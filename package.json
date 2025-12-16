@@ -9,18 +9,28 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lodash.debounce": "^4.0.8",
+    "lucide-react": "^0.560.0",
+    "next": "16.0.1",
+    "propeller-sdk-v2": "github:propeller-commerce/propeller-sdk-v2#master",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "next": "16.0.1"
+    "react-hot-toast": "^2.6.0",
+    "swiper": "^12.0.3",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "baseline-browser-mapping": "^2.9.6",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1"
+    "eslint-config-next": "16.0.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }

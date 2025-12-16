@@ -1,65 +1,216 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import ProductSlider from '@/components/common/ProductSlider';
+import { menuService } from '@/lib/services/MenuService';
+import { categoryService } from '@/lib/api';
+import type { Category, Cluster, Product } from 'propeller-sdk-v2';
+import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
+import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+
+interface CategoryDisplay {
+  id: number;
+  name: string;
+  icon: string;
+  categoryId: number;
+  slug: string;
+}
 
 export default function Home() {
+  const [featuredProducts, setFeaturedProducts] = useState<(Product | Cluster)[]>([]);
+  const [categories, setCategories] = useState<CategoryDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHomeData = async () => {
+      try {
+        const menu = await menuService.getMenu();
+
+        if (menu?.category?.categories) {
+          const topCategories = menu.category.categories.slice(0, 6).map((item: Category, index: number) => {
+            const icons = ['💻', '⌨️', '🌐', '🖥️', '🎮', '🔌'];
+            return {
+              id: item.categoryId,
+              name: item.name?.[0]?.value || 'Category',
+              icon: icons[index] || '📦',
+              categoryId: item.categoryId,
+              slug: item.slug?.[0]?.value || ''
+            };
+          });
+          setCategories(topCategories);
+
+          // Load featured products from first category
+          if (topCategories.length > 0) {
+            try {
+              const categoryQueryVariables: CategoryQueryVariables = {
+                categoryId: topCategories[0].categoryId,
+                language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+                imageSearchFilters: imageSearchFiltersGrid,
+                imageVariantFilters: imageVariantFiltersMedium
+              };
+
+              const categoryData = await categoryService.getCategory(categoryQueryVariables);
+
+              if (categoryData.products?.items) {
+                setFeaturedProducts(categoryData.products.items.slice(0, 8) as (Product | Cluster)[]);
+              }
+            } catch (error) {
+              console.error('Failed to load featured products:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load home data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHomeData();
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+
+      <main className="flex-1">
+        {/* Modern Hero Section */}
+        <section className="relative overflow-hidden min-h-[600px] flex items-center">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src="/hero-banner.png"
+              alt="Industrial Background"
+              fill
+              className="object-cover opacity-100" // Use full opacity for the image
+              priority
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            {/* Overlay Gradient for Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
+          </div>
+
+          <div className="container-width relative z-10 w-full">
+            <div className="max-w-2xl space-y-6 animate-in slide-in-from-left duration-700">
+              <Badge variant="secondary" className="px-3 py-1 text-sm bg-primary/10 text-primary border-primary/20 backdrop-blur-sm">
+                New Arrivals 2024
+              </Badge>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground sm:text-7xl drop-shadow-sm">
+                High-Performance <br />
+                <span className="text-primary mt-2 block">Workstations</span>
+              </h1>
+              <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-xl font-medium">
+                Experience the power of next-gen computing. Built for professionals who demand speed, reliability, and silence.
+              </p>
+              <div className="mt-10 flex items-center gap-x-6">
+                <Button size="lg" className="px-8 text-lg h-12 shadow-lg shadow-primary/20">Shop Now</Button>
+                <Button variant="outline" size="lg" className="px-8 text-lg h-12 bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-background/80">View Details</Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Value Props / Benefits */}
+        <section className="py-16 border-b border-border/60 bg-slate-50/30">
+          <div className="container-width">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { title: "Free Shipping", text: "On orders over €99.00", icon: "🚚" },
+                { title: "Fast Delivery", text: "Same-day shipping available", icon: "⚡" },
+                { title: "Secure Checkout", text: "Protected by SSL encryption", icon: "🔒" },
+              ].map((item, i) => (
+                <Card key={i} className="border-none shadow-none bg-transparent">
+                  <CardContent className="flex items-center gap-4 pt-6">
+                    <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shadow-sm text-primary">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground">{item.text}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Categories */}
+        {categories.length > 0 && (
+          <section className="py-24 bg-white border-b border-border/60">
+            <div className="container-width">
+              <div className="text-center mb-16 max-w-2xl mx-auto">
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">Shop by Category</h2>
+                <p className="text-muted-foreground text-lg">Browse our wide range of premium components and peripherals found exactly for your needs.</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                {categories.map((category: CategoryDisplay) => (
+                  <Link
+                    key={category.categoryId}
+                    href={`/category/${category.categoryId}/${category.slug}`}
+                    className="group"
+                  >
+                    <Card className="h-full border-border/60 hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-1 bg-white">
+                      <CardContent className="flex flex-col items-center justify-center p-6 text-center h-full gap-5">
+                        <div className="text-4xl group-hover:scale-110 transition-transform duration-300 p-4 bg-slate-50 rounded-full group-hover:bg-primary/5">{category.icon}</div>
+                        <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">{category.name}</h4>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Featured Products */}
+        <section className="py-24 bg-slate-50/30 relative">
+          <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10" />
+          <div className="container-width">
+            <div className="flex items-end justify-between mb-12 border-b border-border/40 pb-6">
+              <div>
+                <Badge variant="outline" className="mb-4 text-primary border-primary/20">Recommended</Badge>
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Featured Products</h2>
+              </div>
+              <Button variant="ghost" className="hidden sm:flex group font-semibold" asChild>
+                <Link href="/">
+                  View All Products
+                  <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="h-full border-muted/40">
+                    <div className="aspect-square bg-slate-100 animate-pulse rounded-t-lg" />
+                    <CardContent className="p-4 space-y-3">
+                      <div className="h-4 bg-slate-100 animate-pulse rounded w-3/4" />
+                      <div className="h-4 bg-slate-100 animate-pulse rounded w-1/2" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : featuredProducts.length > 0 ? (
+              /* Reusing existing ProductSlider for logic, but wrapped in valid container */
+              <ProductSlider title="" products={featuredProducts} />
+            ) : (
+              <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed text-muted-foreground">
+                <p>Check back soon for new products!</p>
+              </div>
+            )}
+          </div>
+        </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

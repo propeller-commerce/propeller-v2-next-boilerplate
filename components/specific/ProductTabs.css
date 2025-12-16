@@ -1,0 +1,118 @@
+.product-tabs {
+  border-top: 1px solid #ddd;
+  margin-top: 2rem;
+}
+
+.tab-nav {
+  display: flex;
+  border-bottom: 2px solid #ddd;
+}
+
+.tab-nav button {
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #666;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab-nav button.active {
+  color: #007bff;
+}
+
+.tab-nav button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #007bff;
+}
+
+.tab-content {
+  padding: 2rem 0;
+}
+
+.tab-pane {
+  line-height: 1.7;
+}
+
+.specifications-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.specifications-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid #eee;
+}
+
+.specifications-table tr > td:first-child {
+  font-weight: 500;
+  width: 30%;
+  background-color: #f8f9fa;
+}
+
+.downloads-list {
+  list-style: none;
+  padding: 0;
+}
+
+.downloads-list li {
+  margin-bottom: 0.5rem;
+}
+
+.downloads-list a {
+  text-decoration: none;
+  color: #007bff;
+}
+
+.videos-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.video-item iframe {
+  width: 100%;
+  height: 200px;
+  border-radius: 4px;
+}
+
+/* Specifications color and image displays */
+.spec-color-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spec-color-square {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid #ddd;
+  flex-shrink: 0;
+}
+
+.spec-color-text {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.spec-image-display {
+  display: flex;
+  align-items: center;
+}
+
+.spec-image {
+  max-width: 60px;
+  max-height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+} 

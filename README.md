@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Propeller Next.js E-commerce
+
+A Next.js e-commerce application powered by propeller-sdk-v2, migrated from the React application.
+
+## Features
+
+- 🛍️ Product catalog with categories
+- 🛒 Shopping cart functionality
+- 👤 User authentication
+- 📱 Responsive design with Tailwind CSS
+- 🔥 React Hot Toast notifications
+- 🎨 Modern UI components
+
+## Tech Stack
+
+- **Next.js 15+** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **propeller-sdk-v2** for GraphQL API integration
+- **React Hot Toast** for notifications
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env.local` file with your environment variables (already configured)
+
+4. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+├── app/                    # Next.js app router pages
+│   ├── cart/              # Shopping cart page
+│   ├── category/          # Category pages
+│   ├── product/           # Product detail pages
+│   ├── login/             # Authentication pages
+│   └── layout.tsx         # Root layout with providers
+├── components/            # React components
+│   ├── common/           # Reusable components (ProductCard, etc.)
+│   └── layout/           # Layout components (Header, Footer, CartSidebar)
+├── context/              # React context providers
+│   ├── AuthContext.tsx   # Authentication state
+│   └── CartContext.tsx   # Shopping cart state
+├── lib/                  # Utilities and services
+│   ├── api.ts           # GraphQL client configuration
+│   └── services/        # Service layer (MenuService, etc.)
+└── types/               # TypeScript type definitions
+```
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+All environment variables are prefixed with `NEXT_PUBLIC_` for client-side access:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `NEXT_PUBLIC_GRAPHQL_ENDPOINT` - GraphQL API endpoint
+- `NEXT_PUBLIC_API_KEY` - API key for authentication
+- `NEXT_PUBLIC_DEFAULT_LANGUAGE` - Default language (NL)
+- `NEXT_PUBLIC_BASE_CATEGORY_ID` - Root category ID
+- `NEXT_PUBLIC_MENU_DEPTH` - Menu nesting depth
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Key Features Implemented
 
-## Deploy on Vercel
+### Shopping Cart
+- Add products to cart
+- Update quantities
+- Remove items
+- Persistent cart in localStorage
+- Cart sidebar with slide-in animation
+- Full cart page with checkout flow
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Product Catalog
+- Category pages with product listings
+- Product detail pages with image gallery
+- Product cards with add-to-cart functionality
+- Responsive grid layouts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Authentication
+- Login/Register pages (UI ready, backend integration pending)
+- User context for authentication state
+- Protected routes support
+
+## Migration from React App
+
+This Next.js application is a migration from the existing React application located in `../propeller-react`. Key changes:
+
+1. **Routing**: Migrated from React Router to Next.js App Router
+2. **Environment Variables**: Changed from `REACT_APP_*` to `NEXT_PUBLIC_*`
+3. **API Calls**: Adapted for Next.js server/client components
+4. **State Management**: Maintained React Context for auth and cart
+5. **Styling**: Continued with Tailwind CSS
+
+## Development Guidelines
+
+- Keep files under 200-300 lines of code
+- Avoid code duplication
+- No mocking data for dev/prod environments
+- Use TypeScript for type safety
+- Follow Next.js best practices for server/client components
+
+## Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+## License
+
+Private - Propeller Commerce

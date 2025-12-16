@@ -1,0 +1,219 @@
+/* AttributeSelector Component Styles */
+
+.attribute-selector {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.attribute-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #343A40;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* IMAGE Selector Styles */
+.image-selector .image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 1rem;
+  max-width: 400px;
+}
+
+.image-option {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #DEE2E6;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.image-option:hover:not(.disabled) {
+  border-color: #007BFF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+.image-option.selected {
+  border-color: #007BFF;
+  border-width: 3px;
+}
+
+.image-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attribute-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.selection-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #007BFF;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* COLOR Selector Styles */
+.color-selector .color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 1rem;
+  max-width: 300px;
+}
+
+.color-option {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-option:hover:not(.disabled) {
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
+.color-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.color-square {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 2px solid #DEE2E6;
+  transition: all 0.2s ease;
+}
+
+.color-option.selected .color-square {
+  border-color: #007BFF;
+  border-width: 3px;
+}
+
+.selection-border {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid #007BFF;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* DROPDOWN Selector Styles */
+.dropdown-selector {
+  max-width: 300px;
+}
+
+.attribute-dropdown {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #DEE2E6;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.attribute-dropdown:focus {
+  outline: none;
+  border-color: #007BFF;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.attribute-dropdown:disabled {
+  background: #F8F9FA;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* RADIO Selector Styles */
+.radio-selector .radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.radio-option:hover:not(.disabled) {
+  background-color: #F8F9FA;
+}
+
+.radio-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #007BFF;
+  cursor: pointer;
+}
+
+.radio-option.disabled input[type="radio"] {
+  cursor: not-allowed;
+}
+
+.radio-label {
+  font-size: 1rem;
+  color: #343A40;
+  cursor: pointer;
+}
+
+.radio-option.disabled .radio-label {
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .image-selector .image-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .image-option {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .color-selector .color-grid {
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .color-option {
+    width: 40px;
+    height: 40px;
+  }
+}

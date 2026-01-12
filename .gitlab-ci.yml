@@ -1,0 +1,21 @@
+stages:
+  - source
+  - build
+  - deploy
+
+getSource:
+  stage: source
+  script:
+    - devbox run get-source
+
+buildFrontend:
+  stage: build
+  needs: ["getSource"]
+  script:
+    - devbox run build-frontend
+
+deploy:
+  stage: deploy
+  needs: ["buildFrontend"]
+  script:
+    - devbox run deploy

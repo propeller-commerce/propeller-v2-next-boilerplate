@@ -1,0 +1,44 @@
+version: '3'
+
+vars:
+  BUILD_PATH: '{{.BUILD_PATH | default "/home/gitlab-runner/private"}}'
+  # GitLab CI predefined variables will be available in the environment
+  CI_COMMIT_BRANCH: '{{.CI_COMMIT_BRANCH}}'
+  CI_REPOSITORY_URL: '{{.CI_REPOSITORY_URL}}'
+  DEPLOY_PATH: "/home/boilerplate/public_html"
+  OWNER: "boilerplate"
+
+tasks:
+  get-source:
+    desc: "Clones the repository into the build path."
+    cmds:
+      - echo "Cleaning old build..."
+      - rm -rf {{.BUILD_PATH}}/*
+      - echo "Getting source..."
+      - mkdir -p {{.BUILD_PATH}}
+      - git clone {{.CI_REPOSITORY_URL}} {{.BUILD_PATH}}/source
+      - cd {{.BUILD_PATH}}/source && git checkout {{.CI_COMMIT_BRANCH}}
+
+  build-frontend:
+    desc: "Builds the frontend application."
+    dir: '{{.BUILD_PATH}}/source'
+    cmds:
+      - set -e
+      - npm ci --no-audit --no-fund --include=dev
+      - npm run build
+
+  deploy:
+    desc: "Deploys the application."
+    vars:
+      APP_PORT: '{{.APP_PORT | default "3000"}}'
+    cmds:
+      - echo "Deploying to {{.DEPLOY_PATH}}"
+      - sudo rsync -a --delete --exclude='.git' --exclude='src/i18n' {{.BUILD_PATH}}/source/ {{.DEPLOY_PATH}}/
+      - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
+      - |
+        sudo -u {{.OWNER}} bash -c "
+          cd {{.DEPLOY_PATH}}
+          pm2 delete frontend || true
+          PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev
+          pm2 save
+          "

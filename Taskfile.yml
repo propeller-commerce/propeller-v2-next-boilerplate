@@ -13,7 +13,7 @@ tasks:
     desc: "Clones the repository into the build path."
     cmds:
       - echo "Cleaning old build..."
-      - rm -rf {{.BUILD_PATH}}/*
+      - sudo rm -rf {{.BUILD_PATH}}/*
       - echo "Getting source..."
       - mkdir -p {{.BUILD_PATH}}
       - git clone {{.CI_REPOSITORY_URL}} {{.BUILD_PATH}}/source
@@ -32,7 +32,7 @@ tasks:
 
   deploy:
     desc: "Deploying the application."
-    dir: "{{.DEPLOY_PATH}}"
+    dir: '{{.DEPLOY_PATH}}'
     vars:
       APP_PORT: '{{.APP_PORT | default "3000"}}'
     cmds:

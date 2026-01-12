@@ -17,5 +17,7 @@ buildFrontend:
 deploy:
   stage: deploy
   needs: ["buildFrontend"]
+  variables:
+    USER: "boilerplate"
   script:
-    - sudo -u boilerplate devbox run deploy
+    - sudo -u '$USER' bash -c "cd /home/'$USER'/public_html; devbox run deploy"

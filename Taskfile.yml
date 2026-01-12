@@ -26,19 +26,16 @@ tasks:
       - set -e
       - npm ci --no-audit --no-fund --include=dev
       - npm run build
+      - echo "Copying files to {{.DEPLOY_PATH}}"
+      - sudo rsync -a --delete --exclude='.git' --exclude='src/i18n' {{.BUILD_PATH}}/source/ {{.DEPLOY_PATH}}/
+      - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
 
   deploy:
-    desc: "Deploys the application."
+    desc: "Deploying the application."
+    dir: "{{.DEPLOY_PATH}}"
     vars:
       APP_PORT: '{{.APP_PORT | default "3000"}}'
     cmds:
-      - echo "Deploying to {{.DEPLOY_PATH}}"
-      - sudo rsync -a --delete --exclude='.git' --exclude='src/i18n' {{.BUILD_PATH}}/source/ {{.DEPLOY_PATH}}/
-      - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
-      - |
-        sudo -u {{.OWNER}} bash -c "
-          cd {{.DEPLOY_PATH}}
-          pm2 delete frontend || true
-          PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev
-          pm2 save
-          "
+      - pm2 delete frontend || true
+      - unset name; PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev
+      - pm2 save

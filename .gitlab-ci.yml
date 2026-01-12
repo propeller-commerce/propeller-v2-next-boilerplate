@@ -20,4 +20,4 @@ deploy:
   variables:
     USER: "boilerplate"
   script:
-    - sudo -u '$USER' bash -c "cd /home/'$USER'/public_html; devbox run deploy"
+    - sudo -u ${USER} bash -c "cd /home/${USER}/public_html; devbox run deploy"

@@ -1,10 +1,10 @@
-version: '3'
+version: "3"
 
 vars:
   BUILD_PATH: '{{.BUILD_PATH | default "/home/gitlab-runner/private"}}'
   # GitLab CI predefined variables will be available in the environment
-  CI_COMMIT_BRANCH: '{{.CI_COMMIT_BRANCH}}'
-  CI_REPOSITORY_URL: '{{.CI_REPOSITORY_URL}}'
+  CI_COMMIT_BRANCH: "{{.CI_COMMIT_BRANCH}}"
+  CI_REPOSITORY_URL: "{{.CI_REPOSITORY_URL}}"
   DEPLOY_PATH: "/home/boilerplate/public_html"
   OWNER: "boilerplate"
 
@@ -21,7 +21,7 @@ tasks:
 
   build-frontend:
     desc: "Builds the frontend application."
-    dir: '{{.BUILD_PATH}}/source'
+    dir: "{{.BUILD_PATH}}/source"
     cmds:
       - set -e
       - npm ci --no-audit --no-fund --include=dev
@@ -32,10 +32,10 @@ tasks:
 
   deploy:
     desc: "Deploying the application."
-    dir: '{{.DEPLOY_PATH}}'
+    dir: "{{.DEPLOY_PATH}}"
     vars:
       APP_PORT: '{{.APP_PORT | default "3000"}}'
     cmds:
       - pm2 delete frontend || true
-      - unset name; PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev
+      - unset name; PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev --hostname localhost
       - pm2 save

@@ -37,5 +37,5 @@ tasks:
       APP_PORT: '{{.APP_PORT | default "3000"}}'
     cmds:
       - pm2 delete frontend || true
-      - unset name; PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev --hostname localhost
+      - unset name; PORT={{.APP_PORT}} pm2 start npm --name frontend -- run dev -- --hostname 127.0.0.1
       - pm2 save

@@ -19,6 +19,12 @@
       ],
       "deploy": [
         "task deploy"
+      ],
+      "start": [
+        "task start"
+      ],
+      "stop": [
+        "task stop"
       ]
     }
   }

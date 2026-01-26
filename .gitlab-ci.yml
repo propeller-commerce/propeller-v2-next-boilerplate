@@ -1,0 +1,23 @@
+stages:
+  - source
+  - build
+  - deploy
+
+getSource:
+  stage: source
+  script:
+    - devbox run get-source
+
+buildFrontend:
+  stage: build
+  needs: ["getSource"]
+  script:
+    - devbox run build-frontend
+
+deploy:
+  stage: deploy
+  needs: ["buildFrontend"]
+  variables:
+    USER: "boilerplate"
+  script:
+    - sudo -u ${USER} bash -c "cd /home/${USER}/public_html; devbox run deploy"

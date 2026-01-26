@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "nodejs@24",
+    "rsync@latest",
+    "nodePackages.pm2@latest",
+    "go-task@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'NextJS Boilerplate devbox shell!'"
+    ],
+    "scripts": {
+      "get-source": [
+        "task get-source"
+      ],
+      "build-frontend": [
+        "task build-frontend"
+      ],
+      "deploy": [
+        "task deploy"
+      ],
+      "start": [
+        "task start"
+      ],
+      "stop": [
+        "task stop"
+      ]
+    }
+  }
+}

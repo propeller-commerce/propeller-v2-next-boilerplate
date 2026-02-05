@@ -44,3 +44,6 @@ next-env.d.ts
 # local tool config
 .kiro/
 .vscode/
+
+# devbox dir
+.devbox/

@@ -46,15 +46,15 @@ get_source_prod:
       if [ "$CI_COMMIT_BRANCH" == "develop" ]; then
         cat > .env << EOF
       # Database Configuration
-      DATABASE_URL=${DATABASE_URL_STAGING}
+      # DATABASE_URL=${DATABASE_URL_STAGING}
 
       # Next.js Configuration
-      NEXTAUTH_URL=https://boilerplate.dev.wp-propel.com
-      NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      # NEXTAUTH_URL=https://boilerplate.dev.wp-propel.com
+      # NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
 
       # Strapi Configuration
-      STRAPI_API_URL=http://localhost:1337
-      STRAPI_API_TOKEN=${STRAPI_API_TOKEN}
+      # STRAPI_API_URL=http://localhost:1337
+      # STRAPI_API_TOKEN=${STRAPI_API_TOKEN}
 
       # GraphQL Configuration
       GRAPHQL_ENDPOINT=${GRAPHQL_ENDPOINT}
@@ -62,10 +62,10 @@ get_source_prod:
       GRAPHQL_ORDER_EDITOR_API_KEY=${GRAPHQL_ORDER_EDITOR_API_KEY}
       GRAPHQL_TIMEOUT=30000
 
-      MAILJET_API_KEY=${MAILJET_API_KEY}
-      MAILJET_SECRET_KEY=${MAILJET_SECRET_KEY}
-      SENDER_EMAIL=${SENDER_EMAIL}
-      SENDER_NAME=${SENDER_NAME}
+      # MAILJET_API_KEY=${MAILJET_API_KEY}
+      # MAILJET_SECRET_KEY=${MAILJET_SECRET_KEY}
+      # SENDER_EMAIL=${SENDER_EMAIL}
+      # SENDER_NAME=${SENDER_NAME}
 
       EOF
       else

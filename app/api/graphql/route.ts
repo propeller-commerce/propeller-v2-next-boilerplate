@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || '';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+const GRAPHQL_ENDPOINT = process.env.BOILERPLATE_GRAPHQL_ENDPOINT || '';
+const API_KEY = process.env.BOILERPLATE_API_KEY || '';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     console.log('📤 GraphQL Proxy Request:', {
       endpoint: GRAPHQL_ENDPOINT,
       hasApiKey: !!API_KEY,
       query: body.query?.substring(0, 100) + '...',
       variables: body.variables
     });
-    
+
     // Get authorization header from request if present
     const authHeader = request.headers.get('authorization');
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'apikey': API_KEY,
     };
-    
+
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }

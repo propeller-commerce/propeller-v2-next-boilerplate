@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 
 export default function AccountPage() {
   const { state } = useAuth();
-  
+
   // Use auth state directly instead of local state
   const user = state.user;
 
@@ -22,7 +22,7 @@ export default function AccountPage() {
 
   const getAllAddresses = (): Address[] => {
     if (!user) return [];
-    
+
     if (isContact(user) && user.company?.addresses) {
       return user.company.addresses;
     }
@@ -86,7 +86,7 @@ export default function AccountPage() {
 
             <div className="pt-2">
               {/* Placeholder for edit profile */}
-              <Button variant="outline" size="sm" disabled>Edit Profile</Button>
+              {/* <Button variant="outline" size="sm" disabled>Edit Profile</Button> */}
             </div>
           </CardContent>
         </Card>
@@ -101,28 +101,28 @@ export default function AccountPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                    <h3 className="text-xl font-bold">Invoice Address</h3>
-                    {(() => {
-                        const invoiceAddress = defaultAddresses.invoice;
-                        return invoiceAddress ? (
-                            <AddressCard address={invoiceAddress} showActions={false} />
-                        ) : (
-                            <p className="text-gray-500 italic">No invoice address found</p>
-                        );
-                    })()}
-                </div>
-                <div className="space-y-4">
-                    <h3 className="text-xl font-bold">Delivery Address</h3>
-                    {(() => {
-                        const deliveryAddress = defaultAddresses.delivery;
-                        return deliveryAddress ? (
-                            <AddressCard address={deliveryAddress} showActions={false} />
-                        ) : (
-                            <p className="text-gray-500 italic">No delivery address found</p>
-                        );
-                    })()}
-                </div>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold">Invoice Address</h3>
+                {(() => {
+                  const invoiceAddress = defaultAddresses.invoice;
+                  return invoiceAddress ? (
+                    <AddressCard address={invoiceAddress} showActions={false} />
+                  ) : (
+                    <p className="text-gray-500 italic">No invoice address found</p>
+                  );
+                })()}
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold">Delivery Address</h3>
+                {(() => {
+                  const deliveryAddress = defaultAddresses.delivery;
+                  return deliveryAddress ? (
+                    <AddressCard address={deliveryAddress} showActions={false} />
+                  ) : (
+                    <p className="text-gray-500 italic">No delivery address found</p>
+                  );
+                })()}
+              </div>
             </div>
           </CardContent>
           <CardFooter />

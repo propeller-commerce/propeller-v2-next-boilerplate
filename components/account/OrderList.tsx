@@ -11,6 +11,27 @@ interface OrderListProps {
     type?: 'orders' | 'quotes';
 }
 
+/*
+
+    Arguments:
+        - user: propeller-sdk-v2.Contact | propeller-sdk-v2.Customer | null
+        - columns: string[] = arguments.columns || ['id', 'date', 'status', 'total', 'action']   
+        - columnConfig: Record<string, string> = arguments.columnConfig || {
+            'id': 'Order #',
+            'date': 'Date',
+            'status': 'Status',
+            'total': 'Total',
+            'action': 'Action'
+        }
+        - searchFields: arguments.searchFields || ['id', 'date', 'status', 'total']
+        - orderStatus: arguments.orderStatus || ['NEW', 'CONFIRMED', 'VALIDATED', 'ARCHIVED', 'ORDER']
+        - style: Orders.css | React.CSSProperties = {}
+        - router: arguments.router || useRouter()
+        - graphqlClient: arguments.graphqlClient || graphqlClient
+
+
+*/
+
 const OrderList: React.FC<OrderListProps> = ({ type = 'orders' }) => {
     const { state: authState } = useAuth();
     const router = useRouter();

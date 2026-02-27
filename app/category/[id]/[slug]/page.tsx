@@ -13,6 +13,9 @@ import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaul
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
+import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
+import { getCategoryBanner } from '@/lib/cms/strapi';
+import type { CmsCategoryBanner } from '@/lib/cms/types';
 
 export default function CategoryPage() {
   const params = useParams();
@@ -28,6 +31,7 @@ export default function CategoryPage() {
   const [offset, setOffset] = useState(12);
   const [sortField, setSortField] = useState<Enums.ProductSortField>(Enums.ProductSortField.CATEGORY_ORDER);
   const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(Enums.SortOrder.ASC);
+  const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
 
   // Parse URL parameters
   useEffect(() => {
@@ -51,6 +55,11 @@ export default function CategoryPage() {
     setSortField(searchParams.get('sortField') as Enums.ProductSortField || Enums.ProductSortField.CATEGORY_ORDER);
     setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder | Enums.SortOrder.DESC) || Enums.SortOrder.ASC);
   }, [searchParams]);
+
+  // Fetch CMS banner for this category
+  useEffect(() => {
+    getCategoryBanner(String(categoryId)).then(setBanner);
+  }, [categoryId]);
 
   useEffect(() => {
     const fetchCategory = async () => {
@@ -185,6 +194,9 @@ export default function CategoryPage() {
       <Header />
       <main className="flex-1 py-8">
         <div className="container-width">
+          {/* CMS Category Banner */}
+          {banner && <CategoryBanner banner={banner} />}
+
           {/* Category Header */}
           <div className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">{categoryName}</h1>

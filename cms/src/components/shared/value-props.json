@@ -1,0 +1,16 @@
+{
+  "collectionName": "components_shared_value_props",
+  "info": {
+    "displayName": "Value Props",
+    "icon": "bulletList",
+    "description": "Grid of value propositions"
+  },
+  "options": {},
+  "attributes": {
+    "items": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.value-prop-item"
+    }
+  }
+}

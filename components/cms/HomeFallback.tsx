@@ -1,0 +1,203 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import ProductSlider from '@/components/common/ProductSlider';
+import { menuService } from '@/lib/services/MenuService';
+import { categoryService } from '@/lib/api';
+import type { Category, Cluster, Product } from 'propeller-sdk-v2';
+import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
+import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+
+interface CategoryDisplay {
+  id: number;
+  name: string;
+  icon: string;
+  categoryId: number;
+  slug: string;
+}
+
+export default function HomeFallback() {
+  const [featuredProducts, setFeaturedProducts] = useState<(Product | Cluster)[]>([]);
+  const [categories, setCategories] = useState<CategoryDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHomeData = async () => {
+      try {
+        const menu = await menuService.getMenu();
+
+        if (menu?.category?.categories) {
+          const topCategories = menu.category.categories.slice(0, 6).map((item: Category, index: number) => {
+            const icons = ['\uD83D\uDCBB', '\u2328\uFE0F', '\uD83C\uDF10', '\uD83D\uDDA5\uFE0F', '\uD83C\uDFAE', '\uD83D\uDD0C'];
+            return {
+              id: item.categoryId,
+              name: item.name?.[0]?.value || 'Category',
+              icon: icons[index] || '\uD83D\uDCE6',
+              categoryId: item.categoryId,
+              slug: item.slug?.[0]?.value || ''
+            };
+          });
+          setCategories(topCategories);
+
+          if (topCategories.length > 0) {
+            try {
+              const categoryQueryVariables: CategoryQueryVariables = {
+                categoryId: topCategories[0].categoryId,
+                language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+                imageSearchFilters: imageSearchFiltersGrid,
+                imageVariantFilters: imageVariantFiltersMedium
+              };
+
+              const categoryData = await categoryService.getCategory(categoryQueryVariables);
+
+              if (categoryData.products?.items) {
+                setFeaturedProducts(categoryData.products.items.slice(0, 8) as (Product | Cluster)[]);
+              }
+            } catch (error) {
+              console.error('Failed to load featured products:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load home data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHomeData();
+  }, []);
+
+  return (
+    <>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden min-h-[600px] flex items-center">
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/hero-banner.png"
+            alt="Industrial Background"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
+        </div>
+
+        <div className="container-width relative z-10 w-full">
+          <div className="max-w-2xl space-y-6 animate-in slide-in-from-left duration-700">
+            <Badge variant="secondary" className="px-3 py-1 text-sm bg-primary/10 text-primary border-primary/20 backdrop-blur-sm">
+              New Arrivals 2024
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground sm:text-7xl drop-shadow-sm">
+              High-Performance <br />
+              <span className="text-primary mt-2 block">Workstations</span>
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-xl font-medium">
+              Experience the power of next-gen computing. Built for professionals who demand speed, reliability, and silence.
+            </p>
+            <div className="mt-10 flex items-center gap-x-6">
+              <Button size="lg" className="px-8 text-lg h-12 shadow-lg shadow-primary/20">Shop Now</Button>
+              <Button variant="outline" size="lg" className="px-8 text-lg h-12 bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-background/80">View Details</Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Value Props */}
+      <section className="py-16 border-b border-border/60 bg-slate-50/30">
+        <div className="container-width">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { title: "Free Shipping", text: "On orders over \u20AC99.00", icon: "\uD83D\uDE9A" },
+              { title: "Fast Delivery", text: "Same-day shipping available", icon: "\u26A1" },
+              { title: "Secure Checkout", text: "Protected by SSL encryption", icon: "\uD83D\uDD12" },
+            ].map((item, i) => (
+              <Card key={i} className="border-none shadow-none bg-transparent">
+                <CardContent className="flex items-center gap-4 pt-6">
+                  <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shadow-sm text-primary">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.text}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Categories */}
+      {categories.length > 0 && (
+        <section className="py-24 bg-white border-b border-border/60">
+          <div className="container-width">
+            <div className="text-center mb-16 max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">Shop by Category</h2>
+              <p className="text-muted-foreground text-lg">Browse our wide range of premium components and peripherals.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {categories.map((category) => (
+                <Link
+                  key={category.categoryId}
+                  href={`/category/${category.categoryId}/${category.slug}`}
+                  className="group"
+                >
+                  <Card className="h-full border-border/60 hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-1 bg-white">
+                    <CardContent className="flex flex-col items-center justify-center p-6 text-center h-full gap-5">
+                      <div className="text-4xl group-hover:scale-110 transition-transform duration-300 p-4 bg-slate-50 rounded-full group-hover:bg-primary/5">{category.icon}</div>
+                      <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">{category.name}</h4>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Featured Products */}
+      <section className="py-24 bg-slate-50/30 relative">
+        <div className="container-width">
+          <div className="flex items-end justify-between mb-12 border-b border-border/40 pb-6">
+            <div>
+              <Badge variant="outline" className="mb-4 text-primary border-primary/20">Recommended</Badge>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Featured Products</h2>
+            </div>
+            <Button variant="ghost" className="hidden sm:flex group font-semibold" asChild>
+              <Link href="/">
+                View All Products
+                <span className="ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </Link>
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="h-full border-muted/40">
+                  <div className="aspect-square bg-slate-100 animate-pulse rounded-t-lg" />
+                  <CardContent className="p-4 space-y-3">
+                    <div className="h-4 bg-slate-100 animate-pulse rounded w-3/4" />
+                    <div className="h-4 bg-slate-100 animate-pulse rounded w-1/2" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <ProductSlider title="" products={featuredProducts} />
+          ) : (
+            <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed text-muted-foreground">
+              <p>Check back soon for new products!</p>
+            </div>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}

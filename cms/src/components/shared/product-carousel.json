@@ -1,0 +1,25 @@
+{
+  "collectionName": "components_shared_product_carousels",
+  "info": {
+    "displayName": "Product Carousel",
+    "icon": "apps",
+    "description": "Displays products from a Propeller category"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "categoryId": {
+      "type": "string",
+      "required": true
+    },
+    "limit": {
+      "type": "integer",
+      "default": 8,
+      "min": 1,
+      "max": 24
+    }
+  }
+}

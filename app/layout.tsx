@@ -3,7 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { GlobalProvider } from "@/context/GlobalContext";
 import { Toaster } from "react-hot-toast";
+import { getGlobal } from "@/lib/cms/strapi";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,11 +17,13 @@ export const metadata: Metadata = {
   description: "Next.js e-commerce powered by Propeller SDK",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const globalData = await getGlobal();
+
   return (
     <html lang="en">
       <body
@@ -27,7 +31,9 @@ export default function RootLayout({
       >
         <AuthProvider>
           <CartProvider>
-            {children}
+            <GlobalProvider globalData={globalData}>
+              {children}
+            </GlobalProvider>
             <Toaster position="top-center" reverseOrder={false} />
           </CartProvider>
         </AuthProvider>

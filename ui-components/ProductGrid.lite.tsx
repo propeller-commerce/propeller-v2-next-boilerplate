@@ -20,6 +20,7 @@ import {
     CategoryQueryVariables,
     AttributeFilter,
     ProductTextFilterInput,
+    ProductsResponse,
 } from 'propeller-sdk-v2';
 import ProductCard from './ProductCard.lite';
 import ClusterCard from './ClusterCard.lite';
@@ -184,6 +185,22 @@ export interface ProductGridProps {
     onPageChange?: (page: number) => void;
 
     /**
+     * Called after each successful internal data fetch with the full
+     * ProductsResponse object — use to drive an external GridPagination
+     * component by passing the result as its `products` prop.
+     */
+    onProductsResponse?: (products: ProductsResponse) => void;
+
+    /**
+     * Externally controlled current page.
+     * When provided, the grid uses this value instead of its internal page
+     * counter. Wire this to the `onPageChange` callback from a sibling
+     * GridPagination so the two components stay in sync.
+     * When changed the grid automatically re-fetches.
+     */
+    page?: number;
+
+    /**
      * Number of products per page. Defaults to 12.
      * When changed the grid automatically re-fetches (page resets to 1).
      */
@@ -295,7 +312,6 @@ interface ProductGridState {
     getIsLoading: () => boolean;
     showAddToCart: () => boolean;
     getSkeletonItems: () => number[];
-    showPagination: () => boolean;
 }
 
 export default function ProductGrid(props: ProductGridProps) {
@@ -334,7 +350,7 @@ export default function ProductGrid(props: ProductGridProps) {
                     filterAvailableAttributeInput: { isSearchable: true },
                     categoryProductSearchInput: {
                         language: (props.language as string) || 'NL',
-                        page: state.currentPage,
+                        page: (props.page as number) || state.currentPage,
                         offset: (props.pageSize as number) || 12,
                         hidden: false,
                         statuses: [
@@ -392,22 +408,25 @@ export default function ProductGrid(props: ProductGridProps) {
                     } as CategoryProductSearchInput,
                 } as CategoryQueryVariables);
 
-                state.internalProducts = ((result as any)?.products?.items || []) as (Product | Cluster)[];
-                state.totalPages = (result as any)?.products?.pages || 1;
-                state.itemsFound = (result as any)?.products?.itemsFound || 0;
+                state.internalProducts = (result?.products?.items || []) as (Product | Cluster)[];
+                state.totalPages = result?.products?.pages || 1;
+                state.itemsFound = result?.products?.itemsFound || 0;
 
+                if (props.onProductsResponse && result?.products) {
+                    props.onProductsResponse(result.products as ProductsResponse);
+                }
                 if (props.onFiltersChange) {
-                    props.onFiltersChange(((result as any)?.products?.filters || []) as AttributeFilter[]);
+                    props.onFiltersChange((result?.products?.filters || []) as AttributeFilter[]);
                 }
                 if (props.onPriceBoundsChange) {
-                    const pMin = (result as any)?.products?.minPrice;
-                    const pMax = (result as any)?.products?.maxPrice;
+                    const pMin = result?.products?.minPrice;
+                    const pMax = result?.products?.maxPrice;
                     if (pMin !== undefined && pMax !== undefined) {
                         props.onPriceBoundsChange(pMin, pMax);
                     }
                 }
                 if (props.onItemsFoundChange) {
-                    props.onItemsFoundChange((result as any)?.products?.itemsFound || 0);
+                    props.onItemsFoundChange(result?.products?.itemsFound || 0);
                 }
             } catch {
                 state.internalProducts = [];
@@ -422,6 +441,7 @@ export default function ProductGrid(props: ProductGridProps) {
 
         getGridColsClass(): string {
             const cols = (props.columns as number) || 3;
+            if (cols === 1) return 'flex flex-col gap-4';
             if (cols === 2) return 'grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr';
             if (cols === 4) return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr';
             return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr';
@@ -458,12 +478,7 @@ export default function ProductGrid(props: ProductGridProps) {
             const items: number[] = [];
             for (let i = 0; i < count; i++) items.push(i);
             return items;
-        },
-
-        showPagination(): boolean {
-            // Pagination is only relevant when the grid is managing its own data.
-            return props.products === undefined && state.totalPages > 1;
-        },
+        }
     });
 
     // Re-fetch when filter/sort/query props change from outside (e.g. FiltersSidebar)
@@ -474,6 +489,15 @@ export default function ProductGrid(props: ProductGridProps) {
             state.fetchProducts();
         }
     }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize]);
+
+    // Re-fetch when an external page prop changes (e.g. driven by GridPagination).
+    // Only acts when props.page is defined — falls back to internal state otherwise.
+    onUpdate(() => {
+        if (props.products === undefined && props.page !== undefined) {
+            state.currentPage = props.page as number;
+            state.fetchProducts();
+        }
+    }, [props.page]);
 
     return (
         <div className={`w-full ${(props.className as string) || ''}`}>
@@ -620,31 +644,6 @@ export default function ProductGrid(props: ProductGridProps) {
                             )}
                         </For>
                     </div>
-
-                    {/* ── Pagination ───────────────────────────────────────── */}
-                    <Show when={state.showPagination()}>
-                        <div className="flex justify-center items-center gap-2 mt-12">
-                            <button
-                                type="button"
-                                disabled={state.currentPage === 1}
-                                onClick={() => state.handlePageChange(state.currentPage - 1)}
-                                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                Previous
-                            </button>
-                            <span className="px-2 text-sm font-medium text-gray-700">
-                                Page {state.currentPage} of {state.totalPages}
-                            </span>
-                            <button
-                                type="button"
-                                disabled={state.currentPage === state.totalPages}
-                                onClick={() => state.handlePageChange(state.currentPage + 1)}
-                                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </Show>
                 </Show>
             </Show>
         </div>

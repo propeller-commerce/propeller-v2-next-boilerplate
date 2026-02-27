@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ProductsResponse, AttributeFilter } from 'propeller-sdk-v2';
 import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
 interface FiltersSidebarProps {

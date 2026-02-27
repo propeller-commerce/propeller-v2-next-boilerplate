@@ -124,6 +124,8 @@ const FILE_PATCHES = [
         //
         // Fix: use the functional form  setExpandedFilters(prev => ...)  so React
         // always provides the latest state regardless of when the effect runs.
+        // Also add `selectedFilters` to the dep array so the collapse-with-no-
+        // selections logic always sees the latest selection state.
         file: resolve('../output/react/ui-components/GridFilters.tsx'),
         label: 'React → GridFilters: functional setState for accordion init (prevents stale closure)',
         from: [
@@ -143,6 +145,13 @@ const FILE_PATCHES = [
             '        }',
             '      }',
             '    );',
+            '    const sel = selectedFilters as Record<string, string[]>;',
+            '    Object.keys(nextExp).forEach((k: string) => {',
+            '      if (nextExp[k] && !(sel[k] || []).length) {',
+            '        nextExp[k] = false;',
+            '        changed = true;',
+            '      }',
+            '    });',
             '    if (changed) setExpandedFilters(nextExp);',
             '  }, [props.filters]);',
         ].join('\n'),
@@ -160,9 +169,18 @@ const FILE_PATCHES = [
             '          }',
             '        }',
             '      );',
+            '      // Collapse any filter section that has no active selections.',
+            '      const sel = selectedFilters as Record<string, string[]>;',
+            '      Object.keys(nextExp).forEach((k: string) => {',
+            '        if (nextExp[k] && !(sel[k] || []).length) {',
+            '          nextExp[k] = false;',
+            '          changed = true;',
+            '        }',
+            '      });',
             '      return changed ? nextExp : prev;',
             '    });',
-            '  }, [props.filters]);',
+            '    // eslint-disable-next-line react-hooks/exhaustive-deps',
+            '  }, [props.filters, selectedFilters]);',
         ].join('\n'),
     },
     {

@@ -62,6 +62,9 @@ export interface GridFiltersProps {
      */
     collapsed?: boolean;
 
+    /** Increment this counter to reset all selected filters and price inputs externally. */
+    clearSignal?: number;
+
     /** Extra CSS class on the root element. */
     className?: string;
 }
@@ -164,6 +167,9 @@ export default function GridFilters(props: GridFiltersProps) {
                 ? [...cur, value]
                 : cur.filter((v: string) => v !== value);
             state.selectedFilters = { ...state.selectedFilters, [name]: next };
+            if (next.length === 0) {
+                state.expandedFilters = { ...state.expandedFilters, [name]: false };
+            }
             props.onFilterChange(filter, value);
             if (props.getSelectedFilters) props.getSelectedFilters();
         },
@@ -208,6 +214,7 @@ export default function GridFilters(props: GridFiltersProps) {
 
     // When the filter list changes (arrives from ProductGrid re-fetch), initialise
     // any NEW filter keys to collapsed while keeping existing accordion states.
+    // Also collapse any filter that currently has no selections.
     // onUpdate fires on initial mount too, so no separate onMount is needed.
     onUpdate(() => {
         const currentExp = state.expandedFilters as Record<string, boolean>;
@@ -221,6 +228,13 @@ export default function GridFilters(props: GridFiltersProps) {
                 changed = true;
             }
         });
+        const sel = state.selectedFilters as Record<string, string[]>;
+        Object.keys(nextExp).forEach((k: string) => {
+            if (nextExp[k] && !(sel[k] || []).length) {
+                nextExp[k] = false;
+                changed = true;
+            }
+        });
         if (changed) state.expandedFilters = nextExp;
     }, [props.filters]);
 
@@ -230,11 +244,21 @@ export default function GridFilters(props: GridFiltersProps) {
         state.currentMax = (props.priceMax as number) || 9999;
     }, [props.priceMin, props.priceMax]);
 
+    // External clear signal — resets checkboxes and price inputs without a page reload.
+    // Fired when GridToolbar's "Clear All" is clicked via the parent's clearSignal counter.
+    onUpdate(() => {
+        if (props.clearSignal === undefined) return;
+        state.selectedFilters = {};
+        state.currentMin = (props.priceMin as number) || 0;
+        state.currentMax = (props.priceMax as number) || 9999;
+        state.expandedFilters = {};
+    }, [props.clearSignal]);
+
     return (
         <div className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}>
 
             {/* ── Active filter count + clear ─────────────────────── */}
-            <Show when={state.hasActiveFilters()}>
+            {/* <Show when={state.hasActiveFilters()}>
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                     <span className="text-sm font-medium text-gray-700">
                         {state.getSelectedCount()} active
@@ -247,7 +271,7 @@ export default function GridFilters(props: GridFiltersProps) {
                         Clear all
                     </button>
                 </div>
-            </Show>
+            </Show> */}
 
             {/* ── Price range ─────────────────────────────────────── */}
             <Show when={state.showPriceFilter() && (props.priceMin !== undefined || props.priceMax !== undefined)}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Image from 'next/image';
@@ -13,16 +14,22 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import { ImageVariant, Product } from 'propeller-sdk-v2';
+import AddToCart from '@/output/react/ui-components/AddToCart';
+import { graphqlClient } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { config } from '@/data/config';
 
 export default function ProductPage() {
   const params = useParams();
+  const { state } = useAuth();
   const productId = parseInt(params.productId as string);
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const { addToCart } = useCart();
+  const { cart, addToCart, saveCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -150,24 +157,20 @@ export default function ProductPage() {
               </div>
 
               <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
-                <div className="flex items-end gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Quantity</label>
-                    <div className="flex items-center h-11 bg-background border border-input rounded-md overflow-hidden">
-                      <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 h-full hover:bg-secondary transition">-</button>
-                      <input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-12 text-center h-full border-none focus:ring-0 bg-transparent"
-                      />
-                      <button onClick={() => setQuantity(quantity + 1)} className="px-3 h-full hover:bg-secondary transition">+</button>
-                    </div>
-                  </div>
-                  <Button size="lg" className="flex-1 h-11 text-base" onClick={handleAddToCart} isLoading={isAdding}>
-                    {stock > 0 ? 'Add to Cart' : 'Add to Cart (Pre-order)'}
-                  </Button>
-                </div>
+                <AddToCart
+                  user={state.user}
+                  product={product}
+                  cartId={cart?.cartId}
+                  graphqlClient={graphqlClient}
+                  className='flex items-center w-full gap-2'
+                  configuration={config}
+                  showModal={true}
+                  afterAddToCart={(cart, item) => {
+                    saveCart(cart);
+                    console.log('Cart updated:', cart);
+                    console.log('Added item:', item);
+                  }}
+                  onProceedToCheckout={() => router.push('/checkout')} />
               </Card>
 
               <div className="space-y-6 border-t pt-8">

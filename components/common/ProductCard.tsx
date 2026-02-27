@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { Card, CardContent, CardFooter } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
+import { config } from '@/data/config';
 import { cn } from '@/lib/utils';
-import { ShoppingCart } from 'lucide-react';
+import AddToCart from '@/output/react/ui-components/AddToCart';
+import { graphqlClient } from '@/lib/api';
 
 interface ProductCardProps {
   product: any;
@@ -18,8 +19,10 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, className }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCart();
+  const { cart, addToCart, saveCart } = useCart();
+  const { state } = useAuth();
   const [isAdding, setIsAdding] = useState(false);
+  const router = useRouter();
 
   const imageUrl =
     product.media?.images?.items?.[0]?.imageVariants?.[0]?.url ||
@@ -66,7 +69,21 @@ export default function ProductCard({ product, className }: ProductCardProps) {
 
       <CardFooter className="p-4 pt-0 gap-2">
         {/* Simplified Quantity & Add for cleaner look */}
-        <div className="flex items-center w-full gap-2">
+        <AddToCart
+          user={state.user}
+          product={product}
+          cartId={cart?.cartId}
+          graphqlClient={graphqlClient}
+          className='flex items-center w-full gap-2'
+          configuration={config}
+          showModal={true}
+          afterAddToCart={(cart, item) => {
+            saveCart(cart);
+            console.log('Cart updated:', cart);
+            console.log('Added item:', item);
+          }}
+          onProceedToCheckout={() => router.push('/checkout')} />
+        {/* <div className="flex items-center w-full gap-2">
           <div className="flex items-center border border-input rounded-md h-9 bg-background">
             <button
               onClick={(e) => { e.preventDefault(); setQuantity(Math.max(1, quantity - 1)); }}
@@ -101,7 +118,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             </span>
           </Button>
-        </div>
+        </div> */}
       </CardFooter>
     </Card>
   );

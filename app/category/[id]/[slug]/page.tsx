@@ -1,194 +1,141 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, useSyncExternalStore } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ProductOrClusterCard from '@/components/common/ProductOrClusterCard';
-import FiltersSidebar from '@/components/common/FiltersSidebar';
-import { categoryService } from '@/lib/api';
-import { Category, Cluster, Enums, Product } from 'propeller-sdk-v2';
-import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
-import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Card, CardContent } from '@/components/ui/Card';
+import ProductGrid from '@/components/propeller/ProductGrid';
+import GridFilters from '@/components/propeller/GridFilters';
+import GridTitle from '@/components/propeller/GridTitle';
+import CategoryDescription from '@/components/propeller/CategoryDescription';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
 import { getCategoryBanner } from '@/lib/cms/strapi';
+import { graphqlClient } from '@/lib/api';
+import { config } from '@/data/config';
+import { categoryService } from '@/lib/api';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { Enums, AttributeFilter, ProductTextFilterInput, Category } from 'propeller-sdk-v2';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 
 export default function CategoryPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const categoryId = parseInt(params.id as string);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Record<string, string[]>>({});
-  const [minPrice, setMinPrice] = useState<number | undefined>();
-  const [maxPrice, setMaxPrice] = useState<number | undefined>();
-  const [offset, setOffset] = useState(12);
-  const [sortField, setSortField] = useState<Enums.ProductSortField>(Enums.ProductSortField.CATEGORY_ORDER);
-  const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(Enums.SortOrder.ASC);
+
+  // Prevent hydration mismatch — render grid only after client mount
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  // Cart & auth integration
+  const { cart, saveCart } = useCart();
+  const { state: authState } = useAuth();
+
+  // CMS banner
   const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
 
-  // Parse URL parameters
-  useEffect(() => {
-    const newFilters: Record<string, string[]> = {};
+  // Category data (fetched once)
+  const [categoryName, setCategoryName] = useState('Category');
+  const [category, setCategory] = useState<Category | undefined>();
 
-    searchParams.forEach((value, key) => {
-      if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
-        try {
-          newFilters[key] = JSON.parse(decodeURIComponent(value));
-        } catch {
-          newFilters[key] = [decodeURIComponent(value)];
-        }
-      }
-    });
+  // Filter state bridging GridFilters ↔ ProductGrid
+  const [filters, setFilters] = useState<AttributeFilter[]>([]);
+  const [textFilters, setTextFilters] = useState<ProductTextFilterInput[]>([]);
+  const [priceMin, setPriceMin] = useState<number | undefined>();
+  const [priceMax, setPriceMax] = useState<number | undefined>();
+  const [itemsFound, setItemsFound] = useState(0);
 
-    setCurrentPage(parseInt(searchParams.get('page') || '1'));
-    setFilters(newFilters);
-    setMinPrice(searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined);
-    setMaxPrice(searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined);
-    setOffset(parseInt(searchParams.get('offset') || '12'));
-    setSortField(searchParams.get('sortField') as Enums.ProductSortField || Enums.ProductSortField.CATEGORY_ORDER);
-    setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder | Enums.SortOrder.DESC) || Enums.SortOrder.ASC);
-  }, [searchParams]);
+  // Toolbar state
+  const [pageSize, setPageSize] = useState(12);
+  const [sortField, setSortField] = useState('CATEGORY_ORDER');
+  const [sortOrder, setSortOrder] = useState('ASC');
 
-  // Fetch CMS banner for this category
+  // Fetch CMS banner
   useEffect(() => {
     getCategoryBanner(String(categoryId)).then(setBanner);
   }, [categoryId]);
 
+  // Fetch category name/description once
   useEffect(() => {
-    const fetchCategory = async () => {
-      setLoading(true);
-      try {
-        const categoryQueryVariables: CategoryQueryVariables = {
-          categoryId,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-          imageSearchFilters: imageSearchFiltersGrid,
-          imageVariantFilters: imageVariantFiltersMedium,
-          categoryProductSearchInput: {
-            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-            page: currentPage,
-            offset: offset,
-            hidden: false,
-            statuses: [
-              Enums.ProductStatus.A,
-              Enums.ProductStatus.P,
-              Enums.ProductStatus.T,
-              Enums.ProductStatus.S
-            ],
-            sortInputs: [{
-              field: sortField as Enums.ProductSortField,
-              order: sortOrder
-            }],
-            ...(minPrice !== undefined && maxPrice !== undefined ? {
-              price: {
-                from: minPrice,
-                to: maxPrice
-              }
-            } : minPrice !== undefined ? {
-              price: {
-                from: minPrice,
-                to: 999999
-              }
-            } : maxPrice !== undefined ? {
-              price: {
-                from: 0,
-                to: maxPrice
-              }
-            } : {}),
-            ...(Object.keys(filters).length > 0 ? {
-              textFilters: Object.entries(filters).map(([name, values]) => ({
-                name,
-                values,
-                exclude: false,
-                type: Enums.AttributeType.TEXT
-              }))
-            } : {})
-          },
-          filterAvailableAttributeInput: {
-            isSearchable: true
-          }
-        };
+    categoryService.getCategory({
+      categoryId,
+      language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+      imageSearchFilters: config.imageSearchFiltersGrid,
+      imageVariantFilters: config.imageVariantFiltersMedium,
+      categoryProductSearchInput: {
+        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+        page: 1,
+        offset: 1,
+        statuses: [
+          Enums.ProductStatus.A,
+          Enums.ProductStatus.P,
+          Enums.ProductStatus.T,
+          Enums.ProductStatus.S,
+        ],
+      },
+    }).then((cat) => {
+      if (cat) setCategory(cat);
+      if (cat?.name?.[0]?.value) setCategoryName(cat.name[0].value as string);
+    }).catch(() => {});
+  }, [categoryId]);
 
-        const data = await categoryService.getCategory(categoryQueryVariables);
-        setCategory(data);
-      } catch (error) {
-        console.error('Failed to load category:', error);
-      } finally {
-        setLoading(false);
+  // GridFilters → ProductGrid: convert filter checkbox toggle to textFilters array
+  const handleFilterChange = useCallback((filter: AttributeFilter, value: string | number) => {
+    setTextFilters((prev) => {
+      const filterName = filter.attributeDescription?.name || '';
+      const existing = prev.find((f) => f.name === filterName);
+      if (existing) {
+        const values = existing.values as string[];
+        const hasValue = values.includes(String(value));
+        const newValues = hasValue
+          ? values.filter((v) => v !== String(value))
+          : [...values, String(value)];
+
+        if (newValues.length === 0) {
+          return prev.filter((f) => f.name !== filterName);
+        }
+        return prev.map((f) =>
+          f.name === filterName ? { ...f, values: newValues } : f
+        );
       }
-    };
-
-    fetchCategory();
-  }, [categoryId, currentPage, filters, minPrice, maxPrice, offset, sortField, sortOrder]);
-
-  const updateURL = (
-    newFilters: Record<string, string[]>,
-    newPage: number = 1,
-    newMinPrice?: number,
-    newMaxPrice?: number,
-    newOffset?: number,
-    newSortField?: string,
-    newSortOrder?: 'ASC' | 'DESC'
-  ) => {
-    const searchParams = new URLSearchParams();
-
-    if (newPage > 1) searchParams.set('page', newPage.toString());
-
-    Object.entries(newFilters).forEach(([key, values]) => {
-      if (values.length > 0) {
-        searchParams.set(key, encodeURIComponent(JSON.stringify(values)));
-      }
+      return [
+        ...prev,
+        {
+          name: filterName,
+          values: [String(value)],
+          exclude: false,
+          type: Enums.AttributeType.TEXT,
+        } as ProductTextFilterInput,
+      ];
     });
+  }, []);
 
-    if (newMinPrice !== undefined) searchParams.set('minPrice', newMinPrice.toString());
-    if (newMaxPrice !== undefined) searchParams.set('maxPrice', newMaxPrice.toString());
-    if (newOffset !== undefined && newOffset !== 12) searchParams.set('offset', newOffset.toString());
-    if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER') searchParams.set('sortField', newSortField);
-    if (newSortOrder !== undefined && newSortOrder !== 'ASC') searchParams.set('sortOrder', newSortOrder);
+  const handlePriceChange = useCallback((min: number, max: number) => {
+    setPriceMin(min);
+    setPriceMax(max);
+  }, []);
 
-    const newSearch = searchParams.toString();
-    router.push(`/category/${categoryId}/${params.slug}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-  };
+  const handleClearFilters = useCallback(() => {
+    setTextFilters([]);
+    setPriceMin(undefined);
+    setPriceMax(undefined);
+  }, []);
 
-  const handleFilterChange = (filterName: string, values: string[]) => {
-    const newFilters = { ...filters, [filterName]: values };
-    if (values.length === 0) delete newFilters[filterName];
-    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
-  };
+  const handleFiltersFromGrid = useCallback((newFilters: AttributeFilter[]) => {
+    setFilters(newFilters);
+  }, []);
 
-  const handlePriceRangeChange = (newMinPrice?: number, newMaxPrice?: number) => {
-    updateURL(filters, 1, newMinPrice, newMaxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
-  };
+  const handlePriceBoundsChange = useCallback((min: number, max: number) => {
+    // Only set initial bounds if not already filtering by price
+    if (priceMin === undefined && priceMax === undefined) {
+      setPriceMin(min);
+      setPriceMax(max);
+    }
+  }, [priceMin, priceMax]);
 
-  const handlePageChange = (page: number) => {
-    updateURL(filters, page, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
-  };
-
-  const handleOffsetChange = (newOffset: number) => {
-    updateURL(filters, 1, minPrice, maxPrice, newOffset, sortField as string, sortOrder as 'ASC' | 'DESC');
-  };
-
-  const handleSortChange = (newSortField: string, newSortOrder?: 'ASC' | 'DESC') => {
-    updateURL(filters, 1, minPrice, maxPrice, offset, newSortField, newSortOrder || (sortOrder as 'ASC' | 'DESC'));
-  };
-
-  const clearAllFilters = () => {
-    updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
-  };
-
-  const categoryName = (category?.name?.[0]?.value as string) || 'Category';
-  const products = (category?.products?.items || []) as (Product | Cluster)[];
-  const totalPages = category?.products?.pages || 1;
-  const hasActiveFilters = Object.keys(filters).length > 0 || minPrice !== undefined || maxPrice !== undefined;
-
-  // Render Logic
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -198,28 +145,28 @@ export default function CategoryPage() {
           {banner && <CategoryBanner banner={banner} />}
 
           {/* Category Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">{categoryName}</h1>
-            {category?.shortDescription?.[0]?.value && (
-              <div className="prose prose-slate max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: category.shortDescription[0].value }} />
-            )}
-          </div>
+          <GridTitle
+            title={categoryName}
+            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+          />
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <CategoryDescription
+            category={category}
+            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+          />
+
+          {mounted ? <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}
             <aside className="w-full lg:w-64 flex-shrink-0">
-              {loading && !category ? (
-                <div className="bg-card rounded-lg border p-6 h-96 animate-pulse" />
-              ) : category?.products ? (
-                <FiltersSidebar
-                  productsResponse={category.products}
-                  currentFilters={filters}
-                  currentMinPrice={minPrice}
-                  currentMaxPrice={maxPrice}
-                  onFilterChange={handleFilterChange}
-                  onPriceRangeChange={handlePriceRangeChange}
-                />
-              ) : null}
+              <GridFilters
+                filters={filters}
+                priceMin={priceMin}
+                priceMax={priceMax}
+                onFilterChange={handleFilterChange}
+                onPriceChange={handlePriceChange}
+                onClearFilters={handleClearFilters}
+                collapsed={true}
+              />
             </aside>
 
             {/* Products Grid */}
@@ -227,13 +174,13 @@ export default function CategoryPage() {
               {/* Toolbar */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0">
                 <div className="text-sm text-muted-foreground font-medium">
-                  {loading ? 'Submitting...' : `${category?.products?.itemsFound || 0} Products`}
+                  {itemsFound} Products
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
                   <select
-                    value={offset}
-                    onChange={(e) => handleOffsetChange(parseInt(e.target.value))}
+                    value={pageSize}
+                    onChange={(e) => setPageSize(parseInt(e.target.value))}
                     className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value={12}>12 per page</option>
@@ -245,7 +192,7 @@ export default function CategoryPage() {
 
                   <select
                     value={sortField}
-                    onChange={(e) => handleSortChange(e.target.value)}
+                    onChange={(e) => setSortField(e.target.value)}
                     className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="CATEGORY_ORDER">Default Sorting</option>
@@ -261,7 +208,7 @@ export default function CategoryPage() {
 
                   <select
                     value={sortOrder}
-                    onChange={(e) => handleSortChange(sortField, e.target.value as 'ASC' | 'DESC')}
+                    onChange={(e) => setSortOrder(e.target.value)}
                     className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="ASC">Low to High</option>
@@ -270,96 +217,36 @@ export default function CategoryPage() {
                 </div>
               </div>
 
-              {/* Active Filters Bar */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-7 px-2 text-xs">
-                    Clear All
-                  </Button>
-                  {(minPrice !== undefined || maxPrice !== undefined) && (
-                    <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => handlePriceRangeChange(undefined, undefined)}>
-                      Price: €{minPrice ?? 0} - €{maxPrice ?? '∞'} <span>×</span>
-                    </Badge>
-                  )}
-                  {Object.entries(filters).map(([key, values]) =>
-                    values.map(val => (
-                      <Badge key={`${key}-${val}`} variant="outline" className="gap-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground hover:border-destructive" onClick={() => handleFilterChange(key, values.filter(v => v !== val))}>
-                        {val} <span>×</span>
-                      </Badge>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* Grid */}
-              {loading && !category ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <Card key={i} className="w-full h-full flex flex-col overflow-hidden border-border/60">
-                      <div className="relative aspect-square bg-slate-100 animate-pulse" />
-                      <CardContent className="p-4 flex-1 flex flex-col gap-2">
-                        <div className="h-3 bg-slate-100 animate-pulse rounded w-1/4" />
-                        <div className="h-4 bg-slate-100 animate-pulse rounded w-3/4" />
-                        <div className="h-4 bg-slate-100 animate-pulse rounded w-1/2" />
-                        <div className="mt-auto pt-2">
-                          <div className="h-5 bg-slate-100 animate-pulse rounded w-1/3" />
-                        </div>
-                      </CardContent>
-                      <div className="p-4 pt-0">
-                        <div className="flex items-center gap-2">
-                          <div className="h-9 flex-1 bg-slate-100 animate-pulse rounded" />
-                          <div className="h-9 flex-1 bg-slate-100 animate-pulse rounded" />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-                  {products.map((product) => (
-                    <div key={(product as Product).productId || (product as Cluster).clusterId} className="w-full">
-                      <ProductOrClusterCard
-                        item={product}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Empty State */}
-              {!loading && products.length === 0 && (
-                <div className="text-center py-24 bg-muted/20 rounded-xl border border-dashed">
-                  <h3 className="text-lg font-semibold">No products found</h3>
-                  <p className="text-muted-foreground">Try adjusting your filters.</p>
-                  <Button variant="link" onClick={clearAllFilters}>Clear Filters</Button>
-                </div>
-              )}
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-12">
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                  >
-                    Previous
-                  </Button>
-                  {/* Simplified Pagination for now - just numbers */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
+              {/* Product Grid */}
+              <ProductGrid
+                graphqlClient={graphqlClient}
+                categoryId={categoryId}
+                configuration={config}
+                pageSize={pageSize}
+                sortField={sortField}
+                sortOrder={sortOrder}
+                textFilters={textFilters}
+                priceFilterMin={priceMin}
+                priceFilterMax={priceMax}
+                onFiltersChange={handleFiltersFromGrid}
+                onPriceBoundsChange={handlePriceBoundsChange}
+                onItemsFoundChange={setItemsFound}
+                cartId={cart?.cartId}
+                createCart={true}
+                user={authState.user}
+                onCartCreated={(newCart) => saveCart(newCart)}
+                afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+                onProductClick={(product) => {
+                  const slug = product.slugs?.[0]?.value || '';
+                  router.push(`/product/${product.productId}/${slug}`);
+                }}
+                onClusterClick={(cluster) => {
+                  const slug = cluster.slugs?.[0]?.value || cluster.defaultProduct?.slugs?.[0]?.value || '';
+                  router.push(`/cluster/${cluster.clusterId}/${slug}`);
+                }}
+              />
             </div>
-          </div>
+          </div> : <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}
         </div>
       </main>
       <Footer />

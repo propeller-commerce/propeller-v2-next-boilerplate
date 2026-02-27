@@ -8,11 +8,18 @@ import { Button, buttonVariants } from '@/components/ui/Button';
 import { X, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 export default function CartSidebar() {
   const { cart, isCartOpen, closeCart } = useCart();
   const items = cart?.items || [];
+
+  // Prevent hydration mismatch — cart data comes from localStorage on the client
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   // Close on escape key
   useEffect(() => {
@@ -69,7 +76,7 @@ export default function CartSidebar() {
               <ShoppingBag className="w-5 h-5" />
               <h2 className="text-lg font-semibold">Shopping Cart</h2>
               <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
-                {items.length}
+                {mounted ? items.length : 0}
               </span>
             </div>
             <Button variant="ghost" size="icon" onClick={closeCart} className="h-8 w-8">
@@ -80,7 +87,7 @@ export default function CartSidebar() {
 
           {/* Items */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {items.length === 0 ? (
+            {!mounted || items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-muted-foreground">
                 <ShoppingBag className="w-12 h-12 opacity-20" />
                 <p>Your cart is empty.</p>
@@ -107,7 +114,7 @@ export default function CartSidebar() {
 
                   return (
                     <div key={itemId} className="flex gap-4 group">
-                      <div className="relative w-20 h-20 flex-shrink-0 bg-muted/20 rounded-md overflow-hidden">
+                      <div className="relative w-20 h-20 flex-shrink-0 bg-muted/20 rounded-md overflow-hidden" suppressHydrationWarning>
                         <Image
                           src={getImageUrl(item)}
                           alt={productName}
@@ -143,7 +150,7 @@ export default function CartSidebar() {
           </div>
 
           {/* Footer */}
-          {items.length > 0 && cart && (
+          {mounted && items.length > 0 && cart && (
             <div className="bg-muted/10 p-4 border-t space-y-4">
               <CartTotals cart={cart} showCalculations={false} />
               <Link href="/checkout" onClick={closeCart} className={cn(buttonVariants({ size: 'lg' }), "w-full")}>

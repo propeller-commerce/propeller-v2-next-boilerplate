@@ -27,6 +27,7 @@ interface CartContextType {
   getTotalPrice: () => number;
   getCart: () => void;
   clearCarts: () => Promise<void>;
+  saveCart: (cartData: Cart) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -350,6 +351,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         getTotalPrice,
         getCart: refreshCart,
         clearCarts,
+        saveCart
       }}
     >
       {children}

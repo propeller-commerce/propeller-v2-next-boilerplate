@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue\"",
+    "mitosis:fix": "node scripts/fix-mitosis-callbacks.mjs",
+    "mitosis:build": "mitosis build && npm run mitosis:fix"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -37,7 +40,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "baseline-browser-mapping": "^2.9.19",
+    "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",

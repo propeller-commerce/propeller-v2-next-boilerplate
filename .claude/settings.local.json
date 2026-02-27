@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run mitosis:build:*)",
+      "Read(//d/laragon/www/npm/propeller-sdk-v2/**)"
+    ]
+  }
+}

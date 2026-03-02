@@ -196,8 +196,8 @@ export default function GridPagination(props: GridPaginationProps) {
                         </button>
 
                         <For each={state.getFullPages()}>
-                            {(item: PageItem) => (
-                                <div className="inline-flex">
+                            {(item: PageItem, idx: number) => (
+                                <div key={item.type === 'dots' ? `dots-${idx}` : `page-${item.value}`} className="inline-flex">
                                     <Show when={item.type === 'dots'}>
                                         <span className="inline-flex items-center justify-center min-w-[2rem] px-1 py-2 text-sm text-gray-500 select-none">
                                             ...

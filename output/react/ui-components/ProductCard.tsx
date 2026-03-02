@@ -75,6 +75,9 @@ onProductClick?: (product: Product) => void;
 
 // === Appearance ===
 
+/** Number of grid columns — when 1 the card renders as a compact horizontal row. */
+columns?: number;
+
 /** Extra CSS class applied to the root element. */
 className?: string;
 
@@ -169,6 +172,7 @@ addToCartLabels?: Record<string, string>;
 }
 interface ProductCardState {
 isFavorite: boolean;
+isRow: () => boolean;
 getProductName: () => string;
 getProductSku: () => string;
 getProductImageUrl: () => string;
@@ -195,6 +199,11 @@ import  AddToCart from './AddToCart';
   function ProductCard(props:ProductCardProps) {
 
   const [isFavorite, setIsFavorite] = useState<ProductCardState["isFavorite"]>(() => (false))
+
+
+function isRow(): ReturnType<ProductCardState["isRow"]>{
+return (props.columns as number) === 1;
+}
 
 
 function getProductName(): ReturnType<ProductCardState["getProductName"]>{
@@ -302,8 +311,8 @@ value: string;
 return (
 
 
-  <div  className={`group relative flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${props.className || ''}`}>{props.showImage !== false ? (
-  <div className="relative aspect-square overflow-hidden bg-gray-50 p-4"><a className="block h-full w-full"  href={getProductUrl()}  onClick={(e) => handleProductClick(e) }>{!!getProductImageUrl() ? (
+  <div  className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
+  <div className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}><a className="block h-full w-full"  href={getProductUrl()}  onClick={(e) => handleProductClick(e) }>{!!getProductImageUrl() ? (
   <img className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"  src={getProductImageUrl()}  alt={getProductName()}  />
 ) : null}{!getProductImageUrl() ? (
   <div className="flex h-full w-full items-center justify-center text-gray-200"><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="h-16 w-16"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"  strokeWidth={1}  /></svg></div>
@@ -314,10 +323,10 @@ return (
 ) : null}{props.enableAddFavorite ? (
   <button  type="button"  onClick={(e) => handleToggleFavorite(e) }  aria-label={isFavorite ? getLabel('removeFromFavorites', 'Remove from favourites') : getLabel('addToFavorites', 'Add to favourites')}  className={`absolute right-2 top-2 rounded-full border bg-white p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-red-200 text-red-500' : 'border-gray-100 text-gray-300 hover:text-red-400'}`}><svg  stroke="currentColor"  viewBox="0 0 24 24" className="h-4 w-4"  fill={isFavorite ? 'currentColor' : 'none'}  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"  /></svg></button>
 ) : null}</div>
-) : null}<div className="flex flex-1 flex-col gap-2 p-4">{props.showSku !== false && !!getProductSku() ? (
+) : null}<div className={`flex flex-1 ${isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'}`}>{props.showSku !== false && !!getProductSku() ? (
   <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
 ) : null}{props.showName !== false ? (
-  <a className="line-clamp-2 text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600"  href={getProductUrl()}  onClick={(e) => handleProductClick(e) }>{getProductName()}</a>
+  <a className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'}`}  href={getProductUrl()}  onClick={(e) => handleProductClick(e) }>{getProductName()}</a>
 ) : null}{!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
   <div className="flex flex-col gap-0.5">{computedTextLabels()?.map((item) => (
   <div className="text-xs text-gray-500">{item.value}</div>
@@ -327,8 +336,8 @@ return (
 ) : null}{props.showShortDescription && !!getProductShortDescription() ? (
   <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
 ) : null}{!!getProductPrice() ? (
-  <div className="mt-auto pt-2"><span className="text-lg font-bold text-gray-900">{getProductPrice()}</span></div>
-) : null}</div><div className="px-4 pb-4"><AddToCart  className="flex w-full items-center gap-2"  graphqlClient={props.graphqlClient}  user={props.user}  product={props.product}  cartId={props.cartId}  configuration={props.configuration}  childItems={props.childItems}  notes={props.notes}  price={props.price}  createCart={props.createCart}  onCartCreated={props.onCartCreated}  onAddToCart={props.onAddToCart}  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.allowIncrDecr}  enableStockValidation={props.enableStockValidation}  language={props.language}  onProceedToCheckout={props.onProceedToCheckout}  labels={props.addToCartLabels}  /></div></div>
+  <div className={isRow() ? '' : 'mt-auto pt-2'}><span className={`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>{getProductPrice()}</span></div>
+) : null}</div><div className={isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}><AddToCart  className="flex w-full items-center gap-2"  graphqlClient={props.graphqlClient}  user={props.user}  product={props.product}  cartId={props.cartId}  configuration={props.configuration}  childItems={props.childItems}  notes={props.notes}  price={props.price}  createCart={props.createCart}  onCartCreated={props.onCartCreated}  onAddToCart={props.onAddToCart}  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.allowIncrDecr}  enableStockValidation={props.enableStockValidation}  language={props.language}  onProceedToCheckout={props.onProceedToCheckout}  labels={props.addToCartLabels}  /></div></div>
 
 
 );

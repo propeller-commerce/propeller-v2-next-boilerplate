@@ -517,8 +517,8 @@ export default function ProductGrid(props: ProductGridProps) {
             <Show when={state.getIsLoading()}>
                 <div className={state.getGridColsClass()}>
                     <For each={state.getSkeletonItems()}>
-                        {(_: number) => (
-                            <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                        {(_: number, idx: number) => (
+                            <div key={idx} className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                                 <div className="aspect-square bg-slate-100 animate-pulse" />
                                 <div className="p-4 flex flex-col gap-2 flex-1">
                                     <div className="h-3 bg-slate-100 animate-pulse rounded w-1/4" />
@@ -574,12 +574,13 @@ export default function ProductGrid(props: ProductGridProps) {
                 <Show when={state.getDisplayProducts().length > 0}>
                     <div className={state.getGridColsClass()}>
                         <For each={state.getDisplayProducts()}>
-                            {(item: Product | Cluster) => (
-                                <div>
+                            {(item: Product | Cluster, idx: number) => (
+                                <div key={(item as Product).productId || (item as Cluster).clusterId || idx}>
                                     {/* ── Cluster card ───────────────── */}
                                     <Show when={state.isClusterItem(item)}>
                                         <Show when={!props.renderClusterCard}>
                                             <ClusterCard
+                                                columns={props.columns as number || 3}
                                                 cluster={item as Cluster}
                                                 configuration={props.configuration}
                                                 enableAddFavorite={props.enableAddFavorite as boolean}
@@ -602,6 +603,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                         <Show when={!props.renderProductCard}>
                                             <Show when={state.showAddToCart()}>
                                                 <ProductCard
+                                                    columns={props.columns as number || 3}
                                                     product={item as Product}
                                                     graphqlClient={props.graphqlClient as GraphQLClient}
                                                     user={(props.user as Contact | Customer | null) || null}
@@ -631,6 +633,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                             </Show>
                                             <Show when={!state.showAddToCart()}>
                                                 <ProductCard
+                                                    columns={props.columns as number || 3}
                                                     product={item as Product}
                                                     graphqlClient={props.graphqlClient as GraphQLClient}
                                                     user={(props.user as Contact | Customer | null) || null}

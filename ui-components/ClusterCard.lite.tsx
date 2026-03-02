@@ -87,6 +87,9 @@ export interface ClusterCardProps {
      */
     labels?: Record<string, string>;
 
+    /** Number of grid columns — when 1 the card renders as a compact horizontal row. */
+    columns?: number;
+
     /** Extra CSS class applied to the root element. */
     className?: string;
 
@@ -96,6 +99,7 @@ export interface ClusterCardProps {
 
 interface ClusterCardState {
     isFavorite: boolean;
+    isRow: () => boolean;
     getClusterName: () => string;
     getClusterSku: () => string;
     getClusterImageUrl: () => string;
@@ -116,6 +120,10 @@ interface ClusterCardState {
 export default function ClusterCard(props: ClusterCardProps) {
     const state = useStore<ClusterCardState>({
         isFavorite: false,
+
+        isRow() {
+            return (props.columns as number) === 1;
+        },
 
         getClusterName() {
             return (
@@ -249,11 +257,11 @@ export default function ClusterCard(props: ClusterCardProps) {
 
     return (
         <div
-            className={`group relative flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${props.className || ''}`}
+            className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${state.isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
         >
             {/* ── Image area ──────────────────────────────────── */}
             <Show when={props.showImage !== false}>
-                <div className="relative aspect-square overflow-hidden bg-gray-50 p-4">
+                <div className={`relative overflow-hidden bg-gray-50 ${state.isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}>
                     <a
                         href={state.getClusterUrl()}
                         onClick={(e: any) => state.handleClusterClick(e)}
@@ -345,7 +353,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             </Show>
 
             {/* ── Text content ─────────────────────────────────── */}
-            <div className="flex flex-1 flex-col gap-2 p-4">
+            <div className={`flex flex-1 ${state.isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'}`}>
                 {/* SKU */}
                 <Show
                     when={props.showSku !== false && !!state.getClusterSku()}
@@ -360,7 +368,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                     <a
                         href={state.getClusterUrl()}
                         onClick={(e: any) => state.handleClusterClick(e)}
-                        className="line-clamp-2 text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600"
+                        className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${state.isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'}`}
                     >
                         {state.getClusterName()}
                     </a>
@@ -411,8 +419,8 @@ export default function ClusterCard(props: ClusterCardProps) {
 
                 {/* Price */}
                 <Show when={!!state.getClusterPrice()}>
-                    <div className="mt-auto pt-2">
-                        <span className="text-lg font-bold text-gray-900">
+                    <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
+                        <span className={`font-bold text-gray-900 ${state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>
                             {state.getClusterPrice()}
                         </span>
                     </div>
@@ -441,7 +449,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             </div>
 
             {/* ── View cluster button ───────────────────────────── */}
-            <div className="px-4 pb-4">
+            <div className={state.isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}>
                 <a
                     href={state.getClusterUrl()}
                     onClick={(e: any) => state.handleClusterClick(e)}

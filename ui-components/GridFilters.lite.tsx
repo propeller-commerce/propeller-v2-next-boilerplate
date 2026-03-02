@@ -341,7 +341,7 @@ export default function GridFilters(props: GridFiltersProps) {
             {/* ── Attribute filter accordions ──────────────────── */}
             <For each={state.getFilteredFilters()}>
                 {(filter: AttributeFilter) => (
-                    <div className="border-b border-gray-100 pb-3 last:border-b-0">
+                    <div key={state.getFilterName(filter)} className="border-b border-gray-100 pb-3 last:border-b-0">
                         {/* Header */}
                         <button
                             type="button"
@@ -366,7 +366,7 @@ export default function GridFilters(props: GridFiltersProps) {
                             <div className="pt-2 space-y-1.5">
                                 <For each={state.getValidOptions(filter)}>
                                     {(option: any) => (
-                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                        <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
                                             <input
                                                 type="checkbox"
                                                 checked={state.isSelected(state.getFilterName(filter), option.value)}

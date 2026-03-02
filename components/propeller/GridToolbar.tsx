@@ -296,9 +296,9 @@ return (
   <div  className={`${props.className as string || ''}`}><div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4"><div className="text-sm text-muted-foreground font-medium">{props.itemsFound as number > 0 ? (
   <span>{props.itemsFound as number}{getLabel('products')}</span>
 ) : null}</div><div className="flex flex-wrap items-center gap-3"><select className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"  value={currentOffset}  onChange={(e) => handleOffsetChange(parseInt((e.target as HTMLSelectElement).value)) }>{getOffsetOptions()?.map((n) => (
-  <option  value={n}>{n}{getLabel('perPage')}</option>
+  <option key={n}  value={n}>{n}{getLabel('perPage')}</option>
 ))}</select><div className="h-4 w-px bg-border hidden sm:block"  /><select className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"  value={currentSortField}  onChange={(e) => handleSortFieldChange((e.target as HTMLSelectElement).value) }>{getSortOptions()?.map((field) => (
-  <option  value={field}  disabled={field === 'PRICE' && isPriceSortDisabled()}>{getLabel(field)}</option>
+  <option key={field}  value={field}  disabled={field === 'PRICE' && isPriceSortDisabled()}>{getLabel(field)}</option>
 ))}</select><select className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"  value={currentSortOrder}  onChange={(e) => handleSortOrderChange((e.target as HTMLSelectElement).value) }><option  value={Enums.SortOrder.ASC}>{getLabel('ASC')}</option><option  value={Enums.SortOrder.DESC}>{getLabel('DESC')}</option></select><button  type="button" className="h-9 w-9 flex items-center justify-center rounded-md border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"  onClick={(event) => handleViewChange() }  title={currentViewMode === 'grid' ? getLabel('switchToList') : getLabel('switchToGrid')}>{currentViewMode === 'grid' ? (
   <svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round"><line  x1="8"  y1="6"  x2="21"  y2="6"  /><line  x1="8"  y1="12"  x2="21"  y2="12"  /><line  x1="8"  y1="18"  x2="21"  y2="18"  /><line  x1="3"  y1="6"  x2="3.01"  y2="6"  /><line  x1="3"  y1="12"  x2="3.01"  y2="12"  /><line  x1="3"  y1="18"  x2="3.01"  y2="18"  /></svg>
 ) : null}{currentViewMode === 'list' ? (
@@ -313,7 +313,7 @@ if (props.onPriceFilterRemove) props.onPriceFilterRemove();
                         {props.priceFilterMin as number ?? 0} –
                         €{props.priceFilterMax as number ?? '∞'}<span>×</span></span>
 ) : null}{getActiveFilterBadges()?.map((badge) => (
-  <span className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"  onClick={(event) => {
+  <span key={`${badge.key}-${badge.value}`} className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"  onClick={(event) => {
 if (props.onFilterRemove) props.onFilterRemove(badge.key, badge.value);
 } }>{badge.value}<span>×</span></span>
 ))}</div>

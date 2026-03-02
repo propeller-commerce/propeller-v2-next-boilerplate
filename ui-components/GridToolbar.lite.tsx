@@ -306,7 +306,7 @@ export default function GridToolbar(props: GridToolbarProps) {
                     >
                         <For each={state.getOffsetOptions()}>
                             {(n: number) => (
-                                <option value={n}>
+                                <option key={n} value={n}>
                                     {n} {state.getLabel('perPage')}
                                 </option>
                             )}
@@ -328,6 +328,7 @@ export default function GridToolbar(props: GridToolbarProps) {
                         <For each={state.getSortOptions()}>
                             {(field: string) => (
                                 <option
+                                    key={field}
                                     value={field}
                                     disabled={
                                         field === 'PRICE' &&
@@ -448,6 +449,7 @@ export default function GridToolbar(props: GridToolbarProps) {
                     <For each={state.getActiveFilterBadges()}>
                         {(badge: FilterBadge) => (
                             <span
+                                key={`${badge.key}-${badge.value}`}
                                 onClick={() => {
                                     if (props.onFilterRemove)
                                         props.onFilterRemove(badge.key, badge.value);

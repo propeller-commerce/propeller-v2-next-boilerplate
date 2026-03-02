@@ -1,99 +1,139 @@
 'use client';
 
-import { useState, useCallback, useSyncExternalStore } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useMemo } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ProductGrid from '@/components/propeller/ProductGrid';
-import GridFilters from '@/components/propeller/GridFilters';
-import GridTitle from '@/components/propeller/GridTitle';
 import { graphqlClient } from '@/lib/api';
+import { AttributeFilter, Enums, ProductsResponse } from 'propeller-sdk-v2';
+import ProductGrid from '@/components/propeller/ProductGrid';
+import GridToolbar from '@/components/propeller/GridToolbar';
+import GridFilters from '@/components/propeller/GridFilters';
+import GridPagination from '@/components/propeller/GridPagination';
+import GridTitle from '@/components/propeller/GridTitle';
+import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/context/AuthContext';
-import { Enums, AttributeFilter, ProductTextFilterInput } from 'propeller-sdk-v2';
 
 export default function SearchPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const term = decodeURIComponent(params.term as string);
 
-  // Prevent hydration mismatch — render grid only after client mount
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  // Derive URL-driven state from searchParams (no useEffect needed)
+  const currentPage = parseInt(searchParams.get('page') || '1');
+  const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined;
+  const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
+  const offset = parseInt(searchParams.get('offset') || '12');
+  const sortField = (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.RELEVANCE;
+  const sortOrder = (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.ASC;
 
-  // Cart & auth integration
-  const { cart, saveCart } = useCart();
-  const { state: authState } = useAuth();
-
-  // Filter state bridging GridFilters ↔ ProductGrid
-  const [filters, setFilters] = useState<AttributeFilter[]>([]);
-  const [textFilters, setTextFilters] = useState<ProductTextFilterInput[]>([]);
-  const [priceMin, setPriceMin] = useState<number | undefined>();
-  const [priceMax, setPriceMax] = useState<number | undefined>();
-  const [itemsFound, setItemsFound] = useState(0);
-
-  // Toolbar state
-  const [pageSize, setPageSize] = useState(12);
-  const [sortField, setSortField] = useState('RELEVANCE');
-  const [sortOrder, setSortOrder] = useState('ASC');
-
-  // GridFilters → ProductGrid: convert filter checkbox toggle to textFilters array
-  const handleFilterChange = useCallback((filter: AttributeFilter, value: string | number) => {
-    setTextFilters((prev) => {
-      const filterName = filter.attributeDescription?.name || '';
-      const existing = prev.find((f) => f.name === filterName);
-      if (existing) {
-        const values = existing.values as string[];
-        const hasValue = values.includes(String(value));
-        const newValues = hasValue
-          ? values.filter((v) => v !== String(value))
-          : [...values, String(value)];
-
-        if (newValues.length === 0) {
-          return prev.filter((f) => f.name !== filterName);
+  const filters = useMemo(() => {
+    const newFilters: Record<string, string[]> = {};
+    searchParams.forEach((value, key) => {
+      if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
+        try {
+          newFilters[key] = JSON.parse(decodeURIComponent(value));
+        } catch {
+          newFilters[key] = [decodeURIComponent(value)];
         }
-        return prev.map((f) =>
-          f.name === filterName ? { ...f, values: newValues } : f
-        );
       }
-      return [
-        ...prev,
-        {
-          name: filterName,
-          values: [String(value)],
-          exclude: false,
-          type: Enums.AttributeType.TEXT,
-        } as ProductTextFilterInput,
-      ];
     });
-  }, []);
+    return newFilters;
+  }, [searchParams]);
 
-  const handlePriceChange = useCallback((min: number, max: number) => {
-    setPriceMin(min);
-    setPriceMax(max);
-  }, []);
+  const activeTextFilters = useMemo(() => Object.entries(filters)
+    .filter(([, values]) => values.length > 0)
+    .map(([name, values]) => ({
+      name,
+      values,
+      exclude: false,
+      type: Enums.AttributeType.TEXT,
+    })), [filters]);
 
-  const handleClearFilters = useCallback(() => {
-    setTextFilters([]);
-    setPriceMin(undefined);
-    setPriceMax(undefined);
-  }, []);
+  // Component-local state (not URL-driven)
+  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
+  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
+  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
+  const [clearSignal, setClearSignal] = useState(0);
+  const [itemsFound, setItemsFound] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
 
-  const handleFiltersFromGrid = useCallback((newFilters: AttributeFilter[]) => {
-    setFilters(newFilters);
-  }, []);
+  const { state } = useAuth();
+  const { cart, saveCart } = useCart();
 
-  const handlePriceBoundsChange = useCallback((min: number, max: number) => {
-    // Only set initial bounds if not already filtering by price
-    if (priceMin === undefined && priceMax === undefined) {
-      setPriceMin(min);
-      setPriceMax(max);
-    }
-  }, [priceMin, priceMax]);
+  const updateURL = (
+    newFilters: Record<string, string[]>,
+    newPage: number = 1,
+    newMinPrice?: number,
+    newMaxPrice?: number,
+    newOffset?: number,
+    newSortField?: string,
+    newSortOrder?: 'ASC' | 'DESC'
+  ) => {
+    const urlParams = new URLSearchParams();
+
+    if (newPage > 1) urlParams.set('page', newPage.toString());
+
+    Object.entries(newFilters).forEach(([key, values]) => {
+      if (values.length > 0) {
+        urlParams.set(key, encodeURIComponent(JSON.stringify(values)));
+      }
+    });
+
+    if (newMinPrice !== undefined) urlParams.set('minPrice', newMinPrice.toString());
+    if (newMaxPrice !== undefined) urlParams.set('maxPrice', newMaxPrice.toString());
+    if (newOffset !== undefined && newOffset !== 12) urlParams.set('offset', newOffset.toString());
+    if (newSortField !== undefined && newSortField !== 'RELEVANCE') urlParams.set('sortField', newSortField);
+    if (newSortOrder !== undefined && newSortOrder !== 'ASC') urlParams.set('sortOrder', newSortOrder);
+
+    const newSearch = urlParams.toString();
+    router.push(`/search/${encodeURIComponent(term)}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+  };
+
+  const handleFilterChange = (filter: AttributeFilter, value: string | number) => {
+    const name = filter.attributeDescription?.name || '';
+    const current = filters[name] || [];
+    const valueStr = String(value);
+    const next = current.includes(valueStr)
+      ? current.filter((v: string) => v !== valueStr)
+      : [...current, valueStr];
+    const newFilters = { ...filters, [name]: next };
+    if (next.length === 0) delete newFilters[name];
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
+
+  const handlePriceRangeChange = (newMinPrice?: number, newMaxPrice?: number) => {
+    updateURL(filters, 1, newMinPrice, newMaxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
+
+  const handlePageChange = (page: number) => {
+    updateURL(filters, page, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
+
+  const handleOffsetChange = (newOffset: number) => {
+    updateURL(filters, 1, minPrice, maxPrice, newOffset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
+
+  const handleSortChange = (newSortField: string, newSortOrder?: 'ASC' | 'DESC') => {
+    updateURL(filters, 1, minPrice, maxPrice, offset, newSortField, newSortOrder || (sortOrder as 'ASC' | 'DESC'));
+  };
+
+  const clearAllFilters = () => {
+    setClearSignal(s => s + 1);
+    updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
+
+  const handleFilterRemove = (filterName: string, value: string) => {
+    const current = filters[filterName] || [];
+    const newVals = current.filter(v => v !== value);
+    const newFilters = { ...filters, [filterName]: newVals };
+    if (newVals.length === 0) delete newFilters[filterName];
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -106,97 +146,91 @@ export default function SearchPage() {
             language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
           />
 
-          {mounted ? <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}
             <aside className="w-full lg:w-64 flex-shrink-0">
               <GridFilters
-                filters={filters}
-                priceMin={priceMin}
-                priceMax={priceMax}
+                filters={gridFilters}
+                priceMin={priceBoundsMin}
+                priceMax={priceBoundsMax}
+                language="NL"
                 onFilterChange={handleFilterChange}
-                onPriceChange={handlePriceChange}
-                onClearFilters={handleClearFilters}
+                onPriceChange={handlePriceRangeChange}
+                onClearFilters={clearAllFilters}
+                isMobile={false}
+                portalMode="open"
+                user={state.user}
                 collapsed={true}
+                clearSignal={clearSignal}
+                className=""
               />
             </aside>
 
             {/* Products Grid */}
             <div className="flex-1 w-full">
-              {/* Toolbar */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0">
-                <div className="text-sm text-muted-foreground font-medium">
-                  {itemsFound} Results
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <select
-                    value={pageSize}
-                    onChange={(e) => setPageSize(parseInt(e.target.value))}
-                    className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value={12}>12 per page</option>
-                    <option value={24}>24 per page</option>
-                    <option value={48}>48 per page</option>
-                  </select>
-
-                  <div className="h-4 w-px bg-border hidden sm:block" />
-
-                  <select
-                    value={sortField}
-                    onChange={(e) => setSortField(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="RELEVANCE">Relevance</option>
-                    <option value="NAME">Name</option>
-                    <option value="PRICE">Price</option>
-                    <option value="SKU">SKU</option>
-                    <option value="SUPPLIER_CODE">Supplier code</option>
-                    <option value="CREATED_AT">Created date</option>
-                    <option value="LAST_MODIFIED_AT">Last modified date</option>
-                    <option value="PRIORITY">Priority</option>
-                  </select>
-
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="ASC">Low to High</option>
-                    <option value="DESC">High to Low</option>
-                  </select>
-                </div>
+              {/* Toolbar — sticky on mobile, static on lg+ */}
+              <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
+                <GridToolbar
+                  itemsFound={itemsFound}
+                  activeTextFilters={filters}
+                  priceFilterMin={minPrice}
+                  priceFilterMax={maxPrice}
+                  user={state.user}
+                  onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
+                  onOffsetChange={handleOffsetChange}
+                  onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
+                  onFilterRemove={handleFilterRemove}
+                  onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+                  onClearFilters={clearAllFilters}
+                />
               </div>
 
-              {/* Product Grid */}
+              {/* Grid */}
               <ProductGrid
                 graphqlClient={graphqlClient}
                 term={term}
                 configuration={config}
-                pageSize={pageSize}
-                sortField={sortField}
-                sortOrder={sortOrder}
-                textFilters={textFilters}
-                priceFilterMin={priceMin}
-                priceFilterMax={priceMax}
-                onFiltersChange={handleFiltersFromGrid}
-                onPriceBoundsChange={handlePriceBoundsChange}
-                onItemsFoundChange={setItemsFound}
-                cartId={cart?.cartId}
+                user={state.user}
+                language='NL'
+                showModal={true}
                 createCart={true}
-                user={authState.user}
-                onCartCreated={(newCart) => saveCart(newCart)}
-                afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-                onProductClick={(product) => {
-                  const slug = product.slugs?.[0]?.value || '';
-                  router.push(`/product/${product.productId}/${slug}`);
+                cartId={cart?.cartId}
+                onCartCreated={(newCart) => {
+                  saveCart(newCart);
                 }}
-                onClusterClick={(cluster) => {
-                  const slug = cluster.slugs?.[0]?.value || cluster.defaultProduct?.slugs?.[0]?.value || '';
-                  router.push(`/cluster/${cluster.clusterId}/${slug}`);
+                columns={viewMode === 'list' ? 1 : 3}
+                textFilters={activeTextFilters}
+                priceFilterMin={minPrice}
+                priceFilterMax={maxPrice}
+                pageSize={offset}
+                sortField={sortField as string}
+                sortOrder={sortOrder as string}
+                onFiltersChange={setGridFilters}
+                onPriceBoundsChange={(min, max) => {
+                  setPriceBoundsMin(min);
+                  setPriceBoundsMax(max);
                 }}
+                onItemsFoundChange={setItemsFound}
+                page={currentPage}
+                afterAddToCart={(updatedCart) => {
+                  saveCart(updatedCart);
+                }}
+                onProceedToCheckout={() => router.push('/checkout')}
+                onProductsResponse={setProductsResponse}
               />
+
+              {/* Pagination */}
+              <div className="flex justify-center gap-2 mt-12">
+                {productsResponse && (
+                  <GridPagination
+                    products={productsResponse}
+                    onPageChange={handlePageChange}
+                    variant='full'
+                  />
+                )}
+              </div>
             </div>
-          </div> : <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}
+          </div>
         </div>
       </main>
       <Footer />

@@ -1,18 +1,17 @@
 module.exports = {
     files: 'ui-components/**',
-    targets: ['react', 'vue', 'webcomponent'],
+    targets: ['react', 'vue'],
     dest: 'output',
     options: {
         react: {
             typescript: true,
-            stylesType: 'style-tag'
+            stylesType: 'style-tag',
+            prettier: false,
         },
         vue: {
             typescript: true,
             api: 'composition',
-        },
-        webcomponent: {
-            typescript: true,
+            prettier: false,
         }
     }
 };

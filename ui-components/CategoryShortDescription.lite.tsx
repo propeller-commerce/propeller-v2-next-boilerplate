@@ -1,8 +1,9 @@
 import {
     useStore,
     Show,
+    onUpdate,
 } from '@builder.io/mitosis';
-import type { Category } from 'propeller-sdk-v2';
+import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
 export interface CategoryShortDescriptionProps {
     // ── Required ────────────────────────────────────────────────────────────
@@ -27,27 +28,33 @@ export interface CategoryShortDescriptionProps {
 }
 
 interface CategoryShortDescriptionState {
+    /** Cached resolved HTML — updated via onUpdate whenever category/language changes. */
+    html: string;
     getDescription(): string;
 }
 
 export default function CategoryShortDescription(props: CategoryShortDescriptionProps) {
     const state = useStore<CategoryShortDescriptionState>({
+        html: '',
+
         getDescription() {
             if (!props.category?.shortDescription) return '';
             const match = props.category.shortDescription.find(
-                (d: any) => d.language === props.language
+                (d: LocalizedString) => d.language === props.language
             );
-            return (match?.value as string) || '';
+            return match?.value || '';
         },
     });
 
+    // Sync cached HTML whenever category or language changes.
+    onUpdate(() => {
+        state.html = state.getDescription();
+    }, [props.category, props.language]);
+
     return (
-        <Show when={!!state.getDescription()}>
+        <Show when={!!state.html}>
             <div className={`mb-6 ${(props.className as string) || ''}`}>
-                <div
-                    className="prose prose-slate max-w-none text-muted-foreground"
-                    innerHTML={state.getDescription()}
-                />
+                <div className="prose prose-slate max-w-none text-muted-foreground">{state.html}</div>
             </div>
         </Show>
     );

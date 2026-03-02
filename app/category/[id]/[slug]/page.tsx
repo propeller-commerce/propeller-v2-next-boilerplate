@@ -4,29 +4,27 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ProductOrClusterCard from '@/components/common/ProductOrClusterCard';
-import FiltersSidebar from '@/components/common/FiltersSidebar';
-import { categoryService, graphqlClient } from '@/lib/api';
+import { graphqlClient } from '@/lib/api';
 import { AttributeFilter, Category, Cluster, Enums, Product, ProductsResponse } from 'propeller-sdk-v2';
-import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
-import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Card, CardContent } from '@/components/ui/Card';
-import ProductGrid from '@/output/react/ui-components/ProductGrid';
-import GridToolbar from '@/output/react/ui-components/GridToolbar';
+import ProductGrid from '@/components/propeller/ProductGrid';
+import GridToolbar from '@/components/propeller/GridToolbar';
+import GridFilters from '@/components/propeller/GridFilters';
+import GridPagination from '@/components/propeller/GridPagination';
+import GridTitle from '@/components/propeller/GridTitle';
+import CategoryDescription from '@/components/propeller/CategoryDescription';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import { useCart } from '@/context/CartContext';
-import GridFilters from '@/output/react/ui-components/GridFilters';
-import GridPagination from '@/output/react/ui-components/GridPagination';
+import type { CmsCategoryBanner } from '@/lib/cms/types';
+import { getCategoryBanner } from '@/lib/cms/strapi';
+import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
 
 export default function CategoryPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const categoryId = parseInt(params.id as string);
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<Category>();
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
@@ -44,6 +42,9 @@ export default function CategoryPage() {
   const { state } = useAuth();
   const { cart, addToCart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
+
+  // CMS banner
+  const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
 
   // Parse URL parameters
   useEffect(() => {
@@ -68,71 +69,10 @@ export default function CategoryPage() {
     setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder | Enums.SortOrder.DESC) || Enums.SortOrder.ASC);
   }, [searchParams]);
 
-  // useEffect(() => {
-  //   const fetchCategory = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const categoryQueryVariables: CategoryQueryVariables = {
-  //         categoryId,
-  //         language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-  //         imageSearchFilters: imageSearchFiltersGrid,
-  //         imageVariantFilters: imageVariantFiltersMedium,
-  //         categoryProductSearchInput: {
-  //           language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-  //           page: currentPage,
-  //           offset: offset,
-  //           hidden: false,
-  //           statuses: [
-  //             Enums.ProductStatus.A,
-  //             Enums.ProductStatus.P,
-  //             Enums.ProductStatus.T,
-  //             Enums.ProductStatus.S
-  //           ],
-  //           sortInputs: [{
-  //             field: sortField as Enums.ProductSortField,
-  //             order: sortOrder
-  //           }],
-  //           ...(minPrice !== undefined && maxPrice !== undefined ? {
-  //             price: {
-  //               from: minPrice,
-  //               to: maxPrice
-  //             }
-  //           } : minPrice !== undefined ? {
-  //             price: {
-  //               from: minPrice,
-  //               to: 999999
-  //             }
-  //           } : maxPrice !== undefined ? {
-  //             price: {
-  //               from: 0,
-  //               to: maxPrice
-  //             }
-  //           } : {}),
-  //           ...(Object.keys(filters).length > 0 ? {
-  //             textFilters: Object.entries(filters).map(([name, values]) => ({
-  //               name,
-  //               values,
-  //               exclude: false,
-  //               type: Enums.AttributeType.TEXT
-  //             }))
-  //           } : {})
-  //         },
-  //         filterAvailableAttributeInput: {
-  //           isSearchable: true
-  //         }
-  //       };
-
-  //       const data = await categoryService.getCategory(categoryQueryVariables);
-  //       setCategory(data);
-  //     } catch (error) {
-  //       console.error('Failed to load category:', error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   // fetchCategory();
-  // }, [categoryId, currentPage, filters, minPrice, maxPrice, offset, sortField, sortOrder]);
+  // Fetch CMS banner
+  useEffect(() => {
+    getCategoryBanner(String(categoryId)).then(setBanner);
+  }, [categoryId]);
 
   const updateURL = (
     newFilters: Record<string, string[]>,
@@ -232,13 +172,19 @@ export default function CategoryPage() {
       <Header />
       <main className="flex-1 py-8">
         <div className="container-width">
+          {/* CMS Category Banner */}
+          {banner && <CategoryBanner banner={banner} />}
+
           {/* Category Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">{categoryName}</h1>
-            {category?.shortDescription?.[0]?.value && (
-              <div className="prose prose-slate max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: category.shortDescription[0].value }} />
-            )}
-          </div>
+          <GridTitle
+            title={categoryName}
+            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+          />
+
+          <CategoryDescription
+            category={category}
+            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+          />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}
@@ -314,6 +260,7 @@ export default function CategoryPage() {
                 }}
                 onProceedToCheckout={() => router.push('/checkout')}
                 onProductsResponse={setProductsResponse}
+                onCategoryChange={setCategory}
               />
 
               {/* Pagination */}

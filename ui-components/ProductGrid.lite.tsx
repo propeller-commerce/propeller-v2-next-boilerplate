@@ -21,6 +21,7 @@ import {
     AttributeFilter,
     ProductTextFilterInput,
     ProductsResponse,
+    Category,
 } from 'propeller-sdk-v2';
 import ProductCard from './ProductCard.lite';
 import ClusterCard from './ClusterCard.lite';
@@ -190,6 +191,13 @@ export interface ProductGridProps {
      * component by passing the result as its `products` prop.
      */
     onProductsResponse?: (products: ProductsResponse) => void;
+
+    /**
+     * Called after each successful internal data fetch with the full
+     * Category object — use to populate sibling components like GridTitle,
+     * CategoryDescription, and CategoryShortDescription.
+     */
+    onCategoryChange?: (category: Category) => void;
 
     /**
      * Externally controlled current page.
@@ -414,6 +422,9 @@ export default function ProductGrid(props: ProductGridProps) {
 
                 if (props.onProductsResponse && result?.products) {
                     props.onProductsResponse(result.products as ProductsResponse);
+                }
+                if (props.onCategoryChange && result) {
+                    props.onCategoryChange(result as Category);
                 }
                 if (props.onFiltersChange) {
                     props.onFiltersChange((result?.products?.filters || []) as AttributeFilter[]);

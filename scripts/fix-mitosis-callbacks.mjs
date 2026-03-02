@@ -61,6 +61,16 @@ const TARGETS = [
         label: 'React',
     },
     {
+        dir: resolve('../output/react/ui-components'),
+        ext: '.tsx',
+        // Mitosis bug: dangerouslySetInnerHTML={{ __html: value; }} emits a
+        // trailing semicolon inside the object literal, which is invalid syntax.
+        // Strip it: `__html: value;` → `__html: value`
+        pattern: /(__html:\s*[^}]+?);(\s*\}\})/g,
+        replace: '$1$2',
+        label: 'React __html fix',
+    },
+    {
         dir: resolve('../output/vue/ui-components'),
         ext: '.vue',
         // :onFoo="(event) => onFoo()"  →  :onFoo="onFoo"

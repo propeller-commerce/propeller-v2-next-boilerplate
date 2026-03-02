@@ -1,8 +1,9 @@
 import {
     useStore,
     Show,
+    onUpdate,
 } from '@builder.io/mitosis';
-import type { Category } from 'propeller-sdk-v2';
+import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
 export interface CategoryDescriptionProps {
     // ── Required ────────────────────────────────────────────────────────────
@@ -41,6 +42,8 @@ export interface CategoryDescriptionProps {
 
 interface CategoryDescriptionState {
     expanded: boolean;
+    /** Cached resolved HTML — updated via onUpdate whenever category/language changes. */
+    html: string;
     getDescription(): string;
     getMaxLen(): number;
     shouldTruncate(): boolean;
@@ -51,13 +54,14 @@ interface CategoryDescriptionState {
 export default function CategoryDescription(props: CategoryDescriptionProps) {
     const state = useStore<CategoryDescriptionState>({
         expanded: false,
+        html: '',
 
         getDescription() {
             if (!props.category?.description) return '';
             const match = props.category.description.find(
-                (d: any) => d.language === props.language
+                (d: LocalizedString) => d.language === props.language
             );
-            return (match?.value as string) || '';
+            return match?.value || '';
         },
 
         getMaxLen() {
@@ -66,30 +70,32 @@ export default function CategoryDescription(props: CategoryDescriptionProps) {
 
         shouldTruncate() {
             if (props.collapsed === false) return false;
-            return state.getDescription().length > state.getMaxLen();
+            return this.html.length > this.getMaxLen();
         },
 
         getTruncated() {
-            const desc = state.getDescription();
-            const plain = desc.replace(/<[^>]*>/g, '');
-            if (plain.length <= state.getMaxLen()) return desc;
-            const truncated = plain.substring(0, state.getMaxLen());
+            const plain = this.html.replace(/<[^>]*>/g, '');
+            if (plain.length <= this.getMaxLen()) return this.html;
+            const truncated = plain.substring(0, this.getMaxLen());
             return truncated.substring(0, truncated.lastIndexOf(' ')) + '…';
         },
 
         toggle() {
-            state.expanded = !state.expanded;
+            this.expanded = !this.expanded;
         },
     });
 
+    // Sync cached HTML whenever category or language changes.
+    onUpdate(() => {
+        state.html = state.getDescription();
+    }, [props.category, props.language]);
+
     return (
-        <Show when={!!state.getDescription()}>
+        <Show when={!!state.html}>
             <div className={`mb-6 ${(props.className as string) || ''}`}>
                 <Show when={!state.shouldTruncate() || state.expanded}>
                     <div
-                        className="prose prose-slate max-w-none text-muted-foreground"
-                        innerHTML={state.getDescription()}
-                    />
+                        className="prose prose-slate max-w-none text-muted-foreground">{state.html}</div>
                 </Show>
                 <Show when={state.shouldTruncate() && !state.expanded}>
                     <p className="text-muted-foreground">

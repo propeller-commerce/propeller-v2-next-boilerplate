@@ -2,7 +2,7 @@
   <div :class="`w-full ${className || ''}`">
     <template v-if="getIsLoading()">
       <div :class="getGridColsClass()">
-        <template :key="index" v-for="(_, index) in getSkeletonItems()">
+        <template :key="idx" v-for="(_, idx) in getSkeletonItems()">
           <div
             class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
           >
@@ -61,11 +61,15 @@
 
       <template v-if="getDisplayProducts().length > 0">
         <div :class="getGridColsClass()">
-          <template :key="index" v-for="(item, index) in getDisplayProducts()">
+          <template
+            :key="item.productId || item.clusterId || idx"
+            v-for="(item, idx) in getDisplayProducts()"
+          >
             <div>
               <template v-if="isClusterItem(item)">
                 <template v-if="!renderClusterCard">
                   <ClusterCard
+                    :columns="columns || 3"
                     :cluster="item"
                     :configuration="configuration"
                     :enableAddFavorite="enableAddFavorite"
@@ -91,6 +95,7 @@
                 <template v-if="!renderProductCard">
                   <template v-if="showAddToCart()">
                     <ProductCard
+                      :columns="columns || 3"
                       :product="item"
                       :graphqlClient="graphqlClient"
                       :user="user || null"
@@ -125,6 +130,7 @@
 
                   <template v-if="!showAddToCart()">
                     <ProductCard
+                      :columns="columns || 3"
                       :product="item"
                       :graphqlClient="graphqlClient"
                       :user="user || null"

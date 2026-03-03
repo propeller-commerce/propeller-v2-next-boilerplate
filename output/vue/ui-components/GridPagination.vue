@@ -34,7 +34,10 @@
             @click="async (event) => handlePageChange(getCurrentPage() - 1)"
           >
             {{ getLabel("previous") }}</button
-          ><template :key="index" v-for="(item, index) in getFullPages()">
+          ><template
+            :key="item.type === 'dots' ? `dots-${idx}` : `page-${item.value}`"
+            v-for="(item, idx) in getFullPages()"
+          >
             <div class="inline-flex">
               <template v-if="item.type === 'dots'">
                 <span

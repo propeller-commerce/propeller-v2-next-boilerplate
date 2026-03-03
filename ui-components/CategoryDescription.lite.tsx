@@ -95,7 +95,9 @@ export default function CategoryDescription(props: CategoryDescriptionProps) {
             <div className={`mb-6 ${(props.className as string) || ''}`}>
                 <Show when={!state.shouldTruncate() || state.expanded}>
                     <div
-                        className="prose prose-slate max-w-none text-muted-foreground">{state.html}</div>
+                        className="prose prose-slate max-w-none text-muted-foreground"
+                        dangerouslySetInnerHTML={{ __html: state.html }}
+                    />
                 </Show>
                 <Show when={state.shouldTruncate() && !state.expanded}>
                     <p className="text-muted-foreground">

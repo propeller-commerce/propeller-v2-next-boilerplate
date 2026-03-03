@@ -1,11 +1,15 @@
 <template>
   <div
-    :class="`group relative flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
-      className || ''
-    }`"
+    :class="`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
+      isRow() ? 'flex-row items-center' : 'flex-col'
+    } ${className || ''}`"
   >
     <template v-if="showImage !== false">
-      <div class="relative aspect-square overflow-hidden bg-gray-50 p-4">
+      <div
+        :class="`relative overflow-hidden bg-gray-50 ${
+          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'
+        }`"
+      >
         <a
           class="block h-full w-full"
           :href="getClusterUrl()"
@@ -94,16 +98,24 @@
       </div>
     </template>
 
-    <div class="flex flex-1 flex-col gap-2 p-4">
+    <div
+      :class="`flex flex-1 ${
+        isRow()
+          ? 'flex-row items-center gap-4 px-4 py-2 min-w-0'
+          : 'flex-col gap-2 p-4'
+      }`"
+    >
       <template v-if="showSku !== false && !!getClusterSku()">
         <div class="font-mono text-xs text-gray-400">{{ getClusterSku() }}</div>
       </template>
 
       <template v-if="showName !== false">
         <a
-          class="line-clamp-2 text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600"
           :href="getClusterUrl()"
           @click="async (e) => handleClusterClick(e)"
+          :class="`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${
+            isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'
+          }`"
           >{{ getClusterName() }}</a
         >
       </template>
@@ -133,10 +145,13 @@
       </template>
 
       <template v-if="!!getClusterPrice()">
-        <div class="mt-auto pt-2">
-          <span class="text-lg font-bold text-gray-900">{{
-            getClusterPrice()
-          }}</span>
+        <div :class="isRow() ? '' : 'mt-auto pt-2'">
+          <span
+            :class="`font-bold text-gray-900 ${
+              isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'
+            }`"
+            >{{ getClusterPrice() }}</span
+          >
         </div>
       </template>
 
@@ -154,7 +169,7 @@
         </div>
       </template>
     </div>
-    <div class="px-4 pb-4">
+    <div :class="isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'">
       <a
         class="flex w-full items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
         :href="getClusterUrl()"
@@ -249,6 +264,9 @@ export interface ClusterCardProps {
    */
   labels?: Record<string, string>;
 
+  /** Number of grid columns — when 1 the card renders as a compact horizontal row. */
+  columns?: number;
+
   /** Extra CSS class applied to the root element. */
   className?: string;
 
@@ -257,6 +275,7 @@ export interface ClusterCardProps {
 }
 interface ClusterCardState {
   isFavorite: boolean;
+  isRow: () => boolean;
   getClusterName: () => string;
   getClusterSku: () => string;
   getClusterImageUrl: () => string;
@@ -280,6 +299,9 @@ interface ClusterCardState {
 const props = defineProps<ClusterCardProps>();
 const isFavorite = ref<ClusterCardState["isFavorite"]>(false);
 
+function isRow(): ReturnType<ClusterCardState["isRow"]> {
+  return (props.columns as number) === 1;
+}
 function getClusterName(): ReturnType<ClusterCardState["getClusterName"]> {
   return (
     (props.cluster as Cluster)?.names?.[0]?.value ||

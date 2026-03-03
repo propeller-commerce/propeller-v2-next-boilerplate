@@ -1,11 +1,15 @@
 <template>
   <div
-    :class="`group relative flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
-      className || ''
-    }`"
+    :class="`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
+      isRow() ? 'flex-row items-center' : 'flex-col'
+    } ${className || ''}`"
   >
     <template v-if="showImage !== false">
-      <div class="relative aspect-square overflow-hidden bg-gray-50 p-4">
+      <div
+        :class="`relative overflow-hidden bg-gray-50 ${
+          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'
+        }`"
+      >
         <a
           class="block h-full w-full"
           :href="getProductUrl()"
@@ -94,16 +98,24 @@
       </div>
     </template>
 
-    <div class="flex flex-1 flex-col gap-2 p-4">
+    <div
+      :class="`flex flex-1 ${
+        isRow()
+          ? 'flex-row items-center gap-4 px-4 py-2 min-w-0'
+          : 'flex-col gap-2 p-4'
+      }`"
+    >
       <template v-if="showSku !== false && !!getProductSku()">
         <div class="font-mono text-xs text-gray-400">{{ getProductSku() }}</div>
       </template>
 
       <template v-if="showName !== false">
         <a
-          class="line-clamp-2 text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600"
           :href="getProductUrl()"
           @click="async (e) => handleProductClick(e)"
+          :class="`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${
+            isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'
+          }`"
           >{{ getProductName() }}</a
         >
       </template>
@@ -133,14 +145,17 @@
       </template>
 
       <template v-if="!!getProductPrice()">
-        <div class="mt-auto pt-2">
-          <span class="text-lg font-bold text-gray-900">{{
-            getProductPrice()
-          }}</span>
+        <div :class="isRow() ? '' : 'mt-auto pt-2'">
+          <span
+            :class="`font-bold text-gray-900 ${
+              isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'
+            }`"
+            >{{ getProductPrice() }}</span
+          >
         </div>
       </template>
     </div>
-    <div class="px-4 pb-4">
+    <div :class="isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'">
       <AddToCart
         :graphqlClient="graphqlClient"
         :user="user"
@@ -249,6 +264,9 @@ export interface ProductCardProps {
   onProductClick?: (product: Product) => void;
 
   // === Appearance ===
+
+  /** Number of grid columns — when 1 the card renders as a compact horizontal row. */
+  columns?: number;
 
   /** Extra CSS class applied to the root element. */
   className?: string;
@@ -363,6 +381,7 @@ interface ProductCardState {
   getAttributeValue: (code: string) => string;
   handleProductClick: (e: any) => void;
   handleToggleFavorite: (e: any) => void;
+  isRow: () => boolean;
   computedImageLabels: () => string[];
   computedTextLabels: () => {
     name: string;
@@ -373,6 +392,9 @@ interface ProductCardState {
 const props = defineProps<ProductCardProps>();
 const isFavorite = ref<ProductCardState["isFavorite"]>(false);
 
+function isRow(): ReturnType<ProductCardState["isRow"]> {
+  return (props.columns as number) === 1;
+}
 function getProductName(): ReturnType<ProductCardState["getProductName"]> {
   return (props.product as Product)?.names?.[0]?.value || "Product";
 }

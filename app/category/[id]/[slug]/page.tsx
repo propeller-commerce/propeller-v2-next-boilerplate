@@ -145,6 +145,10 @@ export default function CategoryPage() {
     updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
   };
 
+  const productClick = (product: Product) => {
+    router.push(config.urls.getProductUrl(product));
+  };
+
   // Stable defaultSort reference for GridToolbar — only changes when URL sort params change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const defaultSort = useMemo(
@@ -231,6 +235,7 @@ export default function CategoryPage() {
                 categoryId={categoryId}
                 configuration={config}
                 user={state.user}
+                onProductClick={productClick}
                 language='NL'
                 showModal={true}
                 createCart={true}

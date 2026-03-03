@@ -84,7 +84,7 @@ export const config = {
     /** Generate a canonical category URL from a Category object. */
     getCategoryUrl(category: Category): string {
       const slug = category?.slug?.[0]?.value || '';
-      return buildEntityUrl('cluster', category?.categoryId, slug, this.patern);
+      return buildEntityUrl('category', category?.categoryId, slug, this.patern);
     },
   },
 };

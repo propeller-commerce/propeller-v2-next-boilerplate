@@ -54,7 +54,7 @@ export default function CategoryShortDescription(props: CategoryShortDescription
     return (
         <Show when={!!state.html}>
             <div className={`mb-6 ${(props.className as string) || ''}`}>
-                <div className="prose prose-slate max-w-none text-muted-foreground">{state.html}</div>
+                <div className="prose prose-slate max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: state.html }} />
             </div>
         </Show>
     );

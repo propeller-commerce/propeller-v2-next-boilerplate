@@ -86,7 +86,10 @@
       <p class="text-sm text-gray-400 italic">No filters available</p>
     </template>
 
-    <template :key="index" v-for="(filter, index) in getFilteredFilters()">
+    <template
+      :key="getFilterName(filter)"
+      v-for="(filter, index) in getFilteredFilters()"
+    >
       <div class="border-b border-gray-100 pb-3 last:border-b-0">
         <button
           type="button"
@@ -115,7 +118,7 @@
         <template v-if="isExpanded(getFilterName(filter))">
           <div class="pt-2 space-y-1.5">
             <template
-              :key="index"
+              :key="option.value"
               v-for="(option, index) in getValidOptions(filter)"
             >
               <label class="flex items-center gap-2 cursor-pointer group"

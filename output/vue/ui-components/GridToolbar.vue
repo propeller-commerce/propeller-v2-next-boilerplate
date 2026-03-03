@@ -14,7 +14,7 @@
           :value="currentOffset"
           @change="async (e) => handleOffsetChange(parseInt(e.target.value))"
         >
-          <template :key="index" v-for="(n, index) in getOffsetOptions()">
+          <template :key="n" v-for="(n, index) in getOffsetOptions()">
             <option :value="n">{{ n }}{{ getLabel("perPage") }}</option>
           </template>
         </select>
@@ -24,7 +24,7 @@
           :value="currentSortField"
           @change="async (e) => handleSortFieldChange(e.target.value)"
         >
-          <template :key="index" v-for="(field, index) in getSortOptions()">
+          <template :key="field" v-for="(field, index) in getSortOptions()">
             <option
               :value="field"
               :disabled="field === 'PRICE' && isPriceSortDisabled()"
@@ -123,7 +123,7 @@
         </template>
 
         <template
-          :key="index"
+          :key="`${badge.key}-${badge.value}`"
           v-for="(badge, index) in getActiveFilterBadges()"
         >
           <span

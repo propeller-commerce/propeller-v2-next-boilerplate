@@ -77,6 +77,26 @@ export interface ProductInfoProps {
 
     /** Extra CSS class applied to the root element. */
     className?: string;
+
+    /**
+     * Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall.
+     */
+    configuration?: any;
+
+    /**
+     * Attribute codes/names to look up and display as badge overlays on the product image.
+     * Each code is resolved against `product.attributes.items[].attributeDescription.code`
+     * (or `.name`). Attributes with no matching value are silently omitted.
+     * Example: ['new', 'sale']
+     */
+    imageLabels?: string[];
+
+    /**
+     * Attribute codes/names to look up and display as extra text rows below the product name.
+     * Resolved the same way as `imageLabels`.
+     * Example: ['brand', 'color']
+     */
+    textLabels?: string[];
 }
 
 interface ProductInfoState {
@@ -111,7 +131,7 @@ export default function ProductInfo(props: ProductInfoProps) {
         },
     });
 
-    onMount(() => {
+    onUpdate(() => {
         if (props.product) {
             if (props.onProductLoaded) {
                 props.onProductLoaded(props.product);
@@ -127,8 +147,8 @@ export default function ProductInfo(props: ProductInfoProps) {
             .getProduct({
                 productId: props.productId as number,
                 language: (props.language as string) || 'NL',
-                ...(props.imageSearchFilters && { imageSearchFilters: props.imageSearchFilters }),
-                imageVariantFilters: props.imageVariantFilters || { transformations: [] },
+                imageSearchFilters: props.imageSearchFilters || props.configuration.imageSearchFilters,
+                imageVariantFilters: props.imageVariantFilters || props.configuration.imageVariantFiltersLarge,
                 priceCalculateProductInput: {
                     taxZone: taxZone,
                     ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
@@ -151,13 +171,7 @@ export default function ProductInfo(props: ProductInfoProps) {
             .catch(() => {
                 state.loading = false;
             });
-    });
-
-    onUpdate(() => {
-        if (props.product && props.onProductLoaded) {
-            props.onProductLoaded(props.product);
-        }
-    }, [props.product]);
+    }, [props.productId, props.product]);
 
     return (
         <div className={`product-info ${(props.className as string) || ''}`}>

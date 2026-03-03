@@ -113,6 +113,7 @@ return getAttributes().length > 0;
 
 
 
+
 useEffect(() => {
       if (props.attributes) return;
 if (!props.productId || !props.graphqlClient) return;
@@ -130,8 +131,8 @@ setLoading(false);
 }).catch(() => {
 setLoading(false);
 })
-    }, [])
-
+    },
+    [props.productId])
 
 
 return (

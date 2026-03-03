@@ -62,6 +62,14 @@ descriptionMaxLength?: number;
 graphqlClient?: GraphQLClient;
 
 /**
+ * Product ID to fetch attributes for.
+ * Only used when `attributes` is not provided.
+ * Passed to ProductSpecifications for internal attribute fetching
+ * when the product object does not have pre-loaded attributes.
+ */
+productId?: number;
+
+/**
  * Display layout for the specifications.
  * 'table' — two-column table (name | value). Default.
  * 'list'  — vertical label + value stacked rows.
@@ -171,7 +179,7 @@ return (
 ) : null}</div><div className="pt-6">{isActive('description') && isTabVisible('description') ? (
   <ProductDescription  product={props.product}  language={props.language}  collapsed={props.descriptionCollapsed}  maxLength={props.descriptionMaxLength}  />
 ) : null}{isActive('specifications') && isTabVisible('specifications') ? (
-  <ProductSpecifications  attributes={(props.product as Product).attributes?.items as AttributeResult[]}  productId={(props.product as Product).productId}  graphqlClient={props.graphqlClient}  language={props.language}  layout={props.specificationsLayout}  />
+  <ProductSpecifications  attributes={props.product.attributes?.items as AttributeResult[]}  productId={props.productId}  graphqlClient={props.graphqlClient}  language={props.language}  layout={props.specificationsLayout}  />
 ) : null}{isActive('downloads') && isTabVisible('downloads') ? (
   <ProductDownloads  downloads={(props.product as Product).media?.documents as PaginatedMediaDocumentResponse}  language={props.language as string || 'NL'}  labels={props.downloadsLabels}  />
 ) : null}{isActive('videos') && isTabVisible('videos') ? (

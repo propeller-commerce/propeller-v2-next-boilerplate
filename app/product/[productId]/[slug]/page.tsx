@@ -30,7 +30,8 @@ export default function ProductPage() {
   const { cart, saveCart } = useCart();
   const router = useRouter();
 
-  const images = product?.media?.images?.items?.[0]?.imageVariants?.map((v: ImageVariant) => v.url) || [];
+  const images = product?.media?.images?.items.map(image => image.imageVariants?.map(variant => variant.url));
+
   const price = product?.price as ProductPriceSDK;
 
   return (
@@ -61,9 +62,7 @@ export default function ProductPage() {
 
                 <ProductPrice price={price} />
 
-                {product?.bulkPrices?.length && (
-                  <ProductBulkPrices bulkPrices={product.bulkPrices} />
-                )}
+                <ProductBulkPrices bulkPrices={product?.bulkPrices || []} />
 
                 <div className="mt-6">
                   <ProductShortDescription product={product as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />

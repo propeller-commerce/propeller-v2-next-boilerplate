@@ -69,6 +69,26 @@ language?: string;
 
 /** Extra CSS class applied to the root element. */
 className?: string;
+
+/**
+ * Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall.
+ */
+configuration?: any;
+
+/**
+ * Attribute codes/names to look up and display as badge overlays on the product image.
+ * Each code is resolved against `product.attributes.items[].attributeDescription.code`
+ * (or `.name`). Attributes with no matching value are silently omitted.
+ * Example: ['new', 'sale']
+ */
+imageLabels?: string[];
+
+/**
+ * Attribute codes/names to look up and display as extra text rows below the product name.
+ * Resolved the same way as `imageLabels`.
+ * Example: ['brand', 'color']
+ */
+textLabels?: string[];
 }
 interface ProductInfoState {
 internalProduct: Product | null;
@@ -114,6 +134,7 @@ return getProduct()?.sku || '';
 
 
 
+
 useEffect(() => {
       if (props.product) {
 if (props.onProductLoaded) {
@@ -128,12 +149,8 @@ const taxZone = props.taxZone || 'NL';
 service.getProduct({
 productId: props.productId as number,
 language: props.language as string || 'NL',
-...(props.imageSearchFilters && {
-imageSearchFilters: props.imageSearchFilters
-}),
-imageVariantFilters: props.imageVariantFilters || {
-transformations: []
-},
+imageSearchFilters: props.imageSearchFilters || props.configuration.imageSearchFilters,
+imageVariantFilters: props.imageVariantFilters || props.configuration.imageVariantFiltersLarge,
 priceCalculateProductInput: {
 taxZone: taxZone,
 ...(props.user && 'company' in props.user && {
@@ -160,13 +177,8 @@ props.onProductLoaded(product);
 }).catch(() => {
 setLoading(false);
 })
-    }, [])
-useEffect(() => {
-      if (props.product && props.onProductLoaded) {
-props.onProductLoaded(props.product);
-}
     },
-    [props.product])
+    [props.productId, props.product])
 
 
 return (

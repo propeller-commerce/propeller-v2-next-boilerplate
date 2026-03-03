@@ -72,6 +72,14 @@ export interface ProductTabsProps {
     graphqlClient?: GraphQLClient;
 
     /**
+     * Product ID to fetch attributes for.
+     * Only used when `attributes` is not provided. 
+     * Passed to ProductSpecifications for internal attribute fetching
+     * when the product object does not have pre-loaded attributes.
+     */
+    productId?: number;
+
+    /**
      * Display layout for the specifications.
      * 'table' — two-column table (name | value). Default.
      * 'list'  — vertical label + value stacked rows.
@@ -207,8 +215,8 @@ export default function ProductTabs(props: ProductTabsProps) {
 
                 <Show when={state.isActive('specifications') && state.isTabVisible('specifications')}>
                     <ProductSpecifications
-                        attributes={(props.product as Product).attributes?.items as AttributeResult[]}
-                        productId={(props.product as Product).productId}
+                        attributes={props.product.attributes?.items as AttributeResult[]}
+                        productId={props.productId}
                         graphqlClient={props.graphqlClient}
                         language={props.language}
                         layout={props.specificationsLayout}

@@ -2,7 +2,7 @@ import {
     useStore,
     Show,
     For,
-    onMount,
+    onUpdate,
 } from '@builder.io/mitosis';
 import {
     GraphQLClient,
@@ -107,7 +107,7 @@ export default function ProductSpecifications(props: ProductSpecificationsProps)
         },
     });
 
-    onMount(() => {
+    onUpdate(() => {
         if (props.attributes) return;
         if (!props.productId || !props.graphqlClient) return;
         state.loading = true;
@@ -123,7 +123,7 @@ export default function ProductSpecifications(props: ProductSpecificationsProps)
             .catch(() => {
                 state.loading = false;
             });
-    });
+    }, [props.productId]);
 
     return (
         <Show when={!state.loading && state.hasPublicAttributes()}>

@@ -18,6 +18,7 @@ import { useCart } from '@/context/CartContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms/strapi';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
+import Breadcrumbs from '@/output/react/ui-components/Breadcrumbs';
 
 export default function CategoryPage() {
   const params = useParams();
@@ -170,12 +171,16 @@ export default function CategoryPage() {
       type: Enums.AttributeType.TEXT,
     })), [JSON.stringify(filters)]);
 
+
   // Render Logic
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 py-8">
         <div className="container-width">
+          <div className="propeller-breadcrumbs mb-6">
+            <Breadcrumbs categoryPath={category?.categoryPath || []} language="NL" showCurrent={true} configuration={config} />
+          </div>
           {/* CMS Category Banner */}
           {banner && <CategoryBanner banner={banner} />}
 

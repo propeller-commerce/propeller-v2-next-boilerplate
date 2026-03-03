@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import ProductShortDescription from '@/output/react/ui-components/ProductShortDescription';
 import ProductBulkPrices from '@/output/react/ui-components/ProductBulkPrices';
+import Breadcrumbs from '@/output/react/ui-components/Breadcrumbs';
 
 export default function ProductPage() {
   const params = useParams();
@@ -37,6 +38,10 @@ export default function ProductPage() {
       <Header />
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
+          <div className="propeller-breadcrumbs mb-6">
+            <Breadcrumbs categoryPath={product?.categoryPath || []} language="NL" configuration={config} showCurrent={true} />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mb-12">
             {/* Gallery Column */}
             <ProductGallery images={images} />

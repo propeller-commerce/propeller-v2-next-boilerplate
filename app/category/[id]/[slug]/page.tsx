@@ -18,7 +18,7 @@ import { useCart } from '@/context/CartContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms/strapi';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
-import Breadcrumbs from '@/output/react/ui-components/Breadcrumbs';
+import Breadcrumbs from '@/components/propeller/Breadcrumbs';
 
 export default function CategoryPage() {
   const params = useParams();

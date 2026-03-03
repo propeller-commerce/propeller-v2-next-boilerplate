@@ -492,7 +492,7 @@ return (
 
   <div  className={`w-full ${props.className as string || ''}`}>{getIsLoading() ? (
   <div  className={getGridColsClass()}>{getSkeletonItems()?.map((_, idx) => (
-  <div key={idx} className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"><div className="aspect-square bg-slate-100 animate-pulse"  /><div className="p-4 flex flex-col gap-2 flex-1"><div className="h-3 bg-slate-100 animate-pulse rounded w-1/4"  /><div className="h-4 bg-slate-100 animate-pulse rounded w-3/4"  /><div className="h-4 bg-slate-100 animate-pulse rounded w-1/2"  /><div className="mt-auto pt-2"><div className="h-5 bg-slate-100 animate-pulse rounded w-1/3"  /></div></div>{showAddToCart() ? (
+  <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"  key={idx}><div className="aspect-square bg-slate-100 animate-pulse"  /><div className="p-4 flex flex-col gap-2 flex-1"><div className="h-3 bg-slate-100 animate-pulse rounded w-1/4"  /><div className="h-4 bg-slate-100 animate-pulse rounded w-3/4"  /><div className="h-4 bg-slate-100 animate-pulse rounded w-1/2"  /><div className="mt-auto pt-2"><div className="h-5 bg-slate-100 animate-pulse rounded w-1/3"  /></div></div>{showAddToCart() ? (
   <div className="p-4 pt-0"><div className="flex items-center gap-2"><div className="h-9 flex-1 bg-slate-100 animate-pulse rounded"  /><div className="h-9 flex-1 bg-slate-100 animate-pulse rounded"  /></div></div>
 ) : null}</div>
 ))}</div>
@@ -506,7 +506,7 @@ return (
 ) : null}
 {getDisplayProducts().length > 0 ? (
   <div  className={getGridColsClass()}>{getDisplayProducts()?.map((item, idx) => (
-  <div key={(item as Product).productId || (item as Cluster).clusterId || idx}>{isClusterItem(item) ? (
+  <div  key={(item as Product).productId || (item as Cluster).clusterId || idx}>{isClusterItem(item) ? (
   <>{!props.renderClusterCard ? (
   <ClusterCard  columns={props.columns as number || 3}  cluster={item as Cluster}  configuration={props.configuration}  enableAddFavorite={props.enableAddFavorite as boolean}  onToggleFavorite={(cluster,isFav) => {
 if (props.onToggleFavorite) {

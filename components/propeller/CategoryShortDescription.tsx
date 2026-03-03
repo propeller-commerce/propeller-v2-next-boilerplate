@@ -64,7 +64,9 @@ return (
   <>
 
   {!!html ? (
-  <><div  className={`mb-6 ${props.className as string || ''}`}><div className="prose prose-slate max-w-none text-muted-foreground">{html}</div></div></>
+  <><div  className={`mb-6 ${props.className as string || ''}`}><div className="prose prose-slate max-w-none text-muted-foreground"  dangerouslySetInnerHTML={{
+__html: html
+}}  /></div></>
 ) : null}
 
   </>

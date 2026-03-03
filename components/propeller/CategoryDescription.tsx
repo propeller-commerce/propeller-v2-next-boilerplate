@@ -110,7 +110,9 @@ return (
 
   {!!html ? (
   <><div  className={`mb-6 ${props.className as string || ''}`}>{!shouldTruncate() || expanded ? (
-  <div className="prose prose-slate max-w-none text-muted-foreground">{html}</div>
+  <div className="prose prose-slate max-w-none text-muted-foreground"  dangerouslySetInnerHTML={{
+__html: html
+}}  />
 ) : null}{shouldTruncate() && !expanded ? (
   <p className="text-muted-foreground">{getTruncated()}</p>
 ) : null}{shouldTruncate() ? (

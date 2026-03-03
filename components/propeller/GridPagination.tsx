@@ -188,7 +188,7 @@ return (
 ) : null}
 {(props.variant as string || 'compact') === 'full' ? (
   <div className="flex justify-center items-center gap-1 flex-wrap"><button  type="button" className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"  disabled={getCurrentPage() === 1}  onClick={(event) => handlePageChange(getCurrentPage() - 1) }>{getLabel('previous')}</button>{getFullPages()?.map((item, idx) => (
-  <div key={item.type === 'dots' ? `dots-${idx}` : `page-${item.value}`} className="inline-flex">{item.type === 'dots' ? (
+  <div className="inline-flex"  key={item.type === 'dots' ? `dots-${idx}` : `page-${item.value}`}>{item.type === 'dots' ? (
   <span className="inline-flex items-center justify-center min-w-[2rem] px-1 py-2 text-sm text-gray-500 select-none">
                                         ...
                                     </span>

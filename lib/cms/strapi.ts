@@ -27,6 +27,9 @@ async function strapiFetch<T = any>(path: string, query?: Record<string, any>): 
   });
 
   if (!res.ok) {
+    if (res.status === 404) {
+      return { data: null } as T;
+    }
     const body = await res.text().catch(() => '');
     throw new Error(`Strapi ${res.status} ${res.statusText} — ${path} — ${body}`);
   }

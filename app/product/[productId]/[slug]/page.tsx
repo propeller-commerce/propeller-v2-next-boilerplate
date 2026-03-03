@@ -10,17 +10,17 @@ import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
 import { ImageVariant, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
-import ProductInfo from '@/output/react/ui-components/ProductInfo';
-import ProductGallery from '@/output/react/ui-components/ProductGallery';
-import ProductPrice from '@/output/react/ui-components/ProductPrice';
-import ProductTabs from '@/output/react/ui-components/ProductTabs';
+import ProductInfo from '@/components/propeller/ProductInfo';
+import ProductGallery from '@/components/propeller/ProductGallery';
+import ProductPrice from '@/components/propeller/ProductPrice';
+import ProductTabs from '@/components/propeller/ProductTabs';
 
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
-import ProductShortDescription from '@/output/react/ui-components/ProductShortDescription';
-import ProductBulkPrices from '@/output/react/ui-components/ProductBulkPrices';
-import Breadcrumbs from '@/output/react/ui-components/Breadcrumbs';
+import ProductShortDescription from '@/components/propeller/ProductShortDescription';
+import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
+import Breadcrumbs from '@/components/propeller/Breadcrumbs';
 
 export default function ProductPage() {
   const params = useParams();

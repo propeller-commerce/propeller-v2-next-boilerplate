@@ -66,16 +66,13 @@ export interface ProductTabsProps {
 
     /**
      * Initialised Propeller SDK GraphQL client.
-     * Passed to ProductSpecifications for internal attribute fetching
-     * when the product object does not have pre-loaded attributes.
+     * Passed to ProductSpecifications for internal attribute fetching.
      */
     graphqlClient?: GraphQLClient;
 
     /**
      * Product ID to fetch attributes for.
-     * Only used when `attributes` is not provided. 
-     * Passed to ProductSpecifications for internal attribute fetching
-     * when the product object does not have pre-loaded attributes.
+     * Passed to ProductSpecifications for internal attribute fetching.
      */
     productId?: number;
 
@@ -86,6 +83,13 @@ export interface ProductTabsProps {
      * Passed as `layout` to ProductSpecifications.
      */
     specificationsLayout?: string;
+
+    /**
+     * When true, groups specifications by their group field with a heading per section.
+     * When false or omitted, displays a flat ungrouped table. Default: false.
+     * Passed as `grouping` to ProductSpecifications.
+     */
+    specificationsGrouping?: boolean;
 
     // ── Downloads tab ─────────────────────────────────────────────────────────
 
@@ -113,6 +117,7 @@ export interface ProductTabsProps {
 
 interface ProductTabsState {
     activeTab: string;
+    specsVisited: boolean;
     isTabVisible: (tab: string) => boolean;
     isActive: (tab: string) => boolean;
     selectTab: (tab: string) => void;
@@ -122,6 +127,7 @@ interface ProductTabsState {
 export default function ProductTabs(props: ProductTabsProps) {
     const state = useStore<ProductTabsState>({
         activeTab: 'description',
+        specsVisited: false,
 
         isTabVisible(tab: string): boolean {
             if (tab === 'description') return props.showDescription !== false;
@@ -136,6 +142,9 @@ export default function ProductTabs(props: ProductTabsProps) {
         },
 
         selectTab(tab: string): void {
+            if (tab === 'specifications') {
+                this.specsVisited = true;
+            }
             this.activeTab = tab;
         },
 
@@ -213,14 +222,22 @@ export default function ProductTabs(props: ProductTabsProps) {
                     />
                 </Show>
 
-                <Show when={state.isActive('specifications') && state.isTabVisible('specifications')}>
-                    <ProductSpecifications
-                        attributes={props.product.attributes?.items as AttributeResult[]}
-                        productId={props.productId}
-                        graphqlClient={props.graphqlClient}
-                        language={props.language}
-                        layout={props.specificationsLayout}
-                    />
+                {/*
+                  Specs panel: mounted once on first click (specsVisited), then kept in the DOM
+                  and hidden with CSS when another tab is active. This prevents re-fetching on
+                  every tab switch while still using productId-based fetching for accuracy.
+                */}
+                <Show when={state.specsVisited && state.isTabVisible('specifications')}>
+                    <div className={state.isActive('specifications') ? '' : 'hidden'}>
+                        <ProductSpecifications
+                            attributes={props.product.attributes?.items as AttributeResult[]}
+                            productId={props.productId}
+                            graphqlClient={props.graphqlClient}
+                            language={props.language}
+                            layout={props.specificationsLayout}
+                            grouping={props.specificationsGrouping}
+                        />
+                    </div>
                 </Show>
 
                 <Show when={state.isActive('downloads') && state.isTabVisible('downloads')}>

@@ -8,21 +8,18 @@ import { useState, useEffect } from 'react'
   export interface ProductSpecificationsProps {
 /**
  * Initialised Propeller SDK GraphQL client.
- * Required when `attributes` is not provided and `productId` is set —
- * used to internally fetch public attributes for the product.
+ * Required when `productId` is set — used to fetch public attributes.
  */
 graphqlClient?: GraphQLClient;
 
 /**
  * Product ID to fetch attributes for.
- * Only used when `attributes` is not provided.
  */
 productId?: number;
 
 /**
- * Pre-fetched attribute result items.
- * When provided the component skips internal fetching.
- * Obtain from `product.attributes?.items` or a separate attribute fetch.
+ * Pre-fetched attribute result items used as fallback when `productId` is not provided.
+ * When `productId` is provided the component fetches its own data and this prop is ignored.
  */
 attributes?: AttributeResult[];
 
@@ -39,6 +36,12 @@ language?: string;
  */
 layout?: string;
 
+/**
+ * When true, groups attributes by their group field with a heading per section.
+ * When false or omitted, displays a flat ungrouped table/list. Default: false.
+ */
+grouping?: boolean;
+
 /** Extra CSS class applied to the root element. */
 className?: string;
 }
@@ -53,7 +56,7 @@ getAttributeValue: (attr: AttributeResult) => string;
 hasPublicAttributes: () => boolean;
 }
 
-  import  { GraphQLClient, ProductService, AttributeResult, LocalizedString } from 'propeller-sdk-v2';
+  import  { GraphQLClient, ProductService, AttributeResult, LocalizedString, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -66,8 +69,9 @@ const [loading, setLoading] = useState<ProductSpecificationsState["loading"]>(()
 
 
 function getAttributes(): ReturnType<ProductSpecificationsState["getAttributes"]>{
-const attrs = props.attributes as AttributeResult[] || internalAttributes;
-return attrs.filter((a: AttributeResult) => a.attributeDescription?.isPublic === true);
+// Prefer fetched internalAttributes; fall back to props.attributes
+const attrs = internalAttributes.length ? internalAttributes : props.attributes as AttributeResult[] || [];
+return attrs.filter((a: AttributeResult) => a.attributeDescription?.isPublic === true && getAttributeValue(a) !== '' && getAttributeValue(a) !== null && getAttributeValue(a) !== '0');
 }
 
 
@@ -96,10 +100,36 @@ return match?.value || attr.attributeDescription?.name || '';
 
 
 function getAttributeValue(attr: AttributeResult): ReturnType<ProductSpecificationsState["getAttributeValue"]>{
-const val = attr.value?.value;
-if (val === null || val === undefined) return '';
-if (typeof val === 'boolean') return val ? 'Yes' : 'No';
-return String(val);
+const v = attr.value;
+if (!v) return '';
+const lang = props.language as string || 'NL';
+if (v.type === Enums.AttributeType.TEXT) {
+const entry = (v as any).textValues?.find((tv: any) => tv.language === lang);
+const vals = (entry?.values || []).filter(Boolean);
+return vals.join(', ');
+}
+if (v.type === Enums.AttributeType.ENUM) {
+const vals = ((v as any).enumValues || []).filter(Boolean);
+return vals.join(', ');
+}
+if (v.type === Enums.AttributeType.INT) {
+const val = (v as any).intValue;
+return val !== null && val !== undefined ? String(val) : '';
+}
+if (v.type === Enums.AttributeType.DECIMAL) {
+const val = (v as any).decimalValue;
+return val !== null && val !== undefined ? String(val) : '';
+}
+if (v.type === Enums.AttributeType.DATETIME) {
+return (v as any).dateTimeValue || '';
+}
+if (v.type === Enums.AttributeType.COLOR) {
+return (v as any).colorValue || '';
+}
+const fallback = v.value;
+if (fallback === null || fallback === undefined) return '';
+if (typeof fallback === 'boolean') return fallback ? 'Yes' : 'No';
+return String(fallback);
 }
 
 
@@ -115,14 +145,15 @@ return getAttributes().length > 0;
 
 
 useEffect(() => {
-      if (props.attributes) return;
-if (!props.productId || !props.graphqlClient) return;
+      if (!props.productId || !props.graphqlClient) return;
 setLoading(true);
 const service = new ProductService(props.graphqlClient as GraphQLClient);
 service.getAttributeResultByProductId(props.productId as number, {
 attributeDescription: {
 isPublic: true
-}
+},
+page: 1,
+offset: 2000
 }).then((result: {
 items?: AttributeResult[];
 }) => {
@@ -139,7 +170,19 @@ return (
   <>
 
   {!loading && hasPublicAttributes() ? (
-  <><div  className={`product-specifications ${props.className as string || ''}`}>{getGroups()?.map((group) => (
+  <><div  className={`product-specifications ${props.className as string || ''}`}>{!props.grouping ? (
+  <>{props.layout as string !== 'list' ? (
+  <div className="overflow-hidden rounded-lg border border-border"><table className="w-full text-sm"><tbody className="divide-y divide-border">{getAttributes()?.map((attr, i) => (
+  <tr className="odd:bg-white even:bg-muted/20"  key={i}><td className="px-4 py-2 font-medium text-foreground w-1/2">{getAttributeLabel(attr)}</td><td className="px-4 py-2 text-muted-foreground">{getAttributeValue(attr)}</td></tr>
+))}</tbody></table></div>
+) : null}
+{props.layout as string === 'list' ? (
+  <div className="space-y-3">{getAttributes()?.map((attr, i) => (
+  <div className="flex flex-col gap-0.5"  key={i}><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{getAttributeLabel(attr)}</span><span className="text-sm text-foreground">{getAttributeValue(attr)}</span></div>
+))}</div>
+) : null}</>
+) : null}{!!props.grouping ? (
+  <>{getGroups()?.map((group) => (
   <div className="mb-6"  key={group}>{!!group ? (
   <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">{group}</h4>
 ) : null}{props.layout as string !== 'list' ? (
@@ -151,7 +194,8 @@ return (
   <div className="flex flex-col gap-0.5"  key={i}><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{getAttributeLabel(attr)}</span><span className="text-sm text-foreground">{getAttributeValue(attr)}</span></div>
 ))}</div>
 ) : null}</div>
-))}</div></>
+))}</>
+) : null}</div></>
 ) : null}
 
   </>

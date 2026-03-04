@@ -154,11 +154,6 @@ export default function ProductInfo(props: ProductInfoProps) {
                     ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
                     ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
                     ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer)?.customerId })
-                },
-                attributeResultSearchInput: {
-                    attributeDescription: {
-                        isPublic: true
-                    }
                 }
             })
             .then((product: Product) => {

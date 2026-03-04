@@ -56,16 +56,13 @@ descriptionMaxLength?: number;
 
 /**
  * Initialised Propeller SDK GraphQL client.
- * Passed to ProductSpecifications for internal attribute fetching
- * when the product object does not have pre-loaded attributes.
+ * Passed to ProductSpecifications for internal attribute fetching.
  */
 graphqlClient?: GraphQLClient;
 
 /**
  * Product ID to fetch attributes for.
- * Only used when `attributes` is not provided.
- * Passed to ProductSpecifications for internal attribute fetching
- * when the product object does not have pre-loaded attributes.
+ * Passed to ProductSpecifications for internal attribute fetching.
  */
 productId?: number;
 
@@ -76,6 +73,13 @@ productId?: number;
  * Passed as `layout` to ProductSpecifications.
  */
 specificationsLayout?: string;
+
+/**
+ * When true, groups specifications by their group field with a heading per section.
+ * When false or omitted, displays a flat ungrouped table. Default: false.
+ * Passed as `grouping` to ProductSpecifications.
+ */
+specificationsGrouping?: boolean;
 
 // ── Downloads tab ─────────────────────────────────────────────────────────
 
@@ -102,6 +106,7 @@ className?: string;
 }
 interface ProductTabsState {
 activeTab: string;
+specsVisited: boolean;
 isTabVisible: (tab: string) => boolean;
 isActive: (tab: string) => boolean;
 selectTab: (tab: string) => void;
@@ -121,6 +126,9 @@ import  ProductVideos from './ProductVideos';
   const [activeTab, setActiveTab] = useState<ProductTabsState["activeTab"]>(() => ('description'))
 
 
+const [specsVisited, setSpecsVisited] = useState<ProductTabsState["specsVisited"]>(() => (false))
+
+
 function isTabVisible(tab: string): ReturnType<ProductTabsState["isTabVisible"]>{
 if (tab === 'description') return props.showDescription !== false;
 if (tab === 'specifications') return props.showSpecifications !== false;
@@ -136,6 +144,9 @@ return activeTab === tab;
 
 
 function selectTab(tab: string): ReturnType<ProductTabsState["selectTab"]>{
+if (tab === 'specifications') {
+setSpecsVisited(true);
+}
 setActiveTab(tab);
 }
 
@@ -178,8 +189,8 @@ return (
   <button  type="button"  onClick={(event) => selectTab('videos') }  className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}>{getLabel('videos', 'Videos')}</button>
 ) : null}</div><div className="pt-6">{isActive('description') && isTabVisible('description') ? (
   <ProductDescription  product={props.product}  language={props.language}  collapsed={props.descriptionCollapsed}  maxLength={props.descriptionMaxLength}  />
-) : null}{isActive('specifications') && isTabVisible('specifications') ? (
-  <ProductSpecifications  attributes={props.product.attributes?.items as AttributeResult[]}  productId={props.productId}  graphqlClient={props.graphqlClient}  language={props.language}  layout={props.specificationsLayout}  />
+) : null}{specsVisited && isTabVisible('specifications') ? (
+  <div  className={isActive('specifications') ? '' : 'hidden'}><ProductSpecifications  attributes={props.product.attributes?.items as AttributeResult[]}  productId={props.productId}  graphqlClient={props.graphqlClient}  language={props.language}  layout={props.specificationsLayout}  grouping={props.specificationsGrouping}  /></div>
 ) : null}{isActive('downloads') && isTabVisible('downloads') ? (
   <ProductDownloads  downloads={(props.product as Product).media?.documents as PaginatedMediaDocumentResponse}  language={props.language as string || 'NL'}  labels={props.downloadsLabels}  />
 ) : null}{isActive('videos') && isTabVisible('videos') ? (

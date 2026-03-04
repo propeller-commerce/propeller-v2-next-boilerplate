@@ -13,14 +13,15 @@ import AddToCart from '@/components/propeller/AddToCart';
 import ProductInfo from '@/components/propeller/ProductInfo';
 import ProductGallery from '@/components/propeller/ProductGallery';
 import ProductPrice from '@/components/propeller/ProductPrice';
+import ProductShortDescription from '@/components/propeller/ProductShortDescription';
+import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
+import Breadcrumbs from '@/components/propeller/Breadcrumbs';
 import ProductTabs from '@/components/propeller/ProductTabs';
 
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
-import ProductShortDescription from '@/components/propeller/ProductShortDescription';
-import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
-import Breadcrumbs from '@/components/propeller/Breadcrumbs';
+
 
 export default function ProductPage() {
   const params = useParams();
@@ -30,7 +31,9 @@ export default function ProductPage() {
   const { cart, saveCart } = useCart();
   const router = useRouter();
 
-  const images = product?.media?.images?.items.map(image => image.imageVariants?.map(variant => variant.url));
+  const images: string[] = product?.media?.images?.items?.flatMap(
+    image => image.imageVariants?.map(variant => variant.url).filter((url): url is string => !!url) ?? []
+  ) ?? [];
 
   const price = product?.price as ProductPriceSDK;
 
@@ -88,7 +91,7 @@ export default function ProductPage() {
 
             </div>
           </div>
-          <ProductTabs product={product as Product} />
+          <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} />
         </div>
       </main>
       <Footer />

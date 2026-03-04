@@ -162,11 +162,6 @@ taxZone: taxZone,
 ...(props.user && 'customerId' in props.user && {
   customerId: (props.user as Customer)?.customerId
 })
-},
-attributeResultSearchInput: {
-attributeDescription: {
-  isPublic: true
-}
 }
 }).then((product: Product) => {
 setInternalProduct(product);

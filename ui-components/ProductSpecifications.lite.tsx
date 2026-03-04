@@ -9,26 +9,24 @@ import {
     ProductService,
     AttributeResult,
     LocalizedString,
+    Enums,
 } from 'propeller-sdk-v2';
 
 export interface ProductSpecificationsProps {
     /**
      * Initialised Propeller SDK GraphQL client.
-     * Required when `attributes` is not provided and `productId` is set —
-     * used to internally fetch public attributes for the product.
+     * Required when `productId` is set — used to fetch public attributes.
      */
     graphqlClient?: GraphQLClient;
 
     /**
      * Product ID to fetch attributes for.
-     * Only used when `attributes` is not provided.
      */
     productId?: number;
 
     /**
-     * Pre-fetched attribute result items.
-     * When provided the component skips internal fetching.
-     * Obtain from `product.attributes?.items` or a separate attribute fetch.
+     * Pre-fetched attribute result items used as fallback when `productId` is not provided.
+     * When `productId` is provided the component fetches its own data and this prop is ignored.
      */
     attributes?: AttributeResult[];
 
@@ -44,6 +42,12 @@ export interface ProductSpecificationsProps {
      * 'list'  — vertical label + value stacked rows.
      */
     layout?: string;
+
+    /**
+     * When true, groups attributes by their group field with a heading per section.
+     * When false or omitted, displays a flat ungrouped table/list. Default: false.
+     */
+    grouping?: boolean;
 
     /** Extra CSS class applied to the root element. */
     className?: string;
@@ -66,9 +70,14 @@ export default function ProductSpecifications(props: ProductSpecificationsProps)
         loading: false,
 
         getAttributes(): AttributeResult[] {
-            const attrs = (props.attributes as AttributeResult[]) || this.internalAttributes;
+            // Prefer fetched internalAttributes; fall back to props.attributes
+            const attrs = this.internalAttributes.length
+                ? this.internalAttributes
+                : ((props.attributes as AttributeResult[]) || []);
             return attrs.filter(
-                (a: AttributeResult) => a.attributeDescription?.isPublic === true
+                (a: AttributeResult) =>
+                    a.attributeDescription?.isPublic === true &&
+                    this.getAttributeValue(a) !== '' && this.getAttributeValue(a) !== null && this.getAttributeValue(a) !== '0'
             );
         },
 
@@ -96,10 +105,36 @@ export default function ProductSpecifications(props: ProductSpecificationsProps)
         },
 
         getAttributeValue(attr: AttributeResult): string {
-            const val = attr.value?.value;
-            if (val === null || val === undefined) return '';
-            if (typeof val === 'boolean') return val ? 'Yes' : 'No';
-            return String(val);
+            const v = attr.value;
+            if (!v) return '';
+            const lang = (props.language as string) || 'NL';
+            if (v.type === Enums.AttributeType.TEXT) {
+                const entry = (v as any).textValues?.find((tv: any) => tv.language === lang);
+                const vals = (entry?.values || []).filter(Boolean);
+                return vals.join(', ');
+            }
+            if (v.type === Enums.AttributeType.ENUM) {
+                const vals = ((v as any).enumValues || []).filter(Boolean);
+                return vals.join(', ');
+            }
+            if (v.type === Enums.AttributeType.INT) {
+                const val = (v as any).intValue;
+                return val !== null && val !== undefined ? String(val) : '';
+            }
+            if (v.type === Enums.AttributeType.DECIMAL) {
+                const val = (v as any).decimalValue;
+                return val !== null && val !== undefined ? String(val) : '';
+            }
+            if (v.type === Enums.AttributeType.DATETIME) {
+                return (v as any).dateTimeValue || '';
+            }
+            if (v.type === Enums.AttributeType.COLOR) {
+                return (v as any).colorValue || '';
+            }
+            const fallback = v.value;
+            if (fallback === null || fallback === undefined) return '';
+            if (typeof fallback === 'boolean') return fallback ? 'Yes' : 'No';
+            return String(fallback);
         },
 
         hasPublicAttributes(): boolean {
@@ -108,13 +143,14 @@ export default function ProductSpecifications(props: ProductSpecificationsProps)
     });
 
     onUpdate(() => {
-        if (props.attributes) return;
         if (!props.productId || !props.graphqlClient) return;
         state.loading = true;
         const service = new ProductService(props.graphqlClient as GraphQLClient);
         service
             .getAttributeResultByProductId(props.productId as number, {
                 attributeDescription: { isPublic: true },
+                page: 1,
+                offset: 2000,
             })
             .then((result: { items?: AttributeResult[] }) => {
                 state.internalAttributes = result?.items || [];
@@ -128,58 +164,98 @@ export default function ProductSpecifications(props: ProductSpecificationsProps)
     return (
         <Show when={!state.loading && state.hasPublicAttributes()}>
             <div className={`product-specifications ${(props.className as string) || ''}`}>
-                <For each={state.getGroups()}>
-                    {(group: string) => (
-                        <div key={group} className="mb-6">
-                            {/* Group heading (only if group name is non-empty) */}
-                            <Show when={!!group}>
-                                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                                    {group}
-                                </h4>
-                            </Show>
 
-                            {/* Table layout */}
-                            <Show when={(props.layout as string) !== 'list'}>
-                                <div className="overflow-hidden rounded-lg border border-border">
-                                    <table className="w-full text-sm">
-                                        <tbody className="divide-y divide-border">
-                                            <For each={state.getAttributesByGroup(group)}>
-                                                {(attr: AttributeResult, i: number) => (
-                                                    <tr key={i} className="odd:bg-white even:bg-muted/20">
-                                                        <td className="px-4 py-2 font-medium text-foreground w-1/2">
-                                                            {state.getAttributeLabel(attr)}
-                                                        </td>
-                                                        <td className="px-4 py-2 text-muted-foreground">
-                                                            {state.getAttributeValue(attr)}
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </For>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </Show>
-
-                            {/* List layout */}
-                            <Show when={(props.layout as string) === 'list'}>
-                                <div className="space-y-3">
-                                    <For each={state.getAttributesByGroup(group)}>
+                {/* ── Flat mode (default) ── */}
+                <Show when={!props.grouping}>
+                    <Show when={(props.layout as string) !== 'list'}>
+                        <div className="overflow-hidden rounded-lg border border-border">
+                            <table className="w-full text-sm">
+                                <tbody className="divide-y divide-border">
+                                    <For each={state.getAttributes()}>
                                         {(attr: AttributeResult, i: number) => (
-                                            <div key={i} className="flex flex-col gap-0.5">
-                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                            <tr key={i} className="odd:bg-white even:bg-muted/20">
+                                                <td className="px-4 py-2 font-medium text-foreground w-1/2">
                                                     {state.getAttributeLabel(attr)}
-                                                </span>
-                                                <span className="text-sm text-foreground">
+                                                </td>
+                                                <td className="px-4 py-2 text-muted-foreground">
                                                     {state.getAttributeValue(attr)}
-                                                </span>
-                                            </div>
+                                                </td>
+                                            </tr>
                                         )}
                                     </For>
-                                </div>
-                            </Show>
+                                </tbody>
+                            </table>
                         </div>
-                    )}
-                </For>
+                    </Show>
+                    <Show when={(props.layout as string) === 'list'}>
+                        <div className="space-y-3">
+                            <For each={state.getAttributes()}>
+                                {(attr: AttributeResult, i: number) => (
+                                    <div key={i} className="flex flex-col gap-0.5">
+                                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                            {state.getAttributeLabel(attr)}
+                                        </span>
+                                        <span className="text-sm text-foreground">
+                                            {state.getAttributeValue(attr)}
+                                        </span>
+                                    </div>
+                                )}
+                            </For>
+                        </div>
+                    </Show>
+                </Show>
+
+                {/* ── Grouped mode (grouping=true) ── */}
+                <Show when={!!props.grouping}>
+                    <For each={state.getGroups()}>
+                        {(group: string) => (
+                            <div key={group} className="mb-6">
+                                <Show when={!!group}>
+                                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                                        {group}
+                                    </h4>
+                                </Show>
+                                <Show when={(props.layout as string) !== 'list'}>
+                                    <div className="overflow-hidden rounded-lg border border-border">
+                                        <table className="w-full text-sm">
+                                            <tbody className="divide-y divide-border">
+                                                <For each={state.getAttributesByGroup(group)}>
+                                                    {(attr: AttributeResult, i: number) => (
+                                                        <tr key={i} className="odd:bg-white even:bg-muted/20">
+                                                            <td className="px-4 py-2 font-medium text-foreground w-1/2">
+                                                                {state.getAttributeLabel(attr)}
+                                                            </td>
+                                                            <td className="px-4 py-2 text-muted-foreground">
+                                                                {state.getAttributeValue(attr)}
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </For>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </Show>
+                                <Show when={(props.layout as string) === 'list'}>
+                                    <div className="space-y-3">
+                                        <For each={state.getAttributesByGroup(group)}>
+                                            {(attr: AttributeResult, i: number) => (
+                                                <div key={i} className="flex flex-col gap-0.5">
+                                                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                        {state.getAttributeLabel(attr)}
+                                                    </span>
+                                                    <span className="text-sm text-foreground">
+                                                        {state.getAttributeValue(attr)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+                            </div>
+                        )}
+                    </For>
+                </Show>
+
             </div>
         </Show>
     );

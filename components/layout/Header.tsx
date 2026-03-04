@@ -6,51 +6,36 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import CartSidebar from './CartSidebar';
 import SearchBar from '@/components/common/SearchBar';
 import UserMenu from '@/components/common/UserMenu';
-import { menuService } from '@/lib/services/MenuService';
+import PropellerMenu from '@/components/propeller/Menu';
+import { graphqlClient } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
-import { User, ShoppingBag, Menu, Search, ChevronDown } from 'lucide-react';
-
-interface CategoryName {
-  value: string;
-  language: string;
-}
-
-interface CategorySlug {
-  value: string;
-}
-
-interface MenuCategory {
-  categoryId: number;
-  name: CategoryName[];
-  slug: CategorySlug[];
-  categories?: MenuCategory[];
-}
-
-interface MenuData {
-  category: MenuCategory;
-}
+import { User, ShoppingBag, Menu as MenuIcon } from 'lucide-react';
 
 export default function Header() {
+  const router = useRouter();
   const { getTotalItems, openCart } = useCart();
   const { state, login } = useAuth();
   const globalData = useGlobal();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const [menuData, setMenuData] = useState<MenuData | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
-  const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null);
-  const [hoveredSubCategoryId, setHoveredSubCategoryId] = useState<number | null>(null);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const [showVatInclusive, setShowVatInclusive] = useState(true);
-  const [language, setLanguage] = useState('EN');
+  const [language, setLanguage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('preferred_language') || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+    }
+    return process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+  });
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [loginLoading, setLoginLoading] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -80,8 +65,6 @@ export default function Header() {
       }
       if (mainMenuRef.current && !mainMenuRef.current.contains(event.target as Node)) {
         setShowMainMenu(false);
-        setHoveredCategoryId(null);
-        setHoveredSubCategoryId(null);
       }
     };
 
@@ -93,38 +76,6 @@ export default function Header() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showUserMenu, showMainMenu]);
-
-  useEffect(() => {
-    if (!showCategoriesMenu) return;
-    const loadMenu = async () => {
-      try {
-        const data = await menuService.getMenu();
-        if (data) {
-          if (data.category) {
-            setMenuData(data as MenuData);
-          } else if (data.categories || data.categoryId) {
-            setMenuData({ category: data as MenuCategory } as MenuData);
-          } else if (typeof window !== 'undefined') {
-            try {
-              const cached = localStorage.getItem('menuData');
-              if (cached) {
-                const parsed = JSON.parse(cached);
-                const menuDataFromCache = parsed.data || parsed;
-                if (menuDataFromCache?.category) {
-                  setMenuData(menuDataFromCache as MenuData);
-                }
-              }
-            } catch (e) {
-              console.error('Failed to read menu from localStorage:', e);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load menu:', error);
-      }
-    };
-    loadMenu();
-  }, [showCategoriesMenu]);
 
   // Scroll detection for sticky header
   useEffect(() => {
@@ -152,23 +103,6 @@ export default function Header() {
     } finally {
       setLoginLoading(false);
     }
-  };
-
-  const getCategoryName = (category: MenuCategory) => {
-    const name = category.name?.find(n => n.language === 'NL') || category.name?.[0];
-    return name?.value || '';
-  };
-
-  const getCategorySlug = (category: MenuCategory) => {
-    return category.slug?.[0]?.value || '';
-  };
-
-  const isValidCategory = (category: MenuCategory) => {
-    return getCategoryName(category) && getCategorySlug(category);
-  };
-
-  const getValidCategories = (categories?: MenuCategory[]) => {
-    return categories?.filter(isValidCategory) || [];
   };
 
   // Logo: CMS image or fallback
@@ -231,7 +165,11 @@ export default function Header() {
                       </svg>
                       <select
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
+                        onChange={(e) => {
+                          const lang = e.target.value;
+                          setLanguage(lang);
+                          localStorage.setItem('preferred_language', lang);
+                        }}
                         className="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
                       >
                         {availableLanguages.map((lang) => (
@@ -388,108 +326,33 @@ export default function Header() {
                 <div
                   className="relative h-full"
                   ref={mainMenuRef}
-                  onMouseLeave={() => {
-                    setShowMainMenu(false);
-                    setHoveredCategoryId(null);
-                    setHoveredSubCategoryId(null);
-                  }}
+                  onMouseLeave={() => setShowMainMenu(false)}
                 >
                   <button
                     className="h-full flex items-center gap-2 px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors border-l border-r border-transparent hover:border-border"
-                    onMouseEnter={() => {
-                      if (menuData?.category?.categories && getValidCategories(menuData.category.categories).length > 0) {
-                        setShowMainMenu(true);
-                      }
-                    }}
+                    onMouseEnter={() => setShowMainMenu(true)}
                   >
-                    <Menu className="w-5 h-5" />
+                    <MenuIcon className="w-5 h-5" />
                     <span>{categoriesMenuLabel}</span>
                   </button>
 
-                  {/* Main Dropdown */}
-                  {showMainMenu && menuData?.category?.categories && getValidCategories(menuData.category.categories).length > 0 && (
-                    <div
-                      className="absolute left-0 top-full pt-1 bg-popover border border-border shadow-lg w-64 z-50 animate-in fade-in zoom-in-95 duration-200"
-                      onMouseEnter={() => setShowMainMenu(true)}
-                      onMouseLeave={() => {
+                  <div className={cn(
+                    "absolute left-0 top-full z-50",
+                    showMainMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
+                  )}>
+                    <PropellerMenu
+                      graphqlClient={graphqlClient}
+                      categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
+                      language={language}
+                      menuStyle="dropdown-vertical"
+                      cacheEnabled={!state.isAuthenticated}
+                      onMenuItemClick={(category) => {
                         setShowMainMenu(false);
-                        setHoveredCategoryId(null);
-                        setHoveredSubCategoryId(null);
+                        const slug = category.slug?.[0]?.value || '';
+                        router.push(`/category/${category.categoryId}/${slug}`);
                       }}
-                    >
-                      <div className="py-1">
-                        {getValidCategories(menuData.category.categories).map((category) => {
-                          const validSubCategories = getValidCategories(category.categories);
-                          const isHovered = hoveredCategoryId === category.categoryId;
-                          return (
-                            <div
-                              key={category.categoryId}
-                              className="relative"
-                              onMouseEnter={() => setHoveredCategoryId(category.categoryId)}
-                              onMouseLeave={() => setHoveredCategoryId(null)}
-                            >
-                              <Link
-                                href={`/category/${category.categoryId}/${getCategorySlug(category)}`}
-                                className="flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                              >
-                                <span className="font-medium truncate">{getCategoryName(category)}</span>
-                                {validSubCategories.length > 0 && (
-                                  <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
-                                )}
-                              </Link>
-
-                              {/* Level 2 */}
-                              {validSubCategories.length > 0 && isHovered && (
-                                <div className="absolute left-full top-0 -ml-1 pl-1 bg-popover border border-border shadow-md w-64 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                  <div className="py-1">
-                                    {validSubCategories.map((subCategory) => {
-                                      const validSubSubCategories = getValidCategories(subCategory.categories);
-                                      const isSubHovered = hoveredSubCategoryId === subCategory.categoryId;
-                                      return (
-                                        <div
-                                          key={subCategory.categoryId}
-                                          className="relative"
-                                          onMouseEnter={() => setHoveredSubCategoryId(subCategory.categoryId)}
-                                          onMouseLeave={() => setHoveredSubCategoryId(null)}
-                                        >
-                                          <Link
-                                            href={`/category/${subCategory.categoryId}/${getCategorySlug(subCategory)}`}
-                                            className="flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                          >
-                                            <span className="truncate">{getCategoryName(subCategory)}</span>
-                                            {validSubSubCategories.length > 0 && (
-                                              <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
-                                            )}
-                                          </Link>
-
-                                          {/* Level 3 */}
-                                          {validSubSubCategories.length > 0 && isSubHovered && (
-                                            <div className="absolute left-full top-0 -ml-1 pl-1 bg-popover border border-border shadow-md w-64 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                              <div className="py-1">
-                                                {validSubSubCategories.map((subSubCategory) => (
-                                                  <Link
-                                                    key={subSubCategory.categoryId}
-                                                    href={`/category/${subSubCategory.categoryId}/${getCategorySlug(subSubCategory)}`}
-                                                    className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                                  >
-                                                    {getCategoryName(subSubCategory)}
-                                                  </Link>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    />
+                  </div>
                 </div>
               )}
 

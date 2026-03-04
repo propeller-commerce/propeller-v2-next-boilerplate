@@ -76,6 +76,9 @@ cacheDuration?: number;
 
 /** Extra CSS class applied to the root element. */
 className?: string;
+
+/** Configuration object passed to the component */
+configuration?: any;
 }
 interface MenuState {
 rootCategory: Category | null;
@@ -234,9 +237,7 @@ return match?.value || cat.slug?.[0]?.value || '';
 
 
 function getCategoryUrl(cat: Category): ReturnType<MenuState["getCategoryUrl"]>{
-const format = getLinkFormat();
-const slug = getCategorySlug(cat);
-return '/' + format.replace('{categoryId}', String(cat.categoryId)).replace('{slug}', slug);
+return props.configuration.urls.getCategoryUrl(cat);
 }
 
 
@@ -280,7 +281,7 @@ return props.menuStyle as string || 'dropdown-vertical';
 
 
 function getLinkFormat(): ReturnType<MenuState["getLinkFormat"]>{
-return props.menuLinkFormat as string || 'category/{categoryId}/{slug}';
+return props.configuration.urls.pattern;
 }
 
 

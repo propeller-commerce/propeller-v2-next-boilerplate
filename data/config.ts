@@ -64,12 +64,12 @@ export const config = {
      *   'page/slug'     →  /product/my-product
      *   'page/id'       →  /product/123
      */
-    patern: 'page/id/slug',
+    pattern: 'page/id/slug',
 
     /** Generate a canonical product URL from a Product object. */
     getProductUrl(product: Product): string {
       const slug = product?.slugs?.[0]?.value || '';
-      return buildEntityUrl('product', product?.productId, slug, this.patern);
+      return buildEntityUrl('product', product?.productId, slug, this.pattern);
     },
 
     /** Generate a canonical cluster URL from a Cluster object. */
@@ -78,13 +78,13 @@ export const config = {
         cluster?.slugs?.[0]?.value ||
         cluster?.defaultProduct?.slugs?.[0]?.value ||
         '';
-      return buildEntityUrl('cluster', cluster?.clusterId, slug, this.patern);
+      return buildEntityUrl('cluster', cluster?.clusterId, slug, this.pattern);
     },
 
     /** Generate a canonical category URL from a Category object. */
     getCategoryUrl(category: Category): string {
       const slug = category?.slug?.[0]?.value || '';
-      return buildEntityUrl('category', category?.categoryId, slug, this.patern);
+      return buildEntityUrl('category', category?.categoryId, slug, this.pattern);
     },
   },
 };

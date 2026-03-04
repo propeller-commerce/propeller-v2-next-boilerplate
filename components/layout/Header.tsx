@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { User, ShoppingBag, Menu as MenuIcon } from 'lucide-react';
+import { config } from '@/data/config';
 
 export default function Header() {
   const router = useRouter();
@@ -346,10 +347,10 @@ export default function Header() {
                       language={language}
                       menuStyle="dropdown-vertical"
                       cacheEnabled={!state.isAuthenticated}
+                      configuration={config}
                       onMenuItemClick={(category) => {
                         setShowMainMenu(false);
-                        const slug = category.slug?.[0]?.value || '';
-                        router.push(`/category/${category.categoryId}/${slug}`);
+                        router.push(config.urls.getCategoryUrl(category));
                       }}
                     />
                   </div>

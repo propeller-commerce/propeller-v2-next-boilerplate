@@ -81,6 +81,9 @@ export interface MenuProps {
 
     /** Extra CSS class applied to the root element. */
     className?: string;
+
+    /** Configuration object passed to the component */
+    configuration?: any;
 }
 
 interface MenuState {
@@ -220,11 +223,7 @@ export default function Menu(props: MenuProps) {
         },
 
         getCategoryUrl(cat: Category): string {
-            const format = state.getLinkFormat();
-            const slug = state.getCategorySlug(cat);
-            return '/' + format
-                .replace('{categoryId}', String(cat.categoryId))
-                .replace('{slug}', slug);
+            return props.configuration.urls.getCategoryUrl(cat);
         },
 
         getSubCategories(cat: Category): Category[] {
@@ -261,7 +260,7 @@ export default function Menu(props: MenuProps) {
         },
 
         getLinkFormat(): string {
-            return (props.menuLinkFormat as string) || 'category/{categoryId}/{slug}';
+            return props.configuration.urls.pattern;
         },
     });
 

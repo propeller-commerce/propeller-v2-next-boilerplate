@@ -530,7 +530,7 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
   isInternalLoading.value = true;
   try {
     const service = new CategoryService(props.graphqlClient as GraphQLClient);
-
+    const taxZone = props.taxZone || "NL";
     // Category mode: use the category prop.
     // Search / brand mode: use baseCategoryId to search the full catalog.
     const isWideSearch = !!(props.term as string) || !!(props.brand as string);
@@ -548,6 +548,21 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
       imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
       filterAvailableAttributeInput: {
         isSearchable: true,
+      },
+      priceCalculateProductInput: {
+        taxZone: taxZone,
+        ...(props.user &&
+          "company" in props.user && {
+            companyId: (props.user as Contact)?.company?.companyId,
+          }),
+        ...(props.user &&
+          "contactId" in props.user && {
+            contactId: (props.user as Contact)?.contactId,
+          }),
+        ...(props.user &&
+          "customerId" in props.user && {
+            customerId: (props.user as Customer)?.customerId,
+          }),
       },
       categoryProductSearchInput: {
         language: (props.language as string) || "NL",

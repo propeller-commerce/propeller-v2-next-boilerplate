@@ -162,7 +162,14 @@ taxZone: taxZone,
 ...(props.user && 'customerId' in props.user && {
   customerId: (props.user as Customer)?.customerId
 })
+},
+...(props.configuration.productTrackAttributes && props.configuration.productTrackAttributes.length > 0 && {
+attributeResultSearchInput: {
+  attributeDescription: {
+    names: props.configuration.productTrackAttributes
+  }
 }
+})
 }).then((product: Product) => {
 setInternalProduct(product);
 setLoading(false);

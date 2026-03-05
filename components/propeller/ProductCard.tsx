@@ -28,6 +28,26 @@ showSku?: boolean;
 /** Show the product manufacturer. Defaults to false. */
 showManufacturer?: boolean;
 
+/**
+ * Show the stock / availability widget below the product name.
+ * Uses the embedded `ItemStock` component driven by `product.inventory`.
+ * Defaults to false.
+ */
+showStock?: boolean;
+
+/**
+ * Show only the availability indicator (Available / Not available) inside ItemStock.
+ * Only relevant when `showStock` is true.
+ * Defaults to true.
+ */
+showAvailability?: boolean;
+
+/**
+ * Label overrides forwarded to the embedded ItemStock component.
+ * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+ */
+stockLabels?: Record<string, string>;
+
 // === Attribute labels ===
 
 /**
@@ -193,6 +213,7 @@ computedTextLabels: () => {
 
   import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
 import  AddToCart from './AddToCart';
+import  ItemStock from './ItemStock';
 
 
 
@@ -331,6 +352,13 @@ return (
   <div className="flex flex-col gap-0.5">{computedTextLabels()?.map((item) => (
   <div className="text-xs text-gray-500">{item.value}</div>
 ))}</div>
+) : null}{props.showStock && !!(props.product as Product)?.inventory ? (
+  <ItemStock
+    inventory={(props.product as Product).inventory!}
+    showAvailability={props.showAvailability !== false}
+    showStock={true}
+    labels={props.stockLabels}
+  />
 ) : null}{props.showManufacturer && !!getProductManufacturer() ? (
   <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
 ) : null}{props.showShortDescription && !!getProductShortDescription() ? (

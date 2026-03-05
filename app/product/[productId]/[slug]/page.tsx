@@ -10,6 +10,7 @@ import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
 import { ImageVariant, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
+import ItemStock from '@/output/react/ui-components/ItemStock';
 import ProductInfo from '@/components/propeller/ProductInfo';
 import ProductGallery from '@/components/propeller/ProductGallery';
 import ProductPrice from '@/components/propeller/ProductPrice';
@@ -61,6 +62,7 @@ export default function ProductPage() {
                   imageSearchFilters={imageSearchFilters}
                   imageVariantFilters={imageVariantFiltersLarge}
                   onProductLoaded={setProduct}
+                  configuration={config}
                 />
 
                 <ProductPrice price={price} />
@@ -70,6 +72,12 @@ export default function ProductPage() {
                 <div className="mt-6">
                   <ProductShortDescription product={product as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />
                 </div>
+
+                {product?.inventory && (
+                  <div className="mt-4">
+                    <ItemStock inventory={product.inventory} />
+                  </div>
+                )}
               </div>
 
               {product && (

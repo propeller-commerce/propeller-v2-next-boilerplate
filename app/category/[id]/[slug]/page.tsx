@@ -255,6 +255,8 @@ export default function CategoryPage() {
                 pageSize={offset}
                 sortField={sortField as string}
                 sortOrder={sortOrder as string}
+                showAvailability={true}
+                showStock={true}
                 onFiltersChange={setGridFilters}
                 onPriceBoundsChange={(min, max) => {
                   setPriceBoundsMin(min);

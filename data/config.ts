@@ -49,6 +49,7 @@ export const config = {
   imageVariantFiltersSmall: imageVariantFiltersSmall,
   imageVariantFiltersMedium: imageVariantFiltersMedium,
   imageVariantFiltersLarge: imageVariantFiltersLarge,
+  productTrackAttributes: [],
   enableRegistration: true,
   enableGuestCheckout: false,
   enableWishlist: true,

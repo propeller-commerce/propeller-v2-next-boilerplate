@@ -19,10 +19,13 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { User, ShoppingBag, Menu as MenuIcon } from 'lucide-react';
 import { config } from '@/data/config';
+import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
+import CompanySwitcher from '@/components/propeller/CompanySwitcher';
+import { Cart, Contact, Company } from 'propeller-sdk-v2';
 
 export default function Header() {
   const router = useRouter();
-  const { getTotalItems, openCart } = useCart();
+  const { getTotalItems, openCart, cart } = useCart();
   const { state, login } = useAuth();
   const globalData = useGlobal();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -123,8 +126,8 @@ export default function Header() {
         {/* Top Info Bar */}
         {topBarEnabled && (
           <div className={cn(
-            "transition-all duration-200 overflow-hidden",
-            isSticky ? 'h-0 opacity-5 -translate-y-2' : 'h-10 opacity-100 translate-y-0'
+            "transition-all duration-200",
+            isSticky ? 'h-0 opacity-5 -translate-y-2 overflow-hidden' : 'h-10 opacity-100 translate-y-0'
           )} style={{ background: 'linear-gradient(to bottom, #433183ff, #180147)' }}>
             <div className="container-width h-full">
               <div className="flex items-center justify-between h-full text-xs font-medium text-white">
@@ -145,8 +148,18 @@ export default function Header() {
                   )}
                 </div>
 
-                {/* Right: VAT Switcher & Language Switcher */}
+                {/* Right: Company Switcher, VAT Switcher & Language Switcher */}
                 <div className="flex items-center gap-4">
+                  {/* Company Switcher — Contact users only */}
+                  {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && (
+                    <CompanySwitcher
+                      user={state.user as Contact}
+                      onCompanyChange={(company: Company) => {
+                        // TODO: update session/pricing context for selected company
+                        console.log('Company switched:', company);
+                      }}
+                    />
+                  )}
                   {showVatToggle && (
                     <PriceToggle
                       inclExclVatSwitched={() => {}}
@@ -290,19 +303,26 @@ export default function Header() {
 
                 {/* Cart */}
                 {showCart && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={openCart}
-                    className="relative text-white hover:text-white hover:bg-white/10"
-                  >
-                    <ShoppingBag className="w-5 h-5" />
-                    {isMounted && getTotalItems() > 0 && (
-                      <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 rounded-full text-[10px]">
-                        {getTotalItems()}
-                      </Badge>
-                    )}
-                  </Button>
+                  <CartIconAndSidebar
+                    cart={cart as Cart}
+                    onCheckoutButtonClick={(cart) => router.push('/checkout')}
+                    onCartPageButtonClick={(cart) => router.push('/cart')}
+                    showTotals={true}
+                    iconClassName="text-white hover:text-white hover:bg-white/10"
+                  />
+                  // <Button
+                  //   variant="ghost"
+                  //   size="icon"
+                  //   onClick={openCart}
+                  //   className="relative text-white hover:text-white hover:bg-white/10"
+                  // >
+                  //   <ShoppingBag className="w-5 h-5" />
+                  //   {isMounted && getTotalItems() > 0 && (
+                  //     <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 rounded-full text-[10px]">
+                  //       {getTotalItems()}
+                  //     </Badge>
+                  //   )}
+                  // </Button>
                 )}
               </div>
             </div>

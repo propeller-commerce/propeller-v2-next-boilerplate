@@ -3,6 +3,25 @@ import { graphqlClient } from '../api';
 import toast from 'react-hot-toast';
 import { ViewerInput } from 'propeller-sdk-v2/dist/service/UserService';
 
+/**
+ * Recursively converts an SDK class instance (or any nested object/array) to a
+ * plain object, stripping the leading underscore that the SDK uses for private
+ * backing fields (e.g. _items → items, _firstName → firstName).
+ */
+function deepPlain(value: unknown): unknown {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) return value.map(deepPlain);
+    if (typeof value === 'object') {
+        const result: Record<string, unknown> = {};
+        for (const key of Object.keys(value as object)) {
+            const cleanKey = key.startsWith('_') ? key.slice(1) : key;
+            result[cleanKey] = deepPlain((value as Record<string, unknown>)[key]);
+        }
+        return result;
+    }
+    return value;
+}
+
 export class AuthService {
     private loginService: LoginService;
     private userService: UserService;
@@ -69,7 +88,7 @@ export class AuthService {
             if (typeof window !== 'undefined') {
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
-                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('user', JSON.stringify(deepPlain(user)));
             }
 
             // Dispatch event for AuthContext

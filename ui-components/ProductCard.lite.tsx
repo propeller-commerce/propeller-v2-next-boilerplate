@@ -16,6 +16,7 @@ import {
     AttributeResult,
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart.lite';
+import ItemStock from './ItemStock.lite';
 
 export interface ProductCardProps {
     // === Core ===
@@ -39,6 +40,26 @@ export interface ProductCardProps {
 
     /** Show the product manufacturer. Defaults to false. */
     showManufacturer?: boolean;
+
+    /**
+     * Show the stock / availability widget below the product name.
+     * Uses the embedded `ItemStock` component driven by `product.inventory`.
+     * Defaults to false.
+     */
+    showStock?: boolean;
+
+    /**
+     * Show only the availability indicator (Available / Not available) inside ItemStock.
+     * Only relevant when `showStock` is true.
+     * Defaults to true.
+     */
+    showAvailability?: boolean;
+
+    /**
+     * Label overrides forwarded to the embedded ItemStock component.
+     * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+     */
+    stockLabels?: Record<string, string>;
 
     // === Attribute labels ===
 
@@ -473,6 +494,16 @@ export default function ProductCard(props: ProductCardProps) {
                             )}
                         </For>
                     </div>
+                </Show>
+
+                {/* Stock / availability */}
+                <Show when={props.showStock && !!props.product.inventory}>
+                    <ItemStock
+                        inventory={props.product.inventory!}
+                        showAvailability={props.showAvailability !== false}
+                        showStock={true}
+                        labels={props.stockLabels}
+                    />
                 </Show>
 
                 {/* Manufacturer */}

@@ -277,6 +277,28 @@ export interface ProductGridProps {
      */
     addToCartLabels?: Record<string, string>;
 
+    // ── Stock display ─────────────────────────────────────────────────────────
+
+    /**
+     * Show the stock / availability widget on each product card.
+     * Forwarded directly to `ProductCard.showStock`.
+     * Defaults to false.
+     */
+    showStock?: boolean;
+
+    /**
+     * Show only the availability indicator inside the stock widget.
+     * Forwarded to `ProductCard.showAvailability`.
+     * Defaults to true.
+     */
+    showAvailability?: boolean;
+
+    /**
+     * Label overrides forwarded to the embedded ItemStock component inside each card.
+     * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+     */
+    stockLabels?: Record<string, string>;
+
     // ── Card interaction ──────────────────────────────────────────────────────
 
     /** Show a heart-icon favourite toggle on each card. */
@@ -337,7 +359,7 @@ export default function ProductGrid(props: ProductGridProps) {
             state.isInternalLoading = true;
             try {
                 const service = new CategoryService(props.graphqlClient as GraphQLClient);
-
+                const taxZone = props.taxZone || 'NL';
                 // Category mode: use the category prop.
                 // Search / brand mode: use baseCategoryId to search the full catalog.
                 const isWideSearch = !!(props.term as string) || !!(props.brand as string);
@@ -356,6 +378,12 @@ export default function ProductGrid(props: ProductGridProps) {
                     imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                     imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
                     filterAvailableAttributeInput: { isSearchable: true },
+                    priceCalculateProductInput: {
+                        taxZone: taxZone,
+                        ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
+                        ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
+                        ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer)?.customerId })
+                    },
                     categoryProductSearchInput: {
                         language: (props.language as string) || 'NL',
                         page: (props.page as number) || state.currentPage,
@@ -621,6 +649,9 @@ export default function ProductGrid(props: ProductGridProps) {
                                                     onProceedToCheckout={props.onProceedToCheckout}
                                                     addToCartLabels={props.addToCartLabels}
                                                     enableAddFavorite={props.enableAddFavorite as boolean}
+                                                    showStock={props.showStock as boolean}
+                                                    showAvailability={props.showAvailability as boolean}
+                                                    stockLabels={props.stockLabels}
                                                     onToggleFavorite={(product: Product, isFav: boolean) => {
                                                         if (props.onToggleFavorite) {
                                                             props.onToggleFavorite(product, isFav);
@@ -642,6 +673,9 @@ export default function ProductGrid(props: ProductGridProps) {
                                                     configuration={props.configuration}
                                                     cartId={props.cartId as string}
                                                     enableAddFavorite={props.enableAddFavorite as boolean}
+                                                    showStock={props.showStock as boolean}
+                                                    showAvailability={props.showAvailability as boolean}
+                                                    stockLabels={props.stockLabels}
                                                     onToggleFavorite={(product: Product, isFav: boolean) => {
                                                         if (props.onToggleFavorite) {
                                                             props.onToggleFavorite(product, isFav);

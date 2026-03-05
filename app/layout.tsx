@@ -5,7 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { GlobalProvider } from "@/context/GlobalContext";
 import { Toaster } from "react-hot-toast";
-import { getGlobal } from "@/lib/cms/strapi";
+import { getGlobal } from "@/lib/cms";
 
 const inter = Inter({
   subsets: ["latin"],

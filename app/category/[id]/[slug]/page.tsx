@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
-import { getCategoryBanner } from '@/lib/cms/strapi';
+import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
 import Breadcrumbs from '@/components/propeller/Breadcrumbs';
 

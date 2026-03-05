@@ -9,38 +9,33 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import CartSidebar from './CartSidebar';
 import SearchBar from '@/components/common/SearchBar';
-import UserMenu from '@/components/common/UserMenu';
 import PropellerMenu from '@/components/propeller/Menu';
+import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
-import { User, ShoppingBag, Menu as MenuIcon } from 'lucide-react';
+import { ShoppingBag, Menu as MenuIcon } from 'lucide-react';
 import { config } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
+import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
 import { Cart, Contact, Company } from 'propeller-sdk-v2';
 
 export default function Header() {
   const router = useRouter();
   const { getTotalItems, openCart, cart } = useCart();
-  const { state, login } = useAuth();
+  const { state, login, logout } = useAuth();
   const globalData = useGlobal();
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
-  const [showVatInclusive, setShowVatInclusive] = useState(true);
   const [language, setLanguage] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('preferred_language') || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
     }
     return process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
   });
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [loginLoading, setLoginLoading] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -61,25 +56,22 @@ export default function Header() {
     setIsMounted(true);
   }, []);
 
-  // Close user menu on outside click
+  // Close main menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
       if (mainMenuRef.current && !mainMenuRef.current.contains(event.target as Node)) {
         setShowMainMenu(false);
       }
     };
 
-    if (showUserMenu || showMainMenu) {
+    if (showMainMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showUserMenu, showMainMenu]);
+  }, [showMainMenu]);
 
   // Scroll detection for sticky header
   useEffect(() => {
@@ -94,20 +86,6 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    try {
-      await login(loginForm.email, loginForm.password);
-      setShowUserMenu(false);
-      setLoginForm({ email: '', password: '' });
-    } catch (error) {
-      console.error('Login failed:', error);
-    } finally {
-      setLoginLoading(false);
-    }
-  };
 
   // Logo: CMS image or fallback
   const logoSrc = globalData?.logo?.url || '/propeller_logo.webp';
@@ -161,15 +139,9 @@ export default function Header() {
                     />
                   )}
                   {showVatToggle && (
-                    <div className="flex items-center gap-2">
-                      <span className="hidden sm:inline">Prices:</span>
-                      <button
-                        onClick={() => setShowVatInclusive(!showVatInclusive)}
-                        className="hover:text-white/80 transition-colors"
-                      >
-                        {showVatInclusive ? 'Incl. VAT' : 'Excl. VAT'}
-                      </button>
-                    </div>
+                    <PriceToggle
+                      inclExclVatSwitched={() => {}}
+                    />
                   )}
 
                   {showLanguageSwitcher && availableLanguages.length > 1 && (
@@ -225,86 +197,26 @@ export default function Header() {
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 {/* User Menu */}
                 {showAccount && (
-                  <div className="relative" ref={userMenuRef}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowUserMenu(!showUserMenu)}
-                      className="gap-2 text-white hover:text-white hover:bg-white/10"
-                    >
-                      <User className="w-5 h-5" />
-                      {state.isAuthenticated && state.user?.firstName ? (
-                        <span className="hidden md:block font-normal">Hi, {state.user.firstName}</span>
-                      ) : (
-                        <span className="hidden md:block font-normal">Account</span>
-                      )}
-                    </Button>
-
-                    {showUserMenu && (
-                      <div className="absolute right-0 mt-2 w-80 bg-popover text-popover-foreground rounded-lg shadow-lg border border-border py-4 px-5 z-50 animate-in fade-in zoom-in-95 duration-200">
-                        {state.isAuthenticated ? (
-                          <UserMenu onItemClick={() => setShowUserMenu(false)} />
-                        ) : (
-                          <form onSubmit={handleLoginSubmit} className="space-y-4">
-                            <div className="text-center mb-2">
-                              <h4 className="text-lg font-semibold">Welcome Back</h4>
-                              <p className="text-sm text-muted-foreground">Login to access your account</p>
-                            </div>
-
-                            <div className="space-y-3">
-                              <div className="space-y-1">
-                                <label htmlFor="email" className="text-xs font-medium">Email</label>
-                                <Input
-                                  type="email"
-                                  id="email"
-                                  value={loginForm.email}
-                                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                                  required
-                                  placeholder="name@example.com"
-                                />
-                              </div>
-
-                              <div className="space-y-1">
-                                <label htmlFor="password" className="text-xs font-medium">Password</label>
-                                <Input
-                                  type="password"
-                                  id="password"
-                                  value={loginForm.password}
-                                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                                  required
-                                  placeholder="••••••••"
-                                />
-                              </div>
-                            </div>
-
-                            <Button type="submit" className="w-full" isLoading={loginLoading}>
-                              Log In
-                            </Button>
-
-                            <div className="flex flex-col gap-2 text-sm pt-2 text-center">
-                              <Link
-                                href="/forgot-password"
-                                className="text-primary hover:underline text-xs"
-                                onClick={() => setShowUserMenu(false)}
-                              >
-                                Forgot Password?
-                              </Link>
-                              <div className="text-xs text-muted-foreground">
-                                Don't have an account?{' '}
-                                <Link
-                                  href="/register"
-                                  className="text-primary hover:underline font-medium"
-                                  onClick={() => setShowUserMenu(false)}
-                                >
-                                  Register
-                                </Link>
-                              </div>
-                            </div>
-                          </form>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <AccountIconAndMenu
+                    user={state.isAuthenticated ? (state.user as Contact) : null}
+                    loginLoading={loginLoading}
+                    onLoginSubmit={async (email, password) => {
+                      setLoginLoading(true);
+                      try {
+                        await login(email, password);
+                      } catch (error) {
+                        console.error('Login failed:', error);
+                      } finally {
+                        setLoginLoading(false);
+                      }
+                    }}
+                    onMenuItemClick={(href) => router.push(href)}
+                    onLogoutClick={async () => {
+                      try { await logout(); } catch (e) { console.error('Logout failed:', e); }
+                    }}
+                    onForgotPasswordClick={() => router.push('/forgot-password')}
+                    onRegisterClick={() => router.push('/register')}
+                  />
                 )}
 
                 {/* Cart */}
@@ -366,7 +278,7 @@ export default function Header() {
                       categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
                       language={language}
                       menuStyle="dropdown-vertical"
-                      cacheEnabled={!state.isAuthenticated}
+                      user={state.user}
                       configuration={config}
                       onMenuItemClick={(category) => {
                         setShowMainMenu(false);

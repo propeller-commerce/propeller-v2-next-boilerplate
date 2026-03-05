@@ -190,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
 import {
   GraphQLClient,
@@ -292,6 +292,15 @@ export interface ProductCardProps {
    * can use framework-specific routing (e.g. Next.js `router.push`).
    */
   onProductClick?: (product: Product) => void;
+
+  // === Pricing ===
+
+  /**
+   * When true, tax-inclusive price (net) is the leading price.
+   * When false, tax-exclusive price (gross) is shown.
+   * Defaults to false.
+   */
+  includeTax?: boolean;
 
   // === Appearance ===
 
@@ -400,6 +409,8 @@ export interface ProductCardProps {
 }
 interface ProductCardState {
   isFavorite: boolean;
+  _includeTax: boolean;
+  _priceListener: any;
   getProductName: () => string;
   getProductSku: () => string;
   getProductImageUrl: () => string;
@@ -421,6 +432,20 @@ interface ProductCardState {
 
 const props = defineProps<ProductCardProps>();
 const isFavorite = ref<ProductCardState["isFavorite"]>(false);
+const _includeTax = ref<ProductCardState["_includeTax"]>(false);
+const _priceListener = ref<ProductCardState["_priceListener"]>(null);
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("price_include_tax");
+    _includeTax.value = stored === null ? true : stored === "true";
+    _priceListener.value = () => {
+      const val = localStorage.getItem("price_include_tax");
+      _includeTax.value = val === null ? true : val === "true";
+    };
+    window.addEventListener("priceToggleChanged", _priceListener.value);
+  }
+});
 
 function isRow(): ReturnType<ProductCardState["isRow"]> {
   return (props.columns as number) === 1;
@@ -440,9 +465,12 @@ function getProductImageUrl(): ReturnType<
   );
 }
 function getProductPrice(): ReturnType<ProductCardState["getProductPrice"]> {
-  const price = (props.product as Product)?.price?.gross;
-  if (!price && price !== 0) return "";
-  return `\u20AC${Number(price).toFixed(2)}`;
+  const priceObj = (props.product as Product)?.price;
+  const useTax: boolean =
+    props.includeTax !== undefined ? !!props.includeTax : _includeTax.value;
+  const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+  if (!value && value !== 0) return "";
+  return `\u20AC${Number(value).toFixed(2)}`;
 }
 function getProductUrl(): ReturnType<ProductCardState["getProductUrl"]> {
   return props.configuration.urls.getProductUrl(props.product);

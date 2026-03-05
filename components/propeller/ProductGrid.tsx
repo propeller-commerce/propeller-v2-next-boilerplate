@@ -2,6 +2,11 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+import  { GraphQLClient, Product, Cluster, Contact, Customer, Cart, CartMainItem, CartChildItemInput, Enums, CategoryService, Attribute, CategoryProductSearchInput, AttributeFilter, ProductTextFilterInput, ProductsResponse, Category } from 'propeller-sdk-v2';
+import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
+import  ProductCard from './ProductCard';
+import  ClusterCard from './ClusterCard';
+import  { ProductSearchableField, ProductSortField } from 'propeller-sdk-v2/dist/enum';
 
 
 
@@ -321,10 +326,6 @@ showAddToCart: () => boolean;
 getSkeletonItems: () => number[];
 }
 
-  import  { GraphQLClient, Product, Cluster, Contact, Customer, Cart, CartMainItem, CartChildItemInput, Enums, CategoryService, Attribute, CategoryProductSearchInput, CategoryQueryVariables, AttributeFilter, ProductTextFilterInput, ProductsResponse, Category } from 'propeller-sdk-v2';
-import  ProductCard from './ProductCard';
-import  ClusterCard from './ClusterCard';
-import  { ProductSearchableField, ProductSortField } from 'propeller-sdk-v2/dist/enum';
 
 
 
@@ -542,7 +543,7 @@ return (
   <div  className={getGridColsClass()}>{getDisplayProducts()?.map((item, idx) => (
   <div  key={(item as Product).productId || (item as Cluster).clusterId || idx}>{isClusterItem(item) ? (
   <>{!props.renderClusterCard ? (
-  <ClusterCard  columns={props.columns as number || 3}  cluster={item as Cluster}  configuration={props.configuration}  enableAddFavorite={props.enableAddFavorite as boolean}  onToggleFavorite={(cluster,isFav) => {
+  <ClusterCard  columns={props.columns as number || 3}  cluster={item as Cluster}  configuration={props.configuration}  includeTax={props.includeTax as boolean}  enableAddFavorite={props.enableAddFavorite as boolean}  onToggleFavorite={(cluster,isFav) => {
 if (props.onToggleFavorite) {
 props.onToggleFavorite(cluster, isFav);
 }

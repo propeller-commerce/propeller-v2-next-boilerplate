@@ -1,9 +1,5 @@
 import * as React from 'react';
 
-
-
-
-
   export interface ItemStockProps {
 /**
  * Product inventory to display stock and availability for.

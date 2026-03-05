@@ -8,6 +8,8 @@ import {
     GraphQLClient,
     Category,
     LocalizedString,
+    Contact,
+    Customer,
 } from 'propeller-sdk-v2';
 
 export interface MenuProps {
@@ -66,18 +68,10 @@ export interface MenuProps {
     labels?: Record<string, string>;
 
     /**
-     * Enable localStorage caching for the menu tree.
-     * Useful for anonymous users to avoid re-fetching on every page load.
-     * Defaults to false.
+     * Authenticated user object. When user changes (login/logout),
+     * the menu cache is cleared and the menu is re-fetched.
      */
-    cacheEnabled?: boolean;
-
-    /**
-     * Cache duration in milliseconds.
-     * Only used when cacheEnabled is true.
-     * Defaults to 43200000 (12 hours).
-     */
-    cacheDuration?: number;
+    user?: Contact | Customer | null;
 
     /** Extra CSS class applied to the root element. */
     className?: string;
@@ -92,10 +86,12 @@ interface MenuState {
     hasError: boolean;
     hoveredL1Id: number | null;
     hoveredL2Id: number | null;
+    _prevUserKey: string;
     fetchMenu: () => Promise<void>;
     getCacheKey: () => string;
     getCachedMenu: () => Category | null;
     cacheMenu: (data: Category) => void;
+    clearCache: () => void;
     getCategoryName: (cat: Category) => string;
     getCategorySlug: (cat: Category) => string;
     getCategoryUrl: (cat: Category) => string;
@@ -115,18 +111,17 @@ export default function Menu(props: MenuProps) {
         hasError: false,
         hoveredL1Id: null,
         hoveredL2Id: null,
+        _prevUserKey: '',
 
         async fetchMenu() {
             if (!props.graphqlClient) return;
 
             // Try cache first
-            if (props.cacheEnabled) {
-                const cached = state.getCachedMenu();
-                if (cached) {
-                    state.rootCategory = cached;
-                    state.isLoading = false;
-                    return;
-                }
+            const cached = state.getCachedMenu();
+            if (cached) {
+                state.rootCategory = cached;
+                state.isLoading = false;
+                return;
             }
 
             state.isLoading = true;
@@ -164,7 +159,7 @@ export default function Menu(props: MenuProps) {
                 const root = (menuData as any)?.category || null;
                 state.rootCategory = root as Category;
 
-                if (props.cacheEnabled && root) {
+                if (root) {
                     state.cacheMenu(root as Category);
                 }
             } catch {
@@ -186,7 +181,6 @@ export default function Menu(props: MenuProps) {
                 const raw = localStorage.getItem(state.getCacheKey());
                 if (!raw) return null;
                 const parsed = JSON.parse(raw);
-                const duration = (props.cacheDuration as number) || 43200000;
                 if (parsed.expires > Date.now()) {
                     return parsed.data as Category;
                 }
@@ -200,14 +194,18 @@ export default function Menu(props: MenuProps) {
         cacheMenu(data: Category) {
             if (typeof window === 'undefined') return;
             try {
-                const duration = (props.cacheDuration as number) || 43200000;
                 localStorage.setItem(state.getCacheKey(), JSON.stringify({
                     data,
-                    expires: Date.now() + duration,
+                    expires: Date.now() + 43200000,
                 }));
             } catch {
                 // ignore — quota exceeded etc.
             }
+        },
+
+        clearCache() {
+            if (typeof window === 'undefined') return;
+            localStorage.removeItem(state.getCacheKey());
         },
 
         getCategoryName(cat: Category): string {
@@ -267,6 +265,15 @@ export default function Menu(props: MenuProps) {
     onUpdate(() => {
         state.fetchMenu();
     }, [props.graphqlClient, props.categoryId, props.language]);
+
+    onUpdate(() => {
+        const userKey: string = props.user ? 'auth' : 'anon';
+        if (state._prevUserKey !== '' && state._prevUserKey !== userKey) {
+            state.clearCache();
+            state.fetchMenu();
+        }
+        state._prevUserKey = userKey;
+    }, [props.user]);
 
     return (
         <div className={`propeller-menu ${(props.className as string) || ''}`}>

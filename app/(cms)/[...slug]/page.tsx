@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
-import { getPage, getAllPageSlugs } from '@/lib/cms/strapi';
+import { getPage, getAllPageSlugs } from '@/lib/cms';
 
 interface CmsPageProps {
   params: Promise<{ slug: string[] }>;

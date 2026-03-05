@@ -1,7 +1,7 @@
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
-import { getPage } from '@/lib/cms/strapi';
+import { getPage } from '@/lib/cms';
 import HomeFallback from '@/components/cms/HomeFallback';
 
 export default async function Home() {

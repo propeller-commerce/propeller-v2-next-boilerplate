@@ -87,6 +87,10 @@ export default function ProductPage() {
                     product={product}
                     cartId={cart?.cartId}
                     graphqlClient={graphqlClient}
+                    createCart={true}
+                    onCartCreated={(cart) => {
+                      saveCart(cart);
+                    }}
                     className='flex items-center w-full gap-2'
                     configuration={config}
                     showModal={true}

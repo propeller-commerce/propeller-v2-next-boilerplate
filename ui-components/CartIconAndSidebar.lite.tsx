@@ -266,6 +266,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                 aria-label={state.getSidebarTitle()}
             >
                 <div className="flex flex-col h-full">
+                  <Show when={state._isMounted}>
                     {/* Sidebar header */}
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                         <div className="flex items-center gap-2">
@@ -401,6 +402,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                             </Show>
                         </div>
                     </Show>
+                  </Show>
                 </div>
             </div>
         </div>

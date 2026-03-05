@@ -1,7 +1,9 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
+import  AddToCart from './AddToCart';
 
 
 
@@ -72,6 +74,15 @@ onToggleFavorite?: (product: Product, isFavorite: boolean) => void;
  * can use framework-specific routing (e.g. Next.js `router.push`).
  */
 onProductClick?: (product: Product) => void;
+
+// === Pricing ===
+
+/**
+ * When true, tax-inclusive price (net) is the leading price.
+ * When false, tax-exclusive price (gross) is shown.
+ * Defaults to false.
+ */
+includeTax?: boolean;
 
 // === Appearance ===
 
@@ -172,6 +183,8 @@ addToCartLabels?: Record<string, string>;
 }
 interface ProductCardState {
 isFavorite: boolean;
+_includeTax: boolean;
+_priceListener: any;
 getProductName: () => string;
 getProductSku: () => string;
 getProductImageUrl: () => string;
@@ -191,14 +204,18 @@ computedTextLabels: () => {
 }[];
 }
 
-  import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
-import  AddToCart from './AddToCart';
 
 
 
   function ProductCard(props:ProductCardProps) {
 
   const [isFavorite, setIsFavorite] = useState<ProductCardState["isFavorite"]>(() => (false))
+
+
+const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (false))
+
+
+const [_priceListener, set_priceListener] = useState<ProductCardState["_priceListener"]>(() => (null))
 
 
 function isRow(): ReturnType<ProductCardState["isRow"]>{
@@ -222,9 +239,11 @@ return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]
 
 
 function getProductPrice(): ReturnType<ProductCardState["getProductPrice"]>{
-const price = (props.product as Product)?.price?.gross;
-if (!price && price !== 0) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
+const priceObj = (props.product as Product)?.price;
+const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+if (!value && value !== 0) return '';
+return `\u20AC${Number(value).toFixed(2)}`;
 }
 
 
@@ -304,7 +323,17 @@ value: string;
 
 
 
-
+useEffect(() => {
+      if (typeof window !== 'undefined') {
+const stored = localStorage.getItem('price_include_tax');
+set_includeTax(stored === null ? true : stored === 'true');
+set_priceListener(() => {
+const val = localStorage.getItem('price_include_tax');
+set_includeTax(val === null ? true : val === 'true');
+});
+window.addEventListener('priceToggleChanged', _priceListener);
+}
+    }, [])
 
 
 

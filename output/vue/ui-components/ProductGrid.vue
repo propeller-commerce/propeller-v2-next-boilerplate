@@ -72,6 +72,7 @@
                     :columns="columns || 3"
                     :cluster="item"
                     :configuration="configuration"
+                    :includeTax="includeTax"
                     :enableAddFavorite="enableAddFavorite"
                     :onToggleFavorite="
                       (cluster, isFav) => {
@@ -100,6 +101,7 @@
                       :graphqlClient="graphqlClient"
                       :user="user || null"
                       :configuration="configuration"
+                      :includeTax="includeTax"
                       :cartId="cartId"
                       :createCart="createCart"
                       :onCartCreated="onCartCreated"

@@ -1,6 +1,8 @@
+'use client';
 import * as React from 'react';
 
-
+import { useState, useEffect } from 'react'
+import  { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
 
 
 
@@ -41,21 +43,32 @@ labels?: Record<string, string>;
 className?: string;
 }
 interface ProductBulkPricesState {
+_includeTax: boolean;
+_priceListener: any;
 isHidden: () => boolean;
 hasItems: () => boolean;
+getIncludeTax: () => boolean;
 getBulkPrices: () => ProductPrice[];
 getPrice: (tier: ProductPrice) => string;
 getLabel: (key: string, fallback: string) => string;
 }
 
-  import  { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
-
-
 
   function ProductBulkPrices(props:ProductBulkPricesProps) {
 
-  function isHidden(): ReturnType<ProductBulkPricesState["isHidden"]>{
+  const [_includeTax, set_includeTax] = useState<ProductBulkPricesState["_includeTax"]>(() => (true))
+
+
+const [_priceListener, set_priceListener] = useState<ProductBulkPricesState["_priceListener"]>(() => (null))
+
+
+function isHidden(): ReturnType<ProductBulkPricesState["isHidden"]>{
 return props.portalMode as string === 'semi-closed' && !props.user;
+}
+
+
+function getIncludeTax(): ReturnType<ProductBulkPricesState["getIncludeTax"]>{
+return props.includeTax !== undefined ? !!props.includeTax : _includeTax;
 }
 
 
@@ -70,8 +83,8 @@ return getBulkPrices().length > 0;
 
 
 function getPrice(tier: ProductPrice): ReturnType<ProductBulkPricesState["getPrice"]>{
-// gross = excl. VAT; net = incl. VAT
-const value = props.includeTax ? tier.net : tier.gross;
+const useTax: boolean = getIncludeTax();
+const value: number | undefined = useTax ? tier.net : tier.gross;
 if (value === null || value === undefined) return '';
 return `\u20AC${Number(value).toFixed(2)}`;
 }
@@ -87,7 +100,17 @@ return (props.labels as Record<string, string>)?.[key] || fallback;
 
 
 
-
+useEffect(() => {
+      if (typeof window !== 'undefined') {
+const stored = localStorage.getItem('price_include_tax');
+set_includeTax(stored === null ? true : stored === 'true');
+set_priceListener(() => {
+const val = localStorage.getItem('price_include_tax');
+set_includeTax(val === null ? true : val === 'true');
+});
+window.addEventListener('priceToggleChanged', _priceListener);
+}
+    }, [])
 
 
 
@@ -96,7 +119,7 @@ return (
 
   {!isHidden() && hasItems() ? (
   <><div  className={`product-bulk-prices ${props.className as string || ''}`}><h3 className="text-base font-semibold text-foreground mb-3">{getLabel('title', 'Volume pricing')}</h3><div className="overflow-hidden rounded-lg border border-border"><table className="w-full text-sm"><thead className="bg-muted/50"><tr><th className="px-4 py-2 text-left font-medium text-muted-foreground">{getLabel('quantityFrom', 'Qty from')}</th><th className="px-4 py-2 text-right font-medium text-muted-foreground">{getLabel('price', 'Price')}<span className="font-normal text-xs">
-                                    ({props.includeTax ? (
+                                    ({getIncludeTax() ? (
   <>{getLabel('inclTax', 'incl. VAT')}</>
 ) : <>{getLabel('exclTax', 'excl. VAT')}</>})
                                 </span></th></tr></thead><tbody className="divide-y divide-border">{getBulkPrices()?.map((tier, index) => (

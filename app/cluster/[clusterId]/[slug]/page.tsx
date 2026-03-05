@@ -27,6 +27,22 @@ export default function ClusterPage() {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
 
+  // Price toggle state from localStorage
+  const [includeTax, setIncludeTax] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('price_include_tax');
+    setIncludeTax(stored === null ? true : stored === 'true');
+
+    const handler = () => {
+      const val = localStorage.getItem('price_include_tax');
+      setIncludeTax(val === null ? true : val === 'true');
+    };
+    window.addEventListener('priceToggleChanged', handler);
+    return () => window.removeEventListener('priceToggleChanged', handler);
+  }, []);
+
   // Helper function to check if attribute names match
   const attributeNameMatches = (attr: AttributeResult, targetName: string): boolean => {
     const attrName = attr.attributeDescription?.descriptions?.[0]?.value ||
@@ -96,7 +112,8 @@ export default function ClusterPage() {
   // Calculate total price including selected options
   const totalPrice = useMemo(() => {
     const displayProduct = selectedProduct || cluster?.defaultProduct;
-    const basePrice = displayProduct?.price?.gross || 0;
+    const priceField = includeTax ? 'net' : 'gross';
+    const basePrice = (displayProduct?.price as any)?.[priceField] || 0;
     let total = basePrice;
 
     // Add prices of selected options
@@ -109,15 +126,16 @@ export default function ClusterPage() {
           const selectedOptionProduct = option.products.find(
             p => p.productId.toString() === productId
           );
-          if (selectedOptionProduct?.price?.gross) {
-            total += selectedOptionProduct.price.gross;
+          const optionPrice = (selectedOptionProduct?.price as any)?.[priceField];
+          if (optionPrice) {
+            total += optionPrice;
           }
         }
       });
     }
 
     return total;
-  }, [selectedProduct, cluster, selectedOptions]);
+  }, [selectedProduct, cluster, selectedOptions, includeTax]);
 
   useEffect(() => {
     const fetchCluster = async () => {

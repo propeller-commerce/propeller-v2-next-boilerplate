@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
 } from '@builder.io/mitosis';
 import {
     ProductPrice,
@@ -47,8 +48,11 @@ export interface ProductBulkPricesProps {
 }
 
 interface ProductBulkPricesState {
+    _includeTax: boolean;
+    _priceListener: any;
     isHidden: () => boolean;
     hasItems: () => boolean;
+    getIncludeTax: () => boolean;
     getBulkPrices: () => ProductPrice[];
     getPrice: (tier: ProductPrice) => string;
     getLabel: (key: string, fallback: string) => string;
@@ -56,8 +60,15 @@ interface ProductBulkPricesState {
 
 export default function ProductBulkPrices(props: ProductBulkPricesProps) {
     const state = useStore<ProductBulkPricesState>({
+        _includeTax: true,
+        _priceListener: null as any,
+
         isHidden(): boolean {
             return (props.portalMode as string) === 'semi-closed' && !props.user;
+        },
+
+        getIncludeTax(): boolean {
+            return props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
         },
 
         getBulkPrices(): ProductPrice[] {
@@ -69,8 +80,8 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
         },
 
         getPrice(tier: ProductPrice): string {
-            // gross = excl. VAT; net = incl. VAT
-            const value = props.includeTax ? tier.net : tier.gross;
+            const useTax: boolean = state.getIncludeTax();
+            const value: number | undefined = useTax ? tier.net : tier.gross;
             if (value === null || value === undefined) return '';
             return `\u20AC${Number(value).toFixed(2)}`;
         },
@@ -78,6 +89,18 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
         getLabel(key: string, fallback: string): string {
             return (props.labels as Record<string, string>)?.[key] || fallback;
         },
+    });
+
+    onMount(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('price_include_tax');
+            state._includeTax = stored === null ? true : stored === 'true';
+            state._priceListener = () => {
+                const val = localStorage.getItem('price_include_tax');
+                state._includeTax = val === null ? true : val === 'true';
+            };
+            window.addEventListener('priceToggleChanged', state._priceListener);
+        }
     });
 
     return (
@@ -97,7 +120,7 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
                                     {state.getLabel('price', 'Price')}
                                     {' '}
                                     <span className="font-normal text-xs">
-                                        ({props.includeTax
+                                        ({state.getIncludeTax()
                                             ? state.getLabel('inclTax', 'incl. VAT')
                                             : state.getLabel('exclTax', 'excl. VAT')})
                                     </span>

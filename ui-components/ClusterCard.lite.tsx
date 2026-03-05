@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
 } from '@builder.io/mitosis';
 import {
     Cluster,
@@ -87,6 +88,15 @@ export interface ClusterCardProps {
      */
     labels?: Record<string, string>;
 
+    // === Pricing ===
+
+    /**
+     * When true, tax-inclusive price (net) is the leading price.
+     * When false, tax-exclusive price (gross) is shown.
+     * Defaults to false.
+     */
+    includeTax?: boolean;
+
     /** Number of grid columns — when 1 the card renders as a compact horizontal row. */
     columns?: number;
 
@@ -99,6 +109,8 @@ export interface ClusterCardProps {
 
 interface ClusterCardState {
     isFavorite: boolean;
+    _includeTax: boolean;
+    _priceListener: any;
     isRow: () => boolean;
     getClusterName: () => string;
     getClusterSku: () => string;
@@ -120,6 +132,8 @@ interface ClusterCardState {
 export default function ClusterCard(props: ClusterCardProps) {
     const state = useStore<ClusterCardState>({
         isFavorite: false,
+        _includeTax: false,
+        _priceListener: null as any,
 
         isRow() {
             return (props.columns as number) === 1;
@@ -148,10 +162,12 @@ export default function ClusterCard(props: ClusterCardProps) {
             );
         },
 
-        getClusterPrice() {
-            const price = (props.cluster as Cluster)?.defaultProduct?.price?.gross;
-            if (!price && price !== 0) return '';
-            return `\u20AC${Number(price).toFixed(2)}`;
+        getClusterPrice(): string {
+            const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
+            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
+            const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+            if (!value && value !== 0) return '';
+            return `\u20AC${Number(value).toFixed(2)}`;
         },
 
         getClusterUrl() {
@@ -253,6 +269,18 @@ export default function ClusterCard(props: ClusterCardProps) {
                         item.value.length > 0,
                 );
         },
+    });
+
+    onMount(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('price_include_tax');
+            state._includeTax = stored === null ? true : stored === 'true';
+            state._priceListener = () => {
+                const val = localStorage.getItem('price_include_tax');
+                state._includeTax = val === null ? true : val === 'true';
+            };
+            window.addEventListener('priceToggleChanged', state._priceListener);
+        }
     });
 
     return (

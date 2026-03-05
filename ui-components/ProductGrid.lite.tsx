@@ -583,6 +583,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                                 columns={props.columns as number || 3}
                                                 cluster={item as Cluster}
                                                 configuration={props.configuration}
+                                                includeTax={props.includeTax as boolean}
                                                 enableAddFavorite={props.enableAddFavorite as boolean}
                                                 onToggleFavorite={(cluster: Cluster, isFav: boolean) => {
                                                     if (props.onToggleFavorite) {
@@ -608,6 +609,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                                     graphqlClient={props.graphqlClient as GraphQLClient}
                                                     user={(props.user as Contact | Customer | null) || null}
                                                     configuration={props.configuration}
+                                                    includeTax={props.includeTax as boolean}
                                                     cartId={props.cartId as string}
                                                     createCart={props.createCart as boolean}
                                                     onCartCreated={props.onCartCreated}

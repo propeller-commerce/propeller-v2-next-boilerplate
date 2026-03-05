@@ -11,6 +11,7 @@ import CartSidebar from './CartSidebar';
 import SearchBar from '@/components/common/SearchBar';
 import UserMenu from '@/components/common/UserMenu';
 import PropellerMenu from '@/components/propeller/Menu';
+import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -30,7 +31,6 @@ export default function Header() {
   const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
-  const [showVatInclusive, setShowVatInclusive] = useState(true);
   const [language, setLanguage] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('preferred_language') || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
@@ -148,15 +148,9 @@ export default function Header() {
                 {/* Right: VAT Switcher & Language Switcher */}
                 <div className="flex items-center gap-4">
                   {showVatToggle && (
-                    <div className="flex items-center gap-2">
-                      <span className="hidden sm:inline">Prices:</span>
-                      <button
-                        onClick={() => setShowVatInclusive(!showVatInclusive)}
-                        className="hover:text-white/80 transition-colors"
-                      >
-                        {showVatInclusive ? 'Incl. VAT' : 'Excl. VAT'}
-                      </button>
-                    </div>
+                    <PriceToggle
+                      inclExclVatSwitched={() => {}}
+                    />
                   )}
 
                   {showLanguageSwitcher && availableLanguages.length > 1 && (
@@ -346,7 +340,7 @@ export default function Header() {
                       categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
                       language={language}
                       menuStyle="dropdown-vertical"
-                      cacheEnabled={!state.isAuthenticated}
+                      user={state.user}
                       configuration={config}
                       onMenuItemClick={(category) => {
                         setShowMainMenu(false);

@@ -1,6 +1,7 @@
 import {
     useStore,
     Show,
+    onMount,
 } from '@builder.io/mitosis';
 import {
     ProductPrice,
@@ -50,7 +51,10 @@ export interface ProductPriceProps {
 }
 
 interface ProductPriceState {
+    _includeTax: boolean;
+    _priceListener: any;
     isHidden: () => boolean;
+    getIncludeTax: () => boolean;
     getLeadingPrice: () => string;
     getSecondaryPrice: () => string;
     getTaxLabel: () => string;
@@ -61,8 +65,15 @@ interface ProductPriceState {
 
 export default function ProductPriceDisplay(props: ProductPriceProps) {
     const state = useStore<ProductPriceState>({
+        _includeTax: true,
+        _priceListener: null as any,
+
         isHidden(): boolean {
             return (props.portalMode as string) === 'semi-closed' && !props.user;
+        },
+
+        getIncludeTax(): boolean {
+            return props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
         },
 
         formatPrice(value: number | null | undefined): string {
@@ -74,27 +85,29 @@ export default function ProductPriceDisplay(props: ProductPriceProps) {
         getLeadingPrice(): string {
             const price = props.price as ProductPrice;
             if (!price) return '';
-            // gross = excl. VAT (always shown first by default)
-            const value = props.includeTax ? price.net : price.gross;
+            const useTax: boolean = state.getIncludeTax();
+            const value: number | undefined = useTax ? price.net : price.gross;
             return this.formatPrice(value);
         },
 
         getSecondaryPrice(): string {
             const price = props.price as ProductPrice;
             if (!price) return '';
-            // secondary is the opposite
-            const value = props.includeTax ? price.gross : price.net;
+            const useTax: boolean = state.getIncludeTax();
+            const value: number | undefined = useTax ? price.gross : price.net;
             return this.formatPrice(value);
         },
 
         getTaxLabel(): string {
-            return props.includeTax
+            const useTax: boolean = state.getIncludeTax();
+            return useTax
                 ? this.getLabel('inclTax', 'incl. VAT')
                 : this.getLabel('exclTax', 'excl. VAT');
         },
 
         getSecondaryTaxLabel(): string {
-            return props.includeTax
+            const useTax: boolean = state.getIncludeTax();
+            return useTax
                 ? this.getLabel('exclTax', 'excl. VAT')
                 : this.getLabel('inclTax', 'incl. VAT');
         },
@@ -102,6 +115,18 @@ export default function ProductPriceDisplay(props: ProductPriceProps) {
         getLabel(key: string, fallback: string): string {
             return (props.labels as Record<string, string>)?.[key] || fallback;
         },
+    });
+
+    onMount(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('price_include_tax');
+            state._includeTax = stored === null ? true : stored === 'true';
+            state._priceListener = () => {
+                const val = localStorage.getItem('price_include_tax');
+                state._includeTax = val === null ? true : val === 'true';
+            };
+            window.addEventListener('priceToggleChanged', state._priceListener);
+        }
     });
 
     return (

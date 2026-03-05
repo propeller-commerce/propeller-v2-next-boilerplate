@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import  { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
 
 
 
@@ -61,18 +62,10 @@ onMenuItemClick: (category: Category) => void;
 labels?: Record<string, string>;
 
 /**
- * Enable localStorage caching for the menu tree.
- * Useful for anonymous users to avoid re-fetching on every page load.
- * Defaults to false.
+ * Authenticated user object. When user changes (login/logout),
+ * the menu cache is cleared and the menu is re-fetched.
  */
-cacheEnabled?: boolean;
-
-/**
- * Cache duration in milliseconds.
- * Only used when cacheEnabled is true.
- * Defaults to 43200000 (12 hours).
- */
-cacheDuration?: number;
+user?: Contact | Customer | null;
 
 /** Extra CSS class applied to the root element. */
 className?: string;
@@ -86,10 +79,12 @@ isLoading: boolean;
 hasError: boolean;
 hoveredL1Id: number | null;
 hoveredL2Id: number | null;
+_prevUserKey: string;
 fetchMenu: () => Promise<void>;
 getCacheKey: () => string;
 getCachedMenu: () => Category | null;
 cacheMenu: (data: Category) => void;
+clearCache: () => void;
 getCategoryName: (cat: Category) => string;
 getCategorySlug: (cat: Category) => string;
 getCategoryUrl: (cat: Category) => string;
@@ -102,7 +97,6 @@ getMenuStyle: () => string;
 getLinkFormat: () => string;
 }
 
-  import  { GraphQLClient, Category, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -123,17 +117,18 @@ const [hoveredL1Id, setHoveredL1Id] = useState<MenuState["hoveredL1Id"]>(() => (
 const [hoveredL2Id, setHoveredL2Id] = useState<MenuState["hoveredL2Id"]>(() => (null))
 
 
+const [_prevUserKey, set_prevUserKey] = useState<MenuState["_prevUserKey"]>(() => (''))
+
+
 async function fetchMenu(): ReturnType<MenuState["fetchMenu"]>{
 if (!props.graphqlClient) return;
 
 // Try cache first
-if (props.cacheEnabled) {
 const cached = getCachedMenu();
 if (cached) {
-  setRootCategory(cached);
-  setIsLoading(false);
-  return;
-}
+setRootCategory(cached);
+setIsLoading(false);
+return;
 }
 setIsLoading(true);
 setHasError(false);
@@ -172,7 +167,7 @@ const response = await (props.graphqlClient as GraphQLClient).execute({
 const menuData = (response as any)?.data || response;
 const root = (menuData as any)?.category || null;
 setRootCategory(root as Category);
-if (props.cacheEnabled && root) {
+if (root) {
   cacheMenu(root as Category);
 }
 } catch {
@@ -196,7 +191,6 @@ try {
 const raw = localStorage.getItem(getCacheKey());
 if (!raw) return null;
 const parsed = JSON.parse(raw);
-const duration = props.cacheDuration as number || 43200000;
 if (parsed.expires > Date.now()) {
   return parsed.data as Category;
 }
@@ -211,14 +205,19 @@ return null;
 function cacheMenu(data: Category): ReturnType<MenuState["cacheMenu"]>{
 if (typeof window === 'undefined') return;
 try {
-const duration = props.cacheDuration as number || 43200000;
 localStorage.setItem(getCacheKey(), JSON.stringify({
   data,
-  expires: Date.now() + duration
+  expires: Date.now() + 43200000
 }));
 } catch {
 // ignore — quota exceeded etc.
 }
+}
+
+
+function clearCache(): ReturnType<MenuState["clearCache"]>{
+if (typeof window === 'undefined') return;
+localStorage.removeItem(getCacheKey());
 }
 
 
@@ -294,7 +293,15 @@ return props.configuration.urls.pattern;
 useEffect(() => {
       fetchMenu()
     },
-    [props.graphqlClient, props.categoryId, props.language])
+    [props.graphqlClient, props.categoryId, props.language]);useEffect(() => {
+      const userKey: string = props.user ? 'auth' : 'anon';
+if (_prevUserKey !== '' && _prevUserKey !== userKey) {
+clearCache();
+fetchMenu();
+}
+set_prevUserKey(userKey)
+    },
+    [props.user])
 
 
 return (

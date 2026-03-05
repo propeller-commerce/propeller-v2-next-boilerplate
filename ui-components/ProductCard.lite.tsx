@@ -2,6 +2,8 @@ import {
     useStore,
     Show,
     For,
+    onMount,
+    onUpdate,
 } from '@builder.io/mitosis';
 import {
     GraphQLClient,
@@ -82,6 +84,15 @@ export interface ProductCardProps {
      * can use framework-specific routing (e.g. Next.js `router.push`).
      */
     onProductClick?: (product: Product) => void;
+
+    // === Pricing ===
+
+    /**
+     * When true, tax-inclusive price (net) is the leading price.
+     * When false, tax-exclusive price (gross) is shown.
+     * Defaults to false.
+     */
+    includeTax?: boolean;
 
     // === Appearance ===
 
@@ -191,6 +202,8 @@ export interface ProductCardProps {
 
 interface ProductCardState {
     isFavorite: boolean;
+    _includeTax: boolean;
+    _priceListener: any;
     getProductName: () => string;
     getProductSku: () => string;
     getProductImageUrl: () => string;
@@ -210,6 +223,8 @@ interface ProductCardState {
 export default function ProductCard(props: ProductCardProps) {
     const state = useStore<ProductCardState>({
         isFavorite: false,
+        _includeTax: false,
+        _priceListener: null as any,
 
         isRow() {
             return (props.columns as number) === 1;
@@ -230,10 +245,12 @@ export default function ProductCard(props: ProductCardProps) {
             );
         },
 
-        getProductPrice() {
-            const price = (props.product as Product)?.price?.gross;
-            if (!price && price !== 0) return '';
-            return `\u20AC${Number(price).toFixed(2)}`;
+        getProductPrice(): string {
+            const priceObj = (props.product as Product)?.price;
+            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
+            const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+            if (!value && value !== 0) return '';
+            return `\u20AC${Number(value).toFixed(2)}`;
         },
 
         getProductUrl() {
@@ -306,6 +323,18 @@ export default function ProductCard(props: ProductCardProps) {
                         item.value.length > 0,
                 );
         },
+    });
+
+    onMount(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('price_include_tax');
+            state._includeTax = stored === null ? true : stored === 'true';
+            state._priceListener = () => {
+                const val = localStorage.getItem('price_include_tax');
+                state._includeTax = val === null ? true : val === 'true';
+            };
+            window.addEventListener('priceToggleChanged', state._priceListener);
+        }
     });
 
     return (

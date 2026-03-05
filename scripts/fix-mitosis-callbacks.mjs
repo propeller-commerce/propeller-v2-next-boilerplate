@@ -48,6 +48,74 @@ function resolve(rel) {
         .replace(/^\/([A-Z]:)/, '$1');
 }
 
+// ── mid-file import hoisting ─────────────────────────────────────────────────
+//
+// Mitosis places `import` statements in the middle of compiled files — after
+// interface/type declarations. Turbopack (Next.js bundler) requires all imports
+// at the top of the module, otherwise it errors with:
+//   "Expected export to be in eval context 'default'"
+//
+// This fix scans every compiled React file, extracts any import statements that
+// appear after the first non-import code, and moves them to the top (right after
+// the existing top-level imports).
+
+function hoistImports(dir) {
+    const files = collectFiles(dir, '.tsx');
+    let totalFixed = 0;
+
+    for (const file of files) {
+        const content = readFileSync(file, 'utf8');
+        const lines = content.split('\n');
+
+        // Find where the top import block ends (first line that is not an import,
+        // empty line, 'use client', or comment after we've seen at least one import)
+        let lastTopImportIdx = -1;
+        let seenImport = false;
+        for (let i = 0; i < lines.length; i++) {
+            const trimmed = lines[i].trim();
+            if (trimmed.startsWith('import ') || trimmed.startsWith('import\t')) {
+                seenImport = true;
+                lastTopImportIdx = i;
+            } else if (seenImport && trimmed !== '' && !trimmed.startsWith("'use client'") && !trimmed.startsWith('"use client"') && !trimmed.startsWith('//')) {
+                break;
+            }
+        }
+
+        // Now find any import statements below lastTopImportIdx
+        const midImports = [];
+        const cleanedLines = [];
+        for (let i = 0; i < lines.length; i++) {
+            const trimmed = lines[i].trim();
+            if (i > lastTopImportIdx && (trimmed.startsWith('import ') || trimmed.startsWith('import\t'))) {
+                midImports.push(lines[i]);
+            } else {
+                cleanedLines.push(lines[i]);
+            }
+        }
+
+        if (midImports.length === 0) continue;
+
+        // Insert mid-file imports right after lastTopImportIdx
+        const result = [];
+        for (let i = 0; i < cleanedLines.length; i++) {
+            result.push(cleanedLines[i]);
+            // After the last top-level import, insert the hoisted imports
+            if (i === lastTopImportIdx) {
+                for (const imp of midImports) {
+                    result.push(imp);
+                }
+            }
+        }
+
+        writeFileSync(file, result.join('\n'), 'utf8');
+        const rel = file.replace(/.*[/\\]output[/\\]/, 'output/');
+        console.log(`  [Import hoist] ✓ ${rel} — moved ${midImports.length} import${midImports.length > 1 ? 's' : ''} to top`);
+        totalFixed += midImports.length;
+    }
+
+    return totalFixed;
+}
+
 // ── patterns ─────────────────────────────────────────────────────────────────
 
 const TARGETS = [
@@ -262,6 +330,9 @@ function applyFilePatch(file, from, to, label) {
 // ── main ──────────────────────────────────────────────────────────────────────
 
 let totalFixes = 0;
+
+// Hoist mid-file imports to the top (must run before other patches)
+totalFixes += hoistImports(resolve('../output/react/ui-components'));
 
 for (const { dir, ext, pattern, replace, label } of TARGETS) {
     const files = collectFiles(dir, ext);

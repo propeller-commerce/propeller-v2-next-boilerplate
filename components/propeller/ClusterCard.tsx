@@ -1,9 +1,8 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react'
-
-
+import { useState, useEffect } from 'react'
+import  { Cluster, AttributeResult } from 'propeller-sdk-v2';
 
   export interface ClusterCardProps {
 // === Core ===
@@ -84,6 +83,15 @@ onClusterClick?: (cluster: Cluster) => void;
  */
 labels?: Record<string, string>;
 
+// === Pricing ===
+
+/**
+ * When true, tax-inclusive price (net) is the leading price.
+ * When false, tax-exclusive price (gross) is shown.
+ * Defaults to false.
+ */
+includeTax?: boolean;
+
 /** Number of grid columns — when 1 the card renders as a compact horizontal row. */
 columns?: number;
 
@@ -95,6 +103,8 @@ configuration?: any;
 }
 interface ClusterCardState {
 isFavorite: boolean;
+_includeTax: boolean;
+_priceListener: any;
 isRow: () => boolean;
 getClusterName: () => string;
 getClusterSku: () => string;
@@ -116,13 +126,17 @@ computedTextLabels: () => {
 }[];
 }
 
-  import  { Cluster, AttributeResult } from 'propeller-sdk-v2';
-
 
 
   function ClusterCard(props:ClusterCardProps) {
 
   const [isFavorite, setIsFavorite] = useState<ClusterCardState["isFavorite"]>(() => (false))
+
+
+const [_includeTax, set_includeTax] = useState<ClusterCardState["_includeTax"]>(() => (false))
+
+
+const [_priceListener, set_priceListener] = useState<ClusterCardState["_priceListener"]>(() => (null))
 
 
 function isRow(): ReturnType<ClusterCardState["isRow"]>{
@@ -146,9 +160,11 @@ return (props.cluster as Cluster)?.defaultProduct?.media?.images?.items?.[0]?.im
 
 
 function getClusterPrice(): ReturnType<ClusterCardState["getClusterPrice"]>{
-const price = (props.cluster as Cluster)?.defaultProduct?.price?.gross;
-if (!price && price !== 0) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
+const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
+const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+if (!value && value !== 0) return '';
+return `\u20AC${Number(value).toFixed(2)}`;
 }
 
 
@@ -244,7 +260,17 @@ value: string;
 
 
 
-
+useEffect(() => {
+      if (typeof window !== 'undefined') {
+const stored = localStorage.getItem('price_include_tax');
+set_includeTax(stored === null ? true : stored === 'true');
+set_priceListener(() => {
+const val = localStorage.getItem('price_include_tax');
+set_includeTax(val === null ? true : val === 'true');
+});
+window.addEventListener('priceToggleChanged', _priceListener);
+}
+    }, [])
 
 
 

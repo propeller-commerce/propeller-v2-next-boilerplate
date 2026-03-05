@@ -18,10 +18,12 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { User, ShoppingBag, Menu as MenuIcon } from 'lucide-react';
 import { config } from '@/data/config';
+import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
+import { Cart } from 'propeller-sdk-v2';
 
 export default function Header() {
   const router = useRouter();
-  const { getTotalItems, openCart } = useCart();
+  const { getTotalItems, openCart, cart } = useCart();
   const { state, login } = useAuth();
   const globalData = useGlobal();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -296,19 +298,26 @@ export default function Header() {
 
                 {/* Cart */}
                 {showCart && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={openCart}
-                    className="relative text-white hover:text-white hover:bg-white/10"
-                  >
-                    <ShoppingBag className="w-5 h-5" />
-                    {isMounted && getTotalItems() > 0 && (
-                      <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 rounded-full text-[10px]">
-                        {getTotalItems()}
-                      </Badge>
-                    )}
-                  </Button>
+                  <CartIconAndSidebar
+                    cart={cart as Cart}
+                    onCheckoutButtonClick={(cart) => router.push('/checkout')}
+                    onCartPageButtonClick={(cart) => router.push('/cart')}
+                    showTotals={true}
+                    iconClassName="text-white hover:text-white hover:bg-white/10"
+                  />
+                  // <Button
+                  //   variant="ghost"
+                  //   size="icon"
+                  //   onClick={openCart}
+                  //   className="relative text-white hover:text-white hover:bg-white/10"
+                  // >
+                  //   <ShoppingBag className="w-5 h-5" />
+                  //   {isMounted && getTotalItems() > 0 && (
+                  //     <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 rounded-full text-[10px]">
+                  //       {getTotalItems()}
+                  //     </Badge>
+                  //   )}
+                  // </Button>
                 )}
               </div>
             </div>

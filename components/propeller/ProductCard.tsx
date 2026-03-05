@@ -352,13 +352,8 @@ return (
   <div className="flex flex-col gap-0.5">{computedTextLabels()?.map((item) => (
   <div className="text-xs text-gray-500">{item.value}</div>
 ))}</div>
-) : null}{props.showStock && !!(props.product as Product)?.inventory ? (
-  <ItemStock
-    inventory={(props.product as Product).inventory!}
-    showAvailability={props.showAvailability !== false}
-    showStock={true}
-    labels={props.stockLabels}
-  />
+) : null}{props.showStock && !!props.product.inventory ? (
+  <ItemStock  inventory={props.product.inventory!}  showAvailability={props.showAvailability !== false}  showStock  labels={props.stockLabels}  />
 ) : null}{props.showManufacturer && !!getProductManufacturer() ? (
   <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
 ) : null}{props.showShortDescription && !!getProductShortDescription() ? (

@@ -111,6 +111,9 @@
                       :onProceedToCheckout="onProceedToCheckout"
                       :addToCartLabels="addToCartLabels"
                       :enableAddFavorite="enableAddFavorite"
+                      :showStock="showStock"
+                      :showAvailability="showAvailability"
+                      :stockLabels="stockLabels"
                       :onToggleFavorite="
                         (product, isFav) => {
                           if (onToggleFavorite) {
@@ -137,6 +140,9 @@
                       :configuration="configuration"
                       :cartId="cartId"
                       :enableAddFavorite="enableAddFavorite"
+                      :showStock="showStock"
+                      :showAvailability="showAvailability"
+                      :stockLabels="stockLabels"
                       :onToggleFavorite="
                         (product, isFav) => {
                           if (onToggleFavorite) {
@@ -441,6 +447,28 @@ export interface ProductGridProps {
    *       modalTitle, quantity, continueShopping, proceedToCheckout
    */
   addToCartLabels?: Record<string, string>;
+
+  // ── Stock display ─────────────────────────────────────────────────────────
+
+  /**
+   * Show the stock / availability widget on each product card.
+   * Forwarded directly to `ProductCard.showStock`.
+   * Defaults to false.
+   */
+  showStock?: boolean;
+
+  /**
+   * Show only the availability indicator inside the stock widget.
+   * Forwarded to `ProductCard.showAvailability`.
+   * Defaults to true.
+   */
+  showAvailability?: boolean;
+
+  /**
+   * Label overrides forwarded to the embedded ItemStock component inside each card.
+   * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+   */
+  stockLabels?: Record<string, string>;
 
   // ── Card interaction ──────────────────────────────────────────────────────
 

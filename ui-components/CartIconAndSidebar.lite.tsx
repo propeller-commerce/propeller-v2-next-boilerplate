@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
 } from '@builder.io/mitosis';
 import {
     Cart,
@@ -92,6 +93,7 @@ export interface CartIconAndSidebarProps {
 }
 
 interface CartIconAndSidebarState {
+    _isMounted: boolean;
     sidebarOpen: boolean;
     isHovered: boolean;
     getTotalItems: () => number;
@@ -111,6 +113,7 @@ interface CartIconAndSidebarState {
 
 export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     const state = useStore<CartIconAndSidebarState>({
+        _isMounted: false,
         sidebarOpen: false,
         isHovered: false,
 
@@ -191,6 +194,10 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         },
     });
 
+    onMount(() => {
+        state._isMounted = true;
+    });
+
     return (
         <div className="relative">
             {/* Cart Icon + hover totals */}
@@ -221,7 +228,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     </svg>
 
                     {/* Item count badge */}
-                    <Show when={props.showBadge !== false && state.getTotalItems() > 0}>
+                    <Show when={state._isMounted && props.showBadge !== false && state.getTotalItems() > 0}>
                         <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold pointer-events-none">
                             {state.getTotalItems()}
                         </span>

@@ -24,6 +24,9 @@
  /** IDs of the cluster child items, e.g. cluster options */
  childItems?: number[];
 
+ /** Called before adding to cart. Return false to abort (e.g. failed validation). */
+ beforeAddToCart?: () => boolean;
+
  /** Notes for the cart item */
  notes?: string;
 
@@ -360,6 +363,7 @@ if (props.onCartCreated) {
 
 async function handleAddToCart(): ReturnType<AddToCartState["handleAddToCart"]>{
 if (!props.graphqlClient) return;
+if (props.beforeAddToCart && !props.beforeAddToCart()) return;
 setLoading(true);
 setSuccess(false);
 try {

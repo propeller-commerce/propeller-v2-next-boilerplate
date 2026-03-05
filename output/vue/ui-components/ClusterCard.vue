@@ -144,14 +144,13 @@
         </p>
       </template>
 
-      <template v-if="!!getClusterPrice()">
+      <template v-if="!!cluster.defaultProduct?.price">
         <div :class="isRow() ? '' : 'mt-auto pt-2'">
-          <span
-            :class="`font-bold text-gray-900 ${
-              isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'
-            }`"
-            >{{ getClusterPrice() }}</span
-          >
+          <ProductPriceDisplay
+            :price="cluster.defaultProduct?.price"
+            :options="cluster.options"
+            :priceSize="isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'"
+          ></ProductPriceDisplay>
         </div>
       </template>
 
@@ -183,7 +182,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import { Cluster, AttributeResult } from "propeller-sdk-v2";
+import { Cluster, AttributeResult, ProductPrice } from "propeller-sdk-v2";
+import ProductPriceDisplay from "./ProductPrice.vue";
 
 export interface ClusterCardProps {
   // === Core ===
@@ -279,7 +279,6 @@ interface ClusterCardState {
   getClusterName: () => string;
   getClusterSku: () => string;
   getClusterImageUrl: () => string;
-  getClusterPrice: () => string;
   getClusterUrl: () => string;
   getClusterShortDescription: () => string;
   getClusterManufacturer: () => string;
@@ -323,11 +322,6 @@ function getClusterImageUrl(): ReturnType<
     (props.cluster as Cluster)?.defaultProduct?.media?.images?.items?.[0]
       ?.imageVariants?.[0]?.url || ""
   );
-}
-function getClusterPrice(): ReturnType<ClusterCardState["getClusterPrice"]> {
-  const price = (props.cluster as Cluster)?.defaultProduct?.price?.gross;
-  if (!price && price !== 0) return "";
-  return `\u20AC${Number(price).toFixed(2)}`;
 }
 function getClusterUrl(): ReturnType<ClusterCardState["getClusterUrl"]> {
   return props.configuration.urls.getClusterUrl(props.cluster);

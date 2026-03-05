@@ -26,7 +26,6 @@ export default function CategoryPage() {
   const router = useRouter();
   const categoryId = parseInt(params.id as string);
   const [category, setCategory] = useState<Category>();
-  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [minPrice, setMinPrice] = useState<number | undefined>();
@@ -273,6 +272,9 @@ export default function CategoryPage() {
                 onProceedToCheckout={() => router.push('/checkout')}
                 onProductsResponse={setProductsResponse}
                 onCategoryChange={setCategory}
+                onClusterClick={(cluster: Cluster) => {
+                  router.push(config.urls.getClusterUrl(cluster));
+                }}
               />
 
               {/* Pagination */}

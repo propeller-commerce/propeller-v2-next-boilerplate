@@ -4,8 +4,11 @@ import {
 } from '@builder.io/mitosis';
 import {
     ProductPrice,
+    Product,
+    ClusterOption,
     Contact,
     Customer,
+    Enums,
 } from 'propeller-sdk-v2';
 
 export interface ProductPriceProps {
@@ -39,11 +42,20 @@ export interface ProductPriceProps {
     /** Tax zone code. Defaults to 'NL'. */
     taxZone?: string;
 
+    /** Cluster options (cluster.options). Required option default prices are added even without an active selection. */
+    options?: ClusterOption[];
+
+    /** Active option product selections — pass Object.values(selectedOptionProducts). Price updates on every change. */
+    selectedOptionProducts?: Product[];
+
     /**
      * Override any UI string.
      * Available keys: inclTax, exclTax, loginToSeePrices
      */
     labels?: Record<string, string>;
+
+    /** Tailwind text-size class for the leading price. Defaults to 'text-3xl'. */
+    priceSize?: string;
 
     /** Extra CSS class applied to the root element. */
     className?: string;
@@ -51,6 +63,7 @@ export interface ProductPriceProps {
 
 interface ProductPriceState {
     isHidden: () => boolean;
+    getOptionsTotal: (useNet: boolean) => number;
     getLeadingPrice: () => string;
     getSecondaryPrice: () => string;
     getTaxLabel: () => string;
@@ -71,32 +84,73 @@ export default function ProductPriceDisplay(props: ProductPriceProps) {
             return `${currency}${Number(value).toFixed(2)}`;
         },
 
+        getOptionsTotal(useNet: boolean): number {
+            const options = (props.options as ClusterOption[]) || [];
+            const selected = (props.selectedOptionProducts as Product[]) || [];
+            let total = 0;
+
+            options.forEach((option: ClusterOption) => {
+                if (option.hidden === Enums.YesNo.Y) return;
+
+                // Find whether the user has selected a product in this option
+                const selectedProduct = selected.find((p: Product) =>
+                    (option.products || []).some(
+                        (op: Product) => op.productId === p.productId,
+                    ),
+                );
+
+                if (selectedProduct) {
+                    total += useNet
+                        ? selectedProduct.price?.net || 0
+                        : selectedProduct.price?.gross || 0;
+                } else if (
+                    option.isRequired === Enums.YesNo.Y &&
+                    option.defaultProduct
+                ) {
+                    // option.defaultProduct may lack price data; look up the full
+                    // product record from option.products (which always has prices).
+                    const defaultId = (option.defaultProduct as Product).productId;
+                    const fullDefault =
+                        (option.products || []).find(
+                            (p: Product) => p.productId === defaultId,
+                        ) || option.defaultProduct;
+                    total += useNet
+                        ? (fullDefault as Product).price?.net || 0
+                        : (fullDefault as Product).price?.gross || 0;
+                }
+            });
+
+            return total;
+        },
+
         getLeadingPrice(): string {
             const price = props.price as ProductPrice;
             if (!price) return '';
-            // gross = excl. VAT (always shown first by default)
-            const value = props.includeTax ? price.net : price.gross;
-            return this.formatPrice(value);
+            const useNet = !!props.includeTax;
+            const base = useNet ? price.net : price.gross;
+            if (base === null || base === undefined) return '';
+            return state.formatPrice(base + state.getOptionsTotal(useNet));
         },
 
         getSecondaryPrice(): string {
             const price = props.price as ProductPrice;
             if (!price) return '';
-            // secondary is the opposite
-            const value = props.includeTax ? price.gross : price.net;
-            return this.formatPrice(value);
+            const useNet = !props.includeTax; // opposite of leading
+            const base = useNet ? price.net : price.gross;
+            if (base === null || base === undefined) return '';
+            return state.formatPrice(base + state.getOptionsTotal(useNet));
         },
 
         getTaxLabel(): string {
             return props.includeTax
-                ? this.getLabel('inclTax', 'incl. VAT')
-                : this.getLabel('exclTax', 'excl. VAT');
+                ? state.getLabel('inclTax', 'incl. VAT')
+                : state.getLabel('exclTax', 'excl. VAT');
         },
 
         getSecondaryTaxLabel(): string {
             return props.includeTax
-                ? this.getLabel('exclTax', 'excl. VAT')
-                : this.getLabel('inclTax', 'incl. VAT');
+                ? state.getLabel('exclTax', 'excl. VAT')
+                : state.getLabel('inclTax', 'incl. VAT');
         },
 
         getLabel(key: string, fallback: string): string {
@@ -117,7 +171,7 @@ export default function ProductPriceDisplay(props: ProductPriceProps) {
             <Show when={!state.isHidden() && !!state.getLeadingPrice()}>
                 <div className="flex flex-col gap-0.5">
                     <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-primary">
+                        <span className={`${(props.priceSize as string) || 'text-3xl'} font-bold text-primary`}>
                             {state.getLeadingPrice()}
                         </span>
                         <span className="text-sm text-muted-foreground">

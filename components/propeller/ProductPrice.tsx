@@ -35,17 +35,27 @@ includeTax?: boolean;
 /** Tax zone code. Defaults to 'NL'. */
 taxZone?: string;
 
+/** Cluster options (cluster.options). Required option default prices are added even without an active selection. */
+options?: ClusterOption[];
+
+/** Active option product selections — pass Object.values(selectedOptionProducts). Price updates on every change. */
+selectedOptionProducts?: Product[];
+
 /**
  * Override any UI string.
  * Available keys: inclTax, exclTax, loginToSeePrices
  */
 labels?: Record<string, string>;
 
+/** Tailwind text-size class for the leading price. Defaults to 'text-3xl'. */
+priceSize?: string;
+
 /** Extra CSS class applied to the root element. */
 className?: string;
 }
 interface ProductPriceState {
 isHidden: () => boolean;
+getOptionsTotal: (useNet: boolean) => number;
 getLeadingPrice: () => string;
 getSecondaryPrice: () => string;
 getTaxLabel: () => string;
@@ -54,7 +64,7 @@ getLabel: (key: string, fallback: string) => string;
 formatPrice: (value: number | null | undefined) => string;
 }
 
-  import  { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
+  import  { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -72,21 +82,46 @@ return `${currency}${Number(value).toFixed(2)}`;
 }
 
 
+function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState["getOptionsTotal"]>{
+const options = props.options as ClusterOption[] || [];
+const selected = props.selectedOptionProducts as Product[] || [];
+let total = 0;
+options.forEach((option: ClusterOption) => {
+if (option.hidden === Enums.YesNo.Y) return;
+
+// Find whether the user has selected a product in this option
+const selectedProduct = selected.find((p: Product) => (option.products || []).some((op: Product) => op.productId === p.productId));
+if (selectedProduct) {
+  total += useNet ? selectedProduct.price?.net || 0 : selectedProduct.price?.gross || 0;
+} else if (option.isRequired === Enums.YesNo.Y && option.defaultProduct) {
+  // option.defaultProduct may lack price data; look up the full
+  // product record from option.products (which always has prices).
+  const defaultId = (option.defaultProduct as Product).productId;
+  const fullDefault = (option.products || []).find((p: Product) => p.productId === defaultId) || option.defaultProduct;
+  total += useNet ? (fullDefault as Product).price?.net || 0 : (fullDefault as Product).price?.gross || 0;
+}
+});
+return total;
+}
+
+
 function getLeadingPrice(): ReturnType<ProductPriceState["getLeadingPrice"]>{
 const price = props.price as ProductPrice;
 if (!price) return '';
-// gross = excl. VAT (always shown first by default)
-const value = props.includeTax ? price.net : price.gross;
-return formatPrice(value);
+const useNet = !!props.includeTax;
+const base = useNet ? price.net : price.gross;
+if (base === null || base === undefined) return '';
+return formatPrice(base + getOptionsTotal(useNet));
 }
 
 
 function getSecondaryPrice(): ReturnType<ProductPriceState["getSecondaryPrice"]>{
 const price = props.price as ProductPrice;
 if (!price) return '';
-// secondary is the opposite
-const value = props.includeTax ? price.gross : price.net;
-return formatPrice(value);
+const useNet = !props.includeTax; // opposite of leading
+const base = useNet ? price.net : price.gross;
+if (base === null || base === undefined) return '';
+return formatPrice(base + getOptionsTotal(useNet));
 }
 
 
@@ -120,7 +155,7 @@ return (
   <div  className={`product-price ${props.className as string || ''}`}>{isHidden() ? (
   <p className="text-sm text-muted-foreground italic">{getLabel('loginToSeePrices', 'Log in to see prices')}</p>
 ) : null}{!isHidden() && !!getLeadingPrice() ? (
-  <div className="flex flex-col gap-0.5"><div className="flex items-baseline gap-2"><span className="text-3xl font-bold text-primary">{getLeadingPrice()}</span><span className="text-sm text-muted-foreground">{getTaxLabel()}</span></div>{!!getSecondaryPrice() ? (
+  <div className="flex flex-col gap-0.5"><div className="flex items-baseline gap-2"><span  className={`${props.priceSize as string || 'text-3xl'} font-bold text-primary`}>{getLeadingPrice()}</span><span className="text-sm text-muted-foreground">{getTaxLabel()}</span></div>{!!getSecondaryPrice() ? (
   <div className="text-sm text-muted-foreground">{getSecondaryPrice()}{getSecondaryTaxLabel()}</div>
 ) : null}</div>
 ) : null}</div>

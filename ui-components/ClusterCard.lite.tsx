@@ -6,7 +6,9 @@ import {
 import {
     Cluster,
     AttributeResult,
+    ProductPrice,
 } from 'propeller-sdk-v2';
+import ProductPriceDisplay from './ProductPrice.lite';
 
 export interface ClusterCardProps {
     // === Core ===
@@ -103,7 +105,6 @@ interface ClusterCardState {
     getClusterName: () => string;
     getClusterSku: () => string;
     getClusterImageUrl: () => string;
-    getClusterPrice: () => string;
     getClusterUrl: () => string;
     getClusterShortDescription: () => string;
     getClusterManufacturer: () => string;
@@ -146,12 +147,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                 (props.cluster as Cluster)?.defaultProduct?.media?.images
                     ?.items?.[0]?.imageVariants?.[0]?.url || ''
             );
-        },
-
-        getClusterPrice() {
-            const price = (props.cluster as Cluster)?.defaultProduct?.price?.gross;
-            if (!price && price !== 0) return '';
-            return `\u20AC${Number(price).toFixed(2)}`;
         },
 
         getClusterUrl() {
@@ -418,11 +413,13 @@ export default function ClusterCard(props: ClusterCardProps) {
                 </Show>
 
                 {/* Price */}
-                <Show when={!!state.getClusterPrice()}>
+                <Show when={!!(props.cluster as Cluster).defaultProduct?.price}>
                     <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
-                        <span className={`font-bold text-gray-900 ${state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>
-                            {state.getClusterPrice()}
-                        </span>
+                        <ProductPriceDisplay
+                            price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}
+                            options={(props.cluster as Cluster).options}
+                            priceSize={state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}
+                        />
                     </div>
                 </Show>
 

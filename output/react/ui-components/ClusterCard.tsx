@@ -99,7 +99,6 @@ isRow: () => boolean;
 getClusterName: () => string;
 getClusterSku: () => string;
 getClusterImageUrl: () => string;
-getClusterPrice: () => string;
 getClusterUrl: () => string;
 getClusterShortDescription: () => string;
 getClusterManufacturer: () => string;
@@ -116,7 +115,8 @@ computedTextLabels: () => {
 }[];
 }
 
-  import  { Cluster, AttributeResult } from 'propeller-sdk-v2';
+  import  { Cluster, AttributeResult, ProductPrice } from 'propeller-sdk-v2';
+import  ProductPriceDisplay from './ProductPrice';
 
 
 
@@ -142,13 +142,6 @@ return (props.cluster as Cluster)?.sku || (props.cluster as Cluster)?.defaultPro
 
 function getClusterImageUrl(): ReturnType<ClusterCardState["getClusterImageUrl"]>{
 return (props.cluster as Cluster)?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-}
-
-
-function getClusterPrice(): ReturnType<ClusterCardState["getClusterPrice"]>{
-const price = (props.cluster as Cluster)?.defaultProduct?.price?.gross;
-if (!price && price !== 0) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
 }
 
 
@@ -275,8 +268,8 @@ return (
   <div className="text-xs text-gray-500">{getClusterManufacturer()}</div>
 ) : null}{props.showShortDescription && !!getClusterShortDescription() ? (
   <p className="line-clamp-2 text-xs text-gray-500">{getClusterShortDescription()}</p>
-) : null}{!!getClusterPrice() ? (
-  <div  className={isRow() ? '' : 'mt-auto pt-2'}><span  className={`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>{getClusterPrice()}</span></div>
+) : null}{!!(props.cluster as Cluster).defaultProduct?.price ? (
+  <div  className={isRow() ? '' : 'mt-auto pt-2'}><ProductPriceDisplay  price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}  options={(props.cluster as Cluster).options}  priceSize={isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}  /></div>
 ) : null}{props.showStock !== false && getStockQuantity() >= 0 ? (
   <div className="flex items-center gap-1.5"><span  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStockStatusClass()}`}>{getStockStatusLabel()}</span>{getStockQuantity() > 0 ? (
   <span className="text-xs text-gray-400">

@@ -10,7 +10,7 @@ import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
 import { ImageVariant, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
-import ItemStock from '@/output/react/ui-components/ItemStock';
+import ItemStock from '@/components/propeller/ItemStock';
 import ProductInfo from '@/components/propeller/ProductInfo';
 import ProductGallery from '@/components/propeller/ProductGallery';
 import ProductPrice from '@/components/propeller/ProductPrice';
@@ -47,9 +47,13 @@ export default function ProductPage() {
             <Breadcrumbs categoryPath={product?.categoryPath || []} language="NL" configuration={config} showCurrent={true} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mb-12">
-            {/* Gallery Column */}
-            <ProductGallery images={images} />
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            {/* Left: Image Gallery */}
+            <div className="bg-white rounded-lg shadow p-6">
+              {/* Gallery Column */}
+              <ProductGallery images={images} />
+            </div>
 
             {/* Details Column */}
             <div className="flex flex-col">

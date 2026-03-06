@@ -133,8 +133,8 @@ export default function Header() {
                     <CompanySwitcher
                       user={state.user as Contact}
                       onCompanyChange={(company: Company) => {
-                        // TODO: update session/pricing context for selected company
-                        console.log('Company switched:', company);
+                        localStorage.setItem('selected_company_id', String(company.companyId));
+                        window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
                       }}
                     />
                   )}

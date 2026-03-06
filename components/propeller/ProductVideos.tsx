@@ -19,7 +19,7 @@ language: string;
 
 /**
  * Override any UI string.
- * Available keys: title
+ * Available keys: title, empty
  */
 labels?: Record<string, string>;
 
@@ -110,10 +110,12 @@ return (props.labels as Record<string, string>)?.[key] || fallback;
 
 
 return (
-  <>
 
-  {hasItems() ? (
-  <><div  className={`product-videos ${props.className as string || ''}`}><h3 className="text-base font-semibold text-foreground mb-3">{getLabel('title', 'Videos')}</h3><div className="space-y-4">{getVideoItems()?.map((video, index) => (
+
+  <div  className={`product-videos ${props.className as string || ''}`}>{hasItems() ? (
+  <h3 className="text-base font-semibold text-foreground mb-3">{getLabel('title', 'Videos')}</h3>
+) : null}{hasItems() ? (
+  <div className="space-y-4">{getVideoItems()?.map((video, index) => (
   <div className="rounded-lg overflow-hidden border border-border bg-black"  key={index}>{!!getVideoUri(video) ? (
   <>{isEmbeddable(getVideoUri(video)) ? (
   <div className="relative w-full"  style={{
@@ -124,10 +126,12 @@ paddingBottom: '56.25%'
   <video  preload="metadata" className="w-full"  controls><source  src={getVideoUri(video)}  /></video>
 ) : null}</>
 ) : null}</div>
-))}</div></div></>
-) : null}
+))}</div>
+) : null}{!hasItems() ? (
+  <p className="text-sm text-muted-foreground">{getLabel('empty', 'No videos')}</p>
+) : null}</div>
 
-  </>
+
 );
 }
 

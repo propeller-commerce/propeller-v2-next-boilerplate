@@ -19,7 +19,7 @@ language: string;
 
 /**
  * Override any UI string.
- * Available keys: title, download
+ * Available keys: title, download, empty
  */
 labels?: Record<string, string>;
 
@@ -91,17 +91,21 @@ return (props.labels as Record<string, string>)?.[key] || fallback;
 
 
 return (
-  <>
 
-  {hasItems() ? (
-  <><div  className={`product-downloads ${props.className as string || ''}`}><h3 className="text-base font-semibold text-foreground mb-3">{getLabel('title', 'Downloads')}</h3><ul className="space-y-2">{getDownloadItems()?.map((doc, index) => (
+
+  <div  className={`product-downloads ${props.className as string || ''}`}>{hasItems() ? (
+  <h3 className="text-base font-semibold text-foreground mb-3">{getLabel('title', 'Downloads')}</h3>
+) : null}{hasItems() ? (
+  <ul className="space-y-2">{getDownloadItems()?.map((doc, index) => (
   <li  key={index}>{!!getDocumentUrl(doc) ? (
   <a  target="_blank" className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground hover:bg-muted/30 hover:border-primary/40 transition-colors group"  href={getDocumentUrl(doc)}  download><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="h-5 w-5 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"  strokeWidth={1.5}  /></svg><span className="flex-1 min-w-0 truncate">{getDocumentName(doc)}</span><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"  strokeWidth={2}  /></svg></a>
 ) : null}</li>
-))}</ul></div></>
-) : null}
+))}</ul>
+) : null}{!hasItems() ? (
+  <p className="text-sm text-muted-foreground">{getLabel('empty', 'No downloads')}</p>
+) : null}</div>
 
-  </>
+
 );
 }
 

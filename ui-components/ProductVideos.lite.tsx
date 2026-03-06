@@ -24,7 +24,7 @@ export interface ProductVideosProps {
 
     /**
      * Override any UI string.
-     * Available keys: title
+     * Available keys: title, empty
      */
     labels?: Record<string, string>;
 
@@ -102,11 +102,13 @@ export default function ProductVideos(props: ProductVideosProps) {
     });
 
     return (
-        <Show when={state.hasItems()}>
-            <div className={`product-videos ${(props.className as string) || ''}`}>
+        <div className={`product-videos ${(props.className as string) || ''}`}>
+            <Show when={state.hasItems()}>
                 <h3 className="text-base font-semibold text-foreground mb-3">
                     {state.getLabel('title', 'Videos')}
                 </h3>
+            </Show>
+            <Show when={state.hasItems()}>
                 <div className="space-y-4">
                     <For each={state.getVideoItems()}>
                         {(video: MediaVideo, index: number) => (
@@ -141,7 +143,12 @@ export default function ProductVideos(props: ProductVideosProps) {
                         )}
                     </For>
                 </div>
-            </div>
-        </Show>
+            </Show>
+            <Show when={!state.hasItems()}>
+                <p className="text-sm text-muted-foreground">
+                    {state.getLabel('empty', 'No videos')}
+                </p>
+            </Show>
+        </div>
     );
 }

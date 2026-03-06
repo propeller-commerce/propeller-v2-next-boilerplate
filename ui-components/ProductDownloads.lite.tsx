@@ -24,7 +24,7 @@ export interface ProductDownloadsProps {
 
     /**
      * Override any UI string.
-     * Available keys: title, download
+     * Available keys: title, download, empty
      */
     labels?: Record<string, string>;
 
@@ -80,11 +80,13 @@ export default function ProductDownloads(props: ProductDownloadsProps) {
     });
 
     return (
-        <Show when={state.hasItems()}>
-            <div className={`product-downloads ${(props.className as string) || ''}`}>
+        <div className={`product-downloads ${(props.className as string) || ''}`}>
+            <Show when={state.hasItems()}>
                 <h3 className="text-base font-semibold text-foreground mb-3">
                     {state.getLabel('title', 'Downloads')}
                 </h3>
+            </Show>
+            <Show when={state.hasItems()}>
                 <ul className="space-y-2">
                     <For each={state.getDownloadItems()}>
                         {(doc: MediaDocument, index: number) => (
@@ -133,7 +135,12 @@ export default function ProductDownloads(props: ProductDownloadsProps) {
                         )}
                     </For>
                 </ul>
-            </div>
-        </Show>
+            </Show>
+            <Show when={!state.hasItems()}>
+                <p className="text-sm text-muted-foreground">
+                    {state.getLabel('empty', 'No downloads')}
+                </p>
+            </Show>
+        </div>
     );
 }

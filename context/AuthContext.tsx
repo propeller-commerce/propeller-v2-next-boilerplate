@@ -273,8 +273,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Listen for external auth events (e.g. from other tabs)
   useEffect(() => {
     const handleUserLoggedIn = () => {
-      // Logic to reload user from storage if needed
-      // For now, we mainly use this to sync state across tabs if we implemented storage listeners
+      const storedToken = localStorage.getItem('accessToken');
+      const storedUser = localStorage.getItem('user');
+      if (storedToken && storedUser) {
+        try {
+          const user = sanitizeUser(JSON.parse(storedUser));
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: { user, accessToken: storedToken },
+          });
+        } catch (e) {
+          console.error('Failed to parse stored user on userLoggedIn event:', e);
+        }
+      }
     };
 
     const handleUserLoggedOut = () => {

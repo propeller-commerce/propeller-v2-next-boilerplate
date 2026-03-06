@@ -2,9 +2,10 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
+  import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
 import  AddToCart from './AddToCart';
 import  ItemStock from './ItemStock';
+
 
 
   export interface ProductCardProps {
@@ -223,6 +224,8 @@ computedTextLabels: () => {
   value: string;
 }[];
 }
+
+
 
 
   function ProductCard(props:ProductCardProps) {

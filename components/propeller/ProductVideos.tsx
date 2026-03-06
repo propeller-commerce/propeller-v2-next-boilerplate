@@ -1,4 +1,5 @@
 import * as React from 'react';
+  import  { PaginatedMediaVideoResponse, MediaVideo, LocalizedVideo, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -35,7 +36,6 @@ getEmbedUrl: (uri: string) => string;
 getLabel: (key: string, fallback: string) => string;
 }
 
-  import  { PaginatedMediaVideoResponse, MediaVideo, LocalizedVideo, LocalizedString } from 'propeller-sdk-v2';
 
 
 

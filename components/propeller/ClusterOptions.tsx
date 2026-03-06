@@ -2,6 +2,7 @@
  import * as React from 'react';
 
  import { useState } from 'react'
+   import  { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -99,7 +100,6 @@ interface ClusterOptionsState {
  handleOptionChange: (optionIdStr: string, productIdStr: string) => void;
 }
 
-   import  { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
 
 
 

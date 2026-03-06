@@ -1,4 +1,6 @@
 'use client';
+import * as React from 'react';
+
 import { useState, useEffect } from 'react'
   import  { Contact, Customer } from 'propeller-sdk-v2';
 
@@ -115,12 +117,13 @@ getLabel: (key: string, fallback: string) => string;
 getMenuTitle: () => string;
 getMenuLinks: () => AccountMenuLink[];
 handleIconClick: () => void;
-handleLoginSubmit: (e: { preventDefault: () => void }) => void;
+handleLoginSubmit: (e: Event) => void;
 handleMenuItemClick: (href: string) => void;
 handleLogoutClick: () => void;
 handleForgotPasswordClick: () => void;
 handleRegisterClick: () => void;
 closeMenu: () => void;
+_clickOutsideListener: any;
 }
 
 
@@ -196,7 +199,7 @@ if (props.onAccountIconClick) props.onAccountIconClick();
 }
 
 
-function handleLoginSubmit(e: { preventDefault: () => void }): ReturnType<AccountIconAndMenuState["handleLoginSubmit"]>{
+function handleLoginSubmit(e: Event): ReturnType<AccountIconAndMenuState["handleLoginSubmit"]>{
 e.preventDefault();
 if (props.onLoginSubmit) {
 props.onLoginSubmit(email, password);
@@ -233,6 +236,7 @@ setMenuOpen(false);
 }
 
 
+const [_clickOutsideListener, set_clickOutsideListener] = useState<AccountIconAndMenuState["_clickOutsideListener"]>(() => (null))
 
 
 
@@ -242,16 +246,13 @@ setMenuOpen(false);
 
 useEffect(() => {
       set_isMounted(true);
-const listener = (e: MouseEvent) => {
+set_clickOutsideListener((e: MouseEvent) => {
 const target = e.target as HTMLElement;
 if (target && !target.closest('[data-account-menu]')) {
 setMenuOpen(false);
 }
-};
-document.addEventListener('mousedown', listener);
-return () => {
-document.removeEventListener('mousedown', listener);
-};
+});
+document.addEventListener('mousedown', _clickOutsideListener)
     }, [])
 useEffect(() => {
       // Close menu when user logs in (user prop changes from null to truthy)
@@ -267,7 +268,7 @@ setMenuOpen(false);
 return (
 
 
-  <div className="relative"  data-account-menu><button  type="button"  onClick={() => handleIconClick() }  aria-label={getLabel('accountLabel', 'Account')}  className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"  /></svg>{_isMounted ? (
+  <div className="relative"  data-account-menu><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('accountLabel', 'Account')}  className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"  /></svg>{_isMounted ? (
   <>{props.user ? (
   <span className="hidden md:block font-normal">
                         Hi, {getUserName()}</span>
@@ -280,9 +281,9 @@ return (
   <>{!!props.user ? (
   <><div className="pb-3 mb-3 border-b border-gray-200"><p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">{getLabel('signedInAs', 'Signed in as')}</p><p className="font-medium text-gray-900 truncate">{getUserName()}</p></div>
 <nav><ul className="space-y-0.5">{getMenuLinks()?.map((link) => (
-  <li  key={link.href}><button  type="button" className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"  onClick={() => handleMenuItemClick(link.href) }>{link.label}</button></li>
+  <li  key={link.href}><button  type="button" className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"  onClick={(event) => handleMenuItemClick(link.href) }>{link.label}</button></li>
 ))}</ul></nav>
-<div className="mt-3 pt-3 border-t border-gray-200"><button  type="button" className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"  onClick={() => handleLogoutClick() }>{getLabel('logoutLabel', 'Log Out')}</button></div></>
+<div className="mt-3 pt-3 border-t border-gray-200"><button  type="button" className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"  onClick={(event) => handleLogoutClick() }>{getLabel('logoutLabel', 'Log Out')}</button></div></>
 ) : null}
 {!props.user ? (
   <>{props.accountHeaderLoginForm !== false ? (
@@ -292,10 +293,10 @@ setEmail((e.target as HTMLInputElement).value);
 setPassword((e.target as HTMLInputElement).value);
 } }  required  placeholder={getLabel('passwordPlaceholder', '••••••••')}  /></div></div><button  type="submit" className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"  disabled={!!props.loginLoading}>{!!props.loginLoading ? (
   <svg  fill="none"  viewBox="0 0 24 24" className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"><circle  cx="12"  cy="12"  r="10"  stroke="currentColor"  strokeWidth="4" className="opacity-25"  /><path  fill="currentColor"  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"  /></svg>
-) : null}{getLabel('loginButton', 'Log In')}</button><div className="flex flex-col gap-2 text-sm pt-3 text-center"><button  type="button" className="text-violet-600 hover:underline text-xs"  onClick={() => handleForgotPasswordClick() }>{getLabel('forgotPassword', 'Forgot Password?')}</button><div className="text-xs text-gray-500">{getLabel('noAccount', "Don't have an account?")}<button  type="button" className="text-violet-600 hover:underline font-medium"  onClick={() => handleRegisterClick() }>{getLabel('registerLink', 'Register')}</button></div></div></form>
+) : null}{getLabel('loginButton', 'Log In')}</button><div className="flex flex-col gap-2 text-sm pt-3 text-center"><button  type="button" className="text-violet-600 hover:underline text-xs"  onClick={(event) => handleForgotPasswordClick() }>{getLabel('forgotPassword', 'Forgot Password?')}</button><div className="text-xs text-gray-500">{getLabel('noAccount', "Don't have an account?")}<button  type="button" className="text-violet-600 hover:underline font-medium"  onClick={(event) => handleRegisterClick() }>{getLabel('registerLink', 'Register')}</button></div></div></form>
 ) : null}
 {props.accountHeaderLoginForm === false ? (
-  <div className="text-center py-4"><h4 className="text-lg font-semibold mb-2">{getMenuTitle()}</h4><p className="text-sm text-gray-500 mb-4">{getLabel('loginSubtitle', 'Login to access your account')}</p><button  type="button" className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"  onClick={() => {
+  <div className="text-center py-4"><h4 className="text-lg font-semibold mb-2">{getMenuTitle()}</h4><p className="text-sm text-gray-500 mb-4">{getLabel('loginSubtitle', 'Login to access your account')}</p><button  type="button" className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"  onClick={(event) => {
 closeMenu();
 if (props.onAccountIconClick) props.onAccountIconClick();
 } }>{getLabel('loginButton', 'Log In')}</button></div>

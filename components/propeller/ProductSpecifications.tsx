@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import  { GraphQLClient, ProductService, AttributeResult, LocalizedString, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -56,7 +57,6 @@ getAttributeValue: (attr: AttributeResult) => string;
 hasPublicAttributes: () => boolean;
 }
 
-  import  { GraphQLClient, ProductService, AttributeResult, LocalizedString, Enums } from 'propeller-sdk-v2';
 
 
 

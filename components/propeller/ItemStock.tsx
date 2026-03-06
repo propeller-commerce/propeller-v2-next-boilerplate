@@ -1,4 +1,9 @@
 import * as React from 'react';
+  import  { ProductInventory } from 'propeller-sdk-v2';
+
+
+
+
 
   export interface ItemStockProps {
 /**
@@ -29,7 +34,6 @@ labels?: Record<string, string>;
 className?: string;
 }
 
-  import  { ProductInventory } from 'propeller-sdk-v2';
 
 
 

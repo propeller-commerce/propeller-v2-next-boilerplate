@@ -2,6 +2,7 @@
  import * as React from 'react';
 
  import { useState, useEffect } from 'react'
+   import  { Product, AttributeResult, ClusterConfig, ClusterConfigSetting, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -136,7 +137,6 @@ interface ClusterConfiguratorState {
  handleAttributeSelect: (settingName: string, value: string) => void;
 }
 
-   import  { Product, AttributeResult, ClusterConfig, ClusterConfigSetting, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -337,11 +337,11 @@ for (let i = changedIndex + 1; i < sortedSettings.length; i++) {
  delete newSelections[sortedSettings[i].name];
 }
 
-// Auto-select subsequent settings that have exactly one available value
+// Always pre-select the first available value for all subsequent settings
 for (let i = changedIndex + 1; i < sortedSettings.length; i++) {
  const nextSetting = sortedSettings[i];
  const available = getAvailableValuesForIndexWithSelections(nextSetting.name, i, newSelections);
- if (available.length === 1) {
+ if (available.length > 0) {
    newSelections[nextSetting.name] = available[0];
  } else {
    break;

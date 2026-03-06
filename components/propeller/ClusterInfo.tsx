@@ -2,6 +2,8 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import  { GraphQLClient, Cluster, ClusterService, ClusterConfigSetting, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
+import  { ClusterQueryVariables } from 'propeller-sdk-v2/dist/service/ClusterService';
 
 
 
@@ -98,8 +100,6 @@ getClusterName: () => string;
 getClusterSku: () => string;
 }
 
-  import  { GraphQLClient, Cluster, ClusterService, ClusterConfigSetting, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
-import  { ClusterQueryVariables } from 'propeller-sdk-v2/dist/service/ClusterService';
 
 
 

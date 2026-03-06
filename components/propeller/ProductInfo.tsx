@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import  { GraphQLClient, Product, ProductService, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
 
 
 
@@ -98,7 +99,6 @@ getProductName: () => string;
 getProductSku: () => string;
 }
 
-  import  { GraphQLClient, Product, ProductService, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
 
 
 

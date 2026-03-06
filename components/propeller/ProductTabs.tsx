@@ -2,6 +2,11 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import  { Product, GraphQLClient, PaginatedMediaDocumentResponse, PaginatedMediaVideoResponse, AttributeResult } from 'propeller-sdk-v2';
+import  ProductDescription from './ProductDescription';
+import  ProductSpecifications from './ProductSpecifications';
+import  ProductDownloads from './ProductDownloads';
+import  ProductVideos from './ProductVideos';
 
 
 
@@ -113,11 +118,6 @@ selectTab: (tab: string) => void;
 getLabel: (key: string, fallback: string) => string;
 }
 
-  import  { Product, GraphQLClient, PaginatedMediaDocumentResponse, PaginatedMediaVideoResponse, AttributeResult } from 'propeller-sdk-v2';
-import  ProductDescription from './ProductDescription';
-import  ProductSpecifications from './ProductSpecifications';
-import  ProductDownloads from './ProductDownloads';
-import  ProductVideos from './ProductVideos';
 
 
 

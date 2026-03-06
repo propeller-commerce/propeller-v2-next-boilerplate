@@ -1,4 +1,5 @@
 import * as React from 'react';
+  import  { Category, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -64,7 +65,6 @@ showSeparatorBefore: (index: number) => boolean;
 getLabel: (key: string, fallback: string) => string;
 }
 
-  import  { Category, LocalizedString } from 'propeller-sdk-v2';
 
 
 

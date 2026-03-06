@@ -1,4 +1,5 @@
 import * as React from 'react';
+  import  { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -64,7 +65,6 @@ getLabel: (key: string, fallback: string) => string;
 formatPrice: (value: number | null | undefined) => string;
 }
 
-  import  { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 
 

@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -46,7 +47,6 @@ getTruncated: () => string;
 toggle: () => void;
 }
 
-  import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 
 

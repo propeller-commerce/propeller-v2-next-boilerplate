@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react'
+  import  { Contact, Company } from 'propeller-sdk-v2';
 
 
 
@@ -27,7 +28,6 @@ toggleDropdown: () => void;
 selectCompany: (company: Company) => void;
 }
 
-  import  { Contact, Company } from 'propeller-sdk-v2';
 
 
 

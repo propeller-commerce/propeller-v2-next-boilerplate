@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -32,7 +33,6 @@ html: string;
 getDescription(): string;
 }
 
-  import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
 
 

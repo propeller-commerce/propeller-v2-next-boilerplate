@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+  import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -27,7 +28,6 @@ html: string;
 getShortDescription: () => string;
 }
 
-  import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 
 

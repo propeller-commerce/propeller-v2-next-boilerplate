@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-import  { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
+  import  { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
 
 
 
@@ -52,6 +52,8 @@ getBulkPrices: () => ProductPrice[];
 getPrice: (tier: ProductPrice) => string;
 getLabel: (key: string, fallback: string) => string;
 }
+
+
 
 
   function ProductBulkPrices(props:ProductBulkPricesProps) {

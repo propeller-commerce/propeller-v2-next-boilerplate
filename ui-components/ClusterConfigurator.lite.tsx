@@ -382,7 +382,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                 delete newSelections[sortedSettings[i].name];
             }
 
-            // Auto-select subsequent settings that have exactly one available value
+            // Always pre-select the first available value for all subsequent settings
             for (let i = changedIndex + 1; i < sortedSettings.length; i++) {
                 const nextSetting = sortedSettings[i];
                 const available = state.getAvailableValuesForIndexWithSelections(
@@ -390,7 +390,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                     i,
                     newSelections,
                 );
-                if (available.length === 1) {
+                if (available.length > 0) {
                     newSelections[nextSetting.name] = available[0];
                 } else {
                     break;

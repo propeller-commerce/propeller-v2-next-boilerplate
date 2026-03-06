@@ -1,4 +1,5 @@
 import * as React from 'react';
+  import  { PaginatedMediaDocumentResponse, MediaDocument, LocalizedDocument, LocalizedString } from 'propeller-sdk-v2';
 
 
 
@@ -34,7 +35,6 @@ getDocumentMime: (doc: MediaDocument) => string;
 getLabel: (key: string, fallback: string) => string;
 }
 
-  import  { PaginatedMediaDocumentResponse, MediaDocument, LocalizedDocument, LocalizedString } from 'propeller-sdk-v2';
 
 
 

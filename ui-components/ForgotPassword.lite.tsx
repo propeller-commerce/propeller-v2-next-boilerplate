@@ -72,7 +72,7 @@ export default function ForgotPassword(props: ForgotPasswordProps) {
             return props.labels?.emailPlaceholder || 'name@example.com';
         },
 
-        async handleSubmit(e: Event) {
+        async handleSubmit(e: any) {
             e.preventDefault();
             if (state._loading) return;
 

@@ -117,13 +117,15 @@ getLabel: (key: string, fallback: string) => string;
 getMenuTitle: () => string;
 getMenuLinks: () => AccountMenuLink[];
 handleIconClick: () => void;
-handleLoginSubmit: (e: Event) => void;
+handleLoginSubmit: (e: any) => void;
 handleMenuItemClick: (href: string) => void;
 handleLogoutClick: () => void;
 handleForgotPasswordClick: () => void;
 handleRegisterClick: () => void;
 closeMenu: () => void;
-_clickOutsideListener: any;
+_clickOutsideListener: {
+  handler: any;
+};
 }
 
 
@@ -199,7 +201,7 @@ if (props.onAccountIconClick) props.onAccountIconClick();
 }
 
 
-function handleLoginSubmit(e: Event): ReturnType<AccountIconAndMenuState["handleLoginSubmit"]>{
+function handleLoginSubmit(e: any): ReturnType<AccountIconAndMenuState["handleLoginSubmit"]>{
 e.preventDefault();
 if (props.onLoginSubmit) {
 props.onLoginSubmit(email, password);
@@ -236,7 +238,9 @@ setMenuOpen(false);
 }
 
 
-const [_clickOutsideListener, set_clickOutsideListener] = useState<AccountIconAndMenuState["_clickOutsideListener"]>(() => (null))
+const [_clickOutsideListener, set_clickOutsideListener] = useState<AccountIconAndMenuState["_clickOutsideListener"]>(() => ({
+handler: null as any
+}))
 
 
 
@@ -246,13 +250,16 @@ const [_clickOutsideListener, set_clickOutsideListener] = useState<AccountIconAn
 
 useEffect(() => {
       set_isMounted(true);
-set_clickOutsideListener((e: MouseEvent) => {
+const listener = (e: MouseEvent) => {
 const target = e.target as HTMLElement;
 if (target && !target.closest('[data-account-menu]')) {
 setMenuOpen(false);
 }
+};
+set_clickOutsideListener({
+handler: listener
 });
-document.addEventListener('mousedown', _clickOutsideListener)
+document.addEventListener('mousedown', listener)
     }, [])
 useEffect(() => {
       // Close menu when user logs in (user prop changes from null to truthy)

@@ -140,7 +140,7 @@ export default function Header() {
                   )}
                   {showVatToggle && (
                     <PriceToggle
-                      inclExclVatSwitched={() => {}}
+                      inclExclVatSwitched={() => { }}
                     />
                   )}
 

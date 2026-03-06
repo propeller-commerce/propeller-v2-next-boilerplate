@@ -123,13 +123,13 @@ interface AccountIconAndMenuState {
     getMenuTitle: () => string;
     getMenuLinks: () => AccountMenuLink[];
     handleIconClick: () => void;
-    handleLoginSubmit: (e: Event) => void;
+    handleLoginSubmit: (e: any) => void;
     handleMenuItemClick: (href: string) => void;
     handleLogoutClick: () => void;
     handleForgotPasswordClick: () => void;
     handleRegisterClick: () => void;
     closeMenu: () => void;
-    _clickOutsideListener: any;
+    _clickOutsideListener: { handler: any };
 }
 
 export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
@@ -179,7 +179,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             }
         },
 
-        handleLoginSubmit(e: Event) {
+        handleLoginSubmit(e: any) {
             e.preventDefault();
             if (props.onLoginSubmit) {
                 props.onLoginSubmit(state.email, state.password);
@@ -210,19 +210,20 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             state.menuOpen = false;
         },
 
-        _clickOutsideListener: null as any,
+        _clickOutsideListener: { handler: null as any },
     });
 
     onMount(() => {
         state._isMounted = true;
 
-        state._clickOutsideListener = (e: MouseEvent) => {
+        const listener = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             if (target && !target.closest('[data-account-menu]')) {
                 state.menuOpen = false;
             }
         };
-        document.addEventListener('mousedown', state._clickOutsideListener);
+        state._clickOutsideListener = { handler: listener };
+        document.addEventListener('mousedown', listener);
     });
 
     onUpdate(() => {

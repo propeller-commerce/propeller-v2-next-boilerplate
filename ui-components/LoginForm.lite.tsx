@@ -177,7 +177,7 @@ export default function LoginForm(props: LoginFormProps) {
             return state._error;
         },
 
-        async handleSubmit(e: Event) {
+        async handleSubmit(e: any) {
             e.preventDefault();
 
             if (props.beforeLogin) {

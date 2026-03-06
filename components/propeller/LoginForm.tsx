@@ -1,4 +1,6 @@
 'use client';
+import * as React from 'react';
+
 import { useState } from 'react'
   import  { Contact, Customer, GraphQLClient, LoginService, UserService, LoginInput } from 'propeller-sdk-v2';
 
@@ -108,7 +110,7 @@ const [_loading, set_loading] = useState(() => (false))
 const [_error, set_error] = useState(() => (''))
 
 
-function deepPlain(value: unknown): unknown {
+function deepPlain(value: unknown) {
 if (value === null || value === undefined) return value;
 if (Array.isArray(value)) return (value as unknown[]).map(v => deepPlain(v));
 if (typeof value === 'object') {
@@ -206,7 +208,7 @@ return _error;
 }
 
 
-async function handleSubmit(e: { preventDefault: () => void }) {
+async function handleSubmit(e: any) {
 e.preventDefault();
 if (props.beforeLogin) {
 props.beforeLogin();
@@ -315,7 +317,7 @@ return (
 ) : null}<form className="space-y-4"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-2"><label  htmlFor="login-email" className="text-sm font-medium leading-none">{emailLabel()}</label><input  type="email"  id="login-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_email}  onChange={(e) => {
 set_email((e.target as HTMLInputElement).value);
 } }  placeholder={emailPlaceholder()}  required  disabled={isLoading()}  /></div><div className="space-y-2"><div className="flex items-center justify-between"><label  htmlFor="login-password" className="text-sm font-medium leading-none">{passwordLabel()}</label>{showForgotPassword() ? (
-  <button  type="button" className="text-sm text-blue-600 hover:underline"  onClick={() => {
+  <button  type="button" className="text-sm text-blue-600 hover:underline"  onClick={(event) => {
 if (props.onForgotPasswordClick) props.onForgotPasswordClick();
 } }>{forgotPasswordText()}</button>
 ) : null}</div><input  type="password"  id="login-password"  name="password" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_password}  onChange={(e) => {
@@ -328,11 +330,11 @@ set_password((e.target as HTMLInputElement).value);
   <>Logging in...</>
 ) : <>{resolvedButtonText()}</>}</button></form>{showRegister() || showGuestCheckout() ? (
   <div className="mt-6 border-t pt-6 space-y-3">{showRegister() ? (
-  <div className="text-center"><p className="text-sm text-gray-500 mb-2">{registerText()}</p><button  type="button" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"  onClick={() => {
+  <div className="text-center"><p className="text-sm text-gray-500 mb-2">{registerText()}</p><button  type="button" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"  onClick={(event) => {
 if (props.onRegisterClick) props.onRegisterClick();
 } }>{registerLinkText()}</button></div>
 ) : null}{showGuestCheckout() ? (
-  <div className="text-center"><button  type="button" className="text-sm text-blue-600 hover:underline"  onClick={() => {
+  <div className="text-center"><button  type="button" className="text-sm text-blue-600 hover:underline"  onClick={(event) => {
 if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
 } }>{guestCheckoutLinkText()}</button></div>
 ) : null}</div>

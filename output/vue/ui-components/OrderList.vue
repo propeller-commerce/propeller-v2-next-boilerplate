@@ -364,6 +364,10 @@
                           </button>
                         </template>
 
+                        <template v-if="col === 'validUntil'">
+                          {{ formatDate(order.validUntil || "") }}
+                        </template>
+
                         <template
                           v-if="
                             ![
@@ -372,6 +376,7 @@
                               'status',
                               'total',
                               'action',
+                              'validUntil',
                             ].includes(col)
                           "
                         >
@@ -511,7 +516,7 @@ export interface OrderListProps {
   companyId?: number;
 
   /** Filter orders by these statuses */
-  orderStatus?: OrderStatus[];
+  orderStatus?: string[];
 
   /** Override base styles */
   className?: string;

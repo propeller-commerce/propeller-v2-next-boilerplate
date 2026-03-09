@@ -60,10 +60,11 @@ export default function QuotesPage() {
     id: '#',
     date: 'Datum',
     status: 'Status',
+    validUntil: 'Geldig tot',
     total: 'Totaal',
   }
 
-  const columns = ['id', 'date', 'status', 'total'];
+  const columns = ['id', 'date', 'status', 'validUntil', 'total'];
 
   return (
     <div className="space-y-6">

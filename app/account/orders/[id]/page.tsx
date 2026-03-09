@@ -9,9 +9,9 @@ import { OrderService, Enums, Order, Address, OrderItem, OrderTotalTaxPercentage
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { OrderQueryVariables } from 'propeller-sdk-v2/dist/service/OrderService';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import OrderItemCard from '@/components/propeller/OrderItemCard';
 
 // Helper for AddressType since we might not have the enum exported directly from sdk-v2 in the same way
 const AddressType = {
@@ -274,13 +274,20 @@ export default function OrderDetailPage() {
                     <div className="pt-10">
                         <h2 className="text-2xl font-bold mb-6">Order Overview</h2>
 
-                        {/* Regular Products */}
+                        {/* Regular Products (grouped parent/child) */}
                         {(() => {
-                            const regularProducts = order.items?.filter((item: OrderItem) =>
+                            const allProducts = order.items?.filter((item: OrderItem) =>
                                 item.class === "product" && item.isBonus === "N"
-                            );
+                            ) || [];
+                            const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
+                            const childMap = new Map<number, OrderItem[]>();
+                            allProducts.filter((item: OrderItem) => item.parentOrderItemId).forEach((item: OrderItem) => {
+                                const children = childMap.get(item.parentOrderItemId!) || [];
+                                children.push(item);
+                                childMap.set(item.parentOrderItemId!, children);
+                            });
 
-                            if (regularProducts?.length > 0) {
+                            if (parentItems.length > 0) {
                                 return (
                                     <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
                                         <table className="w-full">
@@ -291,55 +298,13 @@ export default function OrderDetailPage() {
                                                     <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
-                                                {regularProducts.map((item: OrderItem) => {
-                                                    const productId = item.product?.productId;
-                                                    const slug = item.product?.slugs?.[0]?.value;
-                                                    const productName = item.product?.names?.[0]?.value || 'Unknown Product';
-                                                    const productSku = item.product?.sku;
-                                                    const productImage = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-
-                                                    return (
-                                                        <tr key={item.id} className="hover:bg-gray-50 transition">
-                                                            <td className="px-6 py-4">
-                                                                <div className="flex items-center gap-4">
-                                                                    {productImage ? (
-                                                                        <div className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                                                                            <Image
-                                                                                src={productImage}
-                                                                                alt={productName}
-                                                                                fill
-                                                                                className="object-cover"
-                                                                            />
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                                                                            No Img
-                                                                        </div>
-                                                                    )}
-                                                                    <div>
-                                                                        {productId && slug ? (
-                                                                            <Link
-                                                                                href={`/product/${productId}/${slug}`}
-                                                                                className="font-medium text-blue-600 hover:underline"
-                                                                            >
-                                                                                {productName}
-                                                                            </Link>
-                                                                        ) : (
-                                                                            <span className="font-medium">{productName}</span>
-                                                                        )}
-                                                                        {productSku && (
-                                                                            <p className="text-sm text-gray-500 mt-1">SKU: {productSku}</p>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-center">{item.quantity || 0}</td>
-                                                            <td className="px-6 py-4 text-right whitespace-nowrap">€{Number(item.price || 0).toFixed(2)}</td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
+                                            {parentItems.map((item: OrderItem) => (
+                                                <OrderItemCard
+                                                    key={item.id}
+                                                    orderItem={item}
+                                                    childItems={childMap.get(item.id) || []}
+                                                />
+                                            ))}
                                         </table>
                                     </div>
                                 );
@@ -366,40 +331,13 @@ export default function OrderDetailPage() {
                                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {bonusItems.map((item: OrderItem) => {
-                                                        const productName = item.product?.names?.[0]?.value || 'Unknown Product';
-                                                        const productSku = item.product?.sku;
-                                                        const productImage = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-
-                                                        return (
-                                                            <tr key={item.id} className="bg-violet-50/30">
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-4">
-                                                                        {productImage && (
-                                                                            <div className="relative w-12 h-12 flex-shrink-0 border rounded overflow-hidden">
-                                                                                <Image
-                                                                                    src={productImage}
-                                                                                    alt={productName}
-                                                                                    fill
-                                                                                    className="object-cover"
-                                                                                />
-                                                                            </div>
-                                                                        )}
-                                                                        <div>
-                                                                            <span className="font-medium text-gray-900">{productName}</span>
-                                                                            {productSku && (
-                                                                                <p className="text-xs text-gray-500 mt-0.5">SKU: {productSku}</p>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-center">{item.quantity || 0}</td>
-                                                                <td className="px-6 py-4 text-right">€{Number(item.price || 0).toFixed(2)}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
+                                                {bonusItems.map((item: OrderItem) => (
+                                                    <OrderItemCard
+                                                        key={item.id}
+                                                        orderItem={item}
+                                                        titleLinkable={false}
+                                                    />
+                                                ))}
                                             </table>
                                         </div>
                                     </div>
@@ -418,15 +356,15 @@ export default function OrderDetailPage() {
                                         <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
                                         <div className="bg-white rounded-lg shadow overflow-hidden">
                                             <table className="w-full">
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {surcharges.map((item: OrderItem) => (
-                                                        <tr key={item.id} className="bg-gray-50">
-                                                            <td className="px-6 py-3 font-medium text-gray-700 w-2/3">{item.name || 'Surcharge'}</td>
-                                                            <td className="px-6 py-3 text-center text-gray-600">{item.quantity}</td>
-                                                            <td className="px-6 py-3 text-right font-medium text-gray-700">€{Number(item.price || 0).toFixed(2)}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
+                                                {surcharges.map((item: OrderItem) => (
+                                                    <OrderItemCard
+                                                        key={item.id}
+                                                        orderItem={item}
+                                                        titleLinkable={false}
+                                                        showImage={false}
+                                                        showSku={false}
+                                                    />
+                                                ))}
                                             </table>
                                         </div>
                                     </div>

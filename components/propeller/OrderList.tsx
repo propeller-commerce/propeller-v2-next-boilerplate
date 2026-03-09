@@ -410,7 +410,9 @@ fetchOrders(1);
 event.preventDefault();
 props.onOrderClick(order.id);
 } }>{getLabel('view', 'View')}</button>
-) : null}{!['id', 'date', 'status', 'total', 'action'].includes(col) ? (
+) : null}{col === 'validUntil' ? (
+  <>{formatDate((order as any).validUntil || '')}</>
+) : null}{!['id', 'date', 'status', 'total', 'action', 'validUntil'].includes(col) ? (
   <>{(order as any)[col]}</>
 ) : null}</td>
 ))}</tr>

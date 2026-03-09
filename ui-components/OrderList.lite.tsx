@@ -532,7 +532,10 @@ export default function OrderList(props: OrderListProps) {
                                                                     {state.getLabel('view', 'View')}
                                                                 </button>
                                                             </Show>
-                                                            <Show when={!['id', 'date', 'status', 'total', 'action'].includes(col)}>
+                                                            <Show when={col === 'validUntil'}>
+                                                                {state.formatDate((order as any).validUntil || '')}
+                                                            </Show>
+                                                            <Show when={!['id', 'date', 'status', 'total', 'action', 'validUntil'].includes(col)}>
                                                                 {(order as any)[col]}
                                                             </Show>
                                                         </td>

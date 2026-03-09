@@ -124,6 +124,35 @@ The search UI renders different input types based on the field:
 - `sortInput` — Sort field + order dropdowns
 - `type` — Order type dropdown
 
+## Built-in Column Renderers
+
+The following column names have special rendering logic:
+
+- `id` — Bold gray text
+- `date` — Formatted via `formatDate()` (uses `order.date` or `order.createdAt`)
+- `status` — Colored badge via `getStatusColor()`
+- `total` — Formatted via `formatPrice()` (uses `order.total.net`), right-aligned
+- `validUntil` — Formatted via `formatDate()` (uses `order.validUntil`), useful for quote expiry dates
+- `action` — "View" button (hidden when `rowsClickable` is true)
+
+Any other column name falls through to a catch-all that renders `order[col]` as plain text.
+
+### Quotes page with validUntil column
+
+```tsx
+<OrderList
+  graphqlClient={graphqlClient}
+  user={state.user}
+  orderStatus={["QUOTATION"]}
+  columns={['id', 'date', 'status', 'validUntil', 'total']}
+  columnConfig={{ id: '#', date: 'Datum', status: 'Status', validUntil: 'Geldig tot', total: 'Totaal' }}
+  rowsClickable={true}
+  enableSearch={true}
+  searchFields={['term', 'createdAt', 'price']}
+  onOrderClick={(orderId) => router.push(`/account/quotes/${orderId}`)}
+/>
+```
+
 ## Notes
 
 - Orders are fetched on mount and re-fetched when `user`, `currentPage`, or `companyId` changes

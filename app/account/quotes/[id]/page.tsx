@@ -5,13 +5,14 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import AddressCard from '@/components/propeller/AddressCard';
 import { graphqlClient } from '@/lib/api';
-import { Address, Base64File, Enums, Order, OrderItem, OrderService, OrderTotalTaxPercentage } from 'propeller-sdk-v2';
+import { Address, Base64File, Order, OrderItem, OrderService } from 'propeller-sdk-v2';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { OrderQueryVariables } from 'propeller-sdk-v2/dist/service/OrderService';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
+import OrderTotals from '@/components/propeller/OrderTotals';
 
 // Helper for AddressType since we might not have the enum exported directly from sdk-v2 in the same way
 const AddressType = {
@@ -381,63 +382,7 @@ export default function QuoteDetailPage() {
 
                     {/* Quote Bottom Totals */}
                     <div className="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t md:border-none">
-                        <div className="w-full md:w-80 bg-white p-6 rounded-lg shadow space-y-3">
-                            <div className="flex justify-between text-gray-600">
-                                <span>Subtotal:</span>
-                                <span>€{(quote.total?.gross || 0).toFixed(2)}</span>
-                            </div>
-
-                            {quote.total?.discountType && quote.total.discountType !== Enums.OrderDiscountType.N && quote.total.discountValue > 0 && (
-                                <>
-                                    <div className="flex justify-between text-violet-600">
-                                        <span>Discount:</span>
-                                        <span>
-                                            {quote.total.discountType === Enums.OrderDiscountType.A ? `-€${quote.total.discountValue.toFixed(2)}` :
-                                                quote.total.discountType === Enums.OrderDiscountType.P ? `- ${quote.total.discountValue}%` :
-                                                    `-€${quote.total.discountValue.toFixed(2)}`}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-gray-600 border-t pt-2 border-dashed">
-                                        <span>Subtotal with discount:</span>
-                                        <span>€{((quote.total.gross || 0) - (quote.total.discountValue || 0)).toFixed(2)}</span>
-                                    </div>
-                                </>
-                            )}
-
-                            {quote.paymentData?.gross > 0 && (
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Transaction costs:</span>
-                                    <span>€{Number(quote.paymentData.gross).toFixed(2)}</span>
-                                </div>
-                            )}
-
-                            {quote.postageData?.gross > 0 && (
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Shipping costs:</span>
-                                    <span>€{Number(quote.postageData.gross).toFixed(2)}</span>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between text-gray-600 pt-2 border-t">
-                                <span>Total excl. VAT:</span>
-                                <span>€{(quote.total?.gross || 0).toFixed(2)}</span>
-                            </div>
-
-                            {quote.total?.taxPercentages && quote.total.taxPercentages
-                                .filter((tax: OrderTotalTaxPercentage) => tax.percentage > 0 && tax.total > 0)
-                                .map((tax: OrderTotalTaxPercentage, i: number) => (
-                                    <div key={i} className="flex justify-between text-gray-600 text-sm">
-                                        <span>{tax.percentage}% VAT:</span>
-                                        <span>€{Number(tax.total).toFixed(2)}</span>
-                                    </div>
-                                ))
-                            }
-
-                            <div className="flex justify-between text-xl font-bold pt-4 border-t text-gray-900 mt-2">
-                                <span>Total:</span>
-                                <span>€{(quote.total?.net || 0).toFixed(2)}</span>
-                            </div>
-                        </div>
+                        <OrderTotals order={quote} />
                     </div>
                 </div>
             )}

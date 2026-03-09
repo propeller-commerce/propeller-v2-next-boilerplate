@@ -507,6 +507,9 @@ export interface OrderListProps {
   /** Term fields configuration (backend) */
   termFields?: any[]; // Using any[] to avoid strict enum import issues in Mitosis for now, effectively OrderSearchFields[]
 
+  /** Override company ID for order filtering (respects company switcher) */
+  companyId?: number;
+
   /** Filter orders by these statuses */
   orderStatus?: OrderStatus[];
 
@@ -606,7 +609,7 @@ const searchFields = computed(() => {
 });
 
 watch(
-  () => [props.user, currentPage.value],
+  () => [props.user, currentPage.value, props.companyId],
   () => {
     if (props.user) {
       fetchOrders(currentPage.value);
@@ -636,9 +639,10 @@ async function fetchOrders(
       ? (props.user as any).contactId
       : (props.user as any).customerId;
     const companyId =
-      isContactUser && (props.user as any).company
+      props.companyId ||
+      (isContactUser && (props.user as any).company
         ? (props.user as any).company.companyId
-        : undefined;
+        : undefined);
     const searchArgs: OrderSearchArguments = {
       status: statuses,
       userId: [userId],

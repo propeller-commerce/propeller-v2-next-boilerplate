@@ -2,7 +2,6 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { OrderService, OrderSearchArguments, OrderResponse, Order, Contact, Customer, GraphQLClient, Enums, OrderStatus, DateSearchInput, DecimalSearchInput, OrderSortInput } from 'propeller-sdk-v2';
 
 
 
@@ -31,8 +30,11 @@ searchFields?: (keyof OrderSearchArguments)[];
 /** Term fields configuration (backend) */
 termFields?: any[]; // Using any[] to avoid strict enum import issues in Mitosis for now, effectively OrderSearchFields[]
 
+/** Override company ID for order filtering (respects company switcher) */
+companyId?: number;
+
 /** Filter orders by these statuses */
-orderStatus?: OrderStatus[];
+orderStatus?: string[];
 
 /** Override base styles */
 className?: string;
@@ -97,6 +99,7 @@ getLabel: (key: string, fallback: string) => string;
 searchFields: (keyof OrderSearchArguments)[];
 }
 
+  import  { OrderService, OrderSearchArguments, OrderResponse, Order, Contact, Customer, GraphQLClient, Enums, OrderStatus, DateSearchInput, DecimalSearchInput, OrderSortInput } from 'propeller-sdk-v2';
 
 
 
@@ -145,7 +148,7 @@ const statuses = props.orderStatus || ['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER' 
 // Explicit cast to any for user ID access as SDK types might be strict interfaces
 // We handle both Contact (contactId) and Customer (customerId)
 const userId = isContactUser ? (props.user as any).contactId : (props.user as any).customerId;
-const companyId = isContactUser && (props.user as any).company ? (props.user as any).company.companyId : undefined;
+const companyId = props.companyId || (isContactUser && (props.user as any).company ? (props.user as any).company.companyId : undefined);
 const searchArgs: OrderSearchArguments = {
   status: statuses,
   userId: [userId],
@@ -263,7 +266,7 @@ useEffect(() => {
 fetchOrders(currentPage);
 }
     },
-    [props.user, currentPage])
+    [props.user, currentPage, props.companyId])
 
 
 return (

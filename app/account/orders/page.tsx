@@ -2,21 +2,42 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { graphqlClient } from '@/lib/api';
 // import OrderList from '@/components/account/OrderList';
-import OrderList from '@/output/react/ui-components/OrderList';
-import { OrderStatus } from 'propeller-sdk-v2';
+import OrderList from '@/components/propeller/OrderList';
+
 
 export default function OrdersPage() {
   const { state } = useAuth();
   const router = useRouter();
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('selected_company_id');
+      return stored ? parseInt(stored, 10) : undefined;
+    }
+    return undefined;
+  });
 
   useEffect(() => {
     if (!state.isAuthenticated) {
       router.push('/login');
     }
   }, [state.isAuthenticated, router]);
+
+  // Listen for company switch events
+  useEffect(() => {
+    const listener = (event: CustomEvent) => {
+      const company = event.detail;
+      if (company && company.companyId) {
+        setSelectedCompanyId(company.companyId);
+      }
+    };
+    window.addEventListener('companySwitched', listener as EventListener);
+    return () => {
+      window.removeEventListener('companySwitched', listener as EventListener);
+    };
+  }, []);
 
   if (!state.isAuthenticated) return null;
 
@@ -53,6 +74,7 @@ export default function OrdersPage() {
         <OrderList
           graphqlClient={graphqlClient}
           user={state.user}
+          companyId={selectedCompanyId}
           onOrderClick={(orderId) => router.push(`/account/orders/${orderId}`)}
           labels={paginationLabels}
           rowsClickable={true}

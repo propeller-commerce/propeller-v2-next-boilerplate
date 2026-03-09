@@ -9,8 +9,8 @@ import {
 } from 'propeller-sdk-v2';
 
 export interface AddressCardProps {
-    /** GraphQL client for the Propeller SDK */
-    graphqlClient: GraphQLClient;
+    /** GraphQL client for the Propeller SDK (only needed when editing) */
+    graphqlClient?: GraphQLClient;
 
     /** The address to display (Address | CartAddress | WarehouseAddress | ExternalAddress) */
     address: any;

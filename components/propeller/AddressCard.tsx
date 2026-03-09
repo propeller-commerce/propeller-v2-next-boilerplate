@@ -5,8 +5,8 @@ import { GraphQLClient } from 'propeller-sdk-v2';
 import { countries, getCountryName } from '@/data/countries';
 
 export interface AddressCardProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK (only needed when editing) */
+  graphqlClient?: GraphQLClient;
 
   /** The address to display (Address | CartAddress | WarehouseAddress | ExternalAddress) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

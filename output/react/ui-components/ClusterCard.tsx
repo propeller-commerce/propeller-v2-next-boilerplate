@@ -2,8 +2,6 @@
 import * as React from 'react';
 
 import { useState } from 'react'
-  import  { Cluster, AttributeResult, ProductPrice } from 'propeller-sdk-v2';
-import  ProductPriceDisplay from './ProductPrice';
 
 
 
@@ -117,6 +115,8 @@ computedTextLabels: () => {
 }[];
 }
 
+  import  { Cluster, AttributeResult, ProductPrice } from 'propeller-sdk-v2';
+import  ProductPriceDisplay from './ProductPrice';
 
 
 

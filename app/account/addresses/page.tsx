@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { graphqlClient } from '@/lib/api';
 import AddressCard from '@/components/propeller/AddressCard';
-import { Address, AddressService, UserService, Contact, Customer, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
+import { Address, AddressService, UserService, Contact, Customer, Company, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
 import { Enums } from 'propeller-sdk-v2';
 import { CompanyAddressUpdateInput } from 'propeller-sdk-v2';
 import { CustomerAddressUpdateInput } from 'propeller-sdk-v2';
@@ -31,23 +31,60 @@ export default function AddressesPage() {
   const { state: authState } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<Enums.AddressType>(Enums.AddressType.invoice);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('selected_company_id');
+      return stored ? parseInt(stored, 10) : null;
+    }
+    return null;
+  });
 
   // Use authState.user directly instead of storing in local state
   const user = authState.user;
 
+  // Listen for company switch events
+  useEffect(() => {
+    const listener = (event: CustomEvent) => {
+      const company = event.detail;
+      if (company && company.companyId) {
+        setSelectedCompanyId(company.companyId);
+      }
+    };
+    window.addEventListener('companySwitched', listener as EventListener);
+    return () => {
+      window.removeEventListener('companySwitched', listener as EventListener);
+    };
+  }, []);
+
   // Type guards
-  const isContact = (user: Contact | Customer | null): user is Contact => {
-    return user !== null && 'company' in user;
+  const isContact = (u: Contact | Customer | null): u is Contact => {
+    return u !== null && 'company' in u;
   };
 
-  const isCustomer = (user: Contact | Customer | null): user is Customer => {
-    return user !== null && 'customerId' in user;
+  const isCustomer = (u: Contact | Customer | null): u is Customer => {
+    return u !== null && 'customerId' in u;
+  };
+
+  /** Resolve the active company for a Contact user (respects company switcher) */
+  const getActiveCompany = (): Company | null => {
+    if (!user || !isContact(user)) return null;
+    if (selectedCompanyId !== null) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const companiesRaw = (user as any).companies;
+      const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
+      if (Array.isArray(items)) {
+        const found = items.find((c: Company) => c.companyId === selectedCompanyId);
+        if (found) return found;
+      }
+    }
+    return (user.company as Company | undefined) ?? null;
   };
 
   const getAllAddresses = (): Address[] => {
     if (!user) return [];
     if (isContact(user)) {
-      return user.company?.addresses || [];
+      const company = getActiveCompany();
+      return company?.addresses || [];
     }
     if (isCustomer(user)) {
       return user.addresses || [];
@@ -113,10 +150,10 @@ export default function AddressesPage() {
     try {
       const addressService = new AddressService(graphqlClient);
 
-      if (isContact(user) && user.company) {
+      if (isContact(user) && getActiveCompany()) {
         const updateInput: CompanyAddressUpdateInput = {
           id: Number(address.id),
-          companyId: user.company.companyId,
+          companyId: getActiveCompany()!.companyId,
           company: address.company,
           gender: address.gender,
           firstName: address.firstName,
@@ -169,10 +206,10 @@ export default function AddressesPage() {
     try {
       const addressService = new AddressService(graphqlClient);
 
-      if (isContact(user) && user.company) {
+      if (isContact(user) && getActiveCompany()) {
         await addressService.deleteCompanyAddress({
           id: Number(addressId),
-          companyId: user.company.companyId
+          companyId: getActiveCompany()!.companyId
         });
       } else if (isCustomer(user)) {
         await addressService.deleteCustomerAddress({
@@ -194,10 +231,10 @@ export default function AddressesPage() {
 
     try {
       const addressService = new AddressService(graphqlClient);
-      if (isContact(user) && user.company) {
+      if (isContact(user) && getActiveCompany()) {
         await addressService.updateCompanyAddress({
           id: Number(address.id),
-          companyId: user.company.companyId,
+          companyId: getActiveCompany()!.companyId,
           isDefault: Enums.YesNo.Y
         });
       } else if (isCustomer(user)) {
@@ -240,10 +277,10 @@ export default function AddressesPage() {
         type: addModalType
       };
 
-      if (isContact(user) && user.company) {
+      if (isContact(user) && getActiveCompany()) {
         const input: CompanyAddressCreateInput = {
           ...commonData,
-          companyId: user.company.companyId
+          companyId: getActiveCompany()!.companyId
         };
         await addressService.createCompanyAddress(input);
       } else if (isCustomer(user)) {

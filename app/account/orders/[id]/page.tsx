@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import AddressCard from '@/components/account/AddressCard';
+import AddressCard from '@/components/propeller/AddressCard';
 import { graphqlClient } from '@/lib/api';
 import { OrderService, Enums, Order, Address, OrderItem, OrderTotalTaxPercentage, Base64File } from 'propeller-sdk-v2';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
@@ -251,7 +251,7 @@ export default function OrderDetailPage() {
                             {(() => {
                                 const invoiceAddress = order.addresses?.find((addr: Address) => addr.type === AddressType.invoice);
                                 return invoiceAddress ? (
-                                    <AddressCard address={invoiceAddress} showActions={false} />
+                                    <AddressCard address={invoiceAddress} enableActions={false} />
                                 ) : (
                                     <p className="text-gray-500 italic">No invoice address found</p>
                                 );
@@ -262,7 +262,7 @@ export default function OrderDetailPage() {
                             {(() => {
                                 const deliveryAddress = order.addresses?.find((addr: Address) => addr.type === AddressType.delivery);
                                 return deliveryAddress ? (
-                                    <AddressCard address={deliveryAddress} showActions={false} />
+                                    <AddressCard address={deliveryAddress} enableActions={false} />
                                 ) : (
                                     <p className="text-gray-500 italic">No delivery address found</p>
                                 );

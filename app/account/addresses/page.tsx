@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { graphqlClient } from '@/lib/api';
-import AddressCard from '@/components/account/AddressCard';
-import AddressModal, { AddressFormData } from '@/components/account/AddressModal';
+import AddressCard from '@/components/propeller/AddressCard';
 import { Address, AddressService, UserService, Contact, Customer, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
 import { Enums } from 'propeller-sdk-v2';
 import { CompanyAddressUpdateInput } from 'propeller-sdk-v2';
@@ -13,8 +12,23 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ShieldCheck, Truck, Plus } from 'lucide-react';
 
+/** Recursively converts SDK class instances to plain objects, stripping underscore prefixes */
+function deepPlain(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(deepPlain);
+  if (typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const key of Object.keys(value as object)) {
+      const cleanKey = key.startsWith('_') ? key.slice(1) : key;
+      result[cleanKey] = deepPlain((value as Record<string, unknown>)[key]);
+    }
+    return result;
+  }
+  return value;
+}
+
 export default function AddressesPage() {
-  const { state: authState, updateUser } = useAuth();
+  const { state: authState } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<Enums.AddressType>(Enums.AddressType.invoice);
 
@@ -69,34 +83,31 @@ export default function AddressesPage() {
       const userService = new UserService(graphqlClient);
       const viewerData = await userService.getViewer({});
       if (viewerData) {
-        if ('contactId' in viewerData) {
-          const user = new Contact(viewerData);
-          localStorage.setItem('user', JSON.stringify(user));
-          // Update the auth context directly
-          updateUser(user);
-        } else if ('customerId' in viewerData) {
-          const user = new Customer(viewerData);
-          localStorage.setItem('user', JSON.stringify(user));
-          // Update the auth context directly
-          updateUser(user);
-        }
+        // Use deepPlain to strip SDK underscore prefixes (same as login flow)
+        const plainUser = deepPlain(viewerData);
+        localStorage.setItem('user', JSON.stringify(plainUser));
+        // Trigger AuthContext to re-read from localStorage (same event login uses)
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error refreshing user data:', error);
 
       // Handle case where we have "partial" data but also errors (common in GraphQL)
-      // The SDK might throw because of "errors" array, but "data" might still contain the viewer
-      const potentialData = error?.response?.data?.viewer || error?.data?.viewer;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as Record<string, any>;
+      const potentialData = err?.response?.data?.viewer || err?.data?.viewer;
 
       if (potentialData) {
         console.log('Recovering user data from partial error response', potentialData);
-        localStorage.setItem('user', JSON.stringify(potentialData));
-        updateUser(potentialData);
+        const plainUser = deepPlain(potentialData);
+        localStorage.setItem('user', JSON.stringify(plainUser));
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
       }
     }
   };
 
-  const handleEditAddress = async (address: AddressFormData) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleEditAddress = async (address: any) => {
     if (!user) return;
 
     try {
@@ -152,7 +163,7 @@ export default function AddressesPage() {
     }
   };
 
-  const handleDeleteAddress = async (addressId: string) => {
+  const handleDeleteAddress = async (addressId: number) => {
     if (!user) return;
 
     try {
@@ -178,20 +189,20 @@ export default function AddressesPage() {
     }
   };
 
-  const handleSetDefault = async (addressId: string) => {
-    if (!user) return;
+  const handleSetDefault = async (address: Address) => {
+    if (!user || !address.id) return;
 
     try {
       const addressService = new AddressService(graphqlClient);
       if (isContact(user) && user.company) {
         await addressService.updateCompanyAddress({
-          id: Number(addressId),
+          id: Number(address.id),
           companyId: user.company.companyId,
           isDefault: Enums.YesNo.Y
         });
       } else if (isCustomer(user)) {
         await addressService.updateCustomerAddress({
-          id: Number(addressId),
+          id: Number(address.id),
           customerId: user.customerId,
           isDefault: Enums.YesNo.Y
         });
@@ -204,36 +215,29 @@ export default function AddressesPage() {
     }
   };
 
-  const handleSaveNewAddress = async (address: AddressFormData) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSaveNewAddress = async (address: any) => {
     if (!user) return;
 
     try {
       const addressService = new AddressService(graphqlClient);
 
-      // Convert CartAddressType to AddressType if needed
-      let addressType = address.type || Enums.AddressType.invoice;
-      if (addressType === Enums.CartAddressType.INVOICE) {
-        addressType = Enums.AddressType.invoice;
-      } else if (addressType === Enums.CartAddressType.DELIVERY) {
-        addressType = Enums.AddressType.delivery;
-      }
-
       const commonData = {
-        company: address.company,
-        gender: address.gender,
-        firstName: address.firstName,
-        middleName: address.middleName,
-        lastName: address.lastName,
-        email: address.email,
+        company: address.company || undefined,
+        gender: address.gender || undefined,
+        firstName: address.firstName || undefined,
+        middleName: address.middleName || undefined,
+        lastName: address.lastName || undefined,
+        email: address.email || undefined,
         street: address.street || '',
-        number: address.number,
-        numberExtension: address.numberExtension,
+        number: address.number || undefined,
+        numberExtension: address.numberExtension || undefined,
         postalCode: address.postalCode || '',
         city: address.city || '',
-        country: address.country || '',
-        notes: address.notes,
-        isDefault: address.isDefault as Enums.YesNo,
-        type: addressType as Enums.AddressType
+        country: address.country || 'NL',
+        notes: address.notes || undefined,
+        isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
+        type: addModalType
       };
 
       if (isContact(user) && user.company) {
@@ -283,7 +287,9 @@ export default function AddressesPage() {
             </h3>
             {defaultAddresses.invoice ? (
               <AddressCard
+                graphqlClient={graphqlClient}
                 address={defaultAddresses.invoice}
+                enableDelete={false}
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
@@ -301,7 +307,9 @@ export default function AddressesPage() {
             </h3>
             {defaultAddresses.delivery ? (
               <AddressCard
+                graphqlClient={graphqlClient}
                 address={defaultAddresses.delivery}
+                enableDelete={false}
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
@@ -330,6 +338,7 @@ export default function AddressesPage() {
             {billingAddresses.map((address: Address) => (
               <AddressCard
                 key={address.id}
+                graphqlClient={graphqlClient}
                 address={address}
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
@@ -356,6 +365,7 @@ export default function AddressesPage() {
             {deliveryAddresses.map((address: Address) => (
               <AddressCard
                 key={address.id}
+                graphqlClient={graphqlClient}
                 address={address}
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
@@ -369,10 +379,13 @@ export default function AddressesPage() {
       </div>
 
       {showAddModal && (
-        <AddressModal
-          addressType={addModalType}
-          onSave={handleSaveNewAddress}
-          onClose={() => setShowAddModal(false)}
+        <AddressCard
+          graphqlClient={graphqlClient}
+          address={{ type: addModalType }}
+          isNew
+          onEdit={handleSaveNewAddress}
+          onCancel={() => setShowAddModal(false)}
+          enableActions={false}
         />
       )}
     </div>

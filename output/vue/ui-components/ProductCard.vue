@@ -175,14 +175,14 @@
         :notes="notes"
         :price="price"
         :createCart="createCart"
-        :onCartCreated="(event) => onCartCreated()"
-        :onAddToCart="(event) => onAddToCart()"
+        :onCartCreated="onCartCreated"
+        :onAddToCart="onAddToCart"
         :afterAddToCart="afterAddToCart"
         :showModal="showModal"
         :allowIncrDecr="allowIncrDecr"
         :enableStockValidation="enableStockValidation"
         :language="language"
-        :onProceedToCheckout="(event) => onProceedToCheckout()"
+        :onProceedToCheckout="onProceedToCheckout"
         :labels="addToCartLabels"
       ></AddToCart>
     </div>

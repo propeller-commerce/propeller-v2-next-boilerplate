@@ -2,6 +2,7 @@
  import * as React from 'react';
 
  import { useState } from 'react'
+   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, Cluster } from 'propeller-sdk-v2';
 
 
 
@@ -151,7 +152,6 @@ interface AddToCartState {
  getLabel: (key: string, fallback: string) => string;
 }
 
-   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, Cluster } from 'propeller-sdk-v2';
 
 
 

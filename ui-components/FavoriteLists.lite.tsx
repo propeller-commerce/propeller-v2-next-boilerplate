@@ -14,6 +14,11 @@ import {
     FavoriteListsSearchInput,
 } from 'propeller-sdk-v2';
 
+export interface FavoriteListFormData {
+    name: string;
+    isDefault: boolean;
+}
+
 export interface FavoriteListsProps {
     /** The authenticated user (Contact or Customer) */
     user: Contact | Customer | null;
@@ -27,16 +32,25 @@ export interface FavoriteListsProps {
     /** Limit the number of lists shown (e.g. 3 = last 3 modified). undefined = show all */
     limit?: number;
 
-    /** Show the create button */
-    showCreateButton?: boolean;
+    /** Displays the "Default" badge on the favorite list (default: true) */
+    showDefaultIndicator?: boolean;
 
-    /** Show edit/delete action buttons on each list */
-    enableActions?: boolean;
+    /** Displays the last modified date on the favorite list (default: true) */
+    showLastModified?: boolean;
+
+    /** Displays number of products and clusters contained in the favorite list (default: true) */
+    showItemsCount?: boolean;
+
+    /** Displays edit/delete action buttons on each list (default: true) */
+    showActions?: boolean;
+
+    /** Displays create new favorite list button (default: true) */
+    allowFavoriteListCreate?: boolean;
 
     /** Custom class name */
     className?: string;
 
-    /** Format date function override */
+    /** Format date function override. If not provided, dates are formatted as dd/mm/YYYY */
     formatDate?: (dateString: string) => string;
 
     /** Localization labels */
@@ -65,14 +79,14 @@ export interface FavoriteListsProps {
         loading?: string;
     };
 
-    /** Callback after a list is created */
-    afterCreate?: (list: FavoriteList) => void;
+    /** Action function triggered when creating a new favorite list. If not provided, the default action is executed */
+    onCreate?: (favoriteListData: FavoriteListFormData) => void;
 
-    /** Callback after a list is updated */
-    afterUpdate?: (list: FavoriteList) => void;
+    /** Action function triggered when editing a favorite list. If not provided, the default action is executed */
+    onEdit?: (favoriteListId: string, favoriteListData: FavoriteListFormData) => void;
 
-    /** Callback after a list is deleted */
-    afterDelete?: (listId: string) => void;
+    /** Action function triggered when deleting a favorite list. If not provided, the default action is executed */
+    onDelete?: (favoriteListId: string) => void;
 }
 
 interface FavoriteListsState {
@@ -156,35 +170,40 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         },
 
         async handleUpdateList(listId: string) {
-            if (!state.editListName.trim() || !props.graphqlClient) return;
+            if (!state.editListName.trim()) return;
+
+            const formData = { name: state.editListName, isDefault: state.editSetAsDefault };
+
+            // If onEdit callback is provided, delegate to parent
+            if (props.onEdit) {
+                props.onEdit(listId, formData);
+                state.handleCancelEdit();
+                return;
+            }
+
+            if (!props.graphqlClient) return;
 
             try {
-
                 const service = new FavoriteListService(props.graphqlClient);
-                const result = await service.updateFavoriteList(listId, {
-                    name: state.editListName,
-                    isDefault: state.editSetAsDefault,
+                await service.updateFavoriteList(listId, {
+                    name: formData.name,
+                    isDefault: formData.isDefault,
                 });
 
                 // Optimistic update — clear default from others when setting a new default
                 state.lists = state.lists.map((l: FavoriteList) => {
                     if (String(l.id) === listId) {
-                        return { ...l, name: state.editListName, isDefault: state.editSetAsDefault } as FavoriteList;
+                        return { ...l, name: formData.name, isDefault: formData.isDefault } as FavoriteList;
                     }
-                    if (state.editSetAsDefault && l.isDefault) {
+                    if (formData.isDefault && l.isDefault) {
                         return { ...l, isDefault: false } as FavoriteList;
                     }
                     return l;
                 });
 
                 state.handleCancelEdit();
-
-                if (props.afterUpdate) {
-                    props.afterUpdate(result);
-                }
             } catch (error) {
                 console.error('Error updating favorite list:', error);
-                // Refetch on error to restore correct state
                 state.fetchLists();
             }
         },
@@ -195,12 +214,21 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         },
 
         async handleConfirmDelete() {
-            if (!state.listToDelete || !props.graphqlClient) return;
+            if (!state.listToDelete) return;
 
             const deletedId = String(state.listToDelete.id);
 
-            try {
+            // If onDelete callback is provided, delegate to parent
+            if (props.onDelete) {
+                props.onDelete(deletedId);
+                state.showDeleteModal = false;
+                state.listToDelete = null;
+                return;
+            }
 
+            if (!props.graphqlClient) return;
+
+            try {
                 const service = new FavoriteListService(props.graphqlClient);
                 await service.deleteFavoriteList(deletedId);
 
@@ -211,10 +239,6 @@ export default function FavoriteLists(props: FavoriteListsProps) {
 
                 state.showDeleteModal = false;
                 state.listToDelete = null;
-
-                if (props.afterDelete) {
-                    props.afterDelete(deletedId);
-                }
             } catch (error) {
                 console.error('Error deleting favorite list:', error);
                 state.fetchLists();
@@ -231,21 +255,34 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         },
 
         async handleCreateList() {
-            if (!state.newListName.trim() || !props.graphqlClient || !props.user) return;
+            if (!state.newListName.trim()) return;
+
+            const formData = { name: state.newListName, isDefault: state.newSetAsDefault };
+
+            // If onCreate callback is provided, delegate to parent
+            if (props.onCreate) {
+                props.onCreate(formData);
+                state.newListName = '';
+                state.newSetAsDefault = false;
+                state.closeCreateModal();
+                return;
+            }
+
+            if (!props.graphqlClient || !props.user) return;
 
             try {
                 const service = new FavoriteListService(props.graphqlClient);
                 const isContact = 'contactId' in props.user;
                 const input: any = {
-                    name: state.newListName,
-                    isDefault: state.newSetAsDefault,
+                    name: formData.name,
+                    isDefault: formData.isDefault,
                 };
                 if (isContact && (props.user as any).contactId) {
                     input.contactId = (props.user as any).contactId;
                 } else if (!isContact && (props.user as any).customerId) {
                     input.customerId = (props.user as any).customerId;
                 }
-                const result = await service.createFavoriteList(input);
+                await service.createFavoriteList(input);
 
                 state.newListName = '';
                 state.newSetAsDefault = false;
@@ -253,10 +290,6 @@ export default function FavoriteLists(props: FavoriteListsProps) {
 
                 // Refetch to get the complete list
                 state.fetchLists();
-
-                if (props.afterCreate) {
-                    props.afterCreate(result);
-                }
             } catch (error) {
                 console.error('Error creating favorite list:', error);
             }
@@ -265,11 +298,11 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         formatDate(dateString: string) {
             if (props.formatDate) return props.formatDate(dateString);
             if (!dateString) return '-';
-            return new Date(dateString).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            });
+            const d = new Date(dateString);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
         },
 
         getProductCount(list: FavoriteList) {
@@ -331,7 +364,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
 
     return (
         <div className={props.className}>
-            <Show when={props.showCreateButton !== false && !state.loading && state._isMounted && state.displayedLists.length > 0}>
+            <Show when={props.allowFavoriteListCreate !== false && !state.loading && state._isMounted && state.displayedLists.length > 0}>
                 <div className="flex justify-end mb-4">
                     <button
                         onClick={() => { state.showCreateModal = true; }}
@@ -427,7 +460,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                                         >
                                                             {list.name}
                                                         </button>
-                                                        <Show when={list.isDefault}>
+                                                        <Show when={props.showDefaultIndicator !== false && list.isDefault}>
                                                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                                 {state.getLabel('defaultBadge', 'Default')}
                                                             </span>
@@ -435,20 +468,24 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                                     </div>
 
                                                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                        <div className="flex items-center gap-1">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
-                                                            {state.getLabel('lastModified', 'Last modified')}: {state.formatDate(list.updatedAt)}
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>
-                                                            {state.getTotalCount(list)} {state.getLabel('items', 'items')} ({state.getProductCount(list)} {state.getLabel('products', 'products')}, {state.getClusterCount(list)} {state.getLabel('clusters', 'clusters')})
-                                                        </div>
+                                                        <Show when={props.showLastModified !== false}>
+                                                            <div className="flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                                                                {state.getLabel('lastModified', 'Last modified')}: {state.formatDate(list.updatedAt)}
+                                                            </div>
+                                                        </Show>
+                                                        <Show when={props.showItemsCount !== false}>
+                                                            <div className="flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>
+                                                                {state.getTotalCount(list)} {state.getLabel('items', 'items')} ({state.getProductCount(list)} {state.getLabel('products', 'products')}, {state.getClusterCount(list)} {state.getLabel('clusters', 'clusters')})
+                                                            </div>
+                                                        </Show>
                                                     </div>
                                                 </div>
                                             </Show>
                                         </div>
 
-                                        <Show when={(props.enableActions !== false) && state.editingListId !== String(list.id)}>
+                                        <Show when={(props.showActions !== false) && state.editingListId !== String(list.id)}>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => state.handleEditList(list)}
@@ -482,7 +519,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                             <p className="text-lg font-medium">{state.getLabel('noLists', 'No favorite lists')}</p>
                             <p className="text-gray-500">{state.getLabel('noListsDescription', 'Start by creating a new list to save your items.')}</p>
                         </div>
-                        <Show when={props.showCreateButton !== false}>
+                        <Show when={props.allowFavoriteListCreate !== false}>
                             <button
                                 onClick={() => { state.showCreateModal = true; }}
                                 className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"

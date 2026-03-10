@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import toast from 'react-hot-toast';
 import FavoriteLists from '@/components/propeller/FavoriteLists';
 import { graphqlClient } from '@/lib/api';
 
@@ -20,11 +19,8 @@ export default function FavoritesPage() {
         user={authState.user}
         graphqlClient={graphqlClient}
         onListClick={(listId) => router.push(`/account/favorites/${listId}`)}
-        enableActions={true}
-        showCreateButton={true}
-        afterCreate={() => toast.success('Favorite list created')}
-        afterUpdate={() => toast.success('Favorite list updated')}
-        afterDelete={() => toast.success('Favorite list deleted')}
+        showActions={true}
+        allowFavoriteListCreate={true}
       />
     </div>
   );

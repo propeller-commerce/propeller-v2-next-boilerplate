@@ -13,6 +13,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Trash2, Heart, Edit2, Calendar, Package, Plus } from 'lucide-react';
 
+export interface FavoriteListFormData {
+  name: string;
+  isDefault: boolean;
+}
+
 export interface FavoriteListsProps {
   /** The authenticated user (Contact or Customer) */
   user: Contact | Customer | null;
@@ -26,16 +31,25 @@ export interface FavoriteListsProps {
   /** Limit the number of lists shown (e.g. 3 = last 3 modified). undefined = show all */
   limit?: number;
 
-  /** Show the create button */
-  showCreateButton?: boolean;
+  /** Displays the "Default" badge on the favorite list (default: true) */
+  showDefaultIndicator?: boolean;
 
-  /** Show edit/delete action buttons on each list */
-  enableActions?: boolean;
+  /** Displays the last modified date on the favorite list (default: true) */
+  showLastModified?: boolean;
+
+  /** Displays number of products and clusters contained in the favorite list (default: true) */
+  showItemsCount?: boolean;
+
+  /** Displays edit/delete action buttons on each list (default: true) */
+  showActions?: boolean;
+
+  /** Displays create new favorite list button (default: true) */
+  allowFavoriteListCreate?: boolean;
 
   /** Custom class name */
   className?: string;
 
-  /** Format date function override */
+  /** Format date function override. If not provided, dates are formatted as dd/mm/YYYY */
   formatDate?: (dateString: string) => string;
 
   /** Localization labels */
@@ -64,14 +78,14 @@ export interface FavoriteListsProps {
     loading?: string;
   };
 
-  /** Callback after a list is created */
-  afterCreate?: (list: FavoriteList) => void;
+  /** Action function triggered when creating a new favorite list. If not provided, the default action is executed */
+  onCreate?: (favoriteListData: FavoriteListFormData) => void;
 
-  /** Callback after a list is updated */
-  afterUpdate?: (list: FavoriteList) => void;
+  /** Action function triggered when editing a favorite list. If not provided, the default action is executed */
+  onEdit?: (favoriteListId: string, favoriteListData: FavoriteListFormData) => void;
 
-  /** Callback after a list is deleted */
-  afterDelete?: (listId: string) => void;
+  /** Action function triggered when deleting a favorite list. If not provided, the default action is executed */
+  onDelete?: (favoriteListId: string) => void;
 }
 
 function FavoriteLists(props: FavoriteListsProps) {
@@ -124,29 +138,37 @@ function FavoriteLists(props: FavoriteListsProps) {
   }
 
   async function handleUpdateList(listId: string) {
-    if (!editListName.trim() || !props.graphqlClient) return;
+    if (!editListName.trim()) return;
+
+    const formData: FavoriteListFormData = { name: editListName, isDefault: editSetAsDefault };
+
+    // If onEdit callback is provided, delegate to parent
+    if (props.onEdit) {
+      props.onEdit(listId, formData);
+      handleCancelEdit();
+      return;
+    }
+
+    if (!props.graphqlClient) return;
+
     try {
       const service = new FavoriteListService(props.graphqlClient);
-      const result = await service.updateFavoriteList(listId, {
-        name: editListName,
-        isDefault: editSetAsDefault,
+      await service.updateFavoriteList(listId, {
+        name: formData.name,
+        isDefault: formData.isDefault,
       });
       setLists(prev =>
         prev.map((l) => {
           if (String(l.id) === listId) {
-            return { ...l, name: editListName, isDefault: editSetAsDefault } as FavoriteList;
+            return { ...l, name: formData.name, isDefault: formData.isDefault } as FavoriteList;
           }
-          // If the edited list is being set as default, clear default from all others
-          if (editSetAsDefault && l.isDefault) {
+          if (formData.isDefault && l.isDefault) {
             return { ...l, isDefault: false } as FavoriteList;
           }
           return l;
         })
       );
       handleCancelEdit();
-      if (props.afterUpdate) {
-        props.afterUpdate(result);
-      }
     } catch (error) {
       console.error('Error updating favorite list:', error);
       fetchLists();
@@ -159,17 +181,25 @@ function FavoriteLists(props: FavoriteListsProps) {
   }
 
   async function handleConfirmDelete() {
-    if (!listToDelete || !props.graphqlClient) return;
+    if (!listToDelete) return;
     const deletedId = String(listToDelete.id);
+
+    // If onDelete callback is provided, delegate to parent
+    if (props.onDelete) {
+      props.onDelete(deletedId);
+      setShowDeleteModal(false);
+      setListToDelete(null);
+      return;
+    }
+
+    if (!props.graphqlClient) return;
+
     try {
       const service = new FavoriteListService(props.graphqlClient);
       await service.deleteFavoriteList(deletedId);
       setLists(prev => prev.filter((l) => String(l.id) !== deletedId));
       setShowDeleteModal(false);
       setListToDelete(null);
-      if (props.afterDelete) {
-        props.afterDelete(deletedId);
-      }
     } catch (error) {
       console.error('Error deleting favorite list:', error);
       fetchLists();
@@ -186,27 +216,38 @@ function FavoriteLists(props: FavoriteListsProps) {
   }
 
   async function handleCreateList() {
-    if (!newListName.trim() || !props.graphqlClient || !props.user) return;
+    if (!newListName.trim()) return;
+
+    const formData: FavoriteListFormData = { name: newListName, isDefault: newSetAsDefault };
+
+    // If onCreate callback is provided, delegate to parent
+    if (props.onCreate) {
+      props.onCreate(formData);
+      setNewListName('');
+      setNewSetAsDefault(false);
+      closeCreateModal();
+      return;
+    }
+
+    if (!props.graphqlClient || !props.user) return;
+
     try {
       const service = new FavoriteListService(props.graphqlClient);
       const isContact = 'contactId' in props.user;
       const input: any = {
-        name: newListName,
-        isDefault: newSetAsDefault,
+        name: formData.name,
+        isDefault: formData.isDefault,
       };
       if (isContact && (props.user as any).contactId) {
         input.contactId = (props.user as any).contactId;
       } else if (!isContact && (props.user as any).customerId) {
         input.customerId = (props.user as any).customerId;
       }
-      const result = await service.createFavoriteList(input);
+      await service.createFavoriteList(input);
       setNewListName('');
       setNewSetAsDefault(false);
       closeCreateModal();
       fetchLists();
-      if (props.afterCreate) {
-        props.afterCreate(result);
-      }
     } catch (error) {
       console.error('Error creating favorite list:', error);
     }
@@ -215,11 +256,11 @@ function FavoriteLists(props: FavoriteListsProps) {
   function formatDateFn(dateString: string): string {
     if (props.formatDate) return props.formatDate(dateString);
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const d = new Date(dateString);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   function getProductCount(list: FavoriteList): number {
@@ -283,7 +324,7 @@ function FavoriteLists(props: FavoriteListsProps) {
 
   return (
     <div className={props.className}>
-      {props.showCreateButton !== false && !loading && _isMounted && displayed.length > 0 && (
+      {props.allowFavoriteListCreate !== false && !loading && _isMounted && displayed.length > 0 && (
         <div className="flex justify-end mb-4">
           <Button onClick={() => setShowCreateModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -367,27 +408,31 @@ function FavoriteLists(props: FavoriteListsProps) {
                             >
                               {list.name}
                             </button>
-                            {list.isDefault && (
+                            {props.showDefaultIndicator !== false && list.isDefault && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                 {getLabel('defaultBadge', 'Default')}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {getLabel('lastModified', 'Last modified')}: {formatDateFn(list.updatedAt)}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Package className="w-4 h-4" />
-                              {getTotalCount(list)} {getLabel('items', 'items')} ({getProductCount(list)} {getLabel('products', 'products')}, {getClusterCount(list)} {getLabel('clusters', 'clusters')})
-                            </div>
+                            {props.showLastModified !== false && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {getLabel('lastModified', 'Last modified')}: {formatDateFn(list.updatedAt)}
+                              </div>
+                            )}
+                            {props.showItemsCount !== false && (
+                              <div className="flex items-center gap-1">
+                                <Package className="w-4 h-4" />
+                                {getTotalCount(list)} {getLabel('items', 'items')} ({getProductCount(list)} {getLabel('products', 'products')}, {getClusterCount(list)} {getLabel('clusters', 'clusters')})
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {props.enableActions !== false && editingListId !== String(list.id) && (
+                    {props.showActions !== false && editingListId !== String(list.id) && (
                       <div className="flex gap-2">
                         <Button
                           variant="ghost"
@@ -420,7 +465,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                 <p className="text-lg font-medium">{getLabel('noLists', 'No favorite lists')}</p>
                 <p className="text-muted-foreground">{getLabel('noListsDescription', 'Start by creating a new list to save your items.')}</p>
               </div>
-              {props.showCreateButton !== false && (
+              {props.allowFavoriteListCreate !== false && (
                 <Button onClick={() => setShowCreateModal(true)}>
                   {getLabel('createFirstList', 'Create your first list')}
                 </Button>

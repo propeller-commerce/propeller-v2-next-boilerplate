@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ClusterConfigurator from '@/components/propeller/ClusterConfigurator';
@@ -19,7 +20,6 @@ import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
 import ProductShortDescription from '@/components/propeller/ProductShortDescription';
 import ItemStock from '@/components/propeller/ItemStock';
 import AddToCart from '@/components/propeller/AddToCart';
-import router from 'next/router';
 import ProductTabs from '@/components/propeller/ProductTabs';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
@@ -34,6 +34,7 @@ export default function ClusterPage() {
   const [quantity, setQuantity] = useState(1);
   const { cart, saveCart, addToCart } = useCart();
   const { state } = useAuth();
+  const router = useRouter();
 
   // ── Old fetch effect — now handled by ClusterInfo via onClusterLoaded ──────
   /*

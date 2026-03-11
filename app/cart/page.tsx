@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartItem from '@/components/propeller/CartItem';
 import CartSummary from '@/components/propeller/CartSummary';
+import ActionCode from '@/components/propeller/ActionCode';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { CartMainItem, Cart } from 'propeller-sdk-v2';
@@ -62,12 +63,21 @@ export default function CartPage() {
               </div>
 
               {/* Cart Summary */}
-              <div className="h-fit">
+              <div className="h-fit space-y-4">
                 {cart && (
-                  <CartSummary
-                    cart={cart}
-                    onCheckoutButtonClick={() => router.push('/checkout')}
-                  />
+                  <>
+                    <CartSummary
+                      cart={cart}
+                      onCheckoutButtonClick={() => router.push('/checkout')}
+                    />
+                    <ActionCode
+                      graphqlClient={graphqlClient}
+                      cart={cart}
+                      configuration={config}
+                      afterActionCodeApply={handleCartUpdate}
+                      afterActionCodeRemove={handleCartUpdate}
+                    />
+                  </>
                 )}
               </div>
             </div>

@@ -26,7 +26,8 @@ export const serializeCart = (cart: Cart): string => {
     status: cart.status,
     payMethods: cart.payMethods,
     carriers: cart.carriers,
-    // Add other properties as needed
+    actionCode: cart.actionCode,
+    vouchers: cart.vouchers,
   };
 
   return JSON.stringify(cleanCart);

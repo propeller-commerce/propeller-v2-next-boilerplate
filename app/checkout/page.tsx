@@ -6,18 +6,20 @@ import { useCart } from '@/context/CartContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartTotals from '@/components/common/CartTotals';
-import PropellerAddressCard from '@/components/propeller/AddressCard';
+import AddressCard from '@/components/propeller/AddressCard';
 
 import { cartService, orderService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Cart, CartCarrier, CartMainItem, CartPaymethod, CartUpdateAddressInput, CartUpdateInput, AddressService, UserService, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { Cart, CartMainItem, CartUpdateAddressInput, CartUpdateInput, AddressService, UserService, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
+import CartPaymethods from '@/components/propeller/CartPaymethods';
+import CartCarriers from '@/components/propeller/CartCarriers';
+import DeliveryDate from '@/components/propeller/DeliveryDate';
+import CartOverview from '@/components/propeller/CartOverview';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import Link from 'next/link';
 import { Enums } from 'propeller-sdk-v2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
 
@@ -32,9 +34,6 @@ interface CheckoutState {
   selectedPayment: string;
   selectedCarrier: string;
   selectedDeliveryDate: string;
-  reference: string;
-  comment: string;
-  termsAccepted: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -64,9 +63,6 @@ export default function CheckoutPage() {
     selectedPayment: '',
     selectedCarrier: '',
     selectedDeliveryDate: '',
-    reference: '',
-    comment: '',
-    termsAccepted: false,
     loading: false,
     error: null
   });
@@ -284,18 +280,13 @@ export default function CheckoutPage() {
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (!state.termsAccepted) {
-      setState(prev => ({ ...prev, error: 'Please accept the Terms and Conditions' }));
-      return;
-    }
-
+  const handlePlaceOrder = async (reference?: string, notes?: string) => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      if (state.reference || state.comment) {
+      if (reference || notes) {
         await cartService.updateCart({
           id: state.cart!.cartId,
-          input: { reference: state.reference || undefined, notes: state.comment || undefined },
+          input: { reference: reference || undefined, notes: notes || undefined },
           imageVariantFilters: imageVariantFiltersSmall,
           imageSearchFilters: imageSearchFiltersGrid,
           language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
@@ -334,22 +325,6 @@ export default function CheckoutPage() {
     }
   };
 
-  const getWorkingDays = () => {
-    const days = [];
-    const today = new Date();
-    const currentDate = new Date(today);
-    currentDate.setDate(currentDate.getDate() + 1);
-    while (days.length < 3) {
-      const dayOfWeek = currentDate.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) days.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return days;
-  };
-
-  const formatDateForAPI = (date: Date) => date.toISOString().split('T')[0] + 'T00:00:00Z';
-  const formatDateForDisplay = (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
   if (!state.cart) {
     return (
       <div className="min-h-screen flex flex-col bg-muted/20">
@@ -366,9 +341,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-
-  const cartPayMethods = (state.cart as Cart).payMethods || [];
-  const cartCarriers = state.cart.carriers || [];
 
   interface StepIndicatorProps {
     step: number;
@@ -431,7 +403,7 @@ export default function CheckoutPage() {
                   <CardContent className="animate-in slide-in-from-top-2">
                     {state.cart.invoiceAddress?.street ? (
                       <div className="space-y-4">
-                        <PropellerAddressCard
+                        <AddressCard
                           address={state.cart.invoiceAddress}
                           showEmail
                           enableDelete={false}
@@ -443,7 +415,7 @@ export default function CheckoutPage() {
                         </Button>
                       </div>
                     ) : (
-                      <PropellerAddressCard
+                      <AddressCard
                         address={null}
                         inline
                         isNew
@@ -473,7 +445,7 @@ export default function CheckoutPage() {
                   <CardContent className="animate-in slide-in-from-top-2">
                     {state.cart.deliveryAddress?.street ? (
                       <div className="space-y-4">
-                        <PropellerAddressCard
+                        <AddressCard
                           address={state.cart.deliveryAddress}
                           showEmail
                           enableDelete={false}
@@ -486,7 +458,7 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                     ) : (
-                      <PropellerAddressCard
+                      <AddressCard
                         address={null}
                         inline
                         isNew
@@ -510,56 +482,27 @@ export default function CheckoutPage() {
                     {/* Payment */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><CreditCard className="w-4 h-4" /> Payment Method</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {cartPayMethods.filter((method: CartPaymethod) => method?.code).map((method: CartPaymethod) => (
-                          <div
-                            key={method.code}
-                            onClick={() => setState(prev => ({ ...prev, selectedPayment: method.code }))}
-                            className={`cursor-pointer border border-border/60 rounded-lg p-4 flex flex-col gap-2 transition-all ${state.selectedPayment === method.code ? 'border-primary bg-primary/5 shadow-sm' : 'hover:border-primary/50'}`}
-                          >
-                            <div className="flex justify-between font-medium items-center">
-                              <span>{method.name || method.code}</span>
-                              {method.price > 0 && <Badge variant="secondary">€{Number(method.price).toFixed(2)}</Badge>}
-                            </div>
-                          </div>
-                        ))}
-                        {cartPayMethods.length === 0 && <p className="text-muted-foreground italic col-span-full">No payment methods available.</p>}
-                      </div>
+                      <CartPaymethods
+                        cart={state.cart}
+                        onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
+                      />
                     </div>
 
                     {/* Carrier */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Truck className="w-4 h-4" /> Carrier</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {cartCarriers.map((carrier: CartCarrier, index: number) => (
-                          <div
-                            key={`${carrier.name}-${index}`}
-                            onClick={() => setState(prev => ({ ...prev, selectedCarrier: carrier.name }))}
-                            className={`cursor-pointer border border-border/60 rounded-lg p-4 flex flex-col gap-2 transition-all ${state.selectedCarrier === carrier.name ? 'border-primary bg-primary/5 shadow-sm' : 'hover:border-primary/50'}`}
-                          >
-                            <div className="flex justify-between font-medium items-center">
-                              <span>{carrier.name}</span>
-                              <Badge variant="secondary">€{carrier.price?.toFixed(2)}</Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <CartCarriers
+                        cart={state.cart}
+                        onCarrierSelect={(carrier) => setState(prev => ({ ...prev, selectedCarrier: carrier.name }))}
+                      />
                     </div>
 
                     {/* Delivery Date */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Calendar className="w-4 h-4" /> Delivery Date</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                        {getWorkingDays().map((date, index) => (
-                          <div
-                            key={index}
-                            onClick={() => setState(prev => ({ ...prev, selectedDeliveryDate: formatDateForAPI(date) }))}
-                            className={`cursor-pointer border border-border/60 rounded-lg p-3 text-center transition-all ${state.selectedDeliveryDate === formatDateForAPI(date) ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
-                          >
-                            <div className="font-semibold">{formatDateForDisplay(date)}</div>
-                          </div>
-                        ))}
-                      </div>
+                      <DeliveryDate
+                        onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
+                      />
                     </div>
 
                     <div className="flex gap-4 pt-4">
@@ -576,66 +519,13 @@ export default function CheckoutPage() {
                   <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
                 </CardHeader>
                 {state.currentStep === 4 && (
-                  <CardContent className="space-y-8 animate-in slide-in-from-top-2">
-                    <div className="grid md:grid-cols-2 gap-6 pb-5">
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Invoice Address</h3>
-                        <PropellerAddressCard address={state.cart.invoiceAddress} showEmail enableActions={false} />
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Delivery Address</h3>
-                        <PropellerAddressCard address={state.cart.deliveryAddress} showEmail enableActions={false} />
-                      </div>
-                    </div>
-
-                    <div className="bg-muted/30 p-4 rounded-md border space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="font-medium">Payment:</span> <span>{state.selectedPayment}</span></div>
-                      <div className="flex justify-between"><span className="font-medium">Carrier:</span> <span>{state.selectedCarrier}</span></div>
-                      <div className="flex justify-between"><span className="font-medium">Delivery Date:</span> <span>{new Date(state.selectedDeliveryDate).toLocaleDateString()}</span></div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Reference (Optional)</label>
-                        <Input
-                          value={state.reference}
-                          onChange={(e) => setState(prev => ({ ...prev, reference: e.target.value }))}
-                          placeholder="Your reference number"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Order Notes (Optional)</label>
-                        <textarea
-                          className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]"
-                          value={state.comment}
-                          onChange={(e) => setState(prev => ({ ...prev, comment: e.target.value }))}
-                          placeholder="Special instructions or comments"
-                        />
-                      </div>
-
-                      <div className="flex items-center space-x-2 pt-2">
-                        <input
-                          type="checkbox"
-                          id="terms"
-                          checked={state.termsAccepted}
-                          onChange={(e) => setState(prev => ({ ...prev, termsAccepted: e.target.checked }))}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="terms" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          I agree to the <Link href="/terms-conditions" className="text-primary hover:underline font-medium">Terms and Conditions</Link>
-                        </label>
-                      </div>
-
-                      <Button
-                        className="w-full text-lg h-12"
-                        size="lg"
-                        onClick={handlePlaceOrder}
-                        disabled={state.loading || !state.termsAccepted}
-                        isLoading={state.loading}
-                      >
-                        Place Order
-                      </Button>
-                    </div>
+                  <CardContent className="animate-in slide-in-from-top-2">
+                    <CartOverview
+                      graphqlClient={graphqlClient}
+                      cart={state.cart}
+                      onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
+                      onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
+                    />
                   </CardContent>
                 )}
               </Card>

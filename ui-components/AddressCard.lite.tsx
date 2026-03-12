@@ -394,8 +394,8 @@ export default function AddressCard(props: AddressCardProps) {
                                     <input type="text" value={state._editStreet} onChange={(e) => { state._editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')}</label>
-                                    <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')} *</label>
+                                    <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('numberExtension', 'Ext')}</label>
@@ -428,8 +428,8 @@ export default function AddressCard(props: AddressCardProps) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')}</label>
-                                    <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')} *</label>
+                                    <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('phone', 'Phone')}</label>
@@ -523,8 +523,8 @@ export default function AddressCard(props: AddressCardProps) {
                                         <input type="text" value={state._editStreet} onChange={(e) => { state._editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')}</label>
-                                        <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')} *</label>
+                                        <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('numberExtension', 'Ext')}</label>
@@ -557,8 +557,8 @@ export default function AddressCard(props: AddressCardProps) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')}</label>
-                                        <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')} *</label>
+                                        <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('phone', 'Phone')}</label>

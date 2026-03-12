@@ -2,7 +2,6 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { Contact, Customer, AttributeFilter } from 'propeller-sdk-v2';
 
 
 
@@ -89,6 +88,7 @@ getMinBound: () => number;
 getMaxBound: () => number;
 }
 
+  import  { Contact, Customer, AttributeFilter } from 'propeller-sdk-v2';
 
 
 

@@ -2,7 +2,6 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { OrderService, OrderSearchArguments, OrderResponse, Order, Contact, Customer, GraphQLClient, Enums, OrderStatus, DateSearchInput, DecimalSearchInput, OrderSortInput } from 'propeller-sdk-v2';
 
 
 
@@ -100,6 +99,7 @@ getLabel: (key: string, fallback: string) => string;
 searchFields: (keyof OrderSearchArguments)[];
 }
 
+  import  { OrderService, OrderSearchArguments, OrderResponse, Order, Contact, Customer, GraphQLClient, Enums, OrderStatus, DateSearchInput, DecimalSearchInput, OrderSortInput } from 'propeller-sdk-v2';
 
 
 

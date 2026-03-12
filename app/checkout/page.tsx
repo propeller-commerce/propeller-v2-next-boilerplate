@@ -5,17 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CartTotals from '@/components/common/CartTotals';
+import CartSummary from '@/components/propeller/CartSummary';
 import AddressCard from '@/components/propeller/AddressCard';
 
 import { cartService, orderService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Cart, CartMainItem, CartUpdateAddressInput, CartUpdateInput, AddressService, UserService, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, UserService, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
 import CartCarriers from '@/components/propeller/CartCarriers';
 import DeliveryDate from '@/components/propeller/DeliveryDate';
 import CartOverview from '@/components/propeller/CartOverview';
+import ItemsOverview from '@/components/propeller/ItemsOverview';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Enums } from 'propeller-sdk-v2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -420,7 +421,7 @@ export default function CheckoutPage() {
                         inline
                         isNew
                         addressType={CartAddressType.INVOICE}
-                        showIcp
+                        showIcp={false}
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
                       />
@@ -463,7 +464,7 @@ export default function CheckoutPage() {
                         inline
                         isNew
                         addressType={CartAddressType.DELIVERY}
-                        showIcp
+                        showIcp={false}
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY)}
                       />
@@ -538,56 +539,25 @@ export default function CheckoutPage() {
                   <CardHeader>
                     <CardTitle className="text-lg">Cart Items</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {state.cart?.items?.map((item: CartMainItem) => {
-                      const rawUrl = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-                      const imageUrl = rawUrl && rawUrl.startsWith('http') ? rawUrl : '';
-                      const name = item.product?.names?.[0]?.value || 'Product';
-
-                      return (
-                        <div key={item.itemId} className="flex items-center gap-3 pb-3 border-b border-border/60 last:border-b-0 last:pb-0">
-                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {imageUrl ? (
-                              <img
-                                src={imageUrl}
-                                alt={name}
-                                className="w-full h-full object-contain p-1"
-                                onError={(e) => {
-                                  const img = e.target as HTMLImageElement;
-                                  img.style.display = 'none';
-                                  const parent = img.parentElement;
-                                  if (parent && !parent.querySelector('svg')) {
-                                    parent.innerHTML = '<svg class="w-6 h-6 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" /></svg>';
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <svg className="w-6 h-6 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{name}</p>
-                            <p className="text-xs text-muted-foreground">{item.product?.sku}</p>
-                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                          </div>
-                          <div className="text-sm font-medium">
-                            €{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <CardContent>
+                    <ItemsOverview
+                      cart={state.cart}
+                      showAvailability={false}
+                      itemNameClickable={false}
+                    />
                   </CardContent>
                 </Card>
 
                 {/* Order Summary */}
                 <Card className="border-none">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Order Summary</CardTitle>
-                  </CardHeader>
                   <CardContent>
-                    {state.cart && <CartTotals cart={state.cart} showCalculations={true} />}
+                    {state.cart && (
+                      <CartSummary
+                        cart={state.cart}
+                        title="Order Summary"
+                        showCheckoutButton={false}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </div>

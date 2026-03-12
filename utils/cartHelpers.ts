@@ -1,12 +1,28 @@
 import { Cart } from 'propeller-sdk-v2';
 
 /**
+ * Recursively strips underscore-prefixed keys from SDK class instances
+ * e.g. { _street: 'Main St' } → { street: 'Main St' }
+ */
+function deepPlain(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(deepPlain);
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const cleanKey = key.startsWith('_') ? key.slice(1) : key;
+      result[cleanKey] = deepPlain(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
+/**
  * Converts a Cart object to a plain object without private property prefixes
  * This is used when saving to localStorage
  */
 export const serializeCart = (cart: Cart): string => {
-  // The Cart object already has proper getters, so we can access properties directly
-  // We'll create a clean object structure
   const cleanCart = {
     cartId: cart.cartId,
     channelId: cart.channelId,
@@ -16,18 +32,20 @@ export const serializeCart = (cart: Cart): string => {
     companyId: cart.companyId,
     notes: cart.notes,
     reference: cart.reference,
-    items: cart.items,
-    total: cart.total,
-    invoiceAddress: cart.invoiceAddress,
-    deliveryAddress: cart.deliveryAddress,
+    items: deepPlain(cart.items),
+    total: deepPlain(cart.total),
+    invoiceAddress: deepPlain(cart.invoiceAddress),
+    deliveryAddress: deepPlain(cart.deliveryAddress),
     createdAt: cart.createdAt,
     lastModifiedAt: cart.lastModifiedAt,
     language: cart.language,
     status: cart.status,
-    payMethods: cart.payMethods,
-    carriers: cart.carriers,
+    payMethods: deepPlain(cart.payMethods),
+    carriers: deepPlain(cart.carriers),
     actionCode: cart.actionCode,
-    vouchers: cart.vouchers,
+    vouchers: deepPlain(cart.vouchers),
+    postageData: deepPlain(cart.postageData),
+    taxLevels: deepPlain(cart.taxLevels),
   };
 
   return JSON.stringify(cleanCart);

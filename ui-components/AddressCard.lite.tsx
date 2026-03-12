@@ -39,6 +39,12 @@ export interface AddressCardProps {
     /** Display country name @default true */
     showCountry?: boolean;
 
+    /** Display email @default false */
+    showEmail?: boolean;
+
+    /** Display phone @default false */
+    showPhone?: boolean;
+
     /** Display action buttons (edit, delete, set default) @default true */
     enableActions?: boolean;
 
@@ -72,11 +78,29 @@ export interface AddressCardProps {
     /** List of countries for the country dropdown [{code: 'NL', name: 'Netherlands'}, ...] */
     countries?: { code: string; name: string }[];
 
-    /** When true, renders in "new address" mode: auto-opens the edit modal, hides the card body */
+    /** When true, renders in "new address" mode: auto-opens the edit form, hides the card body */
     isNew?: boolean;
 
-    /** Called when the modal is cancelled in new mode */
+    /** Called when the form is cancelled in new mode */
     onCancel?: () => void;
+
+    /** When true, renders the form inline instead of in a modal overlay. @default false */
+    inline?: boolean;
+
+    /** Address type for new addresses (e.g., 'DELIVERY', 'INVOICE'). Used when creating, not editing. */
+    addressType?: string;
+
+    /** Show ICP/ICS (intra-community supply) checkbox. @default false */
+    showIcp?: boolean;
+
+    /** Title for the form or section */
+    title?: string;
+
+    /** Labels for form fields and buttons */
+    labels?: Record<string, string>;
+
+    /** Called before save starts */
+    beforeSave?: () => void;
 }
 
 export default function AddressCard(props: AddressCardProps) {
@@ -98,10 +122,21 @@ export default function AddressCard(props: AddressCardProps) {
         _editEmail: '',
         _editPhone: '',
         _editNotes: '',
+        _editIcp: false,
+
+        getLabel(key: string, fallback: string) {
+            return (props.labels as any)?.[key] || fallback;
+        },
 
         /** Returns the address to display: local optimistic state or props */
         get addr(): any {
             return state._localAddress || props.address;
+        },
+
+        get showCard(): boolean {
+            if (props.isNew) return false;
+            if (props.inline && !props.address) return false;
+            return true;
         },
 
         get salutation(): string {
@@ -143,6 +178,12 @@ export default function AddressCard(props: AddressCardProps) {
             return parts.join(' ');
         },
 
+        get formTitle(): string {
+            if (props.title) return props.title;
+            if (props.isNew) return state.getLabel('newTitle', 'New Address');
+            return state.getLabel('editTitle', 'Edit Address');
+        },
+
         openEditModal() {
             const a = state.addr;
             state._editCompany = a?.company || '';
@@ -159,14 +200,18 @@ export default function AddressCard(props: AddressCardProps) {
             state._editEmail = a?.email || '';
             state._editPhone = a?.phone || '';
             state._editNotes = a?.notes || '';
+            state._editIcp = a?.icp || false;
             state._showEditModal = true;
         },
 
         async handleSaveEdit(e: any) {
             e.preventDefault();
+            if (props.beforeSave) {
+                props.beforeSave();
+            }
             const editedAddress = {
                 id: state.addr?.id,
-                type: state.addr?.type,
+                type: state.addr?.type || props.addressType || '',
                 isDefault: state.addr?.isDefault,
                 company: state._editCompany,
                 gender: state._editGender,
@@ -182,6 +227,7 @@ export default function AddressCard(props: AddressCardProps) {
                 email: state._editEmail,
                 phone: state._editPhone,
                 notes: state._editNotes,
+                icp: state._editIcp,
             };
             state._localAddress = editedAddress;
             if (props.onEdit) {
@@ -226,7 +272,7 @@ export default function AddressCard(props: AddressCardProps) {
     });
 
     onMount(() => {
-        if (props.isNew) {
+        if (props.isNew || (props.inline && !props.address)) {
             state.openEditModal();
         }
     });
@@ -234,7 +280,7 @@ export default function AddressCard(props: AddressCardProps) {
     return (
         <div>
             {/* Address Card */}
-            <Show when={!props.isNew}>
+            <Show when={state.showCard}>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
                 <div className="flex-grow">
                     <Show when={props.showCompanyName !== false && state.addr?.company}>
@@ -251,6 +297,12 @@ export default function AddressCard(props: AddressCardProps) {
                     </Show>
                     <Show when={props.showCountry !== false && state.addr?.country}>
                         <div className="text-gray-600">{state.addr?.country}</div>
+                    </Show>
+                    <Show when={!!props.showEmail && state.addr?.email}>
+                        <div className="text-gray-600">{state.addr?.email}</div>
+                    </Show>
+                    <Show when={!!props.showPhone && state.addr?.phone}>
+                        <div className="text-gray-600">{state.addr?.phone}</div>
                     </Show>
 
                     <Show when={state.addr?.isDefault === 'Y'}>
@@ -269,7 +321,7 @@ export default function AddressCard(props: AddressCardProps) {
                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                 onClick={() => state.openEditModal()}
                             >
-                                Edit
+                                {state.getLabel('edit', 'Edit')}
                             </button>
                         </Show>
                         <Show when={props.enableDelete !== false}>
@@ -277,7 +329,7 @@ export default function AddressCard(props: AddressCardProps) {
                                 className="text-red-600 hover:text-red-800 text-sm font-medium"
                                 onClick={() => { state._showDeleteConfirm = true; }}
                             >
-                                Delete
+                                {state.getLabel('delete', 'Delete')}
                             </button>
                         </Show>
                         <Show when={props.enableSetDefault !== false && state.addr?.isDefault !== 'Y'}>
@@ -285,7 +337,7 @@ export default function AddressCard(props: AddressCardProps) {
                                 className="text-yellow-600 hover:text-yellow-800 text-sm font-medium ml-auto"
                                 onClick={() => state.handleSetDefault()}
                             >
-                                Set Default
+                                {state.getLabel('setDefault', 'Set Default')}
                             </button>
                         </Show>
                     </div>
@@ -293,13 +345,138 @@ export default function AddressCard(props: AddressCardProps) {
             </div>
             </Show>
 
-            {/* Edit Modal */}
-            <Show when={state._showEditModal}>
+            {/* Inline Form (no modal overlay) */}
+            <Show when={props.inline && state._showEditModal}>
+                <div className="bg-white p-6 rounded-lg border">
+                    <form onSubmit={(e) => state.handleSaveEdit(e)}>
+                        <Show when={!!state.formTitle}>
+                            <h3 className="text-xl font-bold mb-4">{state.formTitle}</h3>
+                        </Show>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('gender', 'Gender')}</label>
+                                    <select
+                                        value={state._editGender}
+                                        onChange={(e) => { state._editGender = e.target.value; }}
+                                        className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                                    >
+                                        <option value="M">{state.getLabel('genderMale', 'Male')}</option>
+                                        <option value="F">{state.getLabel('genderFemale', 'Female')}</option>
+                                        <option value="U">{state.getLabel('genderOther', 'Other')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('company', 'Company')}</label>
+                                    <input type="text" value={state._editCompany} onChange={(e) => { state._editCompany = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('firstName', 'First Name')} *</label>
+                                    <input type="text" value={state._editFirstName} onChange={(e) => { state._editFirstName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('middleName', 'Middle Name')}</label>
+                                    <input type="text" value={state._editMiddleName} onChange={(e) => { state._editMiddleName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('lastName', 'Last Name')} *</label>
+                                    <input type="text" value={state._editLastName} onChange={(e) => { state._editLastName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-12 gap-4">
+                                <div className="col-span-8">
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('street', 'Street')} *</label>
+                                    <input type="text" value={state._editStreet} onChange={(e) => { state._editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')}</label>
+                                    <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('numberExtension', 'Ext')}</label>
+                                    <input type="text" value={state._editNumberExtension} onChange={(e) => { state._editNumberExtension = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('postalCode', 'Postal Code')} *</label>
+                                    <input type="text" value={state._editPostalCode} onChange={(e) => { state._editPostalCode = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('city', 'City')} *</label>
+                                    <input type="text" value={state._editCity} onChange={(e) => { state._editCity = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1">{state.getLabel('country', 'Country')} *</label>
+                                <select value={state._editCountry} onChange={(e) => { state._editCountry = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white" required>
+                                    <option value="">{state.getLabel('selectCountry', 'Select country')}</option>
+                                    <For each={props.countries || []}>
+                                        {(c: any) => (
+                                            <option key={c.code} value={c.code}>{c.name}</option>
+                                        )}
+                                    </For>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')}</label>
+                                    <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('phone', 'Phone')}</label>
+                                    <input type="tel" value={state._editPhone} onChange={(e) => { state._editPhone = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                </div>
+                            </div>
+
+                            <Show when={!!props.showIcp}>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="icp-inline"
+                                        checked={state._editIcp}
+                                        onChange={(e) => { state._editIcp = e.target.checked; }}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="icp-inline" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
+                                </div>
+                            </Show>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+                            <Show when={!props.isNew}>
+                                <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
+                                    {state.getLabel('cancel', 'Cancel')}
+                                </button>
+                            </Show>
+                            <Show when={props.isNew && !!props.onCancel}>
+                                <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
+                                    {state.getLabel('cancel', 'Cancel')}
+                                </button>
+                            </Show>
+                            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                {state.getLabel('save', 'Save')}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Show>
+
+            {/* Modal Form (with overlay) */}
+            <Show when={!props.inline && state._showEditModal}>
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10">
                     <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
                         <form onSubmit={(e) => state.handleSaveEdit(e)}>
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold">{props.isNew ? 'New Address' : 'Edit Address'}</h3>
+                                <h3 className="text-xl font-bold">{state.formTitle}</h3>
                                 <button type="button" onClick={() => state.closeEditModal()} className="text-gray-500 hover:text-gray-700 text-xl leading-none">
                                     &times;
                                 </button>
@@ -308,68 +485,68 @@ export default function AddressCard(props: AddressCardProps) {
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Gender</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('gender', 'Gender')}</label>
                                         <select
                                             value={state._editGender}
                                             onChange={(e) => { state._editGender = e.target.value; }}
                                             className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                                         >
-                                            <option value="M">Male</option>
-                                            <option value="F">Female</option>
-                                            <option value="U">Other</option>
+                                            <option value="M">{state.getLabel('genderMale', 'Male')}</option>
+                                            <option value="F">{state.getLabel('genderFemale', 'Female')}</option>
+                                            <option value="U">{state.getLabel('genderOther', 'Other')}</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Company</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('company', 'Company')}</label>
                                         <input type="text" value={state._editCompany} onChange={(e) => { state._editCompany = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">First Name *</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('firstName', 'First Name')} *</label>
                                         <input type="text" value={state._editFirstName} onChange={(e) => { state._editFirstName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Middle Name</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('middleName', 'Middle Name')}</label>
                                         <input type="text" value={state._editMiddleName} onChange={(e) => { state._editMiddleName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Last Name *</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('lastName', 'Last Name')} *</label>
                                         <input type="text" value={state._editLastName} onChange={(e) => { state._editLastName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-12 gap-4">
                                     <div className="col-span-8">
-                                        <label className="block text-sm font-medium mb-1">Street *</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('street', 'Street')} *</label>
                                         <input type="text" value={state._editStreet} onChange={(e) => { state._editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1">Number</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')}</label>
                                         <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1">Ext</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('numberExtension', 'Ext')}</label>
                                         <input type="text" value={state._editNumberExtension} onChange={(e) => { state._editNumberExtension = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Postal Code *</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('postalCode', 'Postal Code')} *</label>
                                         <input type="text" value={state._editPostalCode} onChange={(e) => { state._editPostalCode = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">City *</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('city', 'City')} *</label>
                                         <input type="text" value={state._editCity} onChange={(e) => { state._editCity = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Country *</label>
+                                    <label className="block text-sm font-medium mb-1">{state.getLabel('country', 'Country')} *</label>
                                     <select value={state._editCountry} onChange={(e) => { state._editCountry = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white" required>
-                                        <option value="">Select country</option>
+                                        <option value="">{state.getLabel('selectCountry', 'Select country')}</option>
                                         <For each={props.countries || []}>
                                             {(c: any) => (
                                                 <option key={c.code} value={c.code}>{c.name}</option>
@@ -380,22 +557,35 @@ export default function AddressCard(props: AddressCardProps) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Email</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')}</label>
                                         <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Phone</label>
+                                        <label className="block text-sm font-medium mb-1">{state.getLabel('phone', 'Phone')}</label>
                                         <input type="tel" value={state._editPhone} onChange={(e) => { state._editPhone = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                 </div>
+
+                                <Show when={!!props.showIcp}>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="icp-modal"
+                                            checked={state._editIcp}
+                                            onChange={(e) => { state._editIcp = e.target.checked; }}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <label htmlFor="icp-modal" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
+                                    </div>
+                                </Show>
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
                                 <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
-                                    Cancel
+                                    {state.getLabel('cancel', 'Cancel')}
                                 </button>
                                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                    Save
+                                    {state.getLabel('save', 'Save')}
                                 </button>
                             </div>
                         </form>
@@ -407,14 +597,14 @@ export default function AddressCard(props: AddressCardProps) {
             <Show when={state._showDeleteConfirm}>
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
-                        <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
-                        <p className="mb-6 text-gray-600">Are you sure you want to delete this address?</p>
+                        <h3 className="text-xl font-bold mb-4">{state.getLabel('confirmDeleteTitle', 'Confirm Delete')}</h3>
+                        <p className="mb-6 text-gray-600">{state.getLabel('confirmDeleteMessage', 'Are you sure you want to delete this address?')}</p>
                         <div className="flex justify-end gap-4">
                             <button onClick={() => { state._showDeleteConfirm = false; }} className="px-4 py-2 border rounded hover:bg-gray-100">
-                                Cancel
+                                {state.getLabel('cancel', 'Cancel')}
                             </button>
                             <button onClick={() => state.confirmDelete()} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                Delete
+                                {state.getLabel('delete', 'Delete')}
                             </button>
                         </div>
                     </div>

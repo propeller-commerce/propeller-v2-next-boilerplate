@@ -6,15 +6,14 @@ import { useCart } from '@/context/CartContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartTotals from '@/components/common/CartTotals';
-import AddressModal, { AddressFormData } from '@/components/account/AddressModal';
-import AddressCard from '@/components/account/AddressCard';
+import PropellerAddressCard from '@/components/propeller/AddressCard';
 
-import { cartService, orderService } from '@/lib/api';
-import { Cart, CartCarrier, CartMainItem, CartPaymethod, CartUpdateAddressInput, CartUpdateInput } from 'propeller-sdk-v2';
-import { deserializeCart } from '@/utils/cartHelpers';
+import { cartService, orderService, graphqlClient } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { Cart, CartCarrier, CartMainItem, CartPaymethod, CartUpdateAddressInput, CartUpdateInput, AddressService, UserService, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Enums } from 'propeller-sdk-v2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -40,10 +39,25 @@ interface CheckoutState {
   error: string | null;
 }
 
+/** Recursively strips underscore-prefixed keys from SDK class instances */
+function deepPlain(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(deepPlain);
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const cleanKey = key.startsWith('_') ? key.slice(1) : key;
+      result[cleanKey] = deepPlain(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart: contextCart, getCart } = useCart();
-
+  const { state: authState } = useAuth();
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
     cart: null,
@@ -99,26 +113,117 @@ export default function CheckoutPage() {
     }
   }, [state.currentStep]);
 
-  const handleAddressSubmit = async (addressData: AddressFormData, type: string) => {
+  const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
+  const isCustomer = (u: Contact | Customer | null): u is Customer => u !== null && 'customerId' in u;
+
+  const getActiveCompany = (): Company | null => {
+    const user = authState.user;
+    if (!user || !isContact(user)) return null;
+    const stored = localStorage.getItem('selected_company_id');
+    if (stored) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const companiesRaw = (user as any).companies;
+      const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
+      if (Array.isArray(items)) {
+        const found = items.find((c: Company) => c.companyId === parseInt(stored, 10));
+        if (found) return found;
+      }
+    }
+    return (user.company as Company | undefined) ?? null;
+  };
+
+  /** Update the user's account address and refresh user data from API */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateUserAddress = async (addressData: any, type: string) => {
+    const user = authState.user;
+    if (!user) return;
+
+    const addressService = new AddressService(graphqlClient);
+    const addressType = type === CartAddressType.INVOICE ? Enums.AddressType.invoice : Enums.AddressType.delivery;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let addresses: any[] = [];
+    if (isContact(user)) {
+      const company = getActiveCompany();
+      if (!company) return;
+      addresses = company?.addresses || [];
+    } else if (isCustomer(user)) {
+      addresses = user.addresses || [];
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const matchedAddr = addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      || addresses.find((a: any) => a.type === addressType);
+
+    if (!matchedAddr?.id) return;
+
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      const input: CartUpdateAddressInput = {
-        type: type as Enums.CartAddressType,
-        firstName: addressData.firstName || '',
-        lastName: addressData.lastName || '',
-        street: addressData.street || '',
-        postalCode: addressData.postalCode || '',
-        city: addressData.city || '',
+      const commonFields = {
+        id: Number(matchedAddr.id),
         company: addressData.company,
         gender: addressData.gender,
+        firstName: addressData.firstName,
         middleName: addressData.middleName,
+        lastName: addressData.lastName,
+        email: addressData.email,
+        street: addressData.street,
         number: addressData.number,
         numberExtension: addressData.numberExtension,
+        postalCode: addressData.postalCode,
+        city: addressData.city,
         country: addressData.country,
-        email: addressData.email,
-        mobile: addressData.mobile,
-        phone: addressData.phone,
-        notes: addressData.notes
+        isDefault: matchedAddr.isDefault,
+      };
+
+      if (isContact(user) && getActiveCompany()) {
+        await addressService.updateCompanyAddress({
+          ...commonFields,
+          companyId: getActiveCompany()!.companyId,
+        });
+      } else if (isCustomer(user)) {
+        await addressService.updateCustomerAddress({
+          ...commonFields,
+          customerId: user.customerId,
+        });
+      }
+
+      // Refresh user data from API (same pattern as addresses page)
+      const userService = new UserService(graphqlClient);
+      const viewerData = await userService.getViewer({});
+      if (viewerData) {
+        const plainUser = deepPlain(viewerData);
+        localStorage.setItem('user', JSON.stringify(plainUser));
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+      }
+    } catch (error) {
+      console.error('Error updating user address:', error);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleAddressSubmit = async (addressData: any, type: string, advance = true) => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      const d = addressData as Record<string, string | boolean | undefined>;
+      const input: CartUpdateAddressInput = {
+        type: type as Enums.CartAddressType,
+        firstName: (d.firstName as string) || '',
+        lastName: (d.lastName as string) || '',
+        street: (d.street as string) || '',
+        postalCode: (d.postalCode as string) || '',
+        city: (d.city as string) || '',
+        company: d.company as string | undefined,
+        gender: d.gender as Enums.Gender | undefined,
+        middleName: d.middleName as string | undefined,
+        number: d.number as string | undefined,
+        numberExtension: d.numberExtension as string | undefined,
+        country: d.country as string | undefined,
+        email: d.email as string | undefined,
+        mobile: d.mobile as string | undefined,
+        phone: d.phone as string | undefined,
+        notes: d.notes as string | undefined,
+        icp: d.icp as Enums.YesNo | undefined,
       };
 
       const variables = {
@@ -130,13 +235,17 @@ export default function CheckoutPage() {
       };
 
       const updatedCart = await cartService.updateCartAddress(variables);
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      localStorage.setItem('cart', serializeCart(updatedCart));
 
-      const nextStep = state.currentStep + 1;
+      // When editing an existing address and user is logged in, also update user's account address
+      if (!advance && authState.isAuthenticated) {
+        await updateUserAddress(addressData, type);
+      }
+
       setState(prev => ({
         ...prev,
         cart: updatedCart,
-        currentStep: nextStep,
+        currentStep: advance ? prev.currentStep + 1 : prev.currentStep,
         loading: false
       }));
 
@@ -167,7 +276,7 @@ export default function CheckoutPage() {
         language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
       });
 
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      localStorage.setItem('cart', serializeCart(updatedCart));
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
     } catch (error) {
       console.error(error);
@@ -313,7 +422,7 @@ export default function CheckoutPage() {
                     <CardTitle className="text-lg flex items-center gap-2">1. Invoice Address</CardTitle>
                     {state.currentStep > 1 && state.cart?.invoiceAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.invoiceAddress.street}, {state.cart.invoiceAddress.city}
+                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number}, {state.cart.invoiceAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -322,19 +431,26 @@ export default function CheckoutPage() {
                   <CardContent className="animate-in slide-in-from-top-2">
                     {state.cart.invoiceAddress?.street ? (
                       <div className="space-y-4">
-                        <div className="p-4 border rounded-md bg-muted/30">
-                          <AddressCard address={state.cart.invoiceAddress} showActions={false} />
-                        </div>
+                        <PropellerAddressCard
+                          address={state.cart.invoiceAddress}
+                          showEmail
+                          enableDelete={false}
+                          enableSetDefault={false}
+                          onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE, false)}
+                        />
                         <Button onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>
                           Confirm Invoice Address
                         </Button>
                       </div>
                     ) : (
-                      <AddressModal
+                      <PropellerAddressCard
+                        address={null}
+                        inline
+                        isNew
                         addressType={CartAddressType.INVOICE}
-                        onSave={(data) => handleAddressSubmit(data, CartAddressType.INVOICE)}
-                        onClose={() => { }}
-                        isInline={true}
+                        showIcp
+                        beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
+                        onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
                       />
                     )}
                   </CardContent>
@@ -348,7 +464,7 @@ export default function CheckoutPage() {
                     <CardTitle className="text-lg flex items-center gap-2">2. Shipping Address</CardTitle>
                     {state.currentStep > 2 && state.cart?.deliveryAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.deliveryAddress.street}, {state.cart.deliveryAddress.city}
+                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number}, {state.cart.deliveryAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -357,20 +473,27 @@ export default function CheckoutPage() {
                   <CardContent className="animate-in slide-in-from-top-2">
                     {state.cart.deliveryAddress?.street ? (
                       <div className="space-y-4">
-                        <div className="p-4 border rounded-md bg-muted/30">
-                          <AddressCard address={state.cart.deliveryAddress} showActions={false} />
-                        </div>
+                        <PropellerAddressCard
+                          address={state.cart.deliveryAddress}
+                          showEmail
+                          enableDelete={false}
+                          enableSetDefault={false}
+                          onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
+                        />
                         <div className="flex gap-4">
                           <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
                           <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>Confirm Delivery Address</Button>
                         </div>
                       </div>
                     ) : (
-                      <AddressModal
-                        addressType={Enums.CartAddressType.DELIVERY}
-                        onSave={(data) => handleAddressSubmit(data, CartAddressType.DELIVERY)}
-                        onClose={() => { }}
-                        isInline={true}
+                      <PropellerAddressCard
+                        address={null}
+                        inline
+                        isNew
+                        addressType={CartAddressType.DELIVERY}
+                        showIcp
+                        beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
+                        onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY)}
                       />
                     )}
                   </CardContent>
@@ -457,11 +580,11 @@ export default function CheckoutPage() {
                     <div className="grid md:grid-cols-2 gap-6 pb-5">
                       <div className="space-y-2">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Invoice Address</h3>
-                        <AddressCard address={state.cart.invoiceAddress} showActions={false} />
+                        <PropellerAddressCard address={state.cart.invoiceAddress} showEmail enableActions={false} />
                       </div>
                       <div className="space-y-2">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Delivery Address</h3>
-                        <AddressCard address={state.cart.deliveryAddress} showActions={false} />
+                        <PropellerAddressCard address={state.cart.deliveryAddress} showEmail enableActions={false} />
                       </div>
                     </div>
 
@@ -527,22 +650,32 @@ export default function CheckoutPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {state.cart?.items?.map((item: CartMainItem) => {
-                      const imageUrl = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '/no-image.webp';
+                      const rawUrl = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+                      const imageUrl = rawUrl && rawUrl.startsWith('http') ? rawUrl : '';
                       const name = item.product?.names?.[0]?.value || 'Product';
 
                       return (
                         <div key={item.itemId} className="flex items-center gap-3 pb-3 border-b border-border/60 last:border-b-0 last:pb-0">
-                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden relative flex-shrink-0">
-                            <Image
-                              src={imageUrl}
-                              alt={name}
-                              fill
-                              className="object-contain p-1"
-                              onError={(e) => {
-                                const img = e.target as HTMLImageElement;
-                                img.src = '/no-image.webp';
-                              }}
-                            />
+                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={name}
+                                className="w-full h-full object-contain p-1"
+                                onError={(e) => {
+                                  const img = e.target as HTMLImageElement;
+                                  img.style.display = 'none';
+                                  const parent = img.parentElement;
+                                  if (parent && !parent.querySelector('svg')) {
+                                    parent.innerHTML = '<svg class="w-6 h-6 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" /></svg>';
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <svg className="w-6 h-6 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                              </svg>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{name}</p>

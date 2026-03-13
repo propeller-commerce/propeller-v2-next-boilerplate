@@ -672,6 +672,7 @@ export interface ApiPagePage extends Struct.CollectionTypeSchema {
     blocks: Schema.Attribute.DynamicZone<
       [
         'shared.hero-banner',
+        'shared.product-slider',
         'shared.rich-text',
         'shared.media',
         'shared.quote',

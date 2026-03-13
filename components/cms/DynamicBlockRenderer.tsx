@@ -7,6 +7,7 @@ import ProductCarousel from './blocks/ProductCarousel';
 import ContactForm from './blocks/ContactForm';
 import MediaBlock from './blocks/MediaBlock';
 import QuoteBlock from './blocks/QuoteBlock';
+import ProductSliderBlock from './blocks/ProductSliderBlock';
 
 const blockComponents: Record<string, React.ComponentType<{ block: any }>> = {
   'hero-banner': HeroBanner,
@@ -17,6 +18,7 @@ const blockComponents: Record<string, React.ComponentType<{ block: any }>> = {
   'contact-form': ContactForm,
   'media': MediaBlock,
   'quote': QuoteBlock,
+  'product-slider': ProductSliderBlock,
 };
 
 export default function DynamicBlockRenderer({ blocks }: { blocks: CmsBlock[] }) {

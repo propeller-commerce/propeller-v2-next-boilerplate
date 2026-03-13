@@ -83,6 +83,13 @@ export interface CmsSlider {
   files: CmsImage[];
 }
 
+export interface CmsProductSlider {
+  _type: 'product-slider';
+  title: string;
+  productIds: number[];
+  clusterIds: number[];
+}
+
 export type CmsBlock =
   | CmsHeroBanner
   | CmsRichText
@@ -92,7 +99,8 @@ export type CmsBlock =
   | CmsCallToAction
   | CmsProductCarousel
   | CmsContactForm
-  | CmsSlider;
+  | CmsSlider
+  | CmsProductSlider;
 
 // ── Page ──
 

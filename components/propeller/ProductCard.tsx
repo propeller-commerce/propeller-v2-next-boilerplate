@@ -233,10 +233,16 @@ computedTextLabels: () => {
   const [isFavorite, setIsFavorite] = useState<ProductCardState["isFavorite"]>(() => (false))
 
 
-const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (false))
+const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => {
+if (typeof window !== 'undefined') {
+const stored = localStorage.getItem('price_include_tax');
+return stored === null ? true : stored === 'true';
+}
+return true;
+})
 
 
-const [_priceListener, set_priceListener] = useState<ProductCardState["_priceListener"]>(() => (null))
+// price listener created inline in useEffect (not stored in state)
 
 
 function isRow(): ReturnType<ProductCardState["isRow"]>{
@@ -346,13 +352,14 @@ value: string;
 
 useEffect(() => {
       if (typeof window !== 'undefined') {
-const stored = localStorage.getItem('price_include_tax');
-set_includeTax(stored === null ? true : stored === 'true');
-set_priceListener(() => {
+const listener = () => {
 const val = localStorage.getItem('price_include_tax');
 set_includeTax(val === null ? true : val === 'true');
-});
-window.addEventListener('priceToggleChanged', _priceListener);
+};
+window.addEventListener('priceToggleChanged', listener);
+return () => {
+window.removeEventListener('priceToggleChanged', listener);
+};
 }
     }, [])
 

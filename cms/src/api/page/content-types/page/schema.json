@@ -38,6 +38,7 @@
       "type": "dynamiczone",
       "components": [
         "shared.hero-banner",
+        "shared.product-slider",
         "shared.rich-text",
         "shared.media",
         "shared.quote",

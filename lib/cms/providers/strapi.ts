@@ -59,7 +59,14 @@ const COMPONENT_MAP: Record<string, string> = {
   'shared.product-carousel': 'product-carousel',
   'shared.contact-form': 'contact-form',
   'shared.slider': 'slider',
+  'shared.product-slider': 'product-slider',
 };
+
+function parseIds(value: any): number[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(Number).filter((n) => !isNaN(n));
+  return String(value).split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
+}
 
 function normalizeValuePropItem(raw: any): CmsValuePropItem {
   return {
@@ -120,6 +127,13 @@ function normalizeBlock(strapiUrl: string, raw: any): CmsBlock | null {
       return {
         _type: 'slider',
         files: (raw.files || []).map((f: any) => normalizeImage(strapiUrl, f)).filter(Boolean) as CmsImage[],
+      };
+    case 'product-slider':
+      return {
+        _type: 'product-slider',
+        title: raw.title || '',
+        productIds: parseIds(raw.productIds),
+        clusterIds: parseIds(raw.clusterIds),
       };
     default:
       return null;

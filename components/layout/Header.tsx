@@ -7,12 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import SearchBar from '@/components/common/SearchBar';
+import SearchBar from '@/components/propeller/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { ShoppingBag, Menu as MenuIcon } from 'lucide-react';
+import { Menu as MenuIcon } from 'lucide-react';
 import { config } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
@@ -187,7 +187,14 @@ export default function Header() {
               {/* Search Bar */}
               {showSearch && (
                 <div className="hidden lg:block flex-1 max-w-2xl">
-                  <SearchBar />
+                  <SearchBar
+                    graphqlClient={graphqlClient}
+                    language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+                    onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+                    onResultClick={(result) => result.url && router.push(result.url)}
+                    onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+                    noImageUrl="https://playground2.dev.wp-propel.com/wp-content/plugins/propeller-ecommerce-v2/public/assets/img/no-image-card.webp"
+                  />
                 </div>
               )}
 

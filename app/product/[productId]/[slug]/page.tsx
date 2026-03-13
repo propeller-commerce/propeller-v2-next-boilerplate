@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
+import { imageSearchFilters, imageVariantFiltersLarge, imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
-import { ImageVariant, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { ImageVariant, Product, ProductPrice as ProductPriceSDK, CartService } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
 import ItemStock from '@/components/propeller/ItemStock';
 import ProductInfo from '@/components/propeller/ProductInfo';
@@ -22,6 +22,8 @@ import ProductTabs from '@/components/propeller/ProductTabs';
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
+import ProductSlider from '@/components/propeller/ProductSlider';
+import ProductBundles from '@/components/propeller/ProductBundles';
 
 
 export default function ProductPage() {
@@ -108,6 +110,39 @@ export default function ProductPage() {
             </div>
           </div>
           <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} />
+          <ProductBundles
+            graphqlClient={graphqlClient}
+            productId={productId}
+            language="NL"
+            taxZone="NL"
+            user={state.user}
+            onAddBundleToCart={(bundleId, quantity) => {
+              const cartService = new CartService(graphqlClient);
+              cartService.addBundleToCart({
+                id: cart?.cartId,
+                input: { bundleId, quantity },
+                language: 'NL',
+                imageSearchFilters: imageSearchFiltersGrid,
+                imageVariantFilters: imageVariantFiltersSmall,
+              }).then((updatedCart) => saveCart(updatedCart));
+            }}
+          />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={['ACCESSORIES', 'RELATED']}
+            productId={productId}
+            language="NL"
+            taxZone="NL"
+            title="Related Products"
+            user={state.user}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}
+          />
         </div>
       </main>
       <Footer />

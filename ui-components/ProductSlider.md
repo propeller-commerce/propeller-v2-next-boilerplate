@@ -1,6 +1,11 @@
 # ProductSlider
 
-Displays products and/or clusters in a horizontally scrollable slider with navigation arrows. Fetches items internally via `ProductService` when IDs are provided, or accepts pre-loaded items via props. Designed for CMS integration where editors configure product/cluster IDs.
+Displays products and/or clusters in a horizontally scrollable slider with navigation arrows. Supports two fetching modes:
+
+1. **CMS mode** — Fetches products/clusters by IDs (configured by CMS editors)
+2. **Cross-upsell mode** — Fetches cross-sell/upsell items for a given product or cluster
+
+Can also accept pre-loaded items via `products` prop to skip fetching entirely.
 
 ## Props
 
@@ -8,8 +13,11 @@ Displays products and/or clusters in a horizontally scrollable slider with navig
 |---|---|---|---|---|
 | `graphqlClient` | `GraphQLClient` | **Yes** | — | Propeller SDK GraphQL client. |
 | `products` | `(Product \| Cluster)[]` | No | `[]` | Pre-loaded items. When provided, skips internal fetching. |
-| `productIds` | `number[]` | No | — | Product IDs to fetch internally. |
-| `clusterIds` | `number[]` | No | — | Cluster IDs to fetch internally. |
+| `productIds` | `number[]` | No | — | Product IDs to fetch (CMS mode). |
+| `clusterIds` | `number[]` | No | — | Cluster IDs to fetch (CMS mode). |
+| `crossUpsellTypes` | `string[]` | No | — | Cross-upsell types to fetch. Enables cross-upsell mode. Values: `'ACCESSORIES'`, `'ALTERNATIVES'`, `'RELATED'`, `'OPTIONS'`, `'PARTS'`. |
+| `productId` | `number` | No | — | Source product ID for cross-upsell lookup. Required when `crossUpsellTypes` is set. |
+| `clusterId` | `number` | No | — | Source cluster ID for cross-upsell lookup. Required when `crossUpsellTypes` is set. |
 | `language` | `string` | **Yes** | — | Language code for API requests. |
 | `taxZone` | `string` | **Yes** | — | Tax zone for price calculations. |
 | `portalMode` | `'open' \| 'semi-closed'` | No | `'open'` | Portal mode controlling add-to-cart visibility. |
@@ -42,12 +50,9 @@ Displays products and/or clusters in a horizontally scrollable slider with navig
 
 ## Usage
 
-### With CMS-provided IDs (internal fetch)
+### CMS mode — fetch by IDs
 
 ```tsx
-import ProductSlider from '@/components/propeller/ProductSlider';
-import { graphqlClient } from '@/lib/api';
-
 <ProductSlider
   graphqlClient={graphqlClient}
   productIds={[123, 456, 789]}
@@ -66,7 +71,43 @@ import { graphqlClient } from '@/lib/api';
 />
 ```
 
-### With pre-loaded products (no fetch)
+### Cross-upsell mode — on product page
+
+```tsx
+<ProductSlider
+  graphqlClient={graphqlClient}
+  crossUpsellTypes={['ACCESSORIES', 'RELATED']}
+  productId={product.productId}
+  language="NL"
+  taxZone="NL"
+  title="Related Products"
+  user={authState.user}
+  cartId={cart?.cartId}
+  createCart={true}
+  onCartCreated={(newCart) => saveCart(newCart)}
+  afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+  configuration={config}
+  onProductClick={(product) => router.push(config.urls.getProductUrl(product))}
+  onClusterClick={(cluster) => router.push(config.urls.getClusterUrl(cluster))}
+/>
+```
+
+### Cross-upsell mode — for a cluster
+
+```tsx
+<ProductSlider
+  graphqlClient={graphqlClient}
+  crossUpsellTypes={['ALTERNATIVES']}
+  clusterId={cluster.clusterId}
+  language="NL"
+  taxZone="NL"
+  title="Alternative Products"
+  configuration={config}
+  onProductClick={(product) => router.push(config.urls.getProductUrl(product))}
+/>
+```
+
+### Pre-loaded items (no fetch)
 
 ```tsx
 <ProductSlider
@@ -74,42 +115,53 @@ import { graphqlClient } from '@/lib/api';
   products={preLoadedProducts}
   language="NL"
   taxZone="NL"
-  title="Related Products"
+  title="Hand-picked Products"
   configuration={config}
   onProductClick={(product) => router.push(config.urls.getProductUrl(product))}
 />
 ```
 
-### CMS Integration (Strapi)
-
-Add a `shared.product-slider` component in Strapi with fields `title`, `productIds` (text, comma-separated), `clusterIds` (text, comma-separated). The CMS block wrapper `ProductSliderBlock` handles auth, cart, and config wiring automatically.
-
 ## Behavior
 
-- **Internal fetching**: When `productIds` or `clusterIds` are provided (and `products` is empty), calls `ProductService.getProducts()` with those IDs.
-- **Pre-loaded items**: When `products` prop has items, renders them directly without fetching.
-- **Re-fetch on ID change**: Automatically re-fetches when `productIds` or `clusterIds` props change.
+### Fetching modes
+
+- **CMS mode** (default): When `productIds` or `clusterIds` are provided, calls `ProductService.getProducts()`.
+- **Cross-upsell mode**: When `crossUpsellTypes` is set with a `productId` or `clusterId`, calls `CrossupsellService.getCrossupsells()` and extracts `productTo`/`clusterTo` from the response.
+- **Pre-loaded**: When `products` prop has items, renders them directly without fetching.
+- Cross-upsell mode takes priority over CMS mode when `crossUpsellTypes` is set.
+
+### UI behavior
+
+- **Re-fetch on prop change**: Automatically re-fetches when IDs, cross-upsell types, or source product/cluster change.
 - **Scroll navigation**: Left/right arrows scroll the track by 80% of visible width. Arrows disable at scroll boundaries.
 - **Loading skeleton**: Shows animated placeholder cards matching `desktopCount` while fetching.
-- **Empty state**: Shows "No products found" when fetch returns no items.
-- **Mixed content**: Supports both Products and Clusters in the same slider, rendering appropriate card types.
+- **Empty state**: Shows "No products found" in CMS mode. Hidden in cross-upsell mode (no results is normal).
+- **Mixed content**: Supports both Products and Clusters in the same slider.
 - **Responsive width**: Card width is calculated as `calc((100% - gaps) / desktopCount)`.
-- **VAT toggle**: Reacts to the `priceToggleChanged` custom event (reads `price_include_tax` from localStorage). Can be overridden via `includeTax` prop.
+- **VAT toggle**: Reacts to the `priceToggleChanged` custom event. Can be overridden via `includeTax` prop.
+
+### Known limitation
+
+`CrossupsellService.getCrossupsells()` has a known SDK bug (undeclared fragment variables cause HTTP 400). Cross-upsell results may not display until the SDK is fixed. The error is caught silently.
 
 ## Mitosis vs React Differences
 
-The **Mitosis source** (`ui-components/ProductSlider.lite.tsx`) renders inline card markup because Mitosis cannot import other Mitosis components. It includes basic product/cluster display with image, name, SKU, and price.
+The **Mitosis source** (`ui-components/ProductSlider.lite.tsx`) renders inline card markup because Mitosis cannot import other Mitosis components.
 
-The **React copy** (`components/propeller/ProductSlider.tsx`) is intentionally rewritten to render actual `ProductCard` and `ClusterCard` components, providing full catalog-page-equivalent features:
+The **React copy** (`components/propeller/ProductSlider.tsx`) renders actual `ProductCard` and `ClusterCard` components with full catalog-page features:
 
-- **Add-to-cart** with quantity increment/decrement
-- **Stock display** and availability indicators
-- **VAT toggle** reactivity (via ProductCard's internal `priceToggleChanged` listener)
-- **Cart integration** (`cartId`, `createCart`, `onCartCreated`, `afterAddToCart`)
-- **`useRef`** for scroll track (supports multiple sliders on one page, unlike Mitosis's `querySelector`)
-- **Scroll dimension updates** via `useEffect` on items change + window resize listener
+- Add-to-cart with quantity increment/decrement
+- Stock display and availability indicators
+- VAT toggle reactivity (via ProductCard's internal listener)
+- Cart integration (`cartId`, `createCart`, `onCartCreated`, `afterAddToCart`)
+- `useRef` for scroll track (supports multiple sliders on one page)
+- Scroll dimension updates via `useEffect` on items change + window resize listener
 
 When updating, edit the Mitosis source for props/fetching logic, then manually update the React copy for card rendering changes.
+
+## CMS Integration (Strapi)
+
+Add a `shared.product-slider` component in Strapi with fields `title`, `productIds` (text, comma-separated), `clusterIds` (text, comma-separated). The CMS block wrapper `ProductSliderBlock` handles auth, cart, and config wiring automatically.
 
 ## Mitosis Source
 

@@ -2,6 +2,7 @@ import { useStore, Show, For, onMount, onUpdate } from '@builder.io/mitosis';
 import {
     GraphQLClient,
     ProductService,
+    CrossupsellService,
     Product,
     Cluster,
     Contact,
@@ -10,7 +11,6 @@ import {
     CartMainItem,
     Enums,
 } from 'propeller-sdk-v2';
-import { CartChildItemInput } from 'propeller-sdk-v2/dist/service/CartService';
 
 export interface ProductSliderProps {
     /** Propeller SDK GraphQL client */
@@ -24,6 +24,19 @@ export interface ProductSliderProps {
 
     /** Cluster IDs to fetch internally when `products` is not provided */
     clusterIds?: number[];
+
+    /**
+     * Cross-upsell types to fetch. When provided, fetches cross-upsells for the given
+     * productId/clusterId instead of fetching products by IDs.
+     * Values: 'ACCESSORIES' | 'ALTERNATIVES' | 'RELATED' | 'OPTIONS' | 'PARTS'
+     */
+    crossUpsellTypes?: string[];
+
+    /** Source product ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
+    productId?: number;
+
+    /** Source cluster ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
+    clusterId?: number;
 
     /** Language code for API requests and localized content */
     language: string;
@@ -107,6 +120,30 @@ export default function ProductSlider(props: ProductSliderProps) {
             return state._items;
         },
 
+        get isCrossUpsellMode(): boolean {
+            return !!(props.crossUpsellTypes && props.crossUpsellTypes.length > 0);
+        },
+
+        get crossUpsellTitle(): string {
+            if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return '';
+            const typeLabels: Record<string, string> = {
+                ACCESSORIES: 'Accessories',
+                ALTERNATIVES: 'Alternatives',
+                RELATED: 'Related products',
+                OPTIONS: 'Options',
+                PARTS: 'Parts',
+            };
+            return props.crossUpsellTypes
+                .map((t: string) => props.labels?.[t.toLowerCase()] || typeLabels[t] || t)
+                .join(' & ');
+        },
+
+        get sliderTitle(): string | undefined {
+            if (props.title !== undefined) return props.title;
+            if (state.isCrossUpsellMode) return state.crossUpsellTitle;
+            return undefined;
+        },
+
         get mobileCount() {
             return props.itemsPerView?.mobile || 1;
         },
@@ -155,6 +192,56 @@ export default function ProductSlider(props: ProductSliderProps) {
             return state.isCluster(item) ? item.clusterId : item.productId;
         },
 
+        async fetchCrossUpsells() {
+            if (!props.graphqlClient) return;
+            if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
+            if (!props.productId && !props.clusterId) return;
+
+            state._isLoading = true;
+            try {
+                const crossupsellService = new CrossupsellService(props.graphqlClient);
+                const searchInput: any = {
+                    types: props.crossUpsellTypes,
+                    page: 1,
+                    offset: 50,
+                };
+                if (props.productId) {
+                    searchInput.productIdsFrom = [props.productId];
+                }
+                if (props.clusterId) {
+                    searchInput.clusterIdsFrom = [props.clusterId];
+                }
+                // Call executeQuery directly to pass the missing variables that
+                // getCrossupsells() doesn't forward (language, imageSearchFilters, etc.)
+                const result = await (crossupsellService as any).executeQuery('crossupsells', {
+                    input: searchInput,
+                    language: props.language || 'NL',
+                    imageSearchFilters: { page: 1, offset: 1 },
+                    imageVariantFilters: {
+                        transformations: [{
+                            name: 'grid',
+                            transformation: { format: 'WEBP', height: 300, width: 300, fit: 'BOUNDS' },
+                        }],
+                    },
+                });
+                const crossupsells = result?.data?.crossupsells?.items || [];
+                const items: any[] = [];
+                for (let i = 0; i < crossupsells.length; i++) {
+                    const cu = crossupsells[i] as any;
+                    if (cu.productTo) {
+                        items.push(cu.productTo);
+                    } else if (cu.clusterTo) {
+                        items.push(cu.clusterTo);
+                    }
+                }
+                state._items = items;
+            } catch (e) {
+                state._items = [];
+            } finally {
+                state._isLoading = false;
+            }
+        },
+
         async fetchItems() {
             if (!props.graphqlClient) return;
             const hasProductIds = props.productIds && props.productIds.length > 0;
@@ -191,6 +278,15 @@ export default function ProductSlider(props: ProductSliderProps) {
                 state._items = [];
             } finally {
                 state._isLoading = false;
+            }
+        },
+
+        doFetch() {
+            if (props.products && props.products.length > 0) return;
+            if (state.isCrossUpsellMode) {
+                state.fetchCrossUpsells();
+            } else {
+                state.fetchItems();
             }
         },
 
@@ -231,9 +327,7 @@ export default function ProductSlider(props: ProductSliderProps) {
     });
 
     onMount(() => {
-        if (!props.products || props.products.length === 0) {
-            state.fetchItems();
-        }
+        state.doFetch();
 
         // Initialize scroll dimensions after render
         setTimeout(() => {
@@ -257,18 +351,21 @@ export default function ProductSlider(props: ProductSliderProps) {
     });
 
     onUpdate(() => {
-        if (!props.products || props.products.length === 0) {
-            state.fetchItems();
-        }
+        state.doFetch();
     }, [props.productIds, props.clusterIds]);
 
+    onUpdate(() => {
+        state.doFetch();
+    }, [props.crossUpsellTypes, props.productId, props.clusterId]);
+
     return (
+        <Show when={!(state.isCrossUpsellMode && !state._isLoading && state.items.length === 0)}>
         <div className={props.containerClassName || 'mb-12'}>
             {/* Header with title and navigation arrows */}
-            <Show when={props.title || state.items.length > 0}>
+            <Show when={state.sliderTitle || state.items.length > 0}>
                 <div className="flex items-center justify-between mb-6">
-                    <Show when={props.title}>
-                        <h2 className="text-2xl font-bold">{props.title}</h2>
+                    <Show when={state.sliderTitle}>
+                        <h2 className="text-2xl font-bold">{state.sliderTitle}</h2>
                     </Show>
 
                     <Show when={state.items.length > state.desktopCount}>
@@ -395,12 +492,13 @@ export default function ProductSlider(props: ProductSliderProps) {
                 </div>
             </Show>
 
-            {/* Empty state */}
-            <Show when={!state._isLoading && state.items.length === 0 && !props.products}>
+            {/* Empty state — hidden in cross-upsell mode (no results is normal) */}
+            <Show when={!state._isLoading && state.items.length === 0 && !props.products && !state.isCrossUpsellMode}>
                 <div className="text-center text-gray-500 py-8">
                     {state.getLabel('noProducts', 'No products found')}
                 </div>
             </Show>
         </div>
+        </Show>
     );
 }

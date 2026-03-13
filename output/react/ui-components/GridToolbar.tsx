@@ -2,7 +2,6 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -154,6 +153,7 @@ handleOffsetChange: (offset: number) => void;
 handleViewChange: () => void;
 }
 
+  import  { Contact, Customer, Enums } from 'propeller-sdk-v2';
   // Default sort field keys shown in the dropdown when sortOptions is not provided.
 const ALL_SORT_FIELDS: string[] = [Enums.ProductSortField.CATEGORY_ORDER, Enums.ProductSortField.NAME, Enums.ProductSortField.PRICE, Enums.ProductSortField.SKU, Enums.ProductSortField.SUPPLIER_CODE, Enums.ProductSortField.CREATED_AT, Enums.ProductSortField.LAST_MODIFIED_AT, Enums.ProductSortField.RELEVANCE, Enums.ProductSortField.PRIORITY];
 

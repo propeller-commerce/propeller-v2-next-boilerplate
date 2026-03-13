@@ -128,6 +128,15 @@ export default function AddressCard(props: AddressCardProps) {
             return (props.labels as any)?.[key] || fallback;
         },
 
+        getCountryName(code: string): string {
+            if (!code) return '';
+            const list = props.countries || [];
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].code === code) return list[i].name;
+            }
+            return code;
+        },
+
         /** Returns the address to display: local optimistic state or props */
         get addr(): any {
             return state._localAddress || props.address;
@@ -296,7 +305,7 @@ export default function AddressCard(props: AddressCardProps) {
                         <div className="text-gray-600">{state.cityLine}</div>
                     </Show>
                     <Show when={props.showCountry !== false && state.addr?.country}>
-                        <div className="text-gray-600">{state.addr?.country}</div>
+                        <div className="text-gray-600">{state.getCountryName(state.addr?.country)}</div>
                     </Show>
                     <Show when={!!props.showEmail && state.addr?.email}>
                         <div className="text-gray-600">{state.addr?.email}</div>

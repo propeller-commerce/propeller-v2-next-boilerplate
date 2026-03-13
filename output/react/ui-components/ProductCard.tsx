@@ -2,9 +2,6 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
-import  AddToCart from './AddToCart';
-import  ItemStock from './ItemStock';
 
 
 
@@ -225,6 +222,9 @@ computedTextLabels: () => {
 }[];
 }
 
+  import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
+import  AddToCart from './AddToCart';
+import  ItemStock from './ItemStock';
 
 
 
@@ -389,7 +389,7 @@ return (
   <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
 ) : null}{!!getProductPrice() ? (
   <div  className={isRow() ? '' : 'mt-auto pt-2'}><span  className={`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>{getProductPrice()}</span></div>
-) : null}</div><div  className={isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}><AddToCart  className="flex w-full items-center gap-2"  graphqlClient={props.graphqlClient}  user={props.user}  product={props.product}  cartId={props.cartId}  configuration={props.configuration}  childItems={props.childItems}  notes={props.notes}  price={props.price}  createCart={props.createCart}  onCartCreated={props.onCartCreated}  onAddToCart={props.onAddToCart}  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.allowIncrDecr}  enableStockValidation={props.enableStockValidation}  language={props.language}  onProceedToCheckout={props.onProceedToCheckout}  labels={props.addToCartLabels}  /></div></div>
+) : null}</div><div  className={isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}><AddToCart  className="flex w-full items-center gap-2"  graphqlClient={props.graphqlClient}  user={props.user}  product={props.product}  cartId={props.cartId}  configuration={props.configuration}  childItems={props.childItems}  notes={props.notes}  price={props.price}  createCart={props.createCart}  onCartCreated={(event) => props.onCartCreated() }  onAddToCart={(event) => props.onAddToCart() }  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.allowIncrDecr}  enableStockValidation={props.enableStockValidation}  language={props.language}  onProceedToCheckout={(event) => props.onProceedToCheckout() }  labels={props.addToCartLabels}  /></div></div>
 
 
 );

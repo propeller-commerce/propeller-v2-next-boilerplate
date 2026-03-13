@@ -97,6 +97,9 @@ export default function OrderItemCard(props: OrderItemCardProps) {
     get price(): number {
       return props.orderItem?.price || 0;
     },
+    get priceTotal(): number {
+      return props.orderItem?.priceTotal || 0;
+    },
     get discount(): number {
       return props.orderItem?.discount || 0;
     },
@@ -188,7 +191,7 @@ export default function OrderItemCard(props: OrderItemCardProps) {
         </Show>
         <Show when={state.showPrice}>
           <td className={state.isChildItem ? 'px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600' : 'px-6 py-4 text-right whitespace-nowrap'}>
-            {state.formatItemPrice(state.price)}
+            {state.formatItemPrice(state.priceTotal)}
           </td>
         </Show>
       </tr>
@@ -209,7 +212,7 @@ export default function OrderItemCard(props: OrderItemCardProps) {
               </Show>
               <Show when={state.showPrice}>
                 <td className="px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">
-                  {state.formatItemPrice(child.price || 0)}
+                  {state.formatItemPrice(child.priceTotal || 0)}
                 </td>
               </Show>
             </tr>

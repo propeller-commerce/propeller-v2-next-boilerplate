@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { countries as countryList } from '@/data/countries';
 
 
 
@@ -46,6 +47,12 @@ formatDate?: (dateString: string) => string;
 
 /** Labels for the component */
 labels?: Record<string, string>;
+
+/** List of countries for resolving codes to names [{code: 'NL', name: 'Netherlands'}, ...] */
+countries?: {
+  code: string;
+  name: string;
+}[];
 }
 
 
@@ -119,6 +126,16 @@ return props.order?.remarks || '';
 
 function getLabel(key: string, fallback: string) {
 return props.labels?.[key] || fallback;
+}
+
+
+function getCountryName(code: string) {
+if (!code) return '';
+const list = props.countries || countryList;
+for (let i = 0; i < list.length; i++) {
+if (list[i].code === code) return list[i].name;
+}
+return code;
 }
 
 
@@ -214,7 +231,7 @@ return (
   <div className="text-sm space-y-1">{invoiceAddress().company ? (
   <p className="font-medium">{invoiceAddress().company}</p>
 ) : null}<p>{[invoiceAddress().firstName, invoiceAddress().middleName, invoiceAddress().lastName].filter(Boolean).join(' ')}</p><p>{[invoiceAddress().street, invoiceAddress().number, invoiceAddress().numberExtension].filter(Boolean).join(' ')}</p><p>{[invoiceAddress().postalCode, invoiceAddress().city].filter(Boolean).join(' ')}</p>{invoiceAddress().country ? (
-  <p>{invoiceAddress().country}</p>
+  <p>{getCountryName(invoiceAddress().country)}</p>
 ) : null}{invoiceAddress().email ? (
   <p className="text-gray-500">{invoiceAddress().email}</p>
 ) : null}</div>
@@ -224,7 +241,7 @@ return (
   <div className="text-sm space-y-1">{deliveryAddress().company ? (
   <p className="font-medium">{deliveryAddress().company}</p>
 ) : null}<p>{[deliveryAddress().firstName, deliveryAddress().middleName, deliveryAddress().lastName].filter(Boolean).join(' ')}</p><p>{[deliveryAddress().street, deliveryAddress().number, deliveryAddress().numberExtension].filter(Boolean).join(' ')}</p><p>{[deliveryAddress().postalCode, deliveryAddress().city].filter(Boolean).join(' ')}</p>{deliveryAddress().country ? (
-  <p>{deliveryAddress().country}</p>
+  <p>{getCountryName(deliveryAddress().country)}</p>
 ) : null}{deliveryAddress().email ? (
   <p className="text-gray-500">{deliveryAddress().email}</p>
 ) : null}</div>

@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
+import { countries as countryList } from '@/data/countries';
 
 
 
@@ -165,6 +166,16 @@ const [_editIcp, set_editIcp] = useState(() => (false))
 
 function getLabel(key: string, fallback: string) {
 return (props.labels as any)?.[key] || fallback;
+}
+
+
+function getCountryName(code: string) {
+if (!code) return '';
+const list = props.countries || countryList;
+for (let i = 0; i < list.length; i++) {
+if (list[i].code === code) return list[i].name;
+}
+return code;
 }
 
 
@@ -347,7 +358,7 @@ return (
 ) : null}{cityLine() ? (
   <div className="text-gray-600">{cityLine()}</div>
 ) : null}{props.showCountry !== false && addr?.()?.country ? (
-  <div className="text-gray-600">{addr?.()?.country}</div>
+  <div className="text-gray-600">{getCountryName(addr?.()?.country)}</div>
 ) : null}{!!props.showEmail && addr?.()?.email ? (
   <div className="text-gray-600">{addr?.()?.email}</div>
 ) : null}{!!props.showPhone && addr?.()?.phone ? (
@@ -392,7 +403,7 @@ set_editPostalCode(e.target.value);
 set_editCity(e.target.value);
 } }  required  /></div></div><div><label className="block text-sm font-medium mb-1">{getLabel('country', 'Country')} *</label><select className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"  value={_editCountry}  onChange={(e) => {
 set_editCountry(e.target.value);
-} }  required><option  value="">{getLabel('selectCountry', 'Select country')}</option>{props.countries || []?.map((c) => (
+} }  required><option  value="">{getLabel('selectCountry', 'Select country')}</option>{(props.countries || countryList)?.map((c) => (
   <option  key={c.code}  value={c.code}>{c.name}</option>
 ))}</select></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">{getLabel('email', 'Email')} *</label><input  type="email" className="w-full h-10 px-3 rounded-md border border-gray-300"  value={_editEmail}  onChange={(e) => {
 set_editEmail(e.target.value);
@@ -432,7 +443,7 @@ set_editPostalCode(e.target.value);
 set_editCity(e.target.value);
 } }  required  /></div></div><div><label className="block text-sm font-medium mb-1">{getLabel('country', 'Country')} *</label><select className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"  value={_editCountry}  onChange={(e) => {
 set_editCountry(e.target.value);
-} }  required><option  value="">{getLabel('selectCountry', 'Select country')}</option>{props.countries || []?.map((c) => (
+} }  required><option  value="">{getLabel('selectCountry', 'Select country')}</option>{(props.countries || countryList)?.map((c) => (
   <option  key={c.code}  value={c.code}>{c.name}</option>
 ))}</select></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">{getLabel('email', 'Email')} *</label><input  type="email" className="w-full h-10 px-3 rounded-md border border-gray-300"  value={_editEmail}  onChange={(e) => {
 set_editEmail(e.target.value);

@@ -42,6 +42,9 @@ export interface OrderSummaryProps {
 
     /** Labels for the component */
     labels?: Record<string, string>;
+
+    /** List of countries for resolving codes to names [{code: 'NL', name: 'Netherlands'}, ...] */
+    countries?: { code: string; name: string }[];
 }
 
 export default function OrderSummary(props: OrderSummaryProps) {
@@ -99,6 +102,15 @@ export default function OrderSummary(props: OrderSummaryProps) {
 
         getLabel(key: string, fallback: string) {
             return props.labels?.[key] || fallback;
+        },
+
+        getCountryName(code: string): string {
+            if (!code) return '';
+            const list = props.countries || [];
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].code === code) return list[i].name;
+            }
+            return code;
         },
 
         formatOrderDate(dateString: string) {
@@ -215,7 +227,7 @@ export default function OrderSummary(props: OrderSummaryProps) {
                                     {[state.invoiceAddress.postalCode, state.invoiceAddress.city].filter(Boolean).join(' ')}
                                 </p>
                                 <Show when={state.invoiceAddress.country}>
-                                    <p>{state.invoiceAddress.country}</p>
+                                    <p>{state.getCountryName(state.invoiceAddress.country)}</p>
                                 </Show>
                                 <Show when={state.invoiceAddress.email}>
                                     <p className="text-gray-500">{state.invoiceAddress.email}</p>
@@ -244,7 +256,7 @@ export default function OrderSummary(props: OrderSummaryProps) {
                                     {[state.deliveryAddress.postalCode, state.deliveryAddress.city].filter(Boolean).join(' ')}
                                 </p>
                                 <Show when={state.deliveryAddress.country}>
-                                    <p>{state.deliveryAddress.country}</p>
+                                    <p>{state.getCountryName(state.deliveryAddress.country)}</p>
                                 </Show>
                                 <Show when={state.deliveryAddress.email}>
                                     <p className="text-gray-500">{state.deliveryAddress.email}</p>

@@ -69,6 +69,29 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
+    /** Get the user's default address of a given type */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const getUserDefaultAddress = (type: 'invoice' | 'delivery'): any | null => {
+      const user = authState.user;
+      if (!user) return null;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let addresses: any[] = [];
+      if (isContact(user)) {
+        const company = getActiveCompany();
+        if (company) addresses = company.addresses || [];
+      } else if (isCustomer(user)) {
+        addresses = user.addresses || [];
+      }
+
+      const addressType = type === 'invoice' ? Enums.AddressType.invoice : Enums.AddressType.delivery;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        || addresses.find((a: any) => a.type === addressType)
+        || null;
+    };
+
     const initializeCheckout = async () => {
       let cartToUse = contextCart;
       if (!cartToUse) {
@@ -82,13 +105,88 @@ export default function CheckoutPage() {
       }
 
       if (cartToUse && cartToUse.items && cartToUse.items.length > 0) {
+        const hasInvoiceAddress = !!cartToUse.invoiceAddress?.street;
+        const hasDeliveryAddress = !!cartToUse.deliveryAddress?.street;
+
+        // If user is logged in and cart is missing addresses, pre-populate from user's defaults
+        if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
+          try {
+            let updatedCart = cartToUse;
+
+            if (!hasInvoiceAddress) {
+              const defaultInvoice = getUserDefaultAddress('invoice');
+              if (defaultInvoice) {
+                const input: CartUpdateAddressInput = {
+                  type: Enums.CartAddressType.INVOICE,
+                  firstName: defaultInvoice.firstName || '',
+                  lastName: defaultInvoice.lastName || '',
+                  street: defaultInvoice.street || '',
+                  postalCode: defaultInvoice.postalCode || '',
+                  city: defaultInvoice.city || '',
+                  company: defaultInvoice.company,
+                  gender: defaultInvoice.gender,
+                  middleName: defaultInvoice.middleName,
+                  number: defaultInvoice.number,
+                  numberExtension: defaultInvoice.numberExtension,
+                  country: defaultInvoice.country,
+                  email: defaultInvoice.email,
+                  mobile: defaultInvoice.mobile,
+                  phone: defaultInvoice.phone,
+                };
+                updatedCart = await cartService.updateCartAddress({
+                  id: updatedCart.cartId,
+                  input,
+                  imageVariantFilters: imageVariantFiltersSmall,
+                  imageSearchFilters: imageSearchFiltersGrid,
+                  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+                });
+              }
+            }
+
+            if (!hasDeliveryAddress) {
+              const defaultDelivery = getUserDefaultAddress('delivery');
+              if (defaultDelivery) {
+                const input: CartUpdateAddressInput = {
+                  type: Enums.CartAddressType.DELIVERY,
+                  firstName: defaultDelivery.firstName || '',
+                  lastName: defaultDelivery.lastName || '',
+                  street: defaultDelivery.street || '',
+                  postalCode: defaultDelivery.postalCode || '',
+                  city: defaultDelivery.city || '',
+                  company: defaultDelivery.company,
+                  gender: defaultDelivery.gender,
+                  middleName: defaultDelivery.middleName,
+                  number: defaultDelivery.number,
+                  numberExtension: defaultDelivery.numberExtension,
+                  country: defaultDelivery.country,
+                  email: defaultDelivery.email,
+                  mobile: defaultDelivery.mobile,
+                  phone: defaultDelivery.phone,
+                };
+                updatedCart = await cartService.updateCartAddress({
+                  id: updatedCart.cartId,
+                  input,
+                  imageVariantFilters: imageVariantFiltersSmall,
+                  imageSearchFilters: imageSearchFiltersGrid,
+                  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+                });
+              }
+            }
+
+            localStorage.setItem('cart', serializeCart(updatedCart));
+            cartToUse = updatedCart;
+          } catch (error) {
+            console.error('Error pre-populating cart addresses:', error);
+          }
+        }
+
         setState(prev => {
-          if (prev.cart?.cartId === cartToUse?.cartId) return prev;
-          const hasInvoiceAddress = cartToUse.invoiceAddress?.street;
-          const hasDeliveryAddress = cartToUse.deliveryAddress?.street;
-          if (hasInvoiceAddress && hasDeliveryAddress) {
+          if (prev.cart?.cartId === cartToUse?.cartId && prev.cart?.invoiceAddress?.street === cartToUse?.invoiceAddress?.street) return prev;
+          const updatedHasInvoice = !!cartToUse.invoiceAddress?.street;
+          const updatedHasDelivery = !!cartToUse.deliveryAddress?.street;
+          if (updatedHasInvoice && updatedHasDelivery) {
             return { ...prev, cart: cartToUse, currentStep: 3 };
-          } else if (hasInvoiceAddress) {
+          } else if (updatedHasInvoice) {
             return { ...prev, cart: cartToUse, currentStep: 2 };
           } else {
             return { ...prev, cart: cartToUse, currentStep: 1 };
@@ -97,7 +195,8 @@ export default function CheckoutPage() {
       }
     };
     initializeCheckout();
-  }, [contextCart, router, state.loading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextCart, router, state.loading, authState.isAuthenticated, authState.user]);
 
   useEffect(() => {
     if (state.currentStep) {

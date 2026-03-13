@@ -7,23 +7,15 @@ import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { orderService } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import AddressCard from '@/components/account/AddressCard';
-import Image from 'next/image';
-import { Address, OrderItem } from 'propeller-sdk-v2';
+import OrderSummary from '@/components/propeller/OrderSummary';
+import { OrderItem } from 'propeller-sdk-v2';
+import OrderItemCard from '@/components/propeller/OrderItemCard';
+import OrderTotals from '@/components/propeller/OrderTotals';
 
 interface OrderDetails {
   orderId: string;
-  orderNumber?: string;
-  status?: string;
-  totalAmount?: number;
-  currency?: string;
-  orderDate?: string;
-  deliveryAddress?: Address;
-  invoiceAddress?: Address;
+  order: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   items?: OrderItem[];
-  paymentMethod?: string;
-  carrier?: string;
-  deliveryDate?: string;
 }
 
 export default function ThankYouPage() {
@@ -50,17 +42,8 @@ export default function ThankYouPage() {
 
       setOrderDetails({
         orderId: orderId,
-        orderNumber: String(order.id) || orderId,
-        status: order.status,
-        totalAmount: order.total?.gross || 0,
-        currency: '€',
-        orderDate: order.createdAt,
-        deliveryAddress: order.addresses?.find((addr: Address) => addr.type === 'delivery'),
-        invoiceAddress: order.addresses?.find((addr: Address) => addr.type === 'invoice'),
+        order: order,
         items: order.items || [],
-        paymentMethod: order.paymentData?.method,
-        carrier: order.postageData?.carrier,
-        deliveryDate: order.postageData?.requestDate
       });
     } catch (err) {
       console.error('Failed to fetch order details:', err);
@@ -73,19 +56,6 @@ export default function ThankYouPage() {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `€${amount.toFixed(2)}`;
-  };
 
   if (loading) {
     return (
@@ -136,100 +106,115 @@ export default function ThankYouPage() {
             <div className="space-y-8">
               {/* Order Summary */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold mb-6 pb-2 border-b">Order Summary</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">Order Number</p>
-                    <p className="font-semibold">{orderDetails.orderNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">Order Date</p>
-                    <p className="font-semibold">{formatDate(orderDetails.orderDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">Status</p>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800">
-                      {orderDetails.status || 'Processing'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">Total Amount</p>
-                    <p className="font-bold text-lg text-blue-600">{formatCurrency(orderDetails.totalAmount || 0)}</p>
-                  </div>
-                </div>
+                <OrderSummary
+                  order={orderDetails.order}
+                  title="Order Summary"
+                />
               </div>
 
-              {/* Delivery Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold mb-4">Delivery Address</h3>
-                  {orderDetails.deliveryAddress ? (
-                    <div className="min-h-[120px]">
-                      <AddressCard address={orderDetails.deliveryAddress} showActions={false} />
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No delivery address available</p>
-                  )}
-                </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold mb-4">Delivery Details</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Carrier</span>
-                      <span className="font-medium">{orderDetails.carrier || 'Standard'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Expected Delivery</span>
-                      <span className="font-medium">{formatDate(orderDetails.deliveryDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Payment Method</span>
-                      <span className="font-medium">{orderDetails.paymentMethod || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Order Overview */}
+              <div className="pt-10">
+                  <h2 className="text-2xl font-bold mb-6">Order Overview</h2>
 
-              {/* Order Items */}
-              {orderDetails.items && orderDetails.items.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-xl font-bold">Order Items</h3>
-                  </div>
-                  <div className="divide-y divide-gray-200">
-                    {orderDetails.items.map((item: OrderItem, index: number) => {
-                      const productImage = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-                      return (
-                        <div key={index} className="p-6 flex items-center gap-6">
-                          <div className="bg-gray-100 rounded-md p-2 w-20 h-20 flex-shrink-0 flex items-center justify-center">
-                            {productImage ? (
-                              <Image
-                                src={productImage}
-                                alt={item.product?.names?.[0]?.value || 'Product'}
-                                width={64}
-                                height={64}
-                                className="object-contain w-full h-full"
-                              />
-                            ) : (
-                              <span className="text-2xl">📦</span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 truncate">
-                              {item.product?.names?.[0]?.value || 'Product'}
-                            </h4>
-                            <p className="text-sm text-gray-500 mt-1">SKU: {item.product?.sku || 'N/A'}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-500">Qty: {item.quantity || 1}</p>
-                            <p className="font-bold text-gray-900 mt-1">{formatCurrency(item.priceTotalNet || 0)}</p>
-                          </div>
-                        </div>
+                  {/* Regular Products (grouped parent/child) */}
+                  {(() => {
+                      const allProducts = orderDetails.order.items?.filter((item: OrderItem) =>
+                          item.class === "product" && item.isBonus === "N"
+                      ) || [];
+                      const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
+                      const childMap = new Map<number, OrderItem[]>();
+                      allProducts.filter((item: OrderItem) => item.parentOrderItemId).forEach((item: OrderItem) => {
+                          const children = childMap.get(item.parentOrderItemId!) || [];
+                          children.push(item);
+                          childMap.set(item.parentOrderItemId!, children);
+                      });
+
+                      if (parentItems.length > 0) {
+                          return (
+                              <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+                                  <table className="w-full">
+                                      <thead className="bg-gray-50 border-b">
+                                          <tr>
+                                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 w-2/3">Product</th>
+                                              <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">Quantity</th>
+                                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
+                                          </tr>
+                                      </thead>
+                                      {parentItems.map((item: OrderItem) => (
+                                          <OrderItemCard
+                                              key={item.id}
+                                              orderItem={item}
+                                              childItems={childMap.get(item.id) || []}
+                                          />
+                                      ))}
+                                  </table>
+                              </div>
+                          );
+                      }
+                      return null;
+                  })()}
+
+                  {/* Bonus Items */}
+                  {(() => {
+                      const bonusItems = orderDetails.order.items?.filter((item: OrderItem) =>
+                          item.class === "product" && item.isBonus === "Y"
                       );
-                    })}
-                  </div>
-                </div>
-              )}
+
+                      if (bonusItems?.length > 0) {
+                          return (
+                              <div className="mb-8">
+                                  <h3 className="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
+                                  <div className="bg-white rounded-lg shadow overflow-hidden">
+                                      <table className="w-full">
+                                          <thead className="bg-gray-50 border-b">
+                                              <tr>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                                              </tr>
+                                          </thead>
+                                          {bonusItems.map((item: OrderItem) => (
+                                              <OrderItemCard
+                                                  key={item.id}
+                                                  orderItem={item}
+                                                  titleLinkable={false}
+                                              />
+                                          ))}
+                                      </table>
+                                  </div>
+                              </div>
+                          );
+                      }
+                      return null;
+                  })()}
+
+                  {/* Surcharges */}
+                  {(() => {
+                      const surcharges = orderDetails.order.items?.filter((item: OrderItem) => item.class === "surcharge");
+
+                      if (surcharges?.length > 0) {
+                          return (
+                              <div className="mb-8">
+                                  <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
+                                  <div className="bg-white rounded-lg shadow overflow-hidden">
+                                      <table className="w-full">
+                                          {surcharges.map((item: OrderItem) => (
+                                              <OrderItemCard
+                                                  key={item.id}
+                                                  orderItem={item}
+                                                  titleLinkable={false}
+                                                  showImage={false}
+                                                  showSku={false}
+                                              />
+                                          ))}
+                                      </table>
+                                  </div>
+                              </div>
+                          );
+                      }
+                      return null;
+                  })()}
+              </div>  
 
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">

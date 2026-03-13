@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef } from 'react';
-import ProductOrClusterCard from './ProductOrClusterCard';
 import { Product, Cluster } from 'propeller-sdk-v2';
 
 interface ProductSliderProps {
@@ -69,7 +68,7 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
             key={(product as Product).productId || (product as Cluster).clusterId}
             className="flex-shrink-0 w-72"
           >
-            <ProductOrClusterCard item={product} />
+            {/* <ProductOrClusterCard item={product} /> */}
           </div>
         ))}
       </div>

@@ -111,6 +111,17 @@ export interface AccountIconAndMenuProps {
      * Additional class name for the dropdown menu.
      */
     menuClassName?: string;
+
+    /**
+     * Render mode: 'dropdown' (header icon + popup) or 'sidebar' (always-visible vertical nav).
+     * @default 'dropdown'
+     */
+    variant?: 'dropdown' | 'sidebar';
+
+    /**
+     * Current path for active link highlighting in sidebar mode.
+     */
+    currentPath?: string;
 }
 
 interface AccountIconAndMenuState {
@@ -130,6 +141,8 @@ interface AccountIconAndMenuState {
     handleRegisterClick: () => void;
     closeMenu: () => void;
     _clickOutsideListener: { handler: any };
+    isSidebar: boolean;
+    isActiveLink: (href: string) => boolean;
 }
 
 export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
@@ -211,19 +224,31 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
         },
 
         _clickOutsideListener: { handler: null as any },
+
+        get isSidebar() {
+            return props.variant === 'sidebar';
+        },
+
+        isActiveLink(href: string) {
+            if (!props.currentPath) return false;
+            if (href === '/account') return props.currentPath === '/account';
+            return props.currentPath.startsWith(href);
+        },
     });
 
     onMount(() => {
         state._isMounted = true;
 
-        const listener = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (target && !target.closest('[data-account-menu]')) {
-                state.menuOpen = false;
-            }
-        };
-        state._clickOutsideListener = { handler: listener };
-        document.addEventListener('mousedown', listener);
+        if (!state.isSidebar) {
+            const listener = (e: MouseEvent) => {
+                const target = e.target as HTMLElement;
+                if (target && !target.closest('[data-account-menu]')) {
+                    state.menuOpen = false;
+                }
+            };
+            state._clickOutsideListener = { handler: listener };
+            document.addEventListener('mousedown', listener);
+        }
     });
 
     onUpdate(() => {
@@ -236,189 +261,227 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     }, [props.user]);
 
     return (
-        <div className="relative" data-account-menu>
-            {/* Account Icon Button */}
-            <button
-                type="button"
-                onClick={() => state.handleIconClick()}
-                className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}
-                aria-label={state.getLabel('accountLabel', 'Account')}
-            >
-                {/* User icon SVG */}
-                <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
+        <div className={state.isSidebar ? 'flex flex-col h-full' : 'relative'} data-account-menu>
+            {/* === DROPDOWN MODE === */}
+            <Show when={!state.isSidebar}>
+                {/* Account Icon Button */}
+                <button
+                    type="button"
+                    onClick={() => state.handleIconClick()}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}
+                    aria-label={state.getLabel('accountLabel', 'Account')}
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                    />
-                </svg>
+                    <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                        />
+                    </svg>
 
-                <Show when={state._isMounted}>
-                    <Show when={props.user}>
-                        <span className="hidden md:block font-normal">
-                            Hi, {state.getUserName()}
-                        </span>
-                    </Show>
-                    <Show when={!props.user}>
-                        <span className="hidden md:block font-normal">
-                            {state.getLabel('accountLabel', 'Account')}
-                        </span>
-                    </Show>
-                </Show>
-            </button>
-
-            {/* Dropdown Menu */}
-            <Show when={state.menuOpen}>
-                <div className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}>
                     <Show when={state._isMounted}>
-
-                        {/* Authenticated: Account Menu */}
-                        <Show when={!!props.user}>
-                            <div className="pb-3 mb-3 border-b border-gray-200">
-                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
-                                    {state.getLabel('signedInAs', 'Signed in as')}
-                                </p>
-                                <p className="font-medium text-gray-900 truncate">
-                                    {state.getUserName()}
-                                </p>
-                            </div>
-
-                            <nav>
-                                <ul className="space-y-0.5">
-                                    <For each={state.getMenuLinks()}>
-                                        {(link: AccountMenuLink) => (
-                                            <li key={link.href}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => state.handleMenuItemClick(link.href)}
-                                                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                                                >
-                                                    {link.label}
-                                                </button>
-                                            </li>
-                                        )}
-                                    </For>
-                                </ul>
-                            </nav>
-
-                            <div className="mt-3 pt-3 border-t border-gray-200">
-                                <button
-                                    type="button"
-                                    onClick={() => state.handleLogoutClick()}
-                                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                >
-                                    {state.getLabel('logoutLabel', 'Log Out')}
-                                </button>
-                            </div>
+                        <Show when={props.user}>
+                            <span className="hidden md:block font-normal">
+                                Hi, {state.getUserName()}
+                            </span>
                         </Show>
-
-                        {/* Not Authenticated: Login Form or simple message */}
                         <Show when={!props.user}>
-                            <Show when={props.accountHeaderLoginForm !== false}>
-                                <form onSubmit={(e) => state.handleLoginSubmit(e)}>
-                                    <div className="text-center mb-3">
-                                        <h4 className="text-lg font-semibold">
-                                            {state.getLabel('loginTitle', 'Welcome Back')}
-                                        </h4>
-                                        <p className="text-sm text-gray-500">
-                                            {state.getLabel('loginSubtitle', 'Login to access your account')}
-                                        </p>
-                                    </div>
+                            <span className="hidden md:block font-normal">
+                                {state.getLabel('accountLabel', 'Account')}
+                            </span>
+                        </Show>
+                    </Show>
+                </button>
 
-                                    <div className="space-y-3">
-                                        <div className="space-y-1">
-                                            <label htmlFor="account-email" className="text-xs font-medium text-gray-700">
-                                                {state.getLabel('emailLabel', 'Email')}
-                                            </label>
-                                            <input
-                                                type="email"
-                                                id="account-email"
-                                                value={state.email}
-                                                onChange={(e) => { state.email = (e.target as HTMLInputElement).value; }}
-                                                required
-                                                placeholder={state.getLabel('emailPlaceholder', 'name@example.com')}
-                                                className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-500"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <label htmlFor="account-password" className="text-xs font-medium text-gray-700">
-                                                {state.getLabel('passwordLabel', 'Password')}
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="account-password"
-                                                value={state.password}
-                                                onChange={(e) => { state.password = (e.target as HTMLInputElement).value; }}
-                                                required
-                                                placeholder={state.getLabel('passwordPlaceholder', '••••••••')}
-                                                className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        disabled={!!props.loginLoading}
-                                        className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
-                                    >
-                                        <Show when={!!props.loginLoading}>
-                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                            </svg>
-                                        </Show>
-                                        {state.getLabel('loginButton', 'Log In')}
-                                    </button>
-
-                                    <div className="flex flex-col gap-2 text-sm pt-3 text-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => state.handleForgotPasswordClick()}
-                                            className="text-violet-600 hover:underline text-xs"
-                                        >
-                                            {state.getLabel('forgotPassword', 'Forgot Password?')}
-                                        </button>
-                                        <div className="text-xs text-gray-500">
-                                            {state.getLabel('noAccount', "Don't have an account?")}{' '}
-                                            <button
-                                                type="button"
-                                                onClick={() => state.handleRegisterClick()}
-                                                className="text-violet-600 hover:underline font-medium"
-                                            >
-                                                {state.getLabel('registerLink', 'Register')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </Show>
-
-                            <Show when={props.accountHeaderLoginForm === false}>
-                                <div className="text-center py-4">
-                                    <h4 className="text-lg font-semibold mb-2">
-                                        {state.getMenuTitle()}
-                                    </h4>
-                                    <p className="text-sm text-gray-500 mb-4">
-                                        {state.getLabel('loginSubtitle', 'Login to access your account')}
+                {/* Dropdown Menu */}
+                <Show when={state.menuOpen}>
+                    <div className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}>
+                        <Show when={state._isMounted}>
+                            <Show when={!!props.user}>
+                                <div className="pb-3 mb-3 border-b border-gray-200">
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+                                        {state.getLabel('signedInAs', 'Signed in as')}
                                     </p>
+                                    <p className="font-medium text-gray-900 truncate">
+                                        {state.getUserName()}
+                                    </p>
+                                </div>
+
+                                <nav>
+                                    <ul className="space-y-0.5">
+                                        <For each={state.getMenuLinks()}>
+                                            {(link: AccountMenuLink) => (
+                                                <li key={link.href}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => state.handleMenuItemClick(link.href)}
+                                                        className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                                                    >
+                                                        {link.label}
+                                                    </button>
+                                                </li>
+                                            )}
+                                        </For>
+                                    </ul>
+                                </nav>
+
+                                <div className="mt-3 pt-3 border-t border-gray-200">
                                     <button
                                         type="button"
-                                        onClick={() => { state.closeMenu(); if (props.onAccountIconClick) props.onAccountIconClick(); }}
-                                        className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                                        onClick={() => state.handleLogoutClick()}
+                                        className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                     >
-                                        {state.getLabel('loginButton', 'Log In')}
+                                        {state.getLabel('logoutLabel', 'Log Out')}
                                     </button>
                                 </div>
                             </Show>
-                        </Show>
 
-                    </Show>
+                            <Show when={!props.user}>
+                                <Show when={props.accountHeaderLoginForm !== false}>
+                                    <form onSubmit={(e) => state.handleLoginSubmit(e)}>
+                                        <div className="text-center mb-3">
+                                            <h4 className="text-lg font-semibold">
+                                                {state.getLabel('loginTitle', 'Welcome Back')}
+                                            </h4>
+                                            <p className="text-sm text-gray-500">
+                                                {state.getLabel('loginSubtitle', 'Login to access your account')}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="space-y-1">
+                                                <label htmlFor="account-email" className="text-xs font-medium text-gray-700">
+                                                    {state.getLabel('emailLabel', 'Email')}
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    id="account-email"
+                                                    value={state.email}
+                                                    onChange={(e) => { state.email = (e.target as HTMLInputElement).value; }}
+                                                    required
+                                                    placeholder={state.getLabel('emailPlaceholder', 'name@example.com')}
+                                                    className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-500"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label htmlFor="account-password" className="text-xs font-medium text-gray-700">
+                                                    {state.getLabel('passwordLabel', 'Password')}
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    id="account-password"
+                                                    value={state.password}
+                                                    onChange={(e) => { state.password = (e.target as HTMLInputElement).value; }}
+                                                    required
+                                                    placeholder={state.getLabel('passwordPlaceholder', '••••••••')}
+                                                    className="flex h-9 w-full rounded-md border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-violet-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={!!props.loginLoading}
+                                            className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
+                                        >
+                                            <Show when={!!props.loginLoading}>
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                </svg>
+                                            </Show>
+                                            {state.getLabel('loginButton', 'Log In')}
+                                        </button>
+
+                                        <div className="flex flex-col gap-2 text-sm pt-3 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => state.handleForgotPasswordClick()}
+                                                className="text-violet-600 hover:underline text-xs"
+                                            >
+                                                {state.getLabel('forgotPassword', 'Forgot Password?')}
+                                            </button>
+                                            <div className="text-xs text-gray-500">
+                                                {state.getLabel('noAccount', "Don't have an account?")}{' '}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => state.handleRegisterClick()}
+                                                    className="text-violet-600 hover:underline font-medium"
+                                                >
+                                                    {state.getLabel('registerLink', 'Register')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </Show>
+
+                                <Show when={props.accountHeaderLoginForm === false}>
+                                    <div className="text-center py-4">
+                                        <h4 className="text-lg font-semibold mb-2">
+                                            {state.getMenuTitle()}
+                                        </h4>
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            {state.getLabel('loginSubtitle', 'Login to access your account')}
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => { state.closeMenu(); if (props.onAccountIconClick) props.onAccountIconClick(); }}
+                                            className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                                        >
+                                            {state.getLabel('loginButton', 'Log In')}
+                                        </button>
+                                    </div>
+                                </Show>
+                            </Show>
+                        </Show>
+                    </div>
+                </Show>
+            </Show>
+
+            {/* === SIDEBAR MODE === */}
+            <Show when={state.isSidebar}>
+                <div className="p-4 border-b border-gray-200">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+                        {state.getLabel('signedInAs', 'Signed in as')}
+                    </p>
+                    <p className="font-medium text-gray-900 truncate">
+                        {state.getUserName()}
+                    </p>
+                </div>
+
+                <nav className="flex-1 py-2">
+                    <ul className="space-y-0.5 px-2">
+                        <For each={state.getMenuLinks()}>
+                            {(link: AccountMenuLink) => (
+                                <li key={link.href}>
+                                    <button
+                                        type="button"
+                                        onClick={() => state.handleMenuItemClick(link.href)}
+                                        className={`flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${state.isActiveLink(link.href) ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
+                                    >
+                                        {link.label}
+                                    </button>
+                                </li>
+                            )}
+                        </For>
+                    </ul>
+                </nav>
+
+                <div className="p-2 mt-auto border-t border-gray-200">
+                    <button
+                        type="button"
+                        onClick={() => state.handleLogoutClick()}
+                        className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                        {state.getLabel('logoutLabel', 'Log Out')}
+                    </button>
                 </div>
             </Show>
         </div>

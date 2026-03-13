@@ -1,12 +1,14 @@
 # AccountIconAndMenu
 
-A header-level user access control component that adapts based on authentication state. Displays an account icon which, when clicked, opens a configurable dropdown menu containing either a login form (unauthenticated) or account navigation links (authenticated).
+A versatile user access control component with two rendering modes: a **dropdown** for the header (icon + popup menu) and a **sidebar** for account page navigation. Adapts based on authentication state.
 
 ## Props
 
 | Prop | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `user` | `Contact \| Customer \| null` | No | `null` | The authenticated user. When present, shows account menu; when null, shows login form. |
+| `variant` | `'dropdown' \| 'sidebar'` | No | `'dropdown'` | Render mode: `dropdown` for header icon + popup, `sidebar` for always-visible vertical nav. |
+| `currentPath` | `string` | No | — | Current route path for active link highlighting in sidebar mode. |
 | `icon` | `string` | No | `'default-account-icon'` | Icon identifier for the account icon in header. |
 | `showAccountMenuOnClick` | `boolean` | No | `true` | Show account dropdown when icon is clicked. If false, fires `onAccountIconClick`. |
 | `accountMenuTitle` | `string` | No | `'My account'` | Title for the account dropdown menu. |
@@ -56,6 +58,8 @@ A header-level user access control component that adapts based on authentication
 
 ## Usage
 
+### Dropdown Mode (Header)
+
 ```tsx
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 
@@ -70,13 +74,46 @@ import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 />
 ```
 
+### Sidebar Mode (Account Layout)
+
+```tsx
+import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
+
+<AccountIconAndMenu
+  variant="sidebar"
+  user={state.user}
+  currentPath={pathname}
+  onMenuItemClick={(href) => router.push(href)}
+  onLogoutClick={() => logout()}
+  menuLinks={[
+    { label: 'Dashboard', href: '/account' },
+    { label: 'Addresses', href: '/account/addresses' },
+    { label: 'Orders', href: '/account/orders' },
+    { label: 'Quotes', href: '/account/quotes' },
+    { label: 'Invoices', href: '/account/invoices' },
+    { label: 'Favorites', href: '/account/favorites' },
+    { label: 'Price Requests', href: '/account/price-requests' },
+  ]}
+/>
+```
+
 ## Behavior
 
+### Dropdown Mode (default)
 - **Unauthenticated**: Shows "Account" label next to icon. Dropdown contains login form with email/password fields, login button, forgot password link, and register link.
 - **Authenticated**: Shows "Hi, {firstName}" next to icon. Dropdown shows user info header, navigation links, and logout button.
 - **Click outside**: Dropdown closes automatically when clicking outside the component.
 - **Login success**: Dropdown auto-closes and form resets when `user` prop changes from null to a user object.
+
+### Sidebar Mode
+- Always-visible vertical navigation with "Signed in as" header, menu links, and logout button.
+- Active link highlighting based on `currentPath` prop (exact match for `/account`, prefix match for sub-routes).
+- No click-outside listener or dropdown toggle logic.
+- Login form and icon button are not rendered.
+
+### Common
 - **Hydration safe**: Uses `_isMounted` guard to prevent server/client mismatch on user-dependent content.
+- All navigation is callback-based (`onMenuItemClick`, `onLogoutClick`) — parent handles routing and auth.
 
 ## Mitosis Source
 

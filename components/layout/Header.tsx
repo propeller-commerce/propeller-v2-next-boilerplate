@@ -7,13 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import CartSidebar from './CartSidebar';
 import SearchBar from '@/components/common/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/Badge';
 import { ShoppingBag, Menu as MenuIcon } from 'lucide-react';
 import { config } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
@@ -319,7 +317,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-      <CartSidebar />
     </>
   );
 }

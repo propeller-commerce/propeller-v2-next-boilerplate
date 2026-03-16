@@ -244,7 +244,7 @@ value: string;
 return (
 
 
-  <div  className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
+  <div  className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
   <div  className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}><a className="block h-full w-full"  href={getClusterUrl()}  onClick={(e) => handleClusterClick(e) }>{!!getClusterImageUrl() ? (
   <img className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"  src={getClusterImageUrl()}  alt={getClusterName()}  />
 ) : null}{!getClusterImageUrl() ? (

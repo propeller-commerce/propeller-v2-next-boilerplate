@@ -360,7 +360,7 @@ export default function ProductCard(props: ProductCardProps) {
 
     return (
         <div
-            className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${state.isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
+            className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${state.isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
         >
             {/* ── Image area ──────────────────────────────────── */}
             <Show when={props.showImage !== false}>

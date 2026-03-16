@@ -10,15 +10,9 @@
       "type": "string",
       "required": true
     },
-    "productIds": {
-      "type": "string",
-      "pluginOptions": {},
-      "regex": "^[0-9,\\s]*$"
-    },
-    "clusterIds": {
-      "type": "string",
-      "pluginOptions": {},
-      "regex": "^[0-9,\\s]*$"
+    "items": {
+      "type": "customField",
+      "customField": "plugin::propeller-product-picker.propeller-products"
     }
   }
 }

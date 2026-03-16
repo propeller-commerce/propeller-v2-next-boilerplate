@@ -118,8 +118,8 @@ export interface SharedProductSlider extends Struct.ComponentSchema {
     icon: 'shoppingCart';
   };
   attributes: {
-    clusterIds: Schema.Attribute.String;
-    productIds: Schema.Attribute.String;
+    items: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::propeller-product-picker.propeller-products'>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
   };
 }

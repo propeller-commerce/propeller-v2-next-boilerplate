@@ -410,7 +410,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                 <div
                     data-product-slider-track
                     onScroll={(e) => state.handleScroll(e)}
-                    className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
+                    className="flex items-stretch gap-6 overflow-x-auto scroll-smooth pb-4"
                     style={{
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none',
@@ -420,7 +420,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                         {(item: any, index: number) => (
                             <div
                                 key={state.getItemId(item) + '-' + index}
-                                className="flex-shrink-0"
+                                className="flex-shrink-0 self-stretch"
                                 style={{
                                     width: 'calc((100% - 4.5rem) / ' + state.desktopCount + ')',
                                 }}

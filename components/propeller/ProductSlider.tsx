@@ -364,13 +364,13 @@ function ProductSlider(props: ProductSliderProps) {
           ref={trackRef}
           data-product-slider-track
           onScroll={handleScroll}
-          className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
+          className="flex items-stretch gap-6 overflow-x-auto scroll-smooth pb-4"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {currentItems.map((item, index) => (
             <div
               key={getItemId(item) + '-' + index}
-              className="flex-shrink-0"
+              className="flex-shrink-0 self-stretch"
               style={{ width: cardWidth }}
             >
               {isCluster(item) ? (

@@ -128,13 +128,18 @@ function normalizeBlock(strapiUrl: string, raw: any): CmsBlock | null {
         _type: 'slider',
         files: (raw.files || []).map((f: any) => normalizeImage(strapiUrl, f)).filter(Boolean) as CmsImage[],
       };
-    case 'product-slider':
+    case 'product-slider': {
+      const items = typeof raw.items === 'string'
+        ? JSON.parse(raw.items || '[]')
+        : raw.items;
+      const parsed = Array.isArray(items) ? items : [];
       return {
         _type: 'product-slider',
         title: raw.title || '',
-        productIds: parseIds(raw.productIds),
-        clusterIds: parseIds(raw.clusterIds),
+        productIds: parsed.filter((p: any) => !p.isCluster).map((p: any) => p.id),
+        clusterIds: parsed.filter((p: any) => p.isCluster).map((p: any) => p.id),
       };
+    }
     default:
       return null;
   }

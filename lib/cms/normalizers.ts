@@ -55,6 +55,13 @@ function normalizeFooterColumn(raw: any): CmsFooterColumn {
   };
 }
 
+// ── Helpers ──
+
+function parseIds(raw: string | undefined): number[] {
+  if (!raw) return [];
+  return raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+}
+
 // ── Blocks ──
 
 const COMPONENT_MAP: Record<string, string> = {
@@ -67,6 +74,7 @@ const COMPONENT_MAP: Record<string, string> = {
   'shared.product-carousel': 'product-carousel',
   'shared.contact-form': 'contact-form',
   'shared.slider': 'slider',
+  'shared.product-slider': 'product-slider',
 };
 
 function normalizeValuePropItem(raw: any): CmsValuePropItem {
@@ -142,6 +150,18 @@ function normalizeBlock(raw: any): CmsBlock | null {
         _type: 'slider',
         files: (raw.files || []).map(normalizeImage).filter(Boolean) as CmsImage[],
       };
+    case 'product-slider': {
+      const items = typeof raw.items === 'string'
+        ? JSON.parse(raw.items || '[]')
+        : raw.items;
+      const parsed = Array.isArray(items) ? items : [];
+      return {
+        _type: 'product-slider',
+        title: raw.title || '',
+        productIds: parsed.filter((p: any) => !p.isCluster).map((p: any) => p.id),
+        clusterIds: parsed.filter((p: any) => p.isCluster).map((p: any) => p.id),
+      };
+    }
     default:
       return null;
   }

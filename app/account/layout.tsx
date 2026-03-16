@@ -2,9 +2,9 @@
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import UserMenu from '@/components/common/UserMenu';
+import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 
@@ -13,8 +13,9 @@ export default function AccountLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { state } = useAuth();
+    const { state, logout } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     // Protect account routes
     useEffect(() => {
@@ -36,7 +37,22 @@ export default function AccountLayout({
                         {/* Sidebar Navigation */}
                         <aside className="w-full lg:w-72 flex-shrink-0">
                             <Card className="overflow-hidden border-border bg-card shadow-sm sticky top-24">
-                                <UserMenu />
+                                <AccountIconAndMenu
+                                    variant="sidebar"
+                                    user={state.user}
+                                    currentPath={pathname}
+                                    onMenuItemClick={(href) => router.push(href)}
+                                    onLogoutClick={() => logout()}
+                                    menuLinks={[
+                                        { label: 'Dashboard', href: '/account' },
+                                        { label: 'Addresses', href: '/account/addresses' },
+                                        { label: 'Orders', href: '/account/orders' },
+                                        { label: 'Quotes', href: '/account/quotes' },
+                                        { label: 'Invoices', href: '/account/invoices' },
+                                        { label: 'Favorites', href: '/account/favorites' },
+                                        { label: 'Price Requests', href: '/account/price-requests' },
+                                    ]}
+                                />
                             </Card>
                         </aside>
 

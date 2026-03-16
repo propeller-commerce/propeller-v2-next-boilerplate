@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { GlobalProvider } from "@/context/GlobalContext";
 import { CompanyProvider } from "@/context/CompanyContext";
+import { PriceProvider } from "@/context/PriceContext";
 import { Toaster } from "react-hot-toast";
 import { getGlobal } from "@/lib/cms";
 
@@ -32,12 +33,14 @@ export default async function RootLayout({
       >
         <AuthProvider>
           <CompanyProvider>
+            <PriceProvider>
             <CartProvider>
               <GlobalProvider globalData={globalData}>
                 {children}
               </GlobalProvider>
               <Toaster position="top-center" reverseOrder={false} />
             </CartProvider>
+            </PriceProvider>
           </CompanyProvider>
         </AuthProvider>
       </body>

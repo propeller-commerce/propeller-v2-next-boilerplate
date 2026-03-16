@@ -9,6 +9,7 @@ import {
     Contact,
     Customer,
 } from 'propeller-sdk-v2';
+import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
 
 export interface ProductBulkPricesProps {
     /**
@@ -55,6 +56,7 @@ interface ProductBulkPricesState {
     getIncludeTax: () => boolean;
     getBulkPrices: () => ProductPrice[];
     getPrice: (tier: ProductPrice) => string;
+    getQuantityLabel: (tier: ProductPrice, index: number) => string;
     getLabel: (key: string, fallback: string) => string;
 }
 
@@ -86,8 +88,22 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
             return `\u20AC${Number(value).toFixed(2)}`;
         },
 
+        getQuantityLabel(tier: ProductPrice, index: number): string {
+            const prices = state.getBulkPrices();
+            const discount = tier.discount as IDiscount & { quantityFrom?: number } | undefined;
+            const qty = discount?.quantityFrom || tier.quantity || 1;
+            const nextTier = prices[index + 1];
+            const nextDiscount = nextTier?.discount as IDiscount & { quantityFrom?: number } | undefined;
+            const nextQty = nextDiscount?.quantityFrom || nextTier?.quantity;
+            if (nextQty) {
+                return `${qty}\u2013${nextQty - 1}`;
+            }
+            return `${qty}+`;
+        },
+
         getLabel(key: string, fallback: string): string {
-            return (props.labels as Record<string, string>)?.[key] || fallback;
+            const val = (props.labels as Record<string, string>)?.[key];
+            return val !== undefined ? val : fallback;
         },
     });
 
@@ -106,9 +122,11 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
     return (
         <Show when={!state.isHidden() && state.hasItems()}>
             <div className={`product-bulk-prices ${(props.className as string) || ''}`}>
-                <h3 className="text-base font-semibold text-foreground mb-3">
-                    {state.getLabel('title', 'Volume pricing')}
-                </h3>
+                <Show when={state.getLabel('title', 'Volume pricing')}>
+                    <h3 className="text-base font-semibold text-foreground mb-3">
+                        {state.getLabel('title', 'Volume pricing')}
+                    </h3>
+                </Show>
                 <div className="overflow-hidden rounded-lg border border-border">
                     <table className="w-full text-sm">
                         <thead className="bg-muted/50">
@@ -132,7 +150,7 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
                                 {(tier: ProductPrice, index: number) => (
                                     <tr key={index} className="bg-white hover:bg-muted/20 transition-colors">
                                         <td className="px-4 py-2 text-foreground font-medium">
-                                            {tier.quantity}+
+                                            {state.getQuantityLabel(tier, index)}
                                         </td>
                                         <td className="px-4 py-2 text-right text-primary font-semibold">
                                             {state.getPrice(tier)}

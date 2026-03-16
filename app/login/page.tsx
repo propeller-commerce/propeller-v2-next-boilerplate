@@ -10,9 +10,10 @@ import LoginForm from '@/components/propeller/LoginForm';
 import { graphqlClient } from '@/lib/api';
 import { useCompany } from '@/context/CompanyContext';
 import { Company, Contact } from 'propeller-sdk-v2';
+import { stripLeadingUnderscores } from '@/data/defaults';
 
 export default function LoginPage() {
-  const { state, login } = useAuth();
+  const { state, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
   const router = useRouter();
 
@@ -55,16 +56,24 @@ export default function LoginPage() {
                   displayGuestCheckoutLink={false}
                   onForgotPasswordClick={() => router.push('/forgot-password')}
                   onRegisterClick={() => router.push('/register')}
-                  onLoginSubmit={login}
                   afterLogin={(user, accessToken, refreshToken, expiresAt) => {
-                    if ((user as Contact).company) {
-                      setSelectedCompany((user as Contact).company as Company);
+                    const loggedInUser = stripLeadingUnderscores(user);
+                    localStorage.setItem('user', JSON.stringify(loggedInUser));
+                    updateUser(loggedInUser);
+
+                    if ((loggedInUser as Contact).company) {
+                      setSelectedCompany((loggedInUser as Contact).company as Company);
                     }
 
                     if (accessToken && refreshToken && expiresAt) {
                       localStorage.setItem('accessToken', accessToken);
                       localStorage.setItem('refreshToken', refreshToken);
                       localStorage.setItem('expiresAt', expiresAt);
+                    }
+
+                    // Dispatch event for AuthContext
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('userLoggedIn'));
                     }
 
                     router.push('/account')

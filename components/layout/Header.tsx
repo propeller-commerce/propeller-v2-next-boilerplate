@@ -4,10 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePrice } from '@/context/PriceContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import CartSidebar from './CartSidebar';
 // import SearchBar from '@/components/common/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
@@ -20,12 +20,14 @@ import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
 import { useCompany } from '@/context/CompanyContext';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { stripLeadingUnderscores } from '@/data/defaults';
 
 export default function Header() {
   const router = useRouter();
-  const { getTotalItems, openCart, cart } = useCart();
-  const { state, login, logout, updateUser } = useAuth();
+  const { cart } = useCart();
+  const { state, logout, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
+  const { includeTax, setIncludeTax } = usePrice();
   const globalData = useGlobal();
   const [isMounted, setIsMounted] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
@@ -37,8 +39,6 @@ export default function Header() {
     }
     return process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
   });
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -139,7 +139,7 @@ export default function Header() {
                   )}
                   {showVatToggle && (
                     <PriceToggle
-                      inclExclVatSwitched={() => { }}
+                      inclExclVatSwitched={setIncludeTax}
                     />
                   )}
 
@@ -198,19 +198,25 @@ export default function Header() {
                 {showAccount && (
                   <AccountIconAndMenu
                     user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
-                    loginLoading={loginLoading}
-                    loginError={loginError ?? undefined}
                     graphqlClient={graphqlClient}
-                    onLoginSubmit={login}
                     afterLogin={(user, accessToken, refreshToken, expiresAt) => {
-                      if ((user as Contact).company) {
-                        setSelectedCompany((user as Contact).company as Company);
+                      const loggedInUser = stripLeadingUnderscores(user);
+                      localStorage.setItem('user', JSON.stringify(loggedInUser));
+                      updateUser(loggedInUser);
+
+                      if ((loggedInUser as Contact).company) {
+                        setSelectedCompany((loggedInUser as Contact).company as Company);
                       }
 
                       if (accessToken && refreshToken && expiresAt) {
                         localStorage.setItem('accessToken', accessToken);
                         localStorage.setItem('refreshToken', refreshToken);
                         localStorage.setItem('expiresAt', expiresAt);
+                      }
+
+                      // Dispatch event for AuthContext
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('userLoggedIn'));
                       }
 
                       router.push('/account')
@@ -325,7 +331,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-      <CartSidebar />
     </>
   );
 }

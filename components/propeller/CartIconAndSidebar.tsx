@@ -148,7 +148,8 @@ return (item.product as any)?.names?.[0]?.value || 'Unnamed Product';
 
 
 function getItemImageUrl(item: CartMainItem): ReturnType<CartIconAndSidebarState["getItemImageUrl"]>{
-return (item.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '/no-image.webp';
+const url = (item.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+return url && url.startsWith('http') ? url : '';
 }
 
 
@@ -237,7 +238,11 @@ setIsHovered(false);
   <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16"><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-12 h-12 text-gray-200"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"  /></svg><p className="text-sm text-gray-500">{getLabel('emptyCart', 'Your cart is empty.')}</p><button  type="button" className="text-sm text-violet-600 hover:underline"  onClick={(event) => closeSidebar() }>{getLabel('continueShopping', 'Continue Shopping')}</button></div>
 ) : null}{getItems().length > 0 ? (
   <>{getItems()?.map((item) => (
-  <div className="flex gap-3"  key={item.itemId}><div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100"><img className="w-full h-full object-contain p-2"  src={getItemImageUrl(item)}  alt={getItemName(item)}  /></div><div className="flex-1 min-w-0 flex flex-col justify-between py-1"><div><div className="flex justify-between items-start gap-2"><a className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"  href={getItemProductUrl(item)}  onClick={(event) => closeSidebar() }>{getItemName(item)}</a><span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+  <div className="flex gap-3"  key={item.itemId}><div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">{getItemImageUrl(item) ? (
+  <img className="w-full h-full object-contain p-2"  src={getItemImageUrl(item)}  alt={getItemName(item)}  />
+) : null}{!getItemImageUrl(item) ? (
+  <svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="w-8 h-8 text-gray-300"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"  /></svg>
+) : null}</div><div className="flex-1 min-w-0 flex flex-col justify-between py-1"><div><div className="flex justify-between items-start gap-2"><a className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"  href={getItemProductUrl(item)}  onClick={(event) => closeSidebar() }>{getItemName(item)}</a><span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
                                                     &euro;{((item as any).totalSumNet || 0).toFixed(2)}</span></div><p className="text-xs text-gray-400 mt-0.5">
                                                 SKU: {(item.product as any)?.sku || 'N/A'}</p></div><div className="flex items-center text-xs text-gray-400"><span>{getLabel('qty', 'Qty')}: {item.quantity}</span></div></div></div>
 ))}</>

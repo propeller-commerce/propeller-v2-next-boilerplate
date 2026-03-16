@@ -244,7 +244,7 @@ interface ProductCardState {
 export default function ProductCard(props: ProductCardProps) {
     const state = useStore<ProductCardState>({
         isFavorite: false,
-        _includeTax: false,
+        _includeTax: true,
         _priceListener: null as any,
 
         isRow() {

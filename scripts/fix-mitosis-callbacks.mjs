@@ -283,6 +283,16 @@ const FILE_PATCHES = [
         to: '  useEffect(() => {',
     },
     {
+        // Mitosis strips grouping parentheses from `(props.cartItem.childItems || []).map(...)`
+        // producing `props.cartItem.childItems || []?.map(...)`.
+        // Due to operator precedence this returns the array itself when childItems is truthy,
+        // causing React to throw "Objects are not valid as a React child".
+        file: resolve('../output/react/ui-components/CartItem.tsx'),
+        label: 'React → CartItem: fix childItems || []?.map precedence bug',
+        from: '{props.cartItem.childItems || []?.map((child, idx) => (',
+        to: '{(props.cartItem.childItems || []).map((child, idx) => (',
+    },
+    {
         // Mitosis compiles isExpanded as `return !!(expandedFilters)[filterName]`
         // which returns `false` for any key not yet in expandedFilters (undefined).
         // This is technically correct but relies on `!!undefined === false`.

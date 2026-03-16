@@ -178,7 +178,6 @@ handleLogoutClick: () => void;
 handleForgotPasswordClick: () => void;
 handleRegisterClick: () => void;
 handleGuestCheckoutClick: () => void;
-handleAfterLogin: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
 closeMenu: () => void;
 _clickOutsideListener: {
   handler: any;
@@ -282,12 +281,6 @@ if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
 }
 
 
-function handleAfterLogin(user: Contact | Customer): ReturnType<AccountIconAndMenuState["handleAfterLogin"]>{
-setMenuOpen(false);
-if (props.afterLogin) props.afterLogin(user);
-}
-
-
 function closeMenu(): ReturnType<AccountIconAndMenuState["closeMenu"]>{
 setMenuOpen(false);
 }
@@ -347,7 +340,7 @@ return (
 ) : null}
 {!props.user ? (
   <>{props.accountHeaderLoginForm !== false ? (
-  <LoginForm  graphqlClient={props.graphqlClient}  title={props.loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')}  subtitle={props.loginFormSubtitle ?? getLabel('loginSubtitle', '')}  buttonText={props.loginButtonText ?? getLabel('loginButton', 'Log In')}  displayForgotPasswordLink={props.displayForgotPasswordLink}  displayRegisterLink={props.displayRegisterLink}  displayGuestCheckoutLink={props.displayGuestCheckoutLink}  labels={props.labels}  onLoginSubmit={props.onLoginSubmit}  loginLoading={props.loginLoading}  loginError={props.loginError}  beforeLogin={props.beforeLogin}  afterLogin={(user, accessToken, refreshToken, expiresAt) => handleAfterLogin(user, accessToken, refreshToken, expiresAt)}  onForgotPasswordClick={(event) => handleForgotPasswordClick() }  onRegisterClick={(event) => handleRegisterClick() }  onGuestCheckoutClick={(event) => handleGuestCheckoutClick() }  accountHeaderLoginForm={props.accountHeaderLoginForm}  />
+  <LoginForm  graphqlClient={props.graphqlClient}  title={props.loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')}  subtitle={props.loginFormSubtitle ?? getLabel('loginSubtitle', '')}  buttonText={props.loginButtonText ?? getLabel('loginButton', 'Log In')}  displayForgotPasswordLink={props.displayForgotPasswordLink}  displayRegisterLink={props.displayRegisterLink}  displayGuestCheckoutLink={props.displayGuestCheckoutLink}  labels={props.labels}  onLoginSubmit={props.onLoginSubmit}  loginLoading={props.loginLoading}  loginError={props.loginError}  beforeLogin={props.beforeLogin}  afterLogin={props.afterLogin}  onForgotPasswordClick={(event) => handleForgotPasswordClick() }  onRegisterClick={(event) => handleRegisterClick() }  onGuestCheckoutClick={(event) => handleGuestCheckoutClick() }  accountHeaderLoginForm={props.accountHeaderLoginForm}  />
 ) : null}
 {props.accountHeaderLoginForm === false ? (
   <div className="text-center py-4"><h4 className="text-lg font-semibold mb-2">{getMenuTitle()}</h4><p className="text-sm text-gray-500 mb-4">{getLabel('loginSubtitle', 'Login to access your account')}</p><button  type="button" className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"  onClick={(event) => {

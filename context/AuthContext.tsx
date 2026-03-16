@@ -319,8 +319,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     clearError,
-    updateUser,
-    sanitizeUser
+    updateUser
   };
 
   return (

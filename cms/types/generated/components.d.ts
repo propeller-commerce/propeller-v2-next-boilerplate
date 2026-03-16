@@ -110,6 +110,20 @@ export interface SharedProductCarousel extends Struct.ComponentSchema {
   };
 }
 
+export interface SharedProductSlider extends Struct.ComponentSchema {
+  collectionName: 'components_shared_product_sliders';
+  info: {
+    description: 'Displays products/clusters from Propeller by ID';
+    displayName: 'Product Slider';
+    icon: 'shoppingCart';
+  };
+  attributes: {
+    clusterIds: Schema.Attribute.String;
+    productIds: Schema.Attribute.String;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface SharedQuote extends Struct.ComponentSchema {
   collectionName: 'components_shared_quotes';
   info: {
@@ -197,6 +211,7 @@ declare module '@strapi/strapi' {
       'shared.media': SharedMedia;
       'shared.nav-link': SharedNavLink;
       'shared.product-carousel': SharedProductCarousel;
+      'shared.product-slider': SharedProductSlider;
       'shared.quote': SharedQuote;
       'shared.rich-text': SharedRichText;
       'shared.seo': SharedSeo;

@@ -139,6 +139,11 @@ return props.orderItem?.price || 0;
 }
 
 
+function priceTotal() {
+return props.orderItem?.priceTotal || 0;
+}
+
+
 function discount() {
 return props.orderItem?.discount || 0;
 }
@@ -223,7 +228,7 @@ return (
   <>{formatDiscountDisplay()}</>
 ) : null}</td>
 ) : null}{showPrice() ? (
-  <td  className={isChildItem() ? 'px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600' : 'px-6 py-4 text-right whitespace-nowrap'}>{formatItemPrice(price())}</td>
+  <td  className={isChildItem() ? 'px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600' : 'px-6 py-4 text-right whitespace-nowrap'}>{formatItemPrice(priceTotal())}</td>
 ) : null}</tr>{hasChildren() ? (
   <>{props.childItems || []?.map((child) => (
   <tr className="border-0"  key={child.id || child.uuid}><td className="px-6 py-2 pl-28"><span className="text-sm text-gray-700">{child.product?.names?.[0]?.value || child.name || 'Unknown'}</span></td>{showQuantity() ? (
@@ -231,7 +236,7 @@ return (
 ) : null}{showDiscount() ? (
   <td className="px-6 py-2 text-right text-sm text-gray-600"  />
 ) : null}{showPrice() ? (
-  <td className="px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">{formatItemPrice(child.price || 0)}</td>
+  <td className="px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">{formatItemPrice(child.priceTotal || 0)}</td>
 ) : null}</tr>
 ))}</>
 ) : null}</tbody>

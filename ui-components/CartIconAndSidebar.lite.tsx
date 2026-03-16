@@ -140,10 +140,8 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         },
 
         getItemImageUrl(item: CartMainItem) {
-            return (
-                (item.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url ||
-                '/no-image.webp'
-            );
+            const url = (item.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+            return url && url.startsWith('http') ? url : '';
         },
 
         getItemProductUrl(item: CartMainItem) {
@@ -333,12 +331,19 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                 {(item: CartMainItem) => (
                                     <div key={item.itemId} className="flex gap-3">
                                         {/* Product image */}
-                                        <div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100">
-                                            <img
-                                                src={state.getItemImageUrl(item)}
-                                                alt={state.getItemName(item)}
-                                                className="w-full h-full object-contain p-2"
-                                            />
+                                        <div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">
+                                            <Show when={state.getItemImageUrl(item)}>
+                                                <img
+                                                    src={state.getItemImageUrl(item)}
+                                                    alt={state.getItemName(item)}
+                                                    className="w-full h-full object-contain p-2"
+                                                />
+                                            </Show>
+                                            <Show when={!state.getItemImageUrl(item)}>
+                                                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                                                </svg>
+                                            </Show>
                                         </div>
 
                                         {/* Product info */}

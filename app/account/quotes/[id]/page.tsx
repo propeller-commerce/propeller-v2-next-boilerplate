@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import AddressCard from '@/components/propeller/AddressCard';
 import { graphqlClient } from '@/lib/api';
-import { Address, Base64File, Order, OrderItem, OrderService } from 'propeller-sdk-v2';
+import { Base64File, Order, OrderItem, OrderService } from 'propeller-sdk-v2';
+import OrderSummary from '@/components/propeller/OrderSummary';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { OrderQueryVariables } from 'propeller-sdk-v2/dist/service/OrderService';
 import Link from 'next/link';
@@ -13,12 +13,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
 import OrderTotals from '@/components/propeller/OrderTotals';
-
-// Helper for AddressType since we might not have the enum exported directly from sdk-v2 in the same way
-const AddressType = {
-    invoice: 'invoice',
-    delivery: 'delivery'
-};
 
 export default function QuoteDetailPage() {
     const { state } = useAuth();
@@ -68,15 +62,6 @@ export default function QuoteDetailPage() {
             fetchQuoteDetails();
         }
     }, [state.isAuthenticated, router, quoteId]);
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    };
 
     const handleAcceptQuote = () => {
         // TODO: Implement accept quote functionality
@@ -190,89 +175,28 @@ export default function QuoteDetailPage() {
 
             {!loading && !error && quote && (
                 <div className="space-y-8">
-                    {/* Quote Header & Info */}
-                    <div>
-
-                        <Card className="p-6 mb-6">
-                            <div className="flex flex-col md:flex-row justify-between gap-6">
-                                <div className="space-y-3 flex-1">
-                                    <div className="grid grid-cols-[140px_1fr] gap-4">
-                                        <span className="text-gray-600 font-medium">Quote Date:</span>
-                                        <span>{formatDate(quote.createdAt)}</span>
-
-                                        <span className="text-gray-600 font-medium">Total:</span>
-                                        <span>€{(quote.total?.net || 0).toFixed(2)}</span>
-
-                                        <span className="text-gray-600 font-medium">Payment Method:</span>
-                                        <span>{quote.paymentData?.method || '-'}</span>
-
-                                        {quote.remarks && (
-                                            <>
-                                                <span className="text-gray-600 font-medium">Remarks:</span>
-                                                <span>{quote.remarks}</span>
-                                            </>
-                                        )}
-
-                                        {quote.reference && (
-                                            <>
-                                                <span className="text-gray-600 font-medium">Reference:</span>
-                                                <span>{quote.reference}</span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col items-end gap-4">
-                                    <span className={`px-4 py-2 rounded-full text-sm font-semibold capitalize
-                                                    ${quote.status === 'QUOTE_ACCEPTED' ? 'bg-violet-100 text-violet-800' :
-                                            quote.status === 'QUOTE_REJECTED' ? 'bg-red-100 text-red-800' :
-                                                'bg-blue-100 text-blue-800'}`}>
-                                        {quote.status?.toLowerCase().replace(/_/g, ' ')}
-                                    </span>
-
-                                    <div className="flex flex-wrap gap-3 justify-end">
-                                        <Button onClick={handleAcceptQuote} className="bg-violet-600 hover:bg-violet-700">
-                                            Accept Quote
-                                        </Button>
-                                        <Button variant="outline" onClick={handleRequestChanges}>
-                                            Request Changes
-                                        </Button>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <Button variant="link" size="sm" onClick={handleDownloadPDF}>
-                                            Download Quote (PDF)
-                                        </Button>
-                                    </div>
-                                </div>
+                    {/* Quote Summary + Addresses + Delivery Info */}
+                    <Card className="p-6">
+                        <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+                            <div className="flex-1">
+                                <OrderSummary
+                                    order={quote}
+                                    labels={{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }}
+                                />
                             </div>
-                        </Card>
-                    </div>
-
-                    {/* Addresses */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-bold">Invoice Address</h3>
-                            {(() => {
-                                const invoiceAddress = quote.addresses?.find((addr: Address) => addr.type === AddressType.invoice);
-                                return invoiceAddress ? (
-                                    <AddressCard address={invoiceAddress} enableActions={false} />
-                                ) : (
-                                    <p className="text-gray-500 italic">No invoice address found</p>
-                                );
-                            })()}
+                            <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                                <Button onClick={handleAcceptQuote} className="bg-violet-600 hover:bg-violet-700">
+                                    Accept Quote
+                                </Button>
+                                <Button variant="outline" onClick={handleRequestChanges}>
+                                    Request Changes
+                                </Button>
+                                <Button variant="link" size="sm" onClick={handleDownloadPDF}>
+                                    Download Quote (PDF)
+                                </Button>
+                            </div>
                         </div>
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-bold">Delivery Address</h3>
-                            {(() => {
-                                const deliveryAddress = quote.addresses?.find((addr: Address) => addr.type === AddressType.delivery);
-                                return deliveryAddress ? (
-                                    <AddressCard address={deliveryAddress} enableActions={false} />
-                                ) : (
-                                    <p className="text-gray-500 italic">No delivery address found</p>
-                                );
-                            })()}
-                        </div>
-                    </div>
+                    </Card>
 
                     {/* Quote Overview */}
                     <div className="pt-10">

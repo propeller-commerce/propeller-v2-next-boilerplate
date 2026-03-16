@@ -254,11 +254,7 @@ const currentConfig = (props.graphqlClient as any).getConfig();
 let user: any = null;
 try {
   const viewerResponse: any = await userService.getViewer({});
-  if (viewerResponse?.data) {
-    user = viewerResponse.data;
-  } else {
-    user = viewerResponse;
-  }
+  user = viewerResponse;
 } catch (viewerError: any) {
   user = {
     email: session.email || _email,
@@ -305,7 +301,7 @@ return (
 ) : null}</div>
 ) : null}<form className="space-y-4"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-2"><label  htmlFor="login-email" className="text-sm font-medium leading-none">{emailLabel()}</label><input  type="email"  id="login-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_email}  onChange={(e) => {
 set_email((e.target as HTMLInputElement).value);
-} }  placeholder={emailPlaceholder()}  required  disabled={isLoading()}  /></div><div className="space-y-2"><div className="flex items-center justify-between"><label  htmlFor="login-password" className="text-sm font-medium leading-none">{passwordLabel()}</label>{showForgotPassword() ? (
+} }  placeholder={emailPlaceholder()}  required  disabled={isLoading()}  /></div><div className="space-y-2"><div className="flex items-center justify-between"><label  htmlFor="login-password" className="text-sm font-medium leading-none">{passwordLabel()}</label>{showForgotPassword() && !props.accountHeaderLoginForm ? (
   <button  type="button" className="text-sm text-blue-600 hover:underline"  onClick={(event) => {
 if (props.onForgotPasswordClick) props.onForgotPasswordClick();
 } }>{forgotPasswordText()}</button>

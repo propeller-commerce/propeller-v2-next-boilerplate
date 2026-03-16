@@ -228,11 +228,7 @@ export default function LoginForm(props: LoginFormProps) {
                 let user: any = null;
                 try {
                     const viewerResponse: any = await userService.getViewer({});
-                    if (viewerResponse?.data) {
-                        user = viewerResponse.data;
-                    } else {
-                        user = viewerResponse;
-                    }
+                    user = viewerResponse;
                 } catch (viewerError: any) {
                     user = { email: session.email || state._email, type: 'ANONYMOUS' };
                 }
@@ -300,7 +296,7 @@ export default function LoginForm(props: LoginFormProps) {
                         >
                             {state.passwordLabel}
                         </label>
-                        <Show when={state.showForgotPassword}>
+                        <Show when={state.showForgotPassword && !props.accountHeaderLoginForm}>
                             <button
                                 type="button"
                                 onClick={() => { if (props.onForgotPasswordClick) props.onForgotPasswordClick(); }}

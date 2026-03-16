@@ -233,7 +233,7 @@ computedTextLabels: () => {
   const [isFavorite, setIsFavorite] = useState<ProductCardState["isFavorite"]>(() => (false))
 
 
-const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (false))
+const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (true))
 
 
 const [_priceListener, set_priceListener] = useState<ProductCardState["_priceListener"]>(() => (null))

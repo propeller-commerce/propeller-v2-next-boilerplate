@@ -432,7 +432,7 @@ interface ProductCardState {
 
 const props = defineProps<ProductCardProps>();
 const isFavorite = ref<ProductCardState["isFavorite"]>(false);
-const _includeTax = ref<ProductCardState["_includeTax"]>(false);
+const _includeTax = ref<ProductCardState["_includeTax"]>(true);
 const _priceListener = ref<ProductCardState["_priceListener"]>(null);
 
 onMounted(() => {

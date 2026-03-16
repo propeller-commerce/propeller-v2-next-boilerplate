@@ -185,7 +185,6 @@ interface AccountIconAndMenuState {
     handleForgotPasswordClick: () => void;
     handleRegisterClick: () => void;
     handleGuestCheckoutClick: () => void;
-    handleAfterLogin: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
     closeMenu: () => void;
     _clickOutsideListener: { handler: any };
 }
@@ -258,11 +257,6 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
         handleGuestCheckoutClick() {
             state.menuOpen = false;
             if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
-        },
-
-        handleAfterLogin(user: Contact | Customer) {
-            state.menuOpen = false;
-            if (props.afterLogin) props.afterLogin(user);
         },
 
         closeMenu() {
@@ -392,7 +386,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                                     loginLoading={props.loginLoading}
                                     loginError={props.loginError}
                                     beforeLogin={props.beforeLogin}
-                                    afterLogin={(user, accessToken, refreshToken, expiresAt) => state.handleAfterLogin(user, accessToken, refreshToken, expiresAt)}
+                                    afterLogin={props.afterLogin}
                                     onForgotPasswordClick={() => state.handleForgotPasswordClick()}
                                     onRegisterClick={() => state.handleRegisterClick()}
                                     onGuestCheckoutClick={() => state.handleGuestCheckoutClick()}

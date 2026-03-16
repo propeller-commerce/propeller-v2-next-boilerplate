@@ -17,6 +17,11 @@ export interface UserDetailsProps {
     user: Contact | Customer;
 
     /**
+     * The currently active company
+     */
+    activeCompany: Company | null;
+
+    /**
      * Display basic company information for the default company if the user is Contact
      * @default true
      */
@@ -44,7 +49,6 @@ export interface UserDetailsProps {
 interface UserDetailsState {
     _isMounted: boolean;
     _selectedCompanyId: number | null;
-    _companySwitchListener: any;
 
     isContact: () => boolean;
     getName: () => string;
@@ -66,7 +70,6 @@ export default function UserDetails(props: UserDetailsProps) {
     const state = useStore<UserDetailsState>({
         _isMounted: false,
         _selectedCompanyId: null,
-        _companySwitchListener: null,
 
         isContact(): boolean {
             return props.user !== null && 'company' in props.user;
@@ -84,18 +87,7 @@ export default function UserDetails(props: UserDetailsProps) {
         },
 
         getActiveCompany(): Company | null {
-            if (!state.isContact()) return null;
-            const contact = props.user as Contact;
-
-            if (state._selectedCompanyId !== null) {
-                const companies = state.getCompanies();
-                const found = companies.find(
-                    (c: Company) => c.companyId === state._selectedCompanyId
-                );
-                if (found) return found;
-            }
-
-            return (contact.company as Company | undefined) ?? null;
+            return state.isContact() ? props.activeCompany : null;
         },
 
         getCompanies(): Company[] {
@@ -181,24 +173,21 @@ export default function UserDetails(props: UserDetailsProps) {
     onMount(() => {
         state._isMounted = true;
 
-        const storedCompanyId = localStorage.getItem('selected_company_id');
-        if (storedCompanyId) {
-            state._selectedCompanyId = parseInt(storedCompanyId, 10);
-        }
-
-        state._companySwitchListener = (event: any) => {
+        window.addEventListener('companySwitched', (event: any) => {
             const company = event.detail;
             if (company && company.companyId) {
-                state._selectedCompanyId = company.companyId;
+                state._selectedCompanyId = props.activeCompany?.companyId as number;
             }
-        };
-        window.addEventListener('companySwitched', state._companySwitchListener);
+        });
     });
 
     onUnMount(() => {
-        if (state._companySwitchListener) {
-            window.removeEventListener('companySwitched', state._companySwitchListener);
-        }
+        window.removeEventListener('companySwitched', (event: any) => {
+            const company = event.detail;
+            if (company && company.companyId) {
+                state._selectedCompanyId = props.activeCompany?.companyId as number;
+            }
+        });
     });
 
     return (
@@ -260,11 +249,10 @@ export default function UserDetails(props: UserDetailsProps) {
                                     {(company: Company) => (
                                         <li
                                             key={String(company.companyId)}
-                                            className={`flex items-center gap-2 py-2 px-3 rounded-md ${
-                                                state.getActiveCompany()?.companyId === company.companyId
-                                                    ? 'bg-primary/10 font-semibold text-primary'
-                                                    : 'text-foreground'
-                                            }`}
+                                            className={`flex items-center gap-2 py-2 px-3 rounded-md ${state.getActiveCompany()?.companyId === company.companyId
+                                                ? 'bg-primary/10 font-semibold text-primary'
+                                                : 'text-foreground'
+                                                }`}
                                         >
                                             <span className="truncate">{company.name}</span>
                                             <Show when={state.getActiveCompany()?.companyId === company.companyId}>

@@ -11,6 +11,11 @@ import { useState, useEffect } from 'react'
 user: Contact | Customer;
 
 /**
+ * The currently active company
+ */
+activeCompany: Company | null;
+
+/**
  * Display basic company information for the default company if the user is Contact
  * @default true
  */
@@ -31,7 +36,6 @@ showDefaultDeliveryAddress?: boolean;
 interface UserDetailsState {
 _isMounted: boolean;
 _selectedCompanyId: number | null;
-_companySwitchListener: any;
 isContact: () => boolean;
 getName: () => string;
 getActiveCompany: () => Company | null;
@@ -59,9 +63,6 @@ shouldShowDeliveryAddress: () => boolean;
 const [_selectedCompanyId, set_selectedCompanyId] = useState<UserDetailsState["_selectedCompanyId"]>(() => (null))
 
 
-const [_companySwitchListener, set_companySwitchListener] = useState<UserDetailsState["_companySwitchListener"]>(() => (null))
-
-
 function isContact(): ReturnType<UserDetailsState["isContact"]>{
 return props.user !== null && 'company' in props.user;
 }
@@ -80,14 +81,7 @@ return 'User';
 
 
 function getActiveCompany(): ReturnType<UserDetailsState["getActiveCompany"]>{
-if (!isContact()) return null;
-const contact = props.user as Contact;
-if (_selectedCompanyId !== null) {
-const companies = getCompanies();
-const found = companies.find((c: Company) => c.companyId === _selectedCompanyId);
-if (found) return found;
-}
-return contact.company as Company | undefined ?? null;
+return isContact() ? props.activeCompany : null;
 }
 
 
@@ -180,24 +174,22 @@ return props.showDefaultDeliveryAddress === true;
 
 useEffect(() => {
       set_isMounted(true);
-const storedCompanyId = localStorage.getItem('selected_company_id');
-if (storedCompanyId) {
-set_selectedCompanyId(parseInt(storedCompanyId, 10));
-}
-set_companySwitchListener((event: any) => {
+window.addEventListener('companySwitched', (event: any) => {
 const company = event.detail;
 if (company && company.companyId) {
-set_selectedCompanyId(company.companyId);
+set_selectedCompanyId(props.activeCompany?.companyId as number);
 }
-});
-window.addEventListener('companySwitched', _companySwitchListener)
+})
     }, [])
 
 useEffect(() => {
       return () => {
-        if (_companySwitchListener) {
-window.removeEventListener('companySwitched', _companySwitchListener);
+        window.removeEventListener('companySwitched', (event: any) => {
+const company = event.detail;
+if (company && company.companyId) {
+set_selectedCompanyId(props.activeCompany?.companyId as number);
 }
+})
       }
     }, [])
 

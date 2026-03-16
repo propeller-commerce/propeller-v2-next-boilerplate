@@ -1,12 +1,13 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { Contact, Customer } from 'propeller-sdk-v2';
 import UserDetails from '@/output/react/ui-components/UserDetails';
 
 export default function AccountPage() {
   const { state } = useAuth();
-
+  const { selectedCompany } = useCompany();
   const user = state.user;
 
   if (!state.isAuthenticated || !user) return null;
@@ -19,6 +20,7 @@ export default function AccountPage() {
 
       <UserDetails
         user={user as Contact | Customer}
+        activeCompany={selectedCompany}
         showCompanyInfo={true}
         listAllContactCompanies={false}
         showDefaultInvoiceAddress={true}

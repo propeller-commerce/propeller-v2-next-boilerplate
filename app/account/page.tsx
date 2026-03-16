@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { Contact, Customer } from 'propeller-sdk-v2';
-import UserDetails from '@/components/propeller/UserDetails';
+import UserDetails from '@/output/react/ui-components/UserDetails';
 
 export default function AccountPage() {
   const { state } = useAuth();

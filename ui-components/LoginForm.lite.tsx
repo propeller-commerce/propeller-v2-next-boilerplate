@@ -95,7 +95,13 @@ export interface LoginFormProps {
     beforeLogin?: () => void;
 
     /** Callback after successful login with user data */
-    afterLogin?: (user: Contact | Customer) => void;
+    afterLogin?: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
+
+    /**
+     * Show login form in dropdown for immediate login when user is not logged in.
+     * @default true
+     */
+    accountHeaderLoginForm?: boolean;
 }
 
 export default function LoginForm(props: LoginFormProps) {
@@ -105,22 +111,8 @@ export default function LoginForm(props: LoginFormProps) {
         _loading: false,
         _error: '',
 
-        /**
-         * Recursively converts an SDK class instance to a plain object,
-         * stripping the leading underscore the SDK uses for private backing fields.
-         */
-        deepPlain(value: unknown): unknown {
-            if (value === null || value === undefined) return value;
-            if (Array.isArray(value)) return (value as unknown[]).map((v) => state.deepPlain(v));
-            if (typeof value === 'object') {
-                const result: Record<string, unknown> = {};
-                for (const key of Object.keys(value as object)) {
-                    const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-                    result[cleanKey] = state.deepPlain((value as Record<string, unknown>)[key]);
-                }
-                return result;
-            }
-            return value;
+        getLabel(key: string, fallback: string) {
+            return (props.labels as any)?.[key] || fallback;
         },
 
         get emailLabel(): string {
@@ -245,13 +237,6 @@ export default function LoginForm(props: LoginFormProps) {
                     user = { email: session.email || state._email, type: 'ANONYMOUS' };
                 }
 
-                // Store tokens and user data in localStorage
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('accessToken', accessToken);
-                    localStorage.setItem('refreshToken', refreshToken);
-                    localStorage.setItem('user', JSON.stringify(state.deepPlain(user)));
-                }
-
                 // Dispatch event for AuthContext to pick up
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('userLoggedIn'));
@@ -263,7 +248,7 @@ export default function LoginForm(props: LoginFormProps) {
 
                 // Notify parent
                 if (props.afterLogin) {
-                    props.afterLogin(user as Contact);
+                    props.afterLogin(user as unknown as Contact | Customer, accessToken, refreshToken, session?.expirationTime);
                 }
             } catch (err: any) {
                 state._error = err?.message || 'Login failed. Please check your credentials.';
@@ -272,6 +257,8 @@ export default function LoginForm(props: LoginFormProps) {
             }
         },
     });
+
+
 
     return (
         <div className="login-form">
@@ -373,7 +360,7 @@ export default function LoginForm(props: LoginFormProps) {
                 </button>
             </form>
 
-            <Show when={state.showRegister || state.showGuestCheckout}>
+            <Show when={(state.showRegister || state.showGuestCheckout) && !props.accountHeaderLoginForm}>
                 <div className="mt-6 border-t pt-6 space-y-3">
                     <Show when={state.showRegister}>
                         <div className="text-center">
@@ -398,6 +385,28 @@ export default function LoginForm(props: LoginFormProps) {
                             </button>
                         </div>
                     </Show>
+                </div>
+            </Show>
+
+            <Show when={props.accountHeaderLoginForm}>
+                <div className="flex flex-col gap-2 text-sm pt-3 text-center">
+                    <button
+                        type="button"
+                        onClick={() => { if (props.onForgotPasswordClick) props.onForgotPasswordClick(); }}
+                        className="text-violet-600 hover:underline text-xs"
+                    >
+                        {state.getLabel('forgotPassword', 'Forgot Password?')}
+                    </button>
+                    <div className="text-xs text-gray-500">
+                        {state.getLabel('noAccount', "Don't have an account?")}{' '}
+                        <button
+                            type="button"
+                            onClick={() => { if (props.onRegisterClick) props.onRegisterClick(); }}
+                            className="text-violet-600 hover:underline font-medium"
+                        >
+                            {state.getLabel('registerLink', 'Register')}
+                        </button>
+                    </div>
                 </div>
             </Show>
         </div>

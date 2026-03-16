@@ -97,6 +97,9 @@ export interface ClusterCardProps {
 
     /** Configuration object passed to the component */
     configuration?: any;
+
+    /** Include tax in the price display */
+    includeTax?: boolean;
 }
 
 interface ClusterCardState {
@@ -416,6 +419,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                 <Show when={!!(props.cluster as Cluster).defaultProduct?.price}>
                     <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
                         <ProductPriceDisplay
+                            includeTax={props.includeTax}
                             price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}
                             options={(props.cluster as Cluster).options}
                             priceSize={state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}

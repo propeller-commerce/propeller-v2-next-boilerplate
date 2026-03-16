@@ -8,23 +8,24 @@ import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import CartSidebar from './CartSidebar';
-import SearchBar from '@/components/common/SearchBar';
+// import SearchBar from '@/components/common/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/Badge';
-import { ShoppingBag, Menu as MenuIcon } from 'lucide-react';
+import { Menu as MenuIcon } from 'lucide-react';
 import { config } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
-import { Cart, Contact, Company } from 'propeller-sdk-v2';
+import { useCompany } from '@/context/CompanyContext';
+import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
 
 export default function Header() {
   const router = useRouter();
   const { getTotalItems, openCart, cart } = useCart();
-  const { state, login, logout } = useAuth();
+  const { state, login, logout, updateUser } = useAuth();
+  const { setSelectedCompany } = useCompany();
   const globalData = useGlobal();
   const [isMounted, setIsMounted] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
@@ -37,6 +38,7 @@ export default function Header() {
     return process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
   });
   const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -132,10 +134,7 @@ export default function Header() {
                   {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && (
                     <CompanySwitcher
                       user={state.user as Contact}
-                      onCompanyChange={(company: Company) => {
-                        localStorage.setItem('selected_company_id', String(company.companyId));
-                        window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
-                      }}
+                      onCompanyChange={setSelectedCompany}
                     />
                   )}
                   {showVatToggle && (
@@ -187,28 +186,34 @@ export default function Header() {
               </Link>
 
               {/* Search Bar */}
-              {showSearch && (
+              {/* {showSearch && (
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar />
                 </div>
-              )}
+              )} */}
 
               {/* Right Section */}
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 {/* User Menu */}
                 {showAccount && (
                   <AccountIconAndMenu
-                    user={state.isAuthenticated ? (state.user as Contact) : null}
+                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
                     loginLoading={loginLoading}
-                    onLoginSubmit={async (email, password) => {
-                      setLoginLoading(true);
-                      try {
-                        await login(email, password);
-                      } catch (error) {
-                        console.error('Login failed:', error);
-                      } finally {
-                        setLoginLoading(false);
+                    loginError={loginError ?? undefined}
+                    graphqlClient={graphqlClient}
+                    onLoginSubmit={login}
+                    afterLogin={(user, accessToken, refreshToken, expiresAt) => {
+                      if ((user as Contact).company) {
+                        setSelectedCompany((user as Contact).company as Company);
                       }
+
+                      if (accessToken && refreshToken && expiresAt) {
+                        localStorage.setItem('accessToken', accessToken);
+                        localStorage.setItem('refreshToken', refreshToken);
+                        localStorage.setItem('expiresAt', expiresAt);
+                      }
+
+                      router.push('/account')
                     }}
                     onMenuItemClick={(href) => router.push(href)}
                     onLogoutClick={async () => {
@@ -216,6 +221,7 @@ export default function Header() {
                     }}
                     onForgotPasswordClick={() => router.push('/forgot-password')}
                     onRegisterClick={() => router.push('/register')}
+                    accountHeaderLoginForm={true}
                   />
                 )}
 

@@ -8,9 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import LoginForm from '@/components/propeller/LoginForm';
 import { graphqlClient } from '@/lib/api';
+import { useCompany } from '@/context/CompanyContext';
+import { Company, Contact } from 'propeller-sdk-v2';
 
 export default function LoginPage() {
-  const { state } = useAuth();
+  const { state, login } = useAuth();
+  const { setSelectedCompany } = useCompany();
   const router = useRouter();
 
   return (
@@ -48,10 +51,24 @@ export default function LoginPage() {
                 <LoginForm
                   graphqlClient={graphqlClient}
                   title=""
+                  accountHeaderLoginForm={false}
                   displayGuestCheckoutLink={false}
                   onForgotPasswordClick={() => router.push('/forgot-password')}
                   onRegisterClick={() => router.push('/register')}
-                  afterLogin={() => router.push('/account')}
+                  onLoginSubmit={login}
+                  afterLogin={(user, accessToken, refreshToken, expiresAt) => {
+                    if ((user as Contact).company) {
+                      setSelectedCompany((user as Contact).company as Company);
+                    }
+
+                    if (accessToken && refreshToken && expiresAt) {
+                      localStorage.setItem('accessToken', accessToken);
+                      localStorage.setItem('refreshToken', refreshToken);
+                      localStorage.setItem('expiresAt', expiresAt);
+                    }
+
+                    router.push('/account')
+                  }}
                 />
               </CardContent>
             </>

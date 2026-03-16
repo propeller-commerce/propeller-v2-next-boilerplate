@@ -261,6 +261,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
   }, []);
 
+  // Helper to remove leading underscores from object keys
+  const sanitizeUser = (data: any): User => {
+    if (!data || typeof data !== 'object') return data;
+
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const cleanKey = key.startsWith('_') ? key.substring(1) : key;
+      cleanData[cleanKey] = data[key];
+    });
+
+    return cleanData as User;
+  };
+
   const updateUser = useCallback((userData: Partial<User>): void => {
     dispatch({ type: 'UPDATE_USER', payload: userData });
 
@@ -307,6 +320,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     clearError,
     updateUser,
+    sanitizeUser
   };
 
   return (

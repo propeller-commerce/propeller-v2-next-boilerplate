@@ -2,10 +2,9 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { GraphQLClient, Product, Cluster, Contact, Customer, Cart, CartMainItem, CartChildItemInput, Enums, CategoryService, Attribute, CategoryProductSearchInput, CategoryQueryVariables, AttributeFilter, ProductTextFilterInput, ProductsResponse, Category } from 'propeller-sdk-v2';
+  import  { GraphQLClient, Product, Cluster, Contact, Customer, Cart, CartMainItem, Enums, CategoryService, CategoryProductSearchInput, CategoryQueryVariables, AttributeFilter, ProductTextFilterInput, ProductsResponse, Category } from 'propeller-sdk-v2';
 import  ProductCard from './ProductCard';
 import  ClusterCard from './ClusterCard';
-import  { ProductSearchableField, ProductSortField } from 'propeller-sdk-v2/dist/enum';
 
 
 
@@ -361,7 +360,7 @@ const taxZone = props.taxZone || 'NL';
 // Search / brand mode: use baseCategoryId to search the full catalog.
 const isWideSearch = !!(props.term as string) || !!(props.brand as string);
 const catId = isWideSearch ? props.configuration?.baseCategoryId as number || 0 : props.categoryId ? props.categoryId : props.configuration?.baseCategoryId as number || 0;
-if (props.term && !currentSortField) setCurrentSortField(ProductSortField.RELEVANCE);
+if (props.term && !currentSortField) setCurrentSortField(Enums.ProductSortField.RELEVANCE);
 const result = await service.getCategory({
   categoryId: catId,
   language: props.language as string || 'NL',
@@ -391,10 +390,10 @@ const result = await service.getCategory({
     ...(props.term as string && {
       term: props.term as string,
       searchFields: [{
-        fieldNames: [ProductSearchableField.NAME, ProductSearchableField.KEYWORDS, ProductSearchableField.SKU, ProductSearchableField.CUSTOM_KEYWORDS],
+        fieldNames: [Enums.ProductSearchableField.NAME, Enums.ProductSearchableField.KEYWORDS, Enums.ProductSearchableField.SKU, Enums.ProductSearchableField.CUSTOM_KEYWORDS],
         boost: 5
       }, {
-        fieldNames: [ProductSearchableField.DESCRIPTION, ProductSearchableField.MANUFACTURER, ProductSearchableField.MANUFACTURER_CODE, ProductSearchableField.EAN_CODE, ProductSearchableField.BAR_CODE, ProductSearchableField.CLUSTER_ID, ProductSearchableField.CUSTOM_KEYWORDS, ProductSearchableField.PRODUCT_ID, ProductSearchableField.SHORT_DESCRIPTION, ProductSearchableField.SUPPLIER, ProductSearchableField.SUPPLIER_CODE],
+        fieldNames: [Enums.ProductSearchableField.DESCRIPTION, Enums.ProductSearchableField.MANUFACTURER, Enums.ProductSearchableField.MANUFACTURER_CODE, Enums.ProductSearchableField.EAN_CODE, Enums.ProductSearchableField.BAR_CODE, Enums.ProductSearchableField.CLUSTER_ID, Enums.ProductSearchableField.CUSTOM_KEYWORDS, Enums.ProductSearchableField.PRODUCT_ID, Enums.ProductSearchableField.SHORT_DESCRIPTION, Enums.ProductSearchableField.SUPPLIER, Enums.ProductSearchableField.SUPPLIER_CODE],
         boost: 1
       }]
     }),

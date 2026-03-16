@@ -9,6 +9,15 @@ import {
     UserService,
     CompanyService,
     AddressService,
+    RegisterContactResponse,
+    RegisterCustomerResponse,
+    Enums,
+    Company,
+    ContactRegisterInput,
+    CustomerRegisterInput,
+    CreateCompanyInput,
+    CustomerAddressCreateInput,
+    CompanyAddressCreateInput
 } from 'propeller-sdk-v2';
 
 export interface RegisterFormProps {
@@ -73,7 +82,7 @@ export interface RegisterFormProps {
     beforeRegistration?: () => void;
 
     /** Callback after the user is registered */
-    afterRegistration?: (user: Contact | Customer) => void;
+    afterRegistration?: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
 
     /** Action for the login link click */
     onLoginClick?: () => void;
@@ -82,6 +91,18 @@ export interface RegisterFormProps {
      * @default true
      */
     displayLoginLink?: boolean;
+
+    /**
+     * Prefered language
+     * @default 'NL'
+     */
+    preferredLanguage?: string;
+
+    /**
+     * List of countries to display in the country dropdown
+     * @default {}
+     */
+    countries?: Record<string, string>;
 }
 
 export default function RegisterForm(props: RegisterFormProps) {
@@ -94,7 +115,7 @@ export default function RegisterForm(props: RegisterFormProps) {
         _password: '',
         _confirmPassword: '',
         _phone: '',
-        _gender: '',
+        _gender: Enums.Gender.U,
 
         // Company fields (Contact only)
         _companyName: '',
@@ -125,24 +146,6 @@ export default function RegisterForm(props: RegisterFormProps) {
         _loading: false,
         _error: '',
         _submitted: false,
-
-        /**
-         * Recursively converts an SDK class instance to a plain object,
-         * stripping the leading underscore the SDK uses for private backing fields.
-         */
-        deepPlain(value: unknown): unknown {
-            if (value === null || value === undefined) return value;
-            if (Array.isArray(value)) return (value as unknown[]).map((v) => state.deepPlain(v));
-            if (typeof value === 'object') {
-                const result: Record<string, unknown> = {};
-                for (const key of Object.keys(value as object)) {
-                    const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-                    result[cleanKey] = state.deepPlain((value as Record<string, unknown>)[key]);
-                }
-                return result;
-            }
-            return value;
-        },
 
         get resolvedTitle(): string {
             return props.title !== undefined ? props.title : 'Create account';
@@ -206,7 +209,7 @@ export default function RegisterForm(props: RegisterFormProps) {
             return props.requiredFields.indexOf(fieldName) !== -1;
         },
 
-        async handleSubmit(e: Event) {
+        async handleSubmit(e: Event | any) {
             e.preventDefault();
 
             if (!state.effectiveUserType) {
@@ -237,55 +240,75 @@ export default function RegisterForm(props: RegisterFormProps) {
                     password: state._password,
                 };
 
-                if (state._firstName) baseInput.firstName = state._firstName;
-                if (state._middleName) baseInput.middleName = state._middleName;
-                if (state._lastName) baseInput.lastName = state._lastName;
-                if (state._phone) baseInput.phone = state._phone;
-                if (state._gender) baseInput.gender = state._gender;
-                if (typeof window !== 'undefined') {
-                    baseInput.primaryLanguage = localStorage.getItem('preferred_language') || 'NL';
-                }
+                baseInput.firstName = state._firstName;
+                baseInput.middleName = state._middleName;
+                baseInput.lastName = state._lastName;
+                baseInput.phone = state._phone;
+                baseInput.gender = state._gender;
+                baseInput.primaryLanguage = props.preferredLanguage || 'NL';
 
-                let response: any;
+                let response: RegisterContactResponse | RegisterCustomerResponse;
                 let userId: number = 0;
+                let company: Company | null = null;
 
                 if (state.isContact) {
-                    response = await userService.registerContact(baseInput as any);
-                    userId = Number((response as any)?.contact?.id || 0);
-
-                    // Authenticate before creating company/addresses
-                    const session = (response as any)?.session;
-                    if (session?.accessToken) {
-                        const currentConfig = (props.graphqlClient as any).getConfig();
-                        (props.graphqlClient as any).updateConfig({
-                            headers: {
-                                ...currentConfig.headers,
-                                'Authorization': 'Bearer ' + session.accessToken,
-                            },
-                        });
-                    }
-
                     // Create company if company fields are filled
                     if (state._companyName) {
                         const companyService = new CompanyService(props.graphqlClient as GraphQLClient);
-                        const companyInput: Record<string, unknown> = {
+                        const companyInput: CreateCompanyInput = {
                             name: state._companyName,
+                            taxNumber: state._vatNumber,
+                            cocNumber: state._cocNumber,
+                            email: state._email,
+                            phone: state._phone,
                         };
-                        if (state._vatNumber) companyInput.taxNumber = state._vatNumber;
-                        if (state._cocNumber) companyInput.cocNumber = state._cocNumber;
-                        if (state._email) companyInput.email = state._email;
-                        if (state._phone) companyInput.phone = state._phone;
-                        await companyService.createCompany(companyInput as any);
+                        company = await companyService.createCompany(companyInput);
+                    }
+
+                    const contactInput: ContactRegisterInput = {
+                        contactRegisterInput: {
+                            ...baseInput,
+                            parentId: company?.companyId as number,
+                        },
+                        companyAttributesInput: {},
+                        contactAttributesInput: {},
+                        contactPAConfigInput: {
+                            page: 1,
+                            offset: 10
+                        }
+                    };
+
+                    response = await userService.registerContact(contactInput);
+                    userId = Number((response as RegisterContactResponse)?.contact?.id || 0);
+
+                    // Authenticate before creating company/addresses
+                    const session = (response as RegisterContactResponse)?.session;
+                    if (session?.accessToken) {
+                        const currentConfig = (props.graphqlClient as GraphQLClient).getConfig();
+                        (props.graphqlClient as GraphQLClient).updateConfig({
+                            headers: {
+                                ...currentConfig.headers,
+                                'Authorization': 'Bearer ' + session.accessToken,
+                            },
+                        });
                     }
                 } else {
-                    response = await userService.registerCustomer(baseInput as any);
-                    userId = Number((response as any)?.customer?.id || 0);
+                    const customerInput: CustomerRegisterInput = {
+                        customerRegisterInput: {
+                            ...baseInput,
+                            gender: state._gender,
+                            primaryLanguage: props.preferredLanguage || 'NL',
+                        },
+                        customerAttributesInput: {}
+                    };
+                    response = await userService.registerCustomer(customerInput);
+                    userId = Number((response as RegisterCustomerResponse)?.customer?.id || 0);
 
                     // Authenticate before creating addresses
-                    const session = (response as any)?.session;
+                    const session = (response as RegisterCustomerResponse)?.session;
                     if (session?.accessToken) {
-                        const currentConfig = (props.graphqlClient as any).getConfig();
-                        (props.graphqlClient as any).updateConfig({
+                        const currentConfig = (props.graphqlClient as GraphQLClient).getConfig();
+                        (props.graphqlClient as GraphQLClient).updateConfig({
                             headers: {
                                 ...currentConfig.headers,
                                 'Authorization': 'Bearer ' + session.accessToken,
@@ -294,88 +317,122 @@ export default function RegisterForm(props: RegisterFormProps) {
                     }
                 }
 
-                const session = (response as any)?.session;
-                const user = state.isContact ? (response as any)?.contact : (response as any)?.customer;
+                const session = (response as RegisterContactResponse | RegisterCustomerResponse)?.session;
+                const user = state.isContact ? (response as RegisterContactResponse)?.contact : (response as RegisterCustomerResponse)?.customer;
 
                 // Create invoice/billing address
-                if (state._billingStreet && state._billingPostalCode && state._billingCity && state._billingCountry && userId) {
-                    const invoiceAddress: Record<string, unknown> = {
+
+                let invoiceAddress: CustomerAddressCreateInput | CompanyAddressCreateInput;
+
+                if (state.isCustomer) {
+                    invoiceAddress = {
+                        firstName: state._firstName,
+                        middleName: state._middleName,
+                        lastName: state._lastName,
                         street: state._billingStreet,
                         number: state._billingNumber,
+                        numberExtension: state._billingNumberExtension,
                         postalCode: state._billingPostalCode,
                         city: state._billingCity,
                         country: state._billingCountry,
-                        type: 'invoice',
-                        isDefault: 'Y',
+                        type: Enums.AddressType.invoice,
+                        isDefault: Enums.YesNo.Y,
+                        customerId: userId,
                     };
-                    if (state._billingNumberExtension) invoiceAddress.numberExtension = state._billingNumberExtension;
-                    if (state._firstName) invoiceAddress.firstName = state._firstName;
-                    if (state._lastName) invoiceAddress.lastName = state._lastName;
-                    if (state.isContact && state._companyName) invoiceAddress.company = state._companyName;
 
+                    await addressService.createCustomerAddress(invoiceAddress);
+                } else {
+                    invoiceAddress = {
+                        firstName: state._firstName,
+                        middleName: state._middleName,
+                        lastName: state._lastName,
+                        company: state._companyName,
+                        street: state._billingStreet,
+                        number: state._billingNumber,
+                        numberExtension: state._billingNumberExtension,
+                        postalCode: state._billingPostalCode,
+                        city: state._billingCity,
+                        country: state._billingCountry,
+                        type: Enums.AddressType.invoice,
+                        isDefault: Enums.YesNo.Y,
+                        companyId: company?.companyId as number,
+                    };
+
+                    await addressService.createCompanyAddress(invoiceAddress);
+                }
+
+                // Create delivery address
+                if (state._sameAsDelivery) {
                     if (state.isCustomer) {
-                        (invoiceAddress as any).customerId = userId;
-                        await addressService.createCustomerAddress(invoiceAddress as any);
-                    } else {
-                        (invoiceAddress as any).userId = userId;
-                        await (addressService as any).createCompanyAddress(invoiceAddress as any);
-                    }
-
-                    // Create delivery address
-                    if (state._sameAsDelivery) {
-                        const deliveryAddress: Record<string, unknown> = {
-                            ...invoiceAddress,
-                            type: 'delivery',
+                        const deliveryAddress: CustomerAddressCreateInput = {
+                            ...invoiceAddress as CustomerAddressCreateInput,
                         };
-                        if (state.isCustomer) {
-                            (deliveryAddress as any).customerId = userId;
-                            await addressService.createCustomerAddress(deliveryAddress as any);
-                        } else {
-                            (deliveryAddress as any).userId = userId;
-                            await (addressService as any).createCompanyAddress(deliveryAddress as any);
-                        }
-                    } else if (state._deliveryStreet && state._deliveryPostalCode && state._deliveryCity && state._deliveryCountry) {
-                        const deliveryAddress: Record<string, unknown> = {
+
+                        deliveryAddress.type = Enums.AddressType.delivery;
+
+                        await addressService.createCustomerAddress(deliveryAddress);
+                    } else {
+                        const deliveryAddress: CompanyAddressCreateInput = {
+                            ...invoiceAddress as CompanyAddressCreateInput,
+                        };
+
+                        deliveryAddress.type = Enums.AddressType.delivery;
+
+                        await addressService.createCompanyAddress(deliveryAddress);
+                    }
+                } else {
+                    if (state.isCustomer) {
+                        const deliveryAddress: CustomerAddressCreateInput = {
+                            firstName: state._firstName,
+                            middleName: state._middleName,
+                            lastName: state._lastName,
                             street: state._deliveryStreet,
                             number: state._deliveryNumber,
+                            numberExtension: state._deliveryNumberExtension,
                             postalCode: state._deliveryPostalCode,
                             city: state._deliveryCity,
                             country: state._deliveryCountry,
-                            type: 'delivery',
-                            isDefault: 'Y',
+                            type: Enums.AddressType.delivery,
+                            isDefault: Enums.YesNo.Y,
+                            customerId: userId,
                         };
-                        if (state._deliveryNumberExtension) deliveryAddress.numberExtension = state._deliveryNumberExtension;
-                        if (state._firstName) deliveryAddress.firstName = state._firstName;
-                        if (state._lastName) deliveryAddress.lastName = state._lastName;
-                        if (state.isContact && state._companyName) deliveryAddress.company = state._companyName;
 
-                        if (state.isCustomer) {
-                            (deliveryAddress as any).customerId = userId;
-                            await addressService.createCustomerAddress(deliveryAddress as any);
-                        } else {
-                            (deliveryAddress as any).userId = userId;
-                            await (addressService as any).createCompanyAddress(deliveryAddress as any);
-                        }
-                    }
-                }
+                        await addressService.createCustomerAddress(deliveryAddress);
+                    } else {
+                        const deliveryAddress: CompanyAddressCreateInput = {
+                            firstName: state._firstName,
+                            middleName: state._middleName,
+                            lastName: state._lastName,
+                            street: state._deliveryStreet,
+                            number: state._deliveryNumber,
+                            numberExtension: state._deliveryNumberExtension,
+                            postalCode: state._deliveryPostalCode,
+                            city: state._deliveryCity,
+                            country: state._deliveryCountry,
+                            type: Enums.AddressType.delivery,
+                            isDefault: Enums.YesNo.Y,
+                            companyId: company?.companyId as number,
+                        };
 
-                // Auto-login if enabled and session tokens are present
-                if ((props.automaticLogin !== false) && session?.accessToken && session?.refreshToken) {
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem('accessToken', session.accessToken);
-                        localStorage.setItem('refreshToken', session.refreshToken);
-                        localStorage.setItem('user', JSON.stringify(state.deepPlain(user)));
-                    }
-
-                    if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+                        await addressService.createCompanyAddress(deliveryAddress);
                     }
                 }
 
                 state._submitted = true;
 
+                // Auto-login if enabled and session tokens are present
+                if ((props.automaticLogin !== false) && session?.accessToken && session?.refreshToken) {
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+                    }
+                }
+
                 if (props.afterRegistration) {
-                    props.afterRegistration(user as Contact);
+                    if ((props.automaticLogin !== false) && session?.accessToken && session?.refreshToken) {
+                        props.afterRegistration(user as unknown as Contact | Customer, session?.accessToken, session?.refreshToken, session?.expirationTime);
+                    } else {
+                        props.afterRegistration(user as unknown as Contact | Customer);
+                    }
                 }
             } catch (err: any) {
                 state._error = err?.message || 'Registration failed. Please try again.';
@@ -447,8 +504,8 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="radio"
                                         name="gender"
                                         value="M"
-                                        checked={state._gender === 'M'}
-                                        onChange={() => { state._gender = 'M'; }}
+                                        checked={state._gender === Enums.Gender.M}
+                                        onChange={() => { state._gender = Enums.Gender.M; }}
                                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                                         disabled={state._loading}
                                     />
@@ -459,8 +516,8 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="radio"
                                         name="gender"
                                         value="F"
-                                        checked={state._gender === 'F'}
-                                        onChange={() => { state._gender = 'F'; }}
+                                        checked={state._gender === Enums.Gender.F}
+                                        onChange={() => { state._gender = Enums.Gender.F; }}
                                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                                         disabled={state._loading}
                                     />
@@ -471,8 +528,8 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="radio"
                                         name="gender"
                                         value="U"
-                                        checked={state._gender === 'U'}
-                                        onChange={() => { state._gender = 'U'; }}
+                                        checked={state._gender === Enums.Gender.U}
+                                        onChange={() => { state._gender = Enums.Gender.U; }}
                                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                                         disabled={state._loading}
                                     />
@@ -728,16 +785,20 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     {state.countryLabel}
                                     <span className="text-red-500 ml-1">*</span>
                                 </label>
-                                <input
-                                    type="text"
+                                <select
                                     id="register-billingCountry"
                                     name="billingCountry"
                                     value={state._billingCountry}
-                                    onChange={(e) => { state._billingCountry = (e.target as HTMLInputElement).value; }}
+                                    onChange={(e) => { state._billingCountry = (e.target as HTMLSelectElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state._loading}
-                                />
+                                >
+                                    <option value="">Select country</option>
+                                    {Object.entries(props.countries || {}).map((entry) => (
+                                        <option key={entry[0]} value={entry[0]}>{entry[1]}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -853,16 +914,20 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             {state.countryLabel}
                                             <span className="text-red-500 ml-1">*</span>
                                         </label>
-                                        <input
-                                            type="text"
+                                        <select
                                             id="register-deliveryCountry"
                                             name="deliveryCountry"
                                             value={state._deliveryCountry}
-                                            onChange={(e) => { state._deliveryCountry = (e.target as HTMLInputElement).value; }}
+                                            onChange={(e) => { state._deliveryCountry = (e.target as HTMLSelectElement).value; }}
                                             required
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state._loading}
-                                        />
+                                        >
+                                            <option value="">Select country</option>
+                                            {Object.entries(props.countries || {}).map((entry) => (
+                                                <option key={entry[0]} value={entry[0]}>{entry[1]}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>

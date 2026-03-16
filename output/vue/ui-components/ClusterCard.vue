@@ -147,6 +147,7 @@
       <template v-if="!!cluster.defaultProduct?.price">
         <div :class="isRow() ? '' : 'mt-auto pt-2'">
           <ProductPriceDisplay
+            :includeTax="includeTax"
             :price="cluster.defaultProduct?.price"
             :options="cluster.options"
             :priceSize="isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'"
@@ -272,6 +273,9 @@ export interface ClusterCardProps {
 
   /** Configuration object passed to the component */
   configuration?: any;
+
+  /** Include tax in the price display */
+  includeTax?: boolean;
 }
 interface ClusterCardState {
   isFavorite: boolean;

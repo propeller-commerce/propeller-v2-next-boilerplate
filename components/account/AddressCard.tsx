@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { getCountryName } from '@/data/countries';
 import AddressModal, { AddressFormData } from './AddressModal';
-import { Gender } from 'propeller-sdk-v2/dist/enum/Gender';
-import { YesNo } from 'propeller-sdk-v2/dist/enum/YesNo';
-import { AddressType } from 'propeller-sdk-v2/dist/enum/AddressType';
+import { Enums } from 'propeller-sdk-v2';
 
 interface AddressCardProps {
     address: any; // Use any to handle different address structures
     onEdit?: (address: any) => void;
     onDelete?: (addressId: string) => void;
-    onSetDefault?: (addressId: string, type: AddressType) => void;
+    onSetDefault?: (addressId: string, type: Enums.AddressType) => void;
     showActions?: boolean;
 }
 
@@ -23,10 +21,10 @@ const AddressCard: React.FC<AddressCardProps> = ({
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-    const getGenderSalutation = (gender?: Gender) => {
+    const getGenderSalutation = (gender?: Enums.Gender) => {
         switch (gender) {
-            case Gender.M: return 'Mr.';
-            case Gender.F: return 'Mrs.';
+            case Enums.Gender.M: return 'Mr.';
+            case Enums.Gender.F: return 'Mrs.';
             default: return '';
         }
     };
@@ -91,7 +89,7 @@ const AddressCard: React.FC<AddressCardProps> = ({
                     <div className="address-city text-gray-600">{getAddressLine2()}</div>
                     <div className="address-country text-gray-600">{getCountryName(address.country || '')}</div>
 
-                    {address.isDefault === YesNo.Y && (
+                    {address.isDefault === Enums.YesNo.Y && (
                         <div className="mt-2">
                             <span className="bg-violet-100 text-violet-800 text-xs px-2 py-1 rounded-full">
                                 Default {address.type} Address
@@ -116,7 +114,7 @@ const AddressCard: React.FC<AddressCardProps> = ({
                         >
                             🗑️ Delete
                         </button>
-                        {address.isDefault !== YesNo.Y && (
+                        {address.isDefault !== Enums.YesNo.Y && (
                             <button
                                 className="text-yellow-600 hover:text-yellow-800 text-sm font-medium flex items-center gap-1 ml-auto"
                                 onClick={handleSetDefault}

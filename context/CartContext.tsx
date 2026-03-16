@@ -7,10 +7,8 @@ import { useCartSync } from '@/hooks/useCartSync';
 import { dispatchCartUpdate } from '@/utils/cartEvents';
 import { serializeCart } from '@/utils/cartHelpers';
 import toast from 'react-hot-toast';
-import { Address, Cart, CartDeleteVariables, CartMainItem, CartSearchInput, CartStartInput, Customer, Enums } from 'propeller-sdk-v2';
-import { CartQueryVariables, CartStartVariables } from 'propeller-sdk-v2/dist/service/CartService';
+import { CartQueryVariables, CartStartVariables, Address, Cart, CartDeleteVariables, CartMainItem, CartSearchInput, CartStartInput, Customer, Enums } from 'propeller-sdk-v2';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import { CartAddressType } from 'propeller-sdk-v2/dist/enum';
 
 interface CartContextType {
   cart: Cart | null;
@@ -168,7 +166,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           newCart = await cartService.updateCartAddress({
             id: newCart.cartId,
             input: {
-              type: CartAddressType.INVOICE,
+              type: Enums.CartAddressType.INVOICE,
               firstName: defaultInvoice.firstName || '',
               lastName: defaultInvoice.lastName || '',
               street: defaultInvoice.street || '',
@@ -195,7 +193,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           newCart = await cartService.updateCartAddress({
             id: newCart.cartId,
             input: {
-              type: CartAddressType.DELIVERY,
+              type: Enums.CartAddressType.DELIVERY,
               firstName: defaultDelivery.firstName || '',
               lastName: defaultDelivery.lastName || '',
               street: defaultDelivery.street || '',

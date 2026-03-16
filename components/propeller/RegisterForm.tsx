@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react'
-  import  { Contact, Customer, GraphQLClient, UserService, CompanyService, AddressService } from 'propeller-sdk-v2';
+  import  { Contact, Customer, GraphQLClient, UserService, CompanyService, AddressService, RegisterContactResponse, RegisterCustomerResponse, Enums, Company, ContactRegisterInput, CustomerRegisterInput, CreateCompanyInput, CustomerAddressCreateInput, CompanyAddressCreateInput } from 'propeller-sdk-v2';
 
 
 
@@ -68,7 +68,7 @@ labels?: Record<string, string>;
 beforeRegistration?: () => void;
 
 /** Callback after the user is registered */
-afterRegistration?: (user: Contact | Customer) => void;
+afterRegistration?: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
 
 /** Action for the login link click */
 onLoginClick?: () => void;
@@ -77,6 +77,18 @@ onLoginClick?: () => void;
  * @default true
  */
 displayLoginLink?: boolean;
+
+/**
+ * Prefered language
+ * @default 'NL'
+ */
+preferredLanguage?: string;
+
+/**
+ * List of countries to display in the country dropdown
+ * @default {}
+ */
+countries?: Record<string, string>;
 }
 
 
@@ -105,7 +117,7 @@ const [_confirmPassword, set_confirmPassword] = useState(() => (''))
 const [_phone, set_phone] = useState(() => (''))
 
 
-const [_gender, set_gender] = useState(() => (''))
+const [_gender, set_gender] = useState(() => (Enums.Gender.U))
 
 
 const [_companyName, set_companyName] = useState(() => (''))
@@ -166,21 +178,6 @@ const [_error, set_error] = useState(() => (''))
 
 
 const [_submitted, set_submitted] = useState(() => (false))
-
-
-function deepPlain(value: unknown): unknown {
-if (value === null || value === undefined) return value;
-if (Array.isArray(value)) return (value as unknown[]).map(v => deepPlain(v));
-if (typeof value === 'object') {
-const result: Record<string, unknown> = {};
-for (const key of Object.keys(value as object)) {
-  const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-  result[cleanKey] = deepPlain((value as Record<string, unknown>)[key]);
-}
-return result;
-}
-return value;
-}
 
 
 function resolvedTitle() {
@@ -375,7 +372,7 @@ return props.requiredFields.indexOf(fieldName) !== -1;
 }
 
 
-async function handleSubmit(e: Event) {
+async function handleSubmit(e: Event | any) {
 e.preventDefault();
 if (!effectiveUserType()) {
 set_error('Please select an account type.');
@@ -398,53 +395,71 @@ const baseInput: Record<string, unknown> = {
   email: _email,
   password: _password
 };
-if (_firstName) baseInput.firstName = _firstName;
-if (_middleName) baseInput.middleName = _middleName;
-if (_lastName) baseInput.lastName = _lastName;
-if (_phone) baseInput.phone = _phone;
-if (_gender) baseInput.gender = _gender;
-if (typeof window !== 'undefined') {
-  baseInput.primaryLanguage = localStorage.getItem('preferred_language') || 'NL';
-}
-let response: any;
+baseInput.firstName = _firstName;
+baseInput.middleName = _middleName;
+baseInput.lastName = _lastName;
+baseInput.phone = _phone;
+baseInput.gender = _gender;
+baseInput.primaryLanguage = props.preferredLanguage || 'NL';
+let response: RegisterContactResponse | RegisterCustomerResponse;
 let userId: number = 0;
+let company: Company | null = null;
 if (isContact()) {
-  response = await userService.registerContact(baseInput as any);
-  userId = Number((response as any)?.contact?.id || 0);
-
-  // Authenticate before creating company/addresses
-  const session = (response as any)?.session;
-  if (session?.accessToken) {
-    const currentConfig = (props.graphqlClient as any).getConfig();
-    (props.graphqlClient as any).updateConfig({
-      headers: {
-        ...currentConfig.headers,
-        'Authorization': 'Bearer ' + session.accessToken
-      }
-    });
-  }
-
   // Create company if company fields are filled
   if (_companyName) {
     const companyService = new CompanyService(props.graphqlClient as GraphQLClient);
-    const companyInput: Record<string, unknown> = {
-      name: _companyName
+    const companyInput: CreateCompanyInput = {
+      name: _companyName,
+      taxNumber: _vatNumber,
+      cocNumber: _cocNumber,
+      email: _email,
+      phone: _phone
     };
-    if (_vatNumber) companyInput.taxNumber = _vatNumber;
-    if (_cocNumber) companyInput.cocNumber = _cocNumber;
-    if (_email) companyInput.email = _email;
-    if (_phone) companyInput.phone = _phone;
-    await companyService.createCompany(companyInput as any);
+    company = await companyService.createCompany(companyInput);
+  }
+  const contactInput: ContactRegisterInput = {
+    contactRegisterInput: {
+      ...baseInput,
+      parentId: company?.companyId as number
+    },
+    companyAttributesInput: {},
+    contactAttributesInput: {},
+    contactPAConfigInput: {
+      page: 1,
+      offset: 10
+    }
+  };
+  response = await userService.registerContact(contactInput);
+  userId = Number((response as RegisterContactResponse)?.contact?.id || 0);
+
+  // Authenticate before creating company/addresses
+  const session = (response as RegisterContactResponse)?.session;
+  if (session?.accessToken) {
+    const currentConfig = (props.graphqlClient as GraphQLClient).getConfig();
+    (props.graphqlClient as GraphQLClient).updateConfig({
+      headers: {
+        ...currentConfig.headers,
+        'Authorization': 'Bearer ' + session.accessToken
+      }
+    });
   }
 } else {
-  response = await userService.registerCustomer(baseInput as any);
-  userId = Number((response as any)?.customer?.id || 0);
+  const customerInput: CustomerRegisterInput = {
+    customerRegisterInput: {
+      ...baseInput,
+      gender: _gender,
+      primaryLanguage: props.preferredLanguage || 'NL'
+    },
+    customerAttributesInput: {}
+  };
+  response = await userService.registerCustomer(customerInput);
+  userId = Number((response as RegisterCustomerResponse)?.customer?.id || 0);
 
   // Authenticate before creating addresses
-  const session = (response as any)?.session;
+  const session = (response as RegisterCustomerResponse)?.session;
   if (session?.accessToken) {
-    const currentConfig = (props.graphqlClient as any).getConfig();
-    (props.graphqlClient as any).updateConfig({
+    const currentConfig = (props.graphqlClient as GraphQLClient).getConfig();
+    (props.graphqlClient as GraphQLClient).updateConfig({
       headers: {
         ...currentConfig.headers,
         'Authorization': 'Bearer ' + session.accessToken
@@ -452,83 +467,111 @@ if (isContact()) {
     });
   }
 }
-const session = (response as any)?.session;
-const user = isContact() ? (response as any)?.contact : (response as any)?.customer;
+const session = (response as RegisterContactResponse | RegisterCustomerResponse)?.session;
+const user = isContact() ? (response as RegisterContactResponse)?.contact : (response as RegisterCustomerResponse)?.customer;
 
 // Create invoice/billing address
-if (_billingStreet && _billingPostalCode && _billingCity && _billingCountry && userId) {
-  const invoiceAddress: Record<string, unknown> = {
+
+let invoiceAddress: CustomerAddressCreateInput | CompanyAddressCreateInput;
+if (isCustomer()) {
+  invoiceAddress = {
+    firstName: _firstName,
+    middleName: _middleName,
+    lastName: _lastName,
     street: _billingStreet,
     number: _billingNumber,
+    numberExtension: _billingNumberExtension,
     postalCode: _billingPostalCode,
     city: _billingCity,
     country: _billingCountry,
-    type: 'invoice',
-    isDefault: 'Y'
+    type: Enums.AddressType.invoice,
+    isDefault: Enums.YesNo.Y,
+    customerId: userId
   };
-  if (_billingNumberExtension) invoiceAddress.numberExtension = _billingNumberExtension;
-  if (_firstName) invoiceAddress.firstName = _firstName;
-  if (_lastName) invoiceAddress.lastName = _lastName;
-  if (isContact() && _companyName) invoiceAddress.company = _companyName;
-  if (isCustomer()) {
-    (invoiceAddress as any).customerId = userId;
-    await addressService.createCustomerAddress(invoiceAddress as any);
-  } else {
-    (invoiceAddress as any).userId = userId;
-    await (addressService as any).createCompanyAddress(invoiceAddress as any);
-  }
+  await addressService.createCustomerAddress(invoiceAddress);
+} else {
+  invoiceAddress = {
+    firstName: _firstName,
+    middleName: _middleName,
+    lastName: _lastName,
+    company: _companyName,
+    street: _billingStreet,
+    number: _billingNumber,
+    numberExtension: _billingNumberExtension,
+    postalCode: _billingPostalCode,
+    city: _billingCity,
+    country: _billingCountry,
+    type: Enums.AddressType.invoice,
+    isDefault: Enums.YesNo.Y,
+    companyId: company?.companyId as number
+  };
+  await addressService.createCompanyAddress(invoiceAddress);
+}
 
-  // Create delivery address
-  if (_sameAsDelivery) {
-    const deliveryAddress: Record<string, unknown> = {
-      ...invoiceAddress,
-      type: 'delivery'
+// Create delivery address
+if (_sameAsDelivery) {
+  if (isCustomer()) {
+    const deliveryAddress: CustomerAddressCreateInput = {
+      ...(invoiceAddress as CustomerAddressCreateInput)
     };
-    if (isCustomer()) {
-      (deliveryAddress as any).customerId = userId;
-      await addressService.createCustomerAddress(deliveryAddress as any);
-    } else {
-      (deliveryAddress as any).userId = userId;
-      await (addressService as any).createCompanyAddress(deliveryAddress as any);
-    }
-  } else if (_deliveryStreet && _deliveryPostalCode && _deliveryCity && _deliveryCountry) {
-    const deliveryAddress: Record<string, unknown> = {
+    deliveryAddress.type = Enums.AddressType.delivery;
+    await addressService.createCustomerAddress(deliveryAddress);
+  } else {
+    const deliveryAddress: CompanyAddressCreateInput = {
+      ...(invoiceAddress as CompanyAddressCreateInput)
+    };
+    deliveryAddress.type = Enums.AddressType.delivery;
+    await addressService.createCompanyAddress(deliveryAddress);
+  }
+} else {
+  if (isCustomer()) {
+    const deliveryAddress: CustomerAddressCreateInput = {
+      firstName: _firstName,
+      middleName: _middleName,
+      lastName: _lastName,
       street: _deliveryStreet,
       number: _deliveryNumber,
+      numberExtension: _deliveryNumberExtension,
       postalCode: _deliveryPostalCode,
       city: _deliveryCity,
       country: _deliveryCountry,
-      type: 'delivery',
-      isDefault: 'Y'
+      type: Enums.AddressType.delivery,
+      isDefault: Enums.YesNo.Y,
+      customerId: userId
     };
-    if (_deliveryNumberExtension) deliveryAddress.numberExtension = _deliveryNumberExtension;
-    if (_firstName) deliveryAddress.firstName = _firstName;
-    if (_lastName) deliveryAddress.lastName = _lastName;
-    if (isContact() && _companyName) deliveryAddress.company = _companyName;
-    if (isCustomer()) {
-      (deliveryAddress as any).customerId = userId;
-      await addressService.createCustomerAddress(deliveryAddress as any);
-    } else {
-      (deliveryAddress as any).userId = userId;
-      await (addressService as any).createCompanyAddress(deliveryAddress as any);
-    }
+    await addressService.createCustomerAddress(deliveryAddress);
+  } else {
+    const deliveryAddress: CompanyAddressCreateInput = {
+      firstName: _firstName,
+      middleName: _middleName,
+      lastName: _lastName,
+      street: _deliveryStreet,
+      number: _deliveryNumber,
+      numberExtension: _deliveryNumberExtension,
+      postalCode: _deliveryPostalCode,
+      city: _deliveryCity,
+      country: _deliveryCountry,
+      type: Enums.AddressType.delivery,
+      isDefault: Enums.YesNo.Y,
+      companyId: company?.companyId as number
+    };
+    await addressService.createCompanyAddress(deliveryAddress);
   }
 }
+set_submitted(true);
 
 // Auto-login if enabled and session tokens are present
 if (props.automaticLogin !== false && session?.accessToken && session?.refreshToken) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('accessToken', session.accessToken);
-    localStorage.setItem('refreshToken', session.refreshToken);
-    localStorage.setItem('user', JSON.stringify(deepPlain(user)));
-  }
-  if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('userLoggedIn'));
   }
 }
-set_submitted(true);
 if (props.afterRegistration) {
-  props.afterRegistration(user as Contact);
+  if (props.automaticLogin !== false && session?.accessToken && session?.refreshToken) {
+    props.afterRegistration(user as unknown as Contact | Customer, session?.accessToken, session?.refreshToken, session?.expirationTime);
+  } else {
+    props.afterRegistration(user as unknown as Contact | Customer);
+  }
 }
 } catch (err: any) {
 set_error(err?.message || 'Registration failed. Please try again.');
@@ -561,16 +604,16 @@ set_selectedUserType('Contact');
 } }  className={'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' + (_selectedUserType === 'Contact' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50')}>{contactLabel()}</button><button  type="button"  onClick={(event) => {
 set_selectedUserType('Customer');
 } }  className={'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' + (_selectedUserType === 'Customer' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50')}>{customerLabel()}</button></div></div>
-) : null}<div className="space-y-2"><label className="text-sm font-medium leading-none">{genderLabel()}</label><div className="flex gap-4"><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="M" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === 'M'}  onChange={(event) => {
-set_gender('M');
+) : null}<div className="space-y-2"><label className="text-sm font-medium leading-none">{genderLabel()}</label><div className="flex gap-4"><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="M" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === Enums.Gender.M}  onChange={(event) => {
+set_gender(Enums.Gender.M);
 } }  disabled={_loading}  />
                                 Mr.
-                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="F" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === 'F'}  onChange={(event) => {
-set_gender('F');
+                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="F" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === Enums.Gender.F}  onChange={(event) => {
+set_gender(Enums.Gender.F);
 } }  disabled={_loading}  />
                                 Mrs.
-                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="U" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === 'U'}  onChange={(event) => {
-set_gender('U');
+                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="U" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === Enums.Gender.U}  onChange={(event) => {
+set_gender(Enums.Gender.U);
 } }  disabled={_loading}  />
                                 Other
                             </label></div></div><div className="space-y-2"><label  htmlFor="register-email" className="text-sm font-medium leading-none">{emailLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="email"  id="register-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_email}  onChange={(e) => {
@@ -609,9 +652,11 @@ set_billingNumber((e.target as HTMLInputElement).value);
 set_billingNumberExtension((e.target as HTMLInputElement).value);
 } }  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingCity" className="text-sm font-medium leading-none">{cityLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingCity"  name="billingCity" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingCity}  onChange={(e) => {
 set_billingCity((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingCountry"  name="billingCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingCountry}  onChange={(e) => {
-set_billingCountry((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div></div></div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{deliveryAddressTitle()}</h3><div className="flex items-center gap-2"><input  type="checkbox"  id="register-sameAsDelivery"  name="sameAsDelivery" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_sameAsDelivery}  onChange={(e) => {
+} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><select  id="register-billingCountry"  name="billingCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingCountry}  onChange={(e) => {
+set_billingCountry((e.target as HTMLSelectElement).value);
+} }  required  disabled={_loading}><option  value="">Select country</option>{Object.entries(props.countries || {})?.map((entry) => (
+  <option  key={entry[0]}  value={entry[0]}>{entry[1]}</option>
+))}</select></div></div></div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{deliveryAddressTitle()}</h3><div className="flex items-center gap-2"><input  type="checkbox"  id="register-sameAsDelivery"  name="sameAsDelivery" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_sameAsDelivery}  onChange={(e) => {
 set_sameAsDelivery((e.target as HTMLInputElement).checked);
 } }  disabled={_loading}  /><label  htmlFor="register-sameAsDelivery" className="text-sm font-medium leading-none">{sameAsDeliveryLabel()}</label></div>{!_sameAsDelivery ? (
   <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryPostalCode" className="text-sm font-medium leading-none">{postalCodeLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryPostalCode"  name="deliveryPostalCode" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryPostalCode}  onChange={(e) => {
@@ -624,9 +669,11 @@ set_deliveryNumber((e.target as HTMLInputElement).value);
 set_deliveryNumberExtension((e.target as HTMLInputElement).value);
 } }  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryCity" className="text-sm font-medium leading-none">{cityLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryCity"  name="deliveryCity" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryCity}  onChange={(e) => {
 set_deliveryCity((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryCountry"  name="deliveryCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryCountry}  onChange={(e) => {
-set_deliveryCountry((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div></div></div>
+} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><select  id="register-deliveryCountry"  name="deliveryCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryCountry}  onChange={(e) => {
+set_deliveryCountry((e.target as HTMLSelectElement).value);
+} }  required  disabled={_loading}><option  value="">Select country</option>{Object.entries(props.countries || {})?.map((entry) => (
+  <option  key={entry[0]}  value={entry[0]}>{entry[1]}</option>
+))}</select></div></div></div>
 ) : null}</div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{passwordTitle()}</h3><div className="space-y-2"><label  htmlFor="register-password" className="text-sm font-medium leading-none">{passwordLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="password"  id="register-password"  name="password" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_password}  onChange={(e) => {
 set_password((e.target as HTMLInputElement).value);
 } }  placeholder={passwordPlaceholder()}  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-confirmPassword" className="text-sm font-medium leading-none">{confirmPasswordLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="password"  id="register-confirmPassword"  name="confirmPassword" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_confirmPassword}  onChange={(e) => {

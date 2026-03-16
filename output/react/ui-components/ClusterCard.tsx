@@ -94,6 +94,9 @@ className?: string;
 
 /** Configuration object passed to the component */
 configuration?: any;
+
+/** Include tax in the price display */
+includeTax?: boolean;
 }
 interface ClusterCardState {
 isFavorite: boolean;
@@ -269,7 +272,7 @@ return (
 ) : null}{props.showShortDescription && !!getClusterShortDescription() ? (
   <p className="line-clamp-2 text-xs text-gray-500">{getClusterShortDescription()}</p>
 ) : null}{!!(props.cluster as Cluster).defaultProduct?.price ? (
-  <div  className={isRow() ? '' : 'mt-auto pt-2'}><ProductPriceDisplay  price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}  options={(props.cluster as Cluster).options}  priceSize={isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}  /></div>
+  <div  className={isRow() ? '' : 'mt-auto pt-2'}><ProductPriceDisplay  includeTax={props.includeTax}  price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}  options={(props.cluster as Cluster).options}  priceSize={isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}  /></div>
 ) : null}{props.showStock !== false && getStockQuantity() >= 0 ? (
   <div className="flex items-center gap-1.5"><span  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStockStatusClass()}`}>{getStockStatusLabel()}</span>{getStockQuantity() > 0 ? (
   <span className="text-xs text-gray-400">

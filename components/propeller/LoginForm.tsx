@@ -90,7 +90,13 @@ loginError?: string;
 beforeLogin?: () => void;
 
 /** Callback after successful login with user data */
-afterLogin?: (user: Contact | Customer) => void;
+afterLogin?: (user: Contact | Customer, accessToken?: string, refreshToken?: string, expiresAt?: string) => void;
+
+/**
+ * Show login form in dropdown for immediate login when user is not logged in.
+ * @default true
+ */
+accountHeaderLoginForm?: boolean;
 }
 
 
@@ -110,18 +116,8 @@ const [_loading, set_loading] = useState(() => (false))
 const [_error, set_error] = useState(() => (''))
 
 
-function deepPlain(value: unknown) {
-if (value === null || value === undefined) return value;
-if (Array.isArray(value)) return (value as unknown[]).map(v => deepPlain(v));
-if (typeof value === 'object') {
-const result: Record<string, unknown> = {};
-for (const key of Object.keys(value as object)) {
-  const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-  result[cleanKey] = deepPlain((value as Record<string, unknown>)[key]);
-}
-return result;
-}
-return value;
+function getLabel(key: string, fallback: string) {
+return (props.labels as any)?.[key] || fallback;
 }
 
 
@@ -270,13 +266,6 @@ try {
   };
 }
 
-// Store tokens and user data in localStorage
-if (typeof window !== 'undefined') {
-  localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('refreshToken', refreshToken);
-  localStorage.setItem('user', JSON.stringify(deepPlain(user)));
-}
-
 // Dispatch event for AuthContext to pick up
 if (typeof window !== 'undefined') {
   window.dispatchEvent(new CustomEvent('userLoggedIn'));
@@ -288,7 +277,7 @@ set_password('');
 
 // Notify parent
 if (props.afterLogin) {
-  props.afterLogin(user as Contact);
+  props.afterLogin(user as unknown as Contact | Customer, accessToken, refreshToken, session?.expirationTime);
 }
 } catch (err: any) {
 set_error(err?.message || 'Login failed. Please check your credentials.');
@@ -328,7 +317,7 @@ set_password((e.target as HTMLInputElement).value);
   <svg  xmlns="http://www.w3.org/2000/svg"  fill="none"  viewBox="0 0 24 24" className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"><circle  cx="12"  cy="12"  r="10"  stroke="currentColor"  strokeWidth="4" className="opacity-25"  /><path  fill="currentColor"  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"  /></svg>
 ) : null}{isLoading() ? (
   <>Logging in...</>
-) : <>{resolvedButtonText()}</>}</button></form>{showRegister() || showGuestCheckout() ? (
+) : <>{resolvedButtonText()}</>}</button></form>{(showRegister() || showGuestCheckout()) && !props.accountHeaderLoginForm ? (
   <div className="mt-6 border-t pt-6 space-y-3">{showRegister() ? (
   <div className="text-center"><p className="text-sm text-gray-500 mb-2">{registerText()}</p><button  type="button" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"  onClick={(event) => {
 if (props.onRegisterClick) props.onRegisterClick();
@@ -338,6 +327,12 @@ if (props.onRegisterClick) props.onRegisterClick();
 if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
 } }>{guestCheckoutLinkText()}</button></div>
 ) : null}</div>
+) : null}{props.accountHeaderLoginForm ? (
+  <div className="flex flex-col gap-2 text-sm pt-3 text-center"><button  type="button" className="text-violet-600 hover:underline text-xs"  onClick={(event) => {
+if (props.onForgotPasswordClick) props.onForgotPasswordClick();
+} }>{getLabel('forgotPassword', 'Forgot Password?')}</button><div className="text-xs text-gray-500">{getLabel('noAccount', "Don't have an account?")}<button  type="button" className="text-violet-600 hover:underline font-medium"  onClick={(event) => {
+if (props.onRegisterClick) props.onRegisterClick();
+} }>{getLabel('registerLink', 'Register')}</button></div></div>
 ) : null}</div>
 
 

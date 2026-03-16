@@ -12,10 +12,8 @@ import {
     Customer,
     Cart,
     CartMainItem,
-    CartChildItemInput,
     Enums,
     CategoryService,
-    Attribute,
     CategoryProductSearchInput,
     CategoryQueryVariables,
     AttributeFilter,
@@ -25,7 +23,6 @@ import {
 } from 'propeller-sdk-v2';
 import ProductCard from './ProductCard.lite';
 import ClusterCard from './ClusterCard.lite';
-import { ProductSearchableField, ProductSortField } from 'propeller-sdk-v2/dist/enum';
 
 export interface ProductGridProps {
     // ── Data source ──────────────────────────────────────────────────────────
@@ -370,7 +367,7 @@ export default function ProductGrid(props: ProductGridProps) {
                         : ((props.configuration?.baseCategoryId as number) || 0));
 
                 if (props.term && !state.currentSortField)
-                    state.currentSortField = ProductSortField.RELEVANCE;
+                    state.currentSortField = Enums.ProductSortField.RELEVANCE;
 
                 const result = await service.getCategory({
                     categoryId: catId,
@@ -400,26 +397,26 @@ export default function ProductGrid(props: ProductGridProps) {
                             searchFields: [
                                 {
                                     fieldNames: [
-                                        ProductSearchableField.NAME,
-                                        ProductSearchableField.KEYWORDS,
-                                        ProductSearchableField.SKU,
-                                        ProductSearchableField.CUSTOM_KEYWORDS
+                                        Enums.ProductSearchableField.NAME,
+                                        Enums.ProductSearchableField.KEYWORDS,
+                                        Enums.ProductSearchableField.SKU,
+                                        Enums.ProductSearchableField.CUSTOM_KEYWORDS
                                     ],
                                     boost: 5
                                 },
                                 {
                                     fieldNames: [
-                                        ProductSearchableField.DESCRIPTION,
-                                        ProductSearchableField.MANUFACTURER,
-                                        ProductSearchableField.MANUFACTURER_CODE,
-                                        ProductSearchableField.EAN_CODE,
-                                        ProductSearchableField.BAR_CODE,
-                                        ProductSearchableField.CLUSTER_ID,
-                                        ProductSearchableField.CUSTOM_KEYWORDS,
-                                        ProductSearchableField.PRODUCT_ID,
-                                        ProductSearchableField.SHORT_DESCRIPTION,
-                                        ProductSearchableField.SUPPLIER,
-                                        ProductSearchableField.SUPPLIER_CODE
+                                        Enums.ProductSearchableField.DESCRIPTION,
+                                        Enums.ProductSearchableField.MANUFACTURER,
+                                        Enums.ProductSearchableField.MANUFACTURER_CODE,
+                                        Enums.ProductSearchableField.EAN_CODE,
+                                        Enums.ProductSearchableField.BAR_CODE,
+                                        Enums.ProductSearchableField.CLUSTER_ID,
+                                        Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                                        Enums.ProductSearchableField.PRODUCT_ID,
+                                        Enums.ProductSearchableField.SHORT_DESCRIPTION,
+                                        Enums.ProductSearchableField.SUPPLIER,
+                                        Enums.ProductSearchableField.SUPPLIER_CODE
                                     ],
                                     boost: 1
                                 }

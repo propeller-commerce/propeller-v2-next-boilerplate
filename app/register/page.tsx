@@ -4,13 +4,16 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import RegisterForm from '@/components/propeller/RegisterForm';
 import { graphqlClient } from '@/lib/api';
+import { Company, Contact } from 'propeller-sdk-v2';
 
 export default function RegisterPage() {
-  const { state } = useAuth();
+  const { state, updateUser } = useAuth();
+  const { setSelectedCompany } = useCompany();
   const router = useRouter();
 
   return (
@@ -50,7 +53,32 @@ export default function RegisterPage() {
                   title=""
                   requiredFields={['firstName', 'lastName']}
                   onLoginClick={() => router.push('/login')}
-                  afterRegistration={() => router.push('/account')}
+                  automaticLogin={true}
+                  countries={{
+                    'NL': 'Netherlands',
+                    'BE': 'Belgium',
+                    'DE': 'Germany',
+                    'FR': 'France',
+                    'UK': 'United Kingdom',
+                    'US': 'United States'
+                  }}
+                  afterRegistration={(user, accessToken, refreshToken, expiresAt) => {
+                    if ((user as Contact).company) {
+                      setSelectedCompany((user as Contact).company as Company);
+                    }
+
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    updateUser(user);
+
+                    if (accessToken && refreshToken && expiresAt) {
+                      localStorage.setItem('accessToken', accessToken);
+                      localStorage.setItem('refreshToken', refreshToken);
+                      localStorage.setItem('expiresAt', expiresAt);
+                    }
+
+                    router.push('/account')
+                  }}
                 />
               </CardContent>
             </>

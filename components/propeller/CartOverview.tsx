@@ -2,13 +2,13 @@
 import * as React from 'react';
 
 import { useState } from 'react'
-  import  { Cart } from 'propeller-sdk-v2';
+  import  { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
 
 
 
   export interface CartOverviewProps {
 /** GraphQL client for the Propeller SDK */
-graphqlClient: any;
+graphqlClient: GraphQLClient;
 
 /** Shopping cart object from which the cart overview will be displayed */
 cart: Cart;
@@ -89,16 +89,16 @@ return props.labels?.[key] || fallback;
 
 
 function invoiceAddress() {
-return (props.cart as any)?.invoiceAddress;
+return props.cart?.invoiceAddress;
 }
 
 
 function deliveryAddress() {
-return (props.cart as any)?.deliveryAddress;
+return props.cart?.deliveryAddress;
 }
 
 
-function formatAddress(addr: any) {
+function formatAddress(addr: CartAddress) {
 if (!addr || !addr.street) return '';
 const parts: string[] = [];
 if (addr.company) parts.push(addr.company);
@@ -117,17 +117,17 @@ return parts.join(', ');
 
 
 function paymentMethod() {
-return (props.cart as any)?.paymentData?.method || '';
+return props.cart?.paymentData?.method || '';
 }
 
 
 function carrierName() {
-return (props.cart as any)?.postageData?.carrier || '';
+return props.cart?.postageData?.carrier || '';
 }
 
 
 function requestDate() {
-const date = (props.cart as any)?.postageData?.requestDate;
+const date = props.cart?.postageData?.requestDate;
 if (!date) return '';
 try {
 return new Date(date).toLocaleDateString();
@@ -152,7 +152,7 @@ set_termsAccepted(checked);
 }
 
 
-function handleTermsLinkClick(event: any) {
+function handleTermsLinkClick(event: Event) {
 event.preventDefault();
 if (props.onTermsAndConditionsClick) {
 props.onTermsAndConditionsClick();
@@ -216,7 +216,7 @@ return (
 ) : null}{showNotes() ? (
   <div className="space-y-2"><label className="text-sm font-medium">{getLabel('notesLabel', 'Order Notes (Optional)')}</label><textarea className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[80px]"  value={_notes}  onChange={(event) => handleNotesChange(event.target.value) }  placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}  /></div>
 ) : null}{showTermsAndConditions() ? (
-  <div className="flex items-center space-x-2 pt-2"><input  type="checkbox"  id="cart-overview-terms" className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"  checked={_termsAccepted}  onChange={(event) => handleTermsChange(event.target.checked) }  /><label  htmlFor="cart-overview-terms" className="text-sm leading-none">{getLabel('termsPrefix', 'I agree to the')}<a  href="#" className="text-violet-600 hover:underline font-medium"  onClick={(event) => handleTermsLinkClick(event) }>{getLabel('termsLink', 'Terms and Conditions')}</a></label></div>
+  <div className="flex items-center space-x-2 pt-2"><input  type="checkbox"  id="cart-overview-terms" className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"  checked={_termsAccepted}  onChange={(event) => handleTermsChange(event.target.checked) }  /><label  htmlFor="cart-overview-terms" className="text-sm leading-none">{getLabel('termsPrefix', 'I agree to the')}<a  href="#" className="text-violet-600 hover:underline font-medium"  onClick={(event) => handleTermsLinkClick(event as unknown as Event) }>{getLabel('termsLink', 'Terms and Conditions')}</a></label></div>
 ) : null}{showPurchaseButton() ? (
   <button  type="button" className="block w-full bg-violet-600 text-white text-center py-3 rounded-lg hover:bg-violet-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"  onClick={(event) => handlePurchaseClick() }  disabled={isPurchaseDisabled()}>{getLabel('purchaseButton', 'Place Order')}</button>
 ) : null}</div></div>

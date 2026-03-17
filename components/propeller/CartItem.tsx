@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { GraphQLClient, CartService, CrossupsellService, CartMainItem, CartBaseItem, Cart, ProductInventory, CrossupsellSearchInput, CrossupsellsQueryVariables, Crossupsell, Product, Cluster } from 'propeller-sdk-v2';
+  import  { GraphQLClient, CartService, CrossupsellService, CartMainItem, CartBaseItem, Cart, ProductInventory, CrossupsellSearchInput, Crossupsell, Product, Cluster } from 'propeller-sdk-v2';
 
 
 
@@ -78,7 +78,7 @@ _quantity: number;
 _notes: string;
 _loading: boolean;
 _deleting: boolean;
-_notesTimeout: any;
+_notesTimeout: ReturnType<typeof setTimeout>;
 _crossupsells: Crossupsell[];
 _crossupsellsLoading: boolean;
 getLabel: (key: string, fallback: string) => string;
@@ -115,7 +115,7 @@ const [_loading, set_loading] = useState<CartItemState["_loading"]>(() => (false
 const [_deleting, set_deleting] = useState<CartItemState["_deleting"]>(() => (false))
 
 
-const [_notesTimeout, set_notesTimeout] = useState<CartItemState["_notesTimeout"]>(() => (null))
+const [_notesTimeout, set_notesTimeout] = useState<CartItemState["_notesTimeout"] | null>(() => null)
 
 
 const [_crossupsells, set_crossupsells] = useState<CartItemState["_crossupsells"]>(() => ([]))
@@ -189,7 +189,7 @@ set_loading(false);
 if (props.afterCartUpdate) {
   props.afterCartUpdate(updatedCart);
 }
-}).catch((error: any) => {
+}).catch((error: Error) => {
 console.error('Failed to update cart item quantity:', error);
 set_quantity(props.cartItem.quantity);
 set_loading(false);
@@ -221,7 +221,7 @@ cartService.updateCartItem({
   if (props.afterCartUpdate) {
     props.afterCartUpdate(updatedCart);
   }
-}).catch((error: any) => {
+}).catch((error: Error) => {
   console.error('Failed to update cart item notes:', error);
 });
 }, 500));
@@ -251,7 +251,7 @@ set_deleting(false);
 if (props.afterCartUpdate) {
   props.afterCartUpdate(updatedCart);
 }
-}).catch((error: any) => {
+}).catch((error: Error) => {
 console.error('Failed to delete cart item:', error);
 set_deleting(false);
 });
@@ -260,25 +260,19 @@ set_deleting(false);
 
 function fetchCrossupsells(): ReturnType<CartItemState["fetchCrossupsells"]>{
 if (!props.showCrossupsells) return;
-const productId = (props.cartItem as any)?.productId;
+const productId = props.cartItem?.productId;
 if (!productId) return;
 set_crossupsellsLoading(true);
 const crossupsellService = new CrossupsellService(props.graphqlClient);
 const searchInput: CrossupsellSearchInput = {
-types: props.crossupsellTypes || ['ACCESSORIES'],
+types: (props.crossupsellTypes || ['ACCESSORIES']) as CrossupsellSearchInput['types'],
 page: 1,
 offset: 50,
 ...(productId && {
   productIdsFrom: [productId]
 })
 };
-const crossupsellSearchVariables: CrossupsellsQueryVariables = {
-input: searchInput,
-language: props.language || 'NL',
-imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-imageVariantFilters: props.configuration?.imageVariantFiltersMedium
-};
-crossupsellService.getCrossupsells(crossupsellSearchVariables).then((response: any) => {
+crossupsellService.getCrossupsells(searchInput).then(response => {
 set_crossupsells(response?.items || []);
 set_crossupsellsLoading(false);
 }).catch(() => {
@@ -295,19 +289,19 @@ return items.slice(0, limit);
 }
 
 
-function getCrossupsellName(item: any): ReturnType<CartItemState["getCrossupsellName"]>{
+function getCrossupsellName(item: Crossupsell): ReturnType<CartItemState["getCrossupsellName"]>{
 const product = item?.productTo || item?.clusterTo;
 return product?.names?.[0]?.value || 'Product';
 }
 
 
-function getCrossupsellImageUrl(item: any): ReturnType<CartItemState["getCrossupsellImageUrl"]>{
-const product = item?.productTo || item?.clusterTo;
+function getCrossupsellImageUrl(item: Crossupsell): ReturnType<CartItemState["getCrossupsellImageUrl"]>{
+const product = (item?.productTo || item?.clusterTo) as Product | undefined;
 return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
 }
 
 
-function getCrossupsellUrl(item: any): ReturnType<CartItemState["getCrossupsellUrl"]>{
+function getCrossupsellUrl(item: Crossupsell): ReturnType<CartItemState["getCrossupsellUrl"]>{
 const product = item?.productTo || item?.clusterTo;
 if (props.configuration && props.configuration.urls && product) {
 return props.configuration.urls.getProductUrl(product);

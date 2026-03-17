@@ -29,31 +29,31 @@ export default function DeliveryDate(props: DeliveryDateProps) {
         _modalOpen: false as boolean,
         _customDateValue: '' as string,
 
-        get upcomingDays() {
+        get upcomingDays(): number {
             return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
         },
 
-        get skipWeekends() {
+        get skipWeekends(): boolean {
             return props.skipWeekends !== undefined ? props.skipWeekends : true;
         },
 
-        get showDatePicker() {
+        get showDatePicker(): boolean {
             return props.showDatePicker !== undefined ? props.showDatePicker : true;
         },
 
-        get isCustomDateSelected() {
+        get isCustomDateSelected(): boolean {
             return state._selectedDate !== '' && state.upcomingDates.indexOf(state._selectedDate) === -1;
         },
 
-        get containerClass() {
+        get containerClass(): string {
             return props.containerClass || 'delivery-date';
         },
 
-        getLabel(key: string, fallback: string) {
+        getLabel(key: string, fallback: string): string {
             return props.labels?.[key] || fallback;
         },
 
-        get upcomingDates() {
+        get upcomingDates(): string[] {
             const days: string[] = [];
             const today = new Date();
             const current = new Date(today);
@@ -69,14 +69,14 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             return days;
         },
 
-        toApiDate(date: Date) {
+        toApiDate(date: Date): string {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
             const d = String(date.getDate()).padStart(2, '0');
             return y + '-' + m + '-' + d + 'T00:00:00Z';
         },
 
-        formatDisplay(isoDate: string) {
+        formatDisplay(isoDate: string): string {
             if (props.formatDateDisplay) {
                 return props.formatDateDisplay(isoDate);
             }
@@ -86,7 +86,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             return weekday + ', ' + months[date.getMonth()] + ' ' + date.getDate();
         },
 
-        get minDate() {
+        get minDate(): string {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             const y = tomorrow.getFullYear();
@@ -95,7 +95,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             return y + '-' + m + '-' + d;
         },
 
-        handleSelect(isoDate: string) {
+        handleSelect(isoDate: string): void {
             state._selectedDate = isoDate;
             state._modalOpen = false;
             if (props.onDateSelect) {
@@ -103,7 +103,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             }
         },
 
-        handleCustomDateChange(value: string) {
+        handleCustomDateChange(value: string): void {
             state._customDateValue = value;
             if (value) {
                 const date = new Date(value + 'T00:00:00');
@@ -112,15 +112,15 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             }
         },
 
-        openModal() {
+        openModal(): void {
             state._modalOpen = true;
         },
 
-        closeModal() {
+        closeModal(): void {
             state._modalOpen = false;
         },
 
-        handleBackdropClick(event: any) {
+        handleBackdropClick(event: Event): void {
             if (event.target === event.currentTarget) {
                 state._modalOpen = false;
             }
@@ -160,7 +160,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             {/* Date picker modal */}
             <Show when={state._modalOpen}>
                 <div
-                    onClick={(event) => state.handleBackdropClick(event)}
+                    onClick={(event) => state.handleBackdropClick(event as unknown as Event)}
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                 >
                     <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">

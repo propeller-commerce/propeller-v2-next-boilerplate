@@ -28,19 +28,19 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
     const state = useStore({
         _selectedCode: '' as string,
 
-        get containerClass() {
+        get containerClass(): string {
             return props.paymentsContainerClass || 'cart-paymethods';
         },
 
-        get showLogo() {
+        get showLogo(): boolean {
             return props.showPaymentMethodLogo !== undefined ? props.showPaymentMethodLogo : true;
         },
 
-        get showOnAccountForGuests() {
+        get showOnAccountForGuests(): boolean {
             return props.showOnAccountForGuests !== undefined ? props.showOnAccountForGuests : false;
         },
 
-        get isGuest() {
+        get isGuest(): boolean {
             try {
                 const user = localStorage.getItem('user');
                 return !user;
@@ -49,9 +49,9 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
             }
         },
 
-        get payMethods() {
-            const methods = (props.cart as any)?.payMethods || [];
-            return methods.filter((m: any) => {
+        get payMethods(): CartPaymethod[] {
+            const methods: CartPaymethod[] = props.cart?.payMethods || [];
+            return methods.filter((m: CartPaymethod) => {
                 if (!m?.code) return false;
                 if (!state.showOnAccountForGuests && state.isGuest && state.isOnAccountMethod(m)) {
                     return false;
@@ -60,23 +60,23 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
             });
         },
 
-        isOnAccountMethod(method: any) {
+        isOnAccountMethod(method: CartPaymethod): boolean {
             const code = (method.code || '').toLowerCase();
             return code === 'on_account' || code === 'onaccount' || code === 'on-account';
         },
 
-        getLabel(key: string, fallback: string) {
+        getLabel(key: string, fallback: string): string {
             return props.labels?.[key] || fallback;
         },
 
-        formatMethodPrice(price: number) {
+        formatMethodPrice(price: number): string {
             if (props.formatPrice) {
                 return props.formatPrice(price);
             }
             return '\u20AC' + Number(price || 0).toFixed(2);
         },
 
-        getLogoUrl(method: any) {
+        getLogoUrl(method: CartPaymethod): string {
             const code = (method.code || '').toLowerCase();
             const logoMap: Record<string, string> = {
                 'ideal': 'https://cdn.propellor.cloud/payment-logos/ideal.svg',
@@ -91,10 +91,10 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
             return logoMap[code] || '';
         },
 
-        handleSelect(method: any) {
+        handleSelect(method: CartPaymethod): void {
             state._selectedCode = method.code;
             if (props.onPaymethodSelect) {
-                props.onPaymethodSelect(method as CartPaymethod);
+                props.onPaymethodSelect(method);
             }
         },
     });
@@ -104,7 +104,7 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
             <Show when={state.payMethods.length > 0}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <For each={state.payMethods}>
-                        {(method: any, index: number) => (
+                        {(method: CartPaymethod, index: number) => (
                             <div
                                 key={method.code}
                                 onClick={() => state.handleSelect(method)}

@@ -25,37 +25,37 @@ export default function CartCarriers(props: CartCarriersProps) {
     const state = useStore({
         _selectedName: '' as string,
 
-        get containerClass() {
+        get containerClass(): string {
             return props.carriersContainerClass || 'cart-carriers';
         },
 
-        get showLogo() {
+        get showLogo(): boolean {
             return props.showCarrierLogo !== undefined ? props.showCarrierLogo : true;
         },
 
-        get carriers() {
-            return (props.cart as any)?.carriers || [];
+        get carriers(): CartCarrier[] {
+            return props.cart?.carriers || [];
         },
 
-        getLabel(key: string, fallback: string) {
+        getLabel(key: string, fallback: string): string {
             return props.labels?.[key] || fallback;
         },
 
-        formatCarrierPrice(price: number) {
+        formatCarrierPrice(price: number): string {
             if (props.formatPrice) {
                 return props.formatPrice(price);
             }
             return '\u20AC' + Number(price || 0).toFixed(2);
         },
 
-        getLogoUrl(carrier: any) {
+        getLogoUrl(carrier: CartCarrier): string {
             return carrier.logo || '';
         },
 
-        handleSelect(carrier: any) {
+        handleSelect(carrier: CartCarrier): void {
             state._selectedName = carrier.name;
             if (props.onCarrierSelect) {
-                props.onCarrierSelect(carrier as CartCarrier);
+                props.onCarrierSelect(carrier);
             }
         },
     });
@@ -65,7 +65,7 @@ export default function CartCarriers(props: CartCarriersProps) {
             <Show when={state.carriers.length > 0}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <For each={state.carriers}>
-                        {(carrier: any, index: number) => (
+                        {(carrier: CartCarrier, index: number) => (
                             <div
                                 key={`${carrier.name}-${index}`}
                                 onClick={() => state.handleSelect(carrier)}

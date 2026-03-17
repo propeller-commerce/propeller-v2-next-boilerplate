@@ -63,8 +63,8 @@ return true;
 
 
 function payMethods() {
-const methods = (props.cart as any)?.payMethods || [];
-return methods.filter((m: any) => {
+const methods: CartPaymethod[] = props.cart?.payMethods || [];
+return methods.filter((m: CartPaymethod) => {
 if (!m?.code) return false;
 if (!showOnAccountForGuests() && isGuest() && isOnAccountMethod(m)) {
   return false;
@@ -74,7 +74,7 @@ return true;
 }
 
 
-function isOnAccountMethod(method: any) {
+function isOnAccountMethod(method: CartPaymethod) {
 const code = (method.code || '').toLowerCase();
 return code === 'on_account' || code === 'onaccount' || code === 'on-account';
 }
@@ -93,7 +93,7 @@ return '\u20AC' + Number(price || 0).toFixed(2);
 }
 
 
-function getLogoUrl(method: any) {
+function getLogoUrl(method: CartPaymethod) {
 const code = (method.code || '').toLowerCase();
 const logoMap: Record<string, string> = {
 'ideal': 'https://cdn.propellor.cloud/payment-logos/ideal.svg',
@@ -109,10 +109,10 @@ return logoMap[code] || '';
 }
 
 
-function handleSelect(method: any) {
+function handleSelect(method: CartPaymethod) {
 set_selectedCode(method.code);
 if (props.onPaymethodSelect) {
-props.onPaymethodSelect(method as CartPaymethod);
+props.onPaymethodSelect(method);
 }
 }
 

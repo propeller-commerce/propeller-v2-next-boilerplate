@@ -89,7 +89,7 @@ stockLabels?: Record<string, string>;
 }
 interface FavoriteListItemState {
 _includeTax: boolean;
-_priceListener: any;
+_priceListener: (() => void) | null;
 isProduct: () => boolean;
 getProduct: () => Product;
 getCluster: () => Cluster;
@@ -99,7 +99,7 @@ getImageUrl: () => string;
 getItemUrl: () => string;
 getItemId: () => string;
 getLabel: (key: string, fallback: string) => string;
-handleItemClick: (e: any) => void;
+handleItemClick: (e: Event) => void;
 handleDelete: () => void;
 }
 
@@ -170,11 +170,11 @@ return String(getCluster()?.clusterId || '');
 
 
 function getLabel(key: string, fallback: string): ReturnType<FavoriteListItemState["getLabel"]>{
-return (props.labels as Record<string, string>)?.[key] || fallback;
+return props.labels?.[key] || fallback;
 }
 
 
-function handleItemClick(e: any): ReturnType<FavoriteListItemState["handleItemClick"]>{
+function handleItemClick(e: Event): ReturnType<FavoriteListItemState["handleItemClick"]>{
 if (props.onItemClick) {
 e.preventDefault();
 props.onItemClick(props.item);
@@ -212,7 +212,7 @@ return (
 
 
   <div  className={`group flex flex-row items-center gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${props.className || ''}`}><div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-2">{props.titleLinkable !== false ? (
-  <a className="block h-full w-full"  href={getItemUrl()}  onClick={(e) => handleItemClick(e) }>{!!getImageUrl() ? (
+  <a className="block h-full w-full"  href={getItemUrl()}  onClick={(e) => handleItemClick(e as unknown as Event) }>{!!getImageUrl() ? (
   <img className="h-full w-full object-contain"  src={getImageUrl()}  alt={getName()}  />
 ) : null}{!getImageUrl() ? (
   <div className="flex h-full w-full items-center justify-center text-gray-200"><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="h-10 w-10"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"  strokeWidth={1}  /></svg></div>
@@ -226,7 +226,7 @@ return (
 ) : null}</div><div className="flex flex-1 flex-col gap-1 min-w-0">{props.showSku !== false && !!getSku() ? (
   <div className="font-mono text-xs text-gray-400">{getSku()}</div>
 ) : null}{props.titleLinkable !== false ? (
-  <a className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 line-clamp-2"  href={getItemUrl()}  onClick={(e) => handleItemClick(e) }>{getName()}</a>
+  <a className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 line-clamp-2"  href={getItemUrl()}  onClick={(e) => handleItemClick(e as unknown as Event) }>{getName()}</a>
 ) : null}{props.titleLinkable === false ? (
   <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">{getName()}</span>
 ) : null}{!isProduct() ? (
@@ -256,7 +256,7 @@ return (
 ) : null}</div><div className="flex items-center gap-2 flex-shrink-0">{props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
   <div className="flex-shrink-0"><AddToCart  className="flex items-center gap-2"  graphqlClient={props.graphqlClient!}  user={props.user || null}  product={getProduct()}  cartId={props.cartId}  configuration={props.configuration}  createCart={props.createCart}  onCartCreated={props.onCartCreated}  onAddToCart={props.onAddToCart}  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.allowIncrDecr}  enableStockValidation={props.enableStockValidation}  language={props.language}  onProceedToCheckout={props.onProceedToCheckout}  labels={props.addToCartLabels}  /></div>
 ) : null}{!isProduct() ? (
-  <a className="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 whitespace-nowrap"  href={getItemUrl()}  onClick={(e) => handleItemClick(e) }>{getLabel('viewCluster', 'View cluster')}</a>
+  <a className="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 whitespace-nowrap"  href={getItemUrl()}  onClick={(e) => handleItemClick(e as unknown as Event) }>{getLabel('viewCluster', 'View cluster')}</a>
 ) : null}{props.showDelete !== false ? (
   <button  type="button" className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"  onClick={(event) => handleDelete() }  title={getLabel('delete', 'Remove from list')}><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round"><path  d="M3 6h18"  /><path  d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"  /><path  d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"  /></svg></button>
 ) : null}</div></div>

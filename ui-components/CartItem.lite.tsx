@@ -13,7 +13,6 @@ import {
     Cart,
     ProductInventory,
     CrossupsellSearchInput,
-    CrossupsellsQueryVariables,
     Crossupsell,
     Product,
     Cluster,
@@ -92,7 +91,7 @@ interface CartItemState {
     _notes: string;
     _loading: boolean;
     _deleting: boolean;
-    _notesTimeout: any;
+    _notesTimeout: ReturnType<typeof setTimeout>;
     _crossupsells: Crossupsell[];
     _crossupsellsLoading: boolean;
     getLabel: (key: string, fallback: string) => string;
@@ -118,7 +117,7 @@ export default function CartItem(props: CartItemProps) {
         _notes: '',
         _loading: false,
         _deleting: false,
-        _notesTimeout: null as any,
+        _notesTimeout: null as unknown as ReturnType<typeof setTimeout>,
         _crossupsells: [] as Crossupsell[],
         _crossupsellsLoading: false,
         getLabel(key: string, fallback: string): string {
@@ -179,7 +178,7 @@ export default function CartItem(props: CartItemProps) {
                 if (props.afterCartUpdate) {
                     props.afterCartUpdate(updatedCart);
                 }
-            }).catch((error: any) => {
+            }).catch((error: Error) => {
                 console.error('Failed to update cart item quantity:', error);
                 state._quantity = props.cartItem.quantity;
                 state._loading = false;
@@ -211,7 +210,7 @@ export default function CartItem(props: CartItemProps) {
                     if (props.afterCartUpdate) {
                         props.afterCartUpdate(updatedCart);
                     }
-                }).catch((error: any) => {
+                }).catch((error: Error) => {
                     console.error('Failed to update cart item notes:', error);
                 });
             }, 500);
@@ -240,7 +239,7 @@ export default function CartItem(props: CartItemProps) {
                 if (props.afterCartUpdate) {
                     props.afterCartUpdate(updatedCart);
                 }
-            }).catch((error: any) => {
+            }).catch((error: Error) => {
                 console.error('Failed to delete cart item:', error);
                 state._deleting = false;
             });
@@ -248,27 +247,20 @@ export default function CartItem(props: CartItemProps) {
 
         fetchCrossupsells(): void {
             if (!props.showCrossupsells) return;
-            const productId = (props.cartItem as any)?.productId;
+            const productId = props.cartItem?.productId;
             if (!productId) return;
 
             state._crossupsellsLoading = true;
             const crossupsellService = new CrossupsellService(props.graphqlClient);
 
             const searchInput: CrossupsellSearchInput = {
-                types: props.crossupsellTypes || ['ACCESSORIES'],
+                types: (props.crossupsellTypes || ['ACCESSORIES']) as CrossupsellSearchInput['types'],
                 page: 1,
                 offset: 50,
                 ...(productId && { productIdsFrom: [productId] })
             };
 
-            const crossupsellSearchVariables: CrossupsellsQueryVariables = {
-                input: searchInput,
-                language: props.language || 'NL',
-                imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-                imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
-            };
-
-            crossupsellService.getCrossupsells(crossupsellSearchVariables).then((response: any) => {
+            crossupsellService.getCrossupsells(searchInput).then((response) => {
                 state._crossupsells = response?.items || [];
                 state._crossupsellsLoading = false;
             }).catch(() => {
@@ -277,23 +269,23 @@ export default function CartItem(props: CartItemProps) {
             });
         },
 
-        getVisibleCrossupsells(): any[] {
+        getVisibleCrossupsells(): Crossupsell[] {
             const items = state._crossupsells || [];
             const limit = props.crossupsellLimit || 3;
             return items.slice(0, limit);
         },
 
-        getCrossupsellName(item: any): string {
+        getCrossupsellName(item: Crossupsell): string {
             const product = item?.productTo || item?.clusterTo;
             return product?.names?.[0]?.value || 'Product';
         },
 
-        getCrossupsellImageUrl(item: any): string {
-            const product = item?.productTo || item?.clusterTo;
+        getCrossupsellImageUrl(item: Crossupsell): string {
+            const product = (item?.productTo || item?.clusterTo) as Product | undefined;
             return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
         },
 
-        getCrossupsellUrl(item: any): string {
+        getCrossupsellUrl(item: Crossupsell): string {
             const product = item?.productTo || item?.clusterTo;
             if (props.configuration && props.configuration.urls && product) {
                 return props.configuration.urls.getProductUrl(product);

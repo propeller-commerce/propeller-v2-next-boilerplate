@@ -149,13 +149,8 @@ return {
 page: _currentPage,
 pages: getTotalPages(),
 itemsFound: _allItems.length,
-items: [],
-offset: getItemsPerPage(),
-start: 0,
-end: 0,
-minPrice: 0,
-maxPrice: 0
-} as ProductsResponse;
+offset: getItemsPerPage()
+};
 }
 
 
@@ -165,12 +160,29 @@ set_currentPage(page);
 
 
 function buildFetchVariables() {
-const variables: Record<string, any> = {
+const priceInput: Record<string, unknown> = {
+taxZone: 'NL'
+};
+if (props.user) {
+if ('customerId' in props.user) {
+  const customer = props.user as Customer;
+  if (customer.customerId) {
+    priceInput.customerId = customer.customerId;
+  }
+} else if ('contactId' in props.user) {
+  const contact = props.user as Contact;
+  if (contact.contactId) {
+    priceInput.contactId = contact.contactId;
+  }
+  if (contact.company?.companyId) {
+    priceInput.companyId = contact.company.companyId;
+  }
+}
+}
+return {
 id: props.favoriteListId,
 language: props.language || 'NL',
-priceCalculateProductInput: {
-  taxZone: 'NL'
-} as Record<string, any>,
+priceCalculateProductInput: priceInput,
 imageSearchFilters: {
   page: 1,
   offset: 1
@@ -187,17 +199,6 @@ imageVariantFilters: {
   }]
 }
 };
-if (props.user) {
-if ('customerId' in props.user && (props.user as any).customerId) {
-  variables.priceCalculateProductInput.customerId = (props.user as any).customerId;
-} else if ('contactId' in props.user && (props.user as any).contactId) {
-  variables.priceCalculateProductInput.contactId = (props.user as any).contactId;
-  if ('company' in props.user && (props.user as any).company?.companyId) {
-    variables.priceCalculateProductInput.companyId = (props.user as any).company.companyId;
-  }
-}
-}
-return variables;
 }
 
 
@@ -211,11 +212,11 @@ set_favoriteList(list);
 const items: (Product | Cluster)[] = [];
 const productsRef = list?.products as ProductsResponse;
 if (productsRef?.items && Array.isArray(productsRef.items)) {
-  productsRef.items.forEach((item: any) => items.push(item as Product));
+  (productsRef.items as Product[]).forEach((item: Product) => items.push(item));
 }
 const clustersRef = list?.clusters as ProductsResponse;
 if (clustersRef?.items && Array.isArray(clustersRef.items)) {
-  clustersRef.items.forEach((item: any) => items.push(item as Cluster));
+  (clustersRef.items as Cluster[]).forEach((item: Cluster) => items.push(item));
 }
 set_allItems(items);
 set_currentPage(1);
@@ -275,7 +276,7 @@ return (
 ) : null}{!_loading && _isMounted ? (
   <>{_allItems.length > 0 ? (
   <div>{getPagedItems()?.map((item, idx) => (
-  <div  key={'productId' in item ? 'p-' + (item as Product).productId : 'c-' + (item as Cluster).clusterId}><div className="p-4 border-b">{(item as any).names?.[0]?.value || 'Item'}</div></div>
+  <div  key={'productId' in item ? 'p-' + (item as Product).productId : 'c-' + (item as Cluster).clusterId}><div className="p-4 border-b">{item.names?.[0]?.value || 'Item'}</div></div>
 ))}{props.showPagination !== false && getTotalPages() > 1 ? (
   <div className="mt-6"  />
 ) : null}</div>

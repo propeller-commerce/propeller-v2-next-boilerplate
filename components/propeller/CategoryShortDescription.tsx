@@ -1,8 +1,7 @@
-'use client';
 import * as React from 'react';
-
-import { useState, useEffect } from 'react'
   import type { Category, LocalizedString } from 'propeller-sdk-v2';
+
+
 
 
 
@@ -27,21 +26,13 @@ category?: Category;
 /** Extra CSS class applied to the root element. */
 className?: string;
 }
-interface CategoryShortDescriptionState {
-/** Cached resolved HTML — updated via onUpdate whenever category/language changes. */
-html: string;
-getDescription(): string;
-}
 
 
 
 
   function CategoryShortDescription(props:CategoryShortDescriptionProps) {
 
-  const [html, setHtml] = useState<CategoryShortDescriptionState["html"]>(() => (''))
-
-
-function getDescription(): ReturnType<CategoryShortDescriptionState["getDescription"]>{
+  function html() {
 if (!props.category?.shortDescription) return '';
 const match = props.category.shortDescription.find((d: LocalizedString) => d.language === props.language);
 return match?.value || '';
@@ -54,18 +45,15 @@ return match?.value || '';
 
 
 
-useEffect(() => {
-      setHtml(getDescription())
-    },
-    [props.category, props.language])
+
 
 
 return (
   <>
 
-  {!!html ? (
+  {!!html() ? (
   <><div  className={`mb-6 ${props.className as string || ''}`}><div className="prose prose-slate max-w-none text-muted-foreground"  dangerouslySetInnerHTML={{
-__html: html
+__html: html()
 }}  /></div></>
 ) : null}
 

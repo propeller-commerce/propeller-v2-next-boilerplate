@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
+    :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
       isRow() ? 'flex-row items-center' : 'flex-col'
     } ${className || ''}`"
   >
@@ -410,7 +410,6 @@ export interface ProductCardProps {
 interface ProductCardState {
   isFavorite: boolean;
   _includeTax: boolean;
-  _priceListener: any;
   getProductName: () => string;
   getProductSku: () => string;
   getProductImageUrl: () => string;
@@ -433,17 +432,16 @@ interface ProductCardState {
 const props = defineProps<ProductCardProps>();
 const isFavorite = ref<ProductCardState["isFavorite"]>(false);
 const _includeTax = ref<ProductCardState["_includeTax"]>(true);
-const _priceListener = ref<ProductCardState["_priceListener"]>(null);
 
 onMounted(() => {
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem("price_include_tax");
     _includeTax.value = stored === null ? true : stored === "true";
-    _priceListener.value = () => {
+    _priceListener = () => {
       const val = localStorage.getItem("price_include_tax");
       _includeTax.value = val === null ? true : val === "true";
     };
-    window.addEventListener("priceToggleChanged", _priceListener.value);
+    window.addEventListener("priceToggleChanged", _priceListener);
   }
 });
 

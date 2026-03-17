@@ -205,7 +205,6 @@ addToCartLabels?: Record<string, string>;
 interface ProductCardState {
 isFavorite: boolean;
 _includeTax: boolean;
-_priceListener: any;
 getProductName: () => string;
 getProductSku: () => string;
 getProductImageUrl: () => string;
@@ -234,9 +233,6 @@ computedTextLabels: () => {
 
 
 const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (true))
-
-
-const [_priceListener, set_priceListener] = useState<ProductCardState["_priceListener"]>(() => (null))
 
 
 function isRow(): ReturnType<ProductCardState["isRow"]>{
@@ -337,6 +333,9 @@ name: string;
 value: string;
 }) => item.value.length > 0);
 }
+
+
+const [_priceListener, set_priceListener] = useState(() => (null))
 
 
 

@@ -23,7 +23,7 @@
     "lucide-react": "^0.560.0",
     "mysql2": "^3.16.0",
     "next": "16.0.10",
-    "propeller-sdk-v2": "file:D:/laragon/www/npm/propeller-sdk-v2",
+    "propeller-sdk-v2": "github:propeller-commerce/propeller-sdk-v2#master",
     "qs": "^6.15.0",
     "ra-data-simple-rest": "^5.13.4",
     "react": "19.2.0",

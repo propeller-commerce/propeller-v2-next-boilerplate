@@ -10,12 +10,15 @@ import {
     Cart,
     CartMainItem,
     Enums,
-    CrossupsellSearchInput,
     CrossupsellsQueryVariables,
     Crossupsell,
 } from 'propeller-sdk-v2';
+import ProductCard from './ProductCard.lite';
+import ClusterCard from './ClusterCard.lite';
 
 export interface ProductSliderProps {
+    // === Data source ===
+
     /** Propeller SDK GraphQL client */
     graphqlClient: GraphQLClient;
 
@@ -41,26 +44,35 @@ export interface ProductSliderProps {
     /** Source cluster ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
     clusterId?: number;
 
+    // === Locale / pricing ===
+
     /** Language code for API requests and localized content */
     language: string;
 
     /** Tax zone for price calculations */
     taxZone: string;
 
-    /** Portal mode controlling add-to-cart visibility */
+    /**
+     * When true, net price (incl. tax) is the leading price.
+     * Forwarded to each ProductCard / ClusterCard.
+     * Defaults to reading localStorage('price_include_tax') inside each card.
+     */
+    includeTax?: boolean;
+
+    // === Portal / visibility ===
+
+    /**
+     * Controls portal visibility mode.
+     * 'open' — AddToCart is shown on product cards.
+     * 'semi-closed' — AddToCart is hidden (catalog-only view).
+     * Defaults to 'open'.
+     */
     portalMode?: string;
 
     /** Authenticated user for cart operations */
     user?: Contact | Customer | null;
 
-    /** When true, show tax-inclusive prices */
-    includeTax?: boolean;
-
-    /** Validate stock before adding to cart */
-    stockValidation?: boolean;
-
-    /** Show increment/decrement buttons on add-to-cart */
-    showIncrDecr?: boolean;
+    // === Layout ===
 
     /** Items visible per breakpoint */
     itemsPerView?: {
@@ -69,41 +81,100 @@ export interface ProductSliderProps {
         desktop?: number;
     };
 
-    /** Slider title */
+    /** Slider title displayed above the track */
     title?: string;
 
-    /** Fallback image URL when product has no image */
-    noImageUrl?: string;
+    /** Additional CSS class for the outer container */
+    containerClassName?: string;
 
-    /** ID of an existing cart */
-    cartId?: string;
+    // === Card stock display ===
 
-    /** Auto-create cart if none exists */
-    createCart?: boolean;
+    /**
+     * Show the stock / availability widget on each product card.
+     * Forwarded to `ProductCard.showStock`.
+     * Defaults to false.
+     */
+    showStock?: boolean;
 
-    /** Called after a new cart is created */
-    onCartCreated?: (cart: Cart) => void;
+    /**
+     * Show only the availability indicator (Available / Not available) inside the stock widget.
+     * Forwarded to `ProductCard.showAvailability`.
+     * Defaults to true.
+     */
+    showAvailability?: boolean;
 
-    /** Called after successful add-to-cart */
-    afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
+    /**
+     * Label overrides forwarded to the embedded ItemStock component inside each card.
+     * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+     */
+    stockLabels?: Record<string, string>;
 
-    /** Called when a product card is clicked */
+    // === Card favourites ===
+
+    /** Show a heart-icon favourite toggle on each card. Defaults to false. */
+    enableAddFavorite?: boolean;
+
+    /**
+     * Called when a favourite is toggled on any card.
+     * Receives the full Product or Cluster object and the new favourite state.
+     */
+    onToggleFavorite?: (item: Product | Cluster, isFavorite: boolean) => void;
+
+    // === Card navigation ===
+
+    /** Called when a product card is clicked — use for SPA-style routing. */
     onProductClick?: (product: Product) => void;
 
-    /** Called when a cluster card is clicked */
+    /** Called when a cluster card is clicked — use for SPA-style routing. */
     onClusterClick?: (cluster: Cluster) => void;
 
-    /** URL pattern for product links */
-    urlPattern?: string;
+    // === AddToCart pass-through ===
 
-    /** Configuration object for cards */
+    /** Validate stock before adding to cart. Defaults to false. */
+    stockValidation?: boolean;
+
+    /** Show increment/decrement stepper buttons in AddToCart. Defaults to true. */
+    showIncrDecr?: boolean;
+
+    /** ID of an existing cart to add items to. */
+    cartId?: string;
+
+    /** Auto-create a cart when none is available. Pair with onCartCreated. */
+    createCart?: boolean;
+
+    /** Called after AddToCart creates a new cart internally. */
+    onCartCreated?: (cart: Cart) => void;
+
+    /** Called after every successful add-to-cart. Receives the updated cart and the added item. */
+    afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
+
+    /**
+     * When true, AddToCart shows a success modal instead of a toast.
+     * Defaults to false.
+     */
+    showModal?: boolean;
+
+    /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
+    onProceedToCheckout?: () => void;
+
+    /**
+     * Label overrides forwarded to the embedded AddToCart component.
+     * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,
+     *       modalTitle, quantity, continueShopping, proceedToCheckout
+     */
+    addToCartLabels?: Record<string, string>;
+
+    // === Misc ===
+
+    /** Configuration object providing imageSearchFiltersGrid, imageVariantFiltersMedium, urls */
     configuration?: any;
 
-    /** Labels for UI strings */
+    /**
+     * Label overrides for the slider UI.
+     * Available keys: scrollLeft, scrollRight, noProducts, viewCluster,
+     *                 ACCESSORIES, ALTERNATIVES, RELATED, OPTIONS, PARTS
+     */
     labels?: Record<string, string>;
-
-    /** Additional CSS class for the container */
-    containerClassName?: string;
 }
 
 interface ProductSliderState {
@@ -112,8 +183,6 @@ interface ProductSliderState {
     _scrollPosition: number;
     _containerWidth: number;
     _scrollWidth: number;
-    _includeTax: boolean;
-    _priceListener: any;
     items: () => (Product | Cluster)[];
     isCrossUpsellMode: () => boolean;
     crossUpsellTitle: () => string;
@@ -124,9 +193,6 @@ interface ProductSliderState {
     canScrollLeft: () => boolean;
     canScrollRight: () => boolean;
     portalMode: () => string;
-    includeTax: () => boolean;
-    showIncrDecr: () => boolean;
-    stockValidation: () => boolean;
     getLabel: (key: string, fallback: string) => string;
     isCluster: (item: any) => boolean;
     getItemId: (item: any) => number;
@@ -147,8 +213,6 @@ export default function ProductSlider(props: ProductSliderProps) {
         _scrollPosition: 0,
         _containerWidth: 0,
         _scrollWidth: 0,
-        _includeTax: true,
-        _priceListener: null as any,
 
         items(): (Product | Cluster)[] {
             if (props.products && props.products.length > 0) {
@@ -202,34 +266,23 @@ export default function ProductSlider(props: ProductSliderProps) {
         },
 
         portalMode(): string {
-            return props.portalMode || 'open';
+            return (props.portalMode as string) || 'open';
         },
 
-        includeTax(): boolean {
-            return props.includeTax !== undefined ? props.includeTax : state._includeTax;
-        },
-
-        showIncrDecr(): boolean {
-            return props.showIncrDecr !== undefined ? props.showIncrDecr : true;
-        },
-
-        stockValidation(): boolean {
-            return props.stockValidation !== undefined ? props.stockValidation : false;
-        },
-
-        getLabel(key: string, fallback: string) {
-            return props.labels?.[key] || fallback;
+        getLabel(key: string, fallback: string): string {
+            const val = (props.labels as Record<string, string>)?.[key];
+            return val !== undefined ? val : fallback;
         },
 
         isCluster(item: any): boolean {
-            return 'clusterId' in item;
+            return 'clusterId' in item && !('productId' in item);
         },
 
         getItemId(item: any): number {
             return state.isCluster(item) ? item.clusterId : item.productId;
         },
 
-        async fetchCrossUpsells() {
+        async fetchCrossUpsells(): Promise<void> {
             if (!props.graphqlClient) return;
             if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
             if (!props.productId && !props.clusterId) return;
@@ -237,31 +290,35 @@ export default function ProductSlider(props: ProductSliderProps) {
             state._isLoading = true;
             try {
                 const crossupsellService = new CrossupsellService(props.graphqlClient);
-                const searchInput: CrossupsellSearchInput = {
-                    types: props.crossUpsellTypes,
-                    page: 1,
-                    offset: 50,
-                    ...(props.productId && { productIdsFrom: [props.productId] }),
-                    ...(props.clusterId && { clusterIdsFrom: [props.clusterId] })
-                };
-
-                const crossupsellSearchVariables: CrossupsellsQueryVariables = {
-                    input: searchInput,
+                const searchInput: CrossupsellsQueryVariables = {
+                    input: {
+                        types: props.crossUpsellTypes,
+                        page: 1,
+                        offset: 50,
+                        ...(props.productId && { productIdsFrom: [props.productId] }),
+                        ...(props.clusterId && { clusterIdsFrom: [props.clusterId] }),
+                    },
                     language: props.language || 'NL',
                     imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                     imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
+                    priceCalculateProductInput: {
+                        taxZone: props.taxZone || 'NL',
+                        ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
+                        ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
+                        ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
+                    },
                 };
 
-                const result = await (crossupsellService as any).executeQuery('crossupsells', crossupsellSearchVariables);
+                const result = await crossupsellService.getCrossupsells(searchInput);
 
-                const crossupsells = result?.data?.crossupsells?.items || [] as Crossupsell[];
-                const items: Crossupsell[] = [];
+                const crossupsells: Crossupsell[] = result?.items || [];
+                const items: any[] = [];
                 for (let i = 0; i < crossupsells.length; i++) {
                     const cu = crossupsells[i] as Crossupsell;
                     if (cu.productTo) {
-                        items.push(cu);
+                        items.push(cu.productTo);
                     } else if (cu.clusterTo) {
-                        items.push(cu);
+                        items.push(cu.clusterTo);
                     }
                 }
                 state._items = items;
@@ -272,7 +329,7 @@ export default function ProductSlider(props: ProductSliderProps) {
             }
         },
 
-        async fetchItems() {
+        async fetchItems(): Promise<void> {
             if (!props.graphqlClient) return;
             const hasProductIds = props.productIds && props.productIds.length > 0;
             const hasClusterIds = props.clusterIds && props.clusterIds.length > 0;
@@ -295,8 +352,8 @@ export default function ProductSlider(props: ProductSliderProps) {
                             Enums.ProductStatus.S,
                         ],
                     },
-                    imageSearchFilters: { page: 1, offset: 1 },
-                    imageVariantFilters: {
+                    imageSearchFilters: props.configuration?.imageSearchFiltersGrid || { page: 1, offset: 1 },
+                    imageVariantFilters: props.configuration?.imageVariantFiltersMedium || {
                         transformations: [{
                             name: 'grid',
                             transformation: {
@@ -317,7 +374,7 @@ export default function ProductSlider(props: ProductSliderProps) {
             }
         },
 
-        doFetch() {
+        doFetch(): void {
             if (props.products && props.products.length > 0) return;
             if (state.isCrossUpsellMode()) {
                 state.fetchCrossUpsells();
@@ -326,7 +383,7 @@ export default function ProductSlider(props: ProductSliderProps) {
             }
         },
 
-        scrollLeft() {
+        scrollLeft(): void {
             const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
             if (el) {
                 const scrollAmount = el.clientWidth * 0.8;
@@ -334,7 +391,7 @@ export default function ProductSlider(props: ProductSliderProps) {
             }
         },
 
-        scrollRight() {
+        scrollRight(): void {
             const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
             if (el) {
                 const scrollAmount = el.clientWidth * 0.8;
@@ -342,20 +399,20 @@ export default function ProductSlider(props: ProductSliderProps) {
             }
         },
 
-        handleScroll(e: any) {
+        handleScroll(e: any): void {
             const el = e.target as HTMLElement;
             state._scrollPosition = el.scrollLeft;
             state._containerWidth = el.clientWidth;
             state._scrollWidth = el.scrollWidth;
         },
 
-        handleProductClick(product: Product) {
+        handleProductClick(product: Product): void {
             if (props.onProductClick) {
                 props.onProductClick(product);
             }
         },
 
-        handleClusterClick(cluster: Cluster) {
+        handleClusterClick(cluster: Cluster): void {
             if (props.onClusterClick) {
                 props.onClusterClick(cluster);
             }
@@ -373,17 +430,6 @@ export default function ProductSlider(props: ProductSliderProps) {
                 state._scrollWidth = el.scrollWidth;
             }
         }, 100);
-
-        // Price toggle listener
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state._includeTax = stored === null ? true : stored === 'true';
-            state._priceListener = () => {
-                const val = localStorage.getItem('price_include_tax');
-                state._includeTax = val === null ? true : val === 'true';
-            };
-            window.addEventListener('priceToggleChanged', state._priceListener);
-        }
     });
 
     onUpdate(() => {
@@ -431,7 +477,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                     </div>
                 </Show>
 
-                {/* Loading state */}
+                {/* Loading skeleton */}
                 <Show when={state._isLoading}>
                     <div className="flex gap-6 overflow-hidden">
                         <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
@@ -461,66 +507,81 @@ export default function ProductSlider(props: ProductSliderProps) {
                                         width: 'calc((100% - 4.5rem) / ' + state.desktopCount() + ')',
                                     }}
                                 >
+                                    {/* Cluster card */}
                                     <Show when={state.isCluster(item)}>
-                                        <div
-                                            className="cursor-pointer"
-                                            onClick={() => state.handleClusterClick(item as Cluster)}
-                                        >
-                                            <div className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                                                <div className="relative aspect-square bg-gray-50">
-                                                    <Show when={(item as Cluster).defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || props.noImageUrl}>
-                                                        <img
-                                                            src={(item as Cluster).defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || props.noImageUrl || ''}
-                                                            alt={item.names?.[0]?.value || 'Cluster'}
-                                                            className="w-full h-full object-contain p-2"
-                                                        />
-                                                    </Show>
-                                                </div>
-                                                <div className="p-3">
-                                                    <div className="font-semibold text-sm truncate">{item.names?.[0]?.value || 'Cluster'}</div>
-                                                    <Show when={item.sku || (item as Cluster).defaultProduct?.sku}>
-                                                        <div className="text-xs text-gray-500 mt-1">SKU: {item.sku || (item as Cluster).defaultProduct?.sku}</div>
-                                                    </Show>
-                                                    <Show when={(item as Cluster).defaultProduct?.price}>
-                                                        <div className="text-sm font-bold text-blue-600 mt-2">
-                                                            {'\u20AC' + Number(state.includeTax() ? (item as Cluster).defaultProduct?.price?.net || 0 : (item as Cluster).defaultProduct?.price?.gross || 0).toFixed(2)}
-                                                        </div>
-                                                    </Show>
-                                                    <div className="mt-2">
-                                                        <span className="text-xs text-blue-600 font-medium">{state.getLabel('viewCluster', 'View options')}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <ClusterCard
+                                            cluster={item as Cluster}
+                                            configuration={props.configuration}
+                                            includeTax={props.includeTax}
+                                            columns={3}
+                                            enableAddFavorite={props.enableAddFavorite}
+                                            showStock={props.showStock}
+                                            showAvailability={props.showAvailability}
+                                            stockLabels={props.stockLabels}
+                                            labels={props.labels}
+                                            onToggleFavorite={(cluster: Cluster, isFav: boolean) => {
+                                                if (props.onToggleFavorite) {
+                                                    props.onToggleFavorite(cluster, isFav);
+                                                }
+                                            }}
+                                            onClusterClick={(cluster: Cluster) => state.handleClusterClick(cluster)}
+                                        />
                                     </Show>
-                                    <Show when={!state.isCluster(item)}>
-                                        <div
-                                            className="cursor-pointer"
-                                            onClick={() => state.handleProductClick(item as Product)}
-                                        >
-                                            <div className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                                                <div className="relative aspect-square bg-gray-50">
-                                                    <Show when={(item as Product).media?.images?.items?.[0]?.imageVariants?.[0]?.url || props.noImageUrl}>
-                                                        <img
-                                                            src={(item as Product).media?.images?.items?.[0]?.imageVariants?.[0]?.url || props.noImageUrl || ''}
-                                                            alt={item.names?.[0]?.value || 'Product'}
-                                                            className="w-full h-full object-contain p-2"
-                                                        />
-                                                    </Show>
-                                                </div>
-                                                <div className="p-3">
-                                                    <div className="font-semibold text-sm truncate">{item.names?.[0]?.value || 'Product'}</div>
-                                                    <Show when={(item as Product).sku}>
-                                                        <div className="text-xs text-gray-500 mt-1">SKU: {(item as Product).sku}</div>
-                                                    </Show>
-                                                    <Show when={(item as Product).price}>
-                                                        <div className="text-sm font-bold text-blue-600 mt-2">
-                                                            {'\u20AC' + Number(state.includeTax() ? (item as Product).price?.net || 0 : (item as Product).price?.gross || 0).toFixed(2)}
-                                                        </div>
-                                                    </Show>
-                                                </div>
-                                            </div>
-                                        </div>
+
+                                    {/* Product card — with AddToCart (open portal) */}
+                                    <Show when={!state.isCluster(item) && state.portalMode() === 'open'}>
+                                        <ProductCard
+                                            product={item as Product}
+                                            graphqlClient={props.graphqlClient}
+                                            user={(props.user as Contact | Customer | null) || null}
+                                            cartId={props.cartId}
+                                            configuration={props.configuration}
+                                            includeTax={props.includeTax}
+                                            columns={3}
+                                            createCart={props.createCart}
+                                            onCartCreated={props.onCartCreated}
+                                            afterAddToCart={props.afterAddToCart}
+                                            showModal={props.showModal}
+                                            allowIncrDecr={props.showIncrDecr !== false}
+                                            enableStockValidation={props.stockValidation}
+                                            language={props.language}
+                                            onProceedToCheckout={props.onProceedToCheckout}
+                                            addToCartLabels={props.addToCartLabels}
+                                            enableAddFavorite={props.enableAddFavorite}
+                                            showStock={props.showStock}
+                                            showAvailability={props.showAvailability}
+                                            stockLabels={props.stockLabels}
+                                            labels={props.labels}
+                                            onToggleFavorite={(product: Product, isFav: boolean) => {
+                                                if (props.onToggleFavorite) {
+                                                    props.onToggleFavorite(product, isFav);
+                                                }
+                                            }}
+                                            onProductClick={(product: Product) => state.handleProductClick(product)}
+                                        />
+                                    </Show>
+
+                                    {/* Product card — without AddToCart (semi-closed portal) */}
+                                    <Show when={!state.isCluster(item) && state.portalMode() !== 'open'}>
+                                        <ProductCard
+                                            product={item as Product}
+                                            graphqlClient={props.graphqlClient}
+                                            user={(props.user as Contact | Customer | null) || null}
+                                            configuration={props.configuration}
+                                            includeTax={props.includeTax}
+                                            columns={3}
+                                            enableAddFavorite={props.enableAddFavorite}
+                                            showStock={props.showStock}
+                                            showAvailability={props.showAvailability}
+                                            stockLabels={props.stockLabels}
+                                            labels={props.labels}
+                                            onToggleFavorite={(product: Product, isFav: boolean) => {
+                                                if (props.onToggleFavorite) {
+                                                    props.onToggleFavorite(product, isFav);
+                                                }
+                                            }}
+                                            onProductClick={(product: Product) => state.handleProductClick(product)}
+                                        />
                                     </Show>
                                 </div>
                             )}

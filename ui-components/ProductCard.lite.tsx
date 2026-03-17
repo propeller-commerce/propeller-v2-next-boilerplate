@@ -3,7 +3,6 @@ import {
     Show,
     For,
     onMount,
-    onUpdate,
 } from '@builder.io/mitosis';
 import {
     GraphQLClient,
@@ -224,7 +223,6 @@ export interface ProductCardProps {
 interface ProductCardState {
     isFavorite: boolean;
     _includeTax: boolean;
-    _priceListener: any;
     getProductName: () => string;
     getProductSku: () => string;
     getProductImageUrl: () => string;
@@ -245,7 +243,6 @@ export default function ProductCard(props: ProductCardProps) {
     const state = useStore<ProductCardState>({
         isFavorite: false,
         _includeTax: true,
-        _priceListener: null as any,
 
         isRow() {
             return (props.columns as number) === 1;

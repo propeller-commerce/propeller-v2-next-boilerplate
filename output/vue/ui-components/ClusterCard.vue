@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
+    :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
       isRow() ? 'flex-row items-center' : 'flex-col'
     } ${className || ''}`"
   >
@@ -147,7 +147,7 @@
       <template v-if="!!cluster.defaultProduct?.price">
         <div :class="isRow() ? '' : 'mt-auto pt-2'">
           <ProductPriceDisplay
-            :includeTax="includeTax"
+            :includeTax="includeTax !== undefined ? includeTax : _includeTax"
             :price="cluster.defaultProduct?.price"
             :options="cluster.options"
             :priceSize="isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'"
@@ -181,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
 import { Cluster, AttributeResult, ProductPrice } from "propeller-sdk-v2";
 import ProductPriceDisplay from "./ProductPrice.vue";
@@ -279,6 +279,8 @@ export interface ClusterCardProps {
 }
 interface ClusterCardState {
   isFavorite: boolean;
+  _includeTax: boolean;
+  _priceListener: any;
   isRow: () => boolean;
   getClusterName: () => string;
   getClusterSku: () => string;
@@ -301,6 +303,20 @@ interface ClusterCardState {
 
 const props = defineProps<ClusterCardProps>();
 const isFavorite = ref<ClusterCardState["isFavorite"]>(false);
+const _includeTax = ref<ClusterCardState["_includeTax"]>(true);
+const _priceListener = ref<ClusterCardState["_priceListener"]>(null);
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("price_include_tax");
+    _includeTax.value = stored === null ? true : stored === "true";
+    _priceListener.value = () => {
+      const val = localStorage.getItem("price_include_tax");
+      _includeTax.value = val === null ? true : val === "true";
+    };
+    window.addEventListener("priceToggleChanged", _priceListener.value);
+  }
+});
 
 function isRow(): ReturnType<ClusterCardState["isRow"]> {
   return (props.columns as number) === 1;

@@ -69,14 +69,15 @@ onCrossupsellClick?: (product: Product | Cluster) => void;
 
 /** Additional CSS class for the root element */
 className?: string;
+
+/** Include tax in price. Defaults to false. */
+includeTax?: boolean;
 }
 interface CartItemState {
 _quantity: number;
 _notes: string;
 _loading: boolean;
 _deleting: boolean;
-_includeTax: boolean;
-_priceListener: any;
 _notesTimeout: any;
 _crossupsells: Crossupsell[];
 _crossupsellsLoading: boolean;
@@ -112,12 +113,6 @@ const [_loading, set_loading] = useState<CartItemState["_loading"]>(() => (false
 
 
 const [_deleting, set_deleting] = useState<CartItemState["_deleting"]>(() => (false))
-
-
-const [_includeTax, set_includeTax] = useState<CartItemState["_includeTax"]>(() => (true))
-
-
-const [_priceListener, set_priceListener] = useState<CartItemState["_priceListener"]>(() => (null))
 
 
 const [_notesTimeout, set_notesTimeout] = useState<CartItemState["_notesTimeout"]>(() => (null))
@@ -165,7 +160,7 @@ return inv || null;
 
 function getFormattedPrice(): ReturnType<CartItemState["getFormattedPrice"]>{
 const item = props.cartItem;
-const price = _includeTax ? item?.totalSumNet || 0 : item?.totalSum || 0;
+const price = props.includeTax ? item?.totalSumNet || 0 : item?.totalSum || 0;
 return `\u20AC${Number(price).toFixed(2)}`;
 }
 
@@ -329,12 +324,6 @@ return '#';
 useEffect(() => {
       set_quantity(props.cartItem.quantity || 1);
 set_notes(props.cartItem.notes || '');
-const stored = localStorage.getItem('price_include_tax');
-set_includeTax(stored !== null ? stored === 'true' : true);
-set_priceListener((e: any) => {
-set_includeTax(e.detail === true || e.detail === 'true');
-});
-window.addEventListener('priceToggleChanged', _priceListener);
 fetchCrossupsells()
     }, [])
 useEffect(() => {
@@ -360,7 +349,7 @@ return (
 ) : null}{props.showStockComponent === true && !!getInventory() ? (
   <div className="mt-1"><div  data-cart-item-stock="true"  data-inventory={JSON.stringify(getInventory())}  /></div>
 ) : null}<p className="text-lg font-bold text-violet-600 mt-2">{getFormattedPrice()}</p>{!!props.cartItem.clusterId && !!props.cartItem.childItems && props.cartItem.childItems.length > 0 ? (
-  <div className="mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{getLabel('includedOptions', 'Included Options:')}</p>{props.cartItem.childItems || []?.map((child, idx) => (
+  <div className="mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{getLabel('includedOptions', 'Included Options:')}</p>{(props.cartItem.childItems || []).map((child, idx) => (
   <div className="flex flex-wrap gap-x-2 text-sm text-gray-700"  key={idx}><span className="font-medium">{child.product?.names?.[0]?.value || 'Option'}</span><span className="text-gray-400 hidden sm:inline">-</span><span className="text-gray-400 text-xs self-center">{child.product?.sku}</span><div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"  /><span className="font-semibold text-violet-600">€{(child.totalSum || 0).toFixed(2)}</span></div>
 ))}</div>
 ) : null}{props.showCartItemNotesField === true ? (

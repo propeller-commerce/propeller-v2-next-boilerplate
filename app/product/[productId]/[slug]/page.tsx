@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { imageSearchFilters, imageVariantFiltersLarge, imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
-import { ImageVariant, Product, ProductPrice as ProductPriceSDK, CartService } from 'propeller-sdk-v2';
+import { Product, ProductPrice as ProductPriceSDK, CartService, Enums } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
 import ItemStock from '@/components/propeller/ItemStock';
 import ProductInfo from '@/components/propeller/ProductInfo';
@@ -18,12 +18,12 @@ import ProductShortDescription from '@/components/propeller/ProductShortDescript
 import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
 import Breadcrumbs from '@/components/propeller/Breadcrumbs';
 import ProductTabs from '@/components/propeller/ProductTabs';
-
+import { usePrice } from '@/context/PriceContext';
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
-import ProductSlider from '@/components/propeller/ProductSlider';
-import ProductBundles from '@/components/propeller/ProductBundles';
+import ProductSlider from '@/output/react/ui-components/ProductSlider';
+import ProductBundles from '@/output/react/ui-components/ProductBundles';
 
 
 export default function ProductPage() {
@@ -33,7 +33,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const { cart, saveCart } = useCart();
   const router = useRouter();
-
+  const { includeTax } = usePrice();
   const images: string[] = product?.media?.images?.items?.flatMap(
     image => image.imageVariants?.map(variant => variant.url).filter((url): url is string => !!url) ?? []
   ) ?? [];
@@ -71,7 +71,7 @@ export default function ProductPage() {
                   configuration={config}
                 />
 
-                <ProductPrice price={price} />
+                <ProductPrice price={price} includeTax={includeTax} />
 
                 <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ title: '' }} />
 
@@ -114,31 +114,31 @@ export default function ProductPage() {
             graphqlClient={graphqlClient}
             productId={productId}
             language="NL"
+            cartId={cart?.cartId}
             taxZone="NL"
+            configuration={config}
             user={state.user}
-            onAddBundleToCart={(bundleId, quantity) => {
-              const cartService = new CartService(graphqlClient);
-              cartService.addBundleToCart({
-                id: cart?.cartId,
-                input: { bundleId, quantity },
-                language: 'NL',
-                imageSearchFilters: imageSearchFiltersGrid,
-                imageVariantFilters: imageVariantFiltersSmall,
-              }).then((updatedCart) => saveCart(updatedCart));
-            }}
+            createCart={true}
+            showModal={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
+            onProceedToCheckout={() => router.push('/checkout')}
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={['ACCESSORIES', 'RELATED']}
+            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES, Enums.CrossupsellType.RELATED]}
             productId={productId}
             language="NL"
             taxZone="NL"
             title="Related Products"
+            includeTax={includeTax}
             user={state.user}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push('/checkout')}
             configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}

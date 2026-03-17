@@ -205,7 +205,6 @@ addToCartLabels?: Record<string, string>;
 interface ProductCardState {
 isFavorite: boolean;
 _includeTax: boolean;
-_priceListener: any;
 getProductName: () => string;
 getProductSku: () => string;
 getProductImageUrl: () => string;
@@ -234,9 +233,6 @@ computedTextLabels: () => {
 
 
 const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (true))
-
-
-const [_priceListener, set_priceListener] = useState<ProductCardState["_priceListener"]>(() => (null))
 
 
 function isRow(): ReturnType<ProductCardState["isRow"]>{
@@ -339,6 +335,9 @@ value: string;
 }
 
 
+const [_priceListener, set_priceListener] = useState(() => (null))
+
+
 
 
 
@@ -361,7 +360,7 @@ window.addEventListener('priceToggleChanged', _priceListener);
 return (
 
 
-  <div  className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
+  <div  className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
   <div  className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}><a className="block h-full w-full"  href={getProductUrl()}  onClick={(e) => handleProductClick(e) }>{!!getProductImageUrl() ? (
   <img className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"  src={getProductImageUrl()}  alt={getProductName()}  />
 ) : null}{!getProductImageUrl() ? (

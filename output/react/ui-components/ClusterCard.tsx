@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
   import  { Cluster, AttributeResult, ProductPrice } from 'propeller-sdk-v2';
 import  ProductPriceDisplay from './ProductPrice';
 
@@ -100,6 +100,8 @@ includeTax?: boolean;
 }
 interface ClusterCardState {
 isFavorite: boolean;
+_includeTax: boolean;
+_priceListener: any;
 isRow: () => boolean;
 getClusterName: () => string;
 getClusterSku: () => string;
@@ -126,6 +128,12 @@ computedTextLabels: () => {
   function ClusterCard(props:ClusterCardProps) {
 
   const [isFavorite, setIsFavorite] = useState<ClusterCardState["isFavorite"]>(() => (false))
+
+
+const [_includeTax, set_includeTax] = useState<ClusterCardState["_includeTax"]>(() => (true))
+
+
+const [_priceListener, set_priceListener] = useState<ClusterCardState["_priceListener"]>(() => (null))
 
 
 function isRow(): ReturnType<ClusterCardState["isRow"]>{
@@ -240,14 +248,24 @@ value: string;
 
 
 
-
+useEffect(() => {
+      if (typeof window !== 'undefined') {
+const stored = localStorage.getItem('price_include_tax');
+set_includeTax(stored === null ? true : stored === 'true');
+set_priceListener(() => {
+const val = localStorage.getItem('price_include_tax');
+set_includeTax(val === null ? true : val === 'true');
+});
+window.addEventListener('priceToggleChanged', _priceListener);
+}
+    }, [])
 
 
 
 return (
 
 
-  <div  className={`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
+  <div  className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}>{props.showImage !== false ? (
   <div  className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}><a className="block h-full w-full"  href={getClusterUrl()}  onClick={(e) => handleClusterClick(e) }>{!!getClusterImageUrl() ? (
   <img className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"  src={getClusterImageUrl()}  alt={getClusterName()}  />
 ) : null}{!getClusterImageUrl() ? (
@@ -272,7 +290,7 @@ return (
 ) : null}{props.showShortDescription && !!getClusterShortDescription() ? (
   <p className="line-clamp-2 text-xs text-gray-500">{getClusterShortDescription()}</p>
 ) : null}{!!(props.cluster as Cluster).defaultProduct?.price ? (
-  <div  className={isRow() ? '' : 'mt-auto pt-2'}><ProductPriceDisplay  includeTax={props.includeTax}  price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}  options={(props.cluster as Cluster).options}  priceSize={isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}  /></div>
+  <div  className={isRow() ? '' : 'mt-auto pt-2'}><ProductPriceDisplay  includeTax={props.includeTax !== undefined ? props.includeTax : _includeTax}  price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}  options={(props.cluster as Cluster).options}  priceSize={isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}  /></div>
 ) : null}{props.showStock !== false && getStockQuantity() >= 0 ? (
   <div className="flex items-center gap-1.5"><span  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStockStatusClass()}`}>{getStockStatusLabel()}</span>{getStockQuantity() > 0 ? (
   <span className="text-xs text-gray-400">

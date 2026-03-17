@@ -1,7 +1,6 @@
 import {
     useStore,
     Show,
-    onUpdate,
 } from '@builder.io/mitosis';
 import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
@@ -27,17 +26,9 @@ export interface CategoryShortDescriptionProps {
     className?: string;
 }
 
-interface CategoryShortDescriptionState {
-    /** Cached resolved HTML — updated via onUpdate whenever category/language changes. */
-    html: string;
-    getDescription(): string;
-}
-
 export default function CategoryShortDescription(props: CategoryShortDescriptionProps) {
-    const state = useStore<CategoryShortDescriptionState>({
-        html: '',
-
-        getDescription() {
+    const state = useStore({
+        get html(): string {
             if (!props.category?.shortDescription) return '';
             const match = props.category.shortDescription.find(
                 (d: LocalizedString) => d.language === props.language
@@ -45,11 +36,6 @@ export default function CategoryShortDescription(props: CategoryShortDescription
             return match?.value || '';
         },
     });
-
-    // Sync cached HTML whenever category or language changes.
-    onUpdate(() => {
-        state.html = state.getDescription();
-    }, [props.category, props.language]);
 
     return (
         <Show when={!!state.html}>

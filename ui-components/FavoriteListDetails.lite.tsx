@@ -141,31 +141,43 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
       return state._allItems.slice(start, start + perPage);
     },
 
-    getPaginationData(): ProductsResponse {
+    getPaginationData(): Record<string, number> {
       return {
         page: state._currentPage,
         pages: state.getTotalPages(),
         itemsFound: state._allItems.length,
-        items: [],
         offset: state.getItemsPerPage(),
-        start: 0,
-        end: 0,
-        minPrice: 0,
-        maxPrice: 0,
-      } as ProductsResponse;
+      };
     },
 
     handlePageChange(page: number): void {
       state._currentPage = page;
     },
 
-    buildFetchVariables(): Record<string, any> {
-      const variables: Record<string, any> = {
+    buildFetchVariables(): Record<string, unknown> {
+      const priceInput: Record<string, unknown> = {
+        taxZone: 'NL',
+      };
+      if (props.user) {
+        if ('customerId' in props.user) {
+          const customer = props.user as Customer;
+          if (customer.customerId) {
+            priceInput.customerId = customer.customerId;
+          }
+        } else if ('contactId' in props.user) {
+          const contact = props.user as Contact;
+          if (contact.contactId) {
+            priceInput.contactId = contact.contactId;
+          }
+          if (contact.company?.companyId) {
+            priceInput.companyId = contact.company.companyId;
+          }
+        }
+      }
+      return {
         id: props.favoriteListId,
         language: props.language || 'NL',
-        priceCalculateProductInput: {
-          taxZone: 'NL',
-        } as Record<string, any>,
+        priceCalculateProductInput: priceInput,
         imageSearchFilters: { page: 1, offset: 1 },
         imageVariantFilters: {
           transformations: [{
@@ -174,17 +186,6 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
           }],
         },
       };
-      if (props.user) {
-        if ('customerId' in props.user && (props.user as any).customerId) {
-          variables.priceCalculateProductInput.customerId = (props.user as any).customerId;
-        } else if ('contactId' in props.user && (props.user as any).contactId) {
-          variables.priceCalculateProductInput.contactId = (props.user as any).contactId;
-          if ('company' in props.user && (props.user as any).company?.companyId) {
-            variables.priceCalculateProductInput.companyId = (props.user as any).company.companyId;
-          }
-        }
-      }
-      return variables;
     },
 
     async fetchList(): Promise<void> {
@@ -198,11 +199,11 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
         const items: (Product | Cluster)[] = [];
         const productsRef = list?.products as ProductsResponse;
         if (productsRef?.items && Array.isArray(productsRef.items)) {
-          productsRef.items.forEach((item: any) => items.push(item as Product));
+          (productsRef.items as Product[]).forEach((item: Product) => items.push(item));
         }
         const clustersRef = list?.clusters as ProductsResponse;
         if (clustersRef?.items && Array.isArray(clustersRef.items)) {
-          clustersRef.items.forEach((item: any) => items.push(item as Cluster));
+          (clustersRef.items as Cluster[]).forEach((item: Cluster) => items.push(item));
         }
         state._allItems = items;
         state._currentPage = 1;
@@ -272,7 +273,7 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
               {(item: Product | Cluster, idx: number) => (
                 <div key={('productId' in item ? 'p-' + (item as Product).productId : 'c-' + (item as Cluster).clusterId)}>
                   {/* FavoriteListItem rendered here — replaced with actual component in React copy */}
-                  <div className="p-4 border-b">{(item as any).names?.[0]?.value || 'Item'}</div>
+                  <div className="p-4 border-b">{item.names?.[0]?.value || 'Item'}</div>
                 </div>
               )}
             </For>

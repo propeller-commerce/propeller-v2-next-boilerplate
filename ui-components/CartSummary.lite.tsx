@@ -73,58 +73,58 @@ export default function CartSummary(props: CartSummaryProps) {
             return props.showCheckoutButton !== undefined ? props.showCheckoutButton : true;
         },
 
-        getLabel(key: string, fallback: string) {
+        getLabel(key: string, fallback: string): string {
             return props.labels?.[key] || fallback;
         },
 
-        formatItemPrice(price: number) {
+        formatItemPrice(price: number): string {
             if (props.formatPrice) {
                 return props.formatPrice(price);
             }
             return '\u20AC' + Number(price || 0).toFixed(2);
         },
 
-        get subtotal() {
-            return (props.cart as any)?.total?.subTotal || 0;
+        get subtotal(): number {
+            return props.cart?.total?.subTotal || 0;
         },
 
-        get hasDiscount() {
-            const total = (props.cart as any)?.total;
-            return total?.discount > 0;
+        get hasDiscount(): boolean {
+            const total = props.cart?.total;
+            return (total?.discount || 0) > 0;
         },
 
-        get discountAmount() {
-            return (props.cart as any)?.total?.discount || 0;
+        get discountAmount(): number {
+            return props.cart?.total?.discount || 0;
         },
 
-        get hasShippingCosts() {
-            return (props.cart as any)?.postageData?.price > 0;
+        get hasShippingCosts(): boolean {
+            return (props.cart?.postageData?.price || 0) > 0;
         },
 
-        get shippingCosts() {
-            return Number((props.cart as any)?.postageData?.price || 0);
+        get shippingCosts(): number {
+            return Number(props.cart?.postageData?.price || 0);
         },
 
-        get totalExclVat() {
-            return (props.cart as any)?.total?.totalGross || 0;
+        get totalExclVat(): number {
+            return props.cart?.total?.totalGross || 0;
         },
 
         get taxLevels() {
-            const levels = (props.cart as any)?.taxLevels || [];
-            return levels.filter((t: any) => t.taxPercentage > 0 && t.price > 0);
+            const levels = props.cart?.taxLevels || [];
+            return levels.filter((t) => t.taxPercentage > 0 && t.price > 0);
         },
 
-        get totalVat() {
-            const net = (props.cart as any)?.total?.totalNet || 0;
-            const gross = (props.cart as any)?.total?.totalGross || 0;
+        get totalVat(): number {
+            const net = props.cart?.total?.totalNet || 0;
+            const gross = props.cart?.total?.totalGross || 0;
             return net - gross;
         },
 
-        get totalInclVat() {
-            return (props.cart as any)?.total?.totalNet || 0;
+        get totalInclVat(): number {
+            return props.cart?.total?.totalNet || 0;
         },
 
-        handleCheckoutClick() {
+        handleCheckoutClick(): void {
             if (props.onCheckoutButtonClick) {
                 props.onCheckoutButtonClick(props.cart);
             }
@@ -165,7 +165,7 @@ export default function CartSummary(props: CartSummaryProps) {
 
             <Show when={state.showVATs && state.taxLevels.length > 0}>
                 <For each={state.taxLevels}>
-                    {(tax: any, index: number) => (
+                    {(tax, index: number) => (
                         <div key={index} className="flex justify-between text-gray-600 text-sm">
                             <span>{tax.taxPercentage}% {state.getLabel('vat', 'VAT')}:</span>
                             <span>{state.formatItemPrice(Number(tax.price))}</span>

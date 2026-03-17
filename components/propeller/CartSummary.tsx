@@ -1,6 +1,5 @@
 'use client';
 import * as React from 'react';
-  import  { Cart } from 'propeller-sdk-v2';
 
 
 
@@ -44,6 +43,7 @@ onCheckoutButtonClick?: (cart: Cart) => void;
 formatPrice?: (price: number) => string;
 }
 
+  import  { Cart } from 'propeller-sdk-v2';
 
 
 
@@ -103,51 +103,51 @@ return '\u20AC' + Number(price || 0).toFixed(2);
 
 
 function subtotal() {
-return (props.cart as any)?.total?.subTotal || 0;
+return props.cart?.total?.subTotal || 0;
 }
 
 
 function hasDiscount() {
-const total = (props.cart as any)?.total;
-return total?.discount > 0;
+const total = props.cart?.total;
+return (total?.discount || 0) > 0;
 }
 
 
 function discountAmount() {
-return (props.cart as any)?.total?.discount || 0;
+return props.cart?.total?.discount || 0;
 }
 
 
 function hasShippingCosts() {
-return (props.cart as any)?.postageData?.price > 0;
+return (props.cart?.postageData?.price || 0) > 0;
 }
 
 
 function shippingCosts() {
-return Number((props.cart as any)?.postageData?.price || 0);
+return Number(props.cart?.postageData?.price || 0);
 }
 
 
 function totalExclVat() {
-return (props.cart as any)?.total?.totalGross || 0;
+return props.cart?.total?.totalGross || 0;
 }
 
 
 function taxLevels() {
-const levels = (props.cart as any)?.taxLevels || [];
-return levels.filter((t: any) => t.taxPercentage > 0 && t.price > 0);
+const levels = props.cart?.taxLevels || [];
+return levels.filter(t => t.taxPercentage > 0 && t.price > 0);
 }
 
 
 function totalVat() {
-const net = (props.cart as any)?.total?.totalNet || 0;
-const gross = (props.cart as any)?.total?.totalGross || 0;
+const net = props.cart?.total?.totalNet || 0;
+const gross = props.cart?.total?.totalGross || 0;
 return net - gross;
 }
 
 
 function totalInclVat() {
-return (props.cart as any)?.total?.totalNet || 0;
+return props.cart?.total?.totalNet || 0;
 }
 
 

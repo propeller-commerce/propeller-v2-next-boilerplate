@@ -153,10 +153,10 @@ try {
 const service = new FavoriteListService(props.graphqlClient);
 const isContact = 'contactId' in props.user;
 const searchInput: FavoriteListsSearchInput = {};
-if (isContact && (props.user as any).contactId) {
-  searchInput.contactId = (props.user as any).contactId;
-} else if (!isContact && (props.user as any).customerId) {
-  searchInput.customerId = (props.user as any).customerId;
+if (isContact) {
+  searchInput.contactId = (props.user as Contact).contactId;
+} else {
+  searchInput.customerId = (props.user as Customer).customerId;
 }
 const response = await service.getFavoriteLists(searchInput);
 setLists(response.items || []);
@@ -292,16 +292,14 @@ if (!props.graphqlClient || !props.user) return;
 try {
 const service = new FavoriteListService(props.graphqlClient);
 const isContact = 'contactId' in props.user;
-const input: any = {
+const contactId = isContact ? (props.user as Contact).contactId : undefined;
+const customerId = !isContact ? (props.user as Customer).customerId : undefined;
+await service.createFavoriteList({
   name: formData.name,
-  isDefault: formData.isDefault
-};
-if (isContact && (props.user as any).contactId) {
-  input.contactId = (props.user as any).contactId;
-} else if (!isContact && (props.user as any).customerId) {
-  input.customerId = (props.user as any).customerId;
-}
-await service.createFavoriteList(input);
+  isDefault: formData.isDefault,
+  contactId: contactId,
+  customerId: customerId
+} as Parameters<FavoriteListService['createFavoriteList']>[0]);
 setNewListName('');
 setNewSetAsDefault(false);
 closeCreateModal();
@@ -326,25 +324,19 @@ return `${day}/${month}/${year}`;
 
 
 function getProductCount(list: FavoriteList): ReturnType<FavoriteListsState["getProductCount"]>{
-if (Array.isArray(list.products)) {
-return list.products.length;
-} else if (list.products && typeof list.products === 'object' && 'items' in list.products) {
-return ((list.products as any).items || []).length;
-} else if (list.products && typeof list.products === 'object' && 'itemsFound' in list.products) {
-return (list.products as any).itemsFound || 0;
-}
+const products = list.products;
+if (!products) return 0;
+if (products.itemsFound !== undefined) return products.itemsFound;
+if (products.items) return products.items.length;
 return 0;
 }
 
 
 function getClusterCount(list: FavoriteList): ReturnType<FavoriteListsState["getClusterCount"]>{
-if (Array.isArray(list.clusters)) {
-return list.clusters.length;
-} else if (list.clusters && typeof list.clusters === 'object' && 'items' in list.clusters) {
-return ((list.clusters as any).items || []).length;
-} else if (list.clusters && typeof list.clusters === 'object' && 'itemsFound' in list.clusters) {
-return (list.clusters as any).itemsFound || 0;
-}
+const clusters = list.clusters;
+if (!clusters) return 0;
+if (clusters.itemsFound !== undefined) return clusters.itemsFound;
+if (clusters.items) return clusters.items.length;
 return 0;
 }
 
@@ -355,7 +347,8 @@ return getProductCount(list) + getClusterCount(list);
 
 
 function getLabel(key: string, fallback: string): ReturnType<FavoriteListsState["getLabel"]>{
-return (props.labels as any)?.[key] || fallback;
+const labels = props.labels as Record<string, string> | undefined;
+return labels?.[key] || fallback;
 }
 
 

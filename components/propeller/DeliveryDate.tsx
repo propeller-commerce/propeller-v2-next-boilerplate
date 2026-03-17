@@ -147,7 +147,7 @@ set_modalOpen(false);
 }
 
 
-function handleBackdropClick(event: any) {
+function handleBackdropClick(event: Event) {
 if (event.target === event.currentTarget) {
 set_modalOpen(false);
 }
@@ -175,7 +175,7 @@ return (
   <div className="font-semibold">{getLabel('pickDate', 'Other date...')}</div>
 ) : null}</div>
 ) : null}</div>{_modalOpen ? (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"  onClick={(event) => handleBackdropClick(event) }><div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold">{getLabel('modalTitle', 'Select a delivery date')}</h3><button  type="button" className="text-gray-400 hover:text-gray-600 transition-colors"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  strokeWidth="2"  stroke="currentColor" className="w-5 h-5"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><input  type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"  min={minDate()}  value={_customDateValue}  onChange={(event) => handleCustomDateChange(event.target.value) }  /><div className="flex justify-end gap-3 mt-4"><button  type="button" className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"  onClick={(event) => closeModal() }>{getLabel('cancel', 'Cancel')}</button></div></div></div>
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"  onClick={(event) => handleBackdropClick(event as unknown as Event) }><div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold">{getLabel('modalTitle', 'Select a delivery date')}</h3><button  type="button" className="text-gray-400 hover:text-gray-600 transition-colors"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  strokeWidth="2"  stroke="currentColor" className="w-5 h-5"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><input  type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"  min={minDate()}  value={_customDateValue}  onChange={(event) => handleCustomDateChange(event.target.value) }  /><div className="flex justify-end gap-3 mt-4"><button  type="button" className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"  onClick={(event) => closeModal() }>{getLabel('cancel', 'Cancel')}</button></div></div></div>
 ) : null}</div>
 
 

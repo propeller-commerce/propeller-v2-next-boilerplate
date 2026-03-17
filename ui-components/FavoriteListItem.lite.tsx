@@ -107,7 +107,7 @@ export interface FavoriteListItemProps {
 
 interface FavoriteListItemState {
     _includeTax: boolean;
-    _priceListener: any;
+    _priceListener: (() => void) | null;
     isProduct: () => boolean;
     getProduct: () => Product;
     getCluster: () => Cluster;
@@ -117,28 +117,28 @@ interface FavoriteListItemState {
     getItemUrl: () => string;
     getItemId: () => string;
     getLabel: (key: string, fallback: string) => string;
-    handleItemClick: (e: any) => void;
+    handleItemClick: (e: Event) => void;
     handleDelete: () => void;
 }
 
 export default function FavoriteListItem(props: FavoriteListItemProps) {
     const state = useStore<FavoriteListItemState>({
         _includeTax: true,
-        _priceListener: null as any,
+        _priceListener: null as (() => void) | null,
 
-        isProduct() {
+        isProduct(): boolean {
             return 'productId' in props.item;
         },
 
-        getProduct() {
+        getProduct(): Product {
             return props.item as Product;
         },
 
-        getCluster() {
+        getCluster(): Cluster {
             return props.item as Cluster;
         },
 
-        getName() {
+        getName(): string {
             if (state.isProduct()) {
                 return state.getProduct()?.names?.[0]?.value || 'Product';
             }
@@ -146,7 +146,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 state.getCluster()?.defaultProduct?.names?.[0]?.value || 'Cluster';
         },
 
-        getSku() {
+        getSku(): string {
             if (state.isProduct()) {
                 return state.getProduct()?.sku || '';
             }
@@ -154,39 +154,39 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 state.getCluster()?.defaultProduct?.sku || '';
         },
 
-        getImageUrl() {
+        getImageUrl(): string {
             if (state.isProduct()) {
                 return state.getProduct()?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
             }
             return state.getCluster()?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
         },
 
-        getItemUrl() {
+        getItemUrl(): string {
             if (state.isProduct()) {
                 return props.configuration?.urls?.getProductUrl?.(props.item) || '';
             }
             return props.configuration?.urls?.getClusterUrl?.(props.item) || '';
         },
 
-        getItemId() {
+        getItemId(): string {
             if (state.isProduct()) {
                 return String(state.getProduct()?.productId || '');
             }
             return String(state.getCluster()?.clusterId || '');
         },
 
-        getLabel(key: string, fallback: string) {
-            return (props.labels as Record<string, string>)?.[key] || fallback;
+        getLabel(key: string, fallback: string): string {
+            return props.labels?.[key] || fallback;
         },
 
-        handleItemClick(e: any) {
+        handleItemClick(e: Event): void {
             if (props.onItemClick) {
                 e.preventDefault();
                 props.onItemClick(props.item);
             }
         },
 
-        handleDelete() {
+        handleDelete(): void {
             if (props.onDelete) {
                 props.onDelete(state.getItemId());
             }
@@ -212,7 +212,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 <Show when={props.titleLinkable !== false}>
                     <a
                         href={state.getItemUrl()}
-                        onClick={(e: any) => state.handleItemClick(e)}
+                        onClick={(e) => state.handleItemClick(e as unknown as Event)}
                         className="block h-full w-full"
                     >
                         <Show when={!!state.getImageUrl()}>
@@ -264,7 +264,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 <Show when={props.titleLinkable !== false}>
                     <a
                         href={state.getItemUrl()}
-                        onClick={(e: any) => state.handleItemClick(e)}
+                        onClick={(e) => state.handleItemClick(e as unknown as Event)}
                         className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 line-clamp-2"
                     >
                         {state.getName()}
@@ -376,7 +376,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 <Show when={!state.isProduct()}>
                     <a
                         href={state.getItemUrl()}
-                        onClick={(e: any) => state.handleItemClick(e)}
+                        onClick={(e) => state.handleItemClick(e as unknown as Event)}
                         className="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 whitespace-nowrap"
                     >
                         {state.getLabel('viewCluster', 'View cluster')}

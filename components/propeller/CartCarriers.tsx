@@ -45,7 +45,7 @@ return props.showCarrierLogo !== undefined ? props.showCarrierLogo : true;
 
 
 function carriers() {
-return (props.cart as any)?.carriers || [];
+return props.cart?.carriers || [];
 }
 
 
@@ -62,15 +62,15 @@ return '\u20AC' + Number(price || 0).toFixed(2);
 }
 
 
-function getLogoUrl(carrier: any) {
+function getLogoUrl(carrier: CartCarrier) {
 return carrier.logo || '';
 }
 
 
-function handleSelect(carrier: any) {
+function handleSelect(carrier: CartCarrier) {
 set_selectedName(carrier.name);
 if (props.onCarrierSelect) {
-props.onCarrierSelect(carrier as CartCarrier);
+props.onCarrierSelect(carrier);
 }
 }
 

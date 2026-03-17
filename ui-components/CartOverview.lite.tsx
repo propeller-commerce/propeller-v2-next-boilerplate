@@ -1,9 +1,9 @@
 import { useStore, Show } from '@builder.io/mitosis';
-import { Cart } from 'propeller-sdk-v2';
+import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
 
 export interface CartOverviewProps {
     /** GraphQL client for the Propeller SDK */
-    graphqlClient: any;
+    graphqlClient: GraphQLClient;
 
     /** Shopping cart object from which the cart overview will be displayed */
     cart: Cart;
@@ -43,39 +43,39 @@ export default function CartOverview(props: CartOverviewProps) {
         _termsAccepted: false as boolean,
         _loading: false as boolean,
 
-        get containerClass() {
+        get containerClass(): string {
             return props.overviewContainerClass || 'cart-overview';
         },
 
-        get showNotes() {
+        get showNotes(): boolean {
             return props.showNotes !== undefined ? props.showNotes : true;
         },
 
-        get showReference() {
+        get showReference(): boolean {
             return props.showReference !== undefined ? props.showReference : true;
         },
 
-        get showTermsAndConditions() {
+        get showTermsAndConditions(): boolean {
             return props.showTermsAndConditions !== undefined ? props.showTermsAndConditions : true;
         },
 
-        get showPurchaseButton() {
+        get showPurchaseButton(): boolean {
             return props.showPurchaseButton !== undefined ? props.showPurchaseButton : true;
         },
 
-        getLabel(key: string, fallback: string) {
+        getLabel(key: string, fallback: string): string {
             return props.labels?.[key] || fallback;
         },
 
-        get invoiceAddress() {
-            return (props.cart as any)?.invoiceAddress;
+        get invoiceAddress(): CartAddress {
+            return props.cart?.invoiceAddress;
         },
 
-        get deliveryAddress() {
-            return (props.cart as any)?.deliveryAddress;
+        get deliveryAddress(): CartAddress {
+            return props.cart?.deliveryAddress;
         },
 
-        formatAddress(addr: any) {
+        formatAddress(addr: CartAddress): string {
             if (!addr || !addr.street) return '';
             const parts: string[] = [];
             if (addr.company) parts.push(addr.company);
@@ -92,16 +92,16 @@ export default function CartOverview(props: CartOverviewProps) {
             return parts.join(', ');
         },
 
-        get paymentMethod() {
-            return (props.cart as any)?.paymentData?.method || '';
+        get paymentMethod(): string {
+            return props.cart?.paymentData?.method || '';
         },
 
-        get carrierName() {
-            return (props.cart as any)?.postageData?.carrier || '';
+        get carrierName(): string {
+            return props.cart?.postageData?.carrier || '';
         },
 
-        get requestDate() {
-            const date = (props.cart as any)?.postageData?.requestDate;
+        get requestDate(): string {
+            const date = props.cart?.postageData?.requestDate;
             if (!date) return '';
             try {
                 return new Date(date).toLocaleDateString();
@@ -110,32 +110,32 @@ export default function CartOverview(props: CartOverviewProps) {
             }
         },
 
-        handleReferenceChange(value: string) {
+        handleReferenceChange(value: string): void {
             state._reference = value;
         },
 
-        handleNotesChange(value: string) {
+        handleNotesChange(value: string): void {
             state._notes = value;
         },
 
-        handleTermsChange(checked: boolean) {
+        handleTermsChange(checked: boolean): void {
             state._termsAccepted = checked;
         },
 
-        handleTermsLinkClick(event: any) {
+        handleTermsLinkClick(event: Event): void {
             event.preventDefault();
             if (props.onTermsAndConditionsClick) {
                 props.onTermsAndConditionsClick();
             }
         },
 
-        get isPurchaseDisabled() {
+        get isPurchaseDisabled(): boolean {
             if (state.showTermsAndConditions && !state._termsAccepted) return true;
             if (state._loading) return true;
             return false;
         },
 
-        handlePurchaseClick() {
+        handlePurchaseClick(): void {
             if (state.isPurchaseDisabled) return;
             if (props.onPurchaseButtonClick) {
                 props.onPurchaseButtonClick(props.cart, state._reference, state._notes);
@@ -273,7 +273,7 @@ export default function CartOverview(props: CartOverviewProps) {
                             {state.getLabel('termsPrefix', 'I agree to the')}{' '}
                             <a
                                 href="#"
-                                onClick={(event) => state.handleTermsLinkClick(event)}
+                                onClick={(event) => state.handleTermsLinkClick(event as unknown as Event)}
                                 className="text-violet-600 hover:underline font-medium"
                             >
                                 {state.getLabel('termsLink', 'Terms and Conditions')}

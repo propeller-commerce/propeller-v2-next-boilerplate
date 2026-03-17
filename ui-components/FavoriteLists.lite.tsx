@@ -141,10 +141,10 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                 const isContact = 'contactId' in props.user;
                 const searchInput: FavoriteListsSearchInput = {};
 
-                if (isContact && (props.user as any).contactId) {
-                    searchInput.contactId = (props.user as any).contactId;
-                } else if (!isContact && (props.user as any).customerId) {
-                    searchInput.customerId = (props.user as any).customerId;
+                if (isContact) {
+                    searchInput.contactId = (props.user as Contact).contactId;
+                } else {
+                    searchInput.customerId = (props.user as Customer).customerId;
                 }
 
                 const response = await service.getFavoriteLists(searchInput);
@@ -273,16 +273,14 @@ export default function FavoriteLists(props: FavoriteListsProps) {
             try {
                 const service = new FavoriteListService(props.graphqlClient);
                 const isContact = 'contactId' in props.user;
-                const input: any = {
+                const contactId = isContact ? (props.user as Contact).contactId : undefined;
+                const customerId = !isContact ? (props.user as Customer).customerId : undefined;
+                await service.createFavoriteList({
                     name: formData.name,
                     isDefault: formData.isDefault,
-                };
-                if (isContact && (props.user as any).contactId) {
-                    input.contactId = (props.user as any).contactId;
-                } else if (!isContact && (props.user as any).customerId) {
-                    input.customerId = (props.user as any).customerId;
-                }
-                await service.createFavoriteList(input);
+                    contactId: contactId,
+                    customerId: customerId,
+                } as Parameters<FavoriteListService['createFavoriteList']>[0]);
 
                 state.newListName = '';
                 state.newSetAsDefault = false;
@@ -295,7 +293,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
             }
         },
 
-        formatDate(dateString: string) {
+        formatDate(dateString: string): string {
             if (props.formatDate) return props.formatDate(dateString);
             if (!dateString) return '-';
             const d = new Date(dateString);
@@ -305,37 +303,32 @@ export default function FavoriteLists(props: FavoriteListsProps) {
             return `${day}/${month}/${year}`;
         },
 
-        getProductCount(list: FavoriteList) {
-            if (Array.isArray(list.products)) {
-                return list.products.length;
-            } else if (list.products && typeof list.products === 'object' && 'items' in list.products) {
-                return ((list.products as any).items || []).length;
-            } else if (list.products && typeof list.products === 'object' && 'itemsFound' in list.products) {
-                return (list.products as any).itemsFound || 0;
-            }
+        getProductCount(list: FavoriteList): number {
+            const products = list.products;
+            if (!products) return 0;
+            if (products.itemsFound !== undefined) return products.itemsFound;
+            if (products.items) return products.items.length;
             return 0;
         },
 
-        getClusterCount(list: FavoriteList) {
-            if (Array.isArray(list.clusters)) {
-                return list.clusters.length;
-            } else if (list.clusters && typeof list.clusters === 'object' && 'items' in list.clusters) {
-                return ((list.clusters as any).items || []).length;
-            } else if (list.clusters && typeof list.clusters === 'object' && 'itemsFound' in list.clusters) {
-                return (list.clusters as any).itemsFound || 0;
-            }
+        getClusterCount(list: FavoriteList): number {
+            const clusters = list.clusters;
+            if (!clusters) return 0;
+            if (clusters.itemsFound !== undefined) return clusters.itemsFound;
+            if (clusters.items) return clusters.items.length;
             return 0;
         },
 
-        getTotalCount(list: FavoriteList) {
+        getTotalCount(list: FavoriteList): number {
             return state.getProductCount(list) + state.getClusterCount(list);
         },
 
-        getLabel(key: string, fallback: string) {
-            return (props.labels as any)?.[key] || fallback;
+        getLabel(key: string, fallback: string): string {
+            const labels = props.labels as Record<string, string> | undefined;
+            return labels?.[key] || fallback;
         },
 
-        get displayedLists() {
+        get displayedLists(): FavoriteList[] {
             if (props.limit && props.limit > 0) {
                 // Sort by updatedAt descending, then take the first N
                 const sorted = [...state.lists].sort((a: FavoriteList, b: FavoriteList) => {

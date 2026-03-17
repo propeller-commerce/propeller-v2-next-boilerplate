@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`group relative flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
+    :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
       isRow() ? 'flex-row items-center' : 'flex-col'
     } ${className || ''}`"
   >

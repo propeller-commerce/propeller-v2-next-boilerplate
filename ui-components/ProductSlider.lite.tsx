@@ -434,11 +434,13 @@ export default function ProductSlider(props: ProductSliderProps) {
 
     onUpdate(() => {
         state.doFetch();
-    }, [props.productIds, props.clusterIds]);
+        // NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
+    }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds)]);
 
     onUpdate(() => {
         state.doFetch();
-    }, [props.crossUpsellTypes, props.productId, props.clusterId]);
+        // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
+    }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
 
     return (
         <Show when={!(state.isCrossUpsellMode() && !state._isLoading && state.items().length === 0)}>

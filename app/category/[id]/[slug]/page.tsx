@@ -15,6 +15,7 @@ import CategoryDescription from '@/components/propeller/CategoryDescription';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import { useCart } from '@/context/CartContext';
+import { usePrice } from '@/context/PriceContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
@@ -42,6 +43,7 @@ export default function CategoryPage() {
   const { state } = useAuth();
   const { cart, addToCart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
+  const { includeTax } = usePrice();
 
   // CMS banner
   const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
@@ -244,6 +246,7 @@ export default function CategoryPage() {
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}
+                includeTax={includeTax}
                 onCartCreated={(cart) => {
                   saveCart(cart);
                 }}

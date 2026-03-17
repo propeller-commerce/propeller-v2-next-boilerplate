@@ -2,102 +2,405 @@ import { useStore, Show, For, onMount, onUpdate } from '@builder.io/mitosis';
 import {
     GraphQLClient,
     BundleService,
+    CartService,
+    BundleQueryVariables,
     Contact,
     Customer,
+    Cart,
+    Enums,
+    CartAddBundleVariables,
+    CartSearchInput,
+    Bundle,
+    CartQueryVariables,
+    CartStartInput,
+    CartStartVariables,
+    Address,
 } from 'propeller-sdk-v2';
 
 export interface ProductBundlesProps {
+    // === Core ===
+
+    /** GraphQL client instance used to fetch bundle data. */
     graphqlClient: GraphQLClient;
+
+    /** ID of the product whose bundles should be fetched. */
     productId: number;
+
+    /** Language code used for content (e.g. 'NL', 'EN'). */
     language: string;
+
+    /** Tax zone code used for pricing (e.g. 'NL'). */
     taxZone: string;
+
+    // === Pricing ===
+
+    /**
+     * When true, net price (incl. tax) is the leading price.
+     * Defaults to reading `localStorage('price_include_tax')`, falling back to `true`.
+     * Note: in the Propeller SDK `price.gross` = excl. VAT, `price.net` = incl. VAT.
+     */
     includeTax?: boolean;
+
+    // === Portal / visibility ===
+
+    /**
+     * Controls portal visibility mode.
+     * 'semi-closed' — prices and add-to-cart are hidden for anonymous users.
+     * Defaults to 'open'.
+     */
     portalMode?: string;
+
+    /** Authenticated user — used for semi-closed visibility check. */
     user?: Contact | Customer | null;
+
+    /** Cart ID — required when onAddToCart is not provided */
+    cartId?: string;
+
+    /**
+     * Callback to handle a new cart being created.
+     * WARNING: If not provided the component create new carts on every add-to-cart.
+     */
+    onCartCreated?: (cart: Cart) => void;
+
+    /**
+     * If true a new cart is created if no cart ID is provided.
+     * Defaults to false.
+     */
+    createCart?: boolean;
+
+    // === Display options ===
+
+    /** When true, stock availability is validated before adding to cart. */
     stockValidation?: boolean;
+
+    /**
+     * When true, the individual bundle items are listed inside each bundle card.
+     * Defaults to true.
+     */
     showIndividualItems?: boolean;
+
+    /** Additional configuration object passed through to the component. */
+    configuration?: any;
+
+    /**
+     * Layout variant for the bundle display.
+     * - 'vertical' — stacked layout
+     * - 'horizontal' — side-by-side (default)
+     * - 'compact' — condensed, hides individual items
+     */
     layout?: 'vertical' | 'horizontal' | 'compact';
+
+    /**
+     * Override any UI string.
+     * Available keys: title, condition_ALL, condition_EP, leaderItem,
+     * youSave, adding, addToCart, loginToSeePrices, addedToCart,
+     * modalTitle, continueShopping, proceedToCheckout, noCartId
+     */
     labels?: Record<string, string>;
-    onAddBundleToCart: (bundleId: string, quantity: number) => void;
+
+    // === Modal / feedback ===
+
+    /**
+     * When true a modal popup is shown after a successful add-to-cart
+     * with buttons to continue shopping or proceed to checkout.
+     * Defaults to false (only a brief inline toast is shown).
+     */
+    showModal?: boolean;
+
+    /** Callback fired when the "Proceed to checkout" modal button is clicked */
+    onProceedToCheckout?: () => void;
+
+    // === Callbacks ===
+
+    /**
+     * Callback triggered before adding the bundle to cart.
+     */
+    beforeBundleAddToCart?: (bundleId: string, quantity: number) => boolean;
+
+    /** Called when the user clicks "Add bundle to cart". Receives bundleId and quantity (always 1). */
+    onAddBundleToCart?: (bundleId: string, quantity: number) => void;
+
+    /**
+     * Callback triggered after adding the bundle to cart.
+     */
+    afterBundleAddToCart?: (cart: Cart, bundle?: Bundle) => void;
+
+    /** Extra CSS class applied to the root wrapper element. */
     className?: string;
 }
 
+interface ProductBundlesState {
+    _bundles: any[];
+    _isLoading: boolean;
+    _includeTax: boolean;
+    _isMounted: boolean;
+    _addingBundleId: string | null;
+    _lastAddedBundle: Bundle | null;
+    activeCartId: string;
+    toastMessage: string;
+    toastType: string;
+    toastVisible: boolean;
+    modalVisible: boolean;
+
+    getIncludeTax: () => boolean;
+    getShowItems: () => boolean;
+    getLayout: () => string;
+    getIsAnonymous: () => boolean;
+    getHidePrices: () => boolean;
+    getLabel: (key: string, fallback: string) => string;
+    formatPrice: (value: number) => string;
+    getBundlePrice: (bundle: any) => number;
+    getOriginalPrice: (bundle: any) => number;
+    getItemPrice: (item: any) => number;
+    hasDiscount: (bundle: any) => boolean;
+    getDiscountPercentage: (bundle: any) => number;
+    getProductImage: (product: any) => string;
+    getProductName: (product: any) => string;
+    showToast: (message: string, type: string) => void;
+    dismissToast: () => void;
+    closeModal: () => void;
+    fetchBundles: () => Promise<void>;
+    handleAddToCart: (bundle: Bundle) => void;
+    initCart: () => Promise<void>;
+}
+
 export default function ProductBundles(props: ProductBundlesProps) {
-    const state = useStore({
-        _bundles: [] as any[],
+    const state = useStore<ProductBundlesState>({
+        _bundles: [] as Bundle[],
         _isLoading: false,
         _includeTax: true,
-        _priceListener: null as any,
         _isMounted: false,
         _addingBundleId: null as string | null,
+        _lastAddedBundle: null as Bundle | null,
+        activeCartId: '',
+        toastMessage: '',
+        toastType: '',
+        toastVisible: false,
+        modalVisible: false,
 
-        get includeTax() {
-            return props.includeTax !== undefined ? props.includeTax : state._includeTax;
+        getIncludeTax(): boolean {
+            return props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
         },
 
-        get showItems() {
-            return props.showIndividualItems !== undefined ? props.showIndividualItems : true;
+        getShowItems(): boolean {
+            return props.showIndividualItems !== undefined ? !!(props.showIndividualItems) : true;
         },
 
-        get layout() {
-            return props.layout || 'horizontal';
+        getLayout(): string {
+            return (props.layout as string) || 'horizontal';
         },
 
-        get isAnonymous() {
+        getIsAnonymous(): boolean {
             return !props.user;
         },
 
-        get hidePrices() {
-            return props.portalMode === 'semi-closed' && state.isAnonymous;
+        getHidePrices(): boolean {
+            return (props.portalMode as string) === 'semi-closed' && state.getIsAnonymous();
         },
 
-        getLabel(key: string, fallback: string) {
-            return props.labels?.[key] || fallback;
+        getLabel(key: string, fallback: string): string {
+            const val = (props.labels as Record<string, string>)?.[key];
+            return val !== undefined ? val : fallback;
         },
 
-        formatPrice(value: number) {
-            return '\u20AC' + value.toFixed(2);
+        formatPrice(value: number): string {
+            return '\u20AC' + Number(value).toFixed(2);
         },
 
-        getBundlePrice(bundle: any) {
-            return state.includeTax ? bundle.price?.net || 0 : bundle.price?.gross || 0;
+        getBundlePrice(bundle: any): number {
+            return state.getIncludeTax() ? bundle.price?.net || 0 : bundle.price?.gross || 0;
         },
 
-        getOriginalPrice(bundle: any) {
-            return state.includeTax ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
+        getOriginalPrice(bundle: any): number {
+            return state.getIncludeTax() ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
         },
 
-        getItemPrice(item: any) {
-            return state.includeTax ? item.price?.net || 0 : item.price?.gross || 0;
+        getItemPrice(item: any): number {
+            return state.getIncludeTax() ? item.price?.net || 0 : item.price?.gross || 0;
         },
 
-        hasDiscount(bundle: any) {
-            const current = state.getBundlePrice(bundle);
-            const original = state.getOriginalPrice(bundle);
+        hasDiscount(bundle: any): boolean {
+            const current: number = state.getBundlePrice(bundle);
+            const original: number = state.getOriginalPrice(bundle);
             return original > 0 && current < original;
         },
 
-        getDiscountPercentage(bundle: any) {
-            const original = state.getOriginalPrice(bundle);
+        getDiscountPercentage(bundle: any): number {
+            const original: number = state.getOriginalPrice(bundle);
             if (original <= 0) return 0;
             return Math.round(((original - state.getBundlePrice(bundle)) / original) * 100);
         },
 
-        getProductImage(product: any) {
+        getProductImage(product: any): string {
             return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
         },
 
-        getProductName(product: any) {
+        getProductName(product: any): string {
             return product?.names?.[0]?.value || '';
         },
 
-        async fetchBundles() {
+        showToast(message: string, type: string) {
+            state.toastMessage = message;
+            state.toastType = type;
+            state.toastVisible = true;
+            setTimeout(() => {
+                state.toastVisible = false;
+            }, 3000);
+        },
+
+        dismissToast() {
+            state.toastVisible = false;
+        },
+
+        closeModal() {
+            state.modalVisible = false;
+            state._lastAddedBundle = null;
+        },
+
+        async initCart() {
+            const cartService = new CartService(props.graphqlClient);
+            // 1. Check for existing carts for this user first
+            if (props.user) {
+                try {
+                    const searchInput: CartSearchInput = {
+                        offset: 100
+                    };
+
+                    if ('contactId' in props.user && props.user.contactId) {
+                        searchInput.contactIds = [props.user.contactId];
+                        if (props.user.company && 'companyId' in props.user.company && props.user.company.companyId) {
+                            searchInput.companyIds = [props.user.company.companyId];
+                        }
+                    } else if ('customerId' in props.user && props.user.customerId) {
+                        searchInput.customerIds = [props.user.customerId];
+                    }
+
+                    const carts = await cartService.getCarts(searchInput);
+
+                    if (carts && carts.items && carts.items.length > 0) {
+                        const cartId = carts.items[carts.items.length - 1].cartId;
+
+                        const cartVariables: CartQueryVariables = {
+                            cartId: cartId,
+                            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+                            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+                            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+                        };
+
+                        const cart = await cartService.getCart(cartVariables);
+
+                        state.activeCartId = cart.cartId;
+
+                        if (props.onCartCreated) {
+                            props.onCartCreated(cart);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to check existing carts", e);
+                }
+            }
+
+            // 2. Start a new cart
+            const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+            const startCartInput: CartStartInput = { language };
+
+            if (props.user) {
+                if ('contactId' in props.user && props.user.contactId) {
+                    startCartInput.contactId = props.user.contactId;
+                    if ('companyId' in props.user && props.user.companyId) {
+                        startCartInput.companyId = props.user.companyId as number;
+                    }
+                } else if ('customerId' in props.user && props.user.customerId) {
+                    startCartInput.customerId = props.user.customerId;
+                }
+            }
+
+            const cartStartVars: CartStartVariables = {
+                input: startCartInput,
+                imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+                imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+                language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+            };
+
+            let newCart = await cartService.startCart(cartStartVars);
+
+            // 3. Assign Default Addresses
+            if (newCart && props.user) {
+                const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
+
+                if (addresses && Array.isArray(addresses)) {
+                    const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');
+                    const defaultDelivery = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery');
+
+                    if (defaultInvoice) {
+                        newCart = await cartService.updateCartAddress({
+                            id: newCart.cartId,
+                            input: {
+                                type: Enums.CartAddressType.INVOICE,
+                                firstName: defaultInvoice.firstName || '',
+                                lastName: defaultInvoice.lastName || '',
+                                street: defaultInvoice.street || '',
+                                postalCode: defaultInvoice.postalCode || '',
+                                city: defaultInvoice.city || '',
+                                country: defaultInvoice.country || 'NL',
+                                company: defaultInvoice.company || '',
+                                gender: defaultInvoice.gender || Enums.Gender.U,
+                                middleName: defaultInvoice.middleName || '',
+                                number: defaultInvoice.number || '',
+                                numberExtension: defaultInvoice.numberExtension || '',
+                                email: defaultInvoice.email || '',
+                                mobile: defaultInvoice.mobile || '',
+                                phone: defaultInvoice.phone || '',
+                                notes: defaultInvoice.notes || ''
+                            },
+                            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+                            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+                            language: language
+                        });
+                    }
+
+                    if (defaultDelivery) {
+                        newCart = await cartService.updateCartAddress({
+                            id: newCart.cartId,
+                            input: {
+                                type: Enums.CartAddressType.DELIVERY,
+                                firstName: defaultDelivery.firstName || '',
+                                lastName: defaultDelivery.lastName || '',
+                                street: defaultDelivery.street || '',
+                                postalCode: defaultDelivery.postalCode || '',
+                                city: defaultDelivery.city || '',
+                                country: defaultDelivery.country || 'NL',
+                                company: defaultDelivery.company || '',
+                                gender: defaultDelivery.gender || Enums.Gender.U,
+                                middleName: defaultDelivery.middleName || '',
+                                number: defaultDelivery.number || '',
+                                numberExtension: defaultDelivery.numberExtension || '',
+                                email: defaultDelivery.email || '',
+                                mobile: defaultDelivery.mobile || '',
+                                phone: defaultDelivery.phone || '',
+                                notes: defaultDelivery.notes || ''
+                            },
+                            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+                            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+                            language: language
+                        });
+                    }
+                }
+            }
+
+            state.activeCartId = newCart.cartId;
+
+            if (props.onCartCreated) {
+                props.onCartCreated(newCart);
+            }
+        },
+
+        async fetchBundles(): Promise<void> {
             if (!props.graphqlClient || !props.productId) return;
             state._isLoading = true;
             try {
                 const bundleService = new BundleService(props.graphqlClient);
-                // SDK bug workaround: getBundles() doesn't pass language/image variables
-                const result = await (bundleService as any).executeQuery('bundles', {
+                const productBundlesQueryVariables: BundleQueryVariables = {
                     input: {
                         productIds: [props.productId],
                         taxZone: props.taxZone || 'NL',
@@ -105,15 +408,13 @@ export default function ProductBundles(props: ProductBundlesProps) {
                         offset: 20,
                     },
                     language: props.language || 'NL',
-                    imageSearchFilters: { page: 1, offset: 1 },
-                    imageVariantFilters: {
-                        transformations: [{
-                            name: 'bundle',
-                            transformation: { format: 'WEBP', height: 200, width: 200, fit: 'BOUNDS' },
-                        }],
-                    },
-                });
-                state._bundles = result?.data?.bundles?.items || [];
+                    imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+                    imageVariantFilters: props.configuration?.imageVariantFiltersMedium
+                };
+
+                const result = await bundleService.getBundles(productBundlesQueryVariables);
+
+                state._bundles = result?.items || [];
             } catch (e) {
                 state._bundles = [];
             } finally {
@@ -121,27 +422,75 @@ export default function ProductBundles(props: ProductBundlesProps) {
             }
         },
 
-        handleAddToCart(bundleId: string) {
+        async handleAddToCart(bundle: Bundle): Promise<void> {
             if (state._addingBundleId) return;
-            state._addingBundleId = bundleId;
-            props.onAddBundleToCart(bundleId, 1);
-            setTimeout(() => { state._addingBundleId = null; }, 1500);
+
+            state._addingBundleId = bundle.id;
+
+            try {
+                if (props.onAddBundleToCart) {
+                    props.onAddBundleToCart(bundle.id, 1);
+                } else {
+                    if (!props.graphqlClient) return;
+                    if (props.beforeBundleAddToCart) {
+                        props.beforeBundleAddToCart(bundle.id, 1);
+                    }
+
+                    // Internal CartService fallback — resolve cart ID
+                    let cartId = props.cartId || state.activeCartId;
+
+                    if (!cartId) {
+                        if (props.createCart) {
+                            await state.initCart();
+                            cartId = state.activeCartId;
+                        }
+
+                        if (!cartId) {
+                            state.showToast(state.getLabel('noCartId', 'No cart ID provided'), 'error');
+                            return;
+                        }
+                    }
+
+                    const cartService = new CartService(props.graphqlClient);
+                    const cartAddBundleVariables: CartAddBundleVariables = {
+                        id: cartId,
+                        input: {
+                            bundleId: bundle.id,
+                            quantity: 1,
+                        },
+                        language: props.language || 'NL',
+                        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+                        imageVariantFilters: props.configuration?.imageVariantFiltersSmall
+                    };
+
+                    const cart = await cartService.addBundleToCart(cartAddBundleVariables);
+
+                    if (props.afterBundleAddToCart) {
+                        props.afterBundleAddToCart(cart, bundle);
+                    }
+                }
+
+                if (props.showModal) {
+                    state._lastAddedBundle = bundle;
+                    state.modalVisible = true;
+                } else {
+                    const bundleName = (bundle as any).name || state.getLabel('title', 'Bundle');
+                    state.showToast(`${bundleName} ${state.getLabel('addedToCart', 'added to cart')}`, 'success');
+                }
+            } catch (error) {
+                console.error('Error adding bundle to cart:', error);
+                state.showToast(state.getLabel('errorAdding', 'Failed to add bundle to cart'), 'error');
+            } finally {
+                state._addingBundleId = null;
+            }
         },
+
+
     });
 
     onMount(() => {
         state._isMounted = true;
         state.fetchBundles();
-
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state._includeTax = stored === null ? true : stored === 'true';
-            state._priceListener = () => {
-                const val = localStorage.getItem('price_include_tax');
-                state._includeTax = val === null ? true : val === 'true';
-            };
-            window.addEventListener('priceToggleChanged', state._priceListener);
-        }
     });
 
     onUpdate(() => {
@@ -160,7 +509,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                     <h3 className="text-lg font-bold">
                                         {bundle.name || state.getLabel('title', 'Combo deal')}
                                     </h3>
-                                    <Show when={!state.hidePrices && state.hasDiscount(bundle)}>
+                                    <Show when={!state.getHidePrices() && state.hasDiscount(bundle)}>
                                         <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-0.5 rounded">
                                             -{state.getDiscountPercentage(bundle)}%
                                         </span>
@@ -176,7 +525,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                             </div>
 
                             {/* Bundle items */}
-                            <Show when={state.showItems && state.layout !== 'compact' && bundle.items && bundle.items.length > 0}>
+                            <Show when={state.getShowItems() && state.getLayout() !== 'compact' && bundle.items && bundle.items.length > 0}>
                                 <div className="p-4">
                                     <For each={bundle.items}>
                                         {(item: any, idx: number) => (
@@ -197,7 +546,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                                     <Show when={item.product?.sku}>
                                                         <div className="text-xs text-gray-500">SKU: {item.product.sku}</div>
                                                     </Show>
-                                                    <Show when={!state.hidePrices && item.price}>
+                                                    <Show when={!state.getHidePrices() && item.price}>
                                                         <div className="text-sm text-gray-700 mt-0.5">
                                                             {state.formatPrice(state.getItemPrice(item))}
                                                         </div>
@@ -215,7 +564,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                             </Show>
 
                             {/* Bundle pricing + add to cart */}
-                            <Show when={!state.hidePrices}>
+                            <Show when={!state.getHidePrices()}>
                                 <div className="flex items-center justify-between p-4 border-t bg-white">
                                     <div className="flex items-center gap-4">
                                         <Show when={state.hasDiscount(bundle)}>
@@ -233,7 +582,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                         </Show>
                                     </div>
                                     <button
-                                        onClick={() => state.handleAddToCart(bundle.id)}
+                                        onClick={() => state.handleAddToCart(bundle)}
                                         disabled={state._addingBundleId === bundle.id}
                                         className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
@@ -245,7 +594,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                             </Show>
 
                             {/* Semi-closed: login prompt */}
-                            <Show when={state.hidePrices}>
+                            <Show when={state.getHidePrices()}>
                                 <div className="p-4 border-t bg-gray-50 text-center text-sm text-gray-500">
                                     {state.getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
                                 </div>
@@ -253,6 +602,102 @@ export default function ProductBundles(props: ProductBundlesProps) {
                         </div>
                     )}
                 </For>
+
+                {/* Toast notification — fixed top-right, auto-dismisses after 3 s */}
+                <Show when={state.toastVisible}>
+                    <div className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${state.toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                        <div className={`flex-shrink-0 w-5 h-5 mt-0.5 ${state.toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                            <Show when={state.toastType === 'success'}>
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </Show>
+                            <Show when={state.toastType === 'error'}>
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                </svg>
+                            </Show>
+                        </div>
+                        <p className={`flex-1 text-sm font-medium ${state.toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                            {state.toastMessage}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => state.dismissToast()}
+                            className={`flex-shrink-0 rounded focus:outline-none ${state.toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </Show>
+
+                {/* Success modal */}
+                <Show when={state.modalVisible}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                        {/* Slightly opaque backdrop */}
+                        <div className="fixed inset-0 bg-gray-500/20" onClick={() => state.closeModal()} />
+
+                        {/* Panel */}
+                        <div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
+
+                            {/* Title bar */}
+                            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+                                <svg className="h-5 w-5 flex-shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <h3 className="flex-1 text-base font-semibold text-gray-900">
+                                    {state.getLabel('modalTitle', 'Bundle added to cart')}
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => state.closeModal()}
+                                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                >
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Bundle info */}
+                            <div className="px-6 py-5 flex items-start gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {(state._lastAddedBundle as any)?.name || state.getLabel('title', 'Bundle')}
+                                    </p>
+                                    <Show when={!state.getHidePrices() && state._lastAddedBundle}>
+                                        <p className="text-sm font-semibold text-blue-600 mt-1">
+                                            {state.formatPrice(state.getBundlePrice(state._lastAddedBundle))}
+                                        </p>
+                                    </Show>
+                                </div>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => state.closeModal()}
+                                    className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                >
+                                    {state.getLabel('continueShopping', 'Continue shopping')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        state.closeModal();
+                                        if (props.onProceedToCheckout) props.onProceedToCheckout();
+                                    }}
+                                    className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                >
+                                    {state.getLabel('proceedToCheckout', 'Proceed to checkout')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Show>
             </div>
         </Show>
     );

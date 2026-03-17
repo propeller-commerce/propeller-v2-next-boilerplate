@@ -115,7 +115,7 @@ const [_loading, set_loading] = useState<CartItemState["_loading"]>(() => (false
 const [_deleting, set_deleting] = useState<CartItemState["_deleting"]>(() => (false))
 
 
-const [_notesTimeout, set_notesTimeout] = useState<CartItemState["_notesTimeout"]>(() => (null as unknown))
+const [_notesTimeout, set_notesTimeout] = useState<CartItemState["_notesTimeout"] | null>(() => null)
 
 
 const [_crossupsells, set_crossupsells] = useState<CartItemState["_crossupsells"]>(() => ([]))

@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
 } from '@builder.io/mitosis';
 import {
     Cluster,
@@ -104,6 +105,8 @@ export interface ClusterCardProps {
 
 interface ClusterCardState {
     isFavorite: boolean;
+    _includeTax: boolean;
+    _priceListener: any;
     isRow: () => boolean;
     getClusterName: () => string;
     getClusterSku: () => string;
@@ -124,6 +127,8 @@ interface ClusterCardState {
 export default function ClusterCard(props: ClusterCardProps) {
     const state = useStore<ClusterCardState>({
         isFavorite: false,
+        _includeTax: true,
+        _priceListener: null as any,
 
         isRow() {
             return (props.columns as number) === 1;
@@ -251,6 +256,18 @@ export default function ClusterCard(props: ClusterCardProps) {
                         item.value.length > 0,
                 );
         },
+    });
+
+    onMount(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('price_include_tax');
+            state._includeTax = stored === null ? true : stored === 'true';
+            state._priceListener = () => {
+                const val = localStorage.getItem('price_include_tax');
+                state._includeTax = val === null ? true : val === 'true';
+            };
+            window.addEventListener('priceToggleChanged', state._priceListener);
+        }
     });
 
     return (
@@ -419,7 +436,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                 <Show when={!!(props.cluster as Cluster).defaultProduct?.price}>
                     <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
                         <ProductPriceDisplay
-                            includeTax={props.includeTax}
+                            includeTax={props.includeTax !== undefined ? props.includeTax : state._includeTax}
                             price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}
                             options={(props.cluster as Cluster).options}
                             priceSize={state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}

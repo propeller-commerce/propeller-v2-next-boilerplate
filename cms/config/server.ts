@@ -1,6 +1,8 @@
 export default ({ env }: { env: any }) => ({
-  host: env('HOST', '0.0.0.0'),
+  host: env('HOST', '127.0.0.1'),
   port: env.int('PORT', 1337),
+  url: '/cms', 
+  proxy: true, 
   app: {
     keys: env.array('APP_KEYS'),
   },

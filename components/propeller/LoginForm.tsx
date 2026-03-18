@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react'
-  import  { Contact, Customer, GraphQLClient, LoginService, UserService, LoginInput } from 'propeller-sdk-v2';
+  import  { Contact, Customer, GraphQLClient, LoginService, UserService, LoginInput, ViewerResult } from 'propeller-sdk-v2';
 
 
 
@@ -30,7 +30,7 @@ subtitle?: string;
 displayForgotPasswordLink?: boolean;
 
 /** Action for the password reset link click */
-onForgotPasswordClick?: () => void;
+onForgotPasswordClick?: (event?: any) => void;
 
 /** Show/hide the registration link
  * @default true
@@ -38,7 +38,7 @@ onForgotPasswordClick?: () => void;
 displayRegisterLink?: boolean;
 
 /** Action for the registration link click */
-onRegisterClick?: () => void;
+onRegisterClick?: (event?: any) => void;
 
 /** Show/hide the guest checkout link
  * @default true
@@ -46,7 +46,7 @@ onRegisterClick?: () => void;
 displayGuestCheckoutLink?: boolean;
 
 /** Action for the guest checkout link click */
-onGuestCheckoutClick?: () => void;
+onGuestCheckoutClick?: (event?: any) => void;
 
 /** Label for the submit button
  * @default "Login"
@@ -98,143 +98,166 @@ afterLogin?: (user: Contact | Customer, accessToken?: string, refreshToken?: str
  */
 accountHeaderLoginForm?: boolean;
 }
+interface LoginFormState {
+email: string;
+password: string;
+loading: boolean;
+error: string;
+getLabel: (key: string, fallback: string) => string;
+emailLabel: () => string;
+passwordLabel: () => string;
+emailPlaceholder: () => string;
+passwordPlaceholder: () => string;
+forgotPasswordText: () => string;
+registerText: () => string;
+registerLinkText: () => string;
+guestCheckoutLinkText: () => string;
+resolvedTitle: () => string;
+resolvedButtonText: () => string;
+showForgotPassword: () => boolean;
+showRegister: () => boolean;
+showGuestCheckout: () => boolean;
+isLoading: () => boolean;
+errorMessage: () => string;
+handleSubmit: (e: any) => Promise<void>;
+}
 
 
 
 
   function LoginForm(props:LoginFormProps) {
 
-  const [_email, set_email] = useState(() => (''))
+  const [email, setEmail] = useState<LoginFormState["email"]>(() => (''))
 
 
-const [_password, set_password] = useState(() => (''))
+const [password, setPassword] = useState<LoginFormState["password"]>(() => (''))
 
 
-const [_loading, set_loading] = useState(() => (false))
+const [loading, setLoading] = useState<LoginFormState["loading"]>(() => (false))
 
 
-const [_error, set_error] = useState(() => (''))
+const [error, setError] = useState<LoginFormState["error"]>(() => (''))
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<LoginFormState["getLabel"]>{
 return (props.labels as any)?.[key] || fallback;
 }
 
 
-function emailLabel() {
+function emailLabel(): ReturnType<LoginFormState["emailLabel"]>{
 return props.labels?.email || 'Email';
 }
 
 
-function passwordLabel() {
+function passwordLabel(): ReturnType<LoginFormState["passwordLabel"]>{
 return props.labels?.password || 'Password';
 }
 
 
-function emailPlaceholder() {
+function emailPlaceholder(): ReturnType<LoginFormState["emailPlaceholder"]>{
 return props.labels?.emailPlaceholder || 'name@example.com';
 }
 
 
-function passwordPlaceholder() {
+function passwordPlaceholder(): ReturnType<LoginFormState["passwordPlaceholder"]>{
 return props.labels?.passwordPlaceholder || '••••••••';
 }
 
 
-function forgotPasswordText() {
+function forgotPasswordText(): ReturnType<LoginFormState["forgotPasswordText"]>{
 return props.labels?.forgotPassword || 'Forgot password?';
 }
 
 
-function registerText() {
+function registerText(): ReturnType<LoginFormState["registerText"]>{
 return props.labels?.registerText || "Don't have an account?";
 }
 
 
-function registerLinkText() {
+function registerLinkText(): ReturnType<LoginFormState["registerLinkText"]>{
 return props.labels?.registerLink || 'Create an Account';
 }
 
 
-function guestCheckoutLinkText() {
+function guestCheckoutLinkText(): ReturnType<LoginFormState["guestCheckoutLinkText"]>{
 return props.labels?.guestCheckoutLink || 'Continue as Guest';
 }
 
 
-function resolvedTitle() {
+function resolvedTitle(): ReturnType<LoginFormState["resolvedTitle"]>{
 return props.title !== undefined ? props.title : 'Log in';
 }
 
 
-function resolvedButtonText() {
+function resolvedButtonText(): ReturnType<LoginFormState["resolvedButtonText"]>{
 return props.buttonText || 'Login';
 }
 
 
-function showForgotPassword() {
+function showForgotPassword(): ReturnType<LoginFormState["showForgotPassword"]>{
 return props.displayForgotPasswordLink !== false;
 }
 
 
-function showRegister() {
+function showRegister(): ReturnType<LoginFormState["showRegister"]>{
 return props.displayRegisterLink !== false;
 }
 
 
-function showGuestCheckout() {
+function showGuestCheckout(): ReturnType<LoginFormState["showGuestCheckout"]>{
 return props.displayGuestCheckoutLink !== false;
 }
 
 
-function isLoading() {
+function isLoading(): ReturnType<LoginFormState["isLoading"]>{
 // Self-contained mode uses internal state; delegation mode uses prop
 if (props.onLoginSubmit) {
 return props.loginLoading === true;
 }
-return _loading;
+return loading;
 }
 
 
-function errorMessage() {
+function errorMessage(): ReturnType<LoginFormState["errorMessage"]>{
 // Self-contained mode uses internal state; delegation mode uses prop
 if (props.onLoginSubmit) {
 return props.loginError || '';
 }
-return _error;
+return error;
 }
 
 
-async function handleSubmit(e: any) {
+async function handleSubmit(e: any): ReturnType<LoginFormState["handleSubmit"]>{
 e.preventDefault();
 if (props.beforeLogin) {
 props.beforeLogin();
 }
 if (props.onLoginSubmit) {
 // Delegation mode: parent handles authentication
-props.onLoginSubmit(_email, _password);
+props.onLoginSubmit(email, password);
 return;
 }
 
 // Self-contained mode: handle login via SDK
 if (!props.graphqlClient) {
-set_error('Login is not configured. Please provide graphqlClient or onLoginSubmit.');
+setError('Login is not configured. Please provide graphqlClient or onLoginSubmit.');
 return;
 }
-if (_loading) return;
-set_loading(true);
-set_error('');
+if (loading) return;
+setLoading(true);
+setError('');
 try {
 const loginService = new LoginService(props.graphqlClient as GraphQLClient);
 const userService = new UserService(props.graphqlClient as GraphQLClient);
 const loginInput: LoginInput = {
-  email: _email,
-  password: _password
+  email: email,
+  password: password
 };
 const loginResponse = await loginService.login(loginInput);
-if (!(loginResponse as any)?.session) {
+if (!loginResponse?.session) {
   throw new Error('Invalid response: No session data received');
 }
-const session = (loginResponse as any).session;
+const session = loginResponse.session;
 const accessToken = session.accessToken;
 const refreshToken = session.refreshToken;
 if (!accessToken || !refreshToken) {
@@ -242,8 +265,8 @@ if (!accessToken || !refreshToken) {
 }
 
 // Update GraphQL client with auth header
-const currentConfig = (props.graphqlClient as any).getConfig();
-(props.graphqlClient as any).updateConfig({
+const currentConfig = props.graphqlClient.getConfig();
+props.graphqlClient.updateConfig({
   headers: {
     ...currentConfig.headers,
     'Authorization': 'Bearer ' + accessToken
@@ -251,16 +274,10 @@ const currentConfig = (props.graphqlClient as any).getConfig();
 });
 
 // Fetch viewer data
-let user: any = null;
+let user: ViewerResult | null = null;
 try {
-  const viewerResponse: any = await userService.getViewer({});
-  user = viewerResponse;
-} catch (viewerError: any) {
-  user = {
-    email: session.email || _email,
-    type: 'ANONYMOUS'
-  };
-}
+  user = await userService.getViewer({});
+} catch (viewerError: any) {}
 
 // Dispatch event for AuthContext to pick up
 if (typeof window !== 'undefined') {
@@ -268,17 +285,17 @@ if (typeof window !== 'undefined') {
 }
 
 // Reset form
-set_email('');
-set_password('');
+setEmail('');
+setPassword('');
 
 // Notify parent
 if (props.afterLogin) {
   props.afterLogin(user as unknown as Contact | Customer, accessToken, refreshToken, session?.expirationTime);
 }
 } catch (err: any) {
-set_error(err?.message || 'Login failed. Please check your credentials.');
+setError(err?.message || 'Login failed. Please check your credentials.');
 } finally {
-set_loading(false);
+setLoading(false);
 }
 }
 
@@ -299,14 +316,14 @@ return (
   <div className="space-y-1 text-center mb-6"><h2 className="text-2xl font-bold">{resolvedTitle()}</h2>{props.subtitle ? (
   <p className="text-sm text-gray-500">{props.subtitle}</p>
 ) : null}</div>
-) : null}<form className="space-y-4"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-2"><label  htmlFor="login-email" className="text-sm font-medium leading-none">{emailLabel()}</label><input  type="email"  id="login-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_email}  onChange={(e) => {
-set_email((e.target as HTMLInputElement).value);
+) : null}<form className="space-y-4"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-2"><label  htmlFor="login-email" className="text-sm font-medium leading-none">{emailLabel()}</label><input  type="email"  id="login-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={email}  onChange={(e) => {
+setEmail((e.target as HTMLInputElement).value);
 } }  placeholder={emailPlaceholder()}  required  disabled={isLoading()}  /></div><div className="space-y-2"><div className="flex items-center justify-between"><label  htmlFor="login-password" className="text-sm font-medium leading-none">{passwordLabel()}</label>{showForgotPassword() && !props.accountHeaderLoginForm ? (
   <button  type="button" className="text-sm text-blue-600 hover:underline"  onClick={(event) => {
 if (props.onForgotPasswordClick) props.onForgotPasswordClick();
 } }>{forgotPasswordText()}</button>
-) : null}</div><input  type="password"  id="login-password"  name="password" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_password}  onChange={(e) => {
-set_password((e.target as HTMLInputElement).value);
+) : null}</div><input  type="password"  id="login-password"  name="password" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={password}  onChange={(e) => {
+setPassword((e.target as HTMLInputElement).value);
 } }  placeholder={passwordPlaceholder()}  required  disabled={isLoading()}  /></div>{errorMessage() ? (
   <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{errorMessage()}</div>
 ) : null}<button  type="submit" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"  disabled={isLoading()}>{isLoading() ? (

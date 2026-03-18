@@ -39,8 +39,28 @@ export interface ItemsOverviewProps {
     labels?: Record<string, string>;
 }
 
+interface ItemsOverviewState {
+    containerClass: string;
+    itemNameClickable: boolean;
+    showQuantity: boolean;
+    showAvailability: boolean;
+    showSku: boolean;
+    showImage: boolean;
+    showPrice: boolean;
+    getLabel: (key: string, fallback: string) => string;
+    formatItemPrice: (price: number) => string;
+    items: any[];
+    getItemName: (item: any) => string;
+    getItemSku: (item: any) => string;
+    getItemImageUrl: (item: any) => string;
+    getItemTotalPrice: (item: any) => number;
+    getItemAvailability: (item: any) => string;
+    isInStock: (item: any) => boolean;
+    handleItemNameClick: (item: any) => void;
+}
+
 export default function ItemsOverview(props: ItemsOverviewProps) {
-    const state = useStore({
+    const state = useStore<ItemsOverviewState>({
         get containerClass() {
             return props.itemsOverviewContainerClass || 'cart-items-overview';
         },

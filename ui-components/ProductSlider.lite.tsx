@@ -55,7 +55,6 @@ export interface ProductSliderProps {
     /**
      * When true, net price (incl. tax) is the leading price.
      * Forwarded to each ProductCard / ClusterCard.
-     * Defaults to reading localStorage('price_include_tax') inside each card.
      */
     includeTax?: boolean;
 
@@ -178,11 +177,11 @@ export interface ProductSliderProps {
 }
 
 interface ProductSliderState {
-    _items: any[];
-    _isLoading: boolean;
-    _scrollPosition: number;
-    _containerWidth: number;
-    _scrollWidth: number;
+    loadedItems: any[];
+    isLoading: boolean;
+    scrollPosition: number;
+    containerWidth: number;
+    scrollWidth: number;
     items: () => (Product | Cluster)[];
     isCrossUpsellMode: () => boolean;
     crossUpsellTitle: () => string;
@@ -208,17 +207,17 @@ interface ProductSliderState {
 
 export default function ProductSlider(props: ProductSliderProps) {
     const state = useStore<ProductSliderState>({
-        _items: [] as any[],
-        _isLoading: false,
-        _scrollPosition: 0,
-        _containerWidth: 0,
-        _scrollWidth: 0,
+        loadedItems: [] as any[],
+        isLoading: false,
+        scrollPosition: 0,
+        containerWidth: 0,
+        scrollWidth: 0,
 
         items(): (Product | Cluster)[] {
             if (props.products && props.products.length > 0) {
                 return props.products;
             }
-            return state._items;
+            return state.loadedItems;
         },
 
         isCrossUpsellMode(): boolean {
@@ -258,11 +257,11 @@ export default function ProductSlider(props: ProductSliderProps) {
         },
 
         canScrollLeft(): boolean {
-            return state._scrollPosition > 0;
+            return state.scrollPosition > 0;
         },
 
         canScrollRight(): boolean {
-            return state._scrollPosition < state._scrollWidth - state._containerWidth - 1;
+            return state.scrollPosition < state.scrollWidth - state.containerWidth - 1;
         },
 
         portalMode(): string {
@@ -287,7 +286,7 @@ export default function ProductSlider(props: ProductSliderProps) {
             if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
             if (!props.productId && !props.clusterId) return;
 
-            state._isLoading = true;
+            state.isLoading = true;
             try {
                 const crossupsellService = new CrossupsellService(props.graphqlClient);
                 const searchInput: CrossupsellsQueryVariables = {
@@ -321,11 +320,11 @@ export default function ProductSlider(props: ProductSliderProps) {
                         items.push(cu.clusterTo);
                     }
                 }
-                state._items = items;
+                state.loadedItems = items;
             } catch (e) {
-                state._items = [];
+                state.loadedItems = [];
             } finally {
-                state._isLoading = false;
+                state.isLoading = false;
             }
         },
 
@@ -335,7 +334,7 @@ export default function ProductSlider(props: ProductSliderProps) {
             const hasClusterIds = props.clusterIds && props.clusterIds.length > 0;
             if (!hasProductIds && !hasClusterIds) return;
 
-            state._isLoading = true;
+            state.isLoading = true;
             try {
                 const productService = new ProductService(props.graphqlClient);
                 const response = await productService.getProducts({
@@ -366,11 +365,11 @@ export default function ProductSlider(props: ProductSliderProps) {
                     },
                     filterAvailableAttributeInput: { isSearchable: true },
                 });
-                state._items = response.items || [];
+                state.loadedItems = response.items || [];
             } catch (e) {
-                state._items = [];
+                state.loadedItems = [];
             } finally {
-                state._isLoading = false;
+                state.isLoading = false;
             }
         },
 
@@ -401,9 +400,9 @@ export default function ProductSlider(props: ProductSliderProps) {
 
         handleScroll(e: any): void {
             const el = e.target as HTMLElement;
-            state._scrollPosition = el.scrollLeft;
-            state._containerWidth = el.clientWidth;
-            state._scrollWidth = el.scrollWidth;
+            state.scrollPosition = el.scrollLeft;
+            state.containerWidth = el.clientWidth;
+            state.scrollWidth = el.scrollWidth;
         },
 
         handleProductClick(product: Product): void {
@@ -426,8 +425,8 @@ export default function ProductSlider(props: ProductSliderProps) {
         setTimeout(() => {
             const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
             if (el) {
-                state._containerWidth = el.clientWidth;
-                state._scrollWidth = el.scrollWidth;
+                state.containerWidth = el.clientWidth;
+                state.scrollWidth = el.scrollWidth;
             }
         }, 100);
     });
@@ -443,7 +442,7 @@ export default function ProductSlider(props: ProductSliderProps) {
     }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
 
     return (
-        <Show when={!(state.isCrossUpsellMode() && !state._isLoading && state.items().length === 0)}>
+        <Show when={!(state.isCrossUpsellMode() && !state.isLoading && state.items().length === 0)}>
             <div className={props.containerClassName || 'mb-12'}>
                 {/* Header with title and navigation arrows */}
                 <Show when={state.sliderTitle() || state.items().length > 0}>
@@ -480,7 +479,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                 </Show>
 
                 {/* Loading skeleton */}
-                <Show when={state._isLoading}>
+                <Show when={state.isLoading}>
                     <div className="flex gap-6 overflow-hidden">
                         <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
                         <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
@@ -490,7 +489,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                 </Show>
 
                 {/* Slider track */}
-                <Show when={!state._isLoading && state.items().length > 0}>
+                <Show when={!state.isLoading && state.items().length > 0}>
                     <div
                         data-product-slider-track
                         onScroll={(e) => state.handleScroll(e)}
@@ -592,7 +591,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                 </Show>
 
                 {/* Empty state — hidden in cross-upsell mode (no results is normal) */}
-                <Show when={!state._isLoading && state.items().length === 0 && !props.products && !state.isCrossUpsellMode()}>
+                <Show when={!state.isLoading && state.items().length === 0 && !props.products && !state.isCrossUpsellMode()}>
                     <div className="text-center text-gray-500 py-8">
                         {state.getLabel('noProducts', 'No products found')}
                     </div>

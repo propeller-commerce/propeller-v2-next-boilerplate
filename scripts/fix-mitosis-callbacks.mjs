@@ -131,6 +131,19 @@ const TARGETS = [
     {
         dir: resolve('../output/react/ui-components'),
         ext: '.tsx',
+        // Mitosis strips grouping parens from `(expr || []).map(...)` producing
+        // `expr || []?.map(...)`. Due to operator precedence, when expr is truthy
+        // it returns the array itself rather than the mapped result, causing React
+        // to throw "Objects are not valid as a React child".
+        // Fix: restore the grouping parens.
+        // Use [\w.]+ (identifier + dots) to avoid greedily matching JSX text.
+        pattern: /([\w.]+) \|\| \[\]\?\.map\(/g,
+        replace: '($1 || []).map(',
+        label: 'React || []?.map fix',
+    },
+    {
+        dir: resolve('../output/react/ui-components'),
+        ext: '.tsx',
         // Mitosis bug: dangerouslySetInnerHTML={{ __html: value; }} emits a
         // trailing semicolon inside the object literal, which is invalid syntax.
         // Strip it: `__html: value;` → `__html: value`
@@ -337,12 +350,75 @@ function applyFilePatch(file, from, to, label) {
     return 1;
 }
 
+// ── compiled interface getter fixer ──────────────────────────────────────────
+//
+// Mitosis generates `function xxx(): ReturnType<XxxState["xxx"]>` for every
+// `get xxx()` in useStore(). This requires `XxxState["xxx"]` to be a function
+// type (i.e. `xxx: () => T`), but the source interface has `xxx: T` (plain type)
+// because TypeScript getter syntax requires that.
+//
+// After compilation, this function patches the interface in each compiled file:
+//   `xxx: T;`  →  `xxx: () => T;`
+// for every getter-derived property, so ReturnType<> resolves correctly.
+
+function fixCompiledInterfacesForGetters(dir) {
+    const files = collectFiles(dir, '.tsx');
+    let totalFixed = 0;
+
+    for (const file of files) {
+        let content = readFileSync(file, 'utf8');
+
+        // Find all getter-derived function patterns in compiled output:
+        //   function xxx(): ReturnType<XxxState["xxx"]>
+        // Captures: [getterName, interfaceName]
+        const gettersByInterface = new Map();
+        for (const m of content.matchAll(/function (\w+)\(\): ReturnType<(\w+)\["\1"\]>/g)) {
+            const [, getterName, interfaceName] = m;
+            if (!gettersByInterface.has(interfaceName)) gettersByInterface.set(interfaceName, new Set());
+            gettersByInterface.get(interfaceName).add(getterName);
+        }
+
+        if (gettersByInterface.size === 0) continue;
+
+        let updated = content;
+        let fileFixed = 0;
+
+        for (const [, getterNames] of gettersByInterface) {
+            for (const name of getterNames) {
+                // Match `name: T;` preceded by `{` or `;` (property separator in both
+                // multiline and single-line interfaces). Does NOT match already-function types.
+                const propRe = new RegExp(
+                    `(?<=[{;][ \\t\\r\\n]*)(${name})(\\s*:\\s*)(?!\\(\\)\\s*=>)([^;({]+?);`,
+                    'g'
+                );
+                const before = updated;
+                updated = updated.replace(propRe, (_, n, colon, type) => {
+                    return `${n}${colon}() => ${type.trim()};`;
+                });
+                if (updated !== before) fileFixed++;
+            }
+        }
+
+        if (fileFixed > 0) {
+            writeFileSync(file, updated, 'utf8');
+            const rel = file.replace(/.*[/\\]output[/\\]/, 'output/');
+            console.log(`  [Getter interfaces] ✓ ${rel} — fixed ${fileFixed} interface type(s)`);
+            totalFixed += fileFixed;
+        }
+    }
+
+    return totalFixed;
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────
 
 let totalFixes = 0;
 
 // Hoist mid-file imports to the top (must run before other patches)
 totalFixes += hoistImports(resolve('../output/react/ui-components'));
+
+// Fix compiled interface types for getter-derived properties
+totalFixes += fixCompiledInterfacesForGetters(resolve('../output/react/ui-components'));
 
 for (const { dir, ext, pattern, replace, label } of TARGETS) {
     const files = collectFiles(dir, ext);

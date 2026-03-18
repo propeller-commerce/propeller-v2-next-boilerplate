@@ -65,15 +65,38 @@ export interface SearchBarProps {
     containerClassName?: string;
 }
 
+interface SearchBarState {
+    searchTerm: string;
+    results: SearchBarResult[];
+    isLoading: boolean;
+    showDropdown: boolean;
+    itemsFound: number;
+    debounceTimer: any;
+    clickOutsideListener: any;
+    placeholder: string;
+    minLength: number;
+    debounceMs: number;
+    maxResults: number;
+    noImageUrl: string;
+    getLabel: (key: string, fallback: string) => string;
+    formatItemPrice: (price: number) => string;
+    mapProductToResult: (item: Product | Cluster) => SearchBarResult;
+    handleInputChange: (value: string) => void;
+    fetchResults: (term: string) => Promise<void>;
+    handleSubmit: (e: any) => void;
+    handleResultClick: (result: SearchBarResult) => void;
+    handleViewAllClick: () => void;
+}
+
 export default function SearchBar(props: SearchBarProps) {
-    const state = useStore({
+    const state = useStore<SearchBarState>({
         searchTerm: '',
         results: [] as SearchBarResult[],
         isLoading: false,
         showDropdown: false,
         itemsFound: 0,
-        _debounceTimer: null as any,
-        _clickOutsideListener: null as any,
+        debounceTimer: null as any,
+        clickOutsideListener: null as any,
 
         get placeholder() {
             return props.placeholder || 'Search products...';
@@ -128,8 +151,8 @@ export default function SearchBar(props: SearchBarProps) {
         handleInputChange(value: string) {
             state.searchTerm = value;
 
-            if (state._debounceTimer) {
-                clearTimeout(state._debounceTimer);
+            if (state.debounceTimer) {
+                clearTimeout(state.debounceTimer);
             }
 
             if (value.length < state.minLength) {
@@ -138,7 +161,7 @@ export default function SearchBar(props: SearchBarProps) {
                 return;
             }
 
-            state._debounceTimer = setTimeout(() => {
+            state.debounceTimer = setTimeout(() => {
                 state.fetchResults(value);
             }, state.debounceMs);
         },
@@ -230,16 +253,16 @@ export default function SearchBar(props: SearchBarProps) {
                 state.showDropdown = false;
             }
         };
-        state._clickOutsideListener = listener;
+        state.clickOutsideListener = listener;
         document.addEventListener('mousedown', listener);
     });
 
     onUnMount(() => {
-        if (state._clickOutsideListener) {
-            document.removeEventListener('mousedown', state._clickOutsideListener);
+        if (state.clickOutsideListener) {
+            document.removeEventListener('mousedown', state.clickOutsideListener);
         }
-        if (state._debounceTimer) {
-            clearTimeout(state._debounceTimer);
+        if (state.debounceTimer) {
+            clearTimeout(state.debounceTimer);
         }
     });
 

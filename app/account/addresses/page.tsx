@@ -144,7 +144,7 @@ export default function AddressesPage() {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEditAddress = async (address: any) => {
+  const handleEditAddress = async (address: Address) => {
     if (!user) return;
 
     try {
@@ -200,9 +200,10 @@ export default function AddressesPage() {
     }
   };
 
-  const handleDeleteAddress = async (addressId: number) => {
+  const handleDeleteAddress = async (address: Address) => {
     if (!user) return;
 
+    const addressId = (address as any).id;
     try {
       const addressService = new AddressService(graphqlClient);
 
@@ -418,7 +419,8 @@ export default function AddressesPage() {
       {showAddModal && (
         <AddressCard
           graphqlClient={graphqlClient}
-          address={{ type: addModalType }}
+          addressType={addModalType}
+          address={null}
           isNew
           onEdit={handleSaveNewAddress}
           onCancel={() => setShowAddModal(false)}

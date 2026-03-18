@@ -120,6 +120,15 @@
         >
       </template>
 
+      <template v-if="showStock && !!cluster.defaultProduct?.inventory">
+        <ItemStock
+          :inventory="cluster.defaultProduct?.inventory"
+          :showAvailability="showAvailability !== false"
+          :showStock="true"
+          :labels="stockLabels"
+        ></ItemStock>
+      </template>
+
       <template
         v-if="
           !!textLabels &&
@@ -147,25 +156,11 @@
       <template v-if="!!cluster.defaultProduct?.price">
         <div :class="isRow() ? '' : 'mt-auto pt-2'">
           <ProductPriceDisplay
-            :includeTax="includeTax !== undefined ? includeTax : _includeTax"
+            :includeTax="includeTax !== undefined ? includeTax : includeTax"
             :price="cluster.defaultProduct?.price"
             :options="cluster.options"
             :priceSize="isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'"
           ></ProductPriceDisplay>
-        </div>
-      </template>
-
-      <template v-if="showStock !== false && getStockQuantity() >= 0">
-        <div class="flex items-center gap-1.5">
-          <span
-            :class="`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStockStatusClass()}`"
-            >{{ getStockStatusLabel() }}</span
-          >
-          <template v-if="getStockQuantity() > 0">
-            <span class="text-xs text-gray-400">
-              ({{ getStockQuantity() }})
-            </span>
-          </template>
         </div>
       </template>
     </div>
@@ -181,10 +176,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 
 import { Cluster, AttributeResult, ProductPrice } from "propeller-sdk-v2";
 import ProductPriceDisplay from "./ProductPrice.vue";
+import ItemStock from "./ItemStock.vue";
 
 export interface ClusterCardProps {
   // === Core ===
@@ -217,6 +213,19 @@ export interface ClusterCardProps {
    * Reads `defaultProduct.inventory.totalQuantity`. Defaults to true.
    */
   showStock?: boolean;
+
+  /**
+   * Show only the availability indicator (Available / Not available) inside ItemStock.
+   * Only relevant when `showStock` is true.
+   * Defaults to true.
+   */
+  showAvailability?: boolean;
+
+  /**
+   * Label overrides forwarded to the embedded ItemStock component.
+   * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+   */
+  stockLabels?: Record<string, string>;
 
   // === Attribute labels ===
 
@@ -279,8 +288,8 @@ export interface ClusterCardProps {
 }
 interface ClusterCardState {
   isFavorite: boolean;
-  _includeTax: boolean;
-  _priceListener: any;
+  includeTax: boolean;
+  priceListener: any;
   isRow: () => boolean;
   getClusterName: () => string;
   getClusterSku: () => string;
@@ -303,20 +312,8 @@ interface ClusterCardState {
 
 const props = defineProps<ClusterCardProps>();
 const isFavorite = ref<ClusterCardState["isFavorite"]>(false);
-const _includeTax = ref<ClusterCardState["_includeTax"]>(true);
-const _priceListener = ref<ClusterCardState["_priceListener"]>(null);
-
-onMounted(() => {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("price_include_tax");
-    _includeTax.value = stored === null ? true : stored === "true";
-    _priceListener.value = () => {
-      const val = localStorage.getItem("price_include_tax");
-      _includeTax.value = val === null ? true : val === "true";
-    };
-    window.addEventListener("priceToggleChanged", _priceListener.value);
-  }
-});
+const includeTax = ref<ClusterCardState["includeTax"]>(true);
+const priceListener = ref<ClusterCardState["priceListener"]>(null);
 
 function isRow(): ReturnType<ClusterCardState["isRow"]> {
   return (props.columns as number) === 1;

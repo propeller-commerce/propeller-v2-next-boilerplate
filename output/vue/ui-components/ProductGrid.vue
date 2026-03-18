@@ -73,6 +73,9 @@
                     :cluster="item"
                     :configuration="configuration"
                     :includeTax="includeTax"
+                    :showStock="showStock"
+                    :showAvailability="showAvailability"
+                    :stockLabels="stockLabels"
                     :enableAddFavorite="enableAddFavorite"
                     :onToggleFavorite="
                       (cluster, isFav) => {

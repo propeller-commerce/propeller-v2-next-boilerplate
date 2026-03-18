@@ -40,65 +40,89 @@ showPurchaseButton?: boolean;
 /** Action when the purchase button is clicked. Receives cart, reference, and notes */
 onPurchaseButtonClick?: (cart: Cart, reference: string, notes: string) => void;
 }
+interface CartOverviewState {
+reference: string;
+notes: string;
+termsAccepted: boolean;
+loading: boolean;
+containerClass: () => string;
+showNotes: () => boolean;
+showReference: () => boolean;
+showTermsAndConditions: () => boolean;
+showPurchaseButton: () => boolean;
+getLabel: (key: string, fallback: string) => string;
+invoiceAddress: () => CartAddress;
+deliveryAddress: () => CartAddress;
+formatAddress: (addr: CartAddress) => string;
+paymentMethod: () => string;
+carrierName: () => string;
+requestDate: () => string;
+handleReferenceChange: (value: string) => void;
+handleNotesChange: (value: string) => void;
+handleTermsChange: (checked: boolean) => void;
+handleTermsLinkClick: (event: Event) => void;
+isPurchaseDisabled: () => boolean;
+handlePurchaseClick: () => void;
+}
 
 
 
 
   function CartOverview(props:CartOverviewProps) {
 
-  const [_reference, set_reference] = useState(() => (''))
+  const [reference, setReference] = useState<CartOverviewState["reference"]>(() => (''))
 
 
-const [_notes, set_notes] = useState(() => (''))
+const [notes, setNotes] = useState<CartOverviewState["notes"]>(() => (''))
 
 
-const [_termsAccepted, set_termsAccepted] = useState(() => (false))
+const [termsAccepted, setTermsAccepted] = useState<CartOverviewState["termsAccepted"]>(() => (false))
 
 
-const [_loading, set_loading] = useState(() => (false))
+const [loading, setLoading] = useState<CartOverviewState["loading"]>(() => (false))
 
 
-function containerClass() {
+function containerClass(): ReturnType<CartOverviewState["containerClass"]>{
 return props.overviewContainerClass || 'cart-overview';
 }
 
 
-function showNotes() {
+function showNotes(): ReturnType<CartOverviewState["showNotes"]>{
 return props.showNotes !== undefined ? props.showNotes : true;
 }
 
 
-function showReference() {
+function showReference(): ReturnType<CartOverviewState["showReference"]>{
 return props.showReference !== undefined ? props.showReference : true;
 }
 
 
-function showTermsAndConditions() {
+function showTermsAndConditions(): ReturnType<CartOverviewState["showTermsAndConditions"]>{
 return props.showTermsAndConditions !== undefined ? props.showTermsAndConditions : true;
 }
 
 
-function showPurchaseButton() {
+function showPurchaseButton(): ReturnType<CartOverviewState["showPurchaseButton"]>{
 return props.showPurchaseButton !== undefined ? props.showPurchaseButton : true;
 }
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<CartOverviewState["getLabel"]>{
 return props.labels?.[key] || fallback;
 }
 
 
-function invoiceAddress() {
+function invoiceAddress(): ReturnType<CartOverviewState["invoiceAddress"]>{
 return props.cart?.invoiceAddress;
 }
 
 
-function deliveryAddress() {
+function deliveryAddress(): ReturnType<CartOverviewState["deliveryAddress"]>{
 return props.cart?.deliveryAddress;
 }
 
 
-function formatAddress(addr: CartAddress) {
+function formatAddress(addr: CartAddress): ReturnType<CartOverviewState["formatAddress"]>{
 if (!addr || !addr.street) return '';
 const parts: string[] = [];
 if (addr.company) parts.push(addr.company);
@@ -116,17 +140,17 @@ return parts.join(', ');
 }
 
 
-function paymentMethod() {
+function paymentMethod(): ReturnType<CartOverviewState["paymentMethod"]>{
 return props.cart?.paymentData?.method || '';
 }
 
 
-function carrierName() {
+function carrierName(): ReturnType<CartOverviewState["carrierName"]>{
 return props.cart?.postageData?.carrier || '';
 }
 
 
-function requestDate() {
+function requestDate(): ReturnType<CartOverviewState["requestDate"]>{
 const date = props.cart?.postageData?.requestDate;
 if (!date) return '';
 try {
@@ -137,22 +161,22 @@ return date;
 }
 
 
-function handleReferenceChange(value: string) {
-set_reference(value);
+function handleReferenceChange(value: string): ReturnType<CartOverviewState["handleReferenceChange"]>{
+setReference(value);
 }
 
 
-function handleNotesChange(value: string) {
-set_notes(value);
+function handleNotesChange(value: string): ReturnType<CartOverviewState["handleNotesChange"]>{
+setNotes(value);
 }
 
 
-function handleTermsChange(checked: boolean) {
-set_termsAccepted(checked);
+function handleTermsChange(checked: boolean): ReturnType<CartOverviewState["handleTermsChange"]>{
+setTermsAccepted(checked);
 }
 
 
-function handleTermsLinkClick(event: Event) {
+function handleTermsLinkClick(event: Event): ReturnType<CartOverviewState["handleTermsLinkClick"]>{
 event.preventDefault();
 if (props.onTermsAndConditionsClick) {
 props.onTermsAndConditionsClick();
@@ -160,17 +184,17 @@ props.onTermsAndConditionsClick();
 }
 
 
-function isPurchaseDisabled() {
-if (showTermsAndConditions() && !_termsAccepted) return true;
-if (_loading) return true;
+function isPurchaseDisabled(): ReturnType<CartOverviewState["isPurchaseDisabled"]>{
+if (showTermsAndConditions() && !termsAccepted) return true;
+if (loading) return true;
 return false;
 }
 
 
-function handlePurchaseClick() {
+function handlePurchaseClick(): ReturnType<CartOverviewState["handlePurchaseClick"]>{
 if (isPurchaseDisabled()) return;
 if (props.onPurchaseButtonClick) {
-props.onPurchaseButtonClick(props.cart, _reference, _notes);
+props.onPurchaseButtonClick(props.cart, reference, notes);
 }
 }
 
@@ -212,11 +236,11 @@ return (
 ) : null}{requestDate() ? (
   <div className="flex justify-between"><span className="font-medium">{getLabel('deliveryDate', 'Delivery Date:')}</span><span>{requestDate()}</span></div>
 ) : null}</div><div className="space-y-4 mt-6">{showReference() ? (
-  <div className="space-y-2"><label className="text-sm font-medium">{getLabel('referenceLabel', 'Reference (Optional)')}</label><input  type="text" className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"  value={_reference}  onChange={(event) => handleReferenceChange(event.target.value) }  placeholder={getLabel('referencePlaceholder', 'Your reference number')}  /></div>
+  <div className="space-y-2"><label className="text-sm font-medium">{getLabel('referenceLabel', 'Reference (Optional)')}</label><input  type="text" className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"  value={reference}  onChange={(event) => handleReferenceChange(event.target.value) }  placeholder={getLabel('referencePlaceholder', 'Your reference number')}  /></div>
 ) : null}{showNotes() ? (
-  <div className="space-y-2"><label className="text-sm font-medium">{getLabel('notesLabel', 'Order Notes (Optional)')}</label><textarea className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[80px]"  value={_notes}  onChange={(event) => handleNotesChange(event.target.value) }  placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}  /></div>
+  <div className="space-y-2"><label className="text-sm font-medium">{getLabel('notesLabel', 'Order Notes (Optional)')}</label><textarea className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[80px]"  value={notes}  onChange={(event) => handleNotesChange(event.target.value) }  placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}  /></div>
 ) : null}{showTermsAndConditions() ? (
-  <div className="flex items-center space-x-2 pt-2"><input  type="checkbox"  id="cart-overview-terms" className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"  checked={_termsAccepted}  onChange={(event) => handleTermsChange(event.target.checked) }  /><label  htmlFor="cart-overview-terms" className="text-sm leading-none">{getLabel('termsPrefix', 'I agree to the')}<a  href="#" className="text-violet-600 hover:underline font-medium"  onClick={(event) => handleTermsLinkClick(event as unknown as Event) }>{getLabel('termsLink', 'Terms and Conditions')}</a></label></div>
+  <div className="flex items-center space-x-2 pt-2"><input  type="checkbox"  id="cart-overview-terms" className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"  checked={termsAccepted}  onChange={(event) => handleTermsChange(event.target.checked) }  /><label  htmlFor="cart-overview-terms" className="text-sm leading-none">{getLabel('termsPrefix', 'I agree to the')}<a  href="#" className="text-violet-600 hover:underline font-medium"  onClick={(event) => handleTermsLinkClick(event as unknown as Event) }>{getLabel('termsLink', 'Terms and Conditions')}</a></label></div>
 ) : null}{showPurchaseButton() ? (
   <button  type="button" className="block w-full bg-violet-600 text-white text-center py-3 rounded-lg hover:bg-violet-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"  onClick={(event) => handlePurchaseClick() }  disabled={isPurchaseDisabled()}>{getLabel('purchaseButton', 'Place Order')}</button>
 ) : null}</div></div>

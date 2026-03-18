@@ -38,8 +38,36 @@ export interface OrderItemCardProps {
   formatPrice?: (price: number) => string;
 }
 
+interface OrderItemCardState {
+  titleLinkable: boolean;
+  showImage: boolean;
+  showSku: boolean;
+  showQuantity: boolean;
+  showPrice: boolean;
+  showDiscount: boolean;
+  showStockComponent: boolean;
+  showItemNotes: boolean;
+  isChildItem: boolean;
+  productName: string;
+  productSku: string;
+  productImage: string;
+  productId: number | undefined;
+  productSlug: string;
+  productUrl: string;
+  quantity: number;
+  price: number;
+  priceTotal: number;
+  discount: number;
+  originalPrice: number;
+  discountPercentage: number;
+  notes: string;
+  hasChildren: boolean;
+  formatItemPrice: (price: number) => string;
+  formatDiscountDisplay: () => string;
+}
+
 export default function OrderItemCard(props: OrderItemCardProps) {
-  const state = useStore({
+  const state = useStore<OrderItemCardState>({
     get titleLinkable(): boolean {
       return props.titleLinkable !== undefined ? props.titleLinkable : true;
     },

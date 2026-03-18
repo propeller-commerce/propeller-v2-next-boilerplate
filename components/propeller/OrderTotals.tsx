@@ -36,53 +36,76 @@ showTotalVat?: boolean;
 /** Custom price formatting function */
 formatPrice?: (price: number) => string;
 }
+interface OrderTotalsState {
+title: () => string;
+showSubtotal: () => boolean;
+showDiscount: () => boolean;
+showShippingCosts: () => boolean;
+showVATs: () => boolean;
+showTotalExclVat: () => boolean;
+showTotalVat: () => boolean;
+getLabel: (key: string, fallback: string) => string;
+formatItemPrice: (price: number) => string;
+subtotal: () => number;
+hasDiscount: () => boolean;
+discountDisplay: () => string;
+subtotalWithDiscount: () => number;
+hasTransactionCosts: () => boolean;
+transactionCosts: () => number;
+hasShippingCosts: () => boolean;
+shippingCosts: () => number;
+totalExclVat: () => number;
+taxPercentages: () => any[];
+totalInclVat: () => number;
+totalVat: () => number;
+}
 
 
 
 
   function OrderTotals(props:OrderTotalsProps) {
 
-  function title() {
+  function title(): ReturnType<OrderTotalsState["title"]>{
 return props.title || 'Order summary';
 }
 
 
-function showSubtotal() {
+function showSubtotal(): ReturnType<OrderTotalsState["showSubtotal"]>{
 return props.showSubtotal !== undefined ? props.showSubtotal : true;
 }
 
 
-function showDiscount() {
+function showDiscount(): ReturnType<OrderTotalsState["showDiscount"]>{
 return props.showDiscount !== undefined ? props.showDiscount : true;
 }
 
 
-function showShippingCosts() {
+function showShippingCosts(): ReturnType<OrderTotalsState["showShippingCosts"]>{
 return props.showShippingCosts !== undefined ? props.showShippingCosts : true;
 }
 
 
-function showVATs() {
+function showVATs(): ReturnType<OrderTotalsState["showVATs"]>{
 return props.showVATs !== undefined ? props.showVATs : true;
 }
 
 
-function showTotalExclVat() {
+function showTotalExclVat(): ReturnType<OrderTotalsState["showTotalExclVat"]>{
 return props.showTotalExclVat !== undefined ? props.showTotalExclVat : true;
 }
 
 
-function showTotalVat() {
+function showTotalVat(): ReturnType<OrderTotalsState["showTotalVat"]>{
 return props.showTotalVat !== undefined ? props.showTotalVat : true;
 }
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<OrderTotalsState["getLabel"]>{
 return props.labels?.[key] || fallback;
 }
 
 
-function formatItemPrice(price: number) {
+function formatItemPrice(price: number): ReturnType<OrderTotalsState["formatItemPrice"]>{
 if (props.formatPrice) {
 return props.formatPrice(price);
 }
@@ -90,18 +113,18 @@ return '€' + Number(price || 0).toFixed(2);
 }
 
 
-function subtotal() {
+function subtotal(): ReturnType<OrderTotalsState["subtotal"]>{
 return (props.order as any)?.total?.gross || 0;
 }
 
 
-function hasDiscount() {
+function hasDiscount(): ReturnType<OrderTotalsState["hasDiscount"]>{
 const total = (props.order as any)?.total;
 return total?.discountType && total.discountType !== Enums.OrderDiscountType.N && total.discountValue > 0;
 }
 
 
-function discountDisplay() {
+function discountDisplay(): ReturnType<OrderTotalsState["discountDisplay"]>{
 const total = (props.order as any)?.total;
 if (!total) return '';
 if (total.discountType === Enums.OrderDiscountType.A) {
@@ -114,49 +137,49 @@ return '-' + formatItemPrice(total.discountValue);
 }
 
 
-function subtotalWithDiscount() {
+function subtotalWithDiscount(): ReturnType<OrderTotalsState["subtotalWithDiscount"]>{
 const total = (props.order as any)?.total;
 return (total?.gross || 0) - (total?.discountValue || 0);
 }
 
 
-function hasTransactionCosts() {
+function hasTransactionCosts(): ReturnType<OrderTotalsState["hasTransactionCosts"]>{
 return (props.order as any)?.paymentData?.gross > 0;
 }
 
 
-function transactionCosts() {
+function transactionCosts(): ReturnType<OrderTotalsState["transactionCosts"]>{
 return Number((props.order as any)?.paymentData?.gross || 0);
 }
 
 
-function hasShippingCosts() {
+function hasShippingCosts(): ReturnType<OrderTotalsState["hasShippingCosts"]>{
 return (props.order as any)?.postageData?.gross > 0;
 }
 
 
-function shippingCosts() {
+function shippingCosts(): ReturnType<OrderTotalsState["shippingCosts"]>{
 return Number((props.order as any)?.postageData?.gross || 0);
 }
 
 
-function totalExclVat() {
+function totalExclVat(): ReturnType<OrderTotalsState["totalExclVat"]>{
 return (props.order as any)?.total?.gross || 0;
 }
 
 
-function taxPercentages() {
+function taxPercentages(): ReturnType<OrderTotalsState["taxPercentages"]>{
 const taxes = (props.order as any)?.total?.taxPercentages || [];
 return taxes.filter((tax: any) => tax.percentage > 0 && tax.total > 0);
 }
 
 
-function totalInclVat() {
+function totalInclVat(): ReturnType<OrderTotalsState["totalInclVat"]>{
 return (props.order as any)?.total?.net || 0;
 }
 
 
-function totalVat() {
+function totalVat(): ReturnType<OrderTotalsState["totalVat"]>{
 let sum = 0;
 const taxes = taxPercentages();
 for (let i = 0; i < taxes.length; i++) {

@@ -34,8 +34,8 @@ listAllContactCompanies?: boolean;
 showDefaultDeliveryAddress?: boolean;
 }
 interface UserDetailsState {
-_isMounted: boolean;
-_selectedCompanyId: number | null;
+isMounted: boolean;
+selectedCompanyId: number | null;
 isContact: () => boolean;
 getName: () => string;
 getActiveCompany: () => Company | null;
@@ -57,10 +57,10 @@ shouldShowDeliveryAddress: () => boolean;
 
   function UserDetails(props:UserDetailsProps) {
 
-  const [_isMounted, set_isMounted] = useState<UserDetailsState["_isMounted"]>(() => (false))
+  const [isMounted, setIsMounted] = useState<UserDetailsState["isMounted"]>(() => (false))
 
 
-const [_selectedCompanyId, set_selectedCompanyId] = useState<UserDetailsState["_selectedCompanyId"]>(() => (null))
+const [selectedCompanyId, setSelectedCompanyId] = useState<UserDetailsState["selectedCompanyId"]>(() => (null))
 
 
 function isContact(): ReturnType<UserDetailsState["isContact"]>{
@@ -173,11 +173,11 @@ return props.showDefaultDeliveryAddress === true;
 
 
 useEffect(() => {
-      set_isMounted(true);
+      setIsMounted(true);
 window.addEventListener('companySwitched', (event: any) => {
 const company = event.detail;
 if (company && company.companyId) {
-set_selectedCompanyId(props.activeCompany?.companyId as number);
+setSelectedCompanyId(props.activeCompany?.companyId as number);
 }
 })
     }, [])
@@ -187,7 +187,7 @@ useEffect(() => {
         window.removeEventListener('companySwitched', (event: any) => {
 const company = event.detail;
 if (company && company.companyId) {
-set_selectedCompanyId(props.activeCompany?.companyId as number);
+setSelectedCompanyId(props.activeCompany?.companyId as number);
 }
 })
       }
@@ -196,7 +196,7 @@ set_selectedCompanyId(props.activeCompany?.companyId as number);
 return (
 
 
-  <div className="user-details space-y-6">{_isMounted ? (
+  <div className="user-details space-y-6">{isMounted ? (
   <><div className="user-details__personal rounded-lg bg-card text-card-foreground shadow-sm"><div className="p-6 pb-2"><h3 className="text-lg font-semibold">Personal Information</h3></div><div className="p-6 pt-2 space-y-4"><div className="grid grid-cols-1 gap-1"><label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</label><div className="font-medium">{getName()}</div></div><div className="grid grid-cols-1 gap-1"><label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</label><div className="font-medium">{props.user.email}</div></div></div></div>
 {shouldShowCompanyInfo() && getActiveCompany() ? (
   <div className="user-details__company rounded-lg bg-card text-card-foreground shadow-sm"><div className="p-6 pb-2"><h3 className="text-lg font-semibold">Company Information</h3></div><div className="p-6 pt-2 space-y-4"><div className="grid grid-cols-1 gap-1"><label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Company Name</label><div className="font-medium">{getActiveCompany()?.name}</div></div>{getActiveCompany()?.taxNumber ? (

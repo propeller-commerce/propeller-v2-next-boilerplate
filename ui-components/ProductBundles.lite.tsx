@@ -36,7 +36,6 @@ export interface ProductBundlesProps {
 
     /**
      * When true, net price (incl. tax) is the leading price.
-     * Defaults to reading `localStorage('price_include_tax')`, falling back to `true`.
      * Note: in the Propeller SDK `price.gross` = excl. VAT, `price.net` = incl. VAT.
      */
     includeTax?: boolean;
@@ -130,12 +129,12 @@ export interface ProductBundlesProps {
 }
 
 interface ProductBundlesState {
-    _bundles: any[];
-    _isLoading: boolean;
-    _includeTax: boolean;
-    _isMounted: boolean;
-    _addingBundleId: string | null;
-    _lastAddedBundle: Bundle | null;
+    bundles: Bundle[];
+    isLoading: boolean;
+    includeTax: boolean;
+    isMounted: boolean;
+    addingBundleId: string | null;
+    lastAddedBundle: Bundle | null;
     activeCartId: string;
     toastMessage: string;
     toastType: string;
@@ -160,18 +159,18 @@ interface ProductBundlesState {
     dismissToast: () => void;
     closeModal: () => void;
     fetchBundles: () => Promise<void>;
-    handleAddToCart: (bundle: Bundle) => void;
+    handleAddToCart: (bundle: Bundle) => Promise<void>;
     initCart: () => Promise<void>;
 }
 
 export default function ProductBundles(props: ProductBundlesProps) {
     const state = useStore<ProductBundlesState>({
-        _bundles: [] as Bundle[],
-        _isLoading: false,
-        _includeTax: true,
-        _isMounted: false,
-        _addingBundleId: null as string | null,
-        _lastAddedBundle: null as Bundle | null,
+        bundles: [] as Bundle[],
+        isLoading: false,
+        includeTax: true,
+        isMounted: false,
+        addingBundleId: null as string | null,
+        lastAddedBundle: null as Bundle | null,
         activeCartId: '',
         toastMessage: '',
         toastType: '',
@@ -179,7 +178,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
         modalVisible: false,
 
         getIncludeTax(): boolean {
-            return props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
+            return props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
         },
 
         getShowItems(): boolean {
@@ -254,7 +253,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
 
         closeModal() {
             state.modalVisible = false;
-            state._lastAddedBundle = null;
+            state.lastAddedBundle = null;
         },
 
         async initCart() {
@@ -397,7 +396,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
 
         async fetchBundles(): Promise<void> {
             if (!props.graphqlClient || !props.productId) return;
-            state._isLoading = true;
+            state.isLoading = true;
             try {
                 const bundleService = new BundleService(props.graphqlClient);
                 const productBundlesQueryVariables: BundleQueryVariables = {
@@ -414,18 +413,18 @@ export default function ProductBundles(props: ProductBundlesProps) {
 
                 const result = await bundleService.getBundles(productBundlesQueryVariables);
 
-                state._bundles = result?.items || [];
+                state.bundles = result?.items || [];
             } catch (e) {
-                state._bundles = [];
+                state.bundles = [];
             } finally {
-                state._isLoading = false;
+                state.isLoading = false;
             }
         },
 
         async handleAddToCart(bundle: Bundle): Promise<void> {
-            if (state._addingBundleId) return;
+            if (state.addingBundleId) return;
 
-            state._addingBundleId = bundle.id;
+            state.addingBundleId = bundle.id;
 
             try {
                 if (props.onAddBundleToCart) {
@@ -471,7 +470,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                 }
 
                 if (props.showModal) {
-                    state._lastAddedBundle = bundle;
+                    state.lastAddedBundle = bundle;
                     state.modalVisible = true;
                 } else {
                     const bundleName = (bundle as any).name || state.getLabel('title', 'Bundle');
@@ -481,7 +480,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                 console.error('Error adding bundle to cart:', error);
                 state.showToast(state.getLabel('errorAdding', 'Failed to add bundle to cart'), 'error');
             } finally {
-                state._addingBundleId = null;
+                state.addingBundleId = null;
             }
         },
 
@@ -489,7 +488,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
     });
 
     onMount(() => {
-        state._isMounted = true;
+        state.isMounted = true;
         state.fetchBundles();
     });
 
@@ -498,9 +497,9 @@ export default function ProductBundles(props: ProductBundlesProps) {
     }, [props.productId]);
 
     return (
-        <Show when={state._isMounted && !state._isLoading && state._bundles.length > 0}>
+        <Show when={state.isMounted && !state.isLoading && state.bundles.length > 0}>
             <div className={props.className || 'mb-12'}>
-                <For each={state._bundles}>
+                <For each={state.bundles}>
                     {(bundle: any, bundleIdx: number) => (
                         <div key={bundle.id || bundleIdx} className="border rounded-lg overflow-hidden mb-6">
                             {/* Bundle header */}
@@ -583,10 +582,10 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                     </div>
                                     <button
                                         onClick={() => state.handleAddToCart(bundle)}
-                                        disabled={state._addingBundleId === bundle.id}
+                                        disabled={state.addingBundleId === bundle.id}
                                         className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {state._addingBundleId === bundle.id
+                                        {state.addingBundleId === bundle.id
                                             ? state.getLabel('adding', 'Adding...')
                                             : state.getLabel('addToCart', 'Add bundle to cart')}
                                     </button>
@@ -665,11 +664,11 @@ export default function ProductBundles(props: ProductBundlesProps) {
                             <div className="px-6 py-5 flex items-start gap-4">
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900">
-                                        {(state._lastAddedBundle as any)?.name || state.getLabel('title', 'Bundle')}
+                                        {(state.lastAddedBundle as any)?.name || state.getLabel('title', 'Bundle')}
                                     </p>
-                                    <Show when={!state.getHidePrices() && state._lastAddedBundle}>
+                                    <Show when={!state.getHidePrices() && state.lastAddedBundle}>
                                         <p className="text-sm font-semibold text-blue-600 mt-1">
-                                            {state.formatPrice(state.getBundlePrice(state._lastAddedBundle))}
+                                            {state.formatPrice(state.getBundlePrice(state.lastAddedBundle))}
                                         </p>
                                     </Show>
                                 </div>

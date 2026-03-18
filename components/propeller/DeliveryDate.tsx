@@ -27,6 +27,26 @@ labels?: Record<string, string>;
 /** The CSS class for the container */
 containerClass?: string;
 }
+interface DeliveryDateState {
+selectedDate: string;
+modalOpen: boolean;
+customDateValue: string;
+upcomingDays: () => number;
+skipWeekends: () => boolean;
+showDatePicker: () => boolean;
+isCustomDateSelected: () => boolean;
+containerClass: () => string;
+upcomingDates: () => string[];
+minDate: () => string;
+getLabel: (key: string, fallback: string) => string;
+toApiDate: (date: Date) => string;
+formatDisplay: (isoDate: string) => string;
+handleSelect: (isoDate: string) => void;
+handleCustomDateChange: (value: string) => void;
+openModal: () => void;
+closeModal: () => void;
+handleBackdropClick: (event: Event) => void;
+}
 
 
 
@@ -34,46 +54,46 @@ containerClass?: string;
 
   function DeliveryDate(props:DeliveryDateProps) {
 
-  const [_selectedDate, set_selectedDate] = useState(() => (''))
+  const [selectedDate, setSelectedDate] = useState<DeliveryDateState["selectedDate"]>(() => (''))
 
 
-const [_modalOpen, set_modalOpen] = useState(() => (false))
+const [modalOpen, setModalOpen] = useState<DeliveryDateState["modalOpen"]>(() => (false))
 
 
-const [_customDateValue, set_customDateValue] = useState(() => (''))
+const [customDateValue, setCustomDateValue] = useState<DeliveryDateState["customDateValue"]>(() => (''))
 
 
-function upcomingDays() {
+function upcomingDays(): ReturnType<DeliveryDateState["upcomingDays"]>{
 return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
 }
 
 
-function skipWeekends() {
+function skipWeekends(): ReturnType<DeliveryDateState["skipWeekends"]>{
 return props.skipWeekends !== undefined ? props.skipWeekends : true;
 }
 
 
-function showDatePicker() {
+function showDatePicker(): ReturnType<DeliveryDateState["showDatePicker"]>{
 return props.showDatePicker !== undefined ? props.showDatePicker : true;
 }
 
 
-function isCustomDateSelected() {
-return _selectedDate !== '' && upcomingDates().indexOf(_selectedDate) === -1;
+function isCustomDateSelected(): ReturnType<DeliveryDateState["isCustomDateSelected"]>{
+return selectedDate !== '' && upcomingDates().indexOf(selectedDate) === -1;
 }
 
 
-function containerClass() {
+function containerClass(): ReturnType<DeliveryDateState["containerClass"]>{
 return props.containerClass || 'delivery-date';
 }
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<DeliveryDateState["getLabel"]>{
 return props.labels?.[key] || fallback;
 }
 
 
-function upcomingDates() {
+function upcomingDates(): ReturnType<DeliveryDateState["upcomingDates"]>{
 const days: string[] = [];
 const today = new Date();
 const current = new Date(today);
@@ -89,7 +109,7 @@ return days;
 }
 
 
-function toApiDate(date: Date) {
+function toApiDate(date: Date): ReturnType<DeliveryDateState["toApiDate"]>{
 const y = date.getFullYear();
 const m = String(date.getMonth() + 1).padStart(2, '0');
 const d = String(date.getDate()).padStart(2, '0');
@@ -97,7 +117,7 @@ return y + '-' + m + '-' + d + 'T00:00:00Z';
 }
 
 
-function formatDisplay(isoDate: string) {
+function formatDisplay(isoDate: string): ReturnType<DeliveryDateState["formatDisplay"]>{
 if (props.formatDateDisplay) {
 return props.formatDateDisplay(isoDate);
 }
@@ -108,7 +128,7 @@ return weekday + ', ' + months[date.getMonth()] + ' ' + date.getDate();
 }
 
 
-function minDate() {
+function minDate(): ReturnType<DeliveryDateState["minDate"]>{
 const tomorrow = new Date();
 tomorrow.setDate(tomorrow.getDate() + 1);
 const y = tomorrow.getFullYear();
@@ -118,17 +138,17 @@ return y + '-' + m + '-' + d;
 }
 
 
-function handleSelect(isoDate: string) {
-set_selectedDate(isoDate);
-set_modalOpen(false);
+function handleSelect(isoDate: string): ReturnType<DeliveryDateState["handleSelect"]>{
+setSelectedDate(isoDate);
+setModalOpen(false);
 if (props.onDateSelect) {
 props.onDateSelect(isoDate);
 }
 }
 
 
-function handleCustomDateChange(value: string) {
-set_customDateValue(value);
+function handleCustomDateChange(value: string): ReturnType<DeliveryDateState["handleCustomDateChange"]>{
+setCustomDateValue(value);
 if (value) {
 const date = new Date(value + 'T00:00:00');
 const isoDate = toApiDate(date);
@@ -137,19 +157,19 @@ handleSelect(isoDate);
 }
 
 
-function openModal() {
-set_modalOpen(true);
+function openModal(): ReturnType<DeliveryDateState["openModal"]>{
+setModalOpen(true);
 }
 
 
-function closeModal() {
-set_modalOpen(false);
+function closeModal(): ReturnType<DeliveryDateState["closeModal"]>{
+setModalOpen(false);
 }
 
 
-function handleBackdropClick(event: Event) {
+function handleBackdropClick(event: Event): ReturnType<DeliveryDateState["handleBackdropClick"]>{
 if (event.target === event.currentTarget) {
-set_modalOpen(false);
+setModalOpen(false);
 }
 }
 
@@ -167,15 +187,15 @@ return (
 
 
   <div  className={containerClass()}><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">{upcomingDates()?.map((dateStr, index) => (
-  <div  key={index}  onClick={(event) => handleSelect(dateStr) }  className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${_selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}><div className="font-semibold">{formatDisplay(dateStr)}</div></div>
+  <div  key={index}  onClick={(event) => handleSelect(dateStr) }  className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}><div className="font-semibold">{formatDisplay(dateStr)}</div></div>
 ))}{showDatePicker() ? (
   <div  onClick={(event) => openModal() }  className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${isCustomDateSelected() ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}>{isCustomDateSelected() ? (
-  <div className="font-semibold">{formatDisplay(_selectedDate)}</div>
+  <div className="font-semibold">{formatDisplay(selectedDate)}</div>
 ) : null}{!isCustomDateSelected() ? (
   <div className="font-semibold">{getLabel('pickDate', 'Other date...')}</div>
 ) : null}</div>
-) : null}</div>{_modalOpen ? (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"  onClick={(event) => handleBackdropClick(event as unknown as Event) }><div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold">{getLabel('modalTitle', 'Select a delivery date')}</h3><button  type="button" className="text-gray-400 hover:text-gray-600 transition-colors"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  strokeWidth="2"  stroke="currentColor" className="w-5 h-5"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><input  type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"  min={minDate()}  value={_customDateValue}  onChange={(event) => handleCustomDateChange(event.target.value) }  /><div className="flex justify-end gap-3 mt-4"><button  type="button" className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"  onClick={(event) => closeModal() }>{getLabel('cancel', 'Cancel')}</button></div></div></div>
+) : null}</div>{modalOpen ? (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"  onClick={(event) => handleBackdropClick(event as unknown as Event) }><div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold">{getLabel('modalTitle', 'Select a delivery date')}</h3><button  type="button" className="text-gray-400 hover:text-gray-600 transition-colors"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  strokeWidth="2"  stroke="currentColor" className="w-5 h-5"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><input  type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"  min={minDate()}  value={customDateValue}  onChange={(event) => handleCustomDateChange(event.target.value) }  /><div className="flex justify-end gap-3 mt-4"><button  type="button" className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"  onClick={(event) => closeModal() }>{getLabel('cancel', 'Cancel')}</button></div></div></div>
 ) : null}</div>
 
 

@@ -26,7 +26,7 @@ columnConfig?: Record<string, string>;
 enableSearch?: boolean;
 
 /** Fields enabled for searching (UI inputs) */
-searchFields?: (keyof OrderSearchArguments)[];
+searchFields?: string[];
 
 /** Term fields configuration (backend) */
 termFields?: any[]; // Using any[] to avoid strict enum import issues in Mitosis for now, effectively OrderSearchFields[]
@@ -97,7 +97,7 @@ formatPrice: (price: any) => string;
 getStatusColor: (status: string) => string;
 getColumnLabel: (col: string) => string;
 getLabel: (key: string, fallback: string) => string;
-searchFields: (keyof OrderSearchArguments)[];
+searchFields: () => string[];
 }
 
 
@@ -245,7 +245,7 @@ return (props.labels as any)?.[key] || fallback;
 function searchFields(): ReturnType<OrderListState["searchFields"]>{
 const fields = props.searchFields || [];
 if (props.enableSearch && !(fields as string[]).includes('term')) {
-return ['term', ...fields] as (keyof OrderSearchArguments)[];
+return ['term', ...fields] as string[];
 }
 return fields;
 }

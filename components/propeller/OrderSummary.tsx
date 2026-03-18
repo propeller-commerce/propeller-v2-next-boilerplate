@@ -53,6 +53,32 @@ countries?: {
   name: string;
 }[];
 }
+interface OrderSummaryState {
+containerClass: () => string;
+showOrderNumber: () => boolean;
+showOrderDate: () => boolean;
+showOrderStatus: () => boolean;
+showInvoiceAddress: () => boolean;
+showDeliveryAddress: () => boolean;
+showOrderTotal: () => boolean;
+formatItemPrice: (price: number) => string;
+showDeliveryInfo: () => boolean;
+showRemarks: () => boolean;
+orderReference: () => string;
+orderRemarks: () => string;
+getLabel: (key: string, fallback: string) => string;
+getCountryName: (code: string) => string;
+formatOrderDate: (dateString: string) => string;
+orderNumber: () => string;
+orderDate: () => string;
+orderStatus: () => string;
+orderTotal: () => number;
+invoiceAddress: () => any;
+deliveryAddress: () => any;
+paymentMethod: () => string;
+carrierName: () => string;
+requestDate: () => string;
+}
 
 
 
@@ -60,42 +86,42 @@ countries?: {
 
   function OrderSummary(props:OrderSummaryProps) {
 
-  function containerClass() {
+  function containerClass(): ReturnType<OrderSummaryState["containerClass"]>{
 return props.orderSummaryContainerClass || 'order-summary';
 }
 
 
-function showOrderNumber() {
+function showOrderNumber(): ReturnType<OrderSummaryState["showOrderNumber"]>{
 return props.showOrderNumber !== undefined ? props.showOrderNumber : true;
 }
 
 
-function showOrderDate() {
+function showOrderDate(): ReturnType<OrderSummaryState["showOrderDate"]>{
 return props.showOrderDate !== undefined ? props.showOrderDate : true;
 }
 
 
-function showOrderStatus() {
+function showOrderStatus(): ReturnType<OrderSummaryState["showOrderStatus"]>{
 return props.showOrderStatus !== undefined ? props.showOrderStatus : true;
 }
 
 
-function showInvoiceAddress() {
+function showInvoiceAddress(): ReturnType<OrderSummaryState["showInvoiceAddress"]>{
 return props.showInvoiceAddress !== undefined ? props.showInvoiceAddress : true;
 }
 
 
-function showDeliveryAddress() {
+function showDeliveryAddress(): ReturnType<OrderSummaryState["showDeliveryAddress"]>{
 return props.showDeliveryAddress !== undefined ? props.showDeliveryAddress : true;
 }
 
 
-function showOrderTotal() {
+function showOrderTotal(): ReturnType<OrderSummaryState["showOrderTotal"]>{
 return props.showOrderTotal !== undefined ? props.showOrderTotal : true;
 }
 
 
-function formatItemPrice(price: number) {
+function formatItemPrice(price: number): ReturnType<OrderSummaryState["formatItemPrice"]>{
 if (props.formatPrice) {
 return props.formatPrice(price);
 }
@@ -103,32 +129,32 @@ return '\u20AC' + Number(price || 0).toFixed(2);
 }
 
 
-function showDeliveryInfo() {
+function showDeliveryInfo(): ReturnType<OrderSummaryState["showDeliveryInfo"]>{
 return props.showDeliveryInfo !== undefined ? props.showDeliveryInfo : true;
 }
 
 
-function showRemarks() {
+function showRemarks(): ReturnType<OrderSummaryState["showRemarks"]>{
 return props.showRemarks !== undefined ? props.showRemarks : true;
 }
 
 
-function orderReference() {
+function orderReference(): ReturnType<OrderSummaryState["orderReference"]>{
 return props.order?.reference || '';
 }
 
 
-function orderRemarks() {
+function orderRemarks(): ReturnType<OrderSummaryState["orderRemarks"]>{
 return props.order?.remarks || '';
 }
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<OrderSummaryState["getLabel"]>{
 return props.labels?.[key] || fallback;
 }
 
 
-function getCountryName(code: string) {
+function getCountryName(code: string): ReturnType<OrderSummaryState["getCountryName"]>{
 if (!code) return '';
 const list = props.countries || [];
 for (let i = 0; i < list.length; i++) {
@@ -138,7 +164,7 @@ return code;
 }
 
 
-function formatOrderDate(dateString: string) {
+function formatOrderDate(dateString: string): ReturnType<OrderSummaryState["formatOrderDate"]>{
 if (props.formatDate) {
 return props.formatDate(dateString);
 }
@@ -154,49 +180,49 @@ return dateString;
 }
 
 
-function orderNumber() {
+function orderNumber(): ReturnType<OrderSummaryState["orderNumber"]>{
 return props.order?.id || '';
 }
 
 
-function orderDate() {
+function orderDate(): ReturnType<OrderSummaryState["orderDate"]>{
 return props.order?.createdAt || '';
 }
 
 
-function orderStatus() {
+function orderStatus(): ReturnType<OrderSummaryState["orderStatus"]>{
 return props.order?.status || '';
 }
 
 
-function orderTotal() {
+function orderTotal(): ReturnType<OrderSummaryState["orderTotal"]>{
 return Number(props.order?.total?.net || 0);
 }
 
 
-function invoiceAddress() {
+function invoiceAddress(): ReturnType<OrderSummaryState["invoiceAddress"]>{
 const addresses = props.order?.addresses || [];
 return addresses.find((a: any) => a.type === 'invoice') || null;
 }
 
 
-function deliveryAddress() {
+function deliveryAddress(): ReturnType<OrderSummaryState["deliveryAddress"]>{
 const addresses = props.order?.addresses || [];
 return addresses.find((a: any) => a.type === 'delivery') || null;
 }
 
 
-function paymentMethod() {
+function paymentMethod(): ReturnType<OrderSummaryState["paymentMethod"]>{
 return props.order?.paymentData?.method || '';
 }
 
 
-function carrierName() {
+function carrierName(): ReturnType<OrderSummaryState["carrierName"]>{
 return props.order?.postageData?.carrier || '';
 }
 
 
-function requestDate() {
+function requestDate(): ReturnType<OrderSummaryState["requestDate"]>{
 const date = props.order?.postageData?.requestDate;
 if (!date) return '';
 return formatOrderDate(date);

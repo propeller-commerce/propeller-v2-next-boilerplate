@@ -22,8 +22,8 @@ import { usePrice } from '@/context/PriceContext';
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
-import ProductSlider from '@/output/react/ui-components/ProductSlider';
-import ProductBundles from '@/output/react/ui-components/ProductBundles';
+import ProductSlider from '@/components/propeller/ProductSlider';
+import ProductBundles from '@/components/propeller/ProductBundles';
 
 
 export default function ProductPage() {

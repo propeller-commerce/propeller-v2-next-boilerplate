@@ -10,6 +10,7 @@ import {
     ProductPrice,
 } from 'propeller-sdk-v2';
 import ProductPriceDisplay from './ProductPrice.lite';
+import ItemStock from './ItemStock.lite';
 
 export interface ClusterCardProps {
     // === Core ===
@@ -42,6 +43,19 @@ export interface ClusterCardProps {
      * Reads `defaultProduct.inventory.totalQuantity`. Defaults to true.
      */
     showStock?: boolean;
+
+    /**
+     * Show only the availability indicator (Available / Not available) inside ItemStock.
+     * Only relevant when `showStock` is true.
+     * Defaults to true.
+     */
+    showAvailability?: boolean;
+
+    /**
+     * Label overrides forwarded to the embedded ItemStock component.
+     * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+     */
+    stockLabels?: Record<string, string>;
 
     // === Attribute labels ===
 
@@ -105,8 +119,8 @@ export interface ClusterCardProps {
 
 interface ClusterCardState {
     isFavorite: boolean;
-    _includeTax: boolean;
-    _priceListener: any;
+    includeTax: boolean;
+    priceListener: any;
     isRow: () => boolean;
     getClusterName: () => string;
     getClusterSku: () => string;
@@ -127,8 +141,8 @@ interface ClusterCardState {
 export default function ClusterCard(props: ClusterCardProps) {
     const state = useStore<ClusterCardState>({
         isFavorite: false,
-        _includeTax: true,
-        _priceListener: null as any,
+        includeTax: true,
+        priceListener: null as any,
 
         isRow() {
             return (props.columns as number) === 1;
@@ -258,18 +272,6 @@ export default function ClusterCard(props: ClusterCardProps) {
         },
     });
 
-    onMount(() => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state._includeTax = stored === null ? true : stored === 'true';
-            state._priceListener = () => {
-                const val = localStorage.getItem('price_include_tax');
-                state._includeTax = val === null ? true : val === 'true';
-            };
-            window.addEventListener('priceToggleChanged', state._priceListener);
-        }
-    });
-
     return (
         <div
             className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${state.isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
@@ -389,6 +391,16 @@ export default function ClusterCard(props: ClusterCardProps) {
                     </a>
                 </Show>
 
+                {/* Stock / availability */}
+                <Show when={props.showStock && !!props.cluster.defaultProduct?.inventory}>
+                    <ItemStock
+                        inventory={props.cluster.defaultProduct?.inventory!}
+                        showAvailability={props.showAvailability !== false}
+                        showStock={true}
+                        labels={props.stockLabels}
+                    />
+                </Show>
+
                 {/* Attribute text labels */}
                 <Show
                     when={
@@ -433,35 +445,14 @@ export default function ClusterCard(props: ClusterCardProps) {
                 </Show>
 
                 {/* Price */}
-                <Show when={!!(props.cluster as Cluster).defaultProduct?.price}>
+                <Show when={!!props.cluster.defaultProduct?.price}>
                     <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
                         <ProductPriceDisplay
-                            includeTax={props.includeTax !== undefined ? props.includeTax : state._includeTax}
-                            price={(props.cluster as Cluster).defaultProduct?.price as ProductPrice}
-                            options={(props.cluster as Cluster).options}
+                            includeTax={props.includeTax !== undefined ? props.includeTax : state.includeTax}
+                            price={props.cluster.defaultProduct?.price as ProductPrice}
+                            options={props.cluster.options}
                             priceSize={state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}
                         />
-                    </div>
-                </Show>
-
-                {/* Stock badge */}
-                <Show
-                    when={
-                        props.showStock !== false &&
-                        state.getStockQuantity() >= 0
-                    }
-                >
-                    <div className="flex items-center gap-1.5">
-                        <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${state.getStockStatusClass()}`}
-                        >
-                            {state.getStockStatusLabel()}
-                        </span>
-                        <Show when={state.getStockQuantity() > 0}>
-                            <span className="text-xs text-gray-400">
-                                ({state.getStockQuantity()})
-                            </span>
-                        </Show>
                     </div>
                 </Show>
             </div>

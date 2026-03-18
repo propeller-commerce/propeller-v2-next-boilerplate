@@ -46,73 +46,85 @@ beforeForgotPassword?: () => void;
 /** Callback after the user has requested a password reset */
 afterForgotPassword?: (result: boolean) => void;
 }
+interface ForgotPasswordState {
+email: string;
+loading: boolean;
+submitted: boolean;
+error: string;
+resolvedTitle: () => string;
+resolvedButtonText: () => string;
+resolvedResponseMessage: () => string;
+emailLabel: () => string;
+emailPlaceholder: () => string;
+handleSubmit: (e: any) => Promise<void>;
+}
 
 
 
 
   function ForgotPassword(props:ForgotPasswordProps) {
 
-  const [_email, set_email] = useState(() => (''))
+  const [email, setEmail] = useState<ForgotPasswordState["email"]>(() => (''))
 
 
-const [_loading, set_loading] = useState(() => (false))
+const [loading, setLoading] = useState<ForgotPasswordState["loading"]>(() => (false))
 
 
-const [_submitted, set_submitted] = useState(() => (false))
+const [submitted, setSubmitted] = useState<ForgotPasswordState["submitted"]>(() => (false))
 
 
-const [_error, set_error] = useState(() => (''))
+const [error, setError] = useState<ForgotPasswordState["error"]>(() => (''))
 
 
-function resolvedTitle() {
+function resolvedTitle(): ReturnType<ForgotPasswordState["resolvedTitle"]>{
 return props.title !== undefined ? props.title : 'Forgot password?';
 }
 
 
-function resolvedButtonText() {
+function resolvedButtonText(): ReturnType<ForgotPasswordState["resolvedButtonText"]>{
 return props.buttonText || 'Reset';
 }
 
 
-function resolvedResponseMessage() {
+function resolvedResponseMessage(): ReturnType<ForgotPasswordState["resolvedResponseMessage"]>{
 return props.responseMessage || 'If an account exists with this email, you will receive a password reset link shortly.';
 }
 
 
-function emailLabel() {
+function emailLabel(): ReturnType<ForgotPasswordState["emailLabel"]>{
 return props.labels?.email || 'Email';
 }
 
 
-function emailPlaceholder() {
+function emailPlaceholder(): ReturnType<ForgotPasswordState["emailPlaceholder"]>{
 return props.labels?.emailPlaceholder || 'name@example.com';
 }
 
 
-async function handleSubmit(e: any) {
+async function handleSubmit(e: any): ReturnType<ForgotPasswordState["handleSubmit"]>{
 e.preventDefault();
-if (_loading) return;
+if (loading) return;
 if (props.beforeForgotPassword) {
 props.beforeForgotPassword();
 }
-set_loading(true);
-set_error('');
+setLoading(true);
+setError('');
 try {
 const userService = new UserService(props.graphqlClient as GraphQLClient);
 const result = await userService.sendPasswordResetEmail({
-  email: _email
+  email: email
 });
-set_submitted(true);
+setSubmitted(true);
 if (props.afterForgotPassword) {
   props.afterForgotPassword(result);
 }
 } catch (err: any) {
-set_error(err?.message || 'Something went wrong. Please try again.');
+setError(err?.message || 'Something went wrong. Please try again.');
 if (props.afterForgotPassword) {
   props.afterForgotPassword(false);
 }
 } finally {
-set_loading(false);
+setLoading(false);
 }
 }
 
@@ -133,17 +145,17 @@ return (
   <div className="space-y-1 text-center mb-6"><h2 className="text-2xl font-bold">{resolvedTitle()}</h2>{props.subtitle ? (
   <p className="text-sm text-gray-500">{props.subtitle}</p>
 ) : null}</div>
-) : null}{!_submitted ? (
-  <form className="space-y-4"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-2"><label  htmlFor="forgot-password-email" className="text-sm font-medium leading-none">{emailLabel()}</label><input  type="email"  id="forgot-password-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_email}  onChange={(e) => {
-set_email((e.target as HTMLInputElement).value);
-} }  placeholder={emailPlaceholder()}  required  disabled={_loading}  /></div>{_error ? (
-  <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{_error}</div>
-) : null}<button  type="submit" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"  disabled={_loading}>{_loading ? (
+) : null}{!submitted ? (
+  <form className="space-y-4"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-2"><label  htmlFor="forgot-password-email" className="text-sm font-medium leading-none">{emailLabel()}</label><input  type="email"  id="forgot-password-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={email}  onChange={(e) => {
+setEmail((e.target as HTMLInputElement).value);
+} }  placeholder={emailPlaceholder()}  required  disabled={loading}  /></div>{error ? (
+  <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>
+) : null}<button  type="submit" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"  disabled={loading}>{loading ? (
   <svg  xmlns="http://www.w3.org/2000/svg"  fill="none"  viewBox="0 0 24 24" className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"><circle  cx="12"  cy="12"  r="10"  stroke="currentColor"  strokeWidth="4" className="opacity-25"  /><path  fill="currentColor"  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"  /></svg>
-) : null}{_loading ? (
+) : null}{loading ? (
   <>Sending...</>
 ) : <>{resolvedButtonText()}</>}</button></form>
-) : null}{_submitted ? (
+) : null}{submitted ? (
   <div className="text-center space-y-4"><div className="flex justify-center"><svg  xmlns="http://www.w3.org/2000/svg"  fill="none"  viewBox="0 0 24 24"  stroke="currentColor"  strokeWidth="2" className="h-12 w-12 text-green-500"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"  /></svg></div><p className="text-sm text-gray-600">{resolvedResponseMessage()}</p></div>
 ) : null}</div>
 

@@ -36,12 +36,27 @@ export interface ActionCodeProps {
     language?: string;
 }
 
+interface ActionCodeState {
+    code: string;
+    loading: boolean;
+    error: string;
+    isMounted: boolean;
+    getLabel: (key: string, fallback: string) => string;
+    title: string;
+    showRemoveCode: boolean;
+    appliedCode: string;
+    hasAppliedCode: boolean;
+    handleApply: () => Promise<void>;
+    handleRemove: () => Promise<void>;
+    handleKeyDown: (e: any) => void;
+}
+
 export default function ActionCode(props: ActionCodeProps) {
-    const state = useStore({
-        _code: '',
-        _loading: false,
-        _error: '',
-        _isMounted: false,
+    const state = useStore<ActionCodeState>({
+        code: '',
+        loading: false,
+        error: '',
+        isMounted: false,
 
         getLabel(key: string, fallback: string) {
             return props.labels?.[key] || fallback;
@@ -64,47 +79,47 @@ export default function ActionCode(props: ActionCodeProps) {
         },
 
         async handleApply() {
-            if (!state._code.trim() || state._loading) return;
-            state._loading = true;
-            state._error = '';
+            if (!state.code.trim() || state.loading) return;
+            state.loading = true;
+            state.error = '';
 
             if (props.onActionCodeApply) {
-                props.onActionCodeApply(state._code.trim(), props.cart);
-                state._loading = false;
+                props.onActionCodeApply(state.code.trim(), props.cart);
+                state.loading = false;
                 return;
             }
 
             const cartService = new CartService(props.graphqlClient);
             const cartActionCodeVariables: CartActionCodeVariables = {
                 id: props.cart?.cartId,
-                code: state._code.trim(),
+                code: state.code.trim(),
                 language: props.language || 'NL',
                 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                 imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
             };
             await cartService.addActionCodeToCart(cartActionCodeVariables).then((updatedCart: Cart) => {
-                state._loading = false;
-                state._code = '';
+                state.loading = false;
+                state.code = '';
                 if (props.afterActionCodeApply) {
                     props.afterActionCodeApply(updatedCart);
                 }
             }).catch((error: any) => {
-                state._loading = false;
-                state._error = state.getLabel('errorApply', 'Failed to apply action code. Please try again.');
+                state.loading = false;
+                state.error = state.getLabel('errorApply', 'Failed to apply action code. Please try again.');
                 console.error('Failed to apply action code:', error);
             });
         },
 
         async handleRemove() {
-            if (state._loading || !state.hasAppliedCode) return;
-            state._loading = true;
-            state._error = '';
+            if (state.loading || !state.hasAppliedCode) return;
+            state.loading = true;
+            state.error = '';
 
             const code = state.appliedCode;
 
             if (props.onActionCodeRemove) {
                 props.onActionCodeRemove(code, props.cart);
-                state._loading = false;
+                state.loading = false;
                 return;
             }
 
@@ -118,13 +133,13 @@ export default function ActionCode(props: ActionCodeProps) {
             };
 
             await cartService.removeActionCodeFromCart(cartActionCodeVariables).then((updatedCart: Cart) => {
-                state._loading = false;
+                state.loading = false;
                 if (props.afterActionCodeRemove) {
                     props.afterActionCodeRemove(updatedCart);
                 }
             }).catch((error: any) => {
-                state._loading = false;
-                state._error = state.getLabel('errorRemove', 'Failed to remove action code. Please try again.');
+                state.loading = false;
+                state.error = state.getLabel('errorRemove', 'Failed to remove action code. Please try again.');
                 console.error('Failed to remove action code:', error);
             });
         },
@@ -137,14 +152,14 @@ export default function ActionCode(props: ActionCodeProps) {
     });
 
     onMount(() => {
-        state._isMounted = true;
+        state.isMounted = true;
     });
 
     return (
         <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
             <h2 className="text-lg font-bold">{state.title}</h2>
 
-            <Show when={state._isMounted}>
+            <Show when={state.isMounted}>
                 {/* Applied action code display */}
                 <Show when={state.hasAppliedCode}>
                     <div className="flex items-center justify-between bg-violet-50 border border-violet-200 rounded-md px-3 py-2">
@@ -158,7 +173,7 @@ export default function ActionCode(props: ActionCodeProps) {
                             <button
                                 type="button"
                                 onClick={() => state.handleRemove()}
-                                disabled={state._loading}
+                                disabled={state.loading}
                                 className="text-violet-600 hover:text-violet-800 text-sm font-medium transition-colors disabled:opacity-50"
                             >
                                 {state.getLabel('remove', 'Remove')}
@@ -172,23 +187,23 @@ export default function ActionCode(props: ActionCodeProps) {
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            value={state._code}
-                            onChange={(e) => { state._code = e.target.value; }}
+                            value={state.code}
+                            onChange={(e) => { state.code = e.target.value; }}
                             onKeyDown={(e) => state.handleKeyDown(e)}
                             placeholder={state.getLabel('placeholder', 'Enter action code')}
-                            disabled={state._loading}
+                            disabled={state.loading}
                             className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:opacity-50"
                         />
                         <button
                             type="button"
                             onClick={() => state.handleApply()}
-                            disabled={state._loading || !state._code.trim()}
+                            disabled={state.loading || !state.code.trim()}
                             className="bg-violet-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
-                            <Show when={state._loading}>
+                            <Show when={state.loading}>
                                 {state.getLabel('applying', 'Applying...')}
                             </Show>
-                            <Show when={!state._loading}>
+                            <Show when={!state.loading}>
                                 {state.getLabel('apply', 'Apply')}
                             </Show>
                         </button>
@@ -196,8 +211,8 @@ export default function ActionCode(props: ActionCodeProps) {
                 </Show>
 
                 {/* Error message */}
-                <Show when={!!state._error}>
-                    <p className="text-sm text-red-600">{state._error}</p>
+                <Show when={!!state.error}>
+                    <p className="text-sm text-red-600">{state.error}</p>
                 </Show>
             </Show>
         </div>

@@ -89,7 +89,7 @@ iconClassName?: string;
 sidebarClassName?: string;
 }
 interface CartIconAndSidebarState {
-_isMounted: boolean;
+isMounted: boolean;
 sidebarOpen: boolean;
 isHovered: boolean;
 getTotalItems: () => number;
@@ -112,7 +112,7 @@ getSidebarTitle: () => string;
 
   function CartIconAndSidebar(props:CartIconAndSidebarProps) {
 
-  const [_isMounted, set_isMounted] = useState<CartIconAndSidebarState["_isMounted"]>(() => (false))
+  const [isMounted, setIsMounted] = useState<CartIconAndSidebarState["isMounted"]>(() => (false))
 
 
 const [sidebarOpen, setSidebarOpen] = useState<CartIconAndSidebarState["sidebarOpen"]>(() => (false))
@@ -214,7 +214,7 @@ return props.cartSidebarTitle || (props.labels as any)?.['cartSidebarTitle'] || 
 
 
 useEffect(() => {
-      set_isMounted(true)
+      setIsMounted(true)
     }, [])
 
 
@@ -226,13 +226,13 @@ return (
 setIsHovered(true);
 } }  onMouseLeave={(event) => {
 setIsHovered(false);
-} }><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('cartIconLabel', 'Shopping cart')}  className={`relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-6 h-6"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"  /></svg>{_isMounted && props.showBadge !== false && getTotalItems() > 0 ? (
+} }><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('cartIconLabel', 'Shopping cart')}  className={`relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-6 h-6"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"  /></svg>{isMounted && props.showBadge !== false && getTotalItems() > 0 ? (
   <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold pointer-events-none">{getTotalItems()}</span>
 ) : null}</button>{props.showTotals && isHovered ? (
   <div className="absolute top-full right-0 mt-1 z-40 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap"><div className="flex justify-between gap-4"><span className="text-gray-500">{getLabel('totalLabel', 'Total')}</span><span className="font-semibold text-gray-900">{getTotalPrice()}</span></div><div className="text-xs text-gray-400 mt-0.5">{getTotalItems()}{getLabel('itemsLabel', 'item(s)')}</div></div>
 ) : null}</div>{sidebarOpen ? (
   <div  aria-hidden="true" className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"  onClick={(event) => closeSidebar() }  />
-) : null}<div  role="dialog"  aria-modal="true"  aria-label={getSidebarTitle()}  className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}><div className="flex flex-col h-full">{_isMounted ? (
+) : null}<div  role="dialog"  aria-modal="true"  aria-label={getSidebarTitle()}  className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}><div className="flex flex-col h-full">{isMounted ? (
   <><div className="flex items-center justify-between px-5 py-4 border-b border-gray-200"><div className="flex items-center gap-2"><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5 text-gray-700"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"  /></svg><h2 className="text-base font-semibold text-gray-900">{getSidebarTitle()}</h2><span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold">{getTotalItems()}</span></div><button  type="button" className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"  onClick={(event) => closeSidebar() }  aria-label={getLabel('closeLabel', 'Close')}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div>
 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">{getItems().length === 0 ? (
   <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16"><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-12 h-12 text-gray-200"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"  /></svg><p className="text-sm text-gray-500">{getLabel('emptyCart', 'Your cart is empty.')}</p><button  type="button" className="text-sm text-violet-600 hover:underline"  onClick={(event) => closeSidebar() }>{getLabel('continueShopping', 'Continue Shopping')}</button></div>

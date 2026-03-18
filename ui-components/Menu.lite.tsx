@@ -86,7 +86,7 @@ interface MenuState {
     hasError: boolean;
     hoveredL1Id: number | null;
     hoveredL2Id: number | null;
-    _prevUserKey: string;
+    prevUserKey: string;
     fetchMenu: () => Promise<void>;
     getCacheKey: () => string;
     getCachedMenu: () => Category | null;
@@ -111,7 +111,7 @@ export default function Menu(props: MenuProps) {
         hasError: false,
         hoveredL1Id: null,
         hoveredL2Id: null,
-        _prevUserKey: '',
+        prevUserKey: '',
 
         async fetchMenu() {
             if (!props.graphqlClient) return;
@@ -268,11 +268,11 @@ export default function Menu(props: MenuProps) {
 
     onUpdate(() => {
         const userKey: string = props.user ? 'auth' : 'anon';
-        if (state._prevUserKey !== '' && state._prevUserKey !== userKey) {
+        if (state.prevUserKey !== '' && state.prevUserKey !== userKey) {
             state.clearCache();
             state.fetchMenu();
         }
-        state._prevUserKey = userKey;
+        state.prevUserKey = userKey;
     }, [props.user]);
 
     return (

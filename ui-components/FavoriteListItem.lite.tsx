@@ -106,8 +106,8 @@ export interface FavoriteListItemProps {
 }
 
 interface FavoriteListItemState {
-    _includeTax: boolean;
-    _priceListener: (() => void) | null;
+    includeTax: boolean;
+    priceListener: (() => void) | null;
     isProduct: () => boolean;
     getProduct: () => Product;
     getCluster: () => Cluster;
@@ -123,8 +123,8 @@ interface FavoriteListItemState {
 
 export default function FavoriteListItem(props: FavoriteListItemProps) {
     const state = useStore<FavoriteListItemState>({
-        _includeTax: true,
-        _priceListener: null as (() => void) | null,
+        includeTax: true,
+        priceListener: null as (() => void) | null,
 
         isProduct(): boolean {
             return 'productId' in props.item;
@@ -191,18 +191,6 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 props.onDelete(state.getItemId());
             }
         },
-    });
-
-    onMount(() => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state._includeTax = stored === null ? true : stored === 'true';
-            state._priceListener = () => {
-                const val = localStorage.getItem('price_include_tax');
-                state._includeTax = val === null ? true : val === 'true';
-            };
-            window.addEventListener('priceToggleChanged', state._priceListener);
-        }
     });
 
     return (
@@ -327,7 +315,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                     <div>
                         <ProductPriceDisplay
                             price={state.getProduct().price as ProductPrice}
-                            includeTax={state._includeTax}
+                            includeTax={state.includeTax}
                             priceSize="text-sm"
                         />
                     </div>
@@ -338,7 +326,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                     <div>
                         <ProductPriceDisplay
                             price={state.getCluster().defaultProduct?.price as ProductPrice}
-                            includeTax={state._includeTax}
+                            includeTax={state.includeTax}
                             options={state.getCluster().options}
                             priceSize="text-sm"
                         />

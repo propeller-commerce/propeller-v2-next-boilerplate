@@ -166,7 +166,7 @@ iconClassName?: string;
 menuClassName?: string;
 }
 interface AccountIconAndMenuState {
-_isMounted: boolean;
+isMounted: boolean;
 menuOpen: boolean;
 getUserName: () => string;
 getLabel: (key: string, fallback: string) => string;
@@ -179,7 +179,7 @@ handleForgotPasswordClick: () => void;
 handleRegisterClick: () => void;
 handleGuestCheckoutClick: () => void;
 closeMenu: () => void;
-_clickOutsideListener: {
+clickOutsideListener: {
   handler: any;
 };
 }
@@ -189,7 +189,7 @@ _clickOutsideListener: {
 
   function AccountIconAndMenu(props:AccountIconAndMenuProps) {
 
-  const [_isMounted, set_isMounted] = useState<AccountIconAndMenuState["_isMounted"]>(() => (false))
+  const [isMounted, setIsMounted] = useState<AccountIconAndMenuState["isMounted"]>(() => (false))
 
 
 const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState["menuOpen"]>(() => (false))
@@ -286,7 +286,7 @@ setMenuOpen(false);
 }
 
 
-const [_clickOutsideListener, set_clickOutsideListener] = useState<AccountIconAndMenuState["_clickOutsideListener"]>(() => ({
+const [clickOutsideListener, setClickOutsideListener] = useState<AccountIconAndMenuState["clickOutsideListener"]>(() => ({
 handler: null as any
 }))
 
@@ -297,14 +297,14 @@ handler: null as any
 
 
 useEffect(() => {
-      set_isMounted(true);
+      setIsMounted(true);
 const listener = (e: MouseEvent) => {
 const target = e.target as HTMLElement;
 if (target && !target.closest('[data-account-menu]')) {
 setMenuOpen(false);
 }
 };
-set_clickOutsideListener({
+setClickOutsideListener({
 handler: listener
 });
 document.addEventListener('mousedown', listener)
@@ -321,7 +321,7 @@ setMenuOpen(false);
 return (
 
 
-  <div className="relative"  data-account-menu><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('accountLabel', 'Account')}  className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"  /></svg>{_isMounted ? (
+  <div className="relative"  data-account-menu><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('accountLabel', 'Account')}  className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"  /></svg>{isMounted ? (
   <>{props.user ? (
   <span className="hidden md:block font-normal">
                         Hi, {getUserName()}</span>
@@ -330,7 +330,7 @@ return (
   <span className="hidden md:block font-normal">{getLabel('accountLabel', 'Account')}</span>
 ) : null}</>
 ) : null}</button>{menuOpen ? (
-  <div  className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}>{_isMounted ? (
+  <div  className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}>{isMounted ? (
   <>{!!props.user ? (
   <><div className="pb-3 mb-3 border-b border-gray-200"><p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">{getLabel('signedInAs', 'Signed in as')}</p><p className="font-medium text-gray-900 truncate">{getUserName()}</p></div>
 <nav><ul className="space-y-0.5">{getMenuLinks()?.map((link) => (

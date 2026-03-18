@@ -222,7 +222,8 @@ export interface ProductCardProps {
 
 interface ProductCardState {
     isFavorite: boolean;
-    _includeTax: boolean;
+    includeTax: boolean;
+    priceListener: any;
     getProductName: () => string;
     getProductSku: () => string;
     getProductImageUrl: () => string;
@@ -242,7 +243,8 @@ interface ProductCardState {
 export default function ProductCard(props: ProductCardProps) {
     const state = useStore<ProductCardState>({
         isFavorite: false,
-        _includeTax: true,
+        includeTax: true,
+        priceListener: null as any,
 
         isRow() {
             return (props.columns as number) === 1;
@@ -265,7 +267,7 @@ export default function ProductCard(props: ProductCardProps) {
 
         getProductPrice(): string {
             const priceObj = (props.product as Product)?.price;
-            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
+            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
             const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
             if (!value && value !== 0) return '';
             return `\u20AC${Number(value).toFixed(2)}`;
@@ -341,18 +343,6 @@ export default function ProductCard(props: ProductCardProps) {
                         item.value.length > 0,
                 );
         },
-    });
-
-    onMount(() => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state._includeTax = stored === null ? true : stored === 'true';
-            state._priceListener = () => {
-                const val = localStorage.getItem('price_include_tax');
-                state._includeTax = val === null ? true : val === 'true';
-            };
-            window.addEventListener('priceToggleChanged', state._priceListener);
-        }
     });
 
     return (

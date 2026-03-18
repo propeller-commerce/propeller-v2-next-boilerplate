@@ -38,9 +38,7 @@ export default function AccountLayout({
                         <aside className="w-full lg:w-72 flex-shrink-0">
                             <Card className="overflow-hidden border-border bg-card shadow-sm sticky top-24">
                                 <AccountIconAndMenu
-                                    variant="sidebar"
                                     user={state.user}
-                                    currentPath={pathname}
                                     onMenuItemClick={(href) => router.push(href)}
                                     onLogoutClick={() => logout()}
                                     menuLinks={[

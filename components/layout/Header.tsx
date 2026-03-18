@@ -140,6 +140,7 @@ export default function Header() {
                   {showVatToggle && (
                     <PriceToggle
                       inclExclVatSwitched={setIncludeTax}
+                      initialState={includeTax}
                     />
                   )}
 

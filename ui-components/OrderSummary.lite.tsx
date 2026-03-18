@@ -47,8 +47,35 @@ export interface OrderSummaryProps {
     countries?: { code: string; name: string }[];
 }
 
+interface OrderSummaryState {
+    containerClass: string;
+    showOrderNumber: boolean;
+    showOrderDate: boolean;
+    showOrderStatus: boolean;
+    showInvoiceAddress: boolean;
+    showDeliveryAddress: boolean;
+    showOrderTotal: boolean;
+    formatItemPrice: (price: number) => string;
+    showDeliveryInfo: boolean;
+    showRemarks: boolean;
+    orderReference: string;
+    orderRemarks: string;
+    getLabel: (key: string, fallback: string) => string;
+    getCountryName: (code: string) => string;
+    formatOrderDate: (dateString: string) => string;
+    orderNumber: string;
+    orderDate: string;
+    orderStatus: string;
+    orderTotal: number;
+    invoiceAddress: any;
+    deliveryAddress: any;
+    paymentMethod: string;
+    carrierName: string;
+    requestDate: string;
+}
+
 export default function OrderSummary(props: OrderSummaryProps) {
-    const state = useStore({
+    const state = useStore<OrderSummaryState>({
         get containerClass() {
             return props.orderSummaryContainerClass || 'order-summary';
         },

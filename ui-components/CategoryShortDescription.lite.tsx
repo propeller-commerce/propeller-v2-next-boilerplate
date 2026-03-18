@@ -26,8 +26,12 @@ export interface CategoryShortDescriptionProps {
     className?: string;
 }
 
+interface CategoryShortDescriptionState {
+    html: string;
+}
+
 export default function CategoryShortDescription(props: CategoryShortDescriptionProps) {
-    const state = useStore({
+    const state = useStore<CategoryShortDescriptionState>({
         get html(): string {
             if (!props.category?.shortDescription) return '';
             const match = props.category.shortDescription.find(

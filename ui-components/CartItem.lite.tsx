@@ -87,13 +87,13 @@ export interface CartItemProps {
 }
 
 interface CartItemState {
-    _quantity: number;
-    _notes: string;
-    _loading: boolean;
-    _deleting: boolean;
-    _notesTimeout: ReturnType<typeof setTimeout>;
-    _crossupsells: Crossupsell[];
-    _crossupsellsLoading: boolean;
+    quantity: number;
+    notes: string;
+    loading: boolean;
+    deleting: boolean;
+    notesTimeout: any;
+    crossupsells: Crossupsell[];
+    crossupsellsLoading: boolean;
     getLabel: (key: string, fallback: string) => string;
     getProductName: () => string;
     getProductUrl: () => string;
@@ -113,13 +113,13 @@ interface CartItemState {
 
 export default function CartItem(props: CartItemProps) {
     const state = useStore<CartItemState>({
-        _quantity: 1,
-        _notes: '',
-        _loading: false,
-        _deleting: false,
-        _notesTimeout: null as unknown as ReturnType<typeof setTimeout>,
-        _crossupsells: [] as Crossupsell[],
-        _crossupsellsLoading: false,
+        quantity: 1,
+        notes: '',
+        loading: false,
+        deleting: false,
+        notesTimeout: null as unknown as ReturnType<typeof setTimeout>,
+        crossupsells: [] as Crossupsell[],
+        crossupsellsLoading: false,
         getLabel(key: string, fallback: string): string {
             return (props.labels as Record<string, string>)?.[key] || fallback;
         },
@@ -155,13 +155,13 @@ export default function CartItem(props: CartItemProps) {
         },
 
         handleQuantityChange(newQuantity: number): void {
-            if (newQuantity < 1 || state._loading) return;
-            state._quantity = newQuantity;
-            state._loading = true;
+            if (newQuantity < 1 || state.loading) return;
+            state.quantity = newQuantity;
+            state.loading = true;
 
             if (props.onQuantityChange) {
                 props.onQuantityChange(props.cartItem, newQuantity);
-                state._loading = false;
+                state.loading = false;
                 return;
             }
 
@@ -174,30 +174,30 @@ export default function CartItem(props: CartItemProps) {
                 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                 imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
             }).then((updatedCart: Cart) => {
-                state._loading = false;
+                state.loading = false;
                 if (props.afterCartUpdate) {
                     props.afterCartUpdate(updatedCart);
                 }
             }).catch((error: Error) => {
                 console.error('Failed to update cart item quantity:', error);
-                state._quantity = props.cartItem.quantity;
-                state._loading = false;
+                state.quantity = props.cartItem.quantity;
+                state.loading = false;
             });
         },
 
         handleNoteChange(note: string): void {
-            state._notes = note;
+            state.notes = note;
 
             if (props.onNoteChange) {
                 props.onNoteChange(props.cartItem, note);
                 return;
             }
 
-            if (state._notesTimeout) {
-                clearTimeout(state._notesTimeout);
+            if (state.notesTimeout) {
+                clearTimeout(state.notesTimeout);
             }
 
-            state._notesTimeout = setTimeout(() => {
+            state.notesTimeout = setTimeout(() => {
                 const cartService = new CartService(props.graphqlClient);
                 cartService.updateCartItem({
                     id: props.cartId,
@@ -217,12 +217,12 @@ export default function CartItem(props: CartItemProps) {
         },
 
         handleDelete(): void {
-            if (state._deleting) return;
-            state._deleting = true;
+            if (state.deleting) return;
+            state.deleting = true;
 
             if (props.onDelete) {
                 props.onDelete(props.cartItem);
-                state._deleting = false;
+                state.deleting = false;
                 return;
             }
 
@@ -235,13 +235,13 @@ export default function CartItem(props: CartItemProps) {
                 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                 imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
             }).then((updatedCart: Cart) => {
-                state._deleting = false;
+                state.deleting = false;
                 if (props.afterCartUpdate) {
                     props.afterCartUpdate(updatedCart);
                 }
             }).catch((error: Error) => {
                 console.error('Failed to delete cart item:', error);
-                state._deleting = false;
+                state.deleting = false;
             });
         },
 
@@ -250,7 +250,7 @@ export default function CartItem(props: CartItemProps) {
             const productId = props.cartItem?.productId;
             if (!productId) return;
 
-            state._crossupsellsLoading = true;
+            state.crossupsellsLoading = true;
             const crossupsellService = new CrossupsellService(props.graphqlClient);
 
             const searchInput: CrossupsellSearchInput = {
@@ -260,17 +260,17 @@ export default function CartItem(props: CartItemProps) {
                 ...(productId && { productIdsFrom: [productId] })
             };
 
-            crossupsellService.getCrossupsells(searchInput).then((response) => {
-                state._crossupsells = response?.items || [];
-                state._crossupsellsLoading = false;
+            crossupsellService.getCrossupsells({ input: searchInput }).then((response) => {
+                state.crossupsells = response?.items || [];
+                state.crossupsellsLoading = false;
             }).catch(() => {
-                state._crossupsells = [];
-                state._crossupsellsLoading = false;
+                state.crossupsells = [];
+                state.crossupsellsLoading = false;
             });
         },
 
         getVisibleCrossupsells(): Crossupsell[] {
-            const items = state._crossupsells || [];
+            const items = state.crossupsells || [];
             const limit = props.crossupsellLimit || 3;
             return items.slice(0, limit);
         },
@@ -295,15 +295,15 @@ export default function CartItem(props: CartItemProps) {
     });
 
     onMount(() => {
-        state._quantity = props.cartItem.quantity || 1;
-        state._notes = props.cartItem.notes || '';
+        state.quantity = props.cartItem.quantity || 1;
+        state.notes = props.cartItem.notes || '';
 
         state.fetchCrossupsells();
     });
 
     onUpdate(() => {
-        state._quantity = props.cartItem.quantity || 1;
-        state._notes = props.cartItem.notes || '';
+        state.quantity = props.cartItem.quantity || 1;
+        state.notes = props.cartItem.notes || '';
     }, [props.cartItem]);
 
     return (
@@ -379,7 +379,7 @@ export default function CartItem(props: CartItemProps) {
                             {state.getLabel('notes', 'Notes')}
                         </label>
                         <textarea
-                            value={state._notes}
+                            value={state.notes}
                             onChange={(e) => state.handleNoteChange(e.target.value)}
                             placeholder={state.getLabel('notesPlaceholder', 'Add a note for this item...')}
                             rows={2}
@@ -432,8 +432,8 @@ export default function CartItem(props: CartItemProps) {
                     <div className="flex items-center border border-gray-300 rounded-md bg-white h-10">
                         <button
                             type="button"
-                            onClick={() => state.handleQuantityChange(state._quantity - 1)}
-                            disabled={state._quantity <= 1 || state._loading}
+                            onClick={() => state.handleQuantityChange(state.quantity - 1)}
+                            disabled={state.quantity <= 1 || state.loading}
                             className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
                         >
                             -
@@ -441,7 +441,7 @@ export default function CartItem(props: CartItemProps) {
                         <input
                             type="number"
                             min={1}
-                            value={state._quantity}
+                            value={state.quantity}
                             onChange={(e) => {
                                 const val = parseInt(e.target.value, 10);
                                 if (val >= 1) state.handleQuantityChange(val);
@@ -450,8 +450,8 @@ export default function CartItem(props: CartItemProps) {
                         />
                         <button
                             type="button"
-                            onClick={() => state.handleQuantityChange(state._quantity + 1)}
-                            disabled={state._loading}
+                            onClick={() => state.handleQuantityChange(state.quantity + 1)}
+                            disabled={state.loading}
                             className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
                         >
                             +
@@ -464,7 +464,7 @@ export default function CartItem(props: CartItemProps) {
                     <input
                         type="number"
                         min={1}
-                        value={state._quantity}
+                        value={state.quantity}
                         onChange={(e) => {
                             const val = parseInt(e.target.value, 10);
                             if (val >= 1) state.handleQuantityChange(val);
@@ -474,7 +474,7 @@ export default function CartItem(props: CartItemProps) {
                 </Show>
 
                 {/* Loading indicator */}
-                <Show when={state._loading}>
+                <Show when={state.loading}>
                     <span className="text-xs text-gray-400">{state.getLabel('updating', 'Updating...')}</span>
                 </Show>
 
@@ -482,13 +482,13 @@ export default function CartItem(props: CartItemProps) {
                 <button
                     type="button"
                     onClick={() => state.handleDelete()}
-                    disabled={state._deleting}
+                    disabled={state.deleting}
                     className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                    <Show when={state._deleting}>
+                    <Show when={state.deleting}>
                         {state.getLabel('deleting', 'Removing...')}
                     </Show>
-                    <Show when={!state._deleting}>
+                    <Show when={!state.deleting}>
                         {state.getLabel('remove', 'Remove')}
                     </Show>
                 </button>

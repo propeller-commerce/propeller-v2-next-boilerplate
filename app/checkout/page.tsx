@@ -182,8 +182,8 @@ export default function CheckoutPage() {
 
         setState(prev => {
           if (prev.cart?.cartId === cartToUse?.cartId && prev.cart?.invoiceAddress?.street === cartToUse?.invoiceAddress?.street) return prev;
-          const updatedHasInvoice = !!cartToUse.invoiceAddress?.street;
-          const updatedHasDelivery = !!cartToUse.deliveryAddress?.street;
+          const updatedHasInvoice = !!cartToUse?.invoiceAddress?.street;
+          const updatedHasDelivery = !!cartToUse?.deliveryAddress?.street;
           if (updatedHasInvoice && updatedHasDelivery) {
             return { ...prev, cart: cartToUse, currentStep: 3 };
           } else if (updatedHasInvoice) {
@@ -195,7 +195,7 @@ export default function CheckoutPage() {
       }
     };
     initializeCheckout();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contextCart, router, state.loading, authState.isAuthenticated, authState.user]);
 
   useEffect(() => {
@@ -583,6 +583,7 @@ export default function CheckoutPage() {
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><CreditCard className="w-4 h-4" /> Payment Method</h3>
                       <CartPaymethods
+                        user={authState.user}
                         cart={state.cart}
                         onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
                       />

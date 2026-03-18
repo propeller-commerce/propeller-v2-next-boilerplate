@@ -21,9 +21,20 @@ export interface CartCarriersProps {
     labels?: Record<string, string>;
 }
 
+interface CartCarriersState {
+    selectedName: string;
+    containerClass: string;
+    showLogo: boolean;
+    carriers: CartCarrier[];
+    getLabel: (key: string, fallback: string) => string;
+    formatCarrierPrice: (price: number) => string;
+    getLogoUrl: (carrier: CartCarrier) => string;
+    handleSelect: (carrier: CartCarrier) => void;
+}
+
 export default function CartCarriers(props: CartCarriersProps) {
-    const state = useStore({
-        _selectedName: '' as string,
+    const state = useStore<CartCarriersState>({
+        selectedName: '',
 
         get containerClass(): string {
             return props.carriersContainerClass || 'cart-carriers';
@@ -53,7 +64,7 @@ export default function CartCarriers(props: CartCarriersProps) {
         },
 
         handleSelect(carrier: CartCarrier): void {
-            state._selectedName = carrier.name;
+            state.selectedName = carrier.name;
             if (props.onCarrierSelect) {
                 props.onCarrierSelect(carrier);
             }
@@ -69,7 +80,7 @@ export default function CartCarriers(props: CartCarriersProps) {
                             <div
                                 key={`${carrier.name}-${index}`}
                                 onClick={() => state.handleSelect(carrier)}
-                                className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${state._selectedName === carrier.name ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+                                className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${state.selectedName === carrier.name ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
                             >
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">

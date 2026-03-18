@@ -18,7 +18,7 @@ export interface AddressCardProps {
     graphqlClient?: GraphQLClient;
 
     /** The address to display (Address | CartAddress | WarehouseAddress | OrderAddress) */
-    address: Address | CartAddress | WarehouseAddress | OrderAddress;
+    address: Address | CartAddress | WarehouseAddress | OrderAddress | null;
 
     /** Display company name @default true */
     showCompanyName?: boolean;
@@ -108,26 +108,61 @@ export interface AddressCardProps {
     beforeSave?: () => void;
 }
 
+interface AddressCardState {
+    showEditModal: boolean;
+    showDeleteConfirm: boolean;
+    localAddress: any;
+    editCompany: string;
+    editGender: Enums.Gender;
+    editFirstName: string;
+    editMiddleName: string;
+    editLastName: string;
+    editStreet: string;
+    editNumber: string;
+    editNumberExtension: string;
+    editPostalCode: string;
+    editCity: string;
+    editCountry: string;
+    editEmail: string;
+    editPhone: string;
+    editNotes: string;
+    editIcp: Enums.YesNo | boolean;
+    getLabel: (key: string, fallback: string) => string;
+    getCountryName: (code: string) => string;
+    addr: any;
+    showCard: boolean;
+    salutation: string;
+    fullName: string;
+    streetLine: string;
+    cityLine: string;
+    formTitle: string;
+    openEditModal: () => void;
+    handleSaveEdit: (e: any) => Promise<void>;
+    confirmDelete: () => void;
+    handleSetDefault: () => void;
+    closeEditModal: () => void;
+}
+
 export default function AddressCard(props: AddressCardProps) {
-    const state = useStore({
-        _showEditModal: false,
-        _showDeleteConfirm: false,
-        _localAddress: null as any,
-        _editCompany: '',
-        _editGender: Enums.Gender.U,
-        _editFirstName: '',
-        _editMiddleName: '',
-        _editLastName: '',
-        _editStreet: '',
-        _editNumber: '',
-        _editNumberExtension: '',
-        _editPostalCode: '',
-        _editCity: '',
-        _editCountry: '',
-        _editEmail: '',
-        _editPhone: '',
-        _editNotes: '',
-        _editIcp: Enums.YesNo.N,
+    const state = useStore<AddressCardState>({
+        showEditModal: false,
+        showDeleteConfirm: false,
+        localAddress: null as any,
+        editCompany: '',
+        editGender: Enums.Gender.U,
+        editFirstName: '',
+        editMiddleName: '',
+        editLastName: '',
+        editStreet: '',
+        editNumber: '',
+        editNumberExtension: '',
+        editPostalCode: '',
+        editCity: '',
+        editCountry: '',
+        editEmail: '',
+        editPhone: '',
+        editNotes: '',
+        editIcp: Enums.YesNo.N,
 
         getLabel(key: string, fallback: string) {
             return (props.labels as any)?.[key] || fallback;
@@ -144,7 +179,7 @@ export default function AddressCard(props: AddressCardProps) {
 
         /** Returns the address to display: local optimistic state or props */
         get addr(): any {
-            return state._localAddress || props.address;
+            return state.localAddress || props.address;
         },
 
         get showCard(): boolean {
@@ -200,22 +235,22 @@ export default function AddressCard(props: AddressCardProps) {
 
         openEditModal() {
             const a = state.addr;
-            state._editCompany = a?.company || '';
-            state._editGender = a?.gender || 'M';
-            state._editFirstName = a?.firstName || '';
-            state._editMiddleName = a?.middleName || '';
-            state._editLastName = a?.lastName || '';
-            state._editStreet = a?.street || '';
-            state._editNumber = a?.number || '';
-            state._editNumberExtension = a?.numberExtension || '';
-            state._editPostalCode = a?.postalCode || '';
-            state._editCity = a?.city || '';
-            state._editCountry = a?.country || '';
-            state._editEmail = a?.email || '';
-            state._editPhone = a?.phone || '';
-            state._editNotes = a?.notes || '';
-            state._editIcp = a?.icp || false;
-            state._showEditModal = true;
+            state.editCompany = a?.company || '';
+            state.editGender = a?.gender || 'M';
+            state.editFirstName = a?.firstName || '';
+            state.editMiddleName = a?.middleName || '';
+            state.editLastName = a?.lastName || '';
+            state.editStreet = a?.street || '';
+            state.editNumber = a?.number || '';
+            state.editNumberExtension = a?.numberExtension || '';
+            state.editPostalCode = a?.postalCode || '';
+            state.editCity = a?.city || '';
+            state.editCountry = a?.country || '';
+            state.editEmail = a?.email || '';
+            state.editPhone = a?.phone || '';
+            state.editNotes = a?.notes || '';
+            state.editIcp = a?.icp || false;
+            state.showEditModal = true;
         },
 
         async handleSaveEdit(e: any) {
@@ -223,31 +258,31 @@ export default function AddressCard(props: AddressCardProps) {
             if (props.beforeSave) {
                 props.beforeSave();
             }
-            const editedAddress: Address = {
+            const editedAddress = {
                 id: state.addr?.id,
                 type: state.addr?.type || props.addressType || '',
                 isDefault: state.addr?.isDefault,
-                company: state._editCompany,
-                gender: state._editGender,
-                firstName: state._editFirstName,
-                middleName: state._editMiddleName,
-                lastName: state._editLastName,
-                street: state._editStreet,
-                number: state._editNumber,
-                numberExtension: state._editNumberExtension,
-                postalCode: state._editPostalCode,
-                city: state._editCity,
-                country: state._editCountry,
-                email: state._editEmail,
-                phone: state._editPhone,
-                notes: state._editNotes,
-                icp: state._editIcp,
-            };
-            state._localAddress = editedAddress;
+                company: state.editCompany,
+                gender: state.editGender,
+                firstName: state.editFirstName,
+                middleName: state.editMiddleName,
+                lastName: state.editLastName,
+                street: state.editStreet,
+                number: state.editNumber,
+                numberExtension: state.editNumberExtension,
+                postalCode: state.editPostalCode,
+                city: state.editCity,
+                country: state.editCountry,
+                email: state.editEmail,
+                phone: state.editPhone,
+                notes: state.editNotes,
+                icp: state.editIcp as Enums.YesNo,
+            } as unknown as Address;
+            state.localAddress = editedAddress;
             if (props.onEdit) {
                 await props.onEdit(editedAddress);
             }
-            state._showEditModal = false;
+            state.showEditModal = false;
             if (props.afterEdit) {
                 await props.afterEdit(editedAddress);
             }
@@ -259,12 +294,12 @@ export default function AddressCard(props: AddressCardProps) {
                 if (props.onDelete) {
                     props.onDelete(state.addr);
                 }
-                state._showDeleteConfirm = false;
+                state.showDeleteConfirm = false;
                 if (props.afterDelete) {
                     props.afterDelete(state.addr);
                 }
             } else {
-                state._showDeleteConfirm = false;
+                state.showDeleteConfirm = false;
             }
         },
 
@@ -278,7 +313,7 @@ export default function AddressCard(props: AddressCardProps) {
         },
 
         closeEditModal() {
-            state._showEditModal = false;
+            state.showEditModal = false;
             if (props.isNew && props.onCancel) {
                 props.onCancel();
             }
@@ -341,7 +376,7 @@ export default function AddressCard(props: AddressCardProps) {
                             <Show when={props.enableDelete !== false}>
                                 <button
                                     className="text-red-600 hover:text-red-800 text-sm font-medium"
-                                    onClick={() => { state._showDeleteConfirm = true; }}
+                                    onClick={() => { state.showDeleteConfirm = true; }}
                                 >
                                     {state.getLabel('delete', 'Delete')}
                                 </button>
@@ -360,7 +395,7 @@ export default function AddressCard(props: AddressCardProps) {
             </Show>
 
             {/* Inline Form (no modal overlay) */}
-            <Show when={props.inline && state._showEditModal}>
+            <Show when={props.inline && state.showEditModal}>
                 <div className="bg-white p-6 rounded-lg border">
                     <form onSubmit={(e) => state.handleSaveEdit(e)}>
                         <Show when={!!state.formTitle}>
@@ -372,8 +407,8 @@ export default function AddressCard(props: AddressCardProps) {
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('gender', 'Gender')}</label>
                                     <select
-                                        value={state._editGender}
-                                        onChange={(e) => { state._editGender = e.target.value; }}
+                                        value={state.editGender}
+                                        onChange={(e) => { state.editGender = e.target.value as Enums.Gender; }}
                                         className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                                     >
                                         <option value="M">{state.getLabel('genderMale', 'Male')}</option>
@@ -383,54 +418,54 @@ export default function AddressCard(props: AddressCardProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('company', 'Company')}</label>
-                                    <input type="text" value={state._editCompany} onChange={(e) => { state._editCompany = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                    <input type="text" value={state.editCompany} onChange={(e) => { state.editCompany = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('firstName', 'First Name')} *</label>
-                                    <input type="text" value={state._editFirstName} onChange={(e) => { state._editFirstName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="text" value={state.editFirstName} onChange={(e) => { state.editFirstName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('middleName', 'Middle Name')}</label>
-                                    <input type="text" value={state._editMiddleName} onChange={(e) => { state._editMiddleName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                    <input type="text" value={state.editMiddleName} onChange={(e) => { state.editMiddleName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('lastName', 'Last Name')} *</label>
-                                    <input type="text" value={state._editLastName} onChange={(e) => { state._editLastName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="text" value={state.editLastName} onChange={(e) => { state.editLastName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-12 gap-4">
                                 <div className="col-span-8">
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('street', 'Street')} *</label>
-                                    <input type="text" value={state._editStreet} onChange={(e) => { state._editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="text" value={state.editStreet} onChange={(e) => { state.editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')} *</label>
-                                    <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="text" value={state.editNumber} onChange={(e) => { state.editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('numberExtension', 'Ext')}</label>
-                                    <input type="text" value={state._editNumberExtension} onChange={(e) => { state._editNumberExtension = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                    <input type="text" value={state.editNumberExtension} onChange={(e) => { state.editNumberExtension = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('postalCode', 'Postal Code')} *</label>
-                                    <input type="text" value={state._editPostalCode} onChange={(e) => { state._editPostalCode = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="text" value={state.editPostalCode} onChange={(e) => { state.editPostalCode = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('city', 'City')} *</label>
-                                    <input type="text" value={state._editCity} onChange={(e) => { state._editCity = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="text" value={state.editCity} onChange={(e) => { state.editCity = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-1">{state.getLabel('country', 'Country')} *</label>
-                                <select value={state._editCountry} onChange={(e) => { state._editCountry = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white" required>
+                                <select value={state.editCountry} onChange={(e) => { state.editCountry = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white" required>
                                     <option value="">{state.getLabel('selectCountry', 'Select country')}</option>
                                     <For each={props.countries || []}>
                                         {(c: any) => (
@@ -443,11 +478,11 @@ export default function AddressCard(props: AddressCardProps) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')} *</label>
-                                    <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                    <input type="email" value={state.editEmail} onChange={(e) => { state.editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('phone', 'Phone')}</label>
-                                    <input type="tel" value={state._editPhone} onChange={(e) => { state._editPhone = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                    <input type="tel" value={state.editPhone} onChange={(e) => { state.editPhone = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                 </div>
                             </div>
 
@@ -456,8 +491,8 @@ export default function AddressCard(props: AddressCardProps) {
                                     <input
                                         type="checkbox"
                                         id="icp-inline"
-                                        checked={state._editIcp}
-                                        onChange={(e) => { state._editIcp = e.target.checked; }}
+                                        checked={!!state.editIcp}
+                                        onChange={(e) => { state.editIcp = e.target.checked; }}
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
                                     <label htmlFor="icp-inline" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
@@ -485,7 +520,7 @@ export default function AddressCard(props: AddressCardProps) {
             </Show>
 
             {/* Modal Form (with overlay) */}
-            <Show when={!props.inline && state._showEditModal}>
+            <Show when={!props.inline && state.showEditModal}>
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10">
                     <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
                         <form onSubmit={(e) => state.handleSaveEdit(e)}>
@@ -501,8 +536,8 @@ export default function AddressCard(props: AddressCardProps) {
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('gender', 'Gender')}</label>
                                         <select
-                                            value={state._editGender}
-                                            onChange={(e) => { state._editGender = e.target.value; }}
+                                            value={state.editGender}
+                                            onChange={(e) => { state.editGender = e.target.value as Enums.Gender; }}
                                             className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
                                         >
                                             <option value="M">{state.getLabel('genderMale', 'Male')}</option>
@@ -512,54 +547,54 @@ export default function AddressCard(props: AddressCardProps) {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('company', 'Company')}</label>
-                                        <input type="text" value={state._editCompany} onChange={(e) => { state._editCompany = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                        <input type="text" value={state.editCompany} onChange={(e) => { state.editCompany = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('firstName', 'First Name')} *</label>
-                                        <input type="text" value={state._editFirstName} onChange={(e) => { state._editFirstName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="text" value={state.editFirstName} onChange={(e) => { state.editFirstName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('middleName', 'Middle Name')}</label>
-                                        <input type="text" value={state._editMiddleName} onChange={(e) => { state._editMiddleName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                        <input type="text" value={state.editMiddleName} onChange={(e) => { state.editMiddleName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('lastName', 'Last Name')} *</label>
-                                        <input type="text" value={state._editLastName} onChange={(e) => { state._editLastName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="text" value={state.editLastName} onChange={(e) => { state.editLastName = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-12 gap-4">
                                     <div className="col-span-8">
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('street', 'Street')} *</label>
-                                        <input type="text" value={state._editStreet} onChange={(e) => { state._editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="text" value={state.editStreet} onChange={(e) => { state.editStreet = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('number', 'Number')} *</label>
-                                        <input type="text" value={state._editNumber} onChange={(e) => { state._editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="text" value={state.editNumber} onChange={(e) => { state.editNumber = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('numberExtension', 'Ext')}</label>
-                                        <input type="text" value={state._editNumberExtension} onChange={(e) => { state._editNumberExtension = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                        <input type="text" value={state.editNumberExtension} onChange={(e) => { state.editNumberExtension = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('postalCode', 'Postal Code')} *</label>
-                                        <input type="text" value={state._editPostalCode} onChange={(e) => { state._editPostalCode = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="text" value={state.editPostalCode} onChange={(e) => { state.editPostalCode = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('city', 'City')} *</label>
-                                        <input type="text" value={state._editCity} onChange={(e) => { state._editCity = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="text" value={state.editCity} onChange={(e) => { state.editCity = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{state.getLabel('country', 'Country')} *</label>
-                                    <select value={state._editCountry} onChange={(e) => { state._editCountry = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white" required>
+                                    <select value={state.editCountry} onChange={(e) => { state.editCountry = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white" required>
                                         <option value="">{state.getLabel('selectCountry', 'Select country')}</option>
                                         <For each={props.countries || []}>
                                             {(c: any) => (
@@ -572,11 +607,11 @@ export default function AddressCard(props: AddressCardProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('email', 'Email')} *</label>
-                                        <input type="email" value={state._editEmail} onChange={(e) => { state._editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
+                                        <input type="email" value={state.editEmail} onChange={(e) => { state.editEmail = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" required />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-1">{state.getLabel('phone', 'Phone')}</label>
-                                        <input type="tel" value={state._editPhone} onChange={(e) => { state._editPhone = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
+                                        <input type="tel" value={state.editPhone} onChange={(e) => { state.editPhone = e.target.value; }} className="w-full h-10 px-3 rounded-md border border-gray-300" />
                                     </div>
                                 </div>
 
@@ -585,8 +620,8 @@ export default function AddressCard(props: AddressCardProps) {
                                         <input
                                             type="checkbox"
                                             id="icp-modal"
-                                            checked={state._editIcp}
-                                            onChange={(e) => { state._editIcp = e.target.checked; }}
+                                            checked={!!state.editIcp}
+                                            onChange={(e) => { state.editIcp = e.target.checked; }}
                                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         <label htmlFor="icp-modal" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
@@ -608,13 +643,13 @@ export default function AddressCard(props: AddressCardProps) {
             </Show>
 
             {/* Delete Confirmation */}
-            <Show when={state._showDeleteConfirm}>
+            <Show when={state.showDeleteConfirm}>
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
                         <h3 className="text-xl font-bold mb-4">{state.getLabel('confirmDeleteTitle', 'Confirm Delete')}</h3>
                         <p className="mb-6 text-gray-600">{state.getLabel('confirmDeleteMessage', 'Are you sure you want to delete this address?')}</p>
                         <div className="flex justify-end gap-4">
-                            <button onClick={() => { state._showDeleteConfirm = false; }} className="px-4 py-2 border rounded hover:bg-gray-100">
+                            <button onClick={() => { state.showDeleteConfirm = false; }} className="px-4 py-2 border rounded hover:bg-gray-100">
                                 {state.getLabel('cancel', 'Cancel')}
                             </button>
                             <button onClick={() => state.confirmDelete()} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">

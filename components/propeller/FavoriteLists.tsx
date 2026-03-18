@@ -90,7 +90,7 @@ listToDelete: FavoriteList | null;
 showCreateModal: boolean;
 newListName: string;
 newSetAsDefault: boolean;
-_isMounted: boolean;
+isMounted: boolean;
 fetchLists: () => Promise<void>;
 handleEditList: (list: FavoriteList) => void;
 handleCancelEdit: () => void;
@@ -105,7 +105,7 @@ getTotalCount: (list: FavoriteList) => number;
 getProductCount: (list: FavoriteList) => number;
 getClusterCount: (list: FavoriteList) => number;
 getLabel: (key: string, fallback: string) => string;
-displayedLists: FavoriteList[];
+displayedLists: () => FavoriteList[];
 }
 
 
@@ -143,7 +143,7 @@ const [newListName, setNewListName] = useState<FavoriteListsState["newListName"]
 const [newSetAsDefault, setNewSetAsDefault] = useState<FavoriteListsState["newSetAsDefault"]>(() => (false))
 
 
-const [_isMounted, set_isMounted] = useState<FavoriteListsState["_isMounted"]>(() => (false))
+const [isMounted, setIsMounted] = useState<FavoriteListsState["isMounted"]>(() => (false))
 
 
 async function fetchLists(): ReturnType<FavoriteListsState["fetchLists"]>{
@@ -372,7 +372,7 @@ return lists;
 
 
 useEffect(() => {
-      set_isMounted(true);
+      setIsMounted(true);
 if (props.user) {
 fetchLists();
 }
@@ -388,13 +388,13 @@ fetchLists();
 return (
 
 
-  <div  className={props.className}>{props.allowFavoriteListCreate !== false && !loading && _isMounted && displayedLists().length > 0 ? (
+  <div  className={props.className}>{props.allowFavoriteListCreate !== false && !loading && isMounted && displayedLists().length > 0 ? (
   <div className="flex justify-end mb-4"><button className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"  onClick={(event) => {
 setShowCreateModal(true);
 } }><svg  xmlns="http://www.w3.org/2000/svg"  width="16"  height="16"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round" className="mr-2"><path  d="M5 12h14"  /><path  d="M12 5v14"  /></svg>{getLabel('createButton', 'Create New List')}</button></div>
 ) : null}{loading ? (
   <div className="space-y-4"><div className="border border-gray-200 rounded-lg p-6 animate-pulse"><div className="flex justify-between items-start"><div className="space-y-2 flex-1"><div className="h-6 w-1/3 bg-gray-200 rounded"  /><div className="h-4 w-1/4 bg-gray-200 rounded"  /><div className="h-4 w-1/2 bg-gray-200 rounded"  /></div></div></div><div className="border border-gray-200 rounded-lg p-6 animate-pulse"><div className="flex justify-between items-start"><div className="space-y-2 flex-1"><div className="h-6 w-1/3 bg-gray-200 rounded"  /><div className="h-4 w-1/4 bg-gray-200 rounded"  /><div className="h-4 w-1/2 bg-gray-200 rounded"  /></div></div></div></div>
-) : null}{!loading && _isMounted ? (
+) : null}{!loading && isMounted ? (
   <>{displayedLists().length > 0 ? (
   <div className="space-y-4">{displayedLists()?.map((list) => (
   <div className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors"  key={list.id}><div className="flex justify-between items-start"><div className="flex-1">{editingListId === String(list.id) ? (

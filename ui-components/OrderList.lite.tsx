@@ -40,7 +40,7 @@ export interface OrderListProps {
     enableSearch?: boolean;
 
     /** Fields enabled for searching (UI inputs) */
-    searchFields?: (keyof OrderSearchArguments)[];
+    searchFields?: string[];
 
     /** Term fields configuration (backend) */
     termFields?: any[]; // Using any[] to avoid strict enum import issues in Mitosis for now, effectively OrderSearchFields[]
@@ -112,7 +112,7 @@ interface OrderListState {
     getStatusColor: (status: string) => string;
     getColumnLabel: (col: string) => string;
     getLabel: (key: string, fallback: string) => string;
-    searchFields: (keyof OrderSearchArguments)[];
+    searchFields: string[];
 }
 
 export default function OrderList(props: OrderListProps) {
@@ -237,7 +237,7 @@ export default function OrderList(props: OrderListProps) {
         get searchFields() {
             const fields = props.searchFields || [];
             if (props.enableSearch && !(fields as string[]).includes('term')) {
-                return ['term', ...fields] as (keyof OrderSearchArguments)[];
+                return ['term', ...fields] as string[];
             }
             return fields;
         }

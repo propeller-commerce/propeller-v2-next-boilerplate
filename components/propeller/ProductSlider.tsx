@@ -47,7 +47,6 @@ taxZone: string;
 /**
  * When true, net price (incl. tax) is the leading price.
  * Forwarded to each ProductCard / ClusterCard.
- * Defaults to reading localStorage('price_include_tax') inside each card.
  */
 includeTax?: boolean;
 
@@ -169,11 +168,11 @@ configuration?: any;
 labels?: Record<string, string>;
 }
 interface ProductSliderState {
-_items: any[];
-_isLoading: boolean;
-_scrollPosition: number;
-_containerWidth: number;
-_scrollWidth: number;
+loadedItems: any[];
+isLoading: boolean;
+scrollPosition: number;
+containerWidth: number;
+scrollWidth: number;
 items: () => (Product | Cluster)[];
 isCrossUpsellMode: () => boolean;
 crossUpsellTitle: () => string;
@@ -202,26 +201,26 @@ handleClusterClick: (cluster: Cluster) => void;
 
   function ProductSlider(props:ProductSliderProps) {
 
-  const [_items, set_items] = useState<ProductSliderState["_items"]>(() => ([]))
+  const [loadedItems, setLoadedItems] = useState<ProductSliderState["loadedItems"]>(() => ([]))
 
 
-const [_isLoading, set_isLoading] = useState<ProductSliderState["_isLoading"]>(() => (false))
+const [isLoading, setIsLoading] = useState<ProductSliderState["isLoading"]>(() => (false))
 
 
-const [_scrollPosition, set_scrollPosition] = useState<ProductSliderState["_scrollPosition"]>(() => (0))
+const [scrollPosition, setScrollPosition] = useState<ProductSliderState["scrollPosition"]>(() => (0))
 
 
-const [_containerWidth, set_containerWidth] = useState<ProductSliderState["_containerWidth"]>(() => (0))
+const [containerWidth, setContainerWidth] = useState<ProductSliderState["containerWidth"]>(() => (0))
 
 
-const [_scrollWidth, set_scrollWidth] = useState<ProductSliderState["_scrollWidth"]>(() => (0))
+const [scrollWidth, setScrollWidth] = useState<ProductSliderState["scrollWidth"]>(() => (0))
 
 
 function items(): ReturnType<ProductSliderState["items"]>{
 if (props.products && props.products.length > 0) {
 return props.products;
 }
-return _items;
+return loadedItems;
 }
 
 
@@ -266,12 +265,12 @@ return props.itemsPerView?.desktop || 4;
 
 
 function canScrollLeft(): ReturnType<ProductSliderState["canScrollLeft"]>{
-return _scrollPosition > 0;
+return scrollPosition > 0;
 }
 
 
 function canScrollRight(): ReturnType<ProductSliderState["canScrollRight"]>{
-return _scrollPosition < _scrollWidth - _containerWidth - 1;
+return scrollPosition < scrollWidth - containerWidth - 1;
 }
 
 
@@ -300,7 +299,7 @@ async function fetchCrossUpsells(): ReturnType<ProductSliderState["fetchCrossUps
 if (!props.graphqlClient) return;
 if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
 if (!props.productId && !props.clusterId) return;
-set_isLoading(true);
+setIsLoading(true);
 try {
 const crossupsellService = new CrossupsellService(props.graphqlClient);
 const searchInput: CrossupsellsQueryVariables = {
@@ -342,11 +341,11 @@ for (let i = 0; i < crossupsells.length; i++) {
     items.push(cu.clusterTo);
   }
 }
-set_items(items);
+setLoadedItems(items);
 } catch (e) {
-set_items([]);
+setLoadedItems([]);
 } finally {
-set_isLoading(false);
+setIsLoading(false);
 }
 }
 
@@ -356,7 +355,7 @@ if (!props.graphqlClient) return;
 const hasProductIds = props.productIds && props.productIds.length > 0;
 const hasClusterIds = props.clusterIds && props.clusterIds.length > 0;
 if (!hasProductIds && !hasClusterIds) return;
-set_isLoading(true);
+setIsLoading(true);
 try {
 const productService = new ProductService(props.graphqlClient);
 const response = await productService.getProducts({
@@ -387,11 +386,11 @@ const response = await productService.getProducts({
     isSearchable: true
   }
 });
-set_items(response.items || []);
+setLoadedItems(response.items || []);
 } catch (e) {
-set_items([]);
+setLoadedItems([]);
 } finally {
-set_isLoading(false);
+setIsLoading(false);
 }
 }
 
@@ -432,9 +431,9 @@ el.scrollBy({
 
 function handleScroll(e: any): ReturnType<ProductSliderState["handleScroll"]>{
 const el = e.target as HTMLElement;
-set_scrollPosition(el.scrollLeft);
-set_containerWidth(el.clientWidth);
-set_scrollWidth(el.scrollWidth);
+setScrollPosition(el.scrollLeft);
+setContainerWidth(el.clientWidth);
+setScrollWidth(el.scrollWidth);
 }
 
 
@@ -464,33 +463,35 @@ useEffect(() => {
 setTimeout(() => {
 const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
 if (el) {
-set_containerWidth(el.clientWidth);
-set_scrollWidth(el.scrollWidth);
+setContainerWidth(el.clientWidth);
+setScrollWidth(el.scrollWidth);
 }
 }, 100)
     }, [])
 useEffect(() => {
-      doFetch()
+      doFetch();
+// NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
     },
-    [props.productIds, props.clusterIds]);useEffect(() => {
-      doFetch()
+    [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds)]);useEffect(() => {
+      doFetch();
+// NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
     },
-    [props.crossUpsellTypes, props.productId, props.clusterId])
+    [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId])
 
 
 return (
   <>
 
-  {!(isCrossUpsellMode() && !_isLoading && items().length === 0) ? (
+  {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (
   <><div  className={props.containerClassName || 'mb-12'}>{sliderTitle() || items().length > 0 ? (
   <div className="flex items-center justify-between mb-6">{sliderTitle() ? (
   <h2 className="text-2xl font-bold">{sliderTitle()}</h2>
 ) : null}{items().length > desktopCount() ? (
   <div className="flex gap-2"><button className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"  onClick={(event) => scrollLeft() }  disabled={!canScrollLeft()}  aria-label={getLabel('scrollLeft', 'Scroll left')}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round" className="w-5 h-5"><path  d="M15 19l-7-7 7-7"  /></svg></button><button className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"  onClick={(event) => scrollRight() }  disabled={!canScrollRight()}  aria-label={getLabel('scrollRight', 'Scroll right')}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round" className="w-5 h-5"><path  d="M9 5l7 7-7 7"  /></svg></button></div>
 ) : null}</div>
-) : null}{_isLoading ? (
+) : null}{isLoading ? (
   <div className="flex gap-6 overflow-hidden"><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /></div>
-) : null}{!_isLoading && items().length > 0 ? (
+) : null}{!isLoading && items().length > 0 ? (
   <div className="flex gap-6 overflow-x-auto scroll-smooth pb-4"  data-product-slider-track  onScroll={(e) => handleScroll(e) }  style={{
 scrollbarWidth: 'none',
 msOverflowStyle: 'none'
@@ -517,7 +518,7 @@ props.onToggleFavorite(product, isFav);
 } }  onProductClick={(product) => handleProductClick(product) }  />
 ) : null}</div>
 ))}</div>
-) : null}{!_isLoading && items().length === 0 && !props.products && !isCrossUpsellMode() ? (
+) : null}{!isLoading && items().length === 0 && !props.products && !isCrossUpsellMode() ? (
   <div className="text-center text-gray-500 py-8">{getLabel('noProducts', 'No products found')}</div>
 ) : null}</div></>
 ) : null}

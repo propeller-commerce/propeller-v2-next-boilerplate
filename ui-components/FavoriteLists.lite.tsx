@@ -100,7 +100,7 @@ interface FavoriteListsState {
     showCreateModal: boolean;
     newListName: string;
     newSetAsDefault: boolean;
-    _isMounted: boolean;
+    isMounted: boolean;
     fetchLists: () => Promise<void>;
     handleEditList: (list: FavoriteList) => void;
     handleCancelEdit: () => void;
@@ -130,7 +130,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         showCreateModal: false,
         newListName: '',
         newSetAsDefault: false,
-        _isMounted: false,
+        isMounted: false,
 
         async fetchLists() {
             if (!props.user || !props.graphqlClient) return;
@@ -343,7 +343,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
     });
 
     onMount(() => {
-        state._isMounted = true;
+        state.isMounted = true;
         if (props.user) {
             state.fetchLists();
         }
@@ -357,7 +357,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
 
     return (
         <div className={props.className}>
-            <Show when={props.allowFavoriteListCreate !== false && !state.loading && state._isMounted && state.displayedLists.length > 0}>
+            <Show when={props.allowFavoriteListCreate !== false && !state.loading && state.isMounted && state.displayedLists.length > 0}>
                 <div className="flex justify-end mb-4">
                     <button
                         onClick={() => { state.showCreateModal = true; }}
@@ -392,7 +392,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                 </div>
             </Show>
 
-            <Show when={!state.loading && state._isMounted}>
+            <Show when={!state.loading && state.isMounted}>
                 <Show when={state.displayedLists.length > 0}>
                     <div className="space-y-4">
                         <For each={state.displayedLists}>

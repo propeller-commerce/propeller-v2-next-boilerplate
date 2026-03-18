@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
   import  { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
 import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
 
@@ -44,8 +44,8 @@ labels?: Record<string, string>;
 className?: string;
 }
 interface ProductBulkPricesState {
-_includeTax: boolean;
-_priceListener: any;
+includeTax: boolean;
+priceListener: any;
 isHidden: () => boolean;
 hasItems: () => boolean;
 getIncludeTax: () => boolean;
@@ -60,10 +60,10 @@ getLabel: (key: string, fallback: string) => string;
 
   function ProductBulkPrices(props:ProductBulkPricesProps) {
 
-  const [_includeTax, set_includeTax] = useState<ProductBulkPricesState["_includeTax"]>(() => (true))
+  const [includeTax, setIncludeTax] = useState<ProductBulkPricesState["includeTax"]>(() => (true))
 
 
-const [_priceListener, set_priceListener] = useState<ProductBulkPricesState["_priceListener"]>(() => (null))
+const [priceListener, setPriceListener] = useState<ProductBulkPricesState["priceListener"]>(() => (null))
 
 
 function isHidden(): ReturnType<ProductBulkPricesState["isHidden"]>{
@@ -72,7 +72,7 @@ return props.portalMode as string === 'semi-closed' && !props.user;
 
 
 function getIncludeTax(): ReturnType<ProductBulkPricesState["getIncludeTax"]>{
-return props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+return props.includeTax !== undefined ? !!props.includeTax : includeTax;
 }
 
 
@@ -123,17 +123,7 @@ return val !== undefined ? val : fallback;
 
 
 
-useEffect(() => {
-      if (typeof window !== 'undefined') {
-const stored = localStorage.getItem('price_include_tax');
-set_includeTax(stored === null ? true : stored === 'true');
-set_priceListener(() => {
-const val = localStorage.getItem('price_include_tax');
-set_includeTax(val === null ? true : val === 'true');
-});
-window.addEventListener('priceToggleChanged', _priceListener);
-}
-    }, [])
+
 
 
 

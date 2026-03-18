@@ -23,11 +23,32 @@ export interface DeliveryDateProps {
     containerClass?: string;
 }
 
+interface DeliveryDateState {
+    selectedDate: string;
+    modalOpen: boolean;
+    customDateValue: string;
+    upcomingDays: number;
+    skipWeekends: boolean;
+    showDatePicker: boolean;
+    isCustomDateSelected: boolean;
+    containerClass: string;
+    upcomingDates: string[];
+    minDate: string;
+    getLabel: (key: string, fallback: string) => string;
+    toApiDate: (date: Date) => string;
+    formatDisplay: (isoDate: string) => string;
+    handleSelect: (isoDate: string) => void;
+    handleCustomDateChange: (value: string) => void;
+    openModal: () => void;
+    closeModal: () => void;
+    handleBackdropClick: (event: Event) => void;
+}
+
 export default function DeliveryDate(props: DeliveryDateProps) {
-    const state = useStore({
-        _selectedDate: '' as string,
-        _modalOpen: false as boolean,
-        _customDateValue: '' as string,
+    const state = useStore<DeliveryDateState>({
+        selectedDate: '' as string,
+        modalOpen: false as boolean,
+        customDateValue: '' as string,
 
         get upcomingDays(): number {
             return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
@@ -42,7 +63,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
         },
 
         get isCustomDateSelected(): boolean {
-            return state._selectedDate !== '' && state.upcomingDates.indexOf(state._selectedDate) === -1;
+            return state.selectedDate !== '' && state.upcomingDates.indexOf(state.selectedDate) === -1;
         },
 
         get containerClass(): string {
@@ -96,15 +117,15 @@ export default function DeliveryDate(props: DeliveryDateProps) {
         },
 
         handleSelect(isoDate: string): void {
-            state._selectedDate = isoDate;
-            state._modalOpen = false;
+            state.selectedDate = isoDate;
+            state.modalOpen = false;
             if (props.onDateSelect) {
                 props.onDateSelect(isoDate);
             }
         },
 
         handleCustomDateChange(value: string): void {
-            state._customDateValue = value;
+            state.customDateValue = value;
             if (value) {
                 const date = new Date(value + 'T00:00:00');
                 const isoDate = state.toApiDate(date);
@@ -113,16 +134,16 @@ export default function DeliveryDate(props: DeliveryDateProps) {
         },
 
         openModal(): void {
-            state._modalOpen = true;
+            state.modalOpen = true;
         },
 
         closeModal(): void {
-            state._modalOpen = false;
+            state.modalOpen = false;
         },
 
         handleBackdropClick(event: Event): void {
             if (event.target === event.currentTarget) {
-                state._modalOpen = false;
+                state.modalOpen = false;
             }
         },
     });
@@ -135,7 +156,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
                         <div
                             key={index}
                             onClick={() => state.handleSelect(dateStr)}
-                            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state._selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+                            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state.selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
                         >
                             <div className="font-semibold">{state.formatDisplay(dateStr)}</div>
                         </div>
@@ -148,7 +169,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
                         className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state.isCustomDateSelected ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
                     >
                         <Show when={state.isCustomDateSelected}>
-                            <div className="font-semibold">{state.formatDisplay(state._selectedDate)}</div>
+                            <div className="font-semibold">{state.formatDisplay(state.selectedDate)}</div>
                         </Show>
                         <Show when={!state.isCustomDateSelected}>
                             <div className="font-semibold">{state.getLabel('pickDate', 'Other date...')}</div>
@@ -158,7 +179,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
             </div>
 
             {/* Date picker modal */}
-            <Show when={state._modalOpen}>
+            <Show when={state.modalOpen}>
                 <div
                     onClick={(event) => state.handleBackdropClick(event as unknown as Event)}
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -180,7 +201,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
                         <input
                             type="date"
                             min={state.minDate}
-                            value={state._customDateValue}
+                            value={state.customDateValue}
                             onChange={(event) => state.handleCustomDateChange(event.target.value)}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                         />

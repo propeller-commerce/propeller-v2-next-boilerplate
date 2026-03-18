@@ -9,6 +9,7 @@ import {
     LoginService,
     UserService,
     LoginInput,
+    ViewerResult,
 } from 'propeller-sdk-v2';
 
 export interface LoginFormProps {
@@ -35,7 +36,7 @@ export interface LoginFormProps {
     displayForgotPasswordLink?: boolean;
 
     /** Action for the password reset link click */
-    onForgotPasswordClick?: () => void;
+    onForgotPasswordClick?: (event?: any) => void;
 
     /** Show/hide the registration link
      * @default true
@@ -43,7 +44,7 @@ export interface LoginFormProps {
     displayRegisterLink?: boolean;
 
     /** Action for the registration link click */
-    onRegisterClick?: () => void;
+    onRegisterClick?: (event?: any) => void;
 
     /** Show/hide the guest checkout link
      * @default true
@@ -51,7 +52,7 @@ export interface LoginFormProps {
     displayGuestCheckoutLink?: boolean;
 
     /** Action for the guest checkout link click */
-    onGuestCheckoutClick?: () => void;
+    onGuestCheckoutClick?: (event?: any) => void;
 
     /** Label for the submit button
      * @default "Login"
@@ -104,12 +105,36 @@ export interface LoginFormProps {
     accountHeaderLoginForm?: boolean;
 }
 
+interface LoginFormState {
+    email: string;
+    password: string;
+    loading: boolean;
+    error: string;
+    getLabel: (key: string, fallback: string) => string;
+    emailLabel: string;
+    passwordLabel: string;
+    emailPlaceholder: string;
+    passwordPlaceholder: string;
+    forgotPasswordText: string;
+    registerText: string;
+    registerLinkText: string;
+    guestCheckoutLinkText: string;
+    resolvedTitle: string;
+    resolvedButtonText: string;
+    showForgotPassword: boolean;
+    showRegister: boolean;
+    showGuestCheckout: boolean;
+    isLoading: boolean;
+    errorMessage: string;
+    handleSubmit: (e: any) => Promise<void>;
+}
+
 export default function LoginForm(props: LoginFormProps) {
-    const state = useStore({
-        _email: '',
-        _password: '',
-        _loading: false,
-        _error: '',
+    const state = useStore<LoginFormState>({
+        email: '',
+        password: '',
+        loading: false,
+        error: '',
 
         getLabel(key: string, fallback: string) {
             return (props.labels as any)?.[key] || fallback;
@@ -159,14 +184,14 @@ export default function LoginForm(props: LoginFormProps) {
             if (props.onLoginSubmit) {
                 return props.loginLoading === true;
             }
-            return state._loading;
+            return state.loading;
         },
         get errorMessage(): string {
             // Self-contained mode uses internal state; delegation mode uses prop
             if (props.onLoginSubmit) {
                 return props.loginError || '';
             }
-            return state._error;
+            return state.error;
         },
 
         async handleSubmit(e: any) {
@@ -178,36 +203,36 @@ export default function LoginForm(props: LoginFormProps) {
 
             if (props.onLoginSubmit) {
                 // Delegation mode: parent handles authentication
-                props.onLoginSubmit(state._email, state._password);
+                props.onLoginSubmit(state.email, state.password);
                 return;
             }
 
             // Self-contained mode: handle login via SDK
             if (!props.graphqlClient) {
-                state._error = 'Login is not configured. Please provide graphqlClient or onLoginSubmit.';
+                state.error = 'Login is not configured. Please provide graphqlClient or onLoginSubmit.';
                 return;
             }
 
-            if (state._loading) return;
+            if (state.loading) return;
 
-            state._loading = true;
-            state._error = '';
+            state.loading = true;
+            state.error = '';
 
             try {
                 const loginService = new LoginService(props.graphqlClient as GraphQLClient);
                 const userService = new UserService(props.graphqlClient as GraphQLClient);
 
                 const loginInput: LoginInput = {
-                    email: state._email,
-                    password: state._password,
+                    email: state.email,
+                    password: state.password,
                 };
                 const loginResponse = await loginService.login(loginInput);
 
-                if (!(loginResponse as any)?.session) {
+                if (!loginResponse?.session) {
                     throw new Error('Invalid response: No session data received');
                 }
 
-                const session = (loginResponse as any).session;
+                const session = loginResponse.session;
                 const accessToken = session.accessToken;
                 const refreshToken = session.refreshToken;
 
@@ -216,8 +241,8 @@ export default function LoginForm(props: LoginFormProps) {
                 }
 
                 // Update GraphQL client with auth header
-                const currentConfig = (props.graphqlClient as any).getConfig();
-                (props.graphqlClient as any).updateConfig({
+                const currentConfig = props.graphqlClient.getConfig();
+                props.graphqlClient.updateConfig({
                     headers: {
                         ...currentConfig.headers,
                         'Authorization': 'Bearer ' + accessToken,
@@ -225,13 +250,10 @@ export default function LoginForm(props: LoginFormProps) {
                 });
 
                 // Fetch viewer data
-                let user: any = null;
+                let user: ViewerResult | null = null;
                 try {
-                    const viewerResponse: any = await userService.getViewer({});
-                    user = viewerResponse;
-                } catch (viewerError: any) {
-                    user = { email: session.email || state._email, type: 'ANONYMOUS' };
-                }
+                    user = await userService.getViewer({});
+                } catch (viewerError: any) { }
 
                 // Dispatch event for AuthContext to pick up
                 if (typeof window !== 'undefined') {
@@ -239,17 +261,17 @@ export default function LoginForm(props: LoginFormProps) {
                 }
 
                 // Reset form
-                state._email = '';
-                state._password = '';
+                state.email = '';
+                state.password = '';
 
                 // Notify parent
                 if (props.afterLogin) {
                     props.afterLogin(user as unknown as Contact | Customer, accessToken, refreshToken, session?.expirationTime);
                 }
             } catch (err: any) {
-                state._error = err?.message || 'Login failed. Please check your credentials.';
+                state.error = err?.message || 'Login failed. Please check your credentials.';
             } finally {
-                state._loading = false;
+                state.loading = false;
             }
         },
     });
@@ -279,8 +301,8 @@ export default function LoginForm(props: LoginFormProps) {
                         type="email"
                         id="login-email"
                         name="email"
-                        value={state._email}
-                        onChange={(e) => { state._email = (e.target as HTMLInputElement).value; }}
+                        value={state.email}
+                        onChange={(e) => { state.email = (e.target as HTMLInputElement).value; }}
                         placeholder={state.emailPlaceholder}
                         required
                         className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
@@ -310,8 +332,8 @@ export default function LoginForm(props: LoginFormProps) {
                         type="password"
                         id="login-password"
                         name="password"
-                        value={state._password}
-                        onChange={(e) => { state._password = (e.target as HTMLInputElement).value; }}
+                        value={state.password}
+                        onChange={(e) => { state.password = (e.target as HTMLInputElement).value; }}
                         placeholder={state.passwordPlaceholder}
                         required
                         className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"

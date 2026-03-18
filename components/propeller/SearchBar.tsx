@@ -62,64 +62,86 @@ labels?: Record<string, string>;
 /** Additional class name for the container */
 containerClassName?: string;
 }
+interface SearchBarState {
+searchTerm: string;
+results: SearchBarResult[];
+isLoading: boolean;
+showDropdown: boolean;
+itemsFound: number;
+debounceTimer: any;
+clickOutsideListener: any;
+placeholder: () => string;
+minLength: () => number;
+debounceMs: () => number;
+maxResults: () => number;
+noImageUrl: () => string;
+getLabel: (key: string, fallback: string) => string;
+formatItemPrice: (price: number) => string;
+mapProductToResult: (item: Product | Cluster) => SearchBarResult;
+handleInputChange: (value: string) => void;
+fetchResults: (term: string) => Promise<void>;
+handleSubmit: (e: any) => void;
+handleResultClick: (result: SearchBarResult) => void;
+handleViewAllClick: () => void;
+}
 
 
 
 
   function SearchBar(props:SearchBarProps) {
 
-  const [searchTerm, setSearchTerm] = useState(() => (''))
+  const [searchTerm, setSearchTerm] = useState<SearchBarState["searchTerm"]>(() => (''))
 
 
-const [results, setResults] = useState(() => ([]))
+const [results, setResults] = useState<SearchBarState["results"]>(() => ([]))
 
 
-const [isLoading, setIsLoading] = useState(() => (false))
+const [isLoading, setIsLoading] = useState<SearchBarState["isLoading"]>(() => (false))
 
 
-const [showDropdown, setShowDropdown] = useState(() => (false))
+const [showDropdown, setShowDropdown] = useState<SearchBarState["showDropdown"]>(() => (false))
 
 
-const [itemsFound, setItemsFound] = useState(() => (0))
+const [itemsFound, setItemsFound] = useState<SearchBarState["itemsFound"]>(() => (0))
 
 
-const [_debounceTimer, set_debounceTimer] = useState(() => (null))
+const [debounceTimer, setDebounceTimer] = useState<SearchBarState["debounceTimer"]>(() => (null))
 
 
-const [_clickOutsideListener, set_clickOutsideListener] = useState(() => (null))
+const [clickOutsideListener, setClickOutsideListener] = useState<SearchBarState["clickOutsideListener"]>(() => (null))
 
 
-function placeholder() {
+function placeholder(): ReturnType<SearchBarState["placeholder"]>{
 return props.placeholder || 'Search products...';
 }
 
 
-function minLength() {
+function minLength(): ReturnType<SearchBarState["minLength"]>{
 return props.minSearchLength !== undefined ? props.minSearchLength : 3;
 }
 
 
-function debounceMs() {
+function debounceMs(): ReturnType<SearchBarState["debounceMs"]>{
 return props.debounceMs !== undefined ? props.debounceMs : 300;
 }
 
 
-function maxResults() {
+function maxResults(): ReturnType<SearchBarState["maxResults"]>{
 return props.maxResults !== undefined ? props.maxResults : 8;
 }
 
 
-function noImageUrl() {
+function noImageUrl(): ReturnType<SearchBarState["noImageUrl"]>{
 return props.noImageUrl || '';
 }
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<SearchBarState["getLabel"]>{
 return props.labels?.[key] || fallback;
 }
 
 
-function formatItemPrice(price: number) {
+function formatItemPrice(price: number): ReturnType<SearchBarState["formatItemPrice"]>{
 if (props.formatPrice) {
 return props.formatPrice(price);
 }
@@ -127,7 +149,7 @@ return '\u20AC' + Number(price || 0).toFixed(2);
 }
 
 
-function mapProductToResult(item: Product | Cluster) {
+function mapProductToResult(item: Product | Cluster): ReturnType<SearchBarState["mapProductToResult"]>{
 const isCluster = 'clusterId' in item;
 const displayItem = isCluster ? (item as Cluster).defaultProduct : item;
 const id = isCluster ? (item as Cluster).clusterId : (item as Product).productId;
@@ -145,23 +167,23 @@ isCluster: isCluster
 }
 
 
-function handleInputChange(value: string) {
+function handleInputChange(value: string): ReturnType<SearchBarState["handleInputChange"]>{
 setSearchTerm(value);
-if (_debounceTimer) {
-clearTimeout(_debounceTimer);
+if (debounceTimer) {
+clearTimeout(debounceTimer);
 }
 if (value.length < minLength()) {
 setResults([]);
 setShowDropdown(false);
 return;
 }
-set_debounceTimer(setTimeout(() => {
+setDebounceTimer(setTimeout(() => {
 fetchResults(value);
 }, debounceMs()));
 }
 
 
-async function fetchResults(term: string) {
+async function fetchResults(term: string): ReturnType<SearchBarState["fetchResults"]>{
 if (!props.graphqlClient) return;
 setIsLoading(true);
 try {
@@ -215,7 +237,7 @@ setIsLoading(false);
 }
 
 
-function handleSubmit(e: any) {
+function handleSubmit(e: any): ReturnType<SearchBarState["handleSubmit"]>{
 e.preventDefault();
 const term = searchTerm.trim();
 if (term && props.onSubmit) {
@@ -225,7 +247,7 @@ setShowDropdown(false);
 }
 
 
-function handleResultClick(result: SearchBarResult) {
+function handleResultClick(result: SearchBarResult): ReturnType<SearchBarState["handleResultClick"]>{
 if (props.onResultClick) {
 props.onResultClick(result);
 }
@@ -234,7 +256,7 @@ setSearchTerm('');
 }
 
 
-function handleViewAllClick() {
+function handleViewAllClick(): ReturnType<SearchBarState["handleViewAllClick"]>{
 if (props.onViewAllClick) {
 props.onViewAllClick(searchTerm);
 }
@@ -254,17 +276,17 @@ if (target && !target.closest('[data-search-bar]')) {
 setShowDropdown(false);
 }
 };
-set_clickOutsideListener(listener);
+setClickOutsideListener(listener);
 document.addEventListener('mousedown', listener)
     }, [])
 
 useEffect(() => {
       return () => {
-        if (_clickOutsideListener) {
-document.removeEventListener('mousedown', _clickOutsideListener);
+        if (clickOutsideListener) {
+document.removeEventListener('mousedown', clickOutsideListener);
 }
-if (_debounceTimer) {
-clearTimeout(_debounceTimer);
+if (debounceTimer) {
+clearTimeout(debounceTimer);
 }
       }
     }, [])

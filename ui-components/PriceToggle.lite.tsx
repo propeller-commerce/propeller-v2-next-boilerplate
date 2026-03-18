@@ -8,6 +8,12 @@ export interface PriceToggleProps {
     label?: string;
 
     /**
+     * Initial state of the toggle.
+     * Defaults to true (incl. VAT).
+     */
+    initialState?: boolean;
+
+    /**
      * Required callback fired when the toggle is switched.
      * Receives the new state: true = incl. VAT, false = excl. VAT.
      */
@@ -26,7 +32,7 @@ interface PriceToggleState {
 
 export default function PriceToggle(props: PriceToggleProps) {
     const state = useStore<PriceToggleState>({
-        isOn: true,
+        isOn: props.initialState ?? true,
         getLabel() {
             return (props.label as string) || 'Prices:';
         },
@@ -36,20 +42,18 @@ export default function PriceToggle(props: PriceToggleProps) {
         handleToggle() {
             const newValue = !state.isOn;
             state.isOn = newValue;
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('price_include_tax', String(newValue));
-                window.dispatchEvent(new CustomEvent('priceToggleChanged', { detail: newValue }));
-            }
+
             if (props.inclExclVatSwitched) {
                 props.inclExclVatSwitched(newValue);
             }
+
+            window.dispatchEvent(new CustomEvent('priceToggleChanged', { detail: newValue }));
         },
     });
 
     onMount(() => {
         if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state.isOn = stored === null ? true : stored === 'true';
+            state.isOn = props.initialState ?? true;
         }
     });
 

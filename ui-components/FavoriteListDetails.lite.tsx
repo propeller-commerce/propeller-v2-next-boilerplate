@@ -114,14 +114,32 @@ export interface FavoriteListDetailsProps {
   itemLabels?: Record<string, string>;
 }
 
+interface FavoriteListDetailsState {
+  loading: boolean;
+  favoriteList: FavoriteList | null;
+  allItems: (Product | Cluster)[];
+  currentPage: number;
+  isMounted: boolean;
+  prevListId: string;
+  getLabel: (key: string, fallback: string) => string;
+  getItemsPerPage: () => number;
+  getTotalPages: () => number;
+  getPagedItems: () => (Product | Cluster)[];
+  getPaginationData: () => Record<string, number>;
+  handlePageChange: (page: number) => void;
+  buildFetchVariables: () => Record<string, unknown>;
+  fetchList: () => Promise<void>;
+  handleItemDelete: (itemId: string) => void;
+}
+
 export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
-  const state = useStore({
-    _loading: true,
-    _favoriteList: null as FavoriteList | null,
-    _allItems: [] as (Product | Cluster)[],
-    _currentPage: 1,
-    _isMounted: false,
-    _prevListId: '' as string,
+  const state = useStore<FavoriteListDetailsState>({
+    loading: true,
+    favoriteList: null as FavoriteList | null,
+    allItems: [] as (Product | Cluster)[],
+    currentPage: 1,
+    isMounted: false,
+    prevListId: '' as string,
 
     getLabel(key: string, fallback: string): string {
       return (props.labels as Record<string, string>)?.[key] || fallback;
@@ -132,26 +150,26 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
     },
 
     getTotalPages(): number {
-      return Math.max(1, Math.ceil(state._allItems.length / state.getItemsPerPage()));
+      return Math.max(1, Math.ceil(state.allItems.length / state.getItemsPerPage()));
     },
 
     getPagedItems(): (Product | Cluster)[] {
       const perPage = state.getItemsPerPage();
-      const start = (state._currentPage - 1) * perPage;
-      return state._allItems.slice(start, start + perPage);
+      const start = (state.currentPage - 1) * perPage;
+      return state.allItems.slice(start, start + perPage);
     },
 
     getPaginationData(): Record<string, number> {
       return {
-        page: state._currentPage,
+        page: state.currentPage,
         pages: state.getTotalPages(),
-        itemsFound: state._allItems.length,
+        itemsFound: state.allItems.length,
         offset: state.getItemsPerPage(),
       };
     },
 
     handlePageChange(page: number): void {
-      state._currentPage = page;
+      state.currentPage = page;
     },
 
     buildFetchVariables(): Record<string, unknown> {
@@ -190,11 +208,11 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
 
     async fetchList(): Promise<void> {
       if (!props.graphqlClient || !props.favoriteListId) return;
-      state._loading = true;
+      state.loading = true;
       try {
         const service = new FavoriteListService(props.graphqlClient);
         const list = await service.getFavoriteList(state.buildFetchVariables());
-        state._favoriteList = list;
+        state.favoriteList = list;
 
         const items: (Product | Cluster)[] = [];
         const productsRef = list?.products as ProductsResponse;
@@ -205,26 +223,26 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
         if (clustersRef?.items && Array.isArray(clustersRef.items)) {
           (clustersRef.items as Cluster[]).forEach((item: Cluster) => items.push(item));
         }
-        state._allItems = items;
-        state._currentPage = 1;
+        state.allItems = items;
+        state.currentPage = 1;
       } catch (error) {
         console.error('Error fetching favorite list:', error);
-        state._favoriteList = null;
-        state._allItems = [];
+        state.favoriteList = null;
+        state.allItems = [];
       } finally {
-        state._loading = false;
+        state.loading = false;
       }
     },
 
     handleItemDelete(itemId: string): void {
       // Optimistic: remove from local state
-      state._allItems = state._allItems.filter((item: Product | Cluster) => {
+      state.allItems = state.allItems.filter((item: Product | Cluster) => {
         if ('productId' in item) return String(item.productId) !== itemId;
         return String((item as Cluster).clusterId) !== itemId;
       });
       // Adjust current page if needed
-      if (state._currentPage > state.getTotalPages()) {
-        state._currentPage = Math.max(1, state.getTotalPages());
+      if (state.currentPage > state.getTotalPages()) {
+        state.currentPage = Math.max(1, state.getTotalPages());
       }
       // Notify parent
       if (props.onItemDelete) {
@@ -234,21 +252,21 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
   });
 
   onMount(() => {
-    state._isMounted = true;
-    state._prevListId = props.favoriteListId || '';
+    state.isMounted = true;
+    state.prevListId = props.favoriteListId || '';
     state.fetchList();
   });
 
   onUpdate(() => {
-    if (props.favoriteListId && props.favoriteListId !== state._prevListId) {
-      state._prevListId = props.favoriteListId;
+    if (props.favoriteListId && props.favoriteListId !== state.prevListId) {
+      state.prevListId = props.favoriteListId;
       state.fetchList();
     }
   }, [props.favoriteListId]);
 
   return (
     <div className={props.className || ''}>
-      <Show when={state._loading}>
+      <Show when={state.loading}>
         <div className="space-y-4">
           <For each={[1, 2, 3]}>
             {(i: number) => (
@@ -266,8 +284,8 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
         </div>
       </Show>
 
-      <Show when={!state._loading && state._isMounted}>
-        <Show when={state._allItems.length > 0}>
+      <Show when={!state.loading && state.isMounted}>
+        <Show when={state.allItems.length > 0}>
           <div>
             <For each={state.getPagedItems()}>
               {(item: Product | Cluster, idx: number) => (
@@ -286,7 +304,7 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
           </div>
         </Show>
 
-        <Show when={state._allItems.length === 0}>
+        <Show when={state.allItems.length === 0}>
           <div className="border border-gray-200 rounded-lg p-12 text-center space-y-4">
             <div className="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">

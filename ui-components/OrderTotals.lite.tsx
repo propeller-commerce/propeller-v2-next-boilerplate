@@ -33,8 +33,32 @@ export interface OrderTotalsProps {
     formatPrice?: (price: number) => string;
 }
 
+interface OrderTotalsState {
+    title: string;
+    showSubtotal: boolean;
+    showDiscount: boolean;
+    showShippingCosts: boolean;
+    showVATs: boolean;
+    showTotalExclVat: boolean;
+    showTotalVat: boolean;
+    getLabel: (key: string, fallback: string) => string;
+    formatItemPrice: (price: number) => string;
+    subtotal: number;
+    hasDiscount: boolean;
+    discountDisplay: string;
+    subtotalWithDiscount: number;
+    hasTransactionCosts: boolean;
+    transactionCosts: number;
+    hasShippingCosts: boolean;
+    shippingCosts: number;
+    totalExclVat: number;
+    taxPercentages: any[];
+    totalInclVat: number;
+    totalVat: number;
+}
+
 export default function OrderTotals(props: OrderTotalsProps) {
-    const state = useStore({
+    const state = useStore<OrderTotalsState>({
         get title() {
             return props.title || 'Order summary';
         },

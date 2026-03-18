@@ -13,6 +13,12 @@ import { useState, useEffect } from 'react'
 label?: string;
 
 /**
+ * Initial state of the toggle.
+ * Defaults to true (incl. VAT).
+ */
+initialState?: boolean;
+
+/**
  * Required callback fired when the toggle is switched.
  * Receives the new state: true = incl. VAT, false = excl. VAT.
  */
@@ -34,7 +40,7 @@ handleToggle: () => void;
 
   function PriceToggle(props:PriceToggleProps) {
 
-  const [isOn, setIsOn] = useState<PriceToggleState["isOn"]>(() => (true))
+  const [isOn, setIsOn] = useState<PriceToggleState["isOn"]>(() => (props.initialState ?? true))
 
 
 function getLabel(): ReturnType<PriceToggleState["getLabel"]>{
@@ -50,15 +56,12 @@ return isOn ? 'Incl. VAT' : 'Excl. VAT';
 function handleToggle(): ReturnType<PriceToggleState["handleToggle"]>{
 const newValue = !isOn;
 setIsOn(newValue);
-if (typeof window !== 'undefined') {
-localStorage.setItem('price_include_tax', String(newValue));
-window.dispatchEvent(new CustomEvent('priceToggleChanged', {
-  detail: newValue
-}));
-}
 if (props.inclExclVatSwitched) {
 props.inclExclVatSwitched(newValue);
 }
+window.dispatchEvent(new CustomEvent('priceToggleChanged', {
+detail: newValue
+}));
 }
 
 
@@ -69,8 +72,7 @@ props.inclExclVatSwitched(newValue);
 
 useEffect(() => {
       if (typeof window !== 'undefined') {
-const stored = localStorage.getItem('price_include_tax');
-setIsOn(stored === null ? true : stored === 'true');
+setIsOn(props.initialState ?? true);
 }
     }, [])
 

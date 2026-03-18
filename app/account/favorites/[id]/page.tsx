@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useRouter, useParams } from 'next/navigation';
-import { FavoriteListService, type FavoriteList } from 'propeller-sdk-v2';
+import { Contact, Customer, FavoriteListService, type FavoriteList } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
 import Link from 'next/link';
@@ -97,9 +97,8 @@ export default function FavoriteListPage() {
 
       <FavoriteListDetails
         graphqlClient={graphqlClient}
-        user={authState.user}
+        user={authState.user as Contact | Customer}
         favoriteListId={listId}
-        onListLoaded={handleListLoaded}
         onItemDelete={handleItemDelete}
         configuration={config}
         cartId={cart?.cartId}

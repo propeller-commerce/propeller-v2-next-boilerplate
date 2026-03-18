@@ -190,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 
 import {
   GraphQLClient,
@@ -409,7 +409,8 @@ export interface ProductCardProps {
 }
 interface ProductCardState {
   isFavorite: boolean;
-  _includeTax: boolean;
+  includeTax: boolean;
+  priceListener: any;
   getProductName: () => string;
   getProductSku: () => string;
   getProductImageUrl: () => string;
@@ -431,19 +432,8 @@ interface ProductCardState {
 
 const props = defineProps<ProductCardProps>();
 const isFavorite = ref<ProductCardState["isFavorite"]>(false);
-const _includeTax = ref<ProductCardState["_includeTax"]>(true);
-
-onMounted(() => {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("price_include_tax");
-    _includeTax.value = stored === null ? true : stored === "true";
-    _priceListener = () => {
-      const val = localStorage.getItem("price_include_tax");
-      _includeTax.value = val === null ? true : val === "true";
-    };
-    window.addEventListener("priceToggleChanged", _priceListener);
-  }
-});
+const includeTax = ref<ProductCardState["includeTax"]>(true);
+const priceListener = ref<ProductCardState["priceListener"]>(null);
 
 function isRow(): ReturnType<ProductCardState["isRow"]> {
   return (props.columns as number) === 1;
@@ -465,7 +455,9 @@ function getProductImageUrl(): ReturnType<
 function getProductPrice(): ReturnType<ProductCardState["getProductPrice"]> {
   const priceObj = (props.product as Product)?.price;
   const useTax: boolean =
-    props.includeTax !== undefined ? !!props.includeTax : _includeTax.value;
+    props.includeTax.value !== undefined
+      ? !!props.includeTax.value
+      : includeTax.value;
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
   if (!value && value !== 0) return "";
   return `\u20AC${Number(value).toFixed(2)}`;

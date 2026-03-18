@@ -79,7 +79,7 @@ isLoading: boolean;
 hasError: boolean;
 hoveredL1Id: number | null;
 hoveredL2Id: number | null;
-_prevUserKey: string;
+prevUserKey: string;
 fetchMenu: () => Promise<void>;
 getCacheKey: () => string;
 getCachedMenu: () => Category | null;
@@ -117,7 +117,7 @@ const [hoveredL1Id, setHoveredL1Id] = useState<MenuState["hoveredL1Id"]>(() => (
 const [hoveredL2Id, setHoveredL2Id] = useState<MenuState["hoveredL2Id"]>(() => (null))
 
 
-const [_prevUserKey, set_prevUserKey] = useState<MenuState["_prevUserKey"]>(() => (''))
+const [prevUserKey, setPrevUserKey] = useState<MenuState["prevUserKey"]>(() => (''))
 
 
 async function fetchMenu(): ReturnType<MenuState["fetchMenu"]>{
@@ -295,11 +295,11 @@ useEffect(() => {
     },
     [props.graphqlClient, props.categoryId, props.language]);useEffect(() => {
       const userKey: string = props.user ? 'auth' : 'anon';
-if (_prevUserKey !== '' && _prevUserKey !== userKey) {
+if (prevUserKey !== '' && prevUserKey !== userKey) {
 clearCache();
 fetchMenu();
 }
-set_prevUserKey(userKey)
+setPrevUserKey(userKey)
     },
     [props.user])
 

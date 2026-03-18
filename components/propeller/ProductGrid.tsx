@@ -541,7 +541,7 @@ return (
   <div  className={getGridColsClass()}>{getDisplayProducts()?.map((item, idx) => (
   <div  key={(item as Product).productId || (item as Cluster).clusterId || idx}>{isClusterItem(item) ? (
   <>{!props.renderClusterCard ? (
-  <ClusterCard  columns={props.columns as number || 3}  cluster={item as Cluster}  configuration={props.configuration}  includeTax={props.includeTax as boolean}  enableAddFavorite={props.enableAddFavorite as boolean}  onToggleFavorite={(cluster,isFav) => {
+  <ClusterCard  columns={props.columns as number || 3}  cluster={item as Cluster}  configuration={props.configuration}  includeTax={props.includeTax as boolean}  showStock={props.showStock as boolean}  showAvailability={props.showAvailability as boolean}  stockLabels={props.stockLabels}  enableAddFavorite={props.enableAddFavorite as boolean}  onToggleFavorite={(cluster,isFav) => {
 if (props.onToggleFavorite) {
 props.onToggleFavorite(cluster, isFav);
 }

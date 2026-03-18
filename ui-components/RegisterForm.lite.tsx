@@ -105,47 +105,123 @@ export interface RegisterFormProps {
     countries?: Record<string, string>;
 }
 
+interface RegisterFormState {
+    // Personal details
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    phone: string;
+    gender: Enums.Gender;
+    // Company fields (Contact only)
+    companyName: string;
+    vatNumber: string;
+    cocNumber: string;
+    // Billing/Invoice address
+    billingStreet: string;
+    billingNumber: string;
+    billingNumberExtension: string;
+    billingPostalCode: string;
+    billingCity: string;
+    billingCountry: string;
+    // Delivery address
+    sameAsDelivery: boolean;
+    deliveryStreet: string;
+    deliveryNumber: string;
+    deliveryNumberExtension: string;
+    deliveryPostalCode: string;
+    deliveryCity: string;
+    deliveryCountry: string;
+    // User type
+    selectedUserType: '' | 'Contact' | 'Customer';
+    // State
+    loading: boolean;
+    error: string;
+    submitted: boolean;
+    resolvedTitle: string;
+    resolvedButtonText: string;
+    showUserTypeSelector: boolean;
+    effectiveUserType: string;
+    isContact: boolean;
+    isCustomer: boolean;
+    showLoginLink: boolean;
+    personalDetailsTitle: string;
+    billingAddressTitle: string;
+    deliveryAddressTitle: string;
+    passwordTitle: string;
+    sameAsDeliveryLabel: string;
+    firstNameLabel: string;
+    middleNameLabel: string;
+    lastNameLabel: string;
+    emailLabel: string;
+    passwordLabel: string;
+    confirmPasswordLabel: string;
+    phoneLabel: string;
+    genderLabel: string;
+    companyNameLabel: string;
+    vatNumberLabel: string;
+    cocNumberLabel: string;
+    streetLabel: string;
+    numberLabel: string;
+    numberExtensionLabel: string;
+    postalCodeLabel: string;
+    cityLabel: string;
+    countryLabel: string;
+    userTypeLabel: string;
+    contactLabel: string;
+    customerLabel: string;
+    emailPlaceholder: string;
+    passwordPlaceholder: string;
+    passwordMismatchText: string;
+    loginText: string;
+    loginLinkText: string;
+    isFieldRequired: (fieldName: string) => boolean;
+    handleSubmit: (e: Event | any) => Promise<void>;
+}
+
 export default function RegisterForm(props: RegisterFormProps) {
-    const state = useStore({
+    const state = useStore<RegisterFormState>({
         // Personal details
-        _firstName: '',
-        _middleName: '',
-        _lastName: '',
-        _email: '',
-        _password: '',
-        _confirmPassword: '',
-        _phone: '',
-        _gender: Enums.Gender.U,
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        phone: '',
+        gender: Enums.Gender.U,
 
         // Company fields (Contact only)
-        _companyName: '',
-        _vatNumber: '',
-        _cocNumber: '',
+        companyName: '',
+        vatNumber: '',
+        cocNumber: '',
 
         // Billing/Invoice address
-        _billingStreet: '',
-        _billingNumber: '',
-        _billingNumberExtension: '',
-        _billingPostalCode: '',
-        _billingCity: '',
-        _billingCountry: '',
+        billingStreet: '',
+        billingNumber: '',
+        billingNumberExtension: '',
+        billingPostalCode: '',
+        billingCity: '',
+        billingCountry: '',
 
         // Delivery address
-        _sameAsDelivery: true,
-        _deliveryStreet: '',
-        _deliveryNumber: '',
-        _deliveryNumberExtension: '',
-        _deliveryPostalCode: '',
-        _deliveryCity: '',
-        _deliveryCountry: '',
+        sameAsDelivery: true,
+        deliveryStreet: '',
+        deliveryNumber: '',
+        deliveryNumberExtension: '',
+        deliveryPostalCode: '',
+        deliveryCity: '',
+        deliveryCountry: '',
 
         // User type
-        _selectedUserType: '' as '' | 'Contact' | 'Customer',
+        selectedUserType: '' as '' | 'Contact' | 'Customer',
 
         // State
-        _loading: false,
-        _error: '',
-        _submitted: false,
+        loading: false,
+        error: '',
+        submitted: false,
 
         get resolvedTitle(): string {
             return props.title !== undefined ? props.title : 'Create account';
@@ -158,7 +234,7 @@ export default function RegisterForm(props: RegisterFormProps) {
         },
         get effectiveUserType(): string {
             if (props.showUserType) return props.showUserType;
-            return state._selectedUserType;
+            return state.selectedUserType;
         },
         get isContact(): boolean {
             return state.effectiveUserType === 'Contact';
@@ -213,38 +289,38 @@ export default function RegisterForm(props: RegisterFormProps) {
             e.preventDefault();
 
             if (!state.effectiveUserType) {
-                state._error = 'Please select an account type.';
+                state.error = 'Please select an account type.';
                 return;
             }
 
-            if (state._password !== state._confirmPassword) {
-                state._error = state.passwordMismatchText;
+            if (state.password !== state.confirmPassword) {
+                state.error = state.passwordMismatchText;
                 return;
             }
 
-            if (state._loading) return;
+            if (state.loading) return;
 
             if (props.beforeRegistration) {
                 props.beforeRegistration();
             }
 
-            state._loading = true;
-            state._error = '';
+            state.loading = true;
+            state.error = '';
 
             try {
                 const userService = new UserService(props.graphqlClient as GraphQLClient);
                 const addressService = new AddressService(props.graphqlClient as GraphQLClient);
 
                 const baseInput: Record<string, unknown> = {
-                    email: state._email,
-                    password: state._password,
+                    email: state.email,
+                    password: state.password,
                 };
 
-                baseInput.firstName = state._firstName;
-                baseInput.middleName = state._middleName;
-                baseInput.lastName = state._lastName;
-                baseInput.phone = state._phone;
-                baseInput.gender = state._gender;
+                baseInput.firstName = state.firstName;
+                baseInput.middleName = state.middleName;
+                baseInput.lastName = state.lastName;
+                baseInput.phone = state.phone;
+                baseInput.gender = state.gender;
                 baseInput.primaryLanguage = props.preferredLanguage || 'NL';
 
                 let response: RegisterContactResponse | RegisterCustomerResponse;
@@ -253,14 +329,14 @@ export default function RegisterForm(props: RegisterFormProps) {
 
                 if (state.isContact) {
                     // Create company if company fields are filled
-                    if (state._companyName) {
+                    if (state.companyName) {
                         const companyService = new CompanyService(props.graphqlClient as GraphQLClient);
                         const companyInput: CreateCompanyInput = {
-                            name: state._companyName,
-                            taxNumber: state._vatNumber,
-                            cocNumber: state._cocNumber,
-                            email: state._email,
-                            phone: state._phone,
+                            name: state.companyName,
+                            taxNumber: state.vatNumber,
+                            cocNumber: state.cocNumber,
+                            email: state.email,
+                            phone: state.phone,
                         };
                         company = await companyService.createCompany(companyInput);
                     }
@@ -296,7 +372,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                     const customerInput: CustomerRegisterInput = {
                         customerRegisterInput: {
                             ...baseInput,
-                            gender: state._gender,
+                            gender: state.gender,
                             primaryLanguage: props.preferredLanguage || 'NL',
                         },
                         customerAttributesInput: {}
@@ -326,15 +402,15 @@ export default function RegisterForm(props: RegisterFormProps) {
 
                 if (state.isCustomer) {
                     invoiceAddress = {
-                        firstName: state._firstName,
-                        middleName: state._middleName,
-                        lastName: state._lastName,
-                        street: state._billingStreet,
-                        number: state._billingNumber,
-                        numberExtension: state._billingNumberExtension,
-                        postalCode: state._billingPostalCode,
-                        city: state._billingCity,
-                        country: state._billingCountry,
+                        firstName: state.firstName,
+                        middleName: state.middleName,
+                        lastName: state.lastName,
+                        street: state.billingStreet,
+                        number: state.billingNumber,
+                        numberExtension: state.billingNumberExtension,
+                        postalCode: state.billingPostalCode,
+                        city: state.billingCity,
+                        country: state.billingCountry,
                         type: Enums.AddressType.invoice,
                         isDefault: Enums.YesNo.Y,
                         customerId: userId,
@@ -343,16 +419,16 @@ export default function RegisterForm(props: RegisterFormProps) {
                     await addressService.createCustomerAddress(invoiceAddress);
                 } else {
                     invoiceAddress = {
-                        firstName: state._firstName,
-                        middleName: state._middleName,
-                        lastName: state._lastName,
-                        company: state._companyName,
-                        street: state._billingStreet,
-                        number: state._billingNumber,
-                        numberExtension: state._billingNumberExtension,
-                        postalCode: state._billingPostalCode,
-                        city: state._billingCity,
-                        country: state._billingCountry,
+                        firstName: state.firstName,
+                        middleName: state.middleName,
+                        lastName: state.lastName,
+                        company: state.companyName,
+                        street: state.billingStreet,
+                        number: state.billingNumber,
+                        numberExtension: state.billingNumberExtension,
+                        postalCode: state.billingPostalCode,
+                        city: state.billingCity,
+                        country: state.billingCountry,
                         type: Enums.AddressType.invoice,
                         isDefault: Enums.YesNo.Y,
                         companyId: company?.companyId as number,
@@ -362,7 +438,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                 }
 
                 // Create delivery address
-                if (state._sameAsDelivery) {
+                if (state.sameAsDelivery) {
                     if (state.isCustomer) {
                         const deliveryAddress: CustomerAddressCreateInput = {
                             ...invoiceAddress as CustomerAddressCreateInput,
@@ -383,15 +459,15 @@ export default function RegisterForm(props: RegisterFormProps) {
                 } else {
                     if (state.isCustomer) {
                         const deliveryAddress: CustomerAddressCreateInput = {
-                            firstName: state._firstName,
-                            middleName: state._middleName,
-                            lastName: state._lastName,
-                            street: state._deliveryStreet,
-                            number: state._deliveryNumber,
-                            numberExtension: state._deliveryNumberExtension,
-                            postalCode: state._deliveryPostalCode,
-                            city: state._deliveryCity,
-                            country: state._deliveryCountry,
+                            firstName: state.firstName,
+                            middleName: state.middleName,
+                            lastName: state.lastName,
+                            street: state.deliveryStreet,
+                            number: state.deliveryNumber,
+                            numberExtension: state.deliveryNumberExtension,
+                            postalCode: state.deliveryPostalCode,
+                            city: state.deliveryCity,
+                            country: state.deliveryCountry,
                             type: Enums.AddressType.delivery,
                             isDefault: Enums.YesNo.Y,
                             customerId: userId,
@@ -400,15 +476,15 @@ export default function RegisterForm(props: RegisterFormProps) {
                         await addressService.createCustomerAddress(deliveryAddress);
                     } else {
                         const deliveryAddress: CompanyAddressCreateInput = {
-                            firstName: state._firstName,
-                            middleName: state._middleName,
-                            lastName: state._lastName,
-                            street: state._deliveryStreet,
-                            number: state._deliveryNumber,
-                            numberExtension: state._deliveryNumberExtension,
-                            postalCode: state._deliveryPostalCode,
-                            city: state._deliveryCity,
-                            country: state._deliveryCountry,
+                            firstName: state.firstName,
+                            middleName: state.middleName,
+                            lastName: state.lastName,
+                            street: state.deliveryStreet,
+                            number: state.deliveryNumber,
+                            numberExtension: state.deliveryNumberExtension,
+                            postalCode: state.deliveryPostalCode,
+                            city: state.deliveryCity,
+                            country: state.deliveryCountry,
                             type: Enums.AddressType.delivery,
                             isDefault: Enums.YesNo.Y,
                             companyId: company?.companyId as number,
@@ -418,7 +494,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                     }
                 }
 
-                state._submitted = true;
+                state.submitted = true;
 
                 // Auto-login if enabled and session tokens are present
                 if ((props.automaticLogin !== false) && session?.accessToken && session?.refreshToken) {
@@ -435,9 +511,9 @@ export default function RegisterForm(props: RegisterFormProps) {
                     }
                 }
             } catch (err: any) {
-                state._error = err?.message || 'Registration failed. Please try again.';
+                state.error = err?.message || 'Registration failed. Please try again.';
             } finally {
-                state._loading = false;
+                state.loading = false;
             }
         },
     });
@@ -453,7 +529,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                 </div>
             </Show>
 
-            <Show when={!state._submitted}>
+            <Show when={!state.submitted}>
                 <form onSubmit={(e) => state.handleSubmit(e)} className="space-y-6">
 
                     {/* ── SECTION: Your Details ── */}
@@ -469,10 +545,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 <div className="flex gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => { state._selectedUserType = 'Contact'; }}
+                                        onClick={() => { state.selectedUserType = 'Contact'; }}
                                         className={
                                             'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
-                                            (state._selectedUserType === 'Contact'
+                                            (state.selectedUserType === 'Contact'
                                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
                                                 : 'border-gray-300 hover:bg-gray-50')
                                         }
@@ -481,10 +557,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => { state._selectedUserType = 'Customer'; }}
+                                        onClick={() => { state.selectedUserType = 'Customer'; }}
                                         className={
                                             'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
-                                            (state._selectedUserType === 'Customer'
+                                            (state.selectedUserType === 'Customer'
                                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
                                                 : 'border-gray-300 hover:bg-gray-50')
                                         }
@@ -504,10 +580,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="radio"
                                         name="gender"
                                         value="M"
-                                        checked={state._gender === Enums.Gender.M}
-                                        onChange={() => { state._gender = Enums.Gender.M; }}
+                                        checked={state.gender === Enums.Gender.M}
+                                        onChange={() => { state.gender = Enums.Gender.M; }}
                                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        disabled={state._loading}
+                                        disabled={state.loading}
                                     />
                                     Mr.
                                 </label>
@@ -516,10 +592,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="radio"
                                         name="gender"
                                         value="F"
-                                        checked={state._gender === Enums.Gender.F}
-                                        onChange={() => { state._gender = Enums.Gender.F; }}
+                                        checked={state.gender === Enums.Gender.F}
+                                        onChange={() => { state.gender = Enums.Gender.F; }}
                                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        disabled={state._loading}
+                                        disabled={state.loading}
                                     />
                                     Mrs.
                                 </label>
@@ -528,10 +604,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="radio"
                                         name="gender"
                                         value="U"
-                                        checked={state._gender === Enums.Gender.U}
-                                        onChange={() => { state._gender = Enums.Gender.U; }}
+                                        checked={state.gender === Enums.Gender.U}
+                                        onChange={() => { state.gender = Enums.Gender.U; }}
                                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        disabled={state._loading}
+                                        disabled={state.loading}
                                     />
                                     Other
                                 </label>
@@ -548,12 +624,12 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 type="email"
                                 id="register-email"
                                 name="email"
-                                value={state._email}
-                                onChange={(e) => { state._email = (e.target as HTMLInputElement).value; }}
+                                value={state.email}
+                                onChange={(e) => { state.email = (e.target as HTMLInputElement).value; }}
                                 placeholder={state.emailPlaceholder}
                                 required
                                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={state._loading}
+                                disabled={state.loading}
                             />
                         </div>
 
@@ -572,11 +648,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-vatNumber"
                                             name="vatNumber"
-                                            value={state._vatNumber}
-                                            onChange={(e) => { state._vatNumber = (e.target as HTMLInputElement).value; }}
+                                            value={state.vatNumber}
+                                            onChange={(e) => { state.vatNumber = (e.target as HTMLInputElement).value; }}
                                             required={state.isFieldRequired('vatNumber')}
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -590,11 +666,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-cocNumber"
                                             name="cocNumber"
-                                            value={state._cocNumber}
-                                            onChange={(e) => { state._cocNumber = (e.target as HTMLInputElement).value; }}
+                                            value={state.cocNumber}
+                                            onChange={(e) => { state.cocNumber = (e.target as HTMLInputElement).value; }}
                                             required={state.isFieldRequired('cocNumber')}
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                 </div>
@@ -609,11 +685,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         type="text"
                                         id="register-companyName"
                                         name="companyName"
-                                        value={state._companyName}
-                                        onChange={(e) => { state._companyName = (e.target as HTMLInputElement).value; }}
+                                        value={state.companyName}
+                                        onChange={(e) => { state.companyName = (e.target as HTMLInputElement).value; }}
                                         required={state.isFieldRequired('companyName')}
                                         className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                        disabled={state._loading}
+                                        disabled={state.loading}
                                     />
                                 </div>
                             </div>
@@ -630,11 +706,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-firstName"
                                     name="firstName"
-                                    value={state._firstName}
-                                    onChange={(e) => { state._firstName = (e.target as HTMLInputElement).value; }}
+                                    value={state.firstName}
+                                    onChange={(e) => { state.firstName = (e.target as HTMLInputElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -645,10 +721,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-middleName"
                                     name="middleName"
-                                    value={state._middleName}
-                                    onChange={(e) => { state._middleName = (e.target as HTMLInputElement).value; }}
+                                    value={state.middleName}
+                                    onChange={(e) => { state.middleName = (e.target as HTMLInputElement).value; }}
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                         </div>
@@ -663,11 +739,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-lastName"
                                     name="lastName"
-                                    value={state._lastName}
-                                    onChange={(e) => { state._lastName = (e.target as HTMLInputElement).value; }}
+                                    value={state.lastName}
+                                    onChange={(e) => { state.lastName = (e.target as HTMLInputElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -681,11 +757,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="tel"
                                     id="register-phone"
                                     name="phone"
-                                    value={state._phone}
-                                    onChange={(e) => { state._phone = (e.target as HTMLInputElement).value; }}
+                                    value={state.phone}
+                                    onChange={(e) => { state.phone = (e.target as HTMLInputElement).value; }}
                                     required={state.isFieldRequired('phone')}
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                         </div>
@@ -705,11 +781,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-billingPostalCode"
                                     name="billingPostalCode"
-                                    value={state._billingPostalCode}
-                                    onChange={(e) => { state._billingPostalCode = (e.target as HTMLInputElement).value; }}
+                                    value={state.billingPostalCode}
+                                    onChange={(e) => { state.billingPostalCode = (e.target as HTMLInputElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -721,11 +797,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-billingStreet"
                                     name="billingStreet"
-                                    value={state._billingStreet}
-                                    onChange={(e) => { state._billingStreet = (e.target as HTMLInputElement).value; }}
+                                    value={state.billingStreet}
+                                    onChange={(e) => { state.billingStreet = (e.target as HTMLInputElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                         </div>
@@ -740,11 +816,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-billingNumber"
                                     name="billingNumber"
-                                    value={state._billingNumber}
-                                    onChange={(e) => { state._billingNumber = (e.target as HTMLInputElement).value; }}
+                                    value={state.billingNumber}
+                                    onChange={(e) => { state.billingNumber = (e.target as HTMLInputElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -755,10 +831,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-billingNumberExtension"
                                     name="billingNumberExtension"
-                                    value={state._billingNumberExtension}
-                                    onChange={(e) => { state._billingNumberExtension = (e.target as HTMLInputElement).value; }}
+                                    value={state.billingNumberExtension}
+                                    onChange={(e) => { state.billingNumberExtension = (e.target as HTMLInputElement).value; }}
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                         </div>
@@ -773,11 +849,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     type="text"
                                     id="register-billingCity"
                                     name="billingCity"
-                                    value={state._billingCity}
-                                    onChange={(e) => { state._billingCity = (e.target as HTMLInputElement).value; }}
+                                    value={state.billingCity}
+                                    onChange={(e) => { state.billingCity = (e.target as HTMLInputElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -788,11 +864,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 <select
                                     id="register-billingCountry"
                                     name="billingCountry"
-                                    value={state._billingCountry}
-                                    onChange={(e) => { state._billingCountry = (e.target as HTMLSelectElement).value; }}
+                                    value={state.billingCountry}
+                                    onChange={(e) => { state.billingCountry = (e.target as HTMLSelectElement).value; }}
                                     required
                                     className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={state._loading}
+                                    disabled={state.loading}
                                 >
                                     <option value="">Select country</option>
                                     {Object.entries(props.countries || {}).map((entry) => (
@@ -812,17 +888,17 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 type="checkbox"
                                 id="register-sameAsDelivery"
                                 name="sameAsDelivery"
-                                checked={state._sameAsDelivery}
-                                onChange={(e) => { state._sameAsDelivery = (e.target as HTMLInputElement).checked; }}
+                                checked={state.sameAsDelivery}
+                                onChange={(e) => { state.sameAsDelivery = (e.target as HTMLInputElement).checked; }}
                                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                disabled={state._loading}
+                                disabled={state.loading}
                             />
                             <label htmlFor="register-sameAsDelivery" className="text-sm font-medium leading-none">
                                 {state.sameAsDeliveryLabel}
                             </label>
                         </div>
 
-                        <Show when={!state._sameAsDelivery}>
+                        <Show when={!state.sameAsDelivery}>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-2">
@@ -834,11 +910,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-deliveryPostalCode"
                                             name="deliveryPostalCode"
-                                            value={state._deliveryPostalCode}
-                                            onChange={(e) => { state._deliveryPostalCode = (e.target as HTMLInputElement).value; }}
+                                            value={state.deliveryPostalCode}
+                                            onChange={(e) => { state.deliveryPostalCode = (e.target as HTMLInputElement).value; }}
                                             required
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -850,11 +926,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-deliveryStreet"
                                             name="deliveryStreet"
-                                            value={state._deliveryStreet}
-                                            onChange={(e) => { state._deliveryStreet = (e.target as HTMLInputElement).value; }}
+                                            value={state.deliveryStreet}
+                                            onChange={(e) => { state.deliveryStreet = (e.target as HTMLInputElement).value; }}
                                             required
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                 </div>
@@ -869,11 +945,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-deliveryNumber"
                                             name="deliveryNumber"
-                                            value={state._deliveryNumber}
-                                            onChange={(e) => { state._deliveryNumber = (e.target as HTMLInputElement).value; }}
+                                            value={state.deliveryNumber}
+                                            onChange={(e) => { state.deliveryNumber = (e.target as HTMLInputElement).value; }}
                                             required
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -884,10 +960,10 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-deliveryNumberExtension"
                                             name="deliveryNumberExtension"
-                                            value={state._deliveryNumberExtension}
-                                            onChange={(e) => { state._deliveryNumberExtension = (e.target as HTMLInputElement).value; }}
+                                            value={state.deliveryNumberExtension}
+                                            onChange={(e) => { state.deliveryNumberExtension = (e.target as HTMLInputElement).value; }}
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                 </div>
@@ -902,11 +978,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             type="text"
                                             id="register-deliveryCity"
                                             name="deliveryCity"
-                                            value={state._deliveryCity}
-                                            onChange={(e) => { state._deliveryCity = (e.target as HTMLInputElement).value; }}
+                                            value={state.deliveryCity}
+                                            onChange={(e) => { state.deliveryCity = (e.target as HTMLInputElement).value; }}
                                             required
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -917,11 +993,11 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         <select
                                             id="register-deliveryCountry"
                                             name="deliveryCountry"
-                                            value={state._deliveryCountry}
-                                            onChange={(e) => { state._deliveryCountry = (e.target as HTMLSelectElement).value; }}
+                                            value={state.deliveryCountry}
+                                            onChange={(e) => { state.deliveryCountry = (e.target as HTMLSelectElement).value; }}
                                             required
                                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={state._loading}
+                                            disabled={state.loading}
                                         >
                                             <option value="">Select country</option>
                                             {Object.entries(props.countries || {}).map((entry) => (
@@ -947,12 +1023,12 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 type="password"
                                 id="register-password"
                                 name="password"
-                                value={state._password}
-                                onChange={(e) => { state._password = (e.target as HTMLInputElement).value; }}
+                                value={state.password}
+                                onChange={(e) => { state.password = (e.target as HTMLInputElement).value; }}
                                 placeholder={state.passwordPlaceholder}
                                 required
                                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={state._loading}
+                                disabled={state.loading}
                             />
                         </div>
 
@@ -965,30 +1041,30 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 type="password"
                                 id="register-confirmPassword"
                                 name="confirmPassword"
-                                value={state._confirmPassword}
-                                onChange={(e) => { state._confirmPassword = (e.target as HTMLInputElement).value; }}
+                                value={state.confirmPassword}
+                                onChange={(e) => { state.confirmPassword = (e.target as HTMLInputElement).value; }}
                                 placeholder={state.passwordPlaceholder}
                                 required
                                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={state._loading}
+                                disabled={state.loading}
                             />
                         </div>
                     </div>
 
                     {/* Error message */}
-                    <Show when={state._error}>
+                    <Show when={state.error}>
                         <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                            {state._error}
+                            {state.error}
                         </div>
                     </Show>
 
                     {/* Submit button */}
                     <button
                         type="submit"
-                        disabled={state._loading}
+                        disabled={state.loading}
                         className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Show when={state._loading}>
+                        <Show when={state.loading}>
                             <svg
                                 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -1010,12 +1086,12 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 />
                             </svg>
                         </Show>
-                        {state._loading ? 'Registering...' : state.resolvedButtonText}
+                        {state.loading ? 'Registering...' : state.resolvedButtonText}
                     </button>
                 </form>
             </Show>
 
-            <Show when={state._submitted}>
+            <Show when={state.submitted}>
                 <div className="text-center space-y-4">
                     <div className="flex justify-center">
                         <svg

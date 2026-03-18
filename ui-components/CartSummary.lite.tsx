@@ -39,8 +39,31 @@ export interface CartSummaryProps {
     formatPrice?: (price: number) => string;
 }
 
+interface CartSummaryState {
+    title: string;
+    showSubtotal: boolean;
+    showDiscount: boolean;
+    showShippingCosts: boolean;
+    showVATs: boolean;
+    showTotalExclVat: boolean;
+    showTotalVat: boolean;
+    showCheckoutButton: boolean;
+    getLabel: (key: string, fallback: string) => string;
+    formatItemPrice: (price: number) => string;
+    subtotal: number;
+    hasDiscount: boolean;
+    discountAmount: number;
+    hasShippingCosts: boolean;
+    shippingCosts: number;
+    totalExclVat: number;
+    taxLevels: any[];
+    totalVat: number;
+    totalInclVat: number;
+    handleCheckoutClick: () => void;
+}
+
 export default function CartSummary(props: CartSummaryProps) {
-    const state = useStore({
+    const state = useStore<CartSummaryState>({
         get title() {
             return props.title || 'Order summary';
         },

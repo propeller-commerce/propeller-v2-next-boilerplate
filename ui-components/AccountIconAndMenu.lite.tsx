@@ -173,7 +173,7 @@ export interface AccountIconAndMenuProps {
 }
 
 interface AccountIconAndMenuState {
-    _isMounted: boolean;
+    isMounted: boolean;
     menuOpen: boolean;
     getUserName: () => string;
     getLabel: (key: string, fallback: string) => string;
@@ -186,12 +186,12 @@ interface AccountIconAndMenuState {
     handleRegisterClick: () => void;
     handleGuestCheckoutClick: () => void;
     closeMenu: () => void;
-    _clickOutsideListener: { handler: any };
+    clickOutsideListener: { handler: any };
 }
 
 export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     const state = useStore<AccountIconAndMenuState>({
-        _isMounted: false,
+        isMounted: false,
         menuOpen: false,
 
         getUserName() {
@@ -263,11 +263,11 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             state.menuOpen = false;
         },
 
-        _clickOutsideListener: { handler: null as any },
+        clickOutsideListener: { handler: null as any },
     });
 
     onMount(() => {
-        state._isMounted = true;
+        state.isMounted = true;
 
         const listener = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
@@ -275,7 +275,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                 state.menuOpen = false;
             }
         };
-        state._clickOutsideListener = { handler: listener };
+        state.clickOutsideListener = { handler: listener };
         document.addEventListener('mousedown', listener);
     });
 
@@ -310,7 +310,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                     />
                 </svg>
 
-                <Show when={state._isMounted}>
+                <Show when={state.isMounted}>
                     <Show when={props.user}>
                         <span className="hidden md:block font-normal">
                             Hi, {state.getUserName()}
@@ -327,7 +327,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             {/* Dropdown Menu */}
             <Show when={state.menuOpen}>
                 <div className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}>
-                    <Show when={state._isMounted}>
+                    <Show when={state.isMounted}>
 
                         {/* Authenticated: Account Menu */}
                         <Show when={!!props.user}>

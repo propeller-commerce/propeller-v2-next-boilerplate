@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
   import  { Product, Cluster, GraphQLClient, Contact, Customer, Cart, CartMainItem, CartChildItemInput, ProductPrice } from 'propeller-sdk-v2';
 import  AddToCart from './AddToCart';
 import  ItemStock from './ItemStock';
@@ -88,8 +88,8 @@ addToCartLabels?: Record<string, string>;
 stockLabels?: Record<string, string>;
 }
 interface FavoriteListItemState {
-_includeTax: boolean;
-_priceListener: (() => void) | null;
+includeTax: boolean;
+priceListener: (() => void) | null;
 isProduct: () => boolean;
 getProduct: () => Product;
 getCluster: () => Cluster;
@@ -108,10 +108,10 @@ handleDelete: () => void;
 
   function FavoriteListItem(props:FavoriteListItemProps) {
 
-  const [_includeTax, set_includeTax] = useState<FavoriteListItemState["_includeTax"]>(() => (true))
+  const [includeTax, setIncludeTax] = useState<FavoriteListItemState["includeTax"]>(() => (true))
 
 
-const [_priceListener, set_priceListener] = useState<FavoriteListItemState["_priceListener"]>(() => (null))
+const [priceListener, setPriceListener] = useState<FavoriteListItemState["priceListener"]>(() => (null))
 
 
 function isProduct(): ReturnType<FavoriteListItemState["isProduct"]>{
@@ -194,17 +194,7 @@ props.onDelete(getItemId());
 
 
 
-useEffect(() => {
-      if (typeof window !== 'undefined') {
-const stored = localStorage.getItem('price_include_tax');
-set_includeTax(stored === null ? true : stored === 'true');
-set_priceListener(() => {
-const val = localStorage.getItem('price_include_tax');
-set_includeTax(val === null ? true : val === 'true');
-});
-window.addEventListener('priceToggleChanged', _priceListener);
-}
-    }, [])
+
 
 
 
@@ -250,9 +240,9 @@ return (
 ) : null}</div>
 ) : null}</>
 ) : null}{isProduct() && !!getProduct()?.price ? (
-  <div><ProductPriceDisplay  priceSize="text-sm"  price={getProduct().price as ProductPrice}  includeTax={_includeTax}  /></div>
+  <div><ProductPriceDisplay  priceSize="text-sm"  price={getProduct().price as ProductPrice}  includeTax={includeTax}  /></div>
 ) : null}{!isProduct() && !!getCluster()?.defaultProduct?.price ? (
-  <div><ProductPriceDisplay  priceSize="text-sm"  price={getCluster().defaultProduct?.price as ProductPrice}  includeTax={_includeTax}  options={getCluster().options}  /></div>
+  <div><ProductPriceDisplay  priceSize="text-sm"  price={getCluster().defaultProduct?.price as ProductPrice}  includeTax={includeTax}  options={getCluster().options}  /></div>
 ) : null}</div><div className="flex items-center gap-2 flex-shrink-0">{props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
   <div className="flex-shrink-0"><AddToCart  className="flex items-center gap-2"  graphqlClient={props.graphqlClient!}  user={props.user || null}  product={getProduct()}  cartId={props.cartId}  configuration={props.configuration}  createCart={props.createCart}  onCartCreated={props.onCartCreated}  onAddToCart={props.onAddToCart}  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.allowIncrDecr}  enableStockValidation={props.enableStockValidation}  language={props.language}  onProceedToCheckout={props.onProceedToCheckout}  labels={props.addToCartLabels}  /></div>
 ) : null}{!isProduct() ? (

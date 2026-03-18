@@ -90,330 +90,405 @@ preferredLanguage?: string;
  */
 countries?: Record<string, string>;
 }
+interface RegisterFormState {
+// Personal details
+firstName: string;
+middleName: string;
+lastName: string;
+email: string;
+password: string;
+confirmPassword: string;
+phone: string;
+gender: Enums.Gender;
+// Company fields (Contact only)
+companyName: string;
+vatNumber: string;
+cocNumber: string;
+// Billing/Invoice address
+billingStreet: string;
+billingNumber: string;
+billingNumberExtension: string;
+billingPostalCode: string;
+billingCity: string;
+billingCountry: string;
+// Delivery address
+sameAsDelivery: boolean;
+deliveryStreet: string;
+deliveryNumber: string;
+deliveryNumberExtension: string;
+deliveryPostalCode: string;
+deliveryCity: string;
+deliveryCountry: string;
+// User type
+selectedUserType: '' | 'Contact' | 'Customer';
+// State
+loading: boolean;
+error: string;
+submitted: boolean;
+resolvedTitle: () => string;
+resolvedButtonText: () => string;
+showUserTypeSelector: () => boolean;
+effectiveUserType: () => string;
+isContact: () => boolean;
+isCustomer: () => boolean;
+showLoginLink: () => boolean;
+personalDetailsTitle: () => string;
+billingAddressTitle: () => string;
+deliveryAddressTitle: () => string;
+passwordTitle: () => string;
+sameAsDeliveryLabel: () => string;
+firstNameLabel: () => string;
+middleNameLabel: () => string;
+lastNameLabel: () => string;
+emailLabel: () => string;
+passwordLabel: () => string;
+confirmPasswordLabel: () => string;
+phoneLabel: () => string;
+genderLabel: () => string;
+companyNameLabel: () => string;
+vatNumberLabel: () => string;
+cocNumberLabel: () => string;
+streetLabel: () => string;
+numberLabel: () => string;
+numberExtensionLabel: () => string;
+postalCodeLabel: () => string;
+cityLabel: () => string;
+countryLabel: () => string;
+userTypeLabel: () => string;
+contactLabel: () => string;
+customerLabel: () => string;
+emailPlaceholder: () => string;
+passwordPlaceholder: () => string;
+passwordMismatchText: () => string;
+loginText: () => string;
+loginLinkText: () => string;
+isFieldRequired: (fieldName: string) => boolean;
+handleSubmit: (e: Event | any) => Promise<void>;
+}
 
 
 
 
   function RegisterForm(props:RegisterFormProps) {
 
-  const [_firstName, set_firstName] = useState(() => (''))
+  const [firstName, setFirstName] = useState<RegisterFormState["firstName"]>(() => (''))
 
 
-const [_middleName, set_middleName] = useState(() => (''))
+const [middleName, setMiddleName] = useState<RegisterFormState["middleName"]>(() => (''))
 
 
-const [_lastName, set_lastName] = useState(() => (''))
+const [lastName, setLastName] = useState<RegisterFormState["lastName"]>(() => (''))
 
 
-const [_email, set_email] = useState(() => (''))
+const [email, setEmail] = useState<RegisterFormState["email"]>(() => (''))
 
 
-const [_password, set_password] = useState(() => (''))
+const [password, setPassword] = useState<RegisterFormState["password"]>(() => (''))
 
 
-const [_confirmPassword, set_confirmPassword] = useState(() => (''))
+const [confirmPassword, setConfirmPassword] = useState<RegisterFormState["confirmPassword"]>(() => (''))
 
 
-const [_phone, set_phone] = useState(() => (''))
+const [phone, setPhone] = useState<RegisterFormState["phone"]>(() => (''))
 
 
-const [_gender, set_gender] = useState(() => (Enums.Gender.U))
+const [gender, setGender] = useState<RegisterFormState["gender"]>(() => (Enums.Gender.U))
 
 
-const [_companyName, set_companyName] = useState(() => (''))
+const [companyName, setCompanyName] = useState<RegisterFormState["companyName"]>(() => (''))
 
 
-const [_vatNumber, set_vatNumber] = useState(() => (''))
+const [vatNumber, setVatNumber] = useState<RegisterFormState["vatNumber"]>(() => (''))
 
 
-const [_cocNumber, set_cocNumber] = useState(() => (''))
+const [cocNumber, setCocNumber] = useState<RegisterFormState["cocNumber"]>(() => (''))
 
 
-const [_billingStreet, set_billingStreet] = useState(() => (''))
+const [billingStreet, setBillingStreet] = useState<RegisterFormState["billingStreet"]>(() => (''))
 
 
-const [_billingNumber, set_billingNumber] = useState(() => (''))
+const [billingNumber, setBillingNumber] = useState<RegisterFormState["billingNumber"]>(() => (''))
 
 
-const [_billingNumberExtension, set_billingNumberExtension] = useState(() => (''))
+const [billingNumberExtension, setBillingNumberExtension] = useState<RegisterFormState["billingNumberExtension"]>(() => (''))
 
 
-const [_billingPostalCode, set_billingPostalCode] = useState(() => (''))
+const [billingPostalCode, setBillingPostalCode] = useState<RegisterFormState["billingPostalCode"]>(() => (''))
 
 
-const [_billingCity, set_billingCity] = useState(() => (''))
+const [billingCity, setBillingCity] = useState<RegisterFormState["billingCity"]>(() => (''))
 
 
-const [_billingCountry, set_billingCountry] = useState(() => (''))
+const [billingCountry, setBillingCountry] = useState<RegisterFormState["billingCountry"]>(() => (''))
 
 
-const [_sameAsDelivery, set_sameAsDelivery] = useState(() => (true))
+const [sameAsDelivery, setSameAsDelivery] = useState<RegisterFormState["sameAsDelivery"]>(() => (true))
 
 
-const [_deliveryStreet, set_deliveryStreet] = useState(() => (''))
+const [deliveryStreet, setDeliveryStreet] = useState<RegisterFormState["deliveryStreet"]>(() => (''))
 
 
-const [_deliveryNumber, set_deliveryNumber] = useState(() => (''))
+const [deliveryNumber, setDeliveryNumber] = useState<RegisterFormState["deliveryNumber"]>(() => (''))
 
 
-const [_deliveryNumberExtension, set_deliveryNumberExtension] = useState(() => (''))
+const [deliveryNumberExtension, setDeliveryNumberExtension] = useState<RegisterFormState["deliveryNumberExtension"]>(() => (''))
 
 
-const [_deliveryPostalCode, set_deliveryPostalCode] = useState(() => (''))
+const [deliveryPostalCode, setDeliveryPostalCode] = useState<RegisterFormState["deliveryPostalCode"]>(() => (''))
 
 
-const [_deliveryCity, set_deliveryCity] = useState(() => (''))
+const [deliveryCity, setDeliveryCity] = useState<RegisterFormState["deliveryCity"]>(() => (''))
 
 
-const [_deliveryCountry, set_deliveryCountry] = useState(() => (''))
+const [deliveryCountry, setDeliveryCountry] = useState<RegisterFormState["deliveryCountry"]>(() => (''))
 
 
-const [_selectedUserType, set_selectedUserType] = useState(() => (''))
+const [selectedUserType, setSelectedUserType] = useState<RegisterFormState["selectedUserType"]>(() => (''))
 
 
-const [_loading, set_loading] = useState(() => (false))
+const [loading, setLoading] = useState<RegisterFormState["loading"]>(() => (false))
 
 
-const [_error, set_error] = useState(() => (''))
+const [error, setError] = useState<RegisterFormState["error"]>(() => (''))
 
 
-const [_submitted, set_submitted] = useState(() => (false))
+const [submitted, setSubmitted] = useState<RegisterFormState["submitted"]>(() => (false))
 
 
-function resolvedTitle() {
+function resolvedTitle(): ReturnType<RegisterFormState["resolvedTitle"]>{
 return props.title !== undefined ? props.title : 'Create account';
 }
 
 
-function resolvedButtonText() {
+function resolvedButtonText(): ReturnType<RegisterFormState["resolvedButtonText"]>{
 return props.buttonText || 'Register';
 }
 
 
-function showUserTypeSelector() {
+function showUserTypeSelector(): ReturnType<RegisterFormState["showUserTypeSelector"]>{
 return props.showUserType === undefined || props.showUserType === null;
 }
 
 
-function effectiveUserType() {
+function effectiveUserType(): ReturnType<RegisterFormState["effectiveUserType"]>{
 if (props.showUserType) return props.showUserType;
-return _selectedUserType;
+return selectedUserType;
 }
 
 
-function isContact() {
+function isContact(): ReturnType<RegisterFormState["isContact"]>{
 return effectiveUserType() === 'Contact';
 }
 
 
-function isCustomer() {
+function isCustomer(): ReturnType<RegisterFormState["isCustomer"]>{
 return effectiveUserType() === 'Customer';
 }
 
 
-function showLoginLink() {
+function showLoginLink(): ReturnType<RegisterFormState["showLoginLink"]>{
 return props.displayLoginLink !== false;
 }
 
 
-function personalDetailsTitle() {
+function personalDetailsTitle(): ReturnType<RegisterFormState["personalDetailsTitle"]>{
 return props.labels?.personalDetailsTitle || 'Your details';
 }
 
 
-function billingAddressTitle() {
+function billingAddressTitle(): ReturnType<RegisterFormState["billingAddressTitle"]>{
 return props.labels?.billingAddressTitle || 'Billing address';
 }
 
 
-function deliveryAddressTitle() {
+function deliveryAddressTitle(): ReturnType<RegisterFormState["deliveryAddressTitle"]>{
 return props.labels?.deliveryAddressTitle || 'Delivery address';
 }
 
 
-function passwordTitle() {
+function passwordTitle(): ReturnType<RegisterFormState["passwordTitle"]>{
 return props.labels?.passwordTitle || 'Password';
 }
 
 
-function sameAsDeliveryLabel() {
+function sameAsDeliveryLabel(): ReturnType<RegisterFormState["sameAsDeliveryLabel"]>{
 return props.labels?.sameAsDelivery || 'Delivery address is the same as billing address';
 }
 
 
-function firstNameLabel() {
+function firstNameLabel(): ReturnType<RegisterFormState["firstNameLabel"]>{
 return props.labels?.firstName || 'First name';
 }
 
 
-function middleNameLabel() {
+function middleNameLabel(): ReturnType<RegisterFormState["middleNameLabel"]>{
 return props.labels?.middleName || 'Insertion';
 }
 
 
-function lastNameLabel() {
+function lastNameLabel(): ReturnType<RegisterFormState["lastNameLabel"]>{
 return props.labels?.lastName || 'Last name';
 }
 
 
-function emailLabel() {
+function emailLabel(): ReturnType<RegisterFormState["emailLabel"]>{
 return props.labels?.email || 'Email address';
 }
 
 
-function passwordLabel() {
+function passwordLabel(): ReturnType<RegisterFormState["passwordLabel"]>{
 return props.labels?.password || 'Password';
 }
 
 
-function confirmPasswordLabel() {
+function confirmPasswordLabel(): ReturnType<RegisterFormState["confirmPasswordLabel"]>{
 return props.labels?.confirmPassword || 'Repeat password';
 }
 
 
-function phoneLabel() {
+function phoneLabel(): ReturnType<RegisterFormState["phoneLabel"]>{
 return props.labels?.phone || 'Phone number';
 }
 
 
-function genderLabel() {
+function genderLabel(): ReturnType<RegisterFormState["genderLabel"]>{
 return props.labels?.gender || 'Title';
 }
 
 
-function companyNameLabel() {
+function companyNameLabel(): ReturnType<RegisterFormState["companyNameLabel"]>{
 return props.labels?.companyName || 'Company name';
 }
 
 
-function vatNumberLabel() {
+function vatNumberLabel(): ReturnType<RegisterFormState["vatNumberLabel"]>{
 return props.labels?.vatNumber || 'VAT number';
 }
 
 
-function cocNumberLabel() {
+function cocNumberLabel(): ReturnType<RegisterFormState["cocNumberLabel"]>{
 return props.labels?.cocNumber || 'CoC number';
 }
 
 
-function streetLabel() {
+function streetLabel(): ReturnType<RegisterFormState["streetLabel"]>{
 return props.labels?.street || 'Street';
 }
 
 
-function numberLabel() {
+function numberLabel(): ReturnType<RegisterFormState["numberLabel"]>{
 return props.labels?.number || 'Number';
 }
 
 
-function numberExtensionLabel() {
+function numberExtensionLabel(): ReturnType<RegisterFormState["numberExtensionLabel"]>{
 return props.labels?.numberExtension || 'Apt/Suite/Unit';
 }
 
 
-function postalCodeLabel() {
+function postalCodeLabel(): ReturnType<RegisterFormState["postalCodeLabel"]>{
 return props.labels?.postalCode || 'Postal code';
 }
 
 
-function cityLabel() {
+function cityLabel(): ReturnType<RegisterFormState["cityLabel"]>{
 return props.labels?.city || 'City';
 }
 
 
-function countryLabel() {
+function countryLabel(): ReturnType<RegisterFormState["countryLabel"]>{
 return props.labels?.country || 'Country';
 }
 
 
-function userTypeLabel() {
+function userTypeLabel(): ReturnType<RegisterFormState["userTypeLabel"]>{
 return props.labels?.userTypeLabel || 'Account type';
 }
 
 
-function contactLabel() {
+function contactLabel(): ReturnType<RegisterFormState["contactLabel"]>{
 return props.labels?.contactLabel || 'Company';
 }
 
 
-function customerLabel() {
+function customerLabel(): ReturnType<RegisterFormState["customerLabel"]>{
 return props.labels?.customerLabel || 'Consumer';
 }
 
 
-function emailPlaceholder() {
+function emailPlaceholder(): ReturnType<RegisterFormState["emailPlaceholder"]>{
 return props.labels?.emailPlaceholder || 'name@example.com';
 }
 
 
-function passwordPlaceholder() {
+function passwordPlaceholder(): ReturnType<RegisterFormState["passwordPlaceholder"]>{
 return props.labels?.passwordPlaceholder || '••••••••';
 }
 
 
-function passwordMismatchText() {
+function passwordMismatchText(): ReturnType<RegisterFormState["passwordMismatchText"]>{
 return props.labels?.passwordMismatch || 'Passwords do not match';
 }
 
 
-function loginText() {
+function loginText(): ReturnType<RegisterFormState["loginText"]>{
 return props.labels?.loginText || 'Already have an account?';
 }
 
 
-function loginLinkText() {
+function loginLinkText(): ReturnType<RegisterFormState["loginLinkText"]>{
 return props.labels?.loginLink || 'Log in';
 }
 
 
-function isFieldRequired(fieldName: string) {
+function isFieldRequired(fieldName: string): ReturnType<RegisterFormState["isFieldRequired"]>{
 if (!props.requiredFields) return false;
 return props.requiredFields.indexOf(fieldName) !== -1;
 }
 
 
-async function handleSubmit(e: Event | any) {
+async function handleSubmit(e: Event | any): ReturnType<RegisterFormState["handleSubmit"]>{
 e.preventDefault();
 if (!effectiveUserType()) {
-set_error('Please select an account type.');
+setError('Please select an account type.');
 return;
 }
-if (_password !== _confirmPassword) {
-set_error(passwordMismatchText());
+if (password !== confirmPassword) {
+setError(passwordMismatchText());
 return;
 }
-if (_loading) return;
+if (loading) return;
 if (props.beforeRegistration) {
 props.beforeRegistration();
 }
-set_loading(true);
-set_error('');
+setLoading(true);
+setError('');
 try {
 const userService = new UserService(props.graphqlClient as GraphQLClient);
 const addressService = new AddressService(props.graphqlClient as GraphQLClient);
 const baseInput: Record<string, unknown> = {
-  email: _email,
-  password: _password
+  email: email,
+  password: password
 };
-baseInput.firstName = _firstName;
-baseInput.middleName = _middleName;
-baseInput.lastName = _lastName;
-baseInput.phone = _phone;
-baseInput.gender = _gender;
+baseInput.firstName = firstName;
+baseInput.middleName = middleName;
+baseInput.lastName = lastName;
+baseInput.phone = phone;
+baseInput.gender = gender;
 baseInput.primaryLanguage = props.preferredLanguage || 'NL';
 let response: RegisterContactResponse | RegisterCustomerResponse;
 let userId: number = 0;
 let company: Company | null = null;
 if (isContact()) {
   // Create company if company fields are filled
-  if (_companyName) {
+  if (companyName) {
     const companyService = new CompanyService(props.graphqlClient as GraphQLClient);
     const companyInput: CreateCompanyInput = {
-      name: _companyName,
-      taxNumber: _vatNumber,
-      cocNumber: _cocNumber,
-      email: _email,
-      phone: _phone
+      name: companyName,
+      taxNumber: vatNumber,
+      cocNumber: cocNumber,
+      email: email,
+      phone: phone
     };
     company = await companyService.createCompany(companyInput);
   }
@@ -447,7 +522,7 @@ if (isContact()) {
   const customerInput: CustomerRegisterInput = {
     customerRegisterInput: {
       ...baseInput,
-      gender: _gender,
+      gender: gender,
       primaryLanguage: props.preferredLanguage || 'NL'
     },
     customerAttributesInput: {}
@@ -475,15 +550,15 @@ const user = isContact() ? (response as RegisterContactResponse)?.contact : (res
 let invoiceAddress: CustomerAddressCreateInput | CompanyAddressCreateInput;
 if (isCustomer()) {
   invoiceAddress = {
-    firstName: _firstName,
-    middleName: _middleName,
-    lastName: _lastName,
-    street: _billingStreet,
-    number: _billingNumber,
-    numberExtension: _billingNumberExtension,
-    postalCode: _billingPostalCode,
-    city: _billingCity,
-    country: _billingCountry,
+    firstName: firstName,
+    middleName: middleName,
+    lastName: lastName,
+    street: billingStreet,
+    number: billingNumber,
+    numberExtension: billingNumberExtension,
+    postalCode: billingPostalCode,
+    city: billingCity,
+    country: billingCountry,
     type: Enums.AddressType.invoice,
     isDefault: Enums.YesNo.Y,
     customerId: userId
@@ -491,16 +566,16 @@ if (isCustomer()) {
   await addressService.createCustomerAddress(invoiceAddress);
 } else {
   invoiceAddress = {
-    firstName: _firstName,
-    middleName: _middleName,
-    lastName: _lastName,
-    company: _companyName,
-    street: _billingStreet,
-    number: _billingNumber,
-    numberExtension: _billingNumberExtension,
-    postalCode: _billingPostalCode,
-    city: _billingCity,
-    country: _billingCountry,
+    firstName: firstName,
+    middleName: middleName,
+    lastName: lastName,
+    company: companyName,
+    street: billingStreet,
+    number: billingNumber,
+    numberExtension: billingNumberExtension,
+    postalCode: billingPostalCode,
+    city: billingCity,
+    country: billingCountry,
     type: Enums.AddressType.invoice,
     isDefault: Enums.YesNo.Y,
     companyId: company?.companyId as number
@@ -509,7 +584,7 @@ if (isCustomer()) {
 }
 
 // Create delivery address
-if (_sameAsDelivery) {
+if (sameAsDelivery) {
   if (isCustomer()) {
     const deliveryAddress: CustomerAddressCreateInput = {
       ...(invoiceAddress as CustomerAddressCreateInput)
@@ -526,15 +601,15 @@ if (_sameAsDelivery) {
 } else {
   if (isCustomer()) {
     const deliveryAddress: CustomerAddressCreateInput = {
-      firstName: _firstName,
-      middleName: _middleName,
-      lastName: _lastName,
-      street: _deliveryStreet,
-      number: _deliveryNumber,
-      numberExtension: _deliveryNumberExtension,
-      postalCode: _deliveryPostalCode,
-      city: _deliveryCity,
-      country: _deliveryCountry,
+      firstName: firstName,
+      middleName: middleName,
+      lastName: lastName,
+      street: deliveryStreet,
+      number: deliveryNumber,
+      numberExtension: deliveryNumberExtension,
+      postalCode: deliveryPostalCode,
+      city: deliveryCity,
+      country: deliveryCountry,
       type: Enums.AddressType.delivery,
       isDefault: Enums.YesNo.Y,
       customerId: userId
@@ -542,15 +617,15 @@ if (_sameAsDelivery) {
     await addressService.createCustomerAddress(deliveryAddress);
   } else {
     const deliveryAddress: CompanyAddressCreateInput = {
-      firstName: _firstName,
-      middleName: _middleName,
-      lastName: _lastName,
-      street: _deliveryStreet,
-      number: _deliveryNumber,
-      numberExtension: _deliveryNumberExtension,
-      postalCode: _deliveryPostalCode,
-      city: _deliveryCity,
-      country: _deliveryCountry,
+      firstName: firstName,
+      middleName: middleName,
+      lastName: lastName,
+      street: deliveryStreet,
+      number: deliveryNumber,
+      numberExtension: deliveryNumberExtension,
+      postalCode: deliveryPostalCode,
+      city: deliveryCity,
+      country: deliveryCountry,
       type: Enums.AddressType.delivery,
       isDefault: Enums.YesNo.Y,
       companyId: company?.companyId as number
@@ -558,7 +633,7 @@ if (_sameAsDelivery) {
     await addressService.createCompanyAddress(deliveryAddress);
   }
 }
-set_submitted(true);
+setSubmitted(true);
 
 // Auto-login if enabled and session tokens are present
 if (props.automaticLogin !== false && session?.accessToken && session?.refreshToken) {
@@ -574,9 +649,9 @@ if (props.afterRegistration) {
   }
 }
 } catch (err: any) {
-set_error(err?.message || 'Registration failed. Please try again.');
+setError(err?.message || 'Registration failed. Please try again.');
 } finally {
-set_loading(false);
+setLoading(false);
 }
 }
 
@@ -597,95 +672,95 @@ return (
   <div className="space-y-1 text-center mb-6"><h2 className="text-2xl font-bold">{resolvedTitle()}</h2>{props.subtitle ? (
   <p className="text-sm text-gray-500">{props.subtitle}</p>
 ) : null}</div>
-) : null}{!_submitted ? (
+) : null}{!submitted ? (
   <form className="space-y-6"  onSubmit={(e) => handleSubmit(e) }><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{personalDetailsTitle()}</h3>{showUserTypeSelector() ? (
   <div className="space-y-2"><label className="text-sm font-medium leading-none">{userTypeLabel()}</label><div className="flex gap-3"><button  type="button"  onClick={(event) => {
-set_selectedUserType('Contact');
-} }  className={'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' + (_selectedUserType === 'Contact' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50')}>{contactLabel()}</button><button  type="button"  onClick={(event) => {
-set_selectedUserType('Customer');
-} }  className={'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' + (_selectedUserType === 'Customer' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50')}>{customerLabel()}</button></div></div>
-) : null}<div className="space-y-2"><label className="text-sm font-medium leading-none">{genderLabel()}</label><div className="flex gap-4"><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="M" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === Enums.Gender.M}  onChange={(event) => {
-set_gender(Enums.Gender.M);
-} }  disabled={_loading}  />
+setSelectedUserType('Contact');
+} }  className={'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' + (selectedUserType === 'Contact' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50')}>{contactLabel()}</button><button  type="button"  onClick={(event) => {
+setSelectedUserType('Customer');
+} }  className={'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' + (selectedUserType === 'Customer' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 hover:bg-gray-50')}>{customerLabel()}</button></div></div>
+) : null}<div className="space-y-2"><label className="text-sm font-medium leading-none">{genderLabel()}</label><div className="flex gap-4"><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="M" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={gender === Enums.Gender.M}  onChange={(event) => {
+setGender(Enums.Gender.M);
+} }  disabled={loading}  />
                                 Mr.
-                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="F" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === Enums.Gender.F}  onChange={(event) => {
-set_gender(Enums.Gender.F);
-} }  disabled={_loading}  />
+                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="F" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={gender === Enums.Gender.F}  onChange={(event) => {
+setGender(Enums.Gender.F);
+} }  disabled={loading}  />
                                 Mrs.
-                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="U" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_gender === Enums.Gender.U}  onChange={(event) => {
-set_gender(Enums.Gender.U);
-} }  disabled={_loading}  />
+                            </label><label className="flex items-center gap-2 text-sm"><input  type="radio"  name="gender"  value="U" className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"  checked={gender === Enums.Gender.U}  onChange={(event) => {
+setGender(Enums.Gender.U);
+} }  disabled={loading}  />
                                 Other
-                            </label></div></div><div className="space-y-2"><label  htmlFor="register-email" className="text-sm font-medium leading-none">{emailLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="email"  id="register-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_email}  onChange={(e) => {
-set_email((e.target as HTMLInputElement).value);
-} }  placeholder={emailPlaceholder()}  required  disabled={_loading}  /></div>{isContact() ? (
+                            </label></div></div><div className="space-y-2"><label  htmlFor="register-email" className="text-sm font-medium leading-none">{emailLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="email"  id="register-email"  name="email" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={email}  onChange={(e) => {
+setEmail((e.target as HTMLInputElement).value);
+} }  placeholder={emailPlaceholder()}  required  disabled={loading}  /></div>{isContact() ? (
   <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-vatNumber" className="text-sm font-medium leading-none">{vatNumberLabel()}{isFieldRequired('vatNumber') ? (
   <span className="text-red-500 ml-1">*</span>
-) : null}</label><input  type="text"  id="register-vatNumber"  name="vatNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_vatNumber}  onChange={(e) => {
-set_vatNumber((e.target as HTMLInputElement).value);
-} }  required={isFieldRequired('vatNumber')}  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-cocNumber" className="text-sm font-medium leading-none">{cocNumberLabel()}{isFieldRequired('cocNumber') ? (
+) : null}</label><input  type="text"  id="register-vatNumber"  name="vatNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={vatNumber}  onChange={(e) => {
+setVatNumber((e.target as HTMLInputElement).value);
+} }  required={isFieldRequired('vatNumber')}  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-cocNumber" className="text-sm font-medium leading-none">{cocNumberLabel()}{isFieldRequired('cocNumber') ? (
   <span className="text-red-500 ml-1">*</span>
-) : null}</label><input  type="text"  id="register-cocNumber"  name="cocNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_cocNumber}  onChange={(e) => {
-set_cocNumber((e.target as HTMLInputElement).value);
-} }  required={isFieldRequired('cocNumber')}  disabled={_loading}  /></div></div><div className="space-y-2"><label  htmlFor="register-companyName" className="text-sm font-medium leading-none">{companyNameLabel()}{isFieldRequired('companyName') ? (
+) : null}</label><input  type="text"  id="register-cocNumber"  name="cocNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={cocNumber}  onChange={(e) => {
+setCocNumber((e.target as HTMLInputElement).value);
+} }  required={isFieldRequired('cocNumber')}  disabled={loading}  /></div></div><div className="space-y-2"><label  htmlFor="register-companyName" className="text-sm font-medium leading-none">{companyNameLabel()}{isFieldRequired('companyName') ? (
   <span className="text-red-500 ml-1">*</span>
-) : null}</label><input  type="text"  id="register-companyName"  name="companyName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_companyName}  onChange={(e) => {
-set_companyName((e.target as HTMLInputElement).value);
-} }  required={isFieldRequired('companyName')}  disabled={_loading}  /></div></div>
-) : null}<div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-firstName" className="text-sm font-medium leading-none">{firstNameLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-firstName"  name="firstName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_firstName}  onChange={(e) => {
-set_firstName((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-middleName" className="text-sm font-medium leading-none">{middleNameLabel()}</label><input  type="text"  id="register-middleName"  name="middleName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_middleName}  onChange={(e) => {
-set_middleName((e.target as HTMLInputElement).value);
-} }  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-lastName" className="text-sm font-medium leading-none">{lastNameLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-lastName"  name="lastName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_lastName}  onChange={(e) => {
-set_lastName((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-phone" className="text-sm font-medium leading-none">{phoneLabel()}{isFieldRequired('phone') ? (
+) : null}</label><input  type="text"  id="register-companyName"  name="companyName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={companyName}  onChange={(e) => {
+setCompanyName((e.target as HTMLInputElement).value);
+} }  required={isFieldRequired('companyName')}  disabled={loading}  /></div></div>
+) : null}<div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-firstName" className="text-sm font-medium leading-none">{firstNameLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-firstName"  name="firstName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={firstName}  onChange={(e) => {
+setFirstName((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-middleName" className="text-sm font-medium leading-none">{middleNameLabel()}</label><input  type="text"  id="register-middleName"  name="middleName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={middleName}  onChange={(e) => {
+setMiddleName((e.target as HTMLInputElement).value);
+} }  disabled={loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-lastName" className="text-sm font-medium leading-none">{lastNameLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-lastName"  name="lastName" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={lastName}  onChange={(e) => {
+setLastName((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-phone" className="text-sm font-medium leading-none">{phoneLabel()}{isFieldRequired('phone') ? (
   <span className="text-red-500 ml-1">*</span>
-) : null}</label><input  type="tel"  id="register-phone"  name="phone" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_phone}  onChange={(e) => {
-set_phone((e.target as HTMLInputElement).value);
-} }  required={isFieldRequired('phone')}  disabled={_loading}  /></div></div></div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{billingAddressTitle()}</h3><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingPostalCode" className="text-sm font-medium leading-none">{postalCodeLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingPostalCode"  name="billingPostalCode" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingPostalCode}  onChange={(e) => {
-set_billingPostalCode((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingStreet" className="text-sm font-medium leading-none">{streetLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingStreet"  name="billingStreet" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingStreet}  onChange={(e) => {
-set_billingStreet((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingNumber" className="text-sm font-medium leading-none">{numberLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingNumber"  name="billingNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingNumber}  onChange={(e) => {
-set_billingNumber((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingNumberExtension" className="text-sm font-medium leading-none">{numberExtensionLabel()}</label><input  type="text"  id="register-billingNumberExtension"  name="billingNumberExtension" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingNumberExtension}  onChange={(e) => {
-set_billingNumberExtension((e.target as HTMLInputElement).value);
-} }  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingCity" className="text-sm font-medium leading-none">{cityLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingCity"  name="billingCity" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingCity}  onChange={(e) => {
-set_billingCity((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><select  id="register-billingCountry"  name="billingCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_billingCountry}  onChange={(e) => {
-set_billingCountry((e.target as HTMLSelectElement).value);
-} }  required  disabled={_loading}><option  value="">Select country</option>{Object.entries(props.countries || {})?.map((entry) => (
+) : null}</label><input  type="tel"  id="register-phone"  name="phone" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={phone}  onChange={(e) => {
+setPhone((e.target as HTMLInputElement).value);
+} }  required={isFieldRequired('phone')}  disabled={loading}  /></div></div></div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{billingAddressTitle()}</h3><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingPostalCode" className="text-sm font-medium leading-none">{postalCodeLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingPostalCode"  name="billingPostalCode" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={billingPostalCode}  onChange={(e) => {
+setBillingPostalCode((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingStreet" className="text-sm font-medium leading-none">{streetLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingStreet"  name="billingStreet" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={billingStreet}  onChange={(e) => {
+setBillingStreet((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingNumber" className="text-sm font-medium leading-none">{numberLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingNumber"  name="billingNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={billingNumber}  onChange={(e) => {
+setBillingNumber((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingNumberExtension" className="text-sm font-medium leading-none">{numberExtensionLabel()}</label><input  type="text"  id="register-billingNumberExtension"  name="billingNumberExtension" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={billingNumberExtension}  onChange={(e) => {
+setBillingNumberExtension((e.target as HTMLInputElement).value);
+} }  disabled={loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-billingCity" className="text-sm font-medium leading-none">{cityLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-billingCity"  name="billingCity" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={billingCity}  onChange={(e) => {
+setBillingCity((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-billingCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><select  id="register-billingCountry"  name="billingCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={billingCountry}  onChange={(e) => {
+setBillingCountry((e.target as HTMLSelectElement).value);
+} }  required  disabled={loading}><option  value="">Select country</option>{Object.entries(props.countries || {})?.map((entry) => (
   <option  key={entry[0]}  value={entry[0]}>{entry[1]}</option>
-))}</select></div></div></div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{deliveryAddressTitle()}</h3><div className="flex items-center gap-2"><input  type="checkbox"  id="register-sameAsDelivery"  name="sameAsDelivery" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"  checked={_sameAsDelivery}  onChange={(e) => {
-set_sameAsDelivery((e.target as HTMLInputElement).checked);
-} }  disabled={_loading}  /><label  htmlFor="register-sameAsDelivery" className="text-sm font-medium leading-none">{sameAsDeliveryLabel()}</label></div>{!_sameAsDelivery ? (
-  <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryPostalCode" className="text-sm font-medium leading-none">{postalCodeLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryPostalCode"  name="deliveryPostalCode" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryPostalCode}  onChange={(e) => {
-set_deliveryPostalCode((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryStreet" className="text-sm font-medium leading-none">{streetLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryStreet"  name="deliveryStreet" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryStreet}  onChange={(e) => {
-set_deliveryStreet((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryNumber" className="text-sm font-medium leading-none">{numberLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryNumber"  name="deliveryNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryNumber}  onChange={(e) => {
-set_deliveryNumber((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryNumberExtension" className="text-sm font-medium leading-none">{numberExtensionLabel()}</label><input  type="text"  id="register-deliveryNumberExtension"  name="deliveryNumberExtension" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryNumberExtension}  onChange={(e) => {
-set_deliveryNumberExtension((e.target as HTMLInputElement).value);
-} }  disabled={_loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryCity" className="text-sm font-medium leading-none">{cityLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryCity"  name="deliveryCity" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryCity}  onChange={(e) => {
-set_deliveryCity((e.target as HTMLInputElement).value);
-} }  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><select  id="register-deliveryCountry"  name="deliveryCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_deliveryCountry}  onChange={(e) => {
-set_deliveryCountry((e.target as HTMLSelectElement).value);
-} }  required  disabled={_loading}><option  value="">Select country</option>{Object.entries(props.countries || {})?.map((entry) => (
+))}</select></div></div></div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{deliveryAddressTitle()}</h3><div className="flex items-center gap-2"><input  type="checkbox"  id="register-sameAsDelivery"  name="sameAsDelivery" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"  checked={sameAsDelivery}  onChange={(e) => {
+setSameAsDelivery((e.target as HTMLInputElement).checked);
+} }  disabled={loading}  /><label  htmlFor="register-sameAsDelivery" className="text-sm font-medium leading-none">{sameAsDeliveryLabel()}</label></div>{!sameAsDelivery ? (
+  <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryPostalCode" className="text-sm font-medium leading-none">{postalCodeLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryPostalCode"  name="deliveryPostalCode" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={deliveryPostalCode}  onChange={(e) => {
+setDeliveryPostalCode((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryStreet" className="text-sm font-medium leading-none">{streetLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryStreet"  name="deliveryStreet" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={deliveryStreet}  onChange={(e) => {
+setDeliveryStreet((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryNumber" className="text-sm font-medium leading-none">{numberLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryNumber"  name="deliveryNumber" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={deliveryNumber}  onChange={(e) => {
+setDeliveryNumber((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryNumberExtension" className="text-sm font-medium leading-none">{numberExtensionLabel()}</label><input  type="text"  id="register-deliveryNumberExtension"  name="deliveryNumberExtension" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={deliveryNumberExtension}  onChange={(e) => {
+setDeliveryNumberExtension((e.target as HTMLInputElement).value);
+} }  disabled={loading}  /></div></div><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><label  htmlFor="register-deliveryCity" className="text-sm font-medium leading-none">{cityLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="text"  id="register-deliveryCity"  name="deliveryCity" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={deliveryCity}  onChange={(e) => {
+setDeliveryCity((e.target as HTMLInputElement).value);
+} }  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-deliveryCountry" className="text-sm font-medium leading-none">{countryLabel()}<span className="text-red-500 ml-1">*</span></label><select  id="register-deliveryCountry"  name="deliveryCountry" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={deliveryCountry}  onChange={(e) => {
+setDeliveryCountry((e.target as HTMLSelectElement).value);
+} }  required  disabled={loading}><option  value="">Select country</option>{Object.entries(props.countries || {})?.map((entry) => (
   <option  key={entry[0]}  value={entry[0]}>{entry[1]}</option>
 ))}</select></div></div></div>
-) : null}</div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{passwordTitle()}</h3><div className="space-y-2"><label  htmlFor="register-password" className="text-sm font-medium leading-none">{passwordLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="password"  id="register-password"  name="password" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_password}  onChange={(e) => {
-set_password((e.target as HTMLInputElement).value);
-} }  placeholder={passwordPlaceholder()}  required  disabled={_loading}  /></div><div className="space-y-2"><label  htmlFor="register-confirmPassword" className="text-sm font-medium leading-none">{confirmPasswordLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="password"  id="register-confirmPassword"  name="confirmPassword" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={_confirmPassword}  onChange={(e) => {
-set_confirmPassword((e.target as HTMLInputElement).value);
-} }  placeholder={passwordPlaceholder()}  required  disabled={_loading}  /></div></div>{_error ? (
-  <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{_error}</div>
-) : null}<button  type="submit" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"  disabled={_loading}>{_loading ? (
+) : null}</div><div className="space-y-4"><h3 className="text-lg font-semibold border-b pb-2">{passwordTitle()}</h3><div className="space-y-2"><label  htmlFor="register-password" className="text-sm font-medium leading-none">{passwordLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="password"  id="register-password"  name="password" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={password}  onChange={(e) => {
+setPassword((e.target as HTMLInputElement).value);
+} }  placeholder={passwordPlaceholder()}  required  disabled={loading}  /></div><div className="space-y-2"><label  htmlFor="register-confirmPassword" className="text-sm font-medium leading-none">{confirmPasswordLabel()}<span className="text-red-500 ml-1">*</span></label><input  type="password"  id="register-confirmPassword"  name="confirmPassword" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"  value={confirmPassword}  onChange={(e) => {
+setConfirmPassword((e.target as HTMLInputElement).value);
+} }  placeholder={passwordPlaceholder()}  required  disabled={loading}  /></div></div>{error ? (
+  <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>
+) : null}<button  type="submit" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"  disabled={loading}>{loading ? (
   <svg  xmlns="http://www.w3.org/2000/svg"  fill="none"  viewBox="0 0 24 24" className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"><circle  cx="12"  cy="12"  r="10"  stroke="currentColor"  strokeWidth="4" className="opacity-25"  /><path  fill="currentColor"  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"  /></svg>
-) : null}{_loading ? (
+) : null}{loading ? (
   <>Registering...</>
 ) : <>{resolvedButtonText()}</>}</button></form>
-) : null}{_submitted ? (
+) : null}{submitted ? (
   <div className="text-center space-y-4"><div className="flex justify-center"><svg  xmlns="http://www.w3.org/2000/svg"  fill="none"  viewBox="0 0 24 24"  stroke="currentColor"  strokeWidth="2" className="h-12 w-12 text-green-500"><path  strokeLinecap="round"  strokeLinejoin="round"  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"  /></svg></div><p className="text-sm text-gray-600">
                     Your account has been created successfully.
                 </p></div>

@@ -9,7 +9,7 @@
     "lint": "eslint",
     "clean": "powershell -Command \"Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue\"",
     "mitosis:fix": "node scripts/fix-mitosis-callbacks.mjs",
-    "mitosis:build": "mitosis build && npm run mitosis:fix",
+    "mitosis:build": "node scripts/mitosis-build.mjs && npm run mitosis:fix",
     "sdk:sync": "npm update propeller-sdk-v2 && npm install --install-links"
   },
   "dependencies": {

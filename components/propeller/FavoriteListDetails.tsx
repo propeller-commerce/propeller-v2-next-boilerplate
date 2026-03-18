@@ -98,68 +98,85 @@ stockLabels?: Record<string, string>;
 /** Label overrides for FavoriteListItem UI strings */
 itemLabels?: Record<string, string>;
 }
+interface FavoriteListDetailsState {
+loading: boolean;
+favoriteList: FavoriteList | null;
+allItems: (Product | Cluster)[];
+currentPage: number;
+isMounted: boolean;
+prevListId: string;
+getLabel: (key: string, fallback: string) => string;
+getItemsPerPage: () => number;
+getTotalPages: () => number;
+getPagedItems: () => (Product | Cluster)[];
+getPaginationData: () => Record<string, number>;
+handlePageChange: (page: number) => void;
+buildFetchVariables: () => Record<string, unknown>;
+fetchList: () => Promise<void>;
+handleItemDelete: (itemId: string) => void;
+}
 
 
 
 
   function FavoriteListDetails(props:FavoriteListDetailsProps) {
 
-  const [_loading, set_loading] = useState(() => (true))
+  const [loading, setLoading] = useState<FavoriteListDetailsState["loading"]>(() => (true))
 
 
-const [_favoriteList, set_favoriteList] = useState(() => (null))
+const [favoriteList, setFavoriteList] = useState<FavoriteListDetailsState["favoriteList"]>(() => (null))
 
 
-const [_allItems, set_allItems] = useState(() => ([]))
+const [allItems, setAllItems] = useState<FavoriteListDetailsState["allItems"]>(() => ([]))
 
 
-const [_currentPage, set_currentPage] = useState(() => (1))
+const [currentPage, setCurrentPage] = useState<FavoriteListDetailsState["currentPage"]>(() => (1))
 
 
-const [_isMounted, set_isMounted] = useState(() => (false))
+const [isMounted, setIsMounted] = useState<FavoriteListDetailsState["isMounted"]>(() => (false))
 
 
-const [_prevListId, set_prevListId] = useState(() => (''))
+const [prevListId, setPrevListId] = useState<FavoriteListDetailsState["prevListId"]>(() => (''))
 
 
-function getLabel(key: string, fallback: string) {
+function getLabel(key: string, fallback: string): ReturnType<FavoriteListDetailsState["getLabel"]>{
 return (props.labels as Record<string, string>)?.[key] || fallback;
 }
 
 
-function getItemsPerPage() {
+function getItemsPerPage(): ReturnType<FavoriteListDetailsState["getItemsPerPage"]>{
 return props.itemsPerPage || 12;
 }
 
 
-function getTotalPages() {
-return Math.max(1, Math.ceil(_allItems.length / getItemsPerPage()));
+function getTotalPages(): ReturnType<FavoriteListDetailsState["getTotalPages"]>{
+return Math.max(1, Math.ceil(allItems.length / getItemsPerPage()));
 }
 
 
-function getPagedItems() {
+function getPagedItems(): ReturnType<FavoriteListDetailsState["getPagedItems"]>{
 const perPage = getItemsPerPage();
-const start = (_currentPage - 1) * perPage;
-return _allItems.slice(start, start + perPage);
+const start = (currentPage - 1) * perPage;
+return allItems.slice(start, start + perPage);
 }
 
 
-function getPaginationData() {
+function getPaginationData(): ReturnType<FavoriteListDetailsState["getPaginationData"]>{
 return {
-page: _currentPage,
+page: currentPage,
 pages: getTotalPages(),
-itemsFound: _allItems.length,
+itemsFound: allItems.length,
 offset: getItemsPerPage()
 };
 }
 
 
-function handlePageChange(page: number) {
-set_currentPage(page);
+function handlePageChange(page: number): ReturnType<FavoriteListDetailsState["handlePageChange"]>{
+setCurrentPage(page);
 }
 
 
-function buildFetchVariables() {
+function buildFetchVariables(): ReturnType<FavoriteListDetailsState["buildFetchVariables"]>{
 const priceInput: Record<string, unknown> = {
 taxZone: 'NL'
 };
@@ -202,13 +219,13 @@ imageVariantFilters: {
 }
 
 
-async function fetchList() {
+async function fetchList(): ReturnType<FavoriteListDetailsState["fetchList"]>{
 if (!props.graphqlClient || !props.favoriteListId) return;
-set_loading(true);
+setLoading(true);
 try {
 const service = new FavoriteListService(props.graphqlClient);
 const list = await service.getFavoriteList(buildFetchVariables());
-set_favoriteList(list);
+setFavoriteList(list);
 const items: (Product | Cluster)[] = [];
 const productsRef = list?.products as ProductsResponse;
 if (productsRef?.items && Array.isArray(productsRef.items)) {
@@ -218,27 +235,27 @@ const clustersRef = list?.clusters as ProductsResponse;
 if (clustersRef?.items && Array.isArray(clustersRef.items)) {
   (clustersRef.items as Cluster[]).forEach((item: Cluster) => items.push(item));
 }
-set_allItems(items);
-set_currentPage(1);
+setAllItems(items);
+setCurrentPage(1);
 } catch (error) {
 console.error('Error fetching favorite list:', error);
-set_favoriteList(null);
-set_allItems([]);
+setFavoriteList(null);
+setAllItems([]);
 } finally {
-set_loading(false);
+setLoading(false);
 }
 }
 
 
-function handleItemDelete(itemId: string) {
+function handleItemDelete(itemId: string): ReturnType<FavoriteListDetailsState["handleItemDelete"]>{
 // Optimistic: remove from local state
-set_allItems(_allItems.filter((item: Product | Cluster) => {
+setAllItems(allItems.filter((item: Product | Cluster) => {
 if ('productId' in item) return String(item.productId) !== itemId;
 return String((item as Cluster).clusterId) !== itemId;
 }));
 // Adjust current page if needed
-if (_currentPage > getTotalPages()) {
-set_currentPage(Math.max(1, getTotalPages()));
+if (currentPage > getTotalPages()) {
+setCurrentPage(Math.max(1, getTotalPages()));
 }
 // Notify parent
 if (props.onItemDelete) {
@@ -253,13 +270,13 @@ props.onItemDelete(itemId);
 
 
 useEffect(() => {
-      set_isMounted(true);
-set_prevListId(props.favoriteListId || '');
+      setIsMounted(true);
+setPrevListId(props.favoriteListId || '');
 fetchList()
     }, [])
 useEffect(() => {
-      if (props.favoriteListId && props.favoriteListId !== _prevListId) {
-set_prevListId(props.favoriteListId);
+      if (props.favoriteListId && props.favoriteListId !== prevListId) {
+setPrevListId(props.favoriteListId);
 fetchList();
 }
     },
@@ -269,19 +286,19 @@ fetchList();
 return (
 
 
-  <div  className={props.className || ''}>{_loading ? (
+  <div  className={props.className || ''}>{loading ? (
   <div className="space-y-4">{[1, 2, 3]?.map((i) => (
   <div className="flex items-center gap-4 p-4 border-b border-gray-200 animate-pulse"  key={i}><div className="w-20 h-20 bg-gray-100 rounded-md flex-shrink-0"  /><div className="flex-1 space-y-2"><div className="h-4 w-1/4 bg-gray-100 rounded"  /><div className="h-5 w-1/2 bg-gray-100 rounded"  /><div className="h-4 w-1/6 bg-gray-100 rounded"  /></div><div className="h-10 w-28 bg-gray-100 rounded"  /></div>
 ))}</div>
-) : null}{!_loading && _isMounted ? (
-  <>{_allItems.length > 0 ? (
+) : null}{!loading && isMounted ? (
+  <>{allItems.length > 0 ? (
   <div>{getPagedItems()?.map((item, idx) => (
   <div  key={'productId' in item ? 'p-' + (item as Product).productId : 'c-' + (item as Cluster).clusterId}><div className="p-4 border-b">{item.names?.[0]?.value || 'Item'}</div></div>
 ))}{props.showPagination !== false && getTotalPages() > 1 ? (
   <div className="mt-6"  />
 ) : null}</div>
 ) : null}
-{_allItems.length === 0 ? (
+{allItems.length === 0 ? (
   <div className="border border-gray-200 rounded-lg p-12 text-center space-y-4"><div className="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto"><svg  xmlns="http://www.w3.org/2000/svg"  width="32"  height="32"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round" className="text-gray-400"><path  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"  /></svg></div><div><p className="text-lg font-medium">{getLabel('emptyTitle', 'List is empty')}</p><p className="text-gray-500">{getLabel('emptyDescription', "You haven't added any products or clusters to this list yet.")}</p></div></div>
 ) : null}</>
 ) : null}</div>

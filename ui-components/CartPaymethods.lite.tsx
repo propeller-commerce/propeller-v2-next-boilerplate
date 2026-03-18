@@ -1,9 +1,12 @@
 import { useStore, Show, For } from '@builder.io/mitosis';
-import { Cart, CartPaymethod } from 'propeller-sdk-v2';
+import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
 
 export interface CartPaymethodsProps {
     /** Shopping cart object from which the payment methods will be displayed */
     cart: Cart;
+
+    /** Authenticated user — used for cart creation / lookup. */
+    user: Contact | Customer | null;
 
     /** The CSS class for the payment methods container */
     paymentsContainerClass?: string;
@@ -24,9 +27,23 @@ export interface CartPaymethodsProps {
     labels?: Record<string, string>;
 }
 
+interface CartPaymethodsState {
+    selectedCode: string;
+    containerClass: string;
+    showLogo: boolean;
+    showOnAccountForGuests: boolean;
+    isGuest: boolean;
+    payMethods: CartPaymethod[];
+    isOnAccountMethod: (method: CartPaymethod) => boolean;
+    getLabel: (key: string, fallback: string) => string;
+    formatMethodPrice: (price: number) => string;
+    getLogoUrl: (method: CartPaymethod) => string;
+    handleSelect: (method: CartPaymethod) => void;
+}
+
 export default function CartPaymethods(props: CartPaymethodsProps) {
-    const state = useStore({
-        _selectedCode: '' as string,
+    const state = useStore<CartPaymethodsState>({
+        selectedCode: '',
 
         get containerClass(): string {
             return props.paymentsContainerClass || 'cart-paymethods';
@@ -41,12 +58,7 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
         },
 
         get isGuest(): boolean {
-            try {
-                const user = localStorage.getItem('user');
-                return !user;
-            } catch {
-                return true;
-            }
+            return !props.user;
         },
 
         get payMethods(): CartPaymethod[] {
@@ -92,7 +104,7 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
         },
 
         handleSelect(method: CartPaymethod): void {
-            state._selectedCode = method.code;
+            state.selectedCode = method.code;
             if (props.onPaymethodSelect) {
                 props.onPaymethodSelect(method);
             }
@@ -108,7 +120,7 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
                             <div
                                 key={method.code}
                                 onClick={() => state.handleSelect(method)}
-                                className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${state._selectedCode === method.code ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+                                className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${state.selectedCode === method.code ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
                             >
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">

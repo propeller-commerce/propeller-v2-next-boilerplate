@@ -26,13 +26,16 @@ category?: Category;
 /** Extra CSS class applied to the root element. */
 className?: string;
 }
+interface CategoryShortDescriptionState {
+html: () => string;
+}
 
 
 
 
   function CategoryShortDescription(props:CategoryShortDescriptionProps) {
 
-  function html() {
+  function html(): ReturnType<CategoryShortDescriptionState["html"]>{
 if (!props.category?.shortDescription) return '';
 const match = props.category.shortDescription.find((d: LocalizedString) => d.language === props.language);
 return match?.value || '';

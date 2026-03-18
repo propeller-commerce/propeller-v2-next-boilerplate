@@ -47,8 +47,8 @@ export interface UserDetailsProps {
 }
 
 interface UserDetailsState {
-    _isMounted: boolean;
-    _selectedCompanyId: number | null;
+    isMounted: boolean;
+    selectedCompanyId: number | null;
 
     isContact: () => boolean;
     getName: () => string;
@@ -68,8 +68,8 @@ interface UserDetailsState {
 
 export default function UserDetails(props: UserDetailsProps) {
     const state = useStore<UserDetailsState>({
-        _isMounted: false,
-        _selectedCompanyId: null,
+        isMounted: false,
+        selectedCompanyId: null,
 
         isContact(): boolean {
             return props.user !== null && 'company' in props.user;
@@ -171,12 +171,12 @@ export default function UserDetails(props: UserDetailsProps) {
     });
 
     onMount(() => {
-        state._isMounted = true;
+        state.isMounted = true;
 
         window.addEventListener('companySwitched', (event: any) => {
             const company = event.detail;
             if (company && company.companyId) {
-                state._selectedCompanyId = props.activeCompany?.companyId as number;
+                state.selectedCompanyId = props.activeCompany?.companyId as number;
             }
         });
     });
@@ -185,14 +185,14 @@ export default function UserDetails(props: UserDetailsProps) {
         window.removeEventListener('companySwitched', (event: any) => {
             const company = event.detail;
             if (company && company.companyId) {
-                state._selectedCompanyId = props.activeCompany?.companyId as number;
+                state.selectedCompanyId = props.activeCompany?.companyId as number;
             }
         });
     });
 
     return (
         <div className="user-details space-y-6">
-            <Show when={state._isMounted}>
+            <Show when={state.isMounted}>
                 {/* Personal Information */}
                 <div className="user-details__personal rounded-lg bg-card text-card-foreground shadow-sm">
                     <div className="p-6 pb-2">

@@ -36,12 +36,37 @@ export interface CartOverviewProps {
     onPurchaseButtonClick?: (cart: Cart, reference: string, notes: string) => void;
 }
 
+interface CartOverviewState {
+    reference: string;
+    notes: string;
+    termsAccepted: boolean;
+    loading: boolean;
+    containerClass: string;
+    showNotes: boolean;
+    showReference: boolean;
+    showTermsAndConditions: boolean;
+    showPurchaseButton: boolean;
+    getLabel: (key: string, fallback: string) => string;
+    invoiceAddress: CartAddress;
+    deliveryAddress: CartAddress;
+    formatAddress: (addr: CartAddress) => string;
+    paymentMethod: string;
+    carrierName: string;
+    requestDate: string;
+    handleReferenceChange: (value: string) => void;
+    handleNotesChange: (value: string) => void;
+    handleTermsChange: (checked: boolean) => void;
+    handleTermsLinkClick: (event: Event) => void;
+    isPurchaseDisabled: boolean;
+    handlePurchaseClick: () => void;
+}
+
 export default function CartOverview(props: CartOverviewProps) {
-    const state = useStore({
-        _reference: '' as string,
-        _notes: '' as string,
-        _termsAccepted: false as boolean,
-        _loading: false as boolean,
+    const state = useStore<CartOverviewState>({
+        reference: '',
+        notes: '',
+        termsAccepted: false,
+        loading: false,
 
         get containerClass(): string {
             return props.overviewContainerClass || 'cart-overview';
@@ -111,15 +136,15 @@ export default function CartOverview(props: CartOverviewProps) {
         },
 
         handleReferenceChange(value: string): void {
-            state._reference = value;
+            state.reference = value;
         },
 
         handleNotesChange(value: string): void {
-            state._notes = value;
+            state.notes = value;
         },
 
         handleTermsChange(checked: boolean): void {
-            state._termsAccepted = checked;
+            state.termsAccepted = checked;
         },
 
         handleTermsLinkClick(event: Event): void {
@@ -130,15 +155,15 @@ export default function CartOverview(props: CartOverviewProps) {
         },
 
         get isPurchaseDisabled(): boolean {
-            if (state.showTermsAndConditions && !state._termsAccepted) return true;
-            if (state._loading) return true;
+            if (state.showTermsAndConditions && !state.termsAccepted) return true;
+            if (state.loading) return true;
             return false;
         },
 
         handlePurchaseClick(): void {
             if (state.isPurchaseDisabled) return;
             if (props.onPurchaseButtonClick) {
-                props.onPurchaseButtonClick(props.cart, state._reference, state._notes);
+                props.onPurchaseButtonClick(props.cart, state.reference, state.notes);
             }
         },
     });
@@ -238,7 +263,7 @@ export default function CartOverview(props: CartOverviewProps) {
                         </label>
                         <input
                             type="text"
-                            value={state._reference}
+                            value={state.reference}
                             onChange={(event) => state.handleReferenceChange(event.target.value)}
                             placeholder={state.getLabel('referencePlaceholder', 'Your reference number')}
                             className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
@@ -252,7 +277,7 @@ export default function CartOverview(props: CartOverviewProps) {
                             {state.getLabel('notesLabel', 'Order Notes (Optional)')}
                         </label>
                         <textarea
-                            value={state._notes}
+                            value={state.notes}
                             onChange={(event) => state.handleNotesChange(event.target.value)}
                             placeholder={state.getLabel('notesPlaceholder', 'Special instructions or comments')}
                             className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[80px]"
@@ -265,7 +290,7 @@ export default function CartOverview(props: CartOverviewProps) {
                         <input
                             type="checkbox"
                             id="cart-overview-terms"
-                            checked={state._termsAccepted}
+                            checked={state.termsAccepted}
                             onChange={(event) => state.handleTermsChange(event.target.checked)}
                             className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                         />

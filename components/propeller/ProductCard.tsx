@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
   import  { GraphQLClient, Product, Contact, Customer, Cart, CartMainItem, CartChildItemInput, AttributeResult } from 'propeller-sdk-v2';
 import  AddToCart from './AddToCart';
 import  ItemStock from './ItemStock';
@@ -204,7 +204,8 @@ addToCartLabels?: Record<string, string>;
 }
 interface ProductCardState {
 isFavorite: boolean;
-_includeTax: boolean;
+includeTax: boolean;
+priceListener: any;
 getProductName: () => string;
 getProductSku: () => string;
 getProductImageUrl: () => string;
@@ -232,7 +233,10 @@ computedTextLabels: () => {
   const [isFavorite, setIsFavorite] = useState<ProductCardState["isFavorite"]>(() => (false))
 
 
-const [_includeTax, set_includeTax] = useState<ProductCardState["_includeTax"]>(() => (true))
+const [includeTax, setIncludeTax] = useState<ProductCardState["includeTax"]>(() => (true))
+
+
+const [priceListener, setPriceListener] = useState<ProductCardState["priceListener"]>(() => (null))
 
 
 function isRow(): ReturnType<ProductCardState["isRow"]>{
@@ -257,7 +261,7 @@ return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]
 
 function getProductPrice(): ReturnType<ProductCardState["getProductPrice"]>{
 const priceObj = (props.product as Product)?.price;
-const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
 const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
 if (!value && value !== 0) return '';
 return `\u20AC${Number(value).toFixed(2)}`;
@@ -335,25 +339,12 @@ value: string;
 }
 
 
-const [_priceListener, set_priceListener] = useState(() => (null))
 
 
 
 
 
 
-
-useEffect(() => {
-      if (typeof window !== 'undefined') {
-const stored = localStorage.getItem('price_include_tax');
-set_includeTax(stored === null ? true : stored === 'true');
-set_priceListener(() => {
-const val = localStorage.getItem('price_include_tax');
-set_includeTax(val === null ? true : val === 'true');
-});
-window.addEventListener('priceToggleChanged', _priceListener);
-}
-    }, [])
 
 
 

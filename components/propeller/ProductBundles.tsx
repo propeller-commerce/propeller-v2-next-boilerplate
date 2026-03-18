@@ -25,7 +25,6 @@ taxZone: string;
 
 /**
  * When true, net price (incl. tax) is the leading price.
- * Defaults to reading `localStorage('price_include_tax')`, falling back to `true`.
  * Note: in the Propeller SDK `price.gross` = excl. VAT, `price.net` = incl. VAT.
  */
 includeTax?: boolean;
@@ -118,12 +117,12 @@ afterBundleAddToCart?: (cart: Cart, bundle?: Bundle) => void;
 className?: string;
 }
 interface ProductBundlesState {
-_bundles: any[];
-_isLoading: boolean;
-_includeTax: boolean;
-_isMounted: boolean;
-_addingBundleId: string | null;
-_lastAddedBundle: Bundle | null;
+bundles: Bundle[];
+isLoading: boolean;
+includeTax: boolean;
+isMounted: boolean;
+addingBundleId: string | null;
+lastAddedBundle: Bundle | null;
 activeCartId: string;
 toastMessage: string;
 toastType: string;
@@ -147,7 +146,7 @@ showToast: (message: string, type: string) => void;
 dismissToast: () => void;
 closeModal: () => void;
 fetchBundles: () => Promise<void>;
-handleAddToCart: (bundle: Bundle) => void;
+handleAddToCart: (bundle: Bundle) => Promise<void>;
 initCart: () => Promise<void>;
 }
 
@@ -156,22 +155,22 @@ initCart: () => Promise<void>;
 
   function ProductBundles(props:ProductBundlesProps) {
 
-  const [_bundles, set_bundles] = useState<ProductBundlesState["_bundles"]>(() => ([]))
+  const [bundles, setBundles] = useState<ProductBundlesState["bundles"]>(() => ([]))
 
 
-const [_isLoading, set_isLoading] = useState<ProductBundlesState["_isLoading"]>(() => (false))
+const [isLoading, setIsLoading] = useState<ProductBundlesState["isLoading"]>(() => (false))
 
 
-const [_includeTax, set_includeTax] = useState<ProductBundlesState["_includeTax"]>(() => (true))
+const [includeTax, setIncludeTax] = useState<ProductBundlesState["includeTax"]>(() => (true))
 
 
-const [_isMounted, set_isMounted] = useState<ProductBundlesState["_isMounted"]>(() => (false))
+const [isMounted, setIsMounted] = useState<ProductBundlesState["isMounted"]>(() => (false))
 
 
-const [_addingBundleId, set_addingBundleId] = useState<ProductBundlesState["_addingBundleId"]>(() => (null))
+const [addingBundleId, setAddingBundleId] = useState<ProductBundlesState["addingBundleId"]>(() => (null))
 
 
-const [_lastAddedBundle, set_lastAddedBundle] = useState<ProductBundlesState["_lastAddedBundle"]>(() => (null))
+const [lastAddedBundle, setLastAddedBundle] = useState<ProductBundlesState["lastAddedBundle"]>(() => (null))
 
 
 const [activeCartId, setActiveCartId] = useState<ProductBundlesState["activeCartId"]>(() => (''))
@@ -190,7 +189,7 @@ const [modalVisible, setModalVisible] = useState<ProductBundlesState["modalVisib
 
 
 function getIncludeTax(): ReturnType<ProductBundlesState["getIncludeTax"]>{
-return props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+return props.includeTax !== undefined ? !!props.includeTax : includeTax;
 }
 
 
@@ -281,7 +280,7 @@ setToastVisible(false);
 
 function closeModal(): ReturnType<ProductBundlesState["closeModal"]>{
 setModalVisible(false);
-set_lastAddedBundle(null);
+setLastAddedBundle(null);
 }
 
 
@@ -413,7 +412,7 @@ props.onCartCreated(newCart);
 
 async function fetchBundles(): ReturnType<ProductBundlesState["fetchBundles"]>{
 if (!props.graphqlClient || !props.productId) return;
-set_isLoading(true);
+setIsLoading(true);
 try {
 const bundleService = new BundleService(props.graphqlClient);
 const productBundlesQueryVariables: BundleQueryVariables = {
@@ -428,18 +427,18 @@ const productBundlesQueryVariables: BundleQueryVariables = {
   imageVariantFilters: props.configuration?.imageVariantFiltersMedium
 };
 const result = await bundleService.getBundles(productBundlesQueryVariables);
-set_bundles(result?.items || []);
+setBundles(result?.items || []);
 } catch (e) {
-set_bundles([]);
+setBundles([]);
 } finally {
-set_isLoading(false);
+setIsLoading(false);
 }
 }
 
 
 async function handleAddToCart(bundle: Bundle): ReturnType<ProductBundlesState["handleAddToCart"]>{
-if (_addingBundleId) return;
-set_addingBundleId(bundle.id);
+if (addingBundleId) return;
+setAddingBundleId(bundle.id);
 try {
 if (props.onAddBundleToCart) {
   props.onAddBundleToCart(bundle.id, 1);
@@ -478,7 +477,7 @@ if (props.onAddBundleToCart) {
   }
 }
 if (props.showModal) {
-  set_lastAddedBundle(bundle);
+  setLastAddedBundle(bundle);
   setModalVisible(true);
 } else {
   const bundleName = (bundle as any).name || getLabel('title', 'Bundle');
@@ -488,7 +487,7 @@ if (props.showModal) {
 console.error('Error adding bundle to cart:', error);
 showToast(getLabel('errorAdding', 'Failed to add bundle to cart'), 'error');
 } finally {
-set_addingBundleId(null);
+setAddingBundleId(null);
 }
 }
 
@@ -499,7 +498,7 @@ set_addingBundleId(null);
 
 
 useEffect(() => {
-      set_isMounted(true);
+      setIsMounted(true);
 fetchBundles()
     }, [])
 useEffect(() => {
@@ -511,8 +510,8 @@ useEffect(() => {
 return (
   <>
 
-  {_isMounted && !_isLoading && _bundles.length > 0 ? (
-  <><div  className={props.className || 'mb-12'}>{_bundles?.map((bundle, bundleIdx) => (
+  {isMounted && !isLoading && bundles.length > 0 ? (
+  <><div  className={props.className || 'mb-12'}>{bundles?.map((bundle, bundleIdx) => (
   <div className="border rounded-lg overflow-hidden mb-6"  key={bundle.id || bundleIdx}><div className="flex items-center justify-between p-4 bg-gray-50 border-b"><div className="flex items-center gap-3"><h3 className="text-lg font-bold">{bundle.name || getLabel('title', 'Combo deal')}</h3>{!getHidePrices() && hasDiscount(bundle) ? (
   <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-0.5 rounded">
                                         -{getDiscountPercentage(bundle)}%
@@ -538,7 +537,7 @@ return (
   <span className="text-gray-400 line-through text-sm">{formatPrice(getOriginalPrice(bundle))}</span>
 ) : null}<span className="text-xl font-bold text-blue-600">{formatPrice(getBundlePrice(bundle))}</span>{hasDiscount(bundle) ? (
   <span className="text-sm text-green-600 font-medium">{getLabel('youSave', 'You save')}{formatPrice(getOriginalPrice(bundle) - getBundlePrice(bundle))}</span>
-) : null}</div><button className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"  onClick={(event) => handleAddToCart(bundle) }  disabled={_addingBundleId === bundle.id}>{_addingBundleId === bundle.id ? (
+) : null}</div><button className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"  onClick={(event) => handleAddToCart(bundle) }  disabled={addingBundleId === bundle.id}>{addingBundleId === bundle.id ? (
   <>{getLabel('adding', 'Adding...')}</>
 ) : <>{getLabel('addToCart', 'Add bundle to cart')}</>}</button></div>
 ) : null}{getHidePrices() ? (
@@ -551,8 +550,8 @@ return (
   <svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"  /></svg>
 ) : null}</div><p  className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}>{toastMessage}</p><button  type="button"  onClick={(event) => dismissToast() }  className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-4 w-4"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div>
 ) : null}{modalVisible ? (
-  <div className="fixed inset-0 z-50 flex items-center justify-center px-4"><div className="fixed inset-0 bg-gray-500/20"  onClick={(event) => closeModal() }  /><div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden"><div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100"><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5 flex-shrink-0 text-green-500"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M5 13l4 4L19 7"  /></svg><h3 className="flex-1 text-base font-semibold text-gray-900">{getLabel('modalTitle', 'Bundle added to cart')}</h3><button  type="button" className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><div className="px-6 py-5 flex items-start gap-4"><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-900">{(_lastAddedBundle as any)?.name || getLabel('title', 'Bundle')}</p>{!getHidePrices() && _lastAddedBundle ? (
-  <p className="text-sm font-semibold text-blue-600 mt-1">{formatPrice(getBundlePrice(_lastAddedBundle))}</p>
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-4"><div className="fixed inset-0 bg-gray-500/20"  onClick={(event) => closeModal() }  /><div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden"><div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100"><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5 flex-shrink-0 text-green-500"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M5 13l4 4L19 7"  /></svg><h3 className="flex-1 text-base font-semibold text-gray-900">{getLabel('modalTitle', 'Bundle added to cart')}</h3><button  type="button" className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><div className="px-6 py-5 flex items-start gap-4"><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-900">{(lastAddedBundle as any)?.name || getLabel('title', 'Bundle')}</p>{!getHidePrices() && lastAddedBundle ? (
+  <p className="text-sm font-semibold text-blue-600 mt-1">{formatPrice(getBundlePrice(lastAddedBundle))}</p>
 ) : null}</div></div><div className="flex gap-3 px-6 py-4 border-t border-gray-100"><button  type="button" className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"  onClick={(event) => closeModal() }>{getLabel('continueShopping', 'Continue shopping')}</button><button  type="button" className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"  onClick={(event) => {
 closeModal();
 if (props.onProceedToCheckout) props.onProceedToCheckout();

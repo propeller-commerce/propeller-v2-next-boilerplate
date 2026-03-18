@@ -74,13 +74,13 @@ className?: string;
 includeTax?: boolean;
 }
 interface CartItemState {
-_quantity: number;
-_notes: string;
-_loading: boolean;
-_deleting: boolean;
-_notesTimeout: ReturnType<typeof setTimeout>;
-_crossupsells: Crossupsell[];
-_crossupsellsLoading: boolean;
+quantity: number;
+notes: string;
+loading: boolean;
+deleting: boolean;
+notesTimeout: any;
+crossupsells: Crossupsell[];
+crossupsellsLoading: boolean;
 getLabel: (key: string, fallback: string) => string;
 getProductName: () => string;
 getProductUrl: () => string;
@@ -103,25 +103,25 @@ getVisibleCrossupsells: () => Crossupsell[];
 
   function CartItem(props:CartItemProps) {
 
-  const [_quantity, set_quantity] = useState<CartItemState["_quantity"]>(() => (1))
+  const [quantity, setQuantity] = useState<CartItemState["quantity"]>(() => (1))
 
 
-const [_notes, set_notes] = useState<CartItemState["_notes"]>(() => (''))
+const [notes, setNotes] = useState<CartItemState["notes"]>(() => (''))
 
 
-const [_loading, set_loading] = useState<CartItemState["_loading"]>(() => (false))
+const [loading, setLoading] = useState<CartItemState["loading"]>(() => (false))
 
 
-const [_deleting, set_deleting] = useState<CartItemState["_deleting"]>(() => (false))
+const [deleting, setDeleting] = useState<CartItemState["deleting"]>(() => (false))
 
 
-const [_notesTimeout, set_notesTimeout] = useState<CartItemState["_notesTimeout"] | null>(() => null)
+const [notesTimeout, setNotesTimeout] = useState<CartItemState["notesTimeout"]>(() => (null as unknown))
 
 
-const [_crossupsells, set_crossupsells] = useState<CartItemState["_crossupsells"]>(() => ([]))
+const [crossupsells, setCrossupsells] = useState<CartItemState["crossupsells"]>(() => ([]))
 
 
-const [_crossupsellsLoading, set_crossupsellsLoading] = useState<CartItemState["_crossupsellsLoading"]>(() => (false))
+const [crossupsellsLoading, setCrossupsellsLoading] = useState<CartItemState["crossupsellsLoading"]>(() => (false))
 
 
 function getLabel(key: string, fallback: string): ReturnType<CartItemState["getLabel"]>{
@@ -166,12 +166,12 @@ return `\u20AC${Number(price).toFixed(2)}`;
 
 
 function handleQuantityChange(newQuantity: number): ReturnType<CartItemState["handleQuantityChange"]>{
-if (newQuantity < 1 || _loading) return;
-set_quantity(newQuantity);
-set_loading(true);
+if (newQuantity < 1 || loading) return;
+setQuantity(newQuantity);
+setLoading(true);
 if (props.onQuantityChange) {
 props.onQuantityChange(props.cartItem, newQuantity);
-set_loading(false);
+setLoading(false);
 return;
 }
 const cartService = new CartService(props.graphqlClient);
@@ -185,28 +185,28 @@ language: props.language || 'NL',
 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
 imageVariantFilters: props.configuration?.imageVariantFiltersSmall
 }).then((updatedCart: Cart) => {
-set_loading(false);
+setLoading(false);
 if (props.afterCartUpdate) {
   props.afterCartUpdate(updatedCart);
 }
 }).catch((error: Error) => {
 console.error('Failed to update cart item quantity:', error);
-set_quantity(props.cartItem.quantity);
-set_loading(false);
+setQuantity(props.cartItem.quantity);
+setLoading(false);
 });
 }
 
 
 function handleNoteChange(note: string): ReturnType<CartItemState["handleNoteChange"]>{
-set_notes(note);
+setNotes(note);
 if (props.onNoteChange) {
 props.onNoteChange(props.cartItem, note);
 return;
 }
-if (_notesTimeout) {
-clearTimeout(_notesTimeout);
+if (notesTimeout) {
+clearTimeout(notesTimeout);
 }
-set_notesTimeout(setTimeout(() => {
+setNotesTimeout(setTimeout(() => {
 const cartService = new CartService(props.graphqlClient);
 cartService.updateCartItem({
   id: props.cartId,
@@ -229,11 +229,11 @@ cartService.updateCartItem({
 
 
 function handleDelete(): ReturnType<CartItemState["handleDelete"]>{
-if (_deleting) return;
-set_deleting(true);
+if (deleting) return;
+setDeleting(true);
 if (props.onDelete) {
 props.onDelete(props.cartItem);
-set_deleting(false);
+setDeleting(false);
 return;
 }
 const cartService = new CartService(props.graphqlClient);
@@ -247,13 +247,13 @@ language: props.language || 'NL',
 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
 imageVariantFilters: props.configuration?.imageVariantFiltersSmall
 }).then((updatedCart: Cart) => {
-set_deleting(false);
+setDeleting(false);
 if (props.afterCartUpdate) {
   props.afterCartUpdate(updatedCart);
 }
 }).catch((error: Error) => {
 console.error('Failed to delete cart item:', error);
-set_deleting(false);
+setDeleting(false);
 });
 }
 
@@ -262,7 +262,7 @@ function fetchCrossupsells(): ReturnType<CartItemState["fetchCrossupsells"]>{
 if (!props.showCrossupsells) return;
 const productId = props.cartItem?.productId;
 if (!productId) return;
-set_crossupsellsLoading(true);
+setCrossupsellsLoading(true);
 const crossupsellService = new CrossupsellService(props.graphqlClient);
 const searchInput: CrossupsellSearchInput = {
 types: (props.crossupsellTypes || ['ACCESSORIES']) as CrossupsellSearchInput['types'],
@@ -272,18 +272,20 @@ offset: 50,
   productIdsFrom: [productId]
 })
 };
-crossupsellService.getCrossupsells(searchInput).then(response => {
-set_crossupsells(response?.items || []);
-set_crossupsellsLoading(false);
+crossupsellService.getCrossupsells({
+input: searchInput
+}).then(response => {
+setCrossupsells(response?.items || []);
+setCrossupsellsLoading(false);
 }).catch(() => {
-set_crossupsells([]);
-set_crossupsellsLoading(false);
+setCrossupsells([]);
+setCrossupsellsLoading(false);
 });
 }
 
 
 function getVisibleCrossupsells(): ReturnType<CartItemState["getVisibleCrossupsells"]>{
-const items = _crossupsells || [];
+const items = crossupsells || [];
 const limit = props.crossupsellLimit || 3;
 return items.slice(0, limit);
 }
@@ -316,13 +318,13 @@ return '#';
 
 
 useEffect(() => {
-      set_quantity(props.cartItem.quantity || 1);
-set_notes(props.cartItem.notes || '');
+      setQuantity(props.cartItem.quantity || 1);
+setNotes(props.cartItem.notes || '');
 fetchCrossupsells()
     }, [])
 useEffect(() => {
-      set_quantity(props.cartItem.quantity || 1);
-set_notes(props.cartItem.notes || '')
+      setQuantity(props.cartItem.quantity || 1);
+setNotes(props.cartItem.notes || '')
     },
     [props.cartItem])
 
@@ -347,7 +349,7 @@ return (
   <div className="flex flex-wrap gap-x-2 text-sm text-gray-700"  key={idx}><span className="font-medium">{child.product?.names?.[0]?.value || 'Option'}</span><span className="text-gray-400 hidden sm:inline">-</span><span className="text-gray-400 text-xs self-center">{child.product?.sku}</span><div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"  /><span className="font-semibold text-violet-600">€{(child.totalSum || 0).toFixed(2)}</span></div>
 ))}</div>
 ) : null}{props.showCartItemNotesField === true ? (
-  <div className="mt-3"><label className="text-xs font-medium text-gray-500 block mb-1">{getLabel('notes', 'Notes')}</label><textarea className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"  value={_notes}  onChange={(e) => handleNoteChange(e.target.value) }  placeholder={getLabel('notesPlaceholder', 'Add a note for this item...')}  rows={2}  /></div>
+  <div className="mt-3"><label className="text-xs font-medium text-gray-500 block mb-1">{getLabel('notes', 'Notes')}</label><textarea className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"  value={notes}  onChange={(e) => handleNoteChange(e.target.value) }  placeholder={getLabel('notesPlaceholder', 'Add a note for this item...')}  rows={2}  /></div>
 ) : null}{getVisibleCrossupsells().length > 0 ? (
   <div className="mt-3 pt-3 border-t border-gray-200"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{getLabel('crossupsellTitle', 'You might also like')}</p><div className="flex gap-3 overflow-x-auto">{getVisibleCrossupsells()?.map((item, idx) => (
   <a className="flex-shrink-0 flex items-center gap-2 p-2 rounded-md border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors max-w-[200px]"  key={idx}  href={getCrossupsellUrl(item)}  onClick={(e) => {
@@ -360,24 +362,24 @@ props.onCrossupsellClick((item.productTo || item.clusterTo) as Product | Cluster
 ) : null}<span className="text-xs font-medium text-gray-700 line-clamp-2">{getCrossupsellName(item)}</span></a>
 ))}</div></div>
 ) : null}</div><div className="flex flex-col items-end gap-2 flex-shrink-0">{props.enableIncrementDecrement !== false ? (
-  <div className="flex items-center border border-gray-300 rounded-md bg-white h-10"><button  type="button" className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"  onClick={(event) => handleQuantityChange(_quantity - 1) }  disabled={_quantity <= 1 || _loading}>
+  <div className="flex items-center border border-gray-300 rounded-md bg-white h-10"><button  type="button" className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"  onClick={(event) => handleQuantityChange(quantity - 1) }  disabled={quantity <= 1 || loading}>
                         -
-                    </button><input  type="number" className="w-12 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"  min={1}  value={_quantity}  onChange={(e) => {
+                    </button><input  type="number" className="w-12 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"  min={1}  value={quantity}  onChange={(e) => {
 const val = parseInt(e.target.value, 10);
 if (val >= 1) handleQuantityChange(val);
-} }  /><button  type="button" className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"  onClick={(event) => handleQuantityChange(_quantity + 1) }  disabled={_loading}>
+} }  /><button  type="button" className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"  onClick={(event) => handleQuantityChange(quantity + 1) }  disabled={loading}>
                         +
                     </button></div>
 ) : null}{props.enableIncrementDecrement === false ? (
-  <input  type="number" className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"  min={1}  value={_quantity}  onChange={(e) => {
+  <input  type="number" className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"  min={1}  value={quantity}  onChange={(e) => {
 const val = parseInt(e.target.value, 10);
 if (val >= 1) handleQuantityChange(val);
 } }  />
-) : null}{_loading ? (
+) : null}{loading ? (
   <span className="text-xs text-gray-400">{getLabel('updating', 'Updating...')}</span>
-) : null}<button  type="button" className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-50"  onClick={(event) => handleDelete() }  disabled={_deleting}>{_deleting ? (
+) : null}<button  type="button" className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-50"  onClick={(event) => handleDelete() }  disabled={deleting}>{deleting ? (
   <>{getLabel('deleting', 'Removing...')}</>
-) : null}{!_deleting ? (
+) : null}{!deleting ? (
   <>{getLabel('remove', 'Remove')}</>
 ) : null}</button></div></div>
 

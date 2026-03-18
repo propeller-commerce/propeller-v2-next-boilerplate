@@ -93,7 +93,7 @@ export interface CartIconAndSidebarProps {
 }
 
 interface CartIconAndSidebarState {
-    _isMounted: boolean;
+    isMounted: boolean;
     sidebarOpen: boolean;
     isHovered: boolean;
     getTotalItems: () => number;
@@ -113,7 +113,7 @@ interface CartIconAndSidebarState {
 
 export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     const state = useStore<CartIconAndSidebarState>({
-        _isMounted: false,
+        isMounted: false,
         sidebarOpen: false,
         isHovered: false,
 
@@ -193,7 +193,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     });
 
     onMount(() => {
-        state._isMounted = true;
+        state.isMounted = true;
     });
 
     return (
@@ -226,7 +226,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     </svg>
 
                     {/* Item count badge */}
-                    <Show when={state._isMounted && props.showBadge !== false && state.getTotalItems() > 0}>
+                    <Show when={state.isMounted && props.showBadge !== false && state.getTotalItems() > 0}>
                         <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold pointer-events-none">
                             {state.getTotalItems()}
                         </span>
@@ -264,7 +264,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                 aria-label={state.getSidebarTitle()}
             >
                 <div className="flex flex-col h-full">
-                  <Show when={state._isMounted}>
+                  <Show when={state.isMounted}>
                     {/* Sidebar header */}
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                         <div className="flex items-center gap-2">

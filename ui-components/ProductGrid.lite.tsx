@@ -609,6 +609,9 @@ export default function ProductGrid(props: ProductGridProps) {
                                                 cluster={item as Cluster}
                                                 configuration={props.configuration}
                                                 includeTax={props.includeTax as boolean}
+                                                showStock={props.showStock as boolean}
+                                                showAvailability={props.showAvailability as boolean}
+                                                stockLabels={props.stockLabels}
                                                 enableAddFavorite={props.enableAddFavorite as boolean}
                                                 onToggleFavorite={(cluster: Cluster, isFav: boolean) => {
                                                     if (props.onToggleFavorite) {

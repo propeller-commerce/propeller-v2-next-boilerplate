@@ -49,12 +49,25 @@ export interface ForgotPasswordProps {
     afterForgotPassword?: (result: boolean) => void;
 }
 
+interface ForgotPasswordState {
+    email: string;
+    loading: boolean;
+    submitted: boolean;
+    error: string;
+    resolvedTitle: string;
+    resolvedButtonText: string;
+    resolvedResponseMessage: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    handleSubmit: (e: any) => Promise<void>;
+}
+
 export default function ForgotPassword(props: ForgotPasswordProps) {
-    const state = useStore({
-        _email: '',
-        _loading: false,
-        _submitted: false,
-        _error: '',
+    const state = useStore<ForgotPasswordState>({
+        email: '',
+        loading: false,
+        submitted: false,
+        error: '',
 
         get resolvedTitle(): string {
             return props.title !== undefined ? props.title : 'Forgot password?';
@@ -74,33 +87,33 @@ export default function ForgotPassword(props: ForgotPasswordProps) {
 
         async handleSubmit(e: any) {
             e.preventDefault();
-            if (state._loading) return;
+            if (state.loading) return;
 
             if (props.beforeForgotPassword) {
                 props.beforeForgotPassword();
             }
 
-            state._loading = true;
-            state._error = '';
+            state.loading = true;
+            state.error = '';
 
             try {
                 const userService = new UserService(props.graphqlClient as GraphQLClient);
                 const result = await userService.sendPasswordResetEmail({
-                    email: state._email,
+                    email: state.email,
                 });
-                state._submitted = true;
+                state.submitted = true;
 
                 if (props.afterForgotPassword) {
                     props.afterForgotPassword(result);
                 }
             } catch (err: any) {
-                state._error = err?.message || 'Something went wrong. Please try again.';
+                state.error = err?.message || 'Something went wrong. Please try again.';
 
                 if (props.afterForgotPassword) {
                     props.afterForgotPassword(false);
                 }
             } finally {
-                state._loading = false;
+                state.loading = false;
             }
         },
     });
@@ -116,7 +129,7 @@ export default function ForgotPassword(props: ForgotPasswordProps) {
                 </div>
             </Show>
 
-            <Show when={!state._submitted}>
+            <Show when={!state.submitted}>
                 <form onSubmit={(e) => state.handleSubmit(e)} className="space-y-4">
                     <div className="space-y-2">
                         <label
@@ -129,27 +142,27 @@ export default function ForgotPassword(props: ForgotPasswordProps) {
                             type="email"
                             id="forgot-password-email"
                             name="email"
-                            value={state._email}
-                            onChange={(e) => { state._email = (e.target as HTMLInputElement).value; }}
+                            value={state.email}
+                            onChange={(e) => { state.email = (e.target as HTMLInputElement).value; }}
                             placeholder={state.emailPlaceholder}
                             required
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={state._loading}
+                            disabled={state.loading}
                         />
                     </div>
 
-                    <Show when={state._error}>
+                    <Show when={state.error}>
                         <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                            {state._error}
+                            {state.error}
                         </div>
                     </Show>
 
                     <button
                         type="submit"
-                        disabled={state._loading}
+                        disabled={state.loading}
                         className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Show when={state._loading}>
+                        <Show when={state.loading}>
                             <svg
                                 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -171,12 +184,12 @@ export default function ForgotPassword(props: ForgotPasswordProps) {
                                 />
                             </svg>
                         </Show>
-                        {state._loading ? 'Sending...' : state.resolvedButtonText}
+                        {state.loading ? 'Sending...' : state.resolvedButtonText}
                     </button>
                 </form>
             </Show>
 
-            <Show when={state._submitted}>
+            <Show when={state.submitted}>
                 <div className="text-center space-y-4">
                     <div className="flex justify-center">
                         <svg

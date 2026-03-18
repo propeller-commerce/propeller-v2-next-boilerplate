@@ -49,8 +49,8 @@ export interface ProductBulkPricesProps {
 }
 
 interface ProductBulkPricesState {
-    _includeTax: boolean;
-    _priceListener: any;
+    includeTax: boolean;
+    priceListener: any;
     isHidden: () => boolean;
     hasItems: () => boolean;
     getIncludeTax: () => boolean;
@@ -62,15 +62,15 @@ interface ProductBulkPricesState {
 
 export default function ProductBulkPrices(props: ProductBulkPricesProps) {
     const state = useStore<ProductBulkPricesState>({
-        _includeTax: true,
-        _priceListener: null as any,
+        includeTax: true,
+        priceListener: null as any,
 
         isHidden(): boolean {
             return (props.portalMode as string) === 'semi-closed' && !props.user;
         },
 
         getIncludeTax(): boolean {
-            return props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
+            return props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
         },
 
         getBulkPrices(): ProductPrice[] {
@@ -105,18 +105,6 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
             const val = (props.labels as Record<string, string>)?.[key];
             return val !== undefined ? val : fallback;
         },
-    });
-
-    onMount(() => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('price_include_tax');
-            state._includeTax = stored === null ? true : stored === 'true';
-            state._priceListener = () => {
-                const val = localStorage.getItem('price_include_tax');
-                state._includeTax = val === null ? true : val === 'true';
-            };
-            window.addEventListener('priceToggleChanged', state._priceListener);
-        }
     });
 
     return (

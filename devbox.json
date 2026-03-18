@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
   "packages": [
-    "nodejs@24",
+    "nodejs@22",
     "rsync@latest",
     "nodePackages.pm2@latest",
     "go-task@latest"
@@ -17,6 +17,9 @@
       "build-frontend": [
         "task build-frontend"
       ],
+      "build-cms": [
+        "task build-cms"
+      ],
       "deploy": [
         "task deploy"
       ],
@@ -29,3 +32,4 @@
     }
   }
 }
+

@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "ui-components", "output", "scripts"]
+  "exclude": ["node_modules", "ui-components", "output", "scripts", "cms"]
 }

@@ -41,20 +41,19 @@ tasks:
     cmds:
       - set -e
       - |
-        if [ -d "$DEPLOY_PATH/cms/.strapi" ]; then
+        if [ -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
           echo "Strapi exists, skipping build..."
         else
           echo "Strapi does not exist, building..."
-          cd $BUILD_PATH/source/cms
           npm install
           NODE_ENV=production npm run build
         fi
       - |
-        if [ -d "$DEPLOY_PATH/cms/.strapi" ]; then
+        if [ -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
           echo "Strapi exists, skipping sync..."
         else
           echo "Strapi does not exist, syncing..."
-          sudo rsync -a --delete --exclude-from="rsync-exlude.txt" $BUILD_PATH/source/cms/ $DEPLOY_PATH/cms/
+          sudo rsync -a --delete --exclude-from="../rsync-exclude.txt" {{.BUILD_PATH}}/source/cms/ {{.DEPLOY_PATH}}/cms/
         fi
       - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
 

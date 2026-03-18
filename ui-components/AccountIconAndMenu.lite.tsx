@@ -170,15 +170,29 @@ export interface AccountIconAndMenuProps {
 
     /** Additional class name for the dropdown menu. */
     menuClassName?: string;
+
+    /**
+     * Component variant.
+     * - 'dropdown' (default): Header icon with popup menu
+     * - 'sidebar': Always-visible vertical navigation for account layout
+     */
+    variant?: 'dropdown' | 'sidebar';
+
+    /**
+     * Current route path, used in sidebar variant to highlight the active link.
+     */
+    currentPath?: string;
 }
 
 interface AccountIconAndMenuState {
     isMounted: boolean;
     menuOpen: boolean;
+    isSidebar: boolean;
     getUserName: () => string;
     getLabel: (key: string, fallback: string) => string;
     getMenuTitle: () => string;
     getMenuLinks: () => AccountMenuLink[];
+    isActiveLink: (href: string) => boolean;
     handleIconClick: () => void;
     handleMenuItemClick: (href: string) => void;
     handleLogoutClick: () => void;
@@ -186,13 +200,17 @@ interface AccountIconAndMenuState {
     handleRegisterClick: () => void;
     handleGuestCheckoutClick: () => void;
     closeMenu: () => void;
-    clickOutsideListener: { handler: any };
+    clickOutsideListener: { handler: ((e: MouseEvent) => void) | null };
 }
 
 export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     const state = useStore<AccountIconAndMenuState>({
         isMounted: false,
         menuOpen: false,
+
+        get isSidebar(): boolean {
+            return props.variant === 'sidebar';
+        },
 
         getUserName() {
             const user = props.user as Contact | Customer;
@@ -210,6 +228,12 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
 
         getMenuTitle() {
             return props.accountMenuTitle || (props.labels as Record<string, string>)?.['accountMenuTitle'] || 'My account';
+        },
+
+        isActiveLink(href: string): boolean {
+            if (!props.currentPath) return false;
+            if (href === '/account') return props.currentPath === '/account';
+            return props.currentPath.startsWith(href);
         },
 
         getMenuLinks() {
@@ -263,7 +287,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             state.menuOpen = false;
         },
 
-        clickOutsideListener: { handler: null as any },
+        clickOutsideListener: { handler: null as ((e: MouseEvent) => void) | null },
     });
 
     onMount(() => {
@@ -288,6 +312,52 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
 
     return (
         <div className="relative" data-account-menu>
+            {/* ── Sidebar variant ──────────────────────────────── */}
+            <Show when={state.isSidebar}>
+                <div className="flex flex-col">
+                    <Show when={!!props.user}>
+                        <div className="px-4 py-3 border-b border-gray-200">
+                            <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+                                {state.getLabel('signedInAs', 'Signed in as')}
+                            </p>
+                            <p className="font-medium text-gray-900 truncate">
+                                {state.getUserName()}
+                            </p>
+                        </div>
+
+                        <nav className="py-2">
+                            <ul className="space-y-0.5">
+                                <For each={state.getMenuLinks()}>
+                                    {(link: AccountMenuLink) => (
+                                        <li key={link.href}>
+                                            <button
+                                                type="button"
+                                                onClick={() => state.handleMenuItemClick(link.href)}
+                                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${state.isActiveLink(link.href) ? 'bg-violet-50 text-violet-700 border-l-2 border-violet-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                                            >
+                                                {link.label}
+                                            </button>
+                                        </li>
+                                    )}
+                                </For>
+                            </ul>
+                        </nav>
+
+                        <div className="px-4 py-3 border-t border-gray-200">
+                            <button
+                                type="button"
+                                onClick={() => state.handleLogoutClick()}
+                                className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            >
+                                {state.getLabel('logoutLabel', 'Log Out')}
+                            </button>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
+
+            {/* ── Dropdown variant ─────────────────────────────── */}
+            <Show when={!state.isSidebar}>
             {/* Account Icon Button */}
             <button
                 type="button"
@@ -414,6 +484,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
 
                     </Show>
                 </div>
+            </Show>
             </Show>
         </div>
     );

@@ -164,14 +164,28 @@ iconClassName?: string;
 
 /** Additional class name for the dropdown menu. */
 menuClassName?: string;
+
+/**
+ * Component variant.
+ * - 'dropdown' (default): Header icon with popup menu
+ * - 'sidebar': Always-visible vertical navigation for account layout
+ */
+variant?: 'dropdown' | 'sidebar';
+
+/**
+ * Current route path, used in sidebar variant to highlight the active link.
+ */
+currentPath?: string;
 }
 interface AccountIconAndMenuState {
 isMounted: boolean;
 menuOpen: boolean;
+isSidebar: () => boolean;
 getUserName: () => string;
 getLabel: (key: string, fallback: string) => string;
 getMenuTitle: () => string;
 getMenuLinks: () => AccountMenuLink[];
+isActiveLink: (href: string) => boolean;
 handleIconClick: () => void;
 handleMenuItemClick: (href: string) => void;
 handleLogoutClick: () => void;
@@ -180,7 +194,7 @@ handleRegisterClick: () => void;
 handleGuestCheckoutClick: () => void;
 closeMenu: () => void;
 clickOutsideListener: {
-  handler: any;
+  handler: ((e: MouseEvent) => void) | null;
 };
 }
 
@@ -193,6 +207,11 @@ clickOutsideListener: {
 
 
 const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState["menuOpen"]>(() => (false))
+
+
+function isSidebar(): ReturnType<AccountIconAndMenuState["isSidebar"]>{
+return props.variant === 'sidebar';
+}
 
 
 function getUserName(): ReturnType<AccountIconAndMenuState["getUserName"]>{
@@ -213,6 +232,13 @@ return (props.labels as Record<string, string>)?.[key] || fallback;
 
 function getMenuTitle(): ReturnType<AccountIconAndMenuState["getMenuTitle"]>{
 return props.accountMenuTitle || (props.labels as Record<string, string>)?.['accountMenuTitle'] || 'My account';
+}
+
+
+function isActiveLink(href: string): ReturnType<AccountIconAndMenuState["isActiveLink"]>{
+if (!props.currentPath) return false;
+if (href === '/account') return props.currentPath === '/account';
+return props.currentPath.startsWith(href);
 }
 
 
@@ -287,7 +313,7 @@ setMenuOpen(false);
 
 
 const [clickOutsideListener, setClickOutsideListener] = useState<AccountIconAndMenuState["clickOutsideListener"]>(() => ({
-handler: null as any
+handler: null as ((e: MouseEvent) => void) | null
 }))
 
 
@@ -321,7 +347,16 @@ setMenuOpen(false);
 return (
 
 
-  <div className="relative"  data-account-menu><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('accountLabel', 'Account')}  className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"  /></svg>{isMounted ? (
+  <div className="relative"  data-account-menu>{isSidebar() ? (
+  <div className="flex flex-col">{!!props.user ? (
+  <><div className="px-4 py-3 border-b border-gray-200"><p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">{getLabel('signedInAs', 'Signed in as')}</p><p className="font-medium text-gray-900 truncate">{getUserName()}</p></div>
+<nav className="py-2"><ul className="space-y-0.5">{getMenuLinks()?.map((link) => (
+  <li  key={link.href}><button  type="button"  onClick={(event) => handleMenuItemClick(link.href) }  className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${isActiveLink(link.href) ? 'bg-violet-50 text-violet-700 border-l-2 border-violet-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>{link.label}</button></li>
+))}</ul></nav>
+<div className="px-4 py-3 border-t border-gray-200"><button  type="button" className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"  onClick={(event) => handleLogoutClick() }>{getLabel('logoutLabel', 'Log Out')}</button></div></>
+) : null}</div>
+) : null}{!isSidebar() ? (
+  <><button  type="button"  onClick={(event) => handleIconClick() }  aria-label={getLabel('accountLabel', 'Account')}  className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-5 h-5"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"  /></svg>{isMounted ? (
   <>{props.user ? (
   <span className="hidden md:block font-normal">
                         Hi, {getUserName()}</span>
@@ -329,7 +364,8 @@ return (
 {!props.user ? (
   <span className="hidden md:block font-normal">{getLabel('accountLabel', 'Account')}</span>
 ) : null}</>
-) : null}</button>{menuOpen ? (
+) : null}</button>
+{menuOpen ? (
   <div  className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}>{isMounted ? (
   <>{!!props.user ? (
   <><div className="pb-3 mb-3 border-b border-gray-200"><p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">{getLabel('signedInAs', 'Signed in as')}</p><p className="font-medium text-gray-900 truncate">{getUserName()}</p></div>
@@ -350,6 +386,7 @@ if (props.onAccountIconClick) props.onAccountIconClick();
 ) : null}</>
 ) : null}</>
 ) : null}</div>
+) : null}</>
 ) : null}</div>
 
 

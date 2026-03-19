@@ -24,11 +24,6 @@ export default function QuoteDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!state.isAuthenticated) {
-            router.push('/login');
-            return;
-        }
-
         const fetchQuoteDetails = async () => {
             try {
                 setLoading(true);
@@ -61,7 +56,7 @@ export default function QuoteDetailPage() {
         if (quoteId) {
             fetchQuoteDetails();
         }
-    }, [state.isAuthenticated, router, quoteId]);
+    }, [quoteId]);
 
     const handleAcceptQuote = () => {
         // TODO: Implement accept quote functionality

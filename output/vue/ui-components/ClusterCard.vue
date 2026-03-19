@@ -129,14 +129,12 @@
         </p>
       </template>
 
-      <template v-if="!!cluster.defaultProduct?.price">
+      <template v-if="!!getClusterPrice()">
         <div :class="isRow() ? '' : 'mt-auto pt-2'">
-          <ProductPriceDisplay
-            :includeTax="includeTax !== undefined ? includeTax : includeTax"
-            :price="cluster.defaultProduct?.price"
-            :options="cluster.options"
-            :priceSize="isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'"
-          ></ProductPriceDisplay>
+          <span
+            :class="`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`"
+            >{{ getClusterPrice() }}</span
+          >
         </div>
       </template>
     </div>
@@ -154,8 +152,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { Cluster, AttributeResult, ProductPrice } from 'propeller-sdk-v2';
-import ProductPriceDisplay from './ProductPrice.vue';
+import { Cluster, AttributeResult } from 'propeller-sdk-v2';
 import ItemStock from './ItemStock.vue';
 
 export interface ClusterCardProps {
@@ -276,6 +273,7 @@ interface ClusterCardState {
   getStockQuantity: () => number;
   getStockStatusLabel: () => string;
   getStockStatusClass: () => string;
+  getClusterPrice: () => string;
   getLabel: (key: string, fallback: string) => string;
   handleClusterClick: (e: any) => void;
   handleToggleFavorite: (e: any) => void;
@@ -339,6 +337,14 @@ function getStockStatusClass(): ReturnType<ClusterCardState['getStockStatusClass
   if (qty <= 0) return 'text-red-600 bg-red-50';
   if (qty <= 5) return 'text-amber-600 bg-amber-50';
   return 'text-green-600 bg-green-50';
+}
+function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
+  const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
+  const useTax: boolean =
+    props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;
+  const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+  if (!value && value !== 0) return '';
+  return `\u20AC${Number(value).toFixed(2)}`;
 }
 function getLabel(key: string, fallback: string): ReturnType<ClusterCardState['getLabel']> {
   return (props.labels as Record<string, string>)?.[key] || fallback;

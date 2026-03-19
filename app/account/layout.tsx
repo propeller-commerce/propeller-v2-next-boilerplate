@@ -17,15 +17,15 @@ export default function AccountLayout({
     const router = useRouter();
     const pathname = usePathname();
 
-    // Protect account routes
+    // Protect account routes — wait for auth to finish loading before checking
     useEffect(() => {
-        if (!state.isAuthenticated) {
+        if (!state.isLoading && !state.isAuthenticated) {
             router.push('/login');
         }
-    }, [state.isAuthenticated, router]);
+    }, [state.isLoading, state.isAuthenticated, router]);
 
-    if (!state.isAuthenticated) {
-        return null; // or loading spinner
+    if (state.isLoading || !state.isAuthenticated) {
+        return null;
     }
 
     return (

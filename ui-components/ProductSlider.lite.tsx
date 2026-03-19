@@ -198,8 +198,10 @@ interface ProductSliderState {
     fetchCrossUpsells: () => Promise<void>;
     fetchItems: () => Promise<void>;
     doFetch: () => void;
+    sliderId: string;
     scrollLeft: () => void;
     scrollRight: () => void;
+    getTrackEl: () => HTMLElement | null;
     handleScroll: (e: any) => void;
     handleProductClick: (product: Product) => void;
     handleClusterClick: (cluster: Cluster) => void;
@@ -212,6 +214,7 @@ export default function ProductSlider(props: ProductSliderProps) {
         scrollPosition: 0,
         containerWidth: 0,
         scrollWidth: 0,
+        sliderId: '',
 
         items(): (Product | Cluster)[] {
             if (props.products && props.products.length > 0) {
@@ -382,8 +385,12 @@ export default function ProductSlider(props: ProductSliderProps) {
             }
         },
 
+        getTrackEl(): HTMLElement | null {
+            return document.querySelector(`[data-slider-id="${state.sliderId}"]`) as HTMLElement | null;
+        },
+
         scrollLeft(): void {
-            const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+            const el = state.getTrackEl();
             if (el) {
                 const scrollAmount = el.clientWidth * 0.8;
                 el.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
@@ -391,7 +398,7 @@ export default function ProductSlider(props: ProductSliderProps) {
         },
 
         scrollRight(): void {
-            const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+            const el = state.getTrackEl();
             if (el) {
                 const scrollAmount = el.clientWidth * 0.8;
                 el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
@@ -419,16 +426,8 @@ export default function ProductSlider(props: ProductSliderProps) {
     });
 
     onMount(() => {
+        state.sliderId = 'slider-' + Math.random().toString(36).substring(2, 9);
         state.doFetch();
-
-        // Initialize scroll dimensions after render
-        setTimeout(() => {
-            const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
-            if (el) {
-                state.containerWidth = el.clientWidth;
-                state.scrollWidth = el.scrollWidth;
-            }
-        }, 100);
     });
 
     onUpdate(() => {
@@ -440,6 +439,19 @@ export default function ProductSlider(props: ProductSliderProps) {
         state.doFetch();
         // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
     }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
+
+    onUpdate(() => {
+        // Initialize scroll dimensions once sliderId is set and items are rendered
+        if (state.sliderId && state.items().length > 0) {
+            setTimeout(() => {
+                const el = state.getTrackEl();
+                if (el) {
+                    state.containerWidth = el.clientWidth;
+                    state.scrollWidth = el.scrollWidth;
+                }
+            }, 50);
+        }
+    }, [state.sliderId, state.items().length]);
 
     return (
         <Show when={!(state.isCrossUpsellMode() && !state.isLoading && state.items().length === 0)}>
@@ -491,7 +503,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                 {/* Slider track */}
                 <Show when={!state.isLoading && state.items().length > 0}>
                     <div
-                        data-product-slider-track
+                        data-slider-id={state.sliderId}
                         onScroll={(e) => state.handleScroll(e)}
                         className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
                         style={{
@@ -503,10 +515,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                             {(item: any, index: number) => (
                                 <div
                                     key={state.getItemId(item) + '-' + index}
-                                    className="flex-shrink-0"
-                                    style={{
-                                        width: 'calc((100% - 4.5rem) / ' + state.desktopCount() + ')',
-                                    }}
+                                    className="flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
                                 >
                                     {/* Cluster card */}
                                     <Show when={state.isCluster(item)}>

@@ -12,6 +12,8 @@ import {
   CartChildItemInput,
   ProductsResponse,
 } from 'propeller-sdk-v2';
+import FavoriteListItem from './FavoriteListItem.lite';
+import GridPagination from './GridPagination.lite';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */
@@ -25,6 +27,9 @@ export interface FavoriteListDetailsProps {
 
   /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
   onItemDelete?: (itemId: string) => void;
+
+  /** Called after the favorite list is fetched, with the full list object */
+  onListLoaded?: (list: FavoriteList) => void;
 
   /** Number of items to show per page (default: 12) */
   itemsPerPage?: number;
@@ -213,6 +218,9 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
         const service = new FavoriteListService(props.graphqlClient);
         const list = await service.getFavoriteList(state.buildFetchVariables());
         state.favoriteList = list;
+        if (props.onListLoaded) {
+          props.onListLoaded(list);
+        }
 
         const items: (Product | Cluster)[] = [];
         const productsRef = list?.products as ProductsResponse;
@@ -286,19 +294,47 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
 
       <Show when={!state.loading && state.isMounted}>
         <Show when={state.allItems.length > 0}>
-          <div>
+          <div className="space-y-3">
             <For each={state.getPagedItems()}>
               {(item: Product | Cluster, idx: number) => (
                 <div key={('productId' in item ? 'p-' + (item as Product).productId : 'c-' + (item as Cluster).clusterId)}>
-                  {/* FavoriteListItem rendered here — replaced with actual component in React copy */}
-                  <div className="p-4 border-b">{item.names?.[0]?.value || 'Item'}</div>
+                  <FavoriteListItem
+                    item={item}
+                    graphqlClient={props.graphqlClient}
+                    user={props.user}
+                    cartId={props.cartId}
+                    createCart={props.createCart}
+                    onCartCreated={props.onCartCreated}
+                    onAddToCart={props.onAddToCart}
+                    afterAddToCart={props.afterAddToCart}
+                    showModal={props.showModal}
+                    allowIncrDecr={props.allowIncrDecr}
+                    enableStockValidation={props.enableStockValidation}
+                    language={props.language}
+                    onProceedToCheckout={props.onProceedToCheckout}
+                    addToCartLabels={props.addToCartLabels}
+                    stockLabels={props.stockLabels}
+                    labels={props.itemLabels}
+                    configuration={props.configuration}
+                    titleLinkable={props.titleLinkable}
+                    showStockComponent={props.showStockComponent}
+                    showSku={props.showSku}
+                    allowAddToCart={props.allowAddToCart}
+                    showDelete={props.showDelete}
+                    onDelete={(itemId: string) => state.handleItemDelete(itemId)}
+                    onItemClick={props.onItemClick}
+                  />
                 </div>
               )}
             </For>
 
             <Show when={props.showPagination !== false && state.getTotalPages() > 1}>
               <div className="mt-6">
-                {/* GridPagination rendered here — replaced with actual component in React copy */}
+                <GridPagination
+                  products={state.getPaginationData() as unknown as ProductsResponse}
+                  onPageChange={(page: number) => state.handlePageChange(page)}
+                  variant={props.paginationVariant || 'compact'}
+                />
               </div>
             </Show>
           </div>

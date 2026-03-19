@@ -54,6 +54,15 @@ function deepPlain(obj: unknown): unknown {
   return obj;
 }
 
+const COUNTRIES = [
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+];
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart: contextCart, getCart } = useCart();
@@ -509,6 +518,7 @@ export default function CheckoutPage() {
                           enableDelete={false}
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE, false)}
+                          countries={COUNTRIES}
                         />
                         <Button onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>
                           Confirm Invoice Address
@@ -523,6 +533,7 @@ export default function CheckoutPage() {
                         showIcp={false}
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
+                        countries={COUNTRIES}
                       />
                     )}
                   </CardContent>
@@ -551,6 +562,7 @@ export default function CheckoutPage() {
                           enableDelete={false}
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
+                          countries={COUNTRIES}
                         />
                         <div className="flex gap-4">
                           <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
@@ -566,6 +578,7 @@ export default function CheckoutPage() {
                         showIcp={false}
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY)}
+                        countries={COUNTRIES}
                       />
                     )}
                   </CardContent>

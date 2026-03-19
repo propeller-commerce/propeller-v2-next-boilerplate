@@ -24,11 +24,6 @@ export default function OrderDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!state.isAuthenticated) {
-            router.push('/login');
-            return;
-        }
-
         const fetchOrderDetails = async () => {
             try {
                 setLoading(true);
@@ -61,7 +56,7 @@ export default function OrderDetailPage() {
         if (orderId) {
             fetchOrderDetails();
         }
-    }, [state.isAuthenticated, router, orderId]);
+    }, [orderId]);
 
     const handleOrderAgain = () => {
         // TODO: Implement order again functionality

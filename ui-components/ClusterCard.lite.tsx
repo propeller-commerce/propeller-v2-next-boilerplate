@@ -7,9 +7,7 @@ import {
 import {
     Cluster,
     AttributeResult,
-    ProductPrice,
 } from 'propeller-sdk-v2';
-import ProductPriceDisplay from './ProductPrice.lite';
 import ItemStock from './ItemStock.lite';
 
 export interface ClusterCardProps {
@@ -131,6 +129,7 @@ interface ClusterCardState {
     getStockQuantity: () => number;
     getStockStatusLabel: () => string;
     getStockStatusClass: () => string;
+    getClusterPrice: () => string;
     getLabel: (key: string, fallback: string) => string;
     handleClusterClick: (e: any) => void;
     handleToggleFavorite: (e: any) => void;
@@ -206,6 +205,14 @@ export default function ClusterCard(props: ClusterCardProps) {
             if (qty <= 0) return 'text-red-600 bg-red-50';
             if (qty <= 5) return 'text-amber-600 bg-amber-50';
             return 'text-green-600 bg-green-50';
+        },
+
+        getClusterPrice(): string {
+            const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
+            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
+            const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+            if (!value && value !== 0) return '';
+            return `\u20AC${Number(value).toFixed(2)}`;
         },
 
         getLabel(key: string, fallback: string) {
@@ -445,14 +452,11 @@ export default function ClusterCard(props: ClusterCardProps) {
                 </Show>
 
                 {/* Price */}
-                <Show when={!!props.cluster.defaultProduct?.price}>
+                <Show when={!!state.getClusterPrice()}>
                     <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
-                        <ProductPriceDisplay
-                            includeTax={props.includeTax !== undefined ? props.includeTax : state.includeTax}
-                            price={props.cluster.defaultProduct?.price as ProductPrice}
-                            options={props.cluster.options}
-                            priceSize={state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}
-                        />
+                        <span className={`font-bold text-gray-900 ${state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>
+                            {state.getClusterPrice()}
+                        </span>
                     </div>
                 </Show>
             </div>

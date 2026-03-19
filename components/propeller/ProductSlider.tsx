@@ -200,8 +200,10 @@ interface ProductSliderState {
   fetchCrossUpsells: () => Promise<void>;
   fetchItems: () => Promise<void>;
   doFetch: () => void;
+  sliderId: string;
   scrollLeft: () => void;
   scrollRight: () => void;
+  getTrackEl: () => HTMLElement | null;
   handleScroll: (e: any) => void;
   handleProductClick: (product: Product) => void;
   handleClusterClick: (cluster: Cluster) => void;
@@ -221,6 +223,8 @@ function ProductSlider(props: ProductSliderProps) {
   );
 
   const [scrollWidth, setScrollWidth] = useState<ProductSliderState['scrollWidth']>(() => 0);
+
+  const [sliderId, setSliderId] = useState<ProductSliderState['sliderId']>(() => '');
 
   function items(): ReturnType<ProductSliderState['items']> {
     if (props.products && props.products.length > 0) {
@@ -407,8 +411,12 @@ function ProductSlider(props: ProductSliderProps) {
     }
   }
 
+  function getTrackEl(): ReturnType<ProductSliderState['getTrackEl']> {
+    return document.querySelector(`[data-slider-id="${sliderId}"]`) as HTMLElement | null;
+  }
+
   function scrollLeft(): ReturnType<ProductSliderState['scrollLeft']> {
-    const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+    const el = getTrackEl();
     if (el) {
       const scrollAmount = el.clientWidth * 0.8;
       el.scrollBy({
@@ -419,7 +427,7 @@ function ProductSlider(props: ProductSliderProps) {
   }
 
   function scrollRight(): ReturnType<ProductSliderState['scrollRight']> {
-    const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+    const el = getTrackEl();
     if (el) {
       const scrollAmount = el.clientWidth * 0.8;
       el.scrollBy({
@@ -453,16 +461,8 @@ function ProductSlider(props: ProductSliderProps) {
   }
 
   useEffect(() => {
+    setSliderId('slider-' + Math.random().toString(36).substring(2, 9));
     doFetch();
-
-    // Initialize scroll dimensions after render
-    setTimeout(() => {
-      const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
-      if (el) {
-        setContainerWidth(el.clientWidth);
-        setScrollWidth(el.scrollWidth);
-      }
-    }, 100);
   }, []);
   useEffect(() => {
     doFetch();
@@ -472,6 +472,18 @@ function ProductSlider(props: ProductSliderProps) {
     doFetch();
     // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
   }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
+  useEffect(() => {
+    // Initialize scroll dimensions once sliderId is set and items are rendered
+    if (sliderId && items().length > 0) {
+      setTimeout(() => {
+        const el = getTrackEl();
+        if (el) {
+          setContainerWidth(el.clientWidth);
+          setScrollWidth(el.scrollWidth);
+        }
+      }, 50);
+    }
+  }, [sliderId, items().length]);
 
   return (
     <>
@@ -534,7 +546,7 @@ function ProductSlider(props: ProductSliderProps) {
             {!isLoading && items().length > 0 ? (
               <div
                 className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
-                data-product-slider-track
+                data-slider-id={sliderId}
                 onScroll={(e) => handleScroll(e)}
                 style={{
                   scrollbarWidth: 'none',
@@ -543,11 +555,8 @@ function ProductSlider(props: ProductSliderProps) {
               >
                 {items()?.map((item, index) => (
                   <div
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
                     key={getItemId(item) + '-' + index}
-                    style={{
-                      width: 'calc((100% - 4.5rem) / ' + desktopCount() + ')',
-                    }}
                   >
                     {isCluster(item) ? (
                       <ClusterCard

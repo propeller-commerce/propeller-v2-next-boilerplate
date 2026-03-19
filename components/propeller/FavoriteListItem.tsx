@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Product,
   Cluster,
@@ -11,11 +11,9 @@ import {
   Cart,
   CartMainItem,
   CartChildItemInput,
-  ProductPrice,
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
-import ProductPriceDisplay from './ProductPrice';
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */
@@ -50,6 +48,9 @@ export interface FavoriteListItemProps {
 
   /** UI string overrides */
   labels?: Record<string, string>;
+
+  /** Include tax in the price display. When provided, overrides the internal PriceToggle state */
+  includeTax?: boolean;
 
   // === AddToCart pass-through props (only used for products) ===
 
@@ -104,8 +105,8 @@ export interface FavoriteListItemProps {
   stockLabels?: Record<string, string>;
 }
 interface FavoriteListItemState {
-  includeTax: boolean;
-  priceListener: (() => void) | null;
+  _includeTax: boolean;
+  _priceListener: any;
   isProduct: () => boolean;
   getProduct: () => Product;
   getCluster: () => Cluster;
@@ -114,17 +115,14 @@ interface FavoriteListItemState {
   getImageUrl: () => string;
   getItemUrl: () => string;
   getItemId: () => string;
+  getItemPrice: () => string;
   getLabel: (key: string, fallback: string) => string;
-  handleItemClick: (e: Event) => void;
+  handleItemClick: (e: any) => void;
   handleDelete: () => void;
 }
 
 function FavoriteListItem(props: FavoriteListItemProps) {
-  const [includeTax, setIncludeTax] = useState<FavoriteListItemState['includeTax']>(() => true);
-
-  const [priceListener, setPriceListener] = useState<FavoriteListItemState['priceListener']>(
-    () => null
-  );
+  const [_includeTax, set_includeTax] = useState<FavoriteListItemState['_includeTax']>(() => true);
 
   function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
     return 'productId' in props.item;
@@ -177,11 +175,25 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     return String(getCluster()?.clusterId || '');
   }
 
+  function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
+    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+    let priceObj: any = null;
+    if (isProduct()) {
+      priceObj = getProduct()?.price;
+    } else {
+      priceObj = getCluster()?.defaultProduct?.price;
+    }
+    if (!priceObj) return '';
+    const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+    if (!value && value !== 0) return '';
+    return `\u20AC${Number(value).toFixed(2)}`;
+  }
+
   function getLabel(key: string, fallback: string): ReturnType<FavoriteListItemState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
 
-  function handleItemClick(e: Event): ReturnType<FavoriteListItemState['handleItemClick']> {
+  function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemClick']> {
     if (props.onItemClick) {
       e.preventDefault();
       props.onItemClick(props.item);
@@ -194,23 +206,37 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     }
   }
 
+  useEffect(() => {
+    const stored = localStorage.getItem('price_include_tax');
+    if (stored !== null) {
+      set_includeTax(stored === 'true');
+    }
+    const listener = (e: Event) => {
+      set_includeTax(!!(e as CustomEvent).detail);
+    };
+    window.addEventListener('priceToggleChanged', listener);
+    return () => {
+      window.removeEventListener('priceToggleChanged', listener);
+    };
+  }, []);
+
   return (
     <div
-      className={`group flex flex-row items-center gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${props.className || ''}`}
+      className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-violet-200 hover:shadow-sm ${props.className || ''}`}
     >
-      <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-2">
+      <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
         {props.titleLinkable !== false ? (
           <a
             className="block h-full w-full"
             href={getItemUrl()}
-            onClick={(e) => handleItemClick(e as unknown as Event)}
+            onClick={(e) => handleItemClick(e)}
           >
             {!!getImageUrl() ? (
               <img className="h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
             ) : null}
             {!getImageUrl() ? (
               <div className="flex h-full w-full items-center justify-center text-gray-200">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-10 w-10">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-8 w-8">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -229,7 +255,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
             ) : null}
             {!getImageUrl() ? (
               <div className="flex h-full w-full items-center justify-center text-gray-200">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-10 w-10">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-8 w-8">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -242,119 +268,90 @@ function FavoriteListItem(props: FavoriteListItemProps) {
           </div>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1 min-w-0">
+      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         {props.showSku !== false && !!getSku() ? (
-          <div className="font-mono text-xs text-gray-400">{getSku()}</div>
+          <span className="font-mono text-xs text-gray-400">{getSku()}</span>
         ) : null}
         {props.titleLinkable !== false ? (
           <a
-            className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 line-clamp-2"
+            className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 line-clamp-1"
             href={getItemUrl()}
-            onClick={(e) => handleItemClick(e as unknown as Event)}
+            onClick={(e) => handleItemClick(e)}
           >
             {getName()}
           </a>
         ) : null}
         {props.titleLinkable === false ? (
-          <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">
+          <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-1">
             {getName()}
           </span>
         ) : null}
-        {!isProduct() ? (
-          <span className="inline-flex items-center self-start px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800">
-            {getLabel('clusterBadge', 'Cluster')}
-          </span>
-        ) : null}
-        {props.showStockComponent && isProduct() && !!getProduct().inventory ? (
+      </div>
+      {props.showStockComponent && isProduct() && !!getProduct().inventory ? (
+        <div className="flex-shrink-0">
           <ItemStock
             inventory={getProduct().inventory!}
             showAvailability
             showStock
             labels={props.stockLabels}
           />
-        ) : null}
-        {props.showStockComponent && !isProduct() ? (
-          <>
-            {getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined ? (
-              <div className="flex items-center gap-1.5">
-                {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5 ? (
-                  <>
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50">
-                      {getLabel('inStock', 'In stock')}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      ({getCluster()?.defaultProduct?.inventory?.totalQuantity})
-                    </span>
-                  </>
-                ) : null}
-                {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
-                (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) <= 5 ? (
-                  <>
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-amber-600 bg-amber-50">
-                      {getLabel('lowStock', 'Low stock')}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      ({getCluster()?.defaultProduct?.inventory?.totalQuantity})
-                    </span>
-                  </>
-                ) : null}
-                {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0 ? (
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-red-600 bg-red-50">
-                    {getLabel('outOfStock', 'Out of stock')}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-          </>
-        ) : null}
-        {isProduct() && !!getProduct()?.price ? (
-          <div>
-            <ProductPriceDisplay
-              priceSize="text-sm"
-              price={getProduct().price as ProductPrice}
-              includeTax={includeTax}
-            />
-          </div>
-        ) : null}
-        {!isProduct() && !!getCluster()?.defaultProduct?.price ? (
-          <div>
-            <ProductPriceDisplay
-              priceSize="text-sm"
-              price={getCluster().defaultProduct?.price as ProductPrice}
-              includeTax={includeTax}
-              options={getCluster().options}
-            />
-          </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
+      {props.showStockComponent && !isProduct() ? (
+        <>
+          {getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined ? (
+            <div className="flex-shrink-0">
+              {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5 ? (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50">
+                  {getLabel('inStock', 'In stock')}
+                </span>
+              ) : null}
+              {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
+              (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) <= 5 ? (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-amber-600 bg-amber-50">
+                  {getLabel('lowStock', 'Low stock')}
+                </span>
+              ) : null}
+              {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0 ? (
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-red-600 bg-red-50">
+                  {getLabel('outOfStock', 'Out of stock')}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {!!getItemPrice() ? (
+        <span className="text-base font-bold text-gray-900 whitespace-nowrap flex-shrink-0">
+          {getItemPrice()}
+        </span>
+      ) : null}
       <div className="flex items-center gap-2 flex-shrink-0">
         {props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
-          <div className="flex-shrink-0">
-            <AddToCart
-              className="flex items-center gap-2"
-              graphqlClient={props.graphqlClient!}
-              user={props.user || null}
-              product={getProduct()}
-              cartId={props.cartId}
-              configuration={props.configuration}
-              createCart={props.createCart}
-              onCartCreated={props.onCartCreated}
-              onAddToCart={props.onAddToCart}
-              afterAddToCart={props.afterAddToCart}
-              showModal={props.showModal}
-              allowIncrDecr={props.allowIncrDecr}
-              enableStockValidation={props.enableStockValidation}
-              language={props.language}
-              onProceedToCheckout={props.onProceedToCheckout}
-              labels={props.addToCartLabels}
-            />
-          </div>
+          <AddToCart
+            className="flex items-center gap-2"
+            graphqlClient={props.graphqlClient!}
+            user={props.user || null}
+            product={getProduct()}
+            cartId={props.cartId}
+            configuration={props.configuration}
+            createCart={props.createCart}
+            onCartCreated={props.onCartCreated}
+            onAddToCart={props.onAddToCart}
+            afterAddToCart={props.afterAddToCart}
+            showModal={props.showModal}
+            allowIncrDecr={props.allowIncrDecr}
+            enableStockValidation={props.enableStockValidation}
+            language={props.language}
+            onProceedToCheckout={props.onProceedToCheckout}
+            labels={props.addToCartLabels}
+          />
         ) : null}
         {!isProduct() ? (
           <a
             className="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 whitespace-nowrap"
             href={getItemUrl()}
-            onClick={(e) => handleItemClick(e as unknown as Event)}
+            onClick={(e) => handleItemClick(e)}
           >
             {getLabel('viewCluster', 'View cluster')}
           </a>
@@ -362,7 +359,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         {props.showDelete !== false ? (
           <button
             type="button"
-            className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+            className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
             onClick={(event) => handleDelete()}
             title={getLabel('delete', 'Remove from list')}
           >

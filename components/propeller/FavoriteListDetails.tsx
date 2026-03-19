@@ -15,6 +15,8 @@ import {
   CartChildItemInput,
   ProductsResponse,
 } from 'propeller-sdk-v2';
+import FavoriteListItem from './FavoriteListItem';
+import GridPagination from './GridPagination';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */
@@ -28,6 +30,9 @@ export interface FavoriteListDetailsProps {
 
   /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
   onItemDelete?: (itemId: string) => void;
+
+  /** Called after the favorite list is fetched, with the full list object */
+  onListLoaded?: (list: FavoriteList) => void;
 
   /** Number of items to show per page (default: 12) */
   itemsPerPage?: number;
@@ -236,6 +241,9 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       const service = new FavoriteListService(props.graphqlClient);
       const list = await service.getFavoriteList(buildFetchVariables());
       setFavoriteList(list);
+      if (props.onListLoaded) {
+        props.onListLoaded(list);
+      }
       const items: (Product | Cluster)[] = [];
       const productsRef = list?.products as ProductsResponse;
       if (productsRef?.items && Array.isArray(productsRef.items)) {
@@ -311,7 +319,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       {!loading && isMounted ? (
         <>
           {allItems.length > 0 ? (
-            <div>
+            <div className="space-y-3">
               {getPagedItems()?.map((item, idx) => (
                 <div
                   key={
@@ -320,11 +328,42 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                       : 'c-' + (item as Cluster).clusterId
                   }
                 >
-                  <div className="p-4 border-b">{item.names?.[0]?.value || 'Item'}</div>
+                  <FavoriteListItem
+                    item={item}
+                    graphqlClient={props.graphqlClient}
+                    user={props.user}
+                    cartId={props.cartId}
+                    createCart={props.createCart}
+                    onCartCreated={props.onCartCreated}
+                    onAddToCart={props.onAddToCart}
+                    afterAddToCart={props.afterAddToCart}
+                    showModal={props.showModal}
+                    allowIncrDecr={props.allowIncrDecr}
+                    enableStockValidation={props.enableStockValidation}
+                    language={props.language}
+                    onProceedToCheckout={props.onProceedToCheckout}
+                    addToCartLabels={props.addToCartLabels}
+                    stockLabels={props.stockLabels}
+                    labels={props.itemLabels}
+                    configuration={props.configuration}
+                    titleLinkable={props.titleLinkable}
+                    showStockComponent={props.showStockComponent}
+                    showSku={props.showSku}
+                    allowAddToCart={props.allowAddToCart}
+                    showDelete={props.showDelete}
+                    onDelete={(itemId) => handleItemDelete(itemId)}
+                    onItemClick={props.onItemClick}
+                  />
                 </div>
               ))}
               {props.showPagination !== false && getTotalPages() > 1 ? (
-                <div className="mt-6" />
+                <div className="mt-6">
+                  <GridPagination
+                    products={getPaginationData() as unknown as ProductsResponse}
+                    onPageChange={(page) => handlePageChange(page)}
+                    variant={props.paginationVariant || 'compact'}
+                  />
+                </div>
               ) : null}
             </div>
           ) : null}

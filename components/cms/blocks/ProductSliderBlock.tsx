@@ -5,6 +5,7 @@ import { graphqlClient } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { usePrice } from '@/context/PriceContext';
 import { config } from '@/data/config';
 import type { CmsProductSlider } from '@/lib/cms/types';
 import type { Product, Cluster } from 'propeller-sdk-v2';
@@ -13,6 +14,7 @@ export default function ProductSliderBlock({ block }: { block: CmsProductSlider 
   const router = useRouter();
   const { state } = useAuth();
   const { cart, saveCart } = useCart();
+  const { includeTax } = usePrice();
 
   if (block.productIds.length === 0 && block.clusterIds.length === 0) {
     return null;
@@ -31,8 +33,11 @@ export default function ProductSliderBlock({ block }: { block: CmsProductSlider 
           user={state.user}
           cartId={cart?.cartId}
           createCart={true}
+          showModal={true}
           onCartCreated={(newCart) => saveCart(newCart)}
           afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+          onProceedToCheckout={() => router.push('/checkout')}
+          includeTax={includeTax}
           configuration={config}
           onProductClick={(product: Product) => {
             router.push(config.urls.getProductUrl(product));

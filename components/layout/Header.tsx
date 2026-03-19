@@ -187,11 +187,11 @@ export default function Header() {
                   <SearchBar
                     graphqlClient={graphqlClient}
                     language={language}
-                    onSubmit={(term) => router.push(`/search?q=${encodeURIComponent(term)}`)}
+                    onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
                     }}
-                    onViewAllClick={(term) => router.push(`/search?q=${encodeURIComponent(term)}`)}
+                    onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
                   />
                 </div>
               )}

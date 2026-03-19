@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Contact, Customer, FavoriteListService, type FavoriteList } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
@@ -15,17 +15,10 @@ import FavoriteListDetails from '@/components/propeller/FavoriteListDetails';
 export default function FavoriteListPage() {
   const { state: authState } = useAuth();
   const { cart, saveCart } = useCart();
-  const router = useRouter();
   const params = useParams();
   const listId = params?.id as string;
 
   const [listName, setListName] = useState('');
-
-  useEffect(() => {
-    if (!authState.isAuthenticated) {
-      router.push('/login');
-    }
-  }, [authState.isAuthenticated, router]);
 
   function handleListLoaded(list: FavoriteList) {
     setListName(list?.name || '');
@@ -100,6 +93,7 @@ export default function FavoriteListPage() {
         user={authState.user as Contact | Customer}
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
+        onListLoaded={handleListLoaded}
         configuration={config}
         cartId={cart?.cartId}
         createCart={true}
@@ -107,6 +101,7 @@ export default function FavoriteListPage() {
         afterAddToCart={(updatedCart) => saveCart(updatedCart)}
         itemsPerPage={12}
         showPagination={true}
+        showStockComponent={true}
       />
     </div>
   );

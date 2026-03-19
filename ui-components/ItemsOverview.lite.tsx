@@ -1,5 +1,5 @@
 import { useStore, Show, For } from '@builder.io/mitosis';
-import { Cart, CartMainItem } from 'propeller-sdk-v2';
+import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
 
 export interface ItemsOverviewProps {
     /** Shopping cart object from which the cart items overview will be displayed */
@@ -57,6 +57,15 @@ interface ItemsOverviewState {
     getItemAvailability: (item: any) => string;
     isInStock: (item: any) => boolean;
     handleItemNameClick: (item: any) => void;
+    getItemChildItems: (item: any) => any[];
+    isBundleItem: (item: any) => boolean;
+    getBundleName: (item: any) => string;
+    getBundlePrice: (item: any) => string;
+    getBundleLeaderName: (item: any) => string;
+    getBundleLeaderPrice: (item: any) => string;
+    getBundleNonLeaders: (item: any) => any[];
+    getBundleItemName: (bundleItem: any) => string;
+    getBundleItemPrice: (bundleItem: any) => string;
 }
 
 export default function ItemsOverview(props: ItemsOverviewProps) {
@@ -141,6 +150,60 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
                 props.onCartItemNameClick(item as CartMainItem);
             }
         },
+
+        getItemChildItems(item: any) {
+            const children = item.childItems;
+            if (!children || !Array.isArray(children)) return [];
+            return children;
+        },
+
+        isBundleItem(item: any) {
+            return !!item.bundle;
+        },
+
+        getBundleName(item: any) {
+            return item.bundle?.name || 'Bundle';
+        },
+
+        getBundlePrice(item: any) {
+            const price = item.bundle?.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        getBundleLeaderName(item: any) {
+            const items = item.bundle?.items;
+            if (!items) return '';
+            const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+            if (!leader) return '';
+            return leader.product.names?.[0]?.value || 'Product';
+        },
+
+        getBundleLeaderPrice(item: any) {
+            const items = item.bundle?.items;
+            if (!items) return '';
+            const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+            if (!leader) return '';
+            const price = leader.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        getBundleNonLeaders(item: any) {
+            const items = item.bundle?.items;
+            if (!items) return [];
+            return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+        },
+
+        getBundleItemName(bundleItem: any) {
+            return bundleItem.product?.names?.[0]?.value || 'Product';
+        },
+
+        getBundleItemPrice(bundleItem: any) {
+            const price = bundleItem.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
     });
 
     return (
@@ -152,14 +215,14 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
             <div className="space-y-4">
                 <For each={state.items}>
                     {(item: any, index: number) => (
-                        <div key={item.itemId || index} className="flex items-center gap-3 pb-3 border-b border-gray-200 last:border-b-0 last:pb-0">
+                        <div key={item.itemId || index} className="flex gap-3 pb-3 border-b border-gray-200 last:border-b-0 last:pb-0">
                             <Show when={state.showImage}>
-                                <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div className="w-16 h-16 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">
                                     <Show when={state.getItemImageUrl(item)}>
                                         <img
                                             src={state.getItemImageUrl(item)}
                                             alt={state.getItemName(item)}
-                                            className="w-full h-full object-contain p-1"
+                                            className="w-full h-full object-contain p-1.5"
                                         />
                                     </Show>
                                     <Show when={!state.getItemImageUrl(item)}>
@@ -171,38 +234,93 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
                             </Show>
 
                             <div className="flex-1 min-w-0">
-                                <Show when={state.itemNameClickable}>
-                                    <p
-                                        onClick={() => state.handleItemNameClick(item)}
-                                        className="font-medium text-sm truncate cursor-pointer hover:text-violet-600 transition-colors"
-                                    >
-                                        {state.getItemName(item)}
-                                    </p>
-                                </Show>
-                                <Show when={!state.itemNameClickable}>
-                                    <p className="font-medium text-sm truncate">{state.getItemName(item)}</p>
+                                {/* Bundle item display */}
+                                <Show when={state.isBundleItem(item)}>
+                                    <div>
+                                        <div className="flex justify-between items-start gap-2">
+                                            <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">
+                                                {state.getBundleName(item)}
+                                            </span>
+                                            <Show when={state.showPrice && !!state.getBundlePrice(item)}>
+                                                <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                                    {state.getBundlePrice(item)}
+                                                </span>
+                                            </Show>
+                                        </div>
+                                        <div className="mt-1.5 space-y-1 border-l-2 border-violet-100 pl-2">
+                                            <Show when={!!state.getBundleLeaderName(item)}>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="font-medium text-gray-800">
+                                                        {state.getBundleLeaderName(item)}
+                                                    </span>
+                                                    <Show when={!!state.getBundleLeaderPrice(item)}>
+                                                        <span className="text-gray-500 whitespace-nowrap ml-2">{state.getBundleLeaderPrice(item)}</span>
+                                                    </Show>
+                                                </div>
+                                            </Show>
+                                            {state.getBundleNonLeaders(item).map((bundleItem: BundleItem, idx: number) => (
+                                                <div key={idx} className="flex justify-between items-center text-xs text-gray-600">
+                                                    <span className="line-clamp-1">{state.getBundleItemName(bundleItem)}</span>
+                                                    <Show when={!!state.getBundleItemPrice(bundleItem)}>
+                                                        <span className="text-gray-400 whitespace-nowrap ml-2">{state.getBundleItemPrice(bundleItem)}</span>
+                                                    </Show>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center text-xs text-gray-400 mt-1">
+                                        <span>{state.getLabel('quantity', 'Qty:')} {item.quantity}</span>
+                                    </div>
                                 </Show>
 
-                                <Show when={state.showSku && state.getItemSku(item)}>
-                                    <p className="text-xs text-gray-500">{state.getItemSku(item)}</p>
-                                </Show>
+                                {/* Normal / cluster item display */}
+                                <Show when={!state.isBundleItem(item)}>
+                                    <div>
+                                        <div className="flex justify-between items-start gap-2">
+                                            <Show when={state.itemNameClickable}>
+                                                <p
+                                                    onClick={() => state.handleItemNameClick(item)}
+                                                    className="font-medium text-sm leading-tight cursor-pointer hover:text-violet-600 transition-colors line-clamp-2"
+                                                >
+                                                    {state.getItemName(item)}
+                                                </p>
+                                            </Show>
+                                            <Show when={!state.itemNameClickable}>
+                                                <p className="font-medium text-sm leading-tight line-clamp-2">{state.getItemName(item)}</p>
+                                            </Show>
+                                            <Show when={state.showPrice}>
+                                                <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                                    {state.formatItemPrice(state.getItemTotalPrice(item))}
+                                                </span>
+                                            </Show>
+                                        </div>
 
-                                <Show when={state.showQuantity}>
-                                    <p className="text-xs text-gray-500">{state.getLabel('quantity', 'Qty:')} {item.quantity}</p>
-                                </Show>
+                                        <Show when={state.showSku && state.getItemSku(item)}>
+                                            <p className="text-xs text-gray-500 mt-0.5">SKU: {state.getItemSku(item)}</p>
+                                        </Show>
 
-                                <Show when={state.showAvailability && state.getItemAvailability(item)}>
-                                    <p className={`text-xs ${state.isInStock(item) ? 'text-green-600' : 'text-red-500'}`}>
-                                        {state.getItemAvailability(item)}
-                                    </p>
+                                        {/* Cluster child items */}
+                                        <Show when={state.getItemChildItems(item).length > 0}>
+                                            <div className="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
+                                                {state.getItemChildItems(item).map((child: CartBaseItem, idx: number) => (
+                                                    <div key={idx} className="flex justify-between items-center text-xs text-gray-600">
+                                                        <span className="line-clamp-1">{child.product?.names?.[0]?.value || 'Option'}</span>
+                                                        <span className="text-gray-400 whitespace-nowrap ml-2">{state.formatItemPrice(child.totalSum || 0)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </Show>
+                                    </div>
+                                    <div className="flex items-center text-xs text-gray-400 mt-1">
+                                        <span>{state.getLabel('quantity', 'Qty:')} {item.quantity}</span>
+                                        <Show when={state.showAvailability && state.getItemAvailability(item)}>
+                                            <span className={`ml-2 ${state.isInStock(item) ? 'text-green-600' : 'text-red-500'}`}>
+                                                {state.getItemAvailability(item)}
+                                            </span>
+                                        </Show>
+                                    </div>
                                 </Show>
                             </div>
-
-                            <Show when={state.showPrice}>
-                                <div className="text-sm font-medium">
-                                    {state.formatItemPrice(state.getItemTotalPrice(item))}
-                                </div>
-                            </Show>
                         </div>
                     )}
                 </For>

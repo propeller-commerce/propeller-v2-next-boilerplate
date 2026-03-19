@@ -64,7 +64,17 @@ function hoistImports(dir) {
     let totalFixed = 0;
 
     for (const file of files) {
-        const content = readFileSync(file, 'utf8');
+        let content = readFileSync(file, 'utf8');
+
+        // Pre-process: Mitosis sometimes places import statements mid-line
+        // (e.g. `} import { Foo } from 'bar'; function Baz(`).
+        // Split these onto their own lines so the line-by-line hoist logic
+        // can detect them.
+        content = content.replace(
+            /(?<=\S[;\s}])\s*(import\s+(?:\{[^}]*\}|[^\s]+)\s+from\s+['"][^'"]+['"]\s*;)/g,
+            '\n$1\n'
+        );
+
         const lines = content.split('\n');
 
         // Find where the top import block ends (first line that is not an import,
@@ -383,6 +393,42 @@ const FILE_PATCHES = [
             '  }, []);',
         ].join('\n'),
     },
+    {
+        // Mitosis compiles `state._priceListener = (e) => {...}` to
+        // `set_priceListener((e) => {...})`. React treats the function argument
+        // as an updater, calling it with prevState instead of storing it.
+        //
+        // Fix: create the listener inline in useEffect with return cleanup.
+        file: resolve('../output/react/ui-components/FavoriteListItem.tsx'),
+        label: 'React → FavoriteListItem: fix price listener useState setter bug',
+        from: [
+            '  useEffect(() => {',
+            '    const stored = localStorage.getItem(\'price_include_tax\');',
+            '    if (stored !== null) {',
+            '      set_includeTax(stored === \'true\');',
+            '    }',
+            '    set_priceListener(((e: any) => {',
+            '      set_includeTax(!!(e as CustomEvent).detail);',
+            '    }) as any);',
+            '    window.addEventListener(\'priceToggleChanged\', _priceListener as any);',
+            '  }, []);',
+        ].join('\n'),
+        to: [
+            '  useEffect(() => {',
+            '    const stored = localStorage.getItem(\'price_include_tax\');',
+            '    if (stored !== null) {',
+            '      set_includeTax(stored === \'true\');',
+            '    }',
+            '    const listener = (e: Event) => {',
+            '      set_includeTax(!!(e as CustomEvent).detail);',
+            '    };',
+            '    window.addEventListener(\'priceToggleChanged\', listener);',
+            '    return () => {',
+            '      window.removeEventListener(\'priceToggleChanged\', listener);',
+            '    };',
+            '  }, []);',
+        ].join('\n'),
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────
@@ -397,6 +443,11 @@ const UNUSED_STATE_REMOVALS = [
         // Remove the clickOutsideListener useState (4 lines including blank line after)
         pattern: /\s*const \[clickOutsideListener, setClickOutsideListener\] = useState<[^>]+>\(\(\) => null\);\n/g,
         label: 'React → SearchBar: remove unused clickOutsideListener useState',
+    },
+    {
+        file: resolve('../output/react/ui-components/FavoriteListItem.tsx'),
+        pattern: /\s*const \[_priceListener, set_priceListener\] = useState<[^>]+>\(\s*\(\) => null\s*\);\n/g,
+        label: 'React → FavoriteListItem: remove unused _priceListener useState',
     },
 ];
 

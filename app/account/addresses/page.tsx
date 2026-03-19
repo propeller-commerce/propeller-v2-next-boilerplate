@@ -28,6 +28,15 @@ function deepPlain(value: unknown): unknown {
   return value;
 }
 
+const COUNTRIES = [
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+];
+
 export default function AddressesPage() {
   const { state: authState } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -302,6 +311,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
+                countries={COUNTRIES}
               />
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -322,6 +332,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
+                countries={COUNTRIES}
               />
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -352,6 +363,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
+                countries={COUNTRIES}
               />
             ))}
           </div>
@@ -379,6 +391,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
+                countries={COUNTRIES}
               />
             ))}
           </div>
@@ -396,6 +409,7 @@ export default function AddressesPage() {
           onEdit={handleSaveNewAddress}
           onCancel={() => setShowAddModal(false)}
           enableActions={false}
+          countries={COUNTRIES}
         />
       )}
     </div>

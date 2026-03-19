@@ -1,5 +1,4 @@
 'use client';
-import * as React from 'react';
 
 import { useState } from 'react';
 
@@ -173,7 +172,11 @@ function DeliveryDate(props: DeliveryDateProps) {
           <div
             key={index}
             onClick={(event) => handleSelect(dateStr)}
-            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${
+              selectedDate === dateStr
+                ? 'border-violet-600 bg-violet-50 shadow-sm'
+                : 'hover:border-violet-300'
+            }`}
           >
             <div className="font-semibold">{formatDisplay(dateStr)}</div>
           </div>
@@ -181,7 +184,11 @@ function DeliveryDate(props: DeliveryDateProps) {
         {showDatePicker() ? (
           <div
             onClick={(event) => openModal()}
-            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${isCustomDateSelected() ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${
+              isCustomDateSelected()
+                ? 'border-violet-600 bg-violet-50 shadow-sm'
+                : 'hover:border-violet-300'
+            }`}
           >
             {isCustomDateSelected() ? (
               <div className="font-semibold">{formatDisplay(selectedDate)}</div>

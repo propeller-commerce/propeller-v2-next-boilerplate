@@ -21,6 +21,7 @@ import ProductShortDescription from '@/components/propeller/ProductShortDescript
 import ItemStock from '@/components/propeller/ItemStock';
 import AddToCart from '@/components/propeller/AddToCart';
 import ProductTabs from '@/components/propeller/ProductTabs';
+import { usePrice } from '@/context/PriceContext';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
 
@@ -34,6 +35,7 @@ export default function ClusterPage() {
   const [quantity, setQuantity] = useState(1);
   const { cart, saveCart, addToCart } = useCart();
   const { state } = useAuth();
+  const { includeTax } = usePrice();
   const router = useRouter();
 
   // ── Old fetch effect — now handled by ClusterInfo via onClusterLoaded ──────
@@ -168,11 +170,12 @@ export default function ClusterPage() {
                   <>
                     <ProductPriceDisplay
                       price={(selectedProduct?.price ?? cluster.defaultProduct?.price) as ProductPriceSDK}
+                      includeTax={includeTax}
                       options={cluster.options}
                       selectedOptionProducts={Object.values(selectedOptionProducts)}
                     />
 
-                    <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} />
+                    <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} includeTax={includeTax} />
 
                     <div className="mt-6">
                       <ProductShortDescription product={selectedProduct as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />

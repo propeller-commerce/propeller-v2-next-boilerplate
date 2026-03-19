@@ -48,9 +48,7 @@ export default function AccountLayout({
                                         { label: 'Addresses', href: '/account/addresses' },
                                         { label: 'Orders', href: '/account/orders' },
                                         { label: 'Quotes', href: '/account/quotes' },
-                                        { label: 'Invoices', href: '/account/invoices' },
                                         { label: 'Favorites', href: '/account/favorites' },
-                                        { label: 'Price Requests', href: '/account/price-requests' },
                                     ]}
                                 />
                             </Card>

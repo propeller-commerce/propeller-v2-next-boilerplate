@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { ProductInventory } from 'propeller-sdk-v2';
 
 export interface ItemStockProps {

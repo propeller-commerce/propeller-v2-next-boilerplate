@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import { GraphQLClient, ProductService, Product, Cluster, Enums } from 'propeller-sdk-v2';
+import { Cluster, Enums, GraphQLClient, Product, ProductService } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface SearchBarResult {
   /** Unique identifier */

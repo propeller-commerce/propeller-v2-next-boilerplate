@@ -2,7 +2,6 @@ import {
     useStore,
     Show,
     For,
-    onMount,
 } from '@builder.io/mitosis';
 import {
     ProductPrice,
@@ -49,8 +48,6 @@ export interface ProductBulkPricesProps {
 }
 
 interface ProductBulkPricesState {
-    includeTax: boolean;
-    priceListener: any;
     isHidden: () => boolean;
     hasItems: () => boolean;
     getIncludeTax: () => boolean;
@@ -62,15 +59,12 @@ interface ProductBulkPricesState {
 
 export default function ProductBulkPrices(props: ProductBulkPricesProps) {
     const state = useStore<ProductBulkPricesState>({
-        includeTax: true,
-        priceListener: null as any,
-
         isHidden(): boolean {
             return (props.portalMode as string) === 'semi-closed' && !props.user;
         },
 
         getIncludeTax(): boolean {
-            return props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
+            return props.includeTax !== undefined ? !!(props.includeTax) : true;
         },
 
         getBulkPrices(): ProductPrice[] {

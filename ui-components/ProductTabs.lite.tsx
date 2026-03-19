@@ -118,6 +118,7 @@ export interface ProductTabsProps {
 interface ProductTabsState {
     activeTab: string;
     specsVisited: boolean;
+    hasDescription: boolean;
     isTabVisible: (tab: string) => boolean;
     isActive: (tab: string) => boolean;
     selectTab: (tab: string) => void;
@@ -129,8 +130,16 @@ export default function ProductTabs(props: ProductTabsProps) {
         activeTab: 'description',
         specsVisited: false,
 
+        get hasDescription(): boolean {
+            const lang = props.language || 'NL';
+            const descriptions = props.product?.descriptions;
+            if (!descriptions || descriptions.length === 0) return false;
+            const match = descriptions.find((d) => d.language === lang);
+            return !!(match?.value || descriptions[0]?.value);
+        },
+
         isTabVisible(tab: string): boolean {
-            if (tab === 'description') return props.showDescription !== false;
+            if (tab === 'description') return props.showDescription !== false && state.hasDescription;
             if (tab === 'specifications') return props.showSpecifications !== false;
             if (tab === 'downloads') return props.showDownloads !== false;
             if (tab === 'videos') return props.showVideos !== false;
@@ -155,7 +164,7 @@ export default function ProductTabs(props: ProductTabsProps) {
 
     onMount(() => {
         // Set the first visible tab as active
-        if (props.showDescription !== false) {
+        if (props.showDescription !== false && state.hasDescription) {
             state.activeTab = 'description';
         } else if (props.showSpecifications !== false) {
             state.activeTab = 'specifications';

@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
+import { BundleItem, Cart, CartBaseItem, CartMainItem, Enums } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface CartIconAndSidebarProps {
   /**
@@ -291,7 +290,9 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
           type="button"
           onClick={(event) => handleIconClick()}
           aria-label={getLabel('cartIconLabel', 'Shopping cart')}
-          className={`relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${props.iconClassName ? ' ' + props.iconClassName : ''}`}
+          className={`relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${
+            props.iconClassName ? ' ' + props.iconClassName : ''
+          }`}
         >
           <svg
             fill="none"
@@ -336,7 +337,9 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         role="dialog"
         aria-modal="true"
         aria-label={getSidebarTitle()}
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${
+          sidebarOpen ? ' translate-x-0' : ' translate-x-full'
+        }${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
       >
         <div className="flex flex-col h-full">
           {isMounted ? (

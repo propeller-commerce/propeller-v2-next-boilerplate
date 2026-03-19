@@ -1,25 +1,24 @@
 'use client';
-import * as React from 'react';
 
-import { useState } from 'react';
 import {
-  CartService,
-  CartChildItemInput,
-  GraphQLClient,
-  Product,
+  Address,
   Cart,
-  Contact,
-  Customer,
+  CartChildItemInput,
+  CartMainItem,
   CartSearchInput,
-  TransformationsInput,
-  MediaImageProductSearchInput,
+  CartService,
   CartStartInput,
   CartStartVariables,
-  Address,
-  Enums,
-  CartMainItem,
   Cluster,
+  Contact,
+  Customer,
+  Enums,
+  GraphQLClient,
+  MediaImageProductSearchInput,
+  Product,
+  TransformationsInput,
 } from 'propeller-sdk-v2';
+import { useState } from 'react';
 
 export interface AddToCartProps {
   /** GraphQL client for the Propeller SDK */
@@ -533,10 +532,16 @@ function AddToCart(props: AddToCartProps) {
       </div>
       {toastVisible ? (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+          className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${
+            toastType === 'success'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-red-50 border border-red-200'
+          }`}
         >
           <div
-            className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}
+            className={`flex-shrink-0 w-5 h-5 mt-0.5 ${
+              toastType === 'success' ? 'text-green-500' : 'text-red-500'
+            }`}
           >
             {toastType === 'success' ? (
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -554,14 +559,20 @@ function AddToCart(props: AddToCartProps) {
             ) : null}
           </div>
           <p
-            className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}
+            className={`flex-1 text-sm font-medium ${
+              toastType === 'success' ? 'text-green-800' : 'text-red-800'
+            }`}
           >
             {toastMessage}
           </p>
           <button
             type="button"
             onClick={(event) => dismissToast()}
-            className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+            className={`flex-shrink-0 rounded focus:outline-none ${
+              toastType === 'success'
+                ? 'text-green-400 hover:text-green-600'
+                : 'text-red-400 hover:text-red-600'
+            }`}
           >
             <svg
               fill="none"

@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import { Contact, Customer, Enums } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
 

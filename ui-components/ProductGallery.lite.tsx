@@ -91,7 +91,7 @@ export default function ProductGallery(props: ProductGalleryProps) {
     return (
         <div className={`product-gallery ${(props.className as string) || ''}`}>
             {/* Main image area */}
-            <div className="relative aspect-square bg-white rounded-xl overflow-hidden border border-border">
+            <div className="relative aspect-square bg-white overflow-hidden">
                 {/* Placeholder when no images */}
                 <Show when={state.getImages().length === 0}>
                     <div className="flex h-full w-full items-center justify-center bg-slate-50">

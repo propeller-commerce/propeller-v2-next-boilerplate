@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import type { Category, LocalizedString } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface CategoryDescriptionProps {
   // ── Required ────────────────────────────────────────────────────────────

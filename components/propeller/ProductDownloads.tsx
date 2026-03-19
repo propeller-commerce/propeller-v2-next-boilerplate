@@ -1,9 +1,8 @@
-import * as React from 'react';
 import {
-  PaginatedMediaDocumentResponse,
-  MediaDocument,
   LocalizedDocument,
   LocalizedString,
+  MediaDocument,
+  PaginatedMediaDocumentResponse,
 } from 'propeller-sdk-v2';
 
 export interface ProductDownloadsProps {

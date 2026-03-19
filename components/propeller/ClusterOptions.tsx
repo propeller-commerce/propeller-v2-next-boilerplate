@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
+import { ClusterOption, Enums, Product } from 'propeller-sdk-v2';
 import { useState } from 'react';
-import { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
 
 /**
  * Flattened render model for one product inside an option dropdown.
@@ -220,7 +219,13 @@ function ClusterOptions(props: ClusterOptionsProps) {
               <select
                 value={option.selectedProductId}
                 onChange={(e) => handleOptionChange(option.idStr, e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${option.hasError ? 'border-red-400 focus:ring-red-500' : option.isRequired ? 'border-gray-300 focus:ring-violet-500' : 'border-gray-200 focus:ring-violet-500'}`}
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${
+                  option.hasError
+                    ? 'border-red-400 focus:ring-red-500'
+                    : option.isRequired
+                    ? 'border-gray-300 focus:ring-violet-500'
+                    : 'border-gray-200 focus:ring-violet-500'
+                }`}
               >
                 <option value="">
                   {option.isRequired ? (

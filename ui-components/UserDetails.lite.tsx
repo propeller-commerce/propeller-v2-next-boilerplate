@@ -1,7 +1,6 @@
 import {
     useStore,
     onMount,
-    onUnMount,
     Show,
     For,
 } from '@builder.io/mitosis';
@@ -48,8 +47,6 @@ export interface UserDetailsProps {
 
 interface UserDetailsState {
     isMounted: boolean;
-    selectedCompanyId: number | null;
-
     isContact: () => boolean;
     getName: () => string;
     getActiveCompany: () => Company | null;
@@ -69,19 +66,13 @@ interface UserDetailsState {
 export default function UserDetails(props: UserDetailsProps) {
     const state = useStore<UserDetailsState>({
         isMounted: false,
-        selectedCompanyId: null,
-
         isContact(): boolean {
             return props.user !== null && 'company' in props.user;
         },
 
         getName(): string {
-            const user = props.user as any;
-            if (user && user.firstName) {
-                return [user.firstName, user.lastName].filter(Boolean).join(' ');
-            }
-            if (user && user.name) {
-                return user.name;
+            if (props.user && props.user.firstName) {
+                return [props.user.firstName, props.user.lastName].filter(Boolean).join(' ');
             }
             return 'User';
         },
@@ -93,10 +84,9 @@ export default function UserDetails(props: UserDetailsProps) {
         getCompanies(): Company[] {
             if (!state.isContact()) return [];
             const contact = props.user as Contact;
-            const companiesRaw = contact.companies as any;
-            const items = (companiesRaw?.items ?? companiesRaw?._items) as Company[] | undefined;
-            if (Array.isArray(items) && items.length > 0) {
-                return items;
+            const companiesResponse = contact.companies;
+            if (companiesResponse?.items && companiesResponse.items.length > 0) {
+                return companiesResponse.items;
             }
             const defaultCompany = contact.company;
             if (defaultCompany) {
@@ -108,16 +98,10 @@ export default function UserDetails(props: UserDetailsProps) {
         getAllAddresses(): Address[] {
             if (state.isContact()) {
                 const company = state.getActiveCompany();
-                if (company && company.addresses) {
-                    return company.addresses;
-                }
-                return [];
+                return company?.addresses || [];
             }
             const customer = props.user as Customer;
-            if (customer.addresses) {
-                return customer.addresses;
-            }
-            return [];
+            return customer.addresses || [];
         },
 
         getDefaultInvoiceAddress(): Address | null {
@@ -135,16 +119,12 @@ export default function UserDetails(props: UserDetailsProps) {
         },
 
         getAddressName(addr: Address): string {
-            const parts = [
-                (addr as any).firstName,
-                (addr as any).middleName,
-                (addr as any).lastName,
-            ].filter(Boolean);
+            const parts = [addr.firstName, addr.middleName, addr.lastName].filter(Boolean);
             return parts.join(' ');
         },
 
         getAddressLine1(addr: Address): string {
-            const parts = [addr.street, (addr as any).number, (addr as any).numberExtension].filter(Boolean);
+            const parts = [addr.street, addr.number, addr.numberExtension].filter(Boolean);
             return parts.join(' ');
         },
 
@@ -172,22 +152,6 @@ export default function UserDetails(props: UserDetailsProps) {
 
     onMount(() => {
         state.isMounted = true;
-
-        window.addEventListener('companySwitched', (event: any) => {
-            const company = event.detail;
-            if (company && company.companyId) {
-                state.selectedCompanyId = props.activeCompany?.companyId as number;
-            }
-        });
-    });
-
-    onUnMount(() => {
-        window.removeEventListener('companySwitched', (event: any) => {
-            const company = event.detail;
-            if (company && company.companyId) {
-                state.selectedCompanyId = props.activeCompany?.companyId as number;
-            }
-        });
     });
 
     return (
@@ -280,8 +244,8 @@ export default function UserDetails(props: UserDetailsProps) {
                                         <h4 className="text-base font-bold">Invoice Address</h4>
                                         <Show when={state.getDefaultInvoiceAddress()}>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                <Show when={(state.getDefaultInvoiceAddress() as any)?.company}>
-                                                    <div className="font-bold text-lg mb-1">{(state.getDefaultInvoiceAddress() as any)?.company}</div>
+                                                <Show when={state.getDefaultInvoiceAddress()?.company}>
+                                                    <div className="font-bold text-lg mb-1">{state.getDefaultInvoiceAddress()?.company}</div>
                                                 </Show>
                                                 <Show when={state.getAddressName(state.getDefaultInvoiceAddress()!)}>
                                                     <div className="font-medium mb-1">{state.getAddressName(state.getDefaultInvoiceAddress()!)}</div>
@@ -305,8 +269,8 @@ export default function UserDetails(props: UserDetailsProps) {
                                         <h4 className="text-base font-bold">Delivery Address</h4>
                                         <Show when={state.getDefaultDeliveryAddress()}>
                                             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                                <Show when={(state.getDefaultDeliveryAddress() as any)?.company}>
-                                                    <div className="font-bold text-lg mb-1">{(state.getDefaultDeliveryAddress() as any)?.company}</div>
+                                                <Show when={state.getDefaultDeliveryAddress()?.company}>
+                                                    <div className="font-bold text-lg mb-1">{state.getDefaultDeliveryAddress()?.company}</div>
                                                 </Show>
                                                 <Show when={state.getAddressName(state.getDefaultDeliveryAddress()!)}>
                                                     <div className="font-medium mb-1">{state.getAddressName(state.getDefaultDeliveryAddress()!)}</div>

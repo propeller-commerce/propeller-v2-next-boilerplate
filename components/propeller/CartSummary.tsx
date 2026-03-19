@@ -1,5 +1,4 @@
 'use client';
-import * as React from 'react';
 import { Cart } from 'propeller-sdk-v2';
 
 export interface CartSummaryProps {
@@ -56,7 +55,7 @@ interface CartSummaryState {
   hasShippingCosts: () => boolean;
   shippingCosts: () => number;
   totalExclVat: () => number;
-  taxLevels: () => any[];
+  taxLevels: () => NonNullable<Cart['taxLevels']>;
   totalVat: () => number;
   totalInclVat: () => number;
   handleCheckoutClick: () => void;
@@ -153,7 +152,7 @@ function CartSummary(props: CartSummaryProps) {
   }
 
   return (
-    <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
+    <div className="w-full bg-white space-y-3">
       <h2 className="text-xl font-bold mb-4">{title()}</h2>
       {showSubtotal() ? (
         <div className="flex justify-between text-gray-600">
@@ -162,7 +161,7 @@ function CartSummary(props: CartSummaryProps) {
         </div>
       ) : null}
       {showDiscount() && hasDiscount() ? (
-        <div className="flex justify-between text-red-600">
+        <div className="flex justify-between text-green-600">
           <span>{getLabel('discount', 'Discount:')}</span>
           <span>-{formatItemPrice(discountAmount())}</span>
         </div>

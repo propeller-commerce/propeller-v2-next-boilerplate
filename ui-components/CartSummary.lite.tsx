@@ -56,7 +56,7 @@ interface CartSummaryState {
     hasShippingCosts: boolean;
     shippingCosts: number;
     totalExclVat: number;
-    taxLevels: any[];
+    taxLevels: NonNullable<Cart['taxLevels']>;
     totalVat: number;
     totalInclVat: number;
     handleCheckoutClick: () => void;
@@ -155,7 +155,7 @@ export default function CartSummary(props: CartSummaryProps) {
     });
 
     return (
-        <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
+        <div className="w-full bg-white space-y-3">
             <h2 className="text-xl font-bold mb-4">{state.title}</h2>
 
             <Show when={state.showSubtotal}>
@@ -166,7 +166,7 @@ export default function CartSummary(props: CartSummaryProps) {
             </Show>
 
             <Show when={state.showDiscount && state.hasDiscount}>
-                <div className="flex justify-between text-red-600">
+                <div className="flex justify-between text-green-600">
                     <span>{state.getLabel('discount', 'Discount:')}</span>
                     <span>-{state.formatItemPrice(state.discountAmount)}</span>
                 </div>

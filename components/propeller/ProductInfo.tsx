@@ -1,15 +1,14 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import {
-  GraphQLClient,
-  Product,
-  ProductService,
-  LocalizedString,
   Contact,
   Customer,
+  GraphQLClient,
+  LocalizedString,
+  Product,
+  ProductService,
 } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface ProductInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────

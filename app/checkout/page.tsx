@@ -636,7 +636,7 @@ export default function CheckoutPage() {
               <div className="sticky top-24 space-y-6">
                 {/* Cart Items */}
                 <Card className="border-none">
-                  <CardHeader>
+                  <CardHeader className='p-0 px-6 pt-6'>
                     <CardTitle className="text-lg">Cart Items</CardTitle>
                   </CardHeader>
                   <CardContent>

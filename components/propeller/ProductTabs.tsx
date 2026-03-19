@@ -1,17 +1,16 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import {
-  Product,
+  AttributeResult,
   GraphQLClient,
   PaginatedMediaDocumentResponse,
   PaginatedMediaVideoResponse,
-  AttributeResult,
+  Product,
 } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 import ProductDescription from './ProductDescription';
-import ProductSpecifications from './ProductSpecifications';
 import ProductDownloads from './ProductDownloads';
+import ProductSpecifications from './ProductSpecifications';
 import ProductVideos from './ProductVideos';
 
 export interface ProductTabsProps {
@@ -116,6 +115,7 @@ export interface ProductTabsProps {
 interface ProductTabsState {
   activeTab: string;
   specsVisited: boolean;
+  hasDescription: () => boolean;
   isTabVisible: (tab: string) => boolean;
   isActive: (tab: string) => boolean;
   selectTab: (tab: string) => void;
@@ -127,8 +127,16 @@ function ProductTabs(props: ProductTabsProps) {
 
   const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(() => false);
 
+  function hasDescription(): ReturnType<ProductTabsState['hasDescription']> {
+    const lang = props.language || 'NL';
+    const descriptions = props.product?.descriptions;
+    if (!descriptions || descriptions.length === 0) return false;
+    const match = descriptions.find((d) => d.language === lang);
+    return !!(match?.value || descriptions[0]?.value);
+  }
+
   function isTabVisible(tab: string): ReturnType<ProductTabsState['isTabVisible']> {
-    if (tab === 'description') return props.showDescription !== false;
+    if (tab === 'description') return props.showDescription !== false && hasDescription();
     if (tab === 'specifications') return props.showSpecifications !== false;
     if (tab === 'downloads') return props.showDownloads !== false;
     if (tab === 'videos') return props.showVideos !== false;
@@ -152,7 +160,7 @@ function ProductTabs(props: ProductTabsProps) {
 
   useEffect(() => {
     // Set the first visible tab as active
-    if (props.showDescription !== false) {
+    if (props.showDescription !== false && hasDescription()) {
       setActiveTab('description');
     } else if (props.showSpecifications !== false) {
       setActiveTab('specifications');
@@ -170,7 +178,11 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('description')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              isActive('description')
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             {getLabel('description', 'Description')}
           </button>
@@ -179,7 +191,11 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('specifications')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              isActive('specifications')
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             {getLabel('specifications', 'Specifications')}
           </button>
@@ -188,7 +204,11 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('downloads')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              isActive('downloads')
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             {getLabel('downloads', 'Downloads')}
           </button>
@@ -197,7 +217,11 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('videos')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              isActive('videos')
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             {getLabel('videos', 'Videos')}
           </button>

@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */
   order: any;

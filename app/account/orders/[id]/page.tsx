@@ -183,9 +183,6 @@ export default function OrderDetailPage() {
                             <Button variant="link" size="sm" onClick={handleDownloadPDF}>
                                 Order confirmation (PDF)
                             </Button>
-                            <Button variant="link" size="sm" onClick={handleReturnRequest}>
-                                Return request
-                            </Button>
                             <Button variant="link" size="sm" onClick={handleOrderAgain}>
                                 Order again
                             </Button>
@@ -301,9 +298,6 @@ export default function OrderDetailPage() {
                         <div className="order-actions flex flex-wrap gap-4 h-fit">
                             <button onClick={handleDownloadPDF} className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">
                                 Order confirmation (PDF)
-                            </button>
-                            <button onClick={handleReturnRequest} className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">
-                                Return request
                             </button>
                             <button onClick={handleOrderAgain} className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">
                                 Order again

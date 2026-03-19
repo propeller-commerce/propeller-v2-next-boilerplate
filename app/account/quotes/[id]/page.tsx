@@ -177,24 +177,22 @@ export default function QuoteDetailPage() {
                 <div className="space-y-8">
                     {/* Quote Summary + Addresses + Delivery Info */}
                     <Card className="p-6">
-                        <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-                            <div className="flex-1">
-                                <OrderSummary
-                                    order={quote}
-                                    labels={{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }}
-                                />
-                            </div>
-                            <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                                <Button onClick={handleAcceptQuote} className="bg-violet-600 hover:bg-violet-700">
-                                    Accept Quote
-                                </Button>
-                                <Button variant="outline" onClick={handleRequestChanges}>
-                                    Request Changes
-                                </Button>
-                                <Button variant="link" size="sm" onClick={handleDownloadPDF}>
-                                    Download Quote (PDF)
-                                </Button>
-                            </div>
+                        <div className="flex-1">
+                            <OrderSummary
+                                order={quote}
+                                labels={{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }}
+                            />
+                        </div>
+                        <div className="flex flex-row items-end gap-3 flex-shrink-0">
+                            <Button onClick={handleAcceptQuote} className="bg-violet-600 hover:bg-violet-700">
+                                Accept Quote
+                            </Button>
+                            <Button variant="outline" onClick={handleRequestChanges}>
+                                Request Changes
+                            </Button>
+                            <Button variant="link" size="sm" onClick={handleDownloadPDF}>
+                                Download Quote (PDF)
+                            </Button>
                         </div>
                     </Card>
 

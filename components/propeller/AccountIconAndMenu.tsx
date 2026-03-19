@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import LoginForm from './LoginForm';
 
 export interface AccountMenuLink {
@@ -201,8 +200,10 @@ interface AccountIconAndMenuState {
   };
 }
 
+const subscribe = () => () => {};
+
 function AccountIconAndMenu(props: AccountIconAndMenuProps) {
-  const [isMounted, setIsMounted] = useState<AccountIconAndMenuState['isMounted']>(() => false);
+  const isMounted = useSyncExternalStore(subscribe, () => true, () => false);
 
   const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState['menuOpen']>(() => false);
 
@@ -316,31 +317,16 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     setMenuOpen(false);
   }
 
-  const [clickOutsideListener, setClickOutsideListener] = useState<
-    AccountIconAndMenuState['clickOutsideListener']
-  >(() => ({
-    handler: null as ((e: MouseEvent) => void) | null,
-  }));
-
   useEffect(() => {
-    setIsMounted(true);
     const listener = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target && !target.closest('[data-account-menu]')) {
         setMenuOpen(false);
       }
     };
-    setClickOutsideListener({
-      handler: listener,
-    });
     document.addEventListener('mousedown', listener);
+    return () => document.removeEventListener('mousedown', listener);
   }, []);
-  useEffect(() => {
-    // Close menu when user logs in (user prop changes from null to truthy)
-    if (props.user && menuOpen) {
-      setMenuOpen(false);
-    }
-  }, [props.user]);
 
   return (
     <div className="relative" data-account-menu>
@@ -360,8 +346,12 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                     <li key={link.href}>
                       <button
                         type="button"
-                        onClick={(event) => handleMenuItemClick(link.href)}
-                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${isActiveLink(link.href) ? 'bg-violet-50 text-violet-700 border-l-2 border-violet-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                        onClick={() => handleMenuItemClick(link.href)}
+                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                          isActiveLink(link.href)
+                            ? 'bg-violet-50 text-violet-700 border-l-2 border-violet-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
                       >
                         {link.label}
                       </button>
@@ -373,7 +363,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                 <button
                   type="button"
                   className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                  onClick={(event) => handleLogoutClick()}
+                  onClick={() => handleLogoutClick()}
                 >
                   {getLabel('logoutLabel', 'Log Out')}
                 </button>
@@ -386,9 +376,11 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
         <>
           <button
             type="button"
-            onClick={(event) => handleIconClick()}
+            onClick={() => handleIconClick()}
             aria-label={getLabel('accountLabel', 'Account')}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${
+              props.iconClassName ? ' ' + props.iconClassName : ''
+            }`}
           >
             <svg
               fill="none"
@@ -418,7 +410,9 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
           </button>
           {menuOpen ? (
             <div
-              className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}
+              className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${
+                props.menuClassName ? ' ' + props.menuClassName : ''
+              }`}
             >
               {isMounted ? (
                 <>
@@ -437,7 +431,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                               <button
                                 type="button"
                                 className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                                onClick={(event) => handleMenuItemClick(link.href)}
+                                onClick={() => handleMenuItemClick(link.href)}
                               >
                                 {link.label}
                               </button>
@@ -449,7 +443,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                         <button
                           type="button"
                           className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          onClick={(event) => handleLogoutClick()}
+                          onClick={() => handleLogoutClick()}
                         >
                           {getLabel('logoutLabel', 'Log Out')}
                         </button>
@@ -473,9 +467,9 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                           loginError={props.loginError}
                           beforeLogin={props.beforeLogin}
                           afterLogin={props.afterLogin}
-                          onForgotPasswordClick={(event) => handleForgotPasswordClick()}
-                          onRegisterClick={(event) => handleRegisterClick()}
-                          onGuestCheckoutClick={(event) => handleGuestCheckoutClick()}
+                          onForgotPasswordClick={() => handleForgotPasswordClick()}
+                          onRegisterClick={() => handleRegisterClick()}
+                          onGuestCheckoutClick={() => handleGuestCheckoutClick()}
                           accountHeaderLoginForm={props.accountHeaderLoginForm}
                         />
                       ) : null}
@@ -488,7 +482,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                           <button
                             type="button"
                             className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
-                            onClick={(event) => {
+                            onClick={() => {
                               closeMenu();
                               if (props.onAccountIconClick) props.onAccountIconClick();
                             }}

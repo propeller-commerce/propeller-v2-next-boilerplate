@@ -1,25 +1,23 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import {
-  GraphQLClient,
-  CartService,
-  CrossupsellService,
-  CartMainItem,
-  CartBaseItem,
   BundleItem,
   Cart,
-  ProductInventory,
-  CrossupsellSearchInput,
-  Crossupsell,
-  Product,
+  CartMainItem,
+  CartService,
   Cluster,
-  Enums,
-  CrossupsellsQueryVariables,
   Contact,
+  Crossupsell,
+  CrossupsellSearchInput,
+  CrossupsellService,
+  CrossupsellsQueryVariables,
   Customer,
+  Enums,
+  GraphQLClient,
+  Product,
+  ProductInventory,
 } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface CartItemProps {
   /** GraphQL client for the Propeller SDK */
@@ -426,7 +424,9 @@ function CartItem(props: CartItemProps) {
 
   return (
     <div
-      className={`flex gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${props.className || ''}`}
+      className={`flex gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${
+        props.className || ''
+      }`}
     >
       <div className="w-24 h-24 flex-shrink-0 bg-gray-50 rounded border border-gray-200 flex items-center justify-center overflow-hidden relative">
         {!!getProductImageUrl() ? (

@@ -72,9 +72,9 @@ export default function ProductPage() {
                 />
 
                 <ProductPrice price={price} includeTax={includeTax} />
-
-                <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ title: '' }} />
-
+                <div className="mt-6">
+                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} includeTax={includeTax} labels={{ title: '' }} />
+                </div>
                 <div className="mt-6">
                   <ProductShortDescription product={product as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />
                 </div>

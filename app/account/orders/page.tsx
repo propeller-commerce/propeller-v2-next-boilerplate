@@ -1,43 +1,28 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { graphqlClient } from '@/lib/api';
-// import OrderList from '@/components/account/OrderList';
 import OrderList from '@/components/propeller/OrderList';
+import { Contact, Customer, Company } from 'propeller-sdk-v2';
 
 
 export default function OrdersPage() {
   const { state } = useAuth();
+  const { selectedCompany } = useCompany();
   const router = useRouter();
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('selected_company_id');
-      return stored ? parseInt(stored, 10) : undefined;
-    }
-    return undefined;
-  });
 
-  useEffect(() => {
-    if (!state.isAuthenticated) {
-      router.push('/login');
-    }
-  }, [state.isAuthenticated, router]);
+  const isContact = (u: Contact | Customer | null): u is Contact =>
+    u !== null && 'company' in u;
 
-  // Listen for company switch events
-  useEffect(() => {
-    const listener = (event: CustomEvent) => {
-      const company = event.detail;
-      if (company && company.companyId) {
-        setSelectedCompanyId(company.companyId);
-      }
-    };
-    window.addEventListener('companySwitched', listener as EventListener);
-    return () => {
-      window.removeEventListener('companySwitched', listener as EventListener);
-    };
-  }, []);
+  /** Resolve the active company for a Contact user (respects company switcher) */
+  const getActiveCompany = (): Company | null => {
+    if (!state.user || !isContact(state.user)) return null;
+    return (selectedCompany) ?? null;
+  };
+
+  const companyId = getActiveCompany()?.companyId;
 
   if (!state.isAuthenticated) return null;
 
@@ -74,7 +59,7 @@ export default function OrdersPage() {
         <OrderList
           graphqlClient={graphqlClient}
           user={state.user}
-          companyId={selectedCompanyId}
+          companyId={companyId}
           onOrderClick={(orderId) => router.push(`/account/orders/${orderId}`)}
           labels={paginationLabels}
           rowsClickable={true}

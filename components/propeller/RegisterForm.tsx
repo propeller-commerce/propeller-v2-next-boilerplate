@@ -1,24 +1,23 @@
 'use client';
-import * as React from 'react';
 
-import { useState } from 'react';
 import {
-  Contact,
-  Customer,
-  GraphQLClient,
-  UserService,
-  CompanyService,
   AddressService,
+  Company,
+  CompanyAddressCreateInput,
+  CompanyService,
+  Contact,
+  ContactRegisterInput,
+  CreateCompanyInput,
+  Customer,
+  CustomerAddressCreateInput,
+  CustomerRegisterInput,
+  Enums,
+  GraphQLClient,
   RegisterContactResponse,
   RegisterCustomerResponse,
-  Enums,
-  Company,
-  ContactRegisterInput,
-  CustomerRegisterInput,
-  CreateCompanyInput,
-  CustomerAddressCreateInput,
-  CompanyAddressCreateInput,
+  UserService,
 } from 'propeller-sdk-v2';
+import { useState } from 'react';
 
 export interface RegisterFormProps {
   /** GraphQL client for the Propeller SDK */

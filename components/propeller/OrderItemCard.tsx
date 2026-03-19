@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 export interface OrderItemCardProps {
   /** The order item to display */
   orderItem: any;

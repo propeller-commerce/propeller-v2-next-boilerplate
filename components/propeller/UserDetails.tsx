@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
+import { Address, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface UserDetailsProps {
   /** The currently logged in user (Contact or Customer) */
@@ -26,14 +25,14 @@ export interface UserDetailsProps {
   listAllContactCompanies?: boolean;
 
   /**
-   * Display details of the user's default invoice address  * @default true  */ showDefaultInvoiceAddress?: boolean; /**  * Display details of the user's default delivery address
+   * Display details of the user's default invoice address  * @default true  */ showDefaultInvoiceAddress?: boolean
+  /**  * Display details of the user's default delivery address
    * @default false
-   */
+   */;
   showDefaultDeliveryAddress?: boolean;
 }
 interface UserDetailsState {
   isMounted: boolean;
-  selectedCompanyId: number | null;
   isContact: () => boolean;
   getName: () => string;
   getActiveCompany: () => Company | null;
@@ -53,21 +52,13 @@ interface UserDetailsState {
 function UserDetails(props: UserDetailsProps) {
   const [isMounted, setIsMounted] = useState<UserDetailsState['isMounted']>(() => false);
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<UserDetailsState['selectedCompanyId']>(
-    () => null
-  );
-
   function isContact(): ReturnType<UserDetailsState['isContact']> {
     return props.user !== null && 'company' in props.user;
   }
 
   function getName(): ReturnType<UserDetailsState['getName']> {
-    const user = props.user as any;
-    if (user && user.firstName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
-    }
-    if (user && user.name) {
-      return user.name;
+    if (props.user && props.user.firstName) {
+      return [props.user.firstName, props.user.lastName].filter(Boolean).join(' ');
     }
     return 'User';
   }
@@ -79,10 +70,9 @@ function UserDetails(props: UserDetailsProps) {
   function getCompanies(): ReturnType<UserDetailsState['getCompanies']> {
     if (!isContact()) return [];
     const contact = props.user as Contact;
-    const companiesRaw = contact.companies as any;
-    const items = (companiesRaw?.items ?? companiesRaw?._items) as Company[] | undefined;
-    if (Array.isArray(items) && items.length > 0) {
-      return items;
+    const companiesResponse = contact.companies;
+    if (companiesResponse?.items && companiesResponse.items.length > 0) {
+      return companiesResponse.items;
     }
     const defaultCompany = contact.company;
     if (defaultCompany) {
@@ -94,16 +84,10 @@ function UserDetails(props: UserDetailsProps) {
   function getAllAddresses(): ReturnType<UserDetailsState['getAllAddresses']> {
     if (isContact()) {
       const company = getActiveCompany();
-      if (company && company.addresses) {
-        return company.addresses;
-      }
-      return [];
+      return company?.addresses || [];
     }
     const customer = props.user as Customer;
-    if (customer.addresses) {
-      return customer.addresses;
-    }
-    return [];
+    return customer.addresses || [];
   }
 
   function getDefaultInvoiceAddress(): ReturnType<UserDetailsState['getDefaultInvoiceAddress']> {
@@ -121,18 +105,12 @@ function UserDetails(props: UserDetailsProps) {
   }
 
   function getAddressName(addr: Address): ReturnType<UserDetailsState['getAddressName']> {
-    const parts = [
-      (addr as any).firstName,
-      (addr as any).middleName,
-      (addr as any).lastName,
-    ].filter(Boolean);
+    const parts = [addr.firstName, addr.middleName, addr.lastName].filter(Boolean);
     return parts.join(' ');
   }
 
   function getAddressLine1(addr: Address): ReturnType<UserDetailsState['getAddressLine1']> {
-    const parts = [addr.street, (addr as any).number, (addr as any).numberExtension].filter(
-      Boolean
-    );
+    const parts = [addr.street, addr.number, addr.numberExtension].filter(Boolean);
     return parts.join(' ');
   }
 
@@ -159,23 +137,6 @@ function UserDetails(props: UserDetailsProps) {
 
   useEffect(() => {
     setIsMounted(true);
-    window.addEventListener('companySwitched', (event: any) => {
-      const company = event.detail;
-      if (company && company.companyId) {
-        setSelectedCompanyId(props.activeCompany?.companyId as number);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('companySwitched', (event: any) => {
-        const company = event.detail;
-        if (company && company.companyId) {
-          setSelectedCompanyId(props.activeCompany?.companyId as number);
-        }
-      });
-    };
   }, []);
 
   return (
@@ -242,7 +203,11 @@ function UserDetails(props: UserDetailsProps) {
                   {getCompanies()?.map((company) => (
                     <li
                       key={String(company.companyId)}
-                      className={`flex items-center gap-2 py-2 px-3 rounded-md ${getActiveCompany()?.companyId === company.companyId ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground'}`}
+                      className={`flex items-center gap-2 py-2 px-3 rounded-md ${
+                        getActiveCompany()?.companyId === company.companyId
+                          ? 'bg-primary/10 font-semibold text-primary'
+                          : 'text-foreground'
+                      }`}
                     >
                       <span className="truncate">{company.name}</span>
                       {getActiveCompany()?.companyId === company.companyId ? (
@@ -268,9 +233,9 @@ function UserDetails(props: UserDetailsProps) {
                       <h4 className="text-base font-bold">Invoice Address</h4>
                       {getDefaultInvoiceAddress() ? (
                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                          {(getDefaultInvoiceAddress() as any)?.company ? (
+                          {getDefaultInvoiceAddress()?.company ? (
                             <div className="font-bold text-lg mb-1">
-                              {(getDefaultInvoiceAddress() as any)?.company}
+                              {getDefaultInvoiceAddress()?.company}
                             </div>
                           ) : null}
                           {getAddressName(getDefaultInvoiceAddress()!) ? (
@@ -301,9 +266,9 @@ function UserDetails(props: UserDetailsProps) {
                       <h4 className="text-base font-bold">Delivery Address</h4>
                       {getDefaultDeliveryAddress() ? (
                         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                          {(getDefaultDeliveryAddress() as any)?.company ? (
+                          {getDefaultDeliveryAddress()?.company ? (
                             <div className="font-bold text-lg mb-1">
-                              {(getDefaultDeliveryAddress() as any)?.company}
+                              {getDefaultDeliveryAddress()?.company}
                             </div>
                           ) : null}
                           {getAddressName(getDefaultDeliveryAddress()!) ? (

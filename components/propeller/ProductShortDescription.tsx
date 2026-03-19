@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
+import type { Cluster, LocalizedString, Product } from 'propeller-sdk-v2';
+import { useEffect, useState } from 'react';
 
 export interface ProductShortDescriptionProps {
   /**
@@ -49,7 +48,9 @@ function ProductShortDescription(props: ProductShortDescriptionProps) {
             dangerouslySetInnerHTML={{
               __html: html,
             }}
-            className={`product-short-description prose prose-slate max-w-none text-muted-foreground ${(props.className as string) || ''}`}
+            className={`product-short-description prose prose-slate max-w-none text-muted-foreground ${
+              (props.className as string) || ''
+            }`}
           />
         </>
       ) : null}

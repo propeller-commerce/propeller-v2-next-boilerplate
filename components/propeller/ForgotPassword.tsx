@@ -1,9 +1,7 @@
 'use client';
-import * as React from 'react';
 
+import { GraphQLClient, UserService } from 'propeller-sdk-v2';
 import { useState } from 'react';
-import { GraphQLClient } from 'propeller-sdk-v2';
-import { UserService } from 'propeller-sdk-v2';
 
 export interface ForgotPasswordProps {
   /** GraphQL client for the Propeller SDK */

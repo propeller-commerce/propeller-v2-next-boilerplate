@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState } from 'react';
 import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
+import { useState } from 'react';
 
 export interface CartPaymethodsProps {
   /** Shopping cart object from which the payment methods will be displayed */
@@ -121,7 +120,11 @@ function CartPaymethods(props: CartPaymethodsProps) {
             <div
               key={method.code}
               onClick={(event) => handleSelect(method)}
-              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${selectedCode === method.code ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
+                selectedCode === method.code
+                  ? 'border-violet-600 bg-violet-50 shadow-sm'
+                  : 'hover:border-violet-300'
+              }`}
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

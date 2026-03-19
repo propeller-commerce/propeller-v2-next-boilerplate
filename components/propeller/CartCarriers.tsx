@@ -1,8 +1,7 @@
 'use client';
-import * as React from 'react';
 
-import { useState } from 'react';
 import { Cart, CartCarrier } from 'propeller-sdk-v2';
+import { useState } from 'react';
 
 export interface CartCarriersProps {
   /** Shopping cart object from which the carriers will be displayed */
@@ -79,7 +78,11 @@ function CartCarriers(props: CartCarriersProps) {
             <div
               key={`${carrier.name}-${index}`}
               onClick={(event) => handleSelect(carrier)}
-              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${selectedName === carrier.name ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${
+                selectedName === carrier.name
+                  ? 'border-violet-600 bg-violet-50 shadow-sm'
+                  : 'hover:border-violet-300'
+              }`}
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

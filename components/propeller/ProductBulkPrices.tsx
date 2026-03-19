@@ -1,8 +1,6 @@
 'use client';
-import * as React from 'react';
 
-import { useState } from 'react';
-import { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
+import { Contact, Customer, ProductPrice } from 'propeller-sdk-v2';
 import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
 
 export interface ProductBulkPricesProps {
@@ -42,8 +40,6 @@ export interface ProductBulkPricesProps {
   className?: string;
 }
 interface ProductBulkPricesState {
-  includeTax: boolean;
-  priceListener: any;
   isHidden: () => boolean;
   hasItems: () => boolean;
   getIncludeTax: () => boolean;
@@ -54,18 +50,12 @@ interface ProductBulkPricesState {
 }
 
 function ProductBulkPrices(props: ProductBulkPricesProps) {
-  const [includeTax, setIncludeTax] = useState<ProductBulkPricesState['includeTax']>(() => true);
-
-  const [priceListener, setPriceListener] = useState<ProductBulkPricesState['priceListener']>(
-    () => null
-  );
-
   function isHidden(): ReturnType<ProductBulkPricesState['isHidden']> {
     return (props.portalMode as string) === 'semi-closed' && !props.user;
   }
 
   function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
-    return props.includeTax !== undefined ? !!props.includeTax : includeTax;
+    return props.includeTax !== undefined ? !!props.includeTax : true;
   }
 
   function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {

@@ -229,6 +229,13 @@ export default function Header() {
                     onForgotPasswordClick={() => router.push('/forgot-password')}
                     onRegisterClick={() => router.push('/register')}
                     accountHeaderLoginForm={true}
+                    menuLinks={[
+                        { label: 'Dashboard', href: '/account' },
+                        { label: 'Addresses', href: '/account/addresses' },
+                        { label: 'Orders', href: '/account/orders' },
+                        { label: 'Quotes', href: '/account/quotes' },
+                        { label: 'Favorites', href: '/account/favorites' },
+                    ]}
                   />
                 )}
 

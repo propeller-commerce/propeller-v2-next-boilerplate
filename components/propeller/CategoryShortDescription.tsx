@@ -1,4 +1,3 @@
-import * as React from 'react';
 import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
 export interface CategoryShortDescriptionProps {

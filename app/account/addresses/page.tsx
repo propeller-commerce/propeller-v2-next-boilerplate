@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
 import AddressCard from '@/components/propeller/AddressCard';
 import { Address, AddressService, UserService, Contact, Customer, Company, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
@@ -31,31 +32,10 @@ export default function AddressesPage() {
   const { state: authState } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<Enums.AddressType>(Enums.AddressType.invoice);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('selected_company_id');
-      return stored ? parseInt(stored, 10) : null;
-    }
-    return null;
-  });
+  const { selectedCompany } = useCompany();
 
   // Use authState.user directly instead of storing in local state
   const user = authState.user;
-
-  // Listen for company switch events
-  useEffect(() => {
-    const listener = (event: CustomEvent) => {
-      const company = event.detail;
-      if (company && company.companyId) {
-        setSelectedCompanyId(company.companyId);
-      }
-    };
-    window.addEventListener('companySwitched', listener as EventListener);
-    return () => {
-      window.removeEventListener('companySwitched', listener as EventListener);
-    };
-  }, []);
-
   // Type guards
   const isContact = (u: Contact | Customer | null): u is Contact => {
     return u !== null && 'company' in u;
@@ -67,17 +47,8 @@ export default function AddressesPage() {
 
   /** Resolve the active company for a Contact user (respects company switcher) */
   const getActiveCompany = (): Company | null => {
-    if (!user || !isContact(user)) return null;
-    if (selectedCompanyId !== null) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const companiesRaw = (user as any).companies;
-      const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
-      if (Array.isArray(items)) {
-        const found = items.find((c: Company) => c.companyId === selectedCompanyId);
-        if (found) return found;
-      }
-    }
-    return (user.company as Company | undefined) ?? null;
+    if (!user || !isContact(user)) return null;  
+    return (selectedCompany) ?? null;
   };
 
   const getAllAddresses = (): Address[] => {
@@ -203,7 +174,7 @@ export default function AddressesPage() {
   const handleDeleteAddress = async (address: Address) => {
     if (!user) return;
 
-    const addressId = (address as any).id;
+    const addressId = address.id;
     try {
       const addressService = new AddressService(graphqlClient);
 

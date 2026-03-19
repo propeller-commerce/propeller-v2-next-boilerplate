@@ -30,6 +30,12 @@ export interface UserDetailsProps {
    * @default false
    */
   showDefaultDeliveryAddress?: boolean;
+
+  /** Country code-to-name mapping for address display */
+  countries?: {
+    code: string;
+    name: string;
+  }[];
 }
 interface UserDetailsState {
   isMounted: boolean;
@@ -43,6 +49,7 @@ interface UserDetailsState {
   getAddressName: (addr: Address) => string;
   getAddressLine1: (addr: Address) => string;
   getAddressLine2: (addr: Address) => string;
+  getCountryName: (code: string) => string;
   shouldShowCompanyInfo: () => boolean;
   shouldListCompanies: () => boolean;
   shouldShowInvoiceAddress: () => boolean;
@@ -117,6 +124,15 @@ function UserDetails(props: UserDetailsProps) {
   function getAddressLine2(addr: Address): ReturnType<UserDetailsState['getAddressLine2']> {
     const parts = [addr.postalCode, addr.city].filter(Boolean);
     return parts.join(' ');
+  }
+
+  function getCountryName(code: string): ReturnType<UserDetailsState['getCountryName']> {
+    if (!code) return '';
+    const list = props.countries || [];
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].code === code) return list[i].name;
+    }
+    return code;
   }
 
   function shouldShowCompanyInfo(): ReturnType<UserDetailsState['shouldShowCompanyInfo']> {
@@ -247,7 +263,7 @@ function UserDetails(props: UserDetailsProps) {
                           </div>
                           {getDefaultInvoiceAddress()?.country ? (
                             <div className="text-gray-600">
-                              {getDefaultInvoiceAddress()?.country}
+                              {getCountryName(getDefaultInvoiceAddress()?.country || '')}
                             </div>
                           ) : null}
                         </div>
@@ -280,7 +296,7 @@ function UserDetails(props: UserDetailsProps) {
                           </div>
                           {getDefaultDeliveryAddress()?.country ? (
                             <div className="text-gray-600">
-                              {getDefaultDeliveryAddress()?.country}
+                              {getCountryName(getDefaultDeliveryAddress()?.country || '')}
                             </div>
                           ) : null}
                         </div>

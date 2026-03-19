@@ -5,6 +5,15 @@ import { useCompany } from '@/context/CompanyContext';
 import { Contact, Customer } from 'propeller-sdk-v2';
 import UserDetails from '@/components/propeller/UserDetails';
 
+const COUNTRIES = [
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+];
+
 export default function AccountPage() {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
@@ -25,6 +34,7 @@ export default function AccountPage() {
         listAllContactCompanies={false}
         showDefaultInvoiceAddress={true}
         showDefaultDeliveryAddress={true}
+        countries={COUNTRIES}
       />
     </div>
   );

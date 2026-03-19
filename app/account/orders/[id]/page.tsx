@@ -14,6 +14,15 @@ import { Card } from '@/components/ui/Card';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
 import OrderTotals from '@/components/propeller/OrderTotals';
 
+const COUNTRIES = [
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'US', name: 'United States' },
+];
+
 export default function OrderDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
@@ -172,7 +181,7 @@ export default function OrderDetailPage() {
                     {/* Order Summary + Addresses + Delivery Info */}
                     <Card className="p-6">                        
                         <div className="flex-1">
-                            <OrderSummary order={order} />
+                            <OrderSummary order={order} countries={COUNTRIES} />
                         </div>
                         <div className="flex flex-row items-end gap-3 flex-shrink-0">
                             <Button variant="link" size="sm" onClick={handleDownloadPDF}>

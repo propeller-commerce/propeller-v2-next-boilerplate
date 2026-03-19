@@ -43,6 +43,9 @@ export interface UserDetailsProps {
      * @default false
      */
     showDefaultDeliveryAddress?: boolean;
+
+    /** Country code-to-name mapping for address display */
+    countries?: { code: string; name: string }[];
 }
 
 interface UserDetailsState {
@@ -57,6 +60,7 @@ interface UserDetailsState {
     getAddressName: (addr: Address) => string;
     getAddressLine1: (addr: Address) => string;
     getAddressLine2: (addr: Address) => string;
+    getCountryName: (code: string) => string;
     shouldShowCompanyInfo: () => boolean;
     shouldListCompanies: () => boolean;
     shouldShowInvoiceAddress: () => boolean;
@@ -131,6 +135,15 @@ export default function UserDetails(props: UserDetailsProps) {
         getAddressLine2(addr: Address): string {
             const parts = [addr.postalCode, addr.city].filter(Boolean);
             return parts.join(' ');
+        },
+
+        getCountryName(code: string): string {
+            if (!code) return '';
+            const list = props.countries || [];
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].code === code) return list[i].name;
+            }
+            return code;
         },
 
         shouldShowCompanyInfo(): boolean {
@@ -253,7 +266,7 @@ export default function UserDetails(props: UserDetailsProps) {
                                                 <div className="text-gray-600">{state.getAddressLine1(state.getDefaultInvoiceAddress()!)}</div>
                                                 <div className="text-gray-600">{state.getAddressLine2(state.getDefaultInvoiceAddress()!)}</div>
                                                 <Show when={state.getDefaultInvoiceAddress()?.country}>
-                                                    <div className="text-gray-600">{state.getDefaultInvoiceAddress()?.country}</div>
+                                                    <div className="text-gray-600">{state.getCountryName(state.getDefaultInvoiceAddress()?.country || '')}</div>
                                                 </Show>
                                             </div>
                                         </Show>
@@ -278,7 +291,7 @@ export default function UserDetails(props: UserDetailsProps) {
                                                 <div className="text-gray-600">{state.getAddressLine1(state.getDefaultDeliveryAddress()!)}</div>
                                                 <div className="text-gray-600">{state.getAddressLine2(state.getDefaultDeliveryAddress()!)}</div>
                                                 <Show when={state.getDefaultDeliveryAddress()?.country}>
-                                                    <div className="text-gray-600">{state.getDefaultDeliveryAddress()?.country}</div>
+                                                    <div className="text-gray-600">{state.getCountryName(state.getDefaultDeliveryAddress()?.country || '')}</div>
                                                 </Show>
                                             </div>
                                         </Show>

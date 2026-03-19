@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { Cart, CartMainItem } from 'propeller-sdk-v2';
+  import  { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
 
 
 
@@ -105,6 +105,15 @@ handleCheckoutClick: () => void;
 handleCartPageClick: () => void;
 getLabel: (key: string, fallback: string) => string;
 getSidebarTitle: () => string;
+getItemChildItems: (item: CartMainItem) => CartBaseItem[];
+isBundleItem: (item: CartMainItem) => boolean;
+getBundleName: (item: CartMainItem) => string;
+getBundlePrice: (item: CartMainItem) => string;
+getBundleLeaderName: (item: CartMainItem) => string;
+getBundleLeaderPrice: (item: CartMainItem) => string;
+getBundleNonLeaders: (item: CartMainItem) => BundleItem[];
+getBundleItemName: (bundleItem: BundleItem) => string;
+getBundleItemPrice: (bundleItem: BundleItem) => string;
 }
 
 
@@ -122,44 +131,44 @@ const [isHovered, setIsHovered] = useState<CartIconAndSidebarState["isHovered"]>
 
 
 function getTotalItems(): ReturnType<CartIconAndSidebarState["getTotalItems"]>{
-const items = (props.cart as any)?.items;
-if (!items || !Array.isArray(items)) return 0;
+const items = props.cart?.items;
+if (!items) return 0;
 return items.length;
 }
 
 
 function getTotalPrice(): ReturnType<CartIconAndSidebarState["getTotalPrice"]>{
-const total = (props.cart as any)?.total?.totalNet;
+const total = props.cart?.total?.totalNet;
 if (total === undefined || total === null) return '\u20AC0.00';
 return `\u20AC${Number(total).toFixed(2)}`;
 }
 
 
 function getItems(): ReturnType<CartIconAndSidebarState["getItems"]>{
-const items = (props.cart as any)?.items;
-if (!items || !Array.isArray(items)) return [];
-return (items as CartMainItem[]).filter((item: CartMainItem) => item && item.product);
+const items = props.cart?.items;
+if (!items) return [];
+return items.filter((item: CartMainItem) => item && item.product);
 }
 
 
 function getItemName(item: CartMainItem): ReturnType<CartIconAndSidebarState["getItemName"]>{
-return (item.product as any)?.names?.[0]?.value || 'Unnamed Product';
+return item.product?.names?.[0]?.value || 'Unnamed Product';
 }
 
 
 function getItemImageUrl(item: CartMainItem): ReturnType<CartIconAndSidebarState["getItemImageUrl"]>{
-const url = (item.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+const url = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
 return url && url.startsWith('http') ? url : '';
 }
 
 
 function getItemProductUrl(item: CartMainItem): ReturnType<CartIconAndSidebarState["getItemProductUrl"]>{
-const product = item.product as any;
+const product = item.product;
 if (!product) return '#';
-if (product.class === 'PRODUCT') {
+if (product.class === Enums.ProductClass.PRODUCT) {
 const slug = product.slugs?.[0]?.value || '';
 return `/product/${product.productId}/${slug}`;
-} else if (product.class === 'CLUSTER') {
+} else if (product.class === Enums.ProductClass.CLUSTER) {
 const slug = product.slugs?.[0]?.value || '';
 return `/cluster/${product.clusterId || product.productId}/${slug}`;
 }
@@ -199,12 +208,75 @@ if (props.onCartPageButtonClick) props.onCartPageButtonClick(props.cart);
 
 
 function getLabel(key: string, fallback: string): ReturnType<CartIconAndSidebarState["getLabel"]>{
-return (props.labels as any)?.[key] || fallback;
+return props.labels?.[key] || fallback;
 }
 
 
 function getSidebarTitle(): ReturnType<CartIconAndSidebarState["getSidebarTitle"]>{
-return props.cartSidebarTitle || (props.labels as any)?.['cartSidebarTitle'] || 'Shopping cart';
+return props.cartSidebarTitle || props.labels?.['cartSidebarTitle'] || 'Shopping cart';
+}
+
+
+function getItemChildItems(item: CartMainItem): ReturnType<CartIconAndSidebarState["getItemChildItems"]>{
+const children = item.childItems;
+if (!children || !Array.isArray(children)) return [];
+return children;
+}
+
+
+function isBundleItem(item: CartMainItem): ReturnType<CartIconAndSidebarState["isBundleItem"]>{
+return !!item.bundle;
+}
+
+
+function getBundleName(item: CartMainItem): ReturnType<CartIconAndSidebarState["getBundleName"]>{
+return item.bundle?.name || 'Bundle';
+}
+
+
+function getBundlePrice(item: CartMainItem): ReturnType<CartIconAndSidebarState["getBundlePrice"]>{
+const price = item.bundle?.price?.net;
+if (price === undefined || price === null) return '';
+return `\u20AC${Number(price).toFixed(2)}`;
+}
+
+
+function getBundleLeaderName(item: CartMainItem): ReturnType<CartIconAndSidebarState["getBundleLeaderName"]>{
+const items = item.bundle?.items;
+if (!items) return '';
+const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+if (!leader) return '';
+return leader.product.names?.[0]?.value || 'Product';
+}
+
+
+function getBundleLeaderPrice(item: CartMainItem): ReturnType<CartIconAndSidebarState["getBundleLeaderPrice"]>{
+const items = item.bundle?.items;
+if (!items) return '';
+const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+if (!leader) return '';
+const price = leader.price?.net;
+if (price === undefined || price === null) return '';
+return `\u20AC${Number(price).toFixed(2)}`;
+}
+
+
+function getBundleNonLeaders(item: CartMainItem): ReturnType<CartIconAndSidebarState["getBundleNonLeaders"]>{
+const items = item.bundle?.items;
+if (!items) return [];
+return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+}
+
+
+function getBundleItemName(bundleItem: BundleItem): ReturnType<CartIconAndSidebarState["getBundleItemName"]>{
+return bundleItem.product.names?.[0]?.value || 'Product';
+}
+
+
+function getBundleItemPrice(bundleItem: BundleItem): ReturnType<CartIconAndSidebarState["getBundleItemPrice"]>{
+const price = bundleItem.price?.net;
+if (price === undefined || price === null) return '';
+return `\u20AC${Number(price).toFixed(2)}`;
 }
 
 
@@ -238,13 +310,33 @@ setIsHovered(false);
   <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16"><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24" className="w-12 h-12 text-gray-200"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"  /></svg><p className="text-sm text-gray-500">{getLabel('emptyCart', 'Your cart is empty.')}</p><button  type="button" className="text-sm text-violet-600 hover:underline"  onClick={(event) => closeSidebar() }>{getLabel('continueShopping', 'Continue Shopping')}</button></div>
 ) : null}{getItems().length > 0 ? (
   <>{getItems()?.map((item) => (
-  <div className="flex gap-3"  key={item.itemId}><div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">{getItemImageUrl(item) ? (
+  <div className="flex gap-3"  key={item.itemId}><div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">{!!getItemImageUrl(item) ? (
   <img className="w-full h-full object-contain p-2"  src={getItemImageUrl(item)}  alt={getItemName(item)}  />
 ) : null}{!getItemImageUrl(item) ? (
   <svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="w-8 h-8 text-gray-300"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"  /></svg>
-) : null}</div><div className="flex-1 min-w-0 flex flex-col justify-between py-1"><div><div className="flex justify-between items-start gap-2"><a className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"  href={getItemProductUrl(item)}  onClick={(event) => closeSidebar() }>{getItemName(item)}</a><span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
-                                                    &euro;{((item as any).totalSumNet || 0).toFixed(2)}</span></div><p className="text-xs text-gray-400 mt-0.5">
-                                                SKU: {(item.product as any)?.sku || 'N/A'}</p></div><div className="flex items-center text-xs text-gray-400"><span>{getLabel('qty', 'Qty')}: {item.quantity}</span></div></div></div>
+) : null}</div><div className="flex-1 min-w-0 flex flex-col justify-between py-1">{isBundleItem(item) ? (
+  <><div><div className="flex justify-between items-start gap-2"><span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">{getBundleName(item)}</span>{!!getBundlePrice(item) ? (
+  <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">{getBundlePrice(item)}</span>
+) : null}</div><div className="mt-1.5 space-y-1 border-l-2 border-violet-100 pl-2">{!!getBundleLeaderName(item) ? (
+  <div className="flex justify-between items-center text-xs"><span className="font-medium text-gray-800">{getBundleLeaderName(item)}</span>{!!getBundleLeaderPrice(item) ? (
+  <span className="text-gray-500 whitespace-nowrap ml-2">{getBundleLeaderPrice(item)}</span>
+) : null}</div>
+) : null}{getBundleNonLeaders(item)?.map((bundleItem, idx) => (
+  <div className="flex justify-between items-center text-xs text-gray-600"  key={idx}><span className="line-clamp-1">{getBundleItemName(bundleItem)}</span>{!!getBundleItemPrice(bundleItem) ? (
+  <span className="text-gray-400 whitespace-nowrap ml-2">{getBundleItemPrice(bundleItem)}</span>
+) : null}</div>
+))}</div></div>
+<div className="flex items-center text-xs text-gray-400 mt-1"><span>{getLabel('qty', 'Qty')}: {item.quantity}</span></div></>
+) : null}{!isBundleItem(item) ? (
+  <><div><div className="flex justify-between items-start gap-2"><a className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"  href={getItemProductUrl(item)}  onClick={(event) => closeSidebar() }>{getItemName(item)}</a><span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                                            &euro;{item.totalSumNet.toFixed(2)}</span></div><p className="text-xs text-gray-400 mt-0.5">
+                                                        SKU: {item.product?.sku || 'N/A'}</p>{getItemChildItems(item).length > 0 ? (
+  <div className="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">{getItemChildItems(item)?.map((child, idx) => (
+  <div className="flex justify-between items-center text-xs text-gray-600"  key={idx}><span className="line-clamp-1">{child.product.names?.[0]?.value || 'Option'}</span><span className="text-gray-400 whitespace-nowrap ml-2">&euro;{child.totalSum.toFixed(2)}</span></div>
+))}</div>
+) : null}</div>
+<div className="flex items-center text-xs text-gray-400"><span>{getLabel('qty', 'Qty')}: {item.quantity}</span></div></>
+) : null}</div></div>
 ))}</>
 ) : null}</div>
 {getItems().length > 0 ? (

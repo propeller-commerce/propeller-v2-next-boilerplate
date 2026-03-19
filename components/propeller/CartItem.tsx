@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react'
-  import  { GraphQLClient, CartService, CrossupsellService, CartMainItem, CartBaseItem, Cart, ProductInventory, CrossupsellSearchInput, Crossupsell, Product, Cluster } from 'propeller-sdk-v2';
+  import  { GraphQLClient, CartService, CrossupsellService, CartMainItem, CartBaseItem, BundleItem, Cart, ProductInventory, CrossupsellSearchInput, Crossupsell, Product, Cluster, Enums, CrossupsellsQueryVariables, Contact, Customer } from 'propeller-sdk-v2';
 
 
 
@@ -12,6 +12,12 @@ graphqlClient: GraphQLClient;
 
 /** The shopping cart unique identifier */
 cartId: string;
+
+/** Tax zone for price calculations */
+taxZone?: string;
+
+/** Authenticated user for cart operations */
+user?: Contact | Customer | null;
 
 /** A shopping cart item */
 cartItem: CartMainItem;
@@ -88,6 +94,14 @@ getProductImageUrl: () => string;
 getProductSku: () => string;
 getInventory: () => ProductInventory | null;
 getFormattedPrice: () => string;
+isBundleItem: () => boolean;
+getBundleName: () => string;
+getBundlePrice: () => string;
+getBundleLeaderName: () => string;
+getBundleLeaderPrice: () => string;
+getBundleNonLeaders: () => BundleItem[];
+getBundleItemName: (bundleItem: BundleItem) => string;
+getBundleItemPrice: (bundleItem: BundleItem) => string;
 handleQuantityChange: (newQuantity: number) => void;
 handleNoteChange: (note: string) => void;
 handleDelete: () => void;
@@ -125,7 +139,7 @@ const [crossupsellsLoading, setCrossupsellsLoading] = useState<CartItemState["cr
 
 
 function getLabel(key: string, fallback: string): ReturnType<CartItemState["getLabel"]>{
-return (props.labels as Record<string, string>)?.[key] || fallback;
+return props.labels?.[key] || fallback;
 }
 
 
@@ -161,6 +175,62 @@ return inv || null;
 function getFormattedPrice(): ReturnType<CartItemState["getFormattedPrice"]>{
 const item = props.cartItem;
 const price = props.includeTax ? item?.totalSumNet || 0 : item?.totalSum || 0;
+return `\u20AC${Number(price).toFixed(2)}`;
+}
+
+
+function isBundleItem(): ReturnType<CartItemState["isBundleItem"]>{
+return !!props.cartItem.bundle;
+}
+
+
+function getBundleName(): ReturnType<CartItemState["getBundleName"]>{
+return props.cartItem.bundle?.name || 'Bundle';
+}
+
+
+function getBundlePrice(): ReturnType<CartItemState["getBundlePrice"]>{
+const price = props.cartItem.bundle?.price?.net;
+if (price === undefined || price === null) return '';
+return `\u20AC${Number(price).toFixed(2)}`;
+}
+
+
+function getBundleLeaderName(): ReturnType<CartItemState["getBundleLeaderName"]>{
+const items = props.cartItem.bundle?.items;
+if (!items) return '';
+const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+if (!leader) return '';
+return leader.product.names?.[0]?.value || 'Product';
+}
+
+
+function getBundleLeaderPrice(): ReturnType<CartItemState["getBundleLeaderPrice"]>{
+const items = props.cartItem.bundle?.items;
+if (!items) return '';
+const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+if (!leader) return '';
+const price = leader.price?.net;
+if (price === undefined || price === null) return '';
+return `\u20AC${Number(price).toFixed(2)}`;
+}
+
+
+function getBundleNonLeaders(): ReturnType<CartItemState["getBundleNonLeaders"]>{
+const items = props.cartItem.bundle?.items;
+if (!items) return [];
+return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+}
+
+
+function getBundleItemName(bundleItem: BundleItem): ReturnType<CartItemState["getBundleItemName"]>{
+return bundleItem.product.names?.[0]?.value || 'Product';
+}
+
+
+function getBundleItemPrice(bundleItem: BundleItem): ReturnType<CartItemState["getBundleItemPrice"]>{
+const price = bundleItem.price?.net;
+if (price === undefined || price === null) return '';
 return `\u20AC${Number(price).toFixed(2)}`;
 }
 
@@ -261,20 +331,39 @@ setDeleting(false);
 function fetchCrossupsells(): ReturnType<CartItemState["fetchCrossupsells"]>{
 if (!props.showCrossupsells) return;
 const productId = props.cartItem?.productId;
-if (!productId) return;
+const clusterId = props.cartItem?.clusterId;
+if (!productId && !clusterId) return;
 setCrossupsellsLoading(true);
 const crossupsellService = new CrossupsellService(props.graphqlClient);
-const searchInput: CrossupsellSearchInput = {
-types: (props.crossupsellTypes || ['ACCESSORIES']) as CrossupsellSearchInput['types'],
-page: 1,
-offset: 50,
-...(productId && {
-  productIdsFrom: [productId]
-})
+const searchInput: CrossupsellsQueryVariables = {
+input: {
+  types: (props.crossupsellTypes || [Enums.CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
+  page: 1,
+  offset: 50,
+  ...(productId && !clusterId && {
+    productIdsFrom: [productId]
+  }),
+  ...(clusterId && {
+    clusterIdsFrom: [clusterId]
+  })
+},
+language: props.language || 'NL',
+imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
+priceCalculateProductInput: {
+  taxZone: props.taxZone || 'NL',
+  ...(props.user && 'company' in props.user && {
+    companyId: (props.user as Contact)?.company?.companyId
+  }),
+  ...(props.user && 'contactId' in props.user && {
+    contactId: (props.user as Contact)?.contactId
+  }),
+  ...(props.user && 'customerId' in props.user && {
+    customerId: (props.user as Customer)?.customerId
+  })
+}
 };
-crossupsellService.getCrossupsells({
-input: searchInput
-}).then(response => {
+crossupsellService.getCrossupsells(searchInput).then(response => {
 setCrossupsells(response?.items || []);
 setCrossupsellsLoading(false);
 }).catch(() => {
@@ -336,17 +425,40 @@ return (
   <img className="w-full h-full object-contain p-1"  src={getProductImageUrl()}  alt={getProductName()}  />
 ) : null}{!getProductImageUrl() ? (
   <svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="w-8 h-8 text-gray-300"  strokeWidth={1.5}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"  /></svg>
-) : null}</div><div className="flex-1 min-w-0">{props.titleLinkable !== false ? (
+) : null}</div><div className="flex-1 min-w-0">{isBundleItem() ? (
+  <span className="font-semibold text-lg text-gray-900 line-clamp-2">{getBundleName()}</span>
+) : null}{!isBundleItem() ? (
+  <>{props.titleLinkable !== false ? (
   <a className="font-semibold text-lg text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"  href={getProductUrl()}>{getProductName()}</a>
-) : null}{props.titleLinkable === false ? (
+) : null}
+{props.titleLinkable === false ? (
   <span className="font-semibold text-lg text-gray-900 line-clamp-2">{getProductName()}</span>
-) : null}{props.showSku !== false && !!getProductSku() ? (
+) : null}</>
+) : null}{!isBundleItem() && props.showSku !== false && !!getProductSku() ? (
   <p className="text-sm text-gray-500 mt-0.5">{getProductSku()}</p>
 ) : null}{props.showStockComponent === true && !!getInventory() ? (
   <div className="mt-1"><div  data-cart-item-stock="true"  data-inventory={JSON.stringify(getInventory())}  /></div>
-) : null}<p className="text-lg font-bold text-violet-600 mt-2">{getFormattedPrice()}</p>{!!props.cartItem.clusterId && !!props.cartItem.childItems && props.cartItem.childItems.length > 0 ? (
+) : null}{isBundleItem() ? (
+  <>{!!getBundlePrice() ? (
+  <p className="text-lg font-bold text-violet-600 mt-2">{getBundlePrice()}</p>
+) : null}</>
+) : null}{!isBundleItem() ? (
+  <p className="text-lg font-bold text-violet-600 mt-2">{getFormattedPrice()}</p>
+) : null}{isBundleItem() ? (
+  <div className="mt-3 space-y-1.5 border-l-2 border-violet-200 pl-3">{!!getBundleLeaderName() ? (
+  <div className="flex flex-wrap gap-x-2 text-sm text-gray-700"><span className="font-semibold text-violet-700">{getBundleLeaderName()}</span>{!!getBundleLeaderPrice() ? (
+  <><div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"  />
+<span className="font-semibold text-violet-600">{getBundleLeaderPrice()}</span></>
+) : null}</div>
+) : null}{getBundleNonLeaders()?.map((bundleItem, idx) => (
+  <div className="flex flex-wrap gap-x-2 text-sm text-gray-700"  key={idx}><span className="font-medium">{getBundleItemName(bundleItem)}</span>{!!getBundleItemPrice(bundleItem) ? (
+  <><div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"  />
+<span className="font-semibold text-violet-600">{getBundleItemPrice(bundleItem)}</span></>
+) : null}</div>
+))}</div>
+) : null}{!!props.cartItem.clusterId && !!props.cartItem.childItems && props.cartItem.childItems.length > 0 ? (
   <div className="mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{getLabel('includedOptions', 'Included Options:')}</p>{(props.cartItem.childItems || []).map((child, idx) => (
-  <div className="flex flex-wrap gap-x-2 text-sm text-gray-700"  key={idx}><span className="font-medium">{child.product?.names?.[0]?.value || 'Option'}</span><span className="text-gray-400 hidden sm:inline">-</span><span className="text-gray-400 text-xs self-center">{child.product?.sku}</span><div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"  /><span className="font-semibold text-violet-600">€{(child.totalSum || 0).toFixed(2)}</span></div>
+  <div className="flex flex-wrap gap-x-2 text-sm text-gray-700"  key={idx}><span className="font-medium">{child.product.names?.[0]?.value || 'Option'}</span><span className="text-gray-400 hidden sm:inline">-</span><span className="text-gray-400 text-xs self-center">{child.product.sku}</span><div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1"  /><span className="font-semibold text-violet-600">€{child.totalSum.toFixed(2)}</span></div>
 ))}</div>
 ) : null}{props.showCartItemNotesField === true ? (
   <div className="mt-3"><label className="text-xs font-medium text-gray-500 block mb-1">{getLabel('notes', 'Notes')}</label><textarea className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"  value={notes}  onChange={(e) => handleNoteChange(e.target.value) }  placeholder={getLabel('notesPlaceholder', 'Add a note for this item...')}  rows={2}  /></div>

@@ -10,12 +10,17 @@ import {
     CrossupsellService,
     CartMainItem,
     CartBaseItem,
+    BundleItem,
     Cart,
     ProductInventory,
     CrossupsellSearchInput,
     Crossupsell,
     Product,
     Cluster,
+    Enums,
+    CrossupsellsQueryVariables,
+    Contact,
+    Customer,
 } from 'propeller-sdk-v2';
 
 export interface CartItemProps {
@@ -24,6 +29,12 @@ export interface CartItemProps {
 
     /** The shopping cart unique identifier */
     cartId: string;
+
+    /** Tax zone for price calculations */
+    taxZone?: string;
+
+    /** Authenticated user for cart operations */
+    user?: Contact | Customer | null;
 
     /** A shopping cart item */
     cartItem: CartMainItem;
@@ -101,6 +112,14 @@ interface CartItemState {
     getProductSku: () => string;
     getInventory: () => ProductInventory | null;
     getFormattedPrice: () => string;
+    isBundleItem: () => boolean;
+    getBundleName: () => string;
+    getBundlePrice: () => string;
+    getBundleLeaderName: () => string;
+    getBundleLeaderPrice: () => string;
+    getBundleNonLeaders: () => BundleItem[];
+    getBundleItemName: (bundleItem: BundleItem) => string;
+    getBundleItemPrice: (bundleItem: BundleItem) => string;
     handleQuantityChange: (newQuantity: number) => void;
     handleNoteChange: (note: string) => void;
     handleDelete: () => void;
@@ -120,8 +139,9 @@ export default function CartItem(props: CartItemProps) {
         notesTimeout: null as unknown as ReturnType<typeof setTimeout>,
         crossupsells: [] as Crossupsell[],
         crossupsellsLoading: false,
+
         getLabel(key: string, fallback: string): string {
-            return (props.labels as Record<string, string>)?.[key] || fallback;
+            return props.labels?.[key] || fallback;
         },
 
         getProductName(): string {
@@ -151,6 +171,54 @@ export default function CartItem(props: CartItemProps) {
         getFormattedPrice(): string {
             const item = props.cartItem;
             const price = props.includeTax ? (item?.totalSumNet || 0) : (item?.totalSum || 0);
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        isBundleItem(): boolean {
+            return !!props.cartItem.bundle;
+        },
+
+        getBundleName(): string {
+            return props.cartItem.bundle?.name || 'Bundle';
+        },
+
+        getBundlePrice(): string {
+            const price = props.cartItem.bundle?.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        getBundleLeaderName(): string {
+            const items = props.cartItem.bundle?.items;
+            if (!items) return '';
+            const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+            if (!leader) return '';
+            return leader.product.names?.[0]?.value || 'Product';
+        },
+
+        getBundleLeaderPrice(): string {
+            const items = props.cartItem.bundle?.items;
+            if (!items) return '';
+            const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+            if (!leader) return '';
+            const price = leader.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        getBundleNonLeaders(): BundleItem[] {
+            const items = props.cartItem.bundle?.items;
+            if (!items) return [];
+            return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+        },
+
+        getBundleItemName(bundleItem: BundleItem): string {
+            return bundleItem.product.names?.[0]?.value || 'Product';
+        },
+
+        getBundleItemPrice(bundleItem: BundleItem): string {
+            const price = bundleItem.price?.net;
+            if (price === undefined || price === null) return '';
             return `\u20AC${Number(price).toFixed(2)}`;
         },
 
@@ -248,19 +316,32 @@ export default function CartItem(props: CartItemProps) {
         fetchCrossupsells(): void {
             if (!props.showCrossupsells) return;
             const productId = props.cartItem?.productId;
-            if (!productId) return;
+            const clusterId = props.cartItem?.clusterId;
+            if (!productId && !clusterId) return;
 
             state.crossupsellsLoading = true;
             const crossupsellService = new CrossupsellService(props.graphqlClient);
 
-            const searchInput: CrossupsellSearchInput = {
-                types: (props.crossupsellTypes || ['ACCESSORIES']) as CrossupsellSearchInput['types'],
-                page: 1,
-                offset: 50,
-                ...(productId && { productIdsFrom: [productId] })
+            const searchInput: CrossupsellsQueryVariables = {
+                input: {
+                    types: (props.crossupsellTypes || [Enums.CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
+                    page: 1,
+                    offset: 50,
+                    ...(productId && !clusterId && { productIdsFrom: [productId] }),
+                    ...(clusterId && { clusterIdsFrom: [clusterId] }),
+                },
+                language: props.language || 'NL',
+                imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+                imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
+                priceCalculateProductInput: {
+                    taxZone: props.taxZone || 'NL',
+                    ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
+                    ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
+                    ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
+                },
             };
 
-            crossupsellService.getCrossupsells({ input: searchInput }).then((response) => {
+            crossupsellService.getCrossupsells(searchInput).then((response) => {
                 state.crossupsells = response?.items || [];
                 state.crossupsellsLoading = false;
             }).catch(() => {
@@ -326,20 +407,30 @@ export default function CartItem(props: CartItemProps) {
 
             {/* Product info */}
             <div className="flex-1 min-w-0">
-                {/* Title */}
-                <Show when={props.titleLinkable !== false}>
-                    <a href={state.getProductUrl()} className="font-semibold text-lg text-gray-900 hover:text-violet-600 transition-colors line-clamp-2">
-                        {state.getProductName()}
-                    </a>
-                </Show>
-                <Show when={props.titleLinkable === false}>
+
+                {/* Bundle: title is the bundle name */}
+                <Show when={state.isBundleItem()}>
                     <span className="font-semibold text-lg text-gray-900 line-clamp-2">
-                        {state.getProductName()}
+                        {state.getBundleName()}
                     </span>
                 </Show>
 
-                {/* SKU */}
-                <Show when={props.showSku !== false && !!state.getProductSku()}>
+                {/* Normal / cluster: title is the product name */}
+                <Show when={!state.isBundleItem()}>
+                    <Show when={props.titleLinkable !== false}>
+                        <a href={state.getProductUrl()} className="font-semibold text-lg text-gray-900 hover:text-violet-600 transition-colors line-clamp-2">
+                            {state.getProductName()}
+                        </a>
+                    </Show>
+                    <Show when={props.titleLinkable === false}>
+                        <span className="font-semibold text-lg text-gray-900 line-clamp-2">
+                            {state.getProductName()}
+                        </span>
+                    </Show>
+                </Show>
+
+                {/* SKU — only for non-bundle items */}
+                <Show when={!state.isBundleItem() && props.showSku !== false && !!state.getProductSku()}>
                     <p className="text-sm text-gray-500 mt-0.5">{state.getProductSku()}</p>
                 </Show>
 
@@ -351,8 +442,39 @@ export default function CartItem(props: CartItemProps) {
                     </div>
                 </Show>
 
-                {/* Price */}
-                <p className="text-lg font-bold text-violet-600 mt-2">{state.getFormattedPrice()}</p>
+                {/* Price — bundle price or item price */}
+                <Show when={state.isBundleItem()}>
+                    <Show when={!!state.getBundlePrice()}>
+                        <p className="text-lg font-bold text-violet-600 mt-2">{state.getBundlePrice()}</p>
+                    </Show>
+                </Show>
+                <Show when={!state.isBundleItem()}>
+                    <p className="text-lg font-bold text-violet-600 mt-2">{state.getFormattedPrice()}</p>
+                </Show>
+
+                {/* Bundle items: leader first, then the rest */}
+                <Show when={state.isBundleItem()}>
+                    <div className="mt-3 space-y-1.5 border-l-2 border-violet-200 pl-3">
+                        <Show when={!!state.getBundleLeaderName()}>
+                            <div className="flex flex-wrap gap-x-2 text-sm text-gray-700">
+                                <span className="font-semibold text-violet-700">{state.getBundleLeaderName()}</span>
+                                <Show when={!!state.getBundleLeaderPrice()}>
+                                    <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
+                                    <span className="font-semibold text-violet-600">{state.getBundleLeaderPrice()}</span>
+                                </Show>
+                            </div>
+                        </Show>
+                        {state.getBundleNonLeaders().map((bundleItem: BundleItem, idx: number) => (
+                            <div key={idx} className="flex flex-wrap gap-x-2 text-sm text-gray-700">
+                                <span className="font-medium">{state.getBundleItemName(bundleItem)}</span>
+                                <Show when={!!state.getBundleItemPrice(bundleItem)}>
+                                    <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
+                                    <span className="font-semibold text-violet-600">{state.getBundleItemPrice(bundleItem)}</span>
+                                </Show>
+                            </div>
+                        ))}
+                    </div>
+                </Show>
 
                 {/* Cluster child items */}
                 <Show when={!!props.cartItem.clusterId && !!props.cartItem.childItems && props.cartItem.childItems.length > 0}>
@@ -362,11 +484,11 @@ export default function CartItem(props: CartItemProps) {
                         </p>
                         {(props.cartItem.childItems || []).map((child: CartBaseItem, idx: number) => (
                             <div key={idx} className="flex flex-wrap gap-x-2 text-sm text-gray-700">
-                                <span className="font-medium">{child.product?.names?.[0]?.value || 'Option'}</span>
+                                <span className="font-medium">{child.product.names?.[0]?.value || 'Option'}</span>
                                 <span className="text-gray-400 hidden sm:inline">-</span>
-                                <span className="text-gray-400 text-xs self-center">{child.product?.sku}</span>
+                                <span className="text-gray-400 text-xs self-center">{child.product.sku}</span>
                                 <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
-                                <span className="font-semibold text-violet-600">{'\u20AC'}{(child.totalSum || 0).toFixed(2)}</span>
+                                <span className="font-semibold text-violet-600">{'\u20AC'}{child.totalSum.toFixed(2)}</span>
                             </div>
                         ))}
                     </div>

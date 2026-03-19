@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { useCart } from '@/context/CartContext';
 import { usePrice } from '@/context/PriceContext';
+import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartItem from '@/components/propeller/CartItem';
@@ -10,7 +11,7 @@ import CartSummary from '@/components/propeller/CartSummary';
 import ActionCode from '@/components/propeller/ActionCode';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { CartMainItem, Cart } from 'propeller-sdk-v2';
+import { type CartMainItem, type Cart, type Contact, type Customer, Enums } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
 
@@ -20,6 +21,7 @@ export default function CartPage() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const { cart, saveCart } = useCart();
   const { includeTax } = usePrice();
+  const { state } = useAuth();
   const router = useRouter();
 
   const items = mounted ? (cart?.items || []) : [];
@@ -49,12 +51,15 @@ export default function CartPage() {
                   <CartItem
                     key={item.itemId}
                     includeTax={includeTax}
+                    user={state.user as Contact | Customer}
+                    taxZone={'NL'}
+                    language={'NL'}
                     graphqlClient={graphqlClient}
                     cartId={cart!.cartId}
                     cartItem={item}
                     configuration={config}
                     showCrossupsells={true}
-                    crossupsellTypes={['ACCESSORIES']}
+                    crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}
                     afterCartUpdate={saveCart}
                   />

@@ -7,6 +7,9 @@ import {
 import {
     Cart,
     CartMainItem,
+    CartBaseItem,
+    BundleItem,
+    Enums,
 } from 'propeller-sdk-v2';
 
 export interface CartIconAndSidebarProps {
@@ -109,6 +112,15 @@ interface CartIconAndSidebarState {
     handleCartPageClick: () => void;
     getLabel: (key: string, fallback: string) => string;
     getSidebarTitle: () => string;
+    getItemChildItems: (item: CartMainItem) => CartBaseItem[];
+    isBundleItem: (item: CartMainItem) => boolean;
+    getBundleName: (item: CartMainItem) => string;
+    getBundlePrice: (item: CartMainItem) => string;
+    getBundleLeaderName: (item: CartMainItem) => string;
+    getBundleLeaderPrice: (item: CartMainItem) => string;
+    getBundleNonLeaders: (item: CartMainItem) => BundleItem[];
+    getBundleItemName: (bundleItem: BundleItem) => string;
+    getBundleItemPrice: (bundleItem: BundleItem) => string;
 }
 
 export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
@@ -118,39 +130,39 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         isHovered: false,
 
         getTotalItems() {
-            const items = (props.cart as any)?.items;
-            if (!items || !Array.isArray(items)) return 0;
+            const items = props.cart?.items;
+            if (!items) return 0;
             return items.length;
         },
 
         getTotalPrice() {
-            const total = (props.cart as any)?.total?.totalNet;
+            const total = props.cart?.total?.totalNet;
             if (total === undefined || total === null) return '\u20AC0.00';
             return `\u20AC${Number(total).toFixed(2)}`;
         },
 
         getItems() {
-            const items = (props.cart as any)?.items;
-            if (!items || !Array.isArray(items)) return [];
-            return (items as CartMainItem[]).filter((item: CartMainItem) => item && item.product);
+            const items = props.cart?.items;
+            if (!items) return [];
+            return items.filter((item: CartMainItem) => item && item.product);
         },
 
         getItemName(item: CartMainItem) {
-            return (item.product as any)?.names?.[0]?.value || 'Unnamed Product';
+            return item.product?.names?.[0]?.value || 'Unnamed Product';
         },
 
         getItemImageUrl(item: CartMainItem) {
-            const url = (item.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+            const url = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
             return url && url.startsWith('http') ? url : '';
         },
 
         getItemProductUrl(item: CartMainItem) {
-            const product = item.product as any;
+            const product = item.product;
             if (!product) return '#';
-            if (product.class === 'PRODUCT') {
+            if (product.class === Enums.ProductClass.PRODUCT) {
                 const slug = product.slugs?.[0]?.value || '';
                 return `/product/${product.productId}/${slug}`;
-            } else if (product.class === 'CLUSTER') {
+            } else if (product.class === Enums.ProductClass.CLUSTER) {
                 const slug = product.slugs?.[0]?.value || '';
                 return `/cluster/${product.clusterId || product.productId}/${slug}`;
             }
@@ -184,11 +196,65 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         },
 
         getLabel(key: string, fallback: string) {
-            return (props.labels as any)?.[key] || fallback;
+            return props.labels?.[key] || fallback;
         },
 
         getSidebarTitle() {
-            return props.cartSidebarTitle || (props.labels as any)?.['cartSidebarTitle'] || 'Shopping cart';
+            return props.cartSidebarTitle || props.labels?.['cartSidebarTitle'] || 'Shopping cart';
+        },
+
+        getItemChildItems(item: CartMainItem) {
+            const children = item.childItems;
+            if (!children || !Array.isArray(children)) return [];
+            return children;
+        },
+
+        isBundleItem(item: CartMainItem) {
+            return !!item.bundle;
+        },
+
+        getBundleName(item: CartMainItem) {
+            return item.bundle?.name || 'Bundle';
+        },
+
+        getBundlePrice(item: CartMainItem) {
+            const price = item.bundle?.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        getBundleLeaderName(item: CartMainItem) {
+            const items = item.bundle?.items;
+            if (!items) return '';
+            const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+            if (!leader) return '';
+            return leader.product.names?.[0]?.value || 'Product';
+        },
+
+        getBundleLeaderPrice(item: CartMainItem) {
+            const items = item.bundle?.items;
+            if (!items) return '';
+            const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+            if (!leader) return '';
+            const price = leader.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        getBundleNonLeaders(item: CartMainItem) {
+            const items = item.bundle?.items;
+            if (!items) return [];
+            return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+        },
+
+        getBundleItemName(bundleItem: BundleItem) {
+            return bundleItem.product.names?.[0]?.value || 'Product';
+        },
+
+        getBundleItemPrice(bundleItem: BundleItem) {
+            const price = bundleItem.price?.net;
+            if (price === undefined || price === null) return '';
+            return `\u20AC${Number(price).toFixed(2)}`;
         },
     });
 
@@ -264,46 +330,12 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                 aria-label={state.getSidebarTitle()}
             >
                 <div className="flex flex-col h-full">
-                  <Show when={state.isMounted}>
-                    {/* Sidebar header */}
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-                        <div className="flex items-center gap-2">
-                            <svg
-                                className="w-5 h-5 text-gray-700"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
-                                />
-                            </svg>
-                            <h2 className="text-base font-semibold text-gray-900">{state.getSidebarTitle()}</h2>
-                            <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
-                                {state.getTotalItems()}
-                            </span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => state.closeSidebar()}
-                            className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                            aria-label={state.getLabel('closeLabel', 'Close')}
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* Items list */}
-                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-                        <Show when={state.getItems().length === 0}>
-                            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16">
+                    <Show when={state.isMounted}>
+                        {/* Sidebar header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                            <div className="flex items-center gap-2">
                                 <svg
-                                    className="w-12 h-12 text-gray-200"
+                                    className="w-5 h-5 text-gray-700"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -315,99 +347,189 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                         d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                                     />
                                 </svg>
-                                <p className="text-sm text-gray-500">{state.getLabel('emptyCart', 'Your cart is empty.')}</p>
-                                <button
-                                    type="button"
-                                    onClick={() => state.closeSidebar()}
-                                    className="text-sm text-violet-600 hover:underline"
-                                >
-                                    {state.getLabel('continueShopping', 'Continue Shopping')}
-                                </button>
+                                <h2 className="text-base font-semibold text-gray-900">{state.getSidebarTitle()}</h2>
+                                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                                    {state.getTotalItems()}
+                                </span>
                             </div>
-                        </Show>
+                            <button
+                                type="button"
+                                onClick={() => state.closeSidebar()}
+                                className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                aria-label={state.getLabel('closeLabel', 'Close')}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
 
-                        <Show when={state.getItems().length > 0}>
-                            <For each={state.getItems()}>
-                                {(item: CartMainItem) => (
-                                    <div key={item.itemId} className="flex gap-3">
-                                        {/* Product image */}
-                                        <div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">
-                                            <Show when={state.getItemImageUrl(item)}>
-                                                <img
-                                                    src={state.getItemImageUrl(item)}
-                                                    alt={state.getItemName(item)}
-                                                    className="w-full h-full object-contain p-2"
-                                                />
-                                            </Show>
-                                            <Show when={!state.getItemImageUrl(item)}>
-                                                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                                                </svg>
-                                            </Show>
-                                        </div>
-
-                                        {/* Product info */}
-                                        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-                                            <div>
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <a
-                                                        href={state.getItemProductUrl(item)}
-                                                        onClick={() => state.closeSidebar()}
-                                                        className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"
-                                                    >
-                                                        {state.getItemName(item)}
-                                                    </a>
-                                                    <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
-                                                        &euro;{((item as any).totalSumNet || 0).toFixed(2)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-gray-400 mt-0.5">
-                                                    SKU: {(item.product as any)?.sku || 'N/A'}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center text-xs text-gray-400">
-                                                <span>{state.getLabel('qty', 'Qty')}: {item.quantity}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </For>
-                        </Show>
-                    </div>
-
-                    {/* Sidebar footer */}
-                    <Show when={state.getItems().length > 0}>
-                        <div className="px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
-                            {/* Cart total */}
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-700">{state.getLabel('total', 'Total')}</span>
-                                <span className="text-base font-bold text-gray-900">{state.getTotalPrice()}</span>
-                            </div>
-
-                            {/* Checkout button */}
-                            <Show when={props.cartCheckoutButton !== false}>
-                                <button
-                                    type="button"
-                                    onClick={() => state.handleCheckoutClick()}
-                                    className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
-                                >
-                                    {state.getLabel('checkoutButton', 'Checkout')}
-                                </button>
+                        {/* Items list */}
+                        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                            <Show when={state.getItems().length === 0}>
+                                <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16">
+                                    <svg
+                                        className="w-12 h-12 text-gray-200"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={1.5}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
+                                        />
+                                    </svg>
+                                    <p className="text-sm text-gray-500">{state.getLabel('emptyCart', 'Your cart is empty.')}</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => state.closeSidebar()}
+                                        className="text-sm text-violet-600 hover:underline"
+                                    >
+                                        {state.getLabel('continueShopping', 'Continue Shopping')}
+                                    </button>
+                                </div>
                             </Show>
 
-                            {/* Cart page button */}
-                            <Show when={props.cartPageButton !== false}>
-                                <button
-                                    type="button"
-                                    onClick={() => state.handleCartPageClick()}
-                                    className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-                                >
-                                    {state.getLabel('cartPageButton', 'View Cart Details')}
-                                </button>
+                            <Show when={state.getItems().length > 0}>
+                                <For each={state.getItems()}>
+                                    {(item: CartMainItem) => (
+                                        <div key={item.itemId} className="flex gap-3">
+                                            {/* Product image */}
+                                            <div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">
+                                                <Show when={!!state.getItemImageUrl(item)}>
+                                                    <img
+                                                        src={state.getItemImageUrl(item)}
+                                                        alt={state.getItemName(item)}
+                                                        className="w-full h-full object-contain p-2"
+                                                    />
+                                                </Show>
+                                                <Show when={!state.getItemImageUrl(item)}>
+                                                    <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                                                    </svg>
+                                                </Show>
+                                            </div>
+
+                                            {/* Product info */}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+
+                                                {/* Bundle item display */}
+                                                <Show when={state.isBundleItem(item)}>
+                                                    <div>
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">
+                                                                {state.getBundleName(item)}
+                                                            </span>
+                                                            <Show when={!!state.getBundlePrice(item)}>
+                                                                <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                                                    {state.getBundlePrice(item)}
+                                                                </span>
+                                                            </Show>
+                                                        </div>
+                                                        {/* Bundle items: leader first, then the rest */}
+                                                        <div className="mt-1.5 space-y-1 border-l-2 border-violet-100 pl-2">
+                                                            <Show when={!!state.getBundleLeaderName(item)}>
+                                                                <div className="flex justify-between items-center text-xs">
+                                                                    <span className="font-medium text-gray-800">
+                                                                        {state.getBundleLeaderName(item)}
+                                                                    </span>
+                                                                    <Show when={!!state.getBundleLeaderPrice(item)}>
+                                                                        <span className="text-gray-500 whitespace-nowrap ml-2">{state.getBundleLeaderPrice(item)}</span>
+                                                                    </Show>
+                                                                </div>
+                                                            </Show>
+                                                            {state.getBundleNonLeaders(item).map((bundleItem: BundleItem, idx: number) => (
+                                                                <div key={idx} className="flex justify-between items-center text-xs text-gray-600">
+                                                                    <span className="line-clamp-1">{state.getBundleItemName(bundleItem)}</span>
+                                                                    <Show when={!!state.getBundleItemPrice(bundleItem)}>
+                                                                        <span className="text-gray-400 whitespace-nowrap ml-2">{state.getBundleItemPrice(bundleItem)}</span>
+                                                                    </Show>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center text-xs text-gray-400 mt-1">
+                                                        <span>{state.getLabel('qty', 'Qty')}: {item.quantity}</span>
+                                                    </div>
+                                                </Show>
+
+                                                {/* Normal / cluster item display */}
+                                                <Show when={!state.isBundleItem(item)}>
+                                                    <div>
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <a
+                                                                href={state.getItemProductUrl(item)}
+                                                                onClick={() => state.closeSidebar()}
+                                                                className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"
+                                                            >
+                                                                {state.getItemName(item)}
+                                                            </a>
+                                                            <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                                                &euro;{item.totalSumNet.toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 mt-0.5">
+                                                            SKU: {item.product?.sku || 'N/A'}
+                                                        </p>
+                                                        {/* Cluster child items */}
+                                                        <Show when={state.getItemChildItems(item).length > 0}>
+                                                            <div className="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
+                                                                {state.getItemChildItems(item).map((child: CartBaseItem, idx: number) => (
+                                                                    <div key={idx} className="flex justify-between items-center text-xs text-gray-600">
+                                                                        <span className="line-clamp-1">{child.product.names?.[0]?.value || 'Option'}</span>
+                                                                        <span className="text-gray-400 whitespace-nowrap ml-2">&euro;{child.totalSum.toFixed(2)}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </Show>
+                                                    </div>
+                                                    <div className="flex items-center text-xs text-gray-400">
+                                                        <span>{state.getLabel('qty', 'Qty')}: {item.quantity}</span>
+                                                    </div>
+                                                </Show>
+
+                                            </div>
+                                        </div>
+                                    )}
+                                </For>
                             </Show>
                         </div>
+
+                        {/* Sidebar footer */}
+                        <Show when={state.getItems().length > 0}>
+                            <div className="px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
+                                {/* Cart total */}
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-gray-700">{state.getLabel('total', 'Total')}</span>
+                                    <span className="text-base font-bold text-gray-900">{state.getTotalPrice()}</span>
+                                </div>
+
+                                {/* Checkout button */}
+                                <Show when={props.cartCheckoutButton !== false}>
+                                    <button
+                                        type="button"
+                                        onClick={() => state.handleCheckoutClick()}
+                                        className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                                    >
+                                        {state.getLabel('checkoutButton', 'Checkout')}
+                                    </button>
+                                </Show>
+
+                                {/* Cart page button */}
+                                <Show when={props.cartPageButton !== false}>
+                                    <button
+                                        type="button"
+                                        onClick={() => state.handleCartPageClick()}
+                                        className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                                    >
+                                        {state.getLabel('cartPageButton', 'View Cart Details')}
+                                    </button>
+                                </Show>
+                            </div>
+                        </Show>
                     </Show>
-                  </Show>
                 </div>
             </div>
         </div>

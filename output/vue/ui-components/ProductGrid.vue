@@ -18,12 +18,8 @@
             <template v-if="showAddToCart()">
               <div class="p-4 pt-0">
                 <div class="flex items-center gap-2">
-                  <div
-                    class="h-9 flex-1 bg-slate-100 animate-pulse rounded"
-                  ></div>
-                  <div
-                    class="h-9 flex-1 bg-slate-100 animate-pulse rounded"
-                  ></div>
+                  <div class="h-9 flex-1 bg-slate-100 animate-pulse rounded"></div>
+                  <div class="h-9 flex-1 bg-slate-100 animate-pulse rounded"></div>
                 </div>
               </div>
             </template>
@@ -34,9 +30,7 @@
 
     <template v-if="!getIsLoading()">
       <template v-if="getDisplayProducts().length === 0">
-        <div
-          class="text-center py-24 bg-gray-50 rounded-xl border border-dashed border-gray-200"
-        >
+        <div class="text-center py-24 bg-gray-50 rounded-xl border border-dashed border-gray-200">
           <svg
             fill="none"
             stroke="currentColor"
@@ -50,12 +44,8 @@
               :strokeWidth="1"
             ></path>
           </svg>
-          <h3 class="mt-4 text-lg font-semibold text-gray-900">
-            No products found
-          </h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Try adjusting your filters or search term.
-          </p>
+          <h3 class="mt-4 text-lg font-semibold text-gray-900">No products found</h3>
+          <p class="mt-1 text-sm text-gray-500">Try adjusting your filters or search term.</p>
         </div>
       </template>
 
@@ -175,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch } from 'vue';
 
 import {
   GraphQLClient,
@@ -193,9 +183,9 @@ import {
   ProductTextFilterInput,
   ProductsResponse,
   Category,
-} from "propeller-sdk-v2";
-import ProductCard from "./ProductCard.vue";
-import ClusterCard from "./ClusterCard.vue";
+} from 'propeller-sdk-v2';
+import ProductCard from './ProductCard.vue';
+import ClusterCard from './ClusterCard.vue';
 
 export interface ProductGridProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -514,13 +504,13 @@ interface ProductGridState {
 }
 
 const props = defineProps<ProductGridProps>();
-const internalProducts = ref<ProductGridState["internalProducts"]>([]);
-const isInternalLoading = ref<ProductGridState["isInternalLoading"]>(false);
-const currentPage = ref<ProductGridState["currentPage"]>(1);
-const totalPages = ref<ProductGridState["totalPages"]>(1);
-const itemsFound = ref<ProductGridState["itemsFound"]>(0);
-const currentSortField = ref<ProductGridState["currentSortField"]>("");
-const currentSortOrder = ref<ProductGridState["currentSortOrder"]>("ASC");
+const internalProducts = ref<ProductGridState['internalProducts']>([]);
+const isInternalLoading = ref<ProductGridState['isInternalLoading']>(false);
+const currentPage = ref<ProductGridState['currentPage']>(1);
+const totalPages = ref<ProductGridState['totalPages']>(1);
+const itemsFound = ref<ProductGridState['itemsFound']>(0);
+const currentSortField = ref<ProductGridState['currentSortField']>('');
+const currentSortOrder = ref<ProductGridState['currentSortOrder']>('ASC');
 
 watch(
   () => [
@@ -552,25 +542,25 @@ watch(
   },
   { immediate: true }
 );
-async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
+async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
   if (!props.graphqlClient) return;
   isInternalLoading.value = true;
   try {
     const service = new CategoryService(props.graphqlClient as GraphQLClient);
-    const taxZone = props.taxZone || "NL";
+    const taxZone = props.taxZone || 'NL';
     // Category mode: use the category prop.
     // Search / brand mode: use baseCategoryId to search the full catalog.
     const isWideSearch = !!(props.term as string) || !!(props.brand as string);
     const catId = isWideSearch
       ? (props.configuration?.baseCategoryId as number) || 0
       : props.categoryId
-      ? props.categoryId
-      : (props.configuration?.baseCategoryId as number) || 0;
+        ? props.categoryId
+        : (props.configuration?.baseCategoryId as number) || 0;
     if (props.term && !currentSortField.value)
       currentSortField.value = Enums.ProductSortField.RELEVANCE;
     const result = await service.getCategory({
       categoryId: catId,
-      language: (props.language as string) || "NL",
+      language: (props.language as string) || 'NL',
       imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
       imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
       filterAvailableAttributeInput: {
@@ -579,20 +569,20 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
       priceCalculateProductInput: {
         taxZone: taxZone,
         ...(props.user &&
-          "company" in props.user && {
+          'company' in props.user && {
             companyId: (props.user as Contact)?.company?.companyId,
           }),
         ...(props.user &&
-          "contactId" in props.user && {
+          'contactId' in props.user && {
             contactId: (props.user as Contact)?.contactId,
           }),
         ...(props.user &&
-          "customerId" in props.user && {
+          'customerId' in props.user && {
             customerId: (props.user as Customer)?.customerId,
           }),
       },
       categoryProductSearchInput: {
-        language: (props.language as string) || "NL",
+        language: (props.language as string) || 'NL',
         page: (props.page as number) || currentPage.value,
         offset: (props.pageSize as number) || 12,
         hidden: false,
@@ -638,8 +628,7 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
         ...((props.textFilters as any[])?.length > 0 && {
           textFilters: props.textFilters as any[],
         }),
-        ...(props.priceFilterMin !== undefined ||
-        props.priceFilterMax !== undefined
+        ...(props.priceFilterMin !== undefined || props.priceFilterMax !== undefined
           ? {
               price: {
                 from: (props.priceFilterMin as number) || 0,
@@ -652,17 +641,13 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
             {
               field: ((props.sortField as string) ||
                 currentSortField.value) as Enums.ProductSortField,
-              order: ((props.sortOrder as string) ||
-                currentSortOrder.value) as Enums.SortOrder,
+              order: ((props.sortOrder as string) || currentSortOrder.value) as Enums.SortOrder,
             },
           ],
         }),
       } as CategoryProductSearchInput,
     } as CategoryQueryVariables);
-    internalProducts.value = (result?.products?.items || []) as (
-      | Product
-      | Cluster
-    )[];
+    internalProducts.value = (result?.products?.items || []) as (Product | Cluster)[];
     totalPages.value = result?.products?.pages || 1;
     itemsFound.value = result?.products?.itemsFound.value || 0;
     if (props.onProductsResponse && result?.products) {
@@ -672,9 +657,7 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
       props.onCategoryChange(result as Category);
     }
     if (props.onFiltersChange) {
-      props.onFiltersChange(
-        (result?.products?.filters || []) as AttributeFilter[]
-      );
+      props.onFiltersChange((result?.products?.filters || []) as AttributeFilter[]);
     }
     if (props.onPriceBoundsChange) {
       const pMin = result?.products?.minPrice;
@@ -692,29 +675,22 @@ async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]> {
     isInternalLoading.value = false;
   }
 }
-function isClusterItem(
-  item: Product | Cluster
-): ReturnType<ProductGridState["isClusterItem"]> {
+function isClusterItem(item: Product | Cluster): ReturnType<ProductGridState['isClusterItem']> {
   return !!(item as any)?.clusterId;
 }
-function getGridColsClass(): ReturnType<ProductGridState["getGridColsClass"]> {
+function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
   const cols = (props.columns as number) || 3;
-  if (cols === 1) return "flex flex-col gap-4";
-  if (cols === 2) return "grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr";
-  if (cols === 4)
-    return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr";
-  return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr";
+  if (cols === 1) return 'flex flex-col gap-4';
+  if (cols === 2) return 'grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr';
+  if (cols === 4) return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr';
+  return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr';
 }
-function handlePageChange(
-  page: number
-): ReturnType<ProductGridState["handlePageChange"]> {
+function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
   currentPage.value = page;
   fetchProducts();
   if (props.onPageChange) props.onPageChange(page);
 }
-function getDisplayProducts(): ReturnType<
-  ProductGridState["getDisplayProducts"]
-> {
+function getDisplayProducts(): ReturnType<ProductGridState['getDisplayProducts']> {
   // Use props.products when explicitly provided (even if empty array).
   // Fall through to internally fetched products only when prop is absent.
   if (props.products !== undefined) {
@@ -722,15 +698,15 @@ function getDisplayProducts(): ReturnType<
   }
   return internalProducts.value;
 }
-function getIsLoading(): ReturnType<ProductGridState["getIsLoading"]> {
+function getIsLoading(): ReturnType<ProductGridState['getIsLoading']> {
   return !!(props.isLoading as boolean) || isInternalLoading.value;
 }
-function showAddToCart(): ReturnType<ProductGridState["showAddToCart"]> {
-  const mode = (props.portalMode as string) || "open";
+function showAddToCart(): ReturnType<ProductGridState['showAddToCart']> {
+  const mode = (props.portalMode as string) || 'open';
   const allow = (props.allowAddToCart as boolean) !== false;
-  return mode === "open" && allow;
+  return mode === 'open' && allow;
 }
-function getSkeletonItems(): ReturnType<ProductGridState["getSkeletonItems"]> {
+function getSkeletonItems(): ReturnType<ProductGridState['getSkeletonItems']> {
   const cols = (props.columns as number) || 3;
   const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
   const items: number[] = [];

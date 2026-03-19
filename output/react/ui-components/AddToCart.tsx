@@ -1,108 +1,131 @@
 'use client';
- import * as React from 'react';
+import * as React from 'react';
 
- import { useState } from 'react'
-   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, Cluster } from 'propeller-sdk-v2';
+import { useState } from 'react';
+import {
+  CartService,
+  CartChildItemInput,
+  GraphQLClient,
+  Product,
+  Cart,
+  Contact,
+  Customer,
+  CartSearchInput,
+  TransformationsInput,
+  MediaImageProductSearchInput,
+  CartStartInput,
+  CartStartVariables,
+  Address,
+  Enums,
+  CartMainItem,
+  Cluster,
+} from 'propeller-sdk-v2';
 
+export interface AddToCartProps {
+  /** GraphQL client for the Propeller SDK */
+  graphqlClient: GraphQLClient;
 
+  /** The authenticated user (Contact or Customer) */
+  user: Contact | Customer | null;
 
-   export interface AddToCartProps {
- /** GraphQL client for the Propeller SDK */
- graphqlClient: GraphQLClient;
+  /** The product to be added to cart */
+  product: Product;
 
- /** The authenticated user (Contact or Customer) */
- user: Contact | Customer | null;
+  /** Cart ID — required when onAddToCart is not provided */
+  cartId?: string;
 
- /** The product to be added to cart */
- product: Product;
+  /** The cluster to be added to cart */
+  cluster?: Cluster;
 
- /** Cart ID — required when onAddToCart is not provided */
- cartId?: string;
+  /** IDs of the cluster child items, e.g. cluster options */
+  childItems?: number[];
 
- /** The cluster to be added to cart */
- cluster?: Cluster;
+  /** Called before adding to cart. Return false to abort (e.g. failed validation). */
+  beforeAddToCart?: () => boolean;
 
- /** IDs of the cluster child items, e.g. cluster options */
- childItems?: number[];
+  /** Notes for the cart item */
+  notes?: string;
 
- /** Called before adding to cart. Return false to abort (e.g. failed validation). */
- beforeAddToCart?: () => boolean;
+  /** Custom price for the product (overrides calculated price) */
+  price?: number;
 
- /** Notes for the cart item */
- notes?: string;
+  /** Label overrides for UI strings
+   *
+   * available labels:
+   * - outOfStock
+   * - noCartId
+   * - errorAdding
+   * - addedToCart
+   * - modalTitle
+   * - quantity
+   * - continueShopping
+   * - proceedToCheckout
+   * - add
+   * - adding
+   */
+  labels?: Record<string, string>;
 
- /** Custom price for the product (overrides calculated price) */
- price?: number;
+  /**
+   * If true a new cart is created if no cart ID is provided.
+   * Defaults to false.
+   */
+  createCart?: boolean;
 
- /** Label overrides for UI strings
-  *
-  * available labels:
-  * - outOfStock
-  * - noCartId
-  * - errorAdding
-  * - addedToCart
-  * - modalTitle
-  * - quantity
-  * - continueShopping
-  * - proceedToCheckout
-  * - add
-  * - adding
- */
- labels?: Record<string, string>;
+  /**
+   * Callback to handle a new cart being created.
+   * WARNING: If not provided the component create new carts on every add-to-cart.
+   */
+  onCartCreated?: (cart: Cart) => void;
 
- /**
-  * If true a new cart is created if no cart ID is provided.
-  * Defaults to false.
-  */
- createCart?: boolean;
+  /**
+   * Callback to handle adding the product to cart.
+   * If not provided the component calls CartService.addItemToCart internally.
+   */
+  onAddToCart?: (
+    product: Product,
+    clusterId?: number,
+    quantity?: number,
+    childItems?: CartChildItemInput[],
+    notes?: string,
+    price?: number,
+    showModal?: boolean
+  ) => Cart;
 
- /**
-  * Callback to handle a new cart being created.
-  * WARNING: If not provided the component create new carts on every add-to-cart.
-  */
- onCartCreated?: (cart: Cart) => void;
+  /**
+   * Callback triggered after adding the product to cart.
+   */
+  afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
 
- /**
-  * Callback to handle adding the product to cart.
-  * If not provided the component calls CartService.addItemToCart internally.
-  */
- onAddToCart?: (product: Product, clusterId?: number, quantity?: number, childItems?: CartChildItemInput[], notes?: string, price?: number, showModal?: boolean) => Cart;
+  /**
+   * When true a modal popup is shown after a successful add-to-cart
+   * with buttons to continue shopping or proceed to checkout.
+   * Defaults to false (only a brief inline success message is shown).
+   */
+  showModal?: boolean;
 
- /**
-  * Callback triggered after adding the product to cart.
-  */
- afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
+  /**
+   * Renders − and + buttons beside the quantity input.
+   * Defaults to true.
+   */
+  allowIncrDecr?: boolean;
 
- /**
-  * When true a modal popup is shown after a successful add-to-cart
-  * with buttons to continue shopping or proceed to checkout.
-  * Defaults to false (only a brief inline success message is shown).
-  */
- showModal?: boolean;
+  /**
+   * Validates available stock via InventoryService before adding.
+   * Defaults to false.
+   */
+  enableStockValidation?: boolean;
 
- /**
-  * Renders − and + buttons beside the quantity input.
-  * Defaults to true.
-  */
- allowIncrDecr?: boolean;
+  /** Language code passed to CartService operations. Defaults to 'en'. */
+  language?: string;
 
- /**
-  * Validates available stock via InventoryService before adding.
-  * Defaults to false.
-  */
- enableStockValidation?: boolean;
+  /** Additional CSS class for the root element */
+  className?: string;
 
- /** Language code passed to CartService operations. Defaults to 'en'. */
- language?: string;
+  /** Callback fired when the "Proceed to checkout" modal button is clicked */
+  onProceedToCheckout?: () => void;
 
- /** Additional CSS class for the root element */
- className?: string;
-
- /** Callback fired when the "Proceed to checkout" modal button is clicked */
- onProceedToCheckout?: () => void;
-
- /** Configuration object passed to the component */
- configuration?: any;
+  /** Configuration object passed to the component */
+  configuration?: any;
 }
 
 /**
@@ -114,14 +137,14 @@ Variables for the cart query
 Variables for the cart query
 */
 export interface CartQueryVariables {
- /** Cart ID to fetch */
- cartId: string;
- /** Language for localized content */
- language: string;
- /** Image search filters */
- imageSearchFilters: MediaImageProductSearchInput;
- /** Image transformation filters */
- imageVariantFilters: TransformationsInput;
+  /** Cart ID to fetch */
+  cartId: string;
+  /** Language for localized content */
+  language: string;
+  /** Image search filters */
+  imageSearchFilters: MediaImageProductSearchInput;
+  /** Image transformation filters */
+  imageVariantFilters: TransformationsInput;
 }
 /**
 * Cart query variables interface
@@ -129,384 +152,514 @@ Variables for the cart query
 */
 
 interface AddToCartState {
- quantity: number;
- loading: boolean;
- success: boolean;
- modalVisible: boolean;
- activeCartId: string;
- toastMessage: string;
- toastType: string;
- toastVisible: boolean;
- increment: () => void;
- decrement: () => void;
- showToast: (message: string, type: string) => void;
- dismissToast: () => void;
- getProductName: () => string;
- getProductUrl: () => string;
- getProductImageUrl: () => string;
- getProductSku: () => string;
- getProductPrice: () => string;
- initCart: () => Promise<string>;
- handleAddToCart: () => Promise<void>;
- closeModal: () => void;
- getLabel: (key: string, fallback: string) => string;
+  quantity: number;
+  loading: boolean;
+  success: boolean;
+  modalVisible: boolean;
+  activeCartId: string;
+  toastMessage: string;
+  toastType: string;
+  toastVisible: boolean;
+  increment: () => void;
+  decrement: () => void;
+  showToast: (message: string, type: string) => void;
+  dismissToast: () => void;
+  getProductName: () => string;
+  getProductUrl: () => string;
+  getProductImageUrl: () => string;
+  getProductSku: () => string;
+  getProductPrice: () => string;
+  initCart: () => Promise<string>;
+  handleAddToCart: () => Promise<void>;
+  closeModal: () => void;
+  getLabel: (key: string, fallback: string) => string;
 }
 
+function AddToCart(props: AddToCartProps) {
+  const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => 1);
 
+  const [loading, setLoading] = useState<AddToCartState['loading']>(() => false);
 
+  const [success, setSuccess] = useState<AddToCartState['success']>(() => false);
 
-   function AddToCart(props:AddToCartProps) {
+  const [modalVisible, setModalVisible] = useState<AddToCartState['modalVisible']>(() => false);
 
-   const [quantity, setQuantity] = useState<AddToCartState["quantity"]>(() => (1))
+  const [activeCartId, setActiveCartId] = useState<AddToCartState['activeCartId']>(() => '');
 
+  const [toastMessage, setToastMessage] = useState<AddToCartState['toastMessage']>(() => '');
 
-const [loading, setLoading] = useState<AddToCartState["loading"]>(() => (false))
+  const [toastType, setToastType] = useState<AddToCartState['toastType']>(() => '');
 
+  const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
 
-const [success, setSuccess] = useState<AddToCartState["success"]>(() => (false))
+  function increment(): ReturnType<AddToCartState['increment']> {
+    setQuantity(quantity + 1);
+  }
 
+  function decrement(): ReturnType<AddToCartState['decrement']> {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  }
 
-const [modalVisible, setModalVisible] = useState<AddToCartState["modalVisible"]>(() => (false))
+  function showToast(message: string, type: string): ReturnType<AddToCartState['showToast']> {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+    setTimeout(() => {
+      setToastVisible(false);
+    }, 3000);
+  }
 
+  function dismissToast(): ReturnType<AddToCartState['dismissToast']> {
+    setToastVisible(false);
+  }
 
-const [activeCartId, setActiveCartId] = useState<AddToCartState["activeCartId"]>(() => (''))
+  function getProductName(): ReturnType<AddToCartState['getProductName']> {
+    return (props.product as any)?.names?.[0]?.value || 'Product';
+  }
 
+  function getProductUrl(): ReturnType<AddToCartState['getProductUrl']> {
+    return props.configuration.urls.getProductUrl(props.product);
+  }
 
-const [toastMessage, setToastMessage] = useState<AddToCartState["toastMessage"]>(() => (''))
+  function getProductImageUrl(): ReturnType<AddToCartState['getProductImageUrl']> {
+    return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  }
 
+  function getProductSku(): ReturnType<AddToCartState['getProductSku']> {
+    return (props.product as any)?.sku || '';
+  }
 
-const [toastType, setToastType] = useState<AddToCartState["toastType"]>(() => (''))
+  function getProductPrice(): ReturnType<AddToCartState['getProductPrice']> {
+    const price = props.price !== undefined ? props.price : (props.product as any)?.price?.gross;
+    if (!price && price !== 0) return '';
+    return `\u20AC${Number(price).toFixed(2)}`;
+  }
 
+  async function initCart(): ReturnType<AddToCartState['initCart']> {
+    const cartService = new CartService(props.graphqlClient);
+    // 1. Check for existing carts for this user first
+    if (props.user) {
+      try {
+        const searchInput: CartSearchInput = {
+          offset: 100,
+        };
+        if ('contactId' in props.user && props.user.contactId) {
+          searchInput.contactIds = [props.user.contactId];
+          if (
+            props.user.company &&
+            'companyId' in props.user.company &&
+            props.user.company.companyId
+          ) {
+            searchInput.companyIds = [props.user.company.companyId];
+          }
+        } else if ('customerId' in props.user && props.user.customerId) {
+          searchInput.customerIds = [props.user.customerId];
+        }
+        const carts = await cartService.getCarts(searchInput);
+        if (carts && carts.items && carts.items.length > 0) {
+          const existingCartId = carts.items[carts.items.length - 1].cartId;
+          const cartVariables: CartQueryVariables = {
+            cartId: existingCartId,
+            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+          };
+          const cart = await cartService.getCart(cartVariables);
+          setActiveCartId(cart.cartId);
+          if (props.onCartCreated) {
+            props.onCartCreated(cart);
+          }
+          return cart.cartId;
+        }
+      } catch (e) {
+        console.error('Failed to check existing carts', e);
+      }
+    }
 
-const [toastVisible, setToastVisible] = useState<AddToCartState["toastVisible"]>(() => (false))
+    // 2. Start a new cart
+    const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+    const startCartInput: CartStartInput = {
+      language,
+    };
+    if (props.user) {
+      if ('contactId' in props.user && props.user.contactId) {
+        startCartInput.contactId = props.user.contactId;
+        if ('companyId' in props.user && props.user.companyId) {
+          startCartInput.companyId = props.user.companyId as number;
+        }
+      } else if ('customerId' in props.user && props.user.customerId) {
+        startCartInput.customerId = props.user.customerId;
+      }
+    }
+    const cartStartVars: CartStartVariables = {
+      input: startCartInput,
+      imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+      imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+      language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+    };
+    let newCart = await cartService.startCart(cartStartVars);
 
+    // 3. Assign Default Addresses
+    if (newCart && props.user) {
+      const addresses =
+        'company' in props.user
+          ? props.user.company?.addresses
+          : (props.user as Customer).addresses;
+      if (addresses && Array.isArray(addresses)) {
+        const defaultInvoice = addresses.find(
+          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice'
+        );
+        const defaultDelivery = addresses.find(
+          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery'
+        );
+        if (defaultInvoice) {
+          newCart = await cartService.updateCartAddress({
+            id: newCart.cartId,
+            input: {
+              type: Enums.CartAddressType.INVOICE,
+              firstName: defaultInvoice.firstName || '',
+              lastName: defaultInvoice.lastName || '',
+              street: defaultInvoice.street || '',
+              postalCode: defaultInvoice.postalCode || '',
+              city: defaultInvoice.city || '',
+              country: defaultInvoice.country || 'NL',
+              company: defaultInvoice.company || '',
+              gender: defaultInvoice.gender || Enums.Gender.U,
+              middleName: defaultInvoice.middleName || '',
+              number: defaultInvoice.number || '',
+              numberExtension: defaultInvoice.numberExtension || '',
+              email: defaultInvoice.email || '',
+              mobile: defaultInvoice.mobile || '',
+              phone: defaultInvoice.phone || '',
+              notes: defaultInvoice.notes || '',
+            },
+            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+            language: language,
+          });
+        }
+        if (defaultDelivery) {
+          newCart = await cartService.updateCartAddress({
+            id: newCart.cartId,
+            input: {
+              type: Enums.CartAddressType.DELIVERY,
+              firstName: defaultDelivery.firstName || '',
+              lastName: defaultDelivery.lastName || '',
+              street: defaultDelivery.street || '',
+              postalCode: defaultDelivery.postalCode || '',
+              city: defaultDelivery.city || '',
+              country: defaultDelivery.country || 'NL',
+              company: defaultDelivery.company || '',
+              gender: defaultDelivery.gender || Enums.Gender.U,
+              middleName: defaultDelivery.middleName || '',
+              number: defaultDelivery.number || '',
+              numberExtension: defaultDelivery.numberExtension || '',
+              email: defaultDelivery.email || '',
+              mobile: defaultDelivery.mobile || '',
+              phone: defaultDelivery.phone || '',
+              notes: defaultDelivery.notes || '',
+            },
+            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+            language: language,
+          });
+        }
+      }
+    }
+    setActiveCartId(newCart.cartId);
+    if (props.onCartCreated) {
+      props.onCartCreated(newCart);
+    }
+    return newCart.cartId;
+  }
 
-function increment(): ReturnType<AddToCartState["increment"]>{
-setQuantity(quantity + 1);
+  async function handleAddToCart(): ReturnType<AddToCartState['handleAddToCart']> {
+    if (!props.graphqlClient) return;
+    if (props.beforeAddToCart && !props.beforeAddToCart()) return;
+    setLoading(true);
+    setSuccess(false);
+    try {
+      // Optional stock validation
+      if (props.enableStockValidation) {
+        const inventory = props.product.inventory;
+        const available = inventory?.totalQuantity || 0;
+        if (available < quantity) {
+          showToast(getLabel('outOfStock', 'Insufficient stock available'), 'error');
+          return;
+        }
+      }
+
+      // Map raw child-item IDs → CartChildItemInput[]
+      const childItems: CartChildItemInput[] | undefined = props.childItems
+        ? props.childItems.map((id: number) => ({
+            productId: id,
+            quantity: quantity,
+          }))
+        : undefined;
+      if (props.onAddToCart) {
+        // Consumer-provided handler
+        const cart = props.onAddToCart(
+          props.product,
+          props.cluster?.clusterId,
+          quantity,
+          childItems,
+          props.notes,
+          props.price,
+          props.showModal
+        );
+        props.afterAddToCart?.(
+          cart,
+          cart.items?.find((item) => item.productId === props.product.productId)
+        );
+      } else {
+        // Internal CartService fallback — resolve cart ID
+        let cartId = props.cartId || activeCartId;
+        if (!cartId) {
+          if (props.createCart) {
+            cartId = await initCart();
+          }
+          if (!cartId) {
+            showToast(getLabel('noCartId', 'No cart ID provided'), 'error');
+            return;
+          }
+        }
+        const cartService = new CartService(props.graphqlClient);
+        const cart = await cartService.addItemToCart({
+          id: cartId,
+          input: {
+            productId: props.product.productId,
+            quantity: quantity,
+            ...(props.cluster?.clusterId !== undefined && {
+              clusterId: props.cluster?.clusterId,
+            }),
+            ...(childItems && {
+              childItems,
+            }),
+            ...(props.notes && {
+              notes: props.notes,
+            }),
+            ...(props.price !== undefined && {
+              price: props.price,
+            }),
+          },
+          language: props.language || 'NL',
+          imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+          imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+        });
+        props.afterAddToCart?.(
+          cart,
+          cart.items?.find((item) => item.productId === props.product.productId)
+        );
+      }
+      setSuccess(true);
+      if (props.showModal) {
+        setModalVisible(true);
+      } else {
+        showToast(`${getProductName()} ${getLabel('addedToCart', 'added to cart')}`, 'success');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showToast(getLabel('errorAdding', 'Failed to add item to cart'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function closeModal(): ReturnType<AddToCartState['closeModal']> {
+    setModalVisible(false);
+    setSuccess(false);
+  }
+
+  function getLabel(key: string, fallback: string): ReturnType<AddToCartState['getLabel']> {
+    return (props.labels as any)?.[key] || fallback;
+  }
+
+  return (
+    <div className={props.className}>
+      <div className="flex items-center gap-2 w-full">
+        {props.allowIncrDecr !== false ? (
+          <div className="flex items-center border border-gray-300 rounded-md bg-white h-10">
+            <button
+              type="button"
+              className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
+              onClick={(event) => decrement()}
+              disabled={quantity <= 1 || loading}
+            >
+              -
+            </button>
+            <input
+              type="number"
+              className="w-10 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              min={1}
+              value={quantity}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (val >= 1) setQuantity(val);
+              }}
+            />
+            <button
+              type="button"
+              className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
+              onClick={(event) => increment()}
+              disabled={loading}
+            >
+              +
+            </button>
+          </div>
+        ) : null}
+        {props.allowIncrDecr === false ? (
+          <input
+            type="number"
+            className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            min={1}
+            value={quantity}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10);
+              if (val >= 1) setQuantity(val);
+            }}
+          />
+        ) : null}
+        <button
+          type="button"
+          className="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          onClick={(event) => handleAddToCart()}
+          disabled={loading}
+        >
+          {loading ? <>{getLabel('adding', 'Adding...')}</> : null}
+          {!loading ? <>{getLabel('add', 'Add')}</> : null}
+        </button>
+      </div>
+      {toastVisible ? (
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+        >
+          <div
+            className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}
+          >
+            {toastType === 'success' ? (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : null}
+            {toastType === 'error' ? (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                />
+              </svg>
+            ) : null}
+          </div>
+          <p
+            className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}
+          >
+            {toastMessage}
+          </p>
+          <button
+            type="button"
+            onClick={(event) => dismissToast()}
+            className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="h-4 w-4"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : null}
+      {modalVisible ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-gray-500/20" onClick={(event) => closeModal()} />
+          <div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="h-5 w-5 flex-shrink-0 text-green-500"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <h3 className="flex-1 text-base font-semibold text-gray-900">
+                {getLabel('modalTitle', 'Added to cart')}
+              </h3>
+              <button
+                type="button"
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
+                onClick={(event) => closeModal()}
+              >
+                <svg
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  className="h-5 w-5"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-6 py-5 flex items-start gap-4">
+              {!!getProductImageUrl() ? (
+                <img
+                  className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                  src={getProductImageUrl()}
+                  alt={getProductName()}
+                />
+              ) : null}
+              <div className="flex-1 min-w-0">
+                <a
+                  className="text-sm font-medium text-violet-600 leading-tight hover:underline"
+                  href={getProductUrl()}
+                >
+                  {getProductName()}
+                </a>
+                {!!getProductSku() ? (
+                  <p className="text-xs text-gray-400 mt-0.5">SKU: {getProductSku()}</p>
+                ) : null}
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <p className="text-xs text-gray-500">
+                  {getLabel('quantity', 'Quantity')}: {quantity}
+                </p>
+                {!!getProductPrice() ? (
+                  <p className="text-sm font-semibold text-gray-900 mt-0.5">{getProductPrice()}</p>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+              <button
+                type="button"
+                className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                onClick={(event) => closeModal()}
+              >
+                {getLabel('continueShopping', 'Continue shopping')}
+              </button>
+              <button
+                type="button"
+                className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                onClick={(event) => {
+                  closeModal();
+                  if (props.onProceedToCheckout) props.onProceedToCheckout();
+                }}
+              >
+                {getLabel('proceedToCheckout', 'Proceed to checkout')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
-
-function decrement(): ReturnType<AddToCartState["decrement"]>{
-if (quantity > 1) {
- setQuantity(quantity - 1);
-}
-}
-
-
-function showToast(message: string, type: string): ReturnType<AddToCartState["showToast"]>{
-setToastMessage(message);
-setToastType(type);
-setToastVisible(true);
-setTimeout(() => {
- setToastVisible(false);
-}, 3000);
-}
-
-
-function dismissToast(): ReturnType<AddToCartState["dismissToast"]>{
-setToastVisible(false);
-}
-
-
-function getProductName(): ReturnType<AddToCartState["getProductName"]>{
-return (props.product as any)?.names?.[0]?.value || 'Product';
-}
-
-
-function getProductUrl(): ReturnType<AddToCartState["getProductUrl"]>{
-return props.configuration.urls.getProductUrl(props.product);
-}
-
-
-function getProductImageUrl(): ReturnType<AddToCartState["getProductImageUrl"]>{
-return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-}
-
-
-function getProductSku(): ReturnType<AddToCartState["getProductSku"]>{
-return (props.product as any)?.sku || '';
-}
-
-
-function getProductPrice(): ReturnType<AddToCartState["getProductPrice"]>{
-const price = props.price !== undefined ? props.price : (props.product as any)?.price?.gross;
-if (!price && price !== 0) return '';
-return `\u20AC${Number(price).toFixed(2)}`;
-}
-
-
-async function initCart(): ReturnType<AddToCartState["initCart"]>{
-const cartService = new CartService(props.graphqlClient);
-// 1. Check for existing carts for this user first
-if (props.user) {
- try {
-   const searchInput: CartSearchInput = {
-     offset: 100
-   };
-   if ('contactId' in props.user && props.user.contactId) {
-     searchInput.contactIds = [props.user.contactId];
-     if (props.user.company && 'companyId' in props.user.company && props.user.company.companyId) {
-       searchInput.companyIds = [props.user.company.companyId];
-     }
-   } else if ('customerId' in props.user && props.user.customerId) {
-     searchInput.customerIds = [props.user.customerId];
-   }
-   const carts = await cartService.getCarts(searchInput);
-   if (carts && carts.items && carts.items.length > 0) {
-     const existingCartId = carts.items[carts.items.length - 1].cartId;
-     const cartVariables: CartQueryVariables = {
-       cartId: existingCartId,
-       imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-       imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-       language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-     };
-     const cart = await cartService.getCart(cartVariables);
-     setActiveCartId(cart.cartId);
-     if (props.onCartCreated) {
-       props.onCartCreated(cart);
-     }
-     return cart.cartId;
-   }
- } catch (e) {
-   console.error("Failed to check existing carts", e);
- }
-}
-
-// 2. Start a new cart
-const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-const startCartInput: CartStartInput = {
- language
-};
-if (props.user) {
- if ('contactId' in props.user && props.user.contactId) {
-   startCartInput.contactId = props.user.contactId;
-   if ('companyId' in props.user && props.user.companyId) {
-     startCartInput.companyId = props.user.companyId as number;
-   }
- } else if ('customerId' in props.user && props.user.customerId) {
-   startCartInput.customerId = props.user.customerId;
- }
-}
-const cartStartVars: CartStartVariables = {
- input: startCartInput,
- imageSearchFilters: props.configuration.imageSearchFiltersGrid,
- imageVariantFilters: props.configuration.imageVariantFiltersSmall,
- language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-};
-let newCart = await cartService.startCart(cartStartVars);
-
-// 3. Assign Default Addresses
-if (newCart && props.user) {
- const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
- if (addresses && Array.isArray(addresses)) {
-   const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');
-   const defaultDelivery = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery');
-   if (defaultInvoice) {
-     newCart = await cartService.updateCartAddress({
-       id: newCart.cartId,
-       input: {
-         type: Enums.CartAddressType.INVOICE,
-         firstName: defaultInvoice.firstName || '',
-         lastName: defaultInvoice.lastName || '',
-         street: defaultInvoice.street || '',
-         postalCode: defaultInvoice.postalCode || '',
-         city: defaultInvoice.city || '',
-         country: defaultInvoice.country || 'NL',
-         company: defaultInvoice.company || '',
-         gender: defaultInvoice.gender || Enums.Gender.U,
-         middleName: defaultInvoice.middleName || '',
-         number: defaultInvoice.number || '',
-         numberExtension: defaultInvoice.numberExtension || '',
-         email: defaultInvoice.email || '',
-         mobile: defaultInvoice.mobile || '',
-         phone: defaultInvoice.phone || '',
-         notes: defaultInvoice.notes || ''
-       },
-       imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-       imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-       language: language
-     });
-   }
-   if (defaultDelivery) {
-     newCart = await cartService.updateCartAddress({
-       id: newCart.cartId,
-       input: {
-         type: Enums.CartAddressType.DELIVERY,
-         firstName: defaultDelivery.firstName || '',
-         lastName: defaultDelivery.lastName || '',
-         street: defaultDelivery.street || '',
-         postalCode: defaultDelivery.postalCode || '',
-         city: defaultDelivery.city || '',
-         country: defaultDelivery.country || 'NL',
-         company: defaultDelivery.company || '',
-         gender: defaultDelivery.gender || Enums.Gender.U,
-         middleName: defaultDelivery.middleName || '',
-         number: defaultDelivery.number || '',
-         numberExtension: defaultDelivery.numberExtension || '',
-         email: defaultDelivery.email || '',
-         mobile: defaultDelivery.mobile || '',
-         phone: defaultDelivery.phone || '',
-         notes: defaultDelivery.notes || ''
-       },
-       imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-       imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-       language: language
-     });
-   }
- }
-}
-setActiveCartId(newCart.cartId);
-if (props.onCartCreated) {
- props.onCartCreated(newCart);
-}
-return newCart.cartId;
-}
-
-
-async function handleAddToCart(): ReturnType<AddToCartState["handleAddToCart"]>{
-if (!props.graphqlClient) return;
-if (props.beforeAddToCart && !props.beforeAddToCart()) return;
-setLoading(true);
-setSuccess(false);
-try {
- // Optional stock validation
- if (props.enableStockValidation) {
-   const inventory = props.product.inventory;
-   const available = inventory?.totalQuantity || 0;
-   if (available < quantity) {
-     showToast(getLabel('outOfStock', 'Insufficient stock available'), 'error');
-     return;
-   }
- }
-
- // Map raw child-item IDs → CartChildItemInput[]
- const childItems: CartChildItemInput[] | undefined = props.childItems ? props.childItems.map((id: number) => ({
-   productId: id,
-   quantity: quantity
- })) : undefined;
- if (props.onAddToCart) {
-   // Consumer-provided handler
-   const cart = props.onAddToCart(props.product, props.cluster?.clusterId, quantity, childItems, props.notes, props.price, props.showModal);
-   props.afterAddToCart?.(cart, cart.items?.find(item => item.productId === props.product.productId));
- } else {
-   // Internal CartService fallback — resolve cart ID
-   let cartId = props.cartId || activeCartId;
-   if (!cartId) {
-     if (props.createCart) {
-       cartId = await initCart();
-     }
-     if (!cartId) {
-       showToast(getLabel('noCartId', 'No cart ID provided'), 'error');
-       return;
-     }
-   }
-   const cartService = new CartService(props.graphqlClient);
-   const cart = await cartService.addItemToCart({
-     id: cartId,
-     input: {
-       productId: props.product.productId,
-       quantity: quantity,
-       ...(props.cluster?.clusterId !== undefined && {
-         clusterId: props.cluster?.clusterId
-       }),
-       ...(childItems && {
-         childItems
-       }),
-       ...(props.notes && {
-         notes: props.notes
-       }),
-       ...(props.price !== undefined && {
-         price: props.price
-       })
-     },
-     language: props.language || 'NL',
-     imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-     imageVariantFilters: props.configuration.imageVariantFiltersSmall
-   });
-   props.afterAddToCart?.(cart, cart.items?.find(item => item.productId === props.product.productId));
- }
- setSuccess(true);
- if (props.showModal) {
-   setModalVisible(true);
- } else {
-   showToast(`${getProductName()} ${getLabel('addedToCart', 'added to cart')}`, 'success');
- }
-} catch (error) {
- console.error('Error adding to cart:', error);
- showToast(getLabel('errorAdding', 'Failed to add item to cart'), 'error');
-} finally {
- setLoading(false);
-}
-}
-
-
-function closeModal(): ReturnType<AddToCartState["closeModal"]>{
-setModalVisible(false);
-setSuccess(false);
-}
-
-
-function getLabel(key: string, fallback: string): ReturnType<AddToCartState["getLabel"]>{
-return (props.labels as any)?.[key] || fallback;
-}
-
-
-
-
-
-
-
-
-
-
-
- return (
-
-
-   <div  className={props.className}><div className="flex items-center gap-2 w-full">{props.allowIncrDecr !== false ? (
-   <div className="flex items-center border border-gray-300 rounded-md bg-white h-10"><button  type="button" className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"  onClick={(event) => decrement() }  disabled={quantity <= 1 || loading}>
-                         -
-                     </button><input  type="number" className="w-10 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"  min={1}  value={quantity}  onChange={(e) => {
-const val = parseInt(e.target.value, 10);
-if (val >= 1) setQuantity(val);
-} }  /><button  type="button" className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"  onClick={(event) => increment() }  disabled={loading}>
-                         +
-                     </button></div>
- ) : null}{props.allowIncrDecr === false ? (
-   <input  type="number" className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"  min={1}  value={quantity}  onChange={(e) => {
-const val = parseInt(e.target.value, 10);
-if (val >= 1) setQuantity(val);
-} }  />
- ) : null}<button  type="button" className="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"  onClick={(event) => handleAddToCart() }  disabled={loading}>{loading ? (
-   <>{getLabel('adding', 'Adding...')}</>
- ) : null}{!loading ? (
-   <>{getLabel('add', 'Add')}</>
- ) : null}</button></div>{toastVisible ? (
-   <div  className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}><div  className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}>{toastType === 'success' ? (
-   <svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M5 13l4 4L19 7"  /></svg>
- ) : null}{toastType === 'error' ? (
-   <svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"  /></svg>
- ) : null}</div><p  className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}>{toastMessage}</p><button  type="button"  onClick={(event) => dismissToast() }  className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-4 w-4"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div>
- ) : null}{modalVisible ? (
-   <div className="fixed inset-0 z-50 flex items-center justify-center px-4"><div className="fixed inset-0 bg-gray-500/20"  onClick={(event) => closeModal() }  /><div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden"><div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100"><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5 flex-shrink-0 text-green-500"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M5 13l4 4L19 7"  /></svg><h3 className="flex-1 text-base font-semibold text-gray-900">{getLabel('modalTitle', 'Added to cart')}</h3><button  type="button" className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"  onClick={(event) => closeModal() }><svg  fill="none"  viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5"  strokeWidth={2}><path  strokeLinecap="round"  strokeLinejoin="round"  d="M6 18L18 6M6 6l12 12"  /></svg></button></div><div className="px-6 py-5 flex items-start gap-4">{!!getProductImageUrl() ? (
-   <img className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"  src={getProductImageUrl()}  alt={getProductName()}  />
- ) : null}<div className="flex-1 min-w-0"><a className="text-sm font-medium text-violet-600 leading-tight hover:underline"  href={getProductUrl()}>{getProductName()}</a>{!!getProductSku() ? (
-   <p className="text-xs text-gray-400 mt-0.5">SKU: {getProductSku()}</p>
- ) : null}</div><div className="flex-shrink-0 text-right"><p className="text-xs text-gray-500">{getLabel('quantity', 'Quantity')}: {quantity}</p>{!!getProductPrice() ? (
-   <p className="text-sm font-semibold text-gray-900 mt-0.5">{getProductPrice()}</p>
- ) : null}</div></div><div className="flex gap-3 px-6 py-4 border-t border-gray-100"><button  type="button" className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"  onClick={(event) => closeModal() }>{getLabel('continueShopping', 'Continue shopping')}</button><button  type="button" className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"  onClick={(event) => {
-closeModal();
-if (props.onProceedToCheckout) props.onProceedToCheckout();
-} }>{getLabel('proceedToCheckout', 'Proceed to checkout')}</button></div></div></div>
- ) : null}</div>
-
-
- );
- }
-
-
-
-
-   export default AddToCart;
-
-
+export default AddToCart;

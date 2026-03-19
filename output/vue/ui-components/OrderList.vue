@@ -4,9 +4,9 @@
       <div class="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
         <template v-if="searchFields.includes('term')">
           <div class="w-full">
-            <label
-              class="block text-sm font-medium text-gray-700 capitalize mb-1"
-              >{{ getColumnLabel("term") }}</label
+            <label class="block text-sm font-medium text-gray-700 capitalize mb-1">{{
+              getColumnLabel('term')
+            }}</label
             ><input
               type="text"
               placeholder="Search..."
@@ -32,15 +32,11 @@
         </template>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-          <template
-            :key="field"
-            v-for="(field, index) in searchFields.filter((f) => f !== 'term')"
-          >
+          <template :key="field" v-for="(field, index) in searchFields.filter((f) => f !== 'term')">
             <div class="space-y-1">
-              <label
-                class="block text-sm font-medium text-gray-700 capitalize"
-                >{{ getColumnLabel(field) }}</label
-              >
+              <label class="block text-sm font-medium text-gray-700 capitalize">{{
+                getColumnLabel(field)
+              }}</label>
               <template v-if="field === 'createdAt'">
                 <div class="flex space-x-2 w-full">
                   <input
@@ -55,9 +51,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T00:00:00Z`
-                          : undefined;
+                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           createdAt: {
@@ -79,9 +73,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T23:59:59Z`
-                          : undefined;
+                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           createdAt: {
@@ -109,9 +101,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T00:00:00Z`
-                          : undefined;
+                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
@@ -133,9 +123,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value
-                          ? `${e.target.value}T23:59:59Z`
-                          : undefined;
+                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
@@ -210,9 +198,7 @@
                     <option value="">Sort Field</option>
                     <template
                       :key="sortField"
-                      v-for="(sortField, index) in Object.values(
-                        Enums.OrderSortField
-                      )"
+                      v-for="(sortField, index) in Object.values(Enums.OrderSortField)"
                     >
                       <option :value="sortField">{{ sortField }}</option>
                     </template></select
@@ -233,10 +219,7 @@
                     "
                   >
                     <option value="">Order</option>
-                    <template
-                      :key="order"
-                      v-for="(order, index) in Object.values(Enums.SortOrder)"
-                    >
+                    <template :key="order" v-for="(order, index) in Object.values(Enums.SortOrder)">
                       <option :value="order">{{ order }}</option>
                     </template>
                   </select>
@@ -258,10 +241,7 @@
                     "
                   >
                     <option value="">Type</option>
-                    <template
-                      :key="type"
-                      v-for="(type, index) in Object.values(Enums.OrderType)"
-                    >
+                    <template :key="type" v-for="(type, index) in Object.values(Enums.OrderType)">
                       <option :value="type">{{ type }}</option>
                     </template>
                   </select>
@@ -313,28 +293,20 @@
                 <template :key="order.id" v-for="(order, index) in orders">
                   <tr
                     class="hover:bg-gray-50"
-                    @click="
-                      async (event) => rowsClickable && onOrderClick(order.id)
-                    "
+                    @click="async (event) => rowsClickable && onOrderClick(order.id)"
                   >
                     <template :key="col" v-for="(col, index) in columns">
                       <td
                         :class="`px-6 py-4 whitespace-nowrap text-sm ${
-                          col === 'id' || col === 'action'
-                            ? 'font-medium'
-                            : 'text-gray-500'
-                        } ${
-                          col === 'action' || col === 'total'
-                            ? 'text-right'
-                            : ''
-                        }`"
+                          col === 'id' || col === 'action' ? 'font-medium' : 'text-gray-500'
+                        } ${col === 'action' || col === 'total' ? 'text-right' : ''}`"
                       >
                         <template v-if="col === 'id'">
                           <span class="text-gray-900">{{ order.id }}</span>
                         </template>
 
                         <template v-if="col === 'date'">
-                          {{ formatDate(order.date || order.createdAt || "") }}
+                          {{ formatDate(order.date || order.createdAt || '') }}
                         </template>
 
                         <template v-if="col === 'status'">
@@ -360,24 +332,17 @@
                               }
                             "
                           >
-                            {{ getLabel("view", "View") }}
+                            {{ getLabel('view', 'View') }}
                           </button>
                         </template>
 
                         <template v-if="col === 'validUntil'">
-                          {{ formatDate(order.validUntil || "") }}
+                          {{ formatDate(order.validUntil || '') }}
                         </template>
 
                         <template
                           v-if="
-                            ![
-                              'id',
-                              'date',
-                              'status',
-                              'total',
-                              'action',
-                              'validUntil',
-                            ].includes(col)
+                            !['id', 'date', 'status', 'total', 'action', 'validUntil'].includes(col)
                           "
                         >
                           {{ order[col] }}
@@ -399,27 +364,24 @@
                   @click="async (event) => handlePageChange(currentPage - 1)"
                   :disabled="currentPage === 1"
                 >
-                  {{ getLabel("previous", "Previous") }}</button
+                  {{ getLabel('previous', 'Previous') }}</button
                 ><button
                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   @click="async (event) => handlePageChange(currentPage + 1)"
                   :disabled="currentPage === totalPages"
                 >
-                  {{ getLabel("next", "Next") }}
+                  {{ getLabel('next', 'Next') }}
                 </button>
               </div>
-              <div
-                class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"
-              >
+              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p class="text-sm text-gray-700">
-                    {{ getLabel("showingPage", "Showing page") }}&nbsp;<span
-                      class="font-medium"
-                      >{{ currentPage }}</span
-                    >&nbsp;{{ getLabel("of", "of") }}&nbsp;<span
-                      class="font-medium"
-                      >{{ totalPages }}</span
-                    >
+                    {{ getLabel('showingPage', 'Showing page') }}&nbsp;<span class="font-medium">{{
+                      currentPage
+                    }}</span
+                    >&nbsp;{{ getLabel('of', 'of') }}&nbsp;<span class="font-medium">{{
+                      totalPages
+                    }}</span>
                   </p>
                 </div>
                 <div>
@@ -429,20 +391,16 @@
                   >
                     <button
                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      @click="
-                        async (event) => handlePageChange(currentPage - 1)
-                      "
+                      @click="async (event) => handlePageChange(currentPage - 1)"
                       :disabled="currentPage === 1"
                     >
-                      {{ getLabel("previous", "Previous") }}</button
+                      {{ getLabel('previous', 'Previous') }}</button
                     ><button
                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      @click="
-                        async (event) => handlePageChange(currentPage + 1)
-                      "
+                      @click="async (event) => handlePageChange(currentPage + 1)"
                       :disabled="currentPage === totalPages"
                     >
-                      {{ getLabel("next", "Next") }}
+                      {{ getLabel('next', 'Next') }}
                     </button>
                   </nav>
                 </div>
@@ -455,7 +413,7 @@
       <template v-else>
         <div class="bg-white rounded-lg shadow p-8 text-center">
           <p class="text-gray-500 mb-4">
-            {{ getLabel("noOrders", "No orders found.") }}
+            {{ getLabel('noOrders', 'No orders found.') }}
           </p>
         </div>
       </template>
@@ -463,14 +421,14 @@
 
     <template v-else>
       <div class="p-8 text-center text-gray-500">
-        {{ getLabel("loading", "Loading orders...") }}
+        {{ getLabel('loading', 'Loading orders...') }}
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from 'vue';
 
 import {
   OrderService,
@@ -485,7 +443,7 @@ import {
   DateSearchInput,
   DecimalSearchInput,
   OrderSortInput,
-} from "propeller-sdk-v2";
+} from 'propeller-sdk-v2';
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -582,22 +540,18 @@ interface OrderListState {
 }
 
 const props = defineProps<OrderListProps>();
-const orders = ref<OrderListState["orders"]>([]);
-const columns = ref<OrderListState["columns"]>(
-  props.columns.value || ["id", "date", "status", "total"]
+const orders = ref<OrderListState['orders']>([]);
+const columns = ref<OrderListState['columns']>(
+  props.columns.value || ['id', 'date', 'status', 'total']
 );
-const loading = ref<OrderListState["loading"]>(true);
-const totalItems = ref<OrderListState["totalItems"]>(0);
-const currentPage = ref<OrderListState["currentPage"]>(1);
-const itemsPerPage = ref<OrderListState["itemsPerPage"]>(
-  props.initialItemsPerPage || 10
-);
-const totalPages = ref<OrderListState["totalPages"]>(0);
-const rowsClickable = ref<OrderListState["rowsClickable"]>(
-  props.rowsClickable.value || false
-);
-const fetching = ref<OrderListState["fetching"]>(false);
-const searchForm = ref<OrderListState["searchForm"]>({});
+const loading = ref<OrderListState['loading']>(true);
+const totalItems = ref<OrderListState['totalItems']>(0);
+const currentPage = ref<OrderListState['currentPage']>(1);
+const itemsPerPage = ref<OrderListState['itemsPerPage']>(props.initialItemsPerPage || 10);
+const totalPages = ref<OrderListState['totalPages']>(0);
+const rowsClickable = ref<OrderListState['rowsClickable']>(props.rowsClickable.value || false);
+const fetching = ref<OrderListState['fetching']>(false);
+const searchForm = ref<OrderListState['searchForm']>({});
 
 onMounted(() => {
   if (props.user) {
@@ -607,8 +561,8 @@ onMounted(() => {
 
 const searchFields = computed(() => {
   const fields = props.searchFields || [];
-  if (props.enableSearch && !(fields as string[]).includes("term")) {
-    return ["term", ...fields] as string[];
+  if (props.enableSearch && !(fields as string[]).includes('term')) {
+    return ['term', ...fields] as string[];
   }
   return fields;
 });
@@ -622,27 +576,23 @@ watch(
   },
   { immediate: true }
 );
-async function fetchOrders(
-  page: number = 1
-): ReturnType<OrderListState["fetchOrders"]> {
+async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
   if (!props.user || !props.graphqlClient || fetching.value) return;
   fetching.value = true;
   loading.value = true;
   try {
     const orderService = new OrderService(props.graphqlClient);
-    const isContactUser = "contactId" in props.user;
+    const isContactUser = 'contactId' in props.user;
     const statuses = props.orderStatus || [
-      "NEW",
-      "CONFIRMED",
-      "VALIDATED",
-      "ORDER", // Default statuses if not provided
+      'NEW',
+      'CONFIRMED',
+      'VALIDATED',
+      'ORDER', // Default statuses if not provided
     ];
 
     // Explicit cast to any for user ID access as SDK types might be strict interfaces
     // We handle both Contact (contactId) and Customer (customerId)
-    const userId = isContactUser
-      ? (props.user as any).contactId
-      : (props.user as any).customerId;
+    const userId = isContactUser ? (props.user as any).contactId : (props.user as any).customerId;
     const companyId =
       props.companyId ||
       (isContactUser && (props.user as any).company
@@ -656,7 +606,7 @@ async function fetchOrders(
       }),
       page: page,
       offset: itemsPerPage.value,
-      term: searchForm.value.term || "",
+      term: searchForm.value.term || '',
       termFields: props.termFields || [
         Enums.OrderSearchFields.REFERENCE,
         Enums.OrderSearchFields.ITEM_SKU,
@@ -683,64 +633,51 @@ async function fetchOrders(
     if (response.offset) {
       itemsPerPage.value = response.offset;
     }
-    totalPages.value = Math.ceil(
-      (response.itemsFound || 0) / (response.offset || 10)
-    );
+    totalPages.value = Math.ceil((response.itemsFound || 0) / (response.offset || 10));
   } catch (error) {
-    console.error("Error fetching orders:", error);
+    console.error('Error fetching orders:', error);
     orders.value = [];
   } finally {
     loading.value = false;
     fetching.value = false;
   }
 }
-function handlePageChange(
-  newPage: number
-): ReturnType<OrderListState["handlePageChange"]> {
+function handlePageChange(newPage: number): ReturnType<OrderListState['handlePageChange']> {
   if (newPage >= 1 && newPage <= totalPages.value) {
     currentPage.value = newPage;
   }
 }
-function formatDate(
-  dateString: string
-): ReturnType<OrderListState["formatDate"]> {
+function formatDate(dateString: string): ReturnType<OrderListState['formatDate']> {
   if (props.formatDate) return props.formatDate(dateString);
-  if (!dateString) return "-";
+  if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString();
 }
-function formatPrice(price: number): ReturnType<OrderListState["formatPrice"]> {
+function formatPrice(price: number): ReturnType<OrderListState['formatPrice']> {
   if (props.formatPrice) return props.formatPrice(price);
-  if (!price) return "-";
+  if (!price) return '-';
   return `€${Number(price).toFixed(2)}`;
 }
-function getStatusColor(
-  status: string
-): ReturnType<OrderListState["getStatusColor"]> {
+function getStatusColor(status: string): ReturnType<OrderListState['getStatusColor']> {
   if (props.getStatusColor) return props.getStatusColor(status);
   switch (status) {
-    case "COMPLETE":
-    case "QUOTE_ACCEPTED":
-      return "bg-violet-100 text-violet-800";
-    case "CANCELLED":
-    case "QUOTE_REJECTED":
-      return "bg-red-100 text-red-800";
+    case 'COMPLETE':
+    case 'QUOTE_ACCEPTED':
+      return 'bg-violet-100 text-violet-800';
+    case 'CANCELLED':
+    case 'QUOTE_REJECTED':
+      return 'bg-red-100 text-red-800';
     default:
-      return "bg-yellow-100 text-yellow-800";
+      return 'bg-yellow-100 text-yellow-800';
   }
 }
-function getColumnLabel(
-  col: string
-): ReturnType<OrderListState["getColumnLabel"]> {
+function getColumnLabel(col: string): ReturnType<OrderListState['getColumnLabel']> {
   if (props.columnConfig && props.columnConfig[col]) {
     return props.columnConfig[col];
   }
   // Fallback: Capitalize first letter
   return col.charAt(0).toUpperCase() + col.slice(1);
 }
-function getLabel(
-  key: string,
-  fallback: string
-): ReturnType<OrderListState["getLabel"]> {
+function getLabel(key: string, fallback: string): ReturnType<OrderListState['getLabel']> {
   return (props.labels as any)?.[key] || fallback;
 }
 </script>

@@ -2,9 +2,7 @@
   <div :class="className">
     <div class="flex items-center gap-2 w-full">
       <template v-if="allowIncrDecr !== false">
-        <div
-          class="flex items-center border border-gray-300 rounded-md bg-white h-10"
-        >
+        <div class="flex items-center border border-gray-300 rounded-md bg-white h-10">
           <button
             type="button"
             class="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
@@ -56,11 +54,11 @@
         :disabled="loading"
       >
         <template v-if="loading">
-          {{ getLabel("adding", "Adding...") }}
+          {{ getLabel('adding', 'Adding...') }}
         </template>
 
         <template v-if="!loading">
-          {{ getLabel("add", "Add") }}
+          {{ getLabel('add', 'Add') }}
         </template>
       </button>
     </div>
@@ -78,27 +76,13 @@
           }`"
         >
           <template v-if="toastType === 'success'">
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              :strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              ></path>
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" :strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
             </svg>
           </template>
 
           <template v-if="toastType === 'error'">
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              :strokeWidth="2"
-            >
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" :strokeWidth="2">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -130,11 +114,7 @@
             class="h-4 w-4"
             :strokeWidth="2"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            ></path>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
       </div>
@@ -142,16 +122,9 @@
 
     <template v-if="modalVisible">
       <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div
-          class="fixed inset-0 bg-gray-500/20"
-          @click="async (event) => closeModal()"
-        ></div>
-        <div
-          class="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden"
-        >
-          <div
-            class="flex items-center gap-3 px-6 py-4 border-b border-gray-100"
-          >
+        <div class="fixed inset-0 bg-gray-500/20" @click="async (event) => closeModal()"></div>
+        <div class="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
+          <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
             <svg
               fill="none"
               viewBox="0 0 24 24"
@@ -159,14 +132,10 @@
               class="h-5 w-5 flex-shrink-0 text-green-500"
               :strokeWidth="2"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              ></path>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
             </svg>
             <h3 class="flex-1 text-base font-semibold text-gray-900">
-              {{ getLabel("modalTitle", "Added to cart") }}
+              {{ getLabel('modalTitle', 'Added to cart') }}
             </h3>
             <button
               type="button"
@@ -180,11 +149,7 @@
                 class="h-5 w-5"
                 :strokeWidth="2"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                ></path>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
@@ -204,14 +169,12 @@
                 >{{ getProductName() }}</a
               >
               <template v-if="!!getProductSku()">
-                <p class="text-xs text-gray-400 mt-0.5">
-                  SKU: {{ getProductSku() }}
-                </p>
+                <p class="text-xs text-gray-400 mt-0.5">SKU: {{ getProductSku() }}</p>
               </template>
             </div>
             <div class="flex-shrink-0 text-right">
               <p class="text-xs text-gray-500">
-                {{ getLabel("quantity", "Quantity") }}: {{ quantity }}
+                {{ getLabel('quantity', 'Quantity') }}: {{ quantity }}
               </p>
               <template v-if="!!getProductPrice()">
                 <p class="text-sm font-semibold text-gray-900 mt-0.5">
@@ -226,7 +189,7 @@
               class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
               @click="async (event) => closeModal()"
             >
-              {{ getLabel("continueShopping", "Continue shopping") }}</button
+              {{ getLabel('continueShopping', 'Continue shopping') }}</button
             ><button
               type="button"
               class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
@@ -237,7 +200,7 @@
                 }
               "
             >
-              {{ getLabel("proceedToCheckout", "Proceed to checkout") }}
+              {{ getLabel('proceedToCheckout', 'Proceed to checkout') }}
             </button>
           </div>
         </div>

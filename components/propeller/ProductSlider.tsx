@@ -1,535 +1,639 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react'
-  import  { GraphQLClient, ProductService, CrossupsellService, Product, Cluster, Contact, Customer, Cart, CartMainItem, Enums, CrossupsellsQueryVariables, Crossupsell } from 'propeller-sdk-v2';
-import  ProductCard from './ProductCard';
-import  ClusterCard from './ClusterCard';
+import { useState, useEffect } from 'react';
+import {
+  GraphQLClient,
+  ProductService,
+  CrossupsellService,
+  Product,
+  Cluster,
+  Contact,
+  Customer,
+  Cart,
+  CartMainItem,
+  Enums,
+  CrossupsellsQueryVariables,
+  Crossupsell,
+} from 'propeller-sdk-v2';
+import ProductCard from './ProductCard';
+import ClusterCard from './ClusterCard';
 
+export interface ProductSliderProps {
+  // === Data source ===
 
+  /** Propeller SDK GraphQL client */
+  graphqlClient: GraphQLClient;
 
-  export interface ProductSliderProps {
-// === Data source ===
+  /** Pre-loaded products or clusters to display. When provided, skips internal fetching. */
+  products?: (Product | Cluster)[];
 
-/** Propeller SDK GraphQL client */
-graphqlClient: GraphQLClient;
+  /** Product IDs to fetch internally when `products` is not provided */
+  productIds?: number[];
 
-/** Pre-loaded products or clusters to display. When provided, skips internal fetching. */
-products?: (Product | Cluster)[];
+  /** Cluster IDs to fetch internally when `products` is not provided */
+  clusterIds?: number[];
 
-/** Product IDs to fetch internally when `products` is not provided */
-productIds?: number[];
+  /**
+   * Cross-upsell types to fetch. When provided, fetches cross-upsells for the given
+   * productId/clusterId instead of fetching products by IDs.
+   * Values: 'ACCESSORIES' | 'ALTERNATIVES' | 'RELATED' | 'OPTIONS' | 'PARTS'
+   */
+  crossUpsellTypes?: Enums.CrossupsellType[];
 
-/** Cluster IDs to fetch internally when `products` is not provided */
-clusterIds?: number[];
+  /** Source product ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
+  productId?: number;
 
-/**
- * Cross-upsell types to fetch. When provided, fetches cross-upsells for the given
- * productId/clusterId instead of fetching products by IDs.
- * Values: 'ACCESSORIES' | 'ALTERNATIVES' | 'RELATED' | 'OPTIONS' | 'PARTS'
- */
-crossUpsellTypes?: Enums.CrossupsellType[];
+  /** Source cluster ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
+  clusterId?: number;
 
-/** Source product ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
-productId?: number;
+  // === Locale / pricing ===
 
-/** Source cluster ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
-clusterId?: number;
+  /** Language code for API requests and localized content */
+  language: string;
 
-// === Locale / pricing ===
+  /** Tax zone for price calculations */
+  taxZone: string;
 
-/** Language code for API requests and localized content */
-language: string;
+  /**
+   * When true, net price (incl. tax) is the leading price.
+   * Forwarded to each ProductCard / ClusterCard.
+   */
+  includeTax?: boolean;
 
-/** Tax zone for price calculations */
-taxZone: string;
+  // === Portal / visibility ===
 
-/**
- * When true, net price (incl. tax) is the leading price.
- * Forwarded to each ProductCard / ClusterCard.
- */
-includeTax?: boolean;
+  /**
+   * Controls portal visibility mode.
+   * 'open' — AddToCart is shown on product cards.
+   * 'semi-closed' — AddToCart is hidden (catalog-only view).
+   * Defaults to 'open'.
+   */
+  portalMode?: string;
 
-// === Portal / visibility ===
+  /** Authenticated user for cart operations */
+  user?: Contact | Customer | null;
 
-/**
- * Controls portal visibility mode.
- * 'open' — AddToCart is shown on product cards.
- * 'semi-closed' — AddToCart is hidden (catalog-only view).
- * Defaults to 'open'.
- */
-portalMode?: string;
+  // === Layout ===
 
-/** Authenticated user for cart operations */
-user?: Contact | Customer | null;
+  /** Items visible per breakpoint */
+  itemsPerView?: {
+    mobile?: number;
+    tablet?: number;
+    desktop?: number;
+  };
 
-// === Layout ===
+  /** Slider title displayed above the track */
+  title?: string;
 
-/** Items visible per breakpoint */
-itemsPerView?: {
-  mobile?: number;
-  tablet?: number;
-  desktop?: number;
-};
+  /** Additional CSS class for the outer container */
+  containerClassName?: string;
 
-/** Slider title displayed above the track */
-title?: string;
+  // === Card stock display ===
 
-/** Additional CSS class for the outer container */
-containerClassName?: string;
+  /**
+   * Show the stock / availability widget on each product card.
+   * Forwarded to `ProductCard.showStock`.
+   * Defaults to false.
+   */
+  showStock?: boolean;
 
-// === Card stock display ===
+  /**
+   * Show only the availability indicator (Available / Not available) inside the stock widget.
+   * Forwarded to `ProductCard.showAvailability`.
+   * Defaults to true.
+   */
+  showAvailability?: boolean;
 
-/**
- * Show the stock / availability widget on each product card.
- * Forwarded to `ProductCard.showStock`.
- * Defaults to false.
- */
-showStock?: boolean;
+  /**
+   * Label overrides forwarded to the embedded ItemStock component inside each card.
+   * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
+   */
+  stockLabels?: Record<string, string>;
 
-/**
- * Show only the availability indicator (Available / Not available) inside the stock widget.
- * Forwarded to `ProductCard.showAvailability`.
- * Defaults to true.
- */
-showAvailability?: boolean;
+  // === Card favourites ===
 
-/**
- * Label overrides forwarded to the embedded ItemStock component inside each card.
- * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
- */
-stockLabels?: Record<string, string>;
+  /** Show a heart-icon favourite toggle on each card. Defaults to false. */
+  enableAddFavorite?: boolean;
 
-// === Card favourites ===
+  /**
+   * Called when a favourite is toggled on any card.
+   * Receives the full Product or Cluster object and the new favourite state.
+   */
+  onToggleFavorite?: (item: Product | Cluster, isFavorite: boolean) => void;
 
-/** Show a heart-icon favourite toggle on each card. Defaults to false. */
-enableAddFavorite?: boolean;
+  // === Card navigation ===
 
-/**
- * Called when a favourite is toggled on any card.
- * Receives the full Product or Cluster object and the new favourite state.
- */
-onToggleFavorite?: (item: Product | Cluster, isFavorite: boolean) => void;
+  /** Called when a product card is clicked — use for SPA-style routing. */
+  onProductClick?: (product: Product) => void;
 
-// === Card navigation ===
+  /** Called when a cluster card is clicked — use for SPA-style routing. */
+  onClusterClick?: (cluster: Cluster) => void;
 
-/** Called when a product card is clicked — use for SPA-style routing. */
-onProductClick?: (product: Product) => void;
+  // === AddToCart pass-through ===
 
-/** Called when a cluster card is clicked — use for SPA-style routing. */
-onClusterClick?: (cluster: Cluster) => void;
+  /** Validate stock before adding to cart. Defaults to false. */
+  stockValidation?: boolean;
 
-// === AddToCart pass-through ===
+  /** Show increment/decrement stepper buttons in AddToCart. Defaults to true. */
+  showIncrDecr?: boolean;
 
-/** Validate stock before adding to cart. Defaults to false. */
-stockValidation?: boolean;
+  /** ID of an existing cart to add items to. */
+  cartId?: string;
 
-/** Show increment/decrement stepper buttons in AddToCart. Defaults to true. */
-showIncrDecr?: boolean;
+  /** Auto-create a cart when none is available. Pair with onCartCreated. */
+  createCart?: boolean;
 
-/** ID of an existing cart to add items to. */
-cartId?: string;
+  /** Called after AddToCart creates a new cart internally. */
+  onCartCreated?: (cart: Cart) => void;
 
-/** Auto-create a cart when none is available. Pair with onCartCreated. */
-createCart?: boolean;
+  /** Called after every successful add-to-cart. Receives the updated cart and the added item. */
+  afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
 
-/** Called after AddToCart creates a new cart internally. */
-onCartCreated?: (cart: Cart) => void;
+  /**
+   * When true, AddToCart shows a success modal instead of a toast.
+   * Defaults to false.
+   */
+  showModal?: boolean;
 
-/** Called after every successful add-to-cart. Receives the updated cart and the added item. */
-afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
+  /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
+  onProceedToCheckout?: () => void;
 
-/**
- * When true, AddToCart shows a success modal instead of a toast.
- * Defaults to false.
- */
-showModal?: boolean;
+  /**
+   * Label overrides forwarded to the embedded AddToCart component.
+   * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,
+   *       modalTitle, quantity, continueShopping, proceedToCheckout
+   */
+  addToCartLabels?: Record<string, string>;
 
-/** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
-onProceedToCheckout?: () => void;
+  // === Misc ===
 
-/**
- * Label overrides forwarded to the embedded AddToCart component.
- * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,
- *       modalTitle, quantity, continueShopping, proceedToCheckout
- */
-addToCartLabels?: Record<string, string>;
+  /** Configuration object providing imageSearchFiltersGrid, imageVariantFiltersMedium, urls */
+  configuration?: any;
 
-// === Misc ===
-
-/** Configuration object providing imageSearchFiltersGrid, imageVariantFiltersMedium, urls */
-configuration?: any;
-
-/**
- * Label overrides for the slider UI.
- * Available keys: scrollLeft, scrollRight, noProducts, viewCluster,
- *                 ACCESSORIES, ALTERNATIVES, RELATED, OPTIONS, PARTS
- */
-labels?: Record<string, string>;
+  /**
+   * Label overrides for the slider UI.
+   * Available keys: scrollLeft, scrollRight, noProducts, viewCluster,
+   *                 ACCESSORIES, ALTERNATIVES, RELATED, OPTIONS, PARTS
+   */
+  labels?: Record<string, string>;
 }
 interface ProductSliderState {
-loadedItems: any[];
-isLoading: boolean;
-scrollPosition: number;
-containerWidth: number;
-scrollWidth: number;
-items: () => (Product | Cluster)[];
-isCrossUpsellMode: () => boolean;
-crossUpsellTitle: () => string;
-sliderTitle: () => string | undefined;
-mobileCount: () => number;
-tabletCount: () => number;
-desktopCount: () => number;
-canScrollLeft: () => boolean;
-canScrollRight: () => boolean;
-portalMode: () => string;
-getLabel: (key: string, fallback: string) => string;
-isCluster: (item: any) => boolean;
-getItemId: (item: any) => number;
-fetchCrossUpsells: () => Promise<void>;
-fetchItems: () => Promise<void>;
-doFetch: () => void;
-scrollLeft: () => void;
-scrollRight: () => void;
-handleScroll: (e: any) => void;
-handleProductClick: (product: Product) => void;
-handleClusterClick: (cluster: Cluster) => void;
+  loadedItems: any[];
+  isLoading: boolean;
+  scrollPosition: number;
+  containerWidth: number;
+  scrollWidth: number;
+  items: () => (Product | Cluster)[];
+  isCrossUpsellMode: () => boolean;
+  crossUpsellTitle: () => string;
+  sliderTitle: () => string | undefined;
+  mobileCount: () => number;
+  tabletCount: () => number;
+  desktopCount: () => number;
+  canScrollLeft: () => boolean;
+  canScrollRight: () => boolean;
+  portalMode: () => string;
+  getLabel: (key: string, fallback: string) => string;
+  isCluster: (item: any) => boolean;
+  getItemId: (item: any) => number;
+  fetchCrossUpsells: () => Promise<void>;
+  fetchItems: () => Promise<void>;
+  doFetch: () => void;
+  scrollLeft: () => void;
+  scrollRight: () => void;
+  handleScroll: (e: any) => void;
+  handleProductClick: (product: Product) => void;
+  handleClusterClick: (cluster: Cluster) => void;
 }
 
+function ProductSlider(props: ProductSliderProps) {
+  const [loadedItems, setLoadedItems] = useState<ProductSliderState['loadedItems']>(() => []);
 
+  const [isLoading, setIsLoading] = useState<ProductSliderState['isLoading']>(() => false);
 
+  const [scrollPosition, setScrollPosition] = useState<ProductSliderState['scrollPosition']>(
+    () => 0
+  );
 
-  function ProductSlider(props:ProductSliderProps) {
+  const [containerWidth, setContainerWidth] = useState<ProductSliderState['containerWidth']>(
+    () => 0
+  );
 
-  const [loadedItems, setLoadedItems] = useState<ProductSliderState["loadedItems"]>(() => ([]))
+  const [scrollWidth, setScrollWidth] = useState<ProductSliderState['scrollWidth']>(() => 0);
 
-
-const [isLoading, setIsLoading] = useState<ProductSliderState["isLoading"]>(() => (false))
-
-
-const [scrollPosition, setScrollPosition] = useState<ProductSliderState["scrollPosition"]>(() => (0))
-
-
-const [containerWidth, setContainerWidth] = useState<ProductSliderState["containerWidth"]>(() => (0))
-
-
-const [scrollWidth, setScrollWidth] = useState<ProductSliderState["scrollWidth"]>(() => (0))
-
-
-function items(): ReturnType<ProductSliderState["items"]>{
-if (props.products && props.products.length > 0) {
-return props.products;
-}
-return loadedItems;
-}
-
-
-function isCrossUpsellMode(): ReturnType<ProductSliderState["isCrossUpsellMode"]>{
-return !!(props.crossUpsellTypes && props.crossUpsellTypes.length > 0);
-}
-
-
-function crossUpsellTitle(): ReturnType<ProductSliderState["crossUpsellTitle"]>{
-if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return '';
-const typeLabels: Record<string, string> = {
-ACCESSORIES: 'Accessories',
-ALTERNATIVES: 'Alternatives',
-RELATED: 'Related products',
-OPTIONS: 'Options',
-PARTS: 'Parts'
-};
-return props.crossUpsellTypes.map((t: string) => props.labels?.[t.toLowerCase()] || typeLabels[t] || t).join(' & ');
-}
-
-
-function sliderTitle(): ReturnType<ProductSliderState["sliderTitle"]>{
-if (props.title !== undefined) return props.title;
-if (isCrossUpsellMode()) return crossUpsellTitle();
-return undefined;
-}
-
-
-function mobileCount(): ReturnType<ProductSliderState["mobileCount"]>{
-return props.itemsPerView?.mobile || 1;
-}
-
-
-function tabletCount(): ReturnType<ProductSliderState["tabletCount"]>{
-return props.itemsPerView?.tablet || 2;
-}
-
-
-function desktopCount(): ReturnType<ProductSliderState["desktopCount"]>{
-return props.itemsPerView?.desktop || 4;
-}
-
-
-function canScrollLeft(): ReturnType<ProductSliderState["canScrollLeft"]>{
-return scrollPosition > 0;
-}
-
-
-function canScrollRight(): ReturnType<ProductSliderState["canScrollRight"]>{
-return scrollPosition < scrollWidth - containerWidth - 1;
-}
-
-
-function portalMode(): ReturnType<ProductSliderState["portalMode"]>{
-return props.portalMode as string || 'open';
-}
-
-
-function getLabel(key: string, fallback: string): ReturnType<ProductSliderState["getLabel"]>{
-const val = (props.labels as Record<string, string>)?.[key];
-return val !== undefined ? val : fallback;
-}
-
-
-function isCluster(item: any): ReturnType<ProductSliderState["isCluster"]>{
-return 'clusterId' in item && !('productId' in item);
-}
-
-
-function getItemId(item: any): ReturnType<ProductSliderState["getItemId"]>{
-return isCluster(item) ? item.clusterId : item.productId;
-}
-
-
-async function fetchCrossUpsells(): ReturnType<ProductSliderState["fetchCrossUpsells"]>{
-if (!props.graphqlClient) return;
-if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
-if (!props.productId && !props.clusterId) return;
-setIsLoading(true);
-try {
-const crossupsellService = new CrossupsellService(props.graphqlClient);
-const searchInput: CrossupsellsQueryVariables = {
-  input: {
-    types: props.crossUpsellTypes,
-    page: 1,
-    offset: 50,
-    ...(props.productId && {
-      productIdsFrom: [props.productId]
-    }),
-    ...(props.clusterId && {
-      clusterIdsFrom: [props.clusterId]
-    })
-  },
-  language: props.language || 'NL',
-  imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-  imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
-  priceCalculateProductInput: {
-    taxZone: props.taxZone || 'NL',
-    ...(props.user && 'company' in props.user && {
-      companyId: (props.user as Contact)?.company?.companyId
-    }),
-    ...(props.user && 'contactId' in props.user && {
-      contactId: (props.user as Contact)?.contactId
-    }),
-    ...(props.user && 'customerId' in props.user && {
-      customerId: (props.user as Customer)?.customerId
-    })
+  function items(): ReturnType<ProductSliderState['items']> {
+    if (props.products && props.products.length > 0) {
+      return props.products;
+    }
+    return loadedItems;
   }
-};
-const result = await crossupsellService.getCrossupsells(searchInput);
-const crossupsells: Crossupsell[] = result?.items || [];
-const items: any[] = [];
-for (let i = 0; i < crossupsells.length; i++) {
-  const cu = crossupsells[i] as Crossupsell;
-  if (cu.productTo) {
-    items.push(cu.productTo);
-  } else if (cu.clusterTo) {
-    items.push(cu.clusterTo);
+
+  function isCrossUpsellMode(): ReturnType<ProductSliderState['isCrossUpsellMode']> {
+    return !!(props.crossUpsellTypes && props.crossUpsellTypes.length > 0);
   }
-}
-setLoadedItems(items);
-} catch (e) {
-setLoadedItems([]);
-} finally {
-setIsLoading(false);
-}
-}
 
+  function crossUpsellTitle(): ReturnType<ProductSliderState['crossUpsellTitle']> {
+    if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return '';
+    const typeLabels: Record<string, string> = {
+      ACCESSORIES: 'Accessories',
+      ALTERNATIVES: 'Alternatives',
+      RELATED: 'Related products',
+      OPTIONS: 'Options',
+      PARTS: 'Parts',
+    };
+    return props.crossUpsellTypes
+      .map((t: string) => props.labels?.[t.toLowerCase()] || typeLabels[t] || t)
+      .join(' & ');
+  }
 
-async function fetchItems(): ReturnType<ProductSliderState["fetchItems"]>{
-if (!props.graphqlClient) return;
-const hasProductIds = props.productIds && props.productIds.length > 0;
-const hasClusterIds = props.clusterIds && props.clusterIds.length > 0;
-if (!hasProductIds && !hasClusterIds) return;
-setIsLoading(true);
-try {
-const productService = new ProductService(props.graphqlClient);
-const response = await productService.getProducts({
-  input: {
-    productIds: props.productIds || [],
-    clusterIds: props.clusterIds || [],
-    language: props.language || 'NL',
-    page: 1,
-    offset: 50,
-    statuses: [Enums.ProductStatus.A, Enums.ProductStatus.P, Enums.ProductStatus.T, Enums.ProductStatus.S]
-  },
-  imageSearchFilters: props.configuration?.imageSearchFiltersGrid || {
-    page: 1,
-    offset: 1
-  },
-  imageVariantFilters: props.configuration?.imageVariantFiltersMedium || {
-    transformations: [{
-      name: 'grid',
-      transformation: {
-        format: Enums.Format.WEBP,
-        height: 300,
-        width: 300,
-        fit: Enums.Fit.BOUNDS
+  function sliderTitle(): ReturnType<ProductSliderState['sliderTitle']> {
+    if (props.title !== undefined) return props.title;
+    if (isCrossUpsellMode()) return crossUpsellTitle();
+    return undefined;
+  }
+
+  function mobileCount(): ReturnType<ProductSliderState['mobileCount']> {
+    return props.itemsPerView?.mobile || 1;
+  }
+
+  function tabletCount(): ReturnType<ProductSliderState['tabletCount']> {
+    return props.itemsPerView?.tablet || 2;
+  }
+
+  function desktopCount(): ReturnType<ProductSliderState['desktopCount']> {
+    return props.itemsPerView?.desktop || 4;
+  }
+
+  function canScrollLeft(): ReturnType<ProductSliderState['canScrollLeft']> {
+    return scrollPosition > 0;
+  }
+
+  function canScrollRight(): ReturnType<ProductSliderState['canScrollRight']> {
+    return scrollPosition < scrollWidth - containerWidth - 1;
+  }
+
+  function portalMode(): ReturnType<ProductSliderState['portalMode']> {
+    return (props.portalMode as string) || 'open';
+  }
+
+  function getLabel(key: string, fallback: string): ReturnType<ProductSliderState['getLabel']> {
+    const val = (props.labels as Record<string, string>)?.[key];
+    return val !== undefined ? val : fallback;
+  }
+
+  function isCluster(item: any): ReturnType<ProductSliderState['isCluster']> {
+    return 'clusterId' in item && !('productId' in item);
+  }
+
+  function getItemId(item: any): ReturnType<ProductSliderState['getItemId']> {
+    return isCluster(item) ? item.clusterId : item.productId;
+  }
+
+  async function fetchCrossUpsells(): ReturnType<ProductSliderState['fetchCrossUpsells']> {
+    if (!props.graphqlClient) return;
+    if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
+    if (!props.productId && !props.clusterId) return;
+    setIsLoading(true);
+    try {
+      const crossupsellService = new CrossupsellService(props.graphqlClient);
+      const searchInput: CrossupsellsQueryVariables = {
+        input: {
+          types: props.crossUpsellTypes,
+          page: 1,
+          offset: 50,
+          ...(props.productId && {
+            productIdsFrom: [props.productId],
+          }),
+          ...(props.clusterId && {
+            clusterIdsFrom: [props.clusterId],
+          }),
+        },
+        language: props.language || 'NL',
+        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+        imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
+        priceCalculateProductInput: {
+          taxZone: props.taxZone || 'NL',
+          ...(props.user &&
+            'company' in props.user && {
+              companyId: (props.user as Contact)?.company?.companyId,
+            }),
+          ...(props.user &&
+            'contactId' in props.user && {
+              contactId: (props.user as Contact)?.contactId,
+            }),
+          ...(props.user &&
+            'customerId' in props.user && {
+              customerId: (props.user as Customer)?.customerId,
+            }),
+        },
+      };
+      const result = await crossupsellService.getCrossupsells(searchInput);
+      const crossupsells: Crossupsell[] = result?.items || [];
+      const items: any[] = [];
+      for (let i = 0; i < crossupsells.length; i++) {
+        const cu = crossupsells[i] as Crossupsell;
+        if (cu.productTo) {
+          items.push(cu.productTo);
+        } else if (cu.clusterTo) {
+          items.push(cu.clusterTo);
+        }
       }
-    }]
-  },
-  filterAvailableAttributeInput: {
-    isSearchable: true
+      setLoadedItems(items);
+    } catch (e) {
+      setLoadedItems([]);
+    } finally {
+      setIsLoading(false);
+    }
   }
-});
-setLoadedItems(response.items || []);
-} catch (e) {
-setLoadedItems([]);
-} finally {
-setIsLoading(false);
+
+  async function fetchItems(): ReturnType<ProductSliderState['fetchItems']> {
+    if (!props.graphqlClient) return;
+    const hasProductIds = props.productIds && props.productIds.length > 0;
+    const hasClusterIds = props.clusterIds && props.clusterIds.length > 0;
+    if (!hasProductIds && !hasClusterIds) return;
+    setIsLoading(true);
+    try {
+      const productService = new ProductService(props.graphqlClient);
+      const response = await productService.getProducts({
+        input: {
+          productIds: props.productIds || [],
+          clusterIds: props.clusterIds || [],
+          language: props.language || 'NL',
+          page: 1,
+          offset: 50,
+          statuses: [
+            Enums.ProductStatus.A,
+            Enums.ProductStatus.P,
+            Enums.ProductStatus.T,
+            Enums.ProductStatus.S,
+          ],
+        },
+        imageSearchFilters: props.configuration?.imageSearchFiltersGrid || {
+          page: 1,
+          offset: 1,
+        },
+        imageVariantFilters: props.configuration?.imageVariantFiltersMedium || {
+          transformations: [
+            {
+              name: 'grid',
+              transformation: {
+                format: Enums.Format.WEBP,
+                height: 300,
+                width: 300,
+                fit: Enums.Fit.BOUNDS,
+              },
+            },
+          ],
+        },
+        filterAvailableAttributeInput: {
+          isSearchable: true,
+        },
+      });
+      setLoadedItems(response.items || []);
+    } catch (e) {
+      setLoadedItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function doFetch(): ReturnType<ProductSliderState['doFetch']> {
+    if (props.products && props.products.length > 0) return;
+    if (isCrossUpsellMode()) {
+      fetchCrossUpsells();
+    } else {
+      fetchItems();
+    }
+  }
+
+  function scrollLeft(): ReturnType<ProductSliderState['scrollLeft']> {
+    const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+    if (el) {
+      const scrollAmount = el.clientWidth * 0.8;
+      el.scrollBy({
+        left: -scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  }
+
+  function scrollRight(): ReturnType<ProductSliderState['scrollRight']> {
+    const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+    if (el) {
+      const scrollAmount = el.clientWidth * 0.8;
+      el.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  }
+
+  function handleScroll(e: any): ReturnType<ProductSliderState['handleScroll']> {
+    const el = e.target as HTMLElement;
+    setScrollPosition(el.scrollLeft);
+    setContainerWidth(el.clientWidth);
+    setScrollWidth(el.scrollWidth);
+  }
+
+  function handleProductClick(
+    product: Product
+  ): ReturnType<ProductSliderState['handleProductClick']> {
+    if (props.onProductClick) {
+      props.onProductClick(product);
+    }
+  }
+
+  function handleClusterClick(
+    cluster: Cluster
+  ): ReturnType<ProductSliderState['handleClusterClick']> {
+    if (props.onClusterClick) {
+      props.onClusterClick(cluster);
+    }
+  }
+
+  useEffect(() => {
+    doFetch();
+
+    // Initialize scroll dimensions after render
+    setTimeout(() => {
+      const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
+      if (el) {
+        setContainerWidth(el.clientWidth);
+        setScrollWidth(el.scrollWidth);
+      }
+    }, 100);
+  }, []);
+  useEffect(() => {
+    doFetch();
+    // NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
+  }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds)]);
+  useEffect(() => {
+    doFetch();
+    // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
+  }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
+
+  return (
+    <>
+      {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (
+        <>
+          <div className={props.containerClassName || 'mb-12'}>
+            {sliderTitle() || items().length > 0 ? (
+              <div className="flex items-center justify-between mb-6">
+                {sliderTitle() ? <h2 className="text-2xl font-bold">{sliderTitle()}</h2> : null}
+                {items().length > desktopCount() ? (
+                  <div className="flex gap-2">
+                    <button
+                      className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={(event) => scrollLeft()}
+                      disabled={!canScrollLeft()}
+                      aria-label={getLabel('scrollLeft', 'Scroll left')}
+                    >
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-5 h-5"
+                      >
+                        <path d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={(event) => scrollRight()}
+                      disabled={!canScrollRight()}
+                      aria-label={getLabel('scrollRight', 'Scroll right')}
+                    >
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-5 h-5"
+                      >
+                        <path d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {isLoading ? (
+              <div className="flex gap-6 overflow-hidden">
+                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
+                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
+                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
+                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
+              </div>
+            ) : null}
+            {!isLoading && items().length > 0 ? (
+              <div
+                className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
+                data-product-slider-track
+                onScroll={(e) => handleScroll(e)}
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
+                {items()?.map((item, index) => (
+                  <div
+                    className="flex-shrink-0"
+                    key={getItemId(item) + '-' + index}
+                    style={{
+                      width: 'calc((100% - 4.5rem) / ' + desktopCount() + ')',
+                    }}
+                  >
+                    {isCluster(item) ? (
+                      <ClusterCard
+                        cluster={item as Cluster}
+                        configuration={props.configuration}
+                        includeTax={props.includeTax}
+                        columns={3}
+                        enableAddFavorite={props.enableAddFavorite}
+                        showStock={props.showStock}
+                        showAvailability={props.showAvailability}
+                        stockLabels={props.stockLabels}
+                        labels={props.labels}
+                        onToggleFavorite={(cluster, isFav) => {
+                          if (props.onToggleFavorite) {
+                            props.onToggleFavorite(cluster, isFav);
+                          }
+                        }}
+                        onClusterClick={(cluster) => handleClusterClick(cluster)}
+                      />
+                    ) : null}
+                    {!isCluster(item) && portalMode() === 'open' ? (
+                      <ProductCard
+                        product={item as Product}
+                        graphqlClient={props.graphqlClient}
+                        user={(props.user as Contact | Customer | null) || null}
+                        cartId={props.cartId}
+                        configuration={props.configuration}
+                        includeTax={props.includeTax}
+                        columns={3}
+                        createCart={props.createCart}
+                        onCartCreated={props.onCartCreated}
+                        afterAddToCart={props.afterAddToCart}
+                        showModal={props.showModal}
+                        allowIncrDecr={props.showIncrDecr !== false}
+                        enableStockValidation={props.stockValidation}
+                        language={props.language}
+                        onProceedToCheckout={props.onProceedToCheckout}
+                        addToCartLabels={props.addToCartLabels}
+                        enableAddFavorite={props.enableAddFavorite}
+                        showStock={props.showStock}
+                        showAvailability={props.showAvailability}
+                        stockLabels={props.stockLabels}
+                        labels={props.labels}
+                        onToggleFavorite={(product, isFav) => {
+                          if (props.onToggleFavorite) {
+                            props.onToggleFavorite(product, isFav);
+                          }
+                        }}
+                        onProductClick={(product) => handleProductClick(product)}
+                      />
+                    ) : null}
+                    {!isCluster(item) && portalMode() !== 'open' ? (
+                      <ProductCard
+                        product={item as Product}
+                        graphqlClient={props.graphqlClient}
+                        user={(props.user as Contact | Customer | null) || null}
+                        configuration={props.configuration}
+                        includeTax={props.includeTax}
+                        columns={3}
+                        enableAddFavorite={props.enableAddFavorite}
+                        showStock={props.showStock}
+                        showAvailability={props.showAvailability}
+                        stockLabels={props.stockLabels}
+                        labels={props.labels}
+                        onToggleFavorite={(product, isFav) => {
+                          if (props.onToggleFavorite) {
+                            props.onToggleFavorite(product, isFav);
+                          }
+                        }}
+                        onProductClick={(product) => handleProductClick(product)}
+                      />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!isLoading && items().length === 0 && !props.products && !isCrossUpsellMode() ? (
+              <div className="text-center text-gray-500 py-8">
+                {getLabel('noProducts', 'No products found')}
+              </div>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+    </>
+  );
 }
-}
 
-
-function doFetch(): ReturnType<ProductSliderState["doFetch"]>{
-if (props.products && props.products.length > 0) return;
-if (isCrossUpsellMode()) {
-fetchCrossUpsells();
-} else {
-fetchItems();
-}
-}
-
-
-function scrollLeft(): ReturnType<ProductSliderState["scrollLeft"]>{
-const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
-if (el) {
-const scrollAmount = el.clientWidth * 0.8;
-el.scrollBy({
-  left: -scrollAmount,
-  behavior: 'smooth'
-});
-}
-}
-
-
-function scrollRight(): ReturnType<ProductSliderState["scrollRight"]>{
-const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
-if (el) {
-const scrollAmount = el.clientWidth * 0.8;
-el.scrollBy({
-  left: scrollAmount,
-  behavior: 'smooth'
-});
-}
-}
-
-
-function handleScroll(e: any): ReturnType<ProductSliderState["handleScroll"]>{
-const el = e.target as HTMLElement;
-setScrollPosition(el.scrollLeft);
-setContainerWidth(el.clientWidth);
-setScrollWidth(el.scrollWidth);
-}
-
-
-function handleProductClick(product: Product): ReturnType<ProductSliderState["handleProductClick"]>{
-if (props.onProductClick) {
-props.onProductClick(product);
-}
-}
-
-
-function handleClusterClick(cluster: Cluster): ReturnType<ProductSliderState["handleClusterClick"]>{
-if (props.onClusterClick) {
-props.onClusterClick(cluster);
-}
-}
-
-
-
-
-
-
-
-useEffect(() => {
-      doFetch();
-
-// Initialize scroll dimensions after render
-setTimeout(() => {
-const el = document.querySelector('[data-product-slider-track]') as HTMLElement;
-if (el) {
-setContainerWidth(el.clientWidth);
-setScrollWidth(el.scrollWidth);
-}
-}, 100)
-    }, [])
-useEffect(() => {
-      doFetch();
-// NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
-    },
-    [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds)]);useEffect(() => {
-      doFetch();
-// NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
-    },
-    [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId])
-
-
-return (
-  <>
-
-  {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (
-  <><div  className={props.containerClassName || 'mb-12'}>{sliderTitle() || items().length > 0 ? (
-  <div className="flex items-center justify-between mb-6">{sliderTitle() ? (
-  <h2 className="text-2xl font-bold">{sliderTitle()}</h2>
-) : null}{items().length > desktopCount() ? (
-  <div className="flex gap-2"><button className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"  onClick={(event) => scrollLeft() }  disabled={!canScrollLeft()}  aria-label={getLabel('scrollLeft', 'Scroll left')}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round" className="w-5 h-5"><path  d="M15 19l-7-7 7-7"  /></svg></button><button className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"  onClick={(event) => scrollRight() }  disabled={!canScrollRight()}  aria-label={getLabel('scrollRight', 'Scroll right')}><svg  fill="none"  stroke="currentColor"  viewBox="0 0 24 24"  strokeWidth="2"  strokeLinecap="round"  strokeLinejoin="round" className="w-5 h-5"><path  d="M9 5l7 7-7 7"  /></svg></button></div>
-) : null}</div>
-) : null}{isLoading ? (
-  <div className="flex gap-6 overflow-hidden"><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /><div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse"  /></div>
-) : null}{!isLoading && items().length > 0 ? (
-  <div className="flex gap-6 overflow-x-auto scroll-smooth pb-4"  data-product-slider-track  onScroll={(e) => handleScroll(e) }  style={{
-scrollbarWidth: 'none',
-msOverflowStyle: 'none'
-}}>{items()?.map((item, index) => (
-  <div className="flex-shrink-0"  key={getItemId(item) + '-' + index}  style={{
-width: 'calc((100% - 4.5rem) / ' + desktopCount() + ')'
-}}>{isCluster(item) ? (
-  <ClusterCard  cluster={item as Cluster}  configuration={props.configuration}  includeTax={props.includeTax}  columns={3}  enableAddFavorite={props.enableAddFavorite}  showStock={props.showStock}  showAvailability={props.showAvailability}  stockLabels={props.stockLabels}  labels={props.labels}  onToggleFavorite={(cluster,isFav) => {
-if (props.onToggleFavorite) {
-props.onToggleFavorite(cluster, isFav);
-}
-} }  onClusterClick={(cluster) => handleClusterClick(cluster) }  />
-) : null}{!isCluster(item) && portalMode() === 'open' ? (
-  <ProductCard  product={item as Product}  graphqlClient={props.graphqlClient}  user={props.user as Contact | Customer | null || null}  cartId={props.cartId}  configuration={props.configuration}  includeTax={props.includeTax}  columns={3}  createCart={props.createCart}  onCartCreated={props.onCartCreated}  afterAddToCart={props.afterAddToCart}  showModal={props.showModal}  allowIncrDecr={props.showIncrDecr !== false}  enableStockValidation={props.stockValidation}  language={props.language}  onProceedToCheckout={props.onProceedToCheckout}  addToCartLabels={props.addToCartLabels}  enableAddFavorite={props.enableAddFavorite}  showStock={props.showStock}  showAvailability={props.showAvailability}  stockLabels={props.stockLabels}  labels={props.labels}  onToggleFavorite={(product,isFav) => {
-if (props.onToggleFavorite) {
-props.onToggleFavorite(product, isFav);
-}
-} }  onProductClick={(product) => handleProductClick(product) }  />
-) : null}{!isCluster(item) && portalMode() !== 'open' ? (
-  <ProductCard  product={item as Product}  graphqlClient={props.graphqlClient}  user={props.user as Contact | Customer | null || null}  configuration={props.configuration}  includeTax={props.includeTax}  columns={3}  enableAddFavorite={props.enableAddFavorite}  showStock={props.showStock}  showAvailability={props.showAvailability}  stockLabels={props.stockLabels}  labels={props.labels}  onToggleFavorite={(product,isFav) => {
-if (props.onToggleFavorite) {
-props.onToggleFavorite(product, isFav);
-}
-} }  onProductClick={(product) => handleProductClick(product) }  />
-) : null}</div>
-))}</div>
-) : null}{!isLoading && items().length === 0 && !props.products && !isCrossUpsellMode() ? (
-  <div className="text-center text-gray-500 py-8">{getLabel('noProducts', 'No products found')}</div>
-) : null}</div></>
-) : null}
-
-  </>
-);
-}
-
-
-
-
-  export default ProductSlider;
-
-
+export default ProductSlider;

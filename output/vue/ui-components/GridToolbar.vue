@@ -1,11 +1,9 @@
 <template>
   <div :class="`${className || ''}`">
-    <div
-      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4"
-    >
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
       <div class="text-sm text-muted-foreground font-medium">
         <template v-if="itemsFound > 0">
-          <span>{{ itemsFound }}{{ getLabel("products") }}</span>
+          <span>{{ itemsFound }}{{ getLabel('products') }}</span>
         </template>
       </div>
       <div class="flex flex-wrap items-center gap-3">
@@ -15,7 +13,7 @@
           @change="async (e) => handleOffsetChange(parseInt(e.target.value))"
         >
           <template :key="n" v-for="(n, index) in getOffsetOptions()">
-            <option :value="n">{{ n }}{{ getLabel("perPage") }}</option>
+            <option :value="n">{{ n }}{{ getLabel('perPage') }}</option>
           </template>
         </select>
         <div class="h-4 w-px bg-border hidden sm:block"></div>
@@ -25,10 +23,7 @@
           @change="async (e) => handleSortFieldChange(e.target.value)"
         >
           <template :key="field" v-for="(field, index) in getSortOptions()">
-            <option
-              :value="field"
-              :disabled="field === 'PRICE' && isPriceSortDisabled()"
-            >
+            <option :value="field" :disabled="field === 'PRICE' && isPriceSortDisabled()">
               {{ getLabel(field) }}
             </option>
           </template></select
@@ -37,19 +32,15 @@
           :value="currentSortOrder"
           @change="async (e) => handleSortOrderChange(e.target.value)"
         >
-          <option :value="Enums.SortOrder.ASC">{{ getLabel("ASC") }}</option>
+          <option :value="Enums.SortOrder.ASC">{{ getLabel('ASC') }}</option>
           <option :value="Enums.SortOrder.DESC">
-            {{ getLabel("DESC") }}
+            {{ getLabel('DESC') }}
           </option></select
         ><button
           type="button"
           class="h-9 w-9 flex items-center justify-center rounded-md border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
           @click="async (event) => handleViewChange()"
-          :title="
-            currentViewMode === 'grid'
-              ? getLabel('switchToList')
-              : getLabel('switchToGrid')
-          "
+          :title="currentViewMode === 'grid' ? getLabel('switchToList') : getLabel('switchToGrid')"
         >
           <template v-if="currentViewMode === 'grid'">
             <svg
@@ -104,11 +95,9 @@
             }
           "
         >
-          {{ getLabel("clearAll") }}
+          {{ getLabel('clearAll') }}
         </button>
-        <template
-          v-if="priceFilterMin !== undefined || priceFilterMax !== undefined"
-        >
+        <template v-if="priceFilterMin !== undefined || priceFilterMax !== undefined">
           <span
             class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
             @click="
@@ -116,8 +105,7 @@
                 if (onPriceFilterRemove) onPriceFilterRemove();
               }
             "
-            >{{ getLabel("price") }}: € {{ priceFilterMin ?? 0 }} – €{{
-              priceFilterMax ?? "∞"
+            >{{ getLabel('price') }}: € {{ priceFilterMin ?? 0 }} – €{{ priceFilterMax ?? '∞'
             }}<span>×</span></span
           >
         </template>
@@ -142,9 +130,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch } from 'vue';
 
-import { Contact, Customer, Enums } from "propeller-sdk-v2";
+import { Contact, Customer, Enums } from 'propeller-sdk-v2';
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
 const ALL_SORT_FIELDS: string[] = [
   Enums.ProductSortField.CATEGORY_ORDER,
@@ -161,23 +149,23 @@ const ALL_SORT_FIELDS: string[] = [
 // Built-in label defaults (can be overridden via the labels prop).
 // Built-in label defaults (can be overridden via the labels prop).
 const DEFAULT_LABELS: Record<string, string> = {
-  [Enums.ProductSortField.CATEGORY_ORDER]: "Default Sorting",
-  [Enums.ProductSortField.NAME]: "Name",
-  [Enums.ProductSortField.PRICE]: "Price",
-  [Enums.ProductSortField.SKU]: "SKU",
-  [Enums.ProductSortField.SUPPLIER_CODE]: "Supplier Code",
-  [Enums.ProductSortField.CREATED_AT]: "Created Date",
-  [Enums.ProductSortField.LAST_MODIFIED_AT]: "Last Modified Date",
-  [Enums.ProductSortField.RELEVANCE]: "Relevance",
-  [Enums.ProductSortField.PRIORITY]: "Priority",
-  [Enums.SortOrder.ASC]: "Low to High",
-  [Enums.SortOrder.DESC]: "High to Low",
-  clearAll: "Clear All",
-  products: " Products",
-  perPage: " per page",
-  price: "Price",
-  switchToList: "Switch to list view",
-  switchToGrid: "Switch to grid view",
+  [Enums.ProductSortField.CATEGORY_ORDER]: 'Default Sorting',
+  [Enums.ProductSortField.NAME]: 'Name',
+  [Enums.ProductSortField.PRICE]: 'Price',
+  [Enums.ProductSortField.SKU]: 'SKU',
+  [Enums.ProductSortField.SUPPLIER_CODE]: 'Supplier Code',
+  [Enums.ProductSortField.CREATED_AT]: 'Created Date',
+  [Enums.ProductSortField.LAST_MODIFIED_AT]: 'Last Modified Date',
+  [Enums.ProductSortField.RELEVANCE]: 'Relevance',
+  [Enums.ProductSortField.PRIORITY]: 'Priority',
+  [Enums.SortOrder.ASC]: 'Low to High',
+  [Enums.SortOrder.DESC]: 'High to Low',
+  clearAll: 'Clear All',
+  products: ' Products',
+  perPage: ' per page',
+  price: 'Price',
+  switchToList: 'Switch to list view',
+  switchToGrid: 'Switch to grid view',
 };
 
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
@@ -329,14 +317,12 @@ interface GridToolbarState {
 }
 
 const props = defineProps<GridToolbarProps>();
-const currentSortField = ref<GridToolbarState["currentSortField"]>(
+const currentSortField = ref<GridToolbarState['currentSortField']>(
   Enums.ProductSortField.CATEGORY_ORDER
 );
-const currentSortOrder = ref<GridToolbarState["currentSortOrder"]>(
-  Enums.SortOrder.ASC
-);
-const currentOffset = ref<GridToolbarState["currentOffset"]>(12);
-const currentViewMode = ref<GridToolbarState["currentViewMode"]>("grid");
+const currentSortOrder = ref<GridToolbarState['currentSortOrder']>(Enums.SortOrder.ASC);
+const currentOffset = ref<GridToolbarState['currentOffset']>(12);
+const currentViewMode = ref<GridToolbarState['currentViewMode']>('grid');
 
 watch(
   () => [props.defaultSort],
@@ -351,9 +337,7 @@ watch(
         ? sort[0].field || Enums.ProductSortField.CATEGORY_ORDER
         : Enums.ProductSortField.CATEGORY_ORDER;
     currentSortOrder.value =
-      sort.length > 0
-        ? sort[0].order || Enums.SortOrder.ASC
-        : Enums.SortOrder.ASC;
+      sort.length > 0 ? sort[0].order || Enums.SortOrder.ASC : Enums.SortOrder.ASC;
   },
   { immediate: true }
 );
@@ -373,28 +357,25 @@ watch(
   },
   { immediate: true }
 );
-function getLabel(key: string): ReturnType<GridToolbarState["getLabel"]> {
+function getLabel(key: string): ReturnType<GridToolbarState['getLabel']> {
   const labels = (props.labels as Record<string, string>) || {};
   return labels[key] !== undefined ? labels[key] : DEFAULT_LABELS[key] || key;
 }
-function getSortOptions(): ReturnType<GridToolbarState["getSortOptions"]> {
+function getSortOptions(): ReturnType<GridToolbarState['getSortOptions']> {
   const opts = (props.sortOptions as string[]) || [];
   return opts.length > 0 ? opts : ALL_SORT_FIELDS;
 }
-function getOffsetOptions(): ReturnType<GridToolbarState["getOffsetOptions"]> {
+function getOffsetOptions(): ReturnType<GridToolbarState['getOffsetOptions']> {
   const opts = (props.offset as number[]) || [];
   return opts.length > 0 ? opts : [12, 24, 48];
 }
-function hasActiveFilters(): ReturnType<GridToolbarState["hasActiveFilters"]> {
+function hasActiveFilters(): ReturnType<GridToolbarState['hasActiveFilters']> {
   const text = (props.activeTextFilters as Record<string, string[]>) || {};
   const hasText = Object.keys(text).some((k) => (text[k] || []).length > 0);
-  const hasPrice =
-    props.priceFilterMin !== undefined || props.priceFilterMax !== undefined;
+  const hasPrice = props.priceFilterMin !== undefined || props.priceFilterMax !== undefined;
   return hasText || hasPrice;
 }
-function getActiveFilterBadges(): ReturnType<
-  GridToolbarState["getActiveFilterBadges"]
-> {
+function getActiveFilterBadges(): ReturnType<GridToolbarState['getActiveFilterBadges']> {
   const text = (props.activeTextFilters as Record<string, string[]>) || {};
   const badges: FilterBadge[] = [];
   Object.entries(text)
@@ -409,31 +390,27 @@ function getActiveFilterBadges(): ReturnType<
     });
   return badges;
 }
-function isPriceSortDisabled(): ReturnType<
-  GridToolbarState["isPriceSortDisabled"]
-> {
-  return (props.portalMode as string) === "semi-closed" && !props.user;
+function isPriceSortDisabled(): ReturnType<GridToolbarState['isPriceSortDisabled']> {
+  return (props.portalMode as string) === 'semi-closed' && !props.user;
 }
 function handleSortFieldChange(
   field: string
-): ReturnType<GridToolbarState["handleSortFieldChange"]> {
+): ReturnType<GridToolbarState['handleSortFieldChange']> {
   currentSortField.value = field;
   if (props.onSortChange) props.onSortChange(field, currentSortOrder.value);
 }
 function handleSortOrderChange(
   order: string
-): ReturnType<GridToolbarState["handleSortOrderChange"]> {
+): ReturnType<GridToolbarState['handleSortOrderChange']> {
   currentSortOrder.value = order;
   if (props.onSortChange) props.onSortChange(currentSortField.value, order);
 }
-function handleOffsetChange(
-  offset: number
-): ReturnType<GridToolbarState["handleOffsetChange"]> {
+function handleOffsetChange(offset: number): ReturnType<GridToolbarState['handleOffsetChange']> {
   currentOffset.value = offset;
   if (props.onOffsetChange) props.onOffsetChange(offset);
 }
-function handleViewChange(): ReturnType<GridToolbarState["handleViewChange"]> {
-  const next = currentViewMode.value === "grid" ? "list" : "grid";
+function handleViewChange(): ReturnType<GridToolbarState['handleViewChange']> {
+  const next = currentViewMode.value === 'grid' ? 'list' : 'grid';
   currentViewMode.value = next;
   if (props.onViewChange) props.onViewChange(next);
 }

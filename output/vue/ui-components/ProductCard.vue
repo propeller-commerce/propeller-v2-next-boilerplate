@@ -24,15 +24,8 @@
           </template>
 
           <template v-if="!getProductImageUrl()">
-            <div
-              class="flex h-full w-full items-center justify-center text-gray-200"
-            >
-              <svg
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                class="h-16 w-16"
-              >
+            <div class="flex h-full w-full items-center justify-center text-gray-200">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-16 w-16">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -44,19 +37,10 @@
           </template>
         </a>
         <template
-          v-if="
-            !!imageLabels &&
-            imageLabels.length > 0 &&
-            computedImageLabels().length > 0
-          "
+          v-if="!!imageLabels && imageLabels.length > 0 && computedImageLabels().length > 0"
         >
-          <div
-            class="pointer-events-none absolute left-2 top-2 flex flex-col gap-1"
-          >
-            <template
-              :key="index"
-              v-for="(label, index) in computedImageLabels()"
-            >
+          <div class="pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
+            <template :key="index" v-for="(label, index) in computedImageLabels()">
               <span
                 class="inline-block rounded bg-violet-600 px-2 py-0.5 text-xs font-medium text-white shadow-sm"
                 >{{ label }}</span
@@ -100,9 +84,7 @@
 
     <div
       :class="`flex flex-1 ${
-        isRow()
-          ? 'flex-row items-center gap-4 px-4 py-2 min-w-0'
-          : 'flex-col gap-2 p-4'
+        isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'
       }`"
     >
       <template v-if="showSku !== false && !!getProductSku()">
@@ -120,13 +102,7 @@
         >
       </template>
 
-      <template
-        v-if="
-          !!textLabels &&
-          textLabels.length > 0 &&
-          computedTextLabels().length > 0
-        "
-      >
+      <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
         <div class="flex flex-col gap-0.5">
           <template :key="index" v-for="(item, index) in computedTextLabels()">
             <div class="text-xs text-gray-500">{{ item.value }}</div>
@@ -156,9 +132,7 @@
       <template v-if="!!getProductPrice()">
         <div :class="isRow() ? '' : 'mt-auto pt-2'">
           <span
-            :class="`font-bold text-gray-900 ${
-              isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'
-            }`"
+            :class="`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`"
             >{{ getProductPrice() }}</span
           >
         </div>
@@ -190,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 
 import {
   GraphQLClient,
@@ -201,9 +175,9 @@ import {
   CartMainItem,
   CartChildItemInput,
   AttributeResult,
-} from "propeller-sdk-v2";
-import AddToCart from "./AddToCart.vue";
-import ItemStock from "./ItemStock.vue";
+} from 'propeller-sdk-v2';
+import AddToCart from './AddToCart.vue';
+import ItemStock from './ItemStock.vue';
 
 export interface ProductCardProps {
   // === Core ===
@@ -431,76 +405,54 @@ interface ProductCardState {
 }
 
 const props = defineProps<ProductCardProps>();
-const isFavorite = ref<ProductCardState["isFavorite"]>(false);
-const includeTax = ref<ProductCardState["includeTax"]>(true);
-const priceListener = ref<ProductCardState["priceListener"]>(null);
+const isFavorite = ref<ProductCardState['isFavorite']>(false);
+const includeTax = ref<ProductCardState['includeTax']>(true);
+const priceListener = ref<ProductCardState['priceListener']>(null);
 
-function isRow(): ReturnType<ProductCardState["isRow"]> {
+function isRow(): ReturnType<ProductCardState['isRow']> {
   return (props.columns as number) === 1;
 }
-function getProductName(): ReturnType<ProductCardState["getProductName"]> {
-  return (props.product as Product)?.names?.[0]?.value || "Product";
+function getProductName(): ReturnType<ProductCardState['getProductName']> {
+  return (props.product as Product)?.names?.[0]?.value || 'Product';
 }
-function getProductSku(): ReturnType<ProductCardState["getProductSku"]> {
-  return (props.product as Product)?.sku || "";
+function getProductSku(): ReturnType<ProductCardState['getProductSku']> {
+  return (props.product as Product)?.sku || '';
 }
-function getProductImageUrl(): ReturnType<
-  ProductCardState["getProductImageUrl"]
-> {
-  return (
-    (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]
-      ?.url || ""
-  );
+function getProductImageUrl(): ReturnType<ProductCardState['getProductImageUrl']> {
+  return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
 }
-function getProductPrice(): ReturnType<ProductCardState["getProductPrice"]> {
+function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
   const priceObj = (props.product as Product)?.price;
   const useTax: boolean =
-    props.includeTax.value !== undefined
-      ? !!props.includeTax.value
-      : includeTax.value;
+    props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;
   const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
-  if (!value && value !== 0) return "";
+  if (!value && value !== 0) return '';
   return `\u20AC${Number(value).toFixed(2)}`;
 }
-function getProductUrl(): ReturnType<ProductCardState["getProductUrl"]> {
+function getProductUrl(): ReturnType<ProductCardState['getProductUrl']> {
   return props.configuration.urls.getProductUrl(props.product);
 }
-function getProductShortDescription(): ReturnType<
-  ProductCardState["getProductShortDescription"]
-> {
-  return (props.product as Product)?.shortDescriptions?.[0]?.value || "";
+function getProductShortDescription(): ReturnType<ProductCardState['getProductShortDescription']> {
+  return (props.product as Product)?.shortDescriptions?.[0]?.value || '';
 }
-function getProductManufacturer(): ReturnType<
-  ProductCardState["getProductManufacturer"]
-> {
-  return (props.product as Product)?.manufacturer || "";
+function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {
+  return (props.product as Product)?.manufacturer || '';
 }
-function getLabel(
-  key: string,
-  fallback: string
-): ReturnType<ProductCardState["getLabel"]> {
+function getLabel(key: string, fallback: string): ReturnType<ProductCardState['getLabel']> {
   return (props.labels as Record<string, string>)?.[key] || fallback;
 }
-function getAttributeValue(
-  code: string
-): ReturnType<ProductCardState["getAttributeValue"]> {
+function getAttributeValue(code: string): ReturnType<ProductCardState['getAttributeValue']> {
   const attrs = (props.product as Product)?.attributes?.items || [];
-  const found = attrs.find(
-    (a: AttributeResult) => a.attributeDescription?.name === code
-  );
-  return found?.value?.value || "";
+  const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
+  return found?.value?.value || '';
 }
-function handleProductClick(
-  e: any
-): ReturnType<ProductCardState["handleProductClick"]> {
+function handleProductClick(e: any): ReturnType<ProductCardState['handleProductClick']> {
   if (props.onProductClick) {
     e.preventDefault();
     props.onProductClick(props.product);
   }
 }
-function handleToggleFavorite(
-  e: any
-): ReturnType<ProductCardState["handleToggleFavorite"]> {
+function handleToggleFavorite(e: any): ReturnType<ProductCardState['handleToggleFavorite']> {
   e.preventDefault();
   e.stopPropagation();
   isFavorite.value = !isFavorite.value;
@@ -508,35 +460,25 @@ function handleToggleFavorite(
     props.onToggleFavorite(props.product, isFavorite.value);
   }
 }
-function computedImageLabels(): ReturnType<
-  ProductCardState["computedImageLabels"]
-> {
-  if (!props.imageLabels || (props.imageLabels as string[]).length === 0)
-    return [];
+function computedImageLabels(): ReturnType<ProductCardState['computedImageLabels']> {
+  if (!props.imageLabels || (props.imageLabels as string[]).length === 0) return [];
   const attrs = (props.product as Product)?.attributes?.items || [];
   return (props.imageLabels as string[])
     .map((code: string) => {
-      const found = attrs.find(
-        (a: AttributeResult) => a.attributeDescription?.name === code
-      );
-      return found?.value?.value || "";
+      const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
+      return found?.value?.value || '';
     })
     .filter((v: string) => v.length > 0);
 }
-function computedTextLabels(): ReturnType<
-  ProductCardState["computedTextLabels"]
-> {
-  if (!props.textLabels || (props.textLabels as string[]).length === 0)
-    return [];
+function computedTextLabels(): ReturnType<ProductCardState['computedTextLabels']> {
+  if (!props.textLabels || (props.textLabels as string[]).length === 0) return [];
   const attrs = (props.product as Product)?.attributes?.items || [];
   return (props.textLabels as string[])
     .map((code: string) => {
-      const found = attrs.find(
-        (a: AttributeResult) => a.attributeDescription?.name === code
-      );
+      const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
       return {
         name: code,
-        value: found?.value?.value || "",
+        value: found?.value?.value || '',
       };
     })
     .filter((item: { name: string; value: string }) => item.value.length > 0);

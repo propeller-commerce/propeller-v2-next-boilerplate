@@ -1,18 +1,8 @@
 <template>
-  <div
-    :class="`space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${
-      className || ''
-    }`"
-  >
-    <template
-      v-if="
-        showPriceFilter() && (priceMin !== undefined || priceMax !== undefined)
-      "
-    >
+  <div :class="`space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${className || ''}`">
+    <template v-if="showPriceFilter() && (priceMin !== undefined || priceMax !== undefined)">
       <div class="space-y-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Price Range
-        </h3>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Price Range</h3>
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <span
@@ -24,9 +14,7 @@
               :value="currentMin"
               :min="getMinBound()"
               :max="getMaxBound()"
-              @change="
-                async (e) => handleMinChange(parseFloat(e.target.value) || 0)
-              "
+              @change="async (e) => handleMinChange(parseFloat(e.target.value) || 0)"
               @blur="async (event) => applyPrice()"
             />
           </div>
@@ -41,9 +29,7 @@
               :value="currentMax"
               :min="getMinBound()"
               :max="getMaxBound()"
-              @change="
-                async (e) => handleMaxChange(parseFloat(e.target.value) || 0)
-              "
+              @change="async (e) => handleMaxChange(parseFloat(e.target.value) || 0)"
               @blur="async (event) => applyPrice()"
             />
           </div>
@@ -74,9 +60,7 @@
               }
             "
           />
-          <div
-            class="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10"
-          ></div>
+          <div class="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10"></div>
         </div>
       </div>
       <div class="h-px bg-gray-100"></div>
@@ -86,10 +70,7 @@
       <p class="text-sm text-gray-400 italic">No filters available</p>
     </template>
 
-    <template
-      :key="getFilterName(filter)"
-      v-for="(filter, index) in getFilteredFilters()"
-    >
+    <template :key="getFilterName(filter)" v-for="(filter, index) in getFilteredFilters()">
       <div class="border-b border-gray-100 pb-3 last:border-b-0">
         <button
           type="button"
@@ -117,25 +98,17 @@
         </button>
         <template v-if="isExpanded(getFilterName(filter))">
           <div class="pt-2 space-y-1.5">
-            <template
-              :key="option.value"
-              v-for="(option, index) in getValidOptions(filter)"
-            >
+            <template :key="option.value" v-for="(option, index) in getValidOptions(filter)">
               <label class="flex items-center gap-2 cursor-pointer group"
                 ><input
                   type="checkbox"
                   class="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer flex-shrink-0"
                   :checked="isSelected(getFilterName(filter), option.value)"
-                  @change="
-                    async (e) =>
-                      handleCheckbox(filter, option.value, e.target.checked)
-                  "
+                  @change="async (e) => handleCheckbox(filter, option.value, e.target.checked)"
                 /><span
                   class="flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900"
                   >{{ option.value
-                  }}<span class="ml-1 text-xs text-gray-400">
-                    ({{ getCount(option) }})
-                  </span></span
+                  }}<span class="ml-1 text-xs text-gray-400"> ({{ getCount(option) }}) </span></span
                 ></label
               >
             </template>
@@ -147,9 +120,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch } from 'vue';
 
-import { Contact, Customer, AttributeFilter } from "propeller-sdk-v2";
+import { Contact, Customer, AttributeFilter } from 'propeller-sdk-v2';
 
 export interface GridFiltersProps {
   /**
@@ -224,11 +197,7 @@ interface GridFiltersState {
   isSelected: (filterName: string, value: string) => boolean;
   isExpanded: (filterName: string) => boolean;
   toggleAccordion: (filterName: string) => void;
-  handleCheckbox: (
-    filter: AttributeFilter,
-    value: string,
-    checked: boolean
-  ) => void;
+  handleCheckbox: (filter: AttributeFilter, value: string, checked: boolean) => void;
   handleMinChange: (value: number) => void;
   handleMaxChange: (value: number) => void;
   applyPrice: () => void;
@@ -239,10 +208,10 @@ interface GridFiltersState {
 }
 
 const props = defineProps<GridFiltersProps>();
-const selectedFilters = ref<GridFiltersState["selectedFilters"]>({});
-const currentMin = ref<GridFiltersState["currentMin"]>(0);
-const currentMax = ref<GridFiltersState["currentMax"]>(9999);
-const expandedFilters = ref<GridFiltersState["expandedFilters"]>({});
+const selectedFilters = ref<GridFiltersState['selectedFilters']>({});
+const currentMin = ref<GridFiltersState['currentMin']>(0);
+const currentMax = ref<GridFiltersState['currentMax']>(9999);
+const expandedFilters = ref<GridFiltersState['expandedFilters']>({});
 
 watch(
   () => [props.filters],
@@ -253,15 +222,13 @@ watch(
       ...currentExp,
     };
     let changed = false;
-    ((props.filters as AttributeFilter[]) || []).forEach(
-      (f: AttributeFilter) => {
-        const n = f?.attributeDescription?.name;
-        if (n && nextExp[n] === undefined) {
-          nextExp[n] = open;
-          changed = true;
-        }
+    ((props.filters as AttributeFilter[]) || []).forEach((f: AttributeFilter) => {
+      const n = f?.attributeDescription?.name;
+      if (n && nextExp[n] === undefined) {
+        nextExp[n] = open;
+        changed = true;
       }
-    );
+    });
     const sel = selectedFilters.value as Record<string, string[]>;
     Object.keys(nextExp).forEach((k: string) => {
       if (nextExp[k] && !(sel[k] || []).length) {
@@ -292,45 +259,34 @@ watch(
   },
   { immediate: true }
 );
-function showPriceFilter(): ReturnType<GridFiltersState["showPriceFilter"]> {
-  const mode = (props.portalMode as string) || "open";
-  if (mode === "open") return true;
+function showPriceFilter(): ReturnType<GridFiltersState['showPriceFilter']> {
+  const mode = (props.portalMode as string) || 'open';
+  if (mode === 'open') return true;
   return !!props.user;
 }
-function getFilterName(
-  filter: AttributeFilter
-): ReturnType<GridFiltersState["getFilterName"]> {
-  return (filter as AttributeFilter)?.attributeDescription?.name || "";
+function getFilterName(filter: AttributeFilter): ReturnType<GridFiltersState['getFilterName']> {
+  return (filter as AttributeFilter)?.attributeDescription?.name || '';
 }
-function getFilterTitle(
-  filter: AttributeFilter
-): ReturnType<GridFiltersState["getFilterTitle"]> {
+function getFilterTitle(filter: AttributeFilter): ReturnType<GridFiltersState['getFilterTitle']> {
   return (
-    (filter as AttributeFilter)?.attributeDescription?.descriptions?.[0]
-      ?.value ||
+    (filter as AttributeFilter)?.attributeDescription?.descriptions?.[0]?.value ||
     (filter as AttributeFilter)?.attributeDescription?.name ||
-    ""
+    ''
   );
 }
-function getFilteredFilters(): ReturnType<
-  GridFiltersState["getFilteredFilters"]
-> {
+function getFilteredFilters(): ReturnType<GridFiltersState['getFilteredFilters']> {
   const list = (props.filters as AttributeFilter[]) || [];
   return list.filter((f: AttributeFilter) => {
     const opts = (f?.textFilters as any[]) || [];
-    return opts.some(
-      (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0
-    );
+    return opts.some((o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0);
   });
 }
-function getValidOptions(
-  filter: AttributeFilter
-): ReturnType<GridFiltersState["getValidOptions"]> {
+function getValidOptions(filter: AttributeFilter): ReturnType<GridFiltersState['getValidOptions']> {
   return (((filter as AttributeFilter)?.textFilters as any[]) || []).filter(
     (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0
   );
 }
-function getSelectedCount(): ReturnType<GridFiltersState["getSelectedCount"]> {
+function getSelectedCount(): ReturnType<GridFiltersState['getSelectedCount']> {
   let n = 0;
   const sel = selectedFilters.value as Record<string, string[]>;
   Object.keys(sel).forEach((k: string) => {
@@ -338,28 +294,19 @@ function getSelectedCount(): ReturnType<GridFiltersState["getSelectedCount"]> {
   });
   return n;
 }
-function hasActiveFilters(): ReturnType<GridFiltersState["hasActiveFilters"]> {
+function hasActiveFilters(): ReturnType<GridFiltersState['hasActiveFilters']> {
   const sel = selectedFilters.value as Record<string, string[]>;
   return Object.keys(sel).some((k: string) => (sel[k] || []).length > 0);
 }
-function isSelected(
-  filterName: string,
-  value: string
-): ReturnType<GridFiltersState["isSelected"]> {
-  return (
-    (selectedFilters.value as Record<string, string[]>)[filterName] || []
-  ).includes(value);
+function isSelected(filterName: string, value: string): ReturnType<GridFiltersState['isSelected']> {
+  return ((selectedFilters.value as Record<string, string[]>)[filterName] || []).includes(value);
 }
-function isExpanded(
-  filterName: string
-): ReturnType<GridFiltersState["isExpanded"]> {
+function isExpanded(filterName: string): ReturnType<GridFiltersState['isExpanded']> {
   const stored = (expandedFilters.value as Record<string, boolean>)[filterName];
   if (stored === undefined) return props.collapsed === false;
   return !!stored;
 }
-function toggleAccordion(
-  filterName: string
-): ReturnType<GridFiltersState["toggleAccordion"]> {
+function toggleAccordion(filterName: string): ReturnType<GridFiltersState['toggleAccordion']> {
   const cur = !!(expandedFilters.value as Record<string, boolean>)[filterName];
   expandedFilters.value = {
     ...expandedFilters.value,
@@ -370,12 +317,10 @@ function handleCheckbox(
   filter: AttributeFilter,
   value: string,
   checked: boolean
-): ReturnType<GridFiltersState["handleCheckbox"]> {
-  const name = (filter as AttributeFilter)?.attributeDescription?.name || "";
+): ReturnType<GridFiltersState['handleCheckbox']> {
+  const name = (filter as AttributeFilter)?.attributeDescription?.name || '';
   const cur = (selectedFilters.value as Record<string, string[]>)[name] || [];
-  const next = checked
-    ? [...cur, value]
-    : cur.filter((v: string) => v !== value);
+  const next = checked ? [...cur, value] : cur.filter((v: string) => v !== value);
   selectedFilters.value = {
     ...selectedFilters.value,
     [name]: next,
@@ -389,39 +334,34 @@ function handleCheckbox(
   props.onFilterChange(filter, value);
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
-function handleMinChange(
-  value: number
-): ReturnType<GridFiltersState["handleMinChange"]> {
+function handleMinChange(value: number): ReturnType<GridFiltersState['handleMinChange']> {
   const n = value > currentMax.value ? currentMax.value : value;
   currentMin.value = n;
 }
-function handleMaxChange(
-  value: number
-): ReturnType<GridFiltersState["handleMaxChange"]> {
+function handleMaxChange(value: number): ReturnType<GridFiltersState['handleMaxChange']> {
   const n = value < currentMin.value ? currentMin.value : value;
   currentMax.value = n;
 }
-function applyPrice(): ReturnType<GridFiltersState["applyPrice"]> {
-  if (props.onPriceChange)
-    props.onPriceChange(currentMin.value, currentMax.value);
+function applyPrice(): ReturnType<GridFiltersState['applyPrice']> {
+  if (props.onPriceChange) props.onPriceChange(currentMin.value, currentMax.value);
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
-function clearAll(): ReturnType<GridFiltersState["clearAll"]> {
+function clearAll(): ReturnType<GridFiltersState['clearAll']> {
   selectedFilters.value = {};
   currentMin.value = (props.priceMin as number) || 0;
   currentMax.value = (props.priceMax as number) || 9999;
   if (props.onClearFilters) props.onClearFilters();
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
-function getCount(option: any): ReturnType<GridFiltersState["getCount"]> {
+function getCount(option: any): ReturnType<GridFiltersState['getCount']> {
   const c = option?.count || 0;
   const ca = option?.countActive || 0;
   return c === 0 && ca > 0 ? ca : c;
 }
-function getMinBound(): ReturnType<GridFiltersState["getMinBound"]> {
+function getMinBound(): ReturnType<GridFiltersState['getMinBound']> {
   return (props.priceMin as number) || 0;
 }
-function getMaxBound(): ReturnType<GridFiltersState["getMaxBound"]> {
+function getMaxBound(): ReturnType<GridFiltersState['getMaxBound']> {
   return (props.priceMax as number) || 9999;
 }
 </script>

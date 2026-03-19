@@ -9,18 +9,18 @@
             :disabled="getCurrentPage() === 1"
             @click="async (event) => handlePageChange(getCurrentPage() - 1)"
           >
-            {{ getLabel("previous") }}</button
+            {{ getLabel('previous') }}</button
           ><span class="px-2 text-sm font-medium text-gray-700"
-            >{{ getLabel("page") }}&nbsp;{{ getCurrentPage() }}&nbsp;{{
-              getLabel("of")
-            }}&nbsp;{{ getTotalPages() }}</span
+            >{{ getLabel('page') }}&nbsp;{{ getCurrentPage() }}&nbsp;{{ getLabel('of') }}&nbsp;{{
+              getTotalPages()
+            }}</span
           ><button
             type="button"
             class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             :disabled="getCurrentPage() === getTotalPages()"
             @click="async (event) => handlePageChange(getCurrentPage() + 1)"
           >
-            {{ getLabel("next") }}
+            {{ getLabel('next') }}
           </button>
         </div>
       </template>
@@ -33,7 +33,7 @@
             :disabled="getCurrentPage() === 1"
             @click="async (event) => handlePageChange(getCurrentPage() - 1)"
           >
-            {{ getLabel("previous") }}</button
+            {{ getLabel('previous') }}</button
           ><template
             :key="item.type === 'dots' ? `dots-${idx}` : `page-${item.value}`"
             v-for="(item, idx) in getFullPages()"
@@ -67,7 +67,7 @@
             :disabled="getCurrentPage() === getTotalPages()"
             @click="async (event) => handlePageChange(getCurrentPage() + 1)"
           >
-            {{ getLabel("next") }}
+            {{ getLabel('next') }}
           </button>
         </div>
       </template>
@@ -76,13 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import { ProductsResponse } from "propeller-sdk-v2";
+import { ProductsResponse } from 'propeller-sdk-v2';
 // Built-in label defaults (can be overridden via the labels prop).
 const DEFAULT_LABELS: Record<string, string> = {
-  previous: "Previous",
-  next: "Next",
-  page: "Page",
-  of: "of",
+  previous: 'Previous',
+  next: 'Next',
+  page: 'Page',
+  of: 'of',
 };
 
 // Built-in label defaults (can be overridden via the labels prop).
@@ -149,20 +149,20 @@ interface GridPaginationState {
 
 const props = defineProps<GridPaginationProps>();
 
-function getLabel(key: string): ReturnType<GridPaginationState["getLabel"]> {
+function getLabel(key: string): ReturnType<GridPaginationState['getLabel']> {
   const labels = (props.labels as Record<string, string>) || {};
   return labels[key] !== undefined ? labels[key] : DEFAULT_LABELS[key] || key;
 }
-function getTotalPages(): ReturnType<GridPaginationState["getTotalPages"]> {
+function getTotalPages(): ReturnType<GridPaginationState['getTotalPages']> {
   return (props.products as ProductsResponse)?.pages || 1;
 }
-function getCurrentPage(): ReturnType<GridPaginationState["getCurrentPage"]> {
+function getCurrentPage(): ReturnType<GridPaginationState['getCurrentPage']> {
   return (props.products as ProductsResponse)?.page || 1;
 }
-function showPagination(): ReturnType<GridPaginationState["showPagination"]> {
+function showPagination(): ReturnType<GridPaginationState['showPagination']> {
   return getTotalPages() > 1;
 }
-function getFullPages(): ReturnType<GridPaginationState["getFullPages"]> {
+function getFullPages(): ReturnType<GridPaginationState['getFullPages']> {
   const total = getTotalPages();
   const current = getCurrentPage();
   const sibling = (props.siblingCount as number) || 5;
@@ -172,7 +172,7 @@ function getFullPages(): ReturnType<GridPaginationState["getFullPages"]> {
     const items: PageItem[] = [];
     for (let i = 1; i <= total; i++)
       items.push({
-        type: "page",
+        type: 'page',
         value: i,
       });
     return items;
@@ -195,21 +195,21 @@ function getFullPages(): ReturnType<GridPaginationState["getFullPages"]> {
 
   // First page
   items.push({
-    type: "page",
+    type: 'page',
     value: 1,
   });
 
   // Left ellipsis (value -1 is a unique sentinel)
   if (rangeStart > 2)
     items.push({
-      type: "dots",
+      type: 'dots',
       value: -1,
     });
 
   // Sibling window
   for (let i = rangeStart; i <= rangeEnd; i++) {
     items.push({
-      type: "page",
+      type: 'page',
       value: i,
     });
   }
@@ -217,20 +217,18 @@ function getFullPages(): ReturnType<GridPaginationState["getFullPages"]> {
   // Right ellipsis (value -2 is a unique sentinel)
   if (rangeEnd < total - 1)
     items.push({
-      type: "dots",
+      type: 'dots',
       value: -2,
     });
 
   // Last page
   items.push({
-    type: "page",
+    type: 'page',
     value: total,
   });
   return items;
 }
-function handlePageChange(
-  page: number
-): ReturnType<GridPaginationState["handlePageChange"]> {
+function handlePageChange(page: number): ReturnType<GridPaginationState['handlePageChange']> {
   if (props.onPageChange) props.onPageChange(page);
 }
 </script>

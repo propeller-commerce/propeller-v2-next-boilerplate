@@ -92,7 +92,9 @@ export default function ActionCode(props: ActionCodeProps) {
             const cartService = new CartService(props.graphqlClient);
             const cartActionCodeVariables: CartActionCodeVariables = {
                 id: props.cart?.cartId,
-                code: state.code.trim(),
+                input: {
+                    actionCode: state.code.trim()
+                },
                 language: props.language || 'NL',
                 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                 imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
@@ -126,7 +128,9 @@ export default function ActionCode(props: ActionCodeProps) {
             const cartService = new CartService(props.graphqlClient);
             const cartActionCodeVariables: CartActionCodeVariables = {
                 id: props.cart?.cartId,
-                code: code,
+                input: {
+                    actionCode: code
+                },
                 language: props.language || 'NL',
                 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                 imageVariantFilters: props.configuration?.imageVariantFiltersSmall,

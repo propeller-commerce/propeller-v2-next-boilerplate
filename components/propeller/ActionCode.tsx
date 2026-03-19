@@ -109,7 +109,9 @@ return;
 const cartService = new CartService(props.graphqlClient);
 const cartActionCodeVariables: CartActionCodeVariables = {
 id: props.cart?.cartId,
-code: code.trim(),
+input: {
+  actionCode: code.trim()
+},
 language: props.language || 'NL',
 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
 imageVariantFilters: props.configuration?.imageVariantFiltersSmall
@@ -141,7 +143,9 @@ return;
 const cartService = new CartService(props.graphqlClient);
 const cartActionCodeVariables: CartActionCodeVariables = {
 id: props.cart?.cartId,
-code: code,
+input: {
+  actionCode: code
+},
 language: props.language || 'NL',
 imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
 imageVariantFilters: props.configuration?.imageVariantFiltersSmall

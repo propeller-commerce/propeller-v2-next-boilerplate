@@ -146,7 +146,7 @@ interface AddToCartState {
  getProductImageUrl: () => string;
  getProductSku: () => string;
  getProductPrice: () => string;
- initCart: () => Promise<void>;
+ initCart: () => Promise<string>;
  handleAddToCart: () => Promise<void>;
  closeModal: () => void;
  getLabel: (key: string, fallback: string) => string;
@@ -253,9 +253,9 @@ if (props.user) {
    }
    const carts = await cartService.getCarts(searchInput);
    if (carts && carts.items && carts.items.length > 0) {
-     const cartId = carts.items[carts.items.length - 1].cartId;
+     const existingCartId = carts.items[carts.items.length - 1].cartId;
      const cartVariables: CartQueryVariables = {
-       cartId: cartId,
+       cartId: existingCartId,
        imageSearchFilters: props.configuration.imageSearchFiltersGrid,
        imageVariantFilters: props.configuration.imageVariantFiltersSmall,
        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
@@ -265,6 +265,7 @@ if (props.user) {
      if (props.onCartCreated) {
        props.onCartCreated(cart);
      }
+     return cart.cartId;
    }
  } catch (e) {
    console.error("Failed to check existing carts", e);
@@ -358,6 +359,7 @@ setActiveCartId(newCart.cartId);
 if (props.onCartCreated) {
  props.onCartCreated(newCart);
 }
+return newCart.cartId;
 }
 
 
@@ -391,8 +393,7 @@ try {
    let cartId = props.cartId || activeCartId;
    if (!cartId) {
      if (props.createCart) {
-       await initCart();
-       cartId = activeCartId;
+       cartId = await initCart();
      }
      if (!cartId) {
        showToast(getLabel('noCartId', 'No cart ID provided'), 'error');

@@ -162,7 +162,7 @@ interface AddToCartState {
     getProductImageUrl: () => string;
     getProductSku: () => string;
     getProductPrice: () => string;
-    initCart: () => Promise<void>;
+    initCart: () => Promise<string>;
     handleAddToCart: () => Promise<void>;
     closeModal: () => void;
     getLabel: (key: string, fallback: string) => string;
@@ -224,7 +224,7 @@ export default function AddToCart(props: AddToCartProps) {
             return `\u20AC${Number(price).toFixed(2)}`;
         },
 
-        async initCart() {
+        async initCart(): Promise<string> {
             const cartService = new CartService(props.graphqlClient);
             // 1. Check for existing carts for this user first
             if (props.user) {
@@ -245,10 +245,10 @@ export default function AddToCart(props: AddToCartProps) {
                     const carts = await cartService.getCarts(searchInput);
 
                     if (carts && carts.items && carts.items.length > 0) {
-                        const cartId = carts.items[carts.items.length - 1].cartId;
+                        const existingCartId = carts.items[carts.items.length - 1].cartId;
 
                         const cartVariables: CartQueryVariables = {
-                            cartId: cartId,
+                            cartId: existingCartId,
                             imageSearchFilters: props.configuration.imageSearchFiltersGrid,
                             imageVariantFilters: props.configuration.imageVariantFiltersSmall,
                             language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
@@ -261,6 +261,8 @@ export default function AddToCart(props: AddToCartProps) {
                         if (props.onCartCreated) {
                             props.onCartCreated(cart);
                         }
+
+                        return cart.cartId;
                     }
                 } catch (e) {
                     console.error("Failed to check existing carts", e);
@@ -360,6 +362,8 @@ export default function AddToCart(props: AddToCartProps) {
             if (props.onCartCreated) {
                 props.onCartCreated(newCart);
             }
+
+            return newCart.cartId;
         },
 
         async handleAddToCart() {
@@ -406,8 +410,7 @@ export default function AddToCart(props: AddToCartProps) {
 
                     if (!cartId) {
                         if (props.createCart) {
-                            await state.initCart();
-                            cartId = state.activeCartId;
+                            cartId = await state.initCart();
                         }
 
                         if (!cartId) {

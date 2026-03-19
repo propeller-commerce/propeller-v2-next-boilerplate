@@ -11,6 +11,8 @@ import {
     CartAddBundleVariables,
     CartSearchInput,
     Bundle,
+    BundleItem,
+    Product,
     CartQueryVariables,
     CartStartInput,
     CartStartVariables,
@@ -148,13 +150,13 @@ interface ProductBundlesState {
     getHidePrices: () => boolean;
     getLabel: (key: string, fallback: string) => string;
     formatPrice: (value: number) => string;
-    getBundlePrice: (bundle: any) => number;
-    getOriginalPrice: (bundle: any) => number;
-    getItemPrice: (item: any) => number;
-    hasDiscount: (bundle: any) => boolean;
-    getDiscountPercentage: (bundle: any) => number;
-    getProductImage: (product: any) => string;
-    getProductName: (product: any) => string;
+    getBundlePrice: (bundle: Bundle) => number;
+    getOriginalPrice: (bundle: Bundle) => number;
+    getItemPrice: (item: BundleItem) => number;
+    hasDiscount: (bundle: Bundle) => boolean;
+    getDiscountPercentage: (bundle: Bundle) => number;
+    getProductImage: (product: Product) => string;
+    getProductName: (product: Product) => string;
     showToast: (message: string, type: string) => void;
     dismissToast: () => void;
     closeModal: () => void;
@@ -206,35 +208,35 @@ export default function ProductBundles(props: ProductBundlesProps) {
             return '\u20AC' + Number(value).toFixed(2);
         },
 
-        getBundlePrice(bundle: any): number {
+        getBundlePrice(bundle: Bundle): number {
             return state.getIncludeTax() ? bundle.price?.net || 0 : bundle.price?.gross || 0;
         },
 
-        getOriginalPrice(bundle: any): number {
+        getOriginalPrice(bundle: Bundle): number {
             return state.getIncludeTax() ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
         },
 
-        getItemPrice(item: any): number {
+        getItemPrice(item: BundleItem): number {
             return state.getIncludeTax() ? item.price?.net || 0 : item.price?.gross || 0;
         },
 
-        hasDiscount(bundle: any): boolean {
+        hasDiscount(bundle: Bundle): boolean {
             const current: number = state.getBundlePrice(bundle);
             const original: number = state.getOriginalPrice(bundle);
             return original > 0 && current < original;
         },
 
-        getDiscountPercentage(bundle: any): number {
+        getDiscountPercentage(bundle: Bundle): number {
             const original: number = state.getOriginalPrice(bundle);
             if (original <= 0) return 0;
             return Math.round(((original - state.getBundlePrice(bundle)) / original) * 100);
         },
 
-        getProductImage(product: any): string {
+        getProductImage(product: Product): string {
             return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
         },
 
-        getProductName(product: any): string {
+        getProductName(product: Product): string {
             return product?.names?.[0]?.value || '';
         },
 
@@ -473,7 +475,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                     state.lastAddedBundle = bundle;
                     state.modalVisible = true;
                 } else {
-                    const bundleName = (bundle as any).name || state.getLabel('title', 'Bundle');
+                    const bundleName = bundle.name || state.getLabel('title', 'Bundle');
                     state.showToast(`${bundleName} ${state.getLabel('addedToCart', 'added to cart')}`, 'success');
                 }
             } catch (error) {
@@ -500,104 +502,118 @@ export default function ProductBundles(props: ProductBundlesProps) {
         <Show when={state.isMounted && !state.isLoading && state.bundles.length > 0}>
             <div className={props.className || 'mb-12'}>
                 <For each={state.bundles}>
-                    {(bundle: any, bundleIdx: number) => (
-                        <div key={bundle.id || bundleIdx} className="border rounded-lg overflow-hidden mb-6">
-                            {/* Bundle header */}
-                            <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-                                <div className="flex items-center gap-3">
-                                    <h3 className="text-lg font-bold">
-                                        {bundle.name || state.getLabel('title', 'Combo deal')}
-                                    </h3>
-                                    <Show when={!state.getHidePrices() && state.hasDiscount(bundle)}>
-                                        <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-0.5 rounded">
-                                            -{state.getDiscountPercentage(bundle)}%
-                                        </span>
-                                    </Show>
-                                </div>
-                                <Show when={bundle.condition}>
-                                    <span className="text-xs text-gray-500">
-                                        {bundle.condition === 'ALL'
-                                            ? state.getLabel('condition_ALL', 'Discount on all items')
-                                            : state.getLabel('condition_EP', 'Discount on extra items')}
-                                    </span>
-                                </Show>
-                            </div>
-
-                            {/* Bundle items */}
-                            <Show when={state.getShowItems() && state.getLayout() !== 'compact' && bundle.items && bundle.items.length > 0}>
-                                <div className="p-4">
-                                    <For each={bundle.items}>
-                                        {(item: any, idx: number) => (
-                                            <div key={item.productId + '-' + idx} className="flex items-center gap-3 mb-3">
-                                                <div className="w-16 h-16 bg-gray-50 rounded overflow-hidden flex-shrink-0">
-                                                    <Show when={state.getProductImage(item.product)}>
-                                                        <img
-                                                            src={state.getProductImage(item.product)}
-                                                            alt={state.getProductName(item.product)}
-                                                            className="w-full h-full object-contain p-1"
-                                                        />
-                                                    </Show>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium truncate">
-                                                        {state.getProductName(item.product) || 'Product ' + item.productId}
-                                                    </div>
-                                                    <Show when={item.product?.sku}>
-                                                        <div className="text-xs text-gray-500">SKU: {item.product.sku}</div>
-                                                    </Show>
-                                                    <Show when={!state.getHidePrices() && item.price}>
-                                                        <div className="text-sm text-gray-700 mt-0.5">
-                                                            {state.formatPrice(state.getItemPrice(item))}
+                    {(bundle: Bundle, bundleIdx: number) => (
+                        <div key={bundle.id || bundleIdx} className="border border-gray-200 rounded-xl bg-white shadow-sm mb-6 p-6">
+                            <div className="flex flex-col lg:flex-row items-center gap-6">
+                                {/* Bundle items — horizontal with + separators */}
+                                <Show when={state.getShowItems() && state.getLayout() !== 'compact' && bundle.items && bundle.items.length > 0}>
+                                    <div className="flex flex-wrap items-center justify-center gap-2 flex-1">
+                                        <For each={bundle.items}>
+                                            {(item: BundleItem, idx: number) => (
+                                                <div key={item.productId + '-' + idx} className="flex items-center gap-2">
+                                                    {/* + separator before item (skip first) */}
+                                                    <Show when={idx > 0}>
+                                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                            </svg>
                                                         </div>
                                                     </Show>
-                                                    <Show when={item.isLeader === 'Y'}>
-                                                        <span className="text-xs text-blue-600 font-medium">
-                                                            {state.getLabel('leaderItem', 'Main product')}
-                                                        </span>
-                                                    </Show>
+                                                    {/* Product card */}
+                                                    <div className="flex flex-col items-center text-center w-40">
+                                                        <div className="w-32 h-32 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 mb-2">
+                                                            <Show when={state.getProductImage(item.product)}>
+                                                                <img
+                                                                    src={state.getProductImage(item.product)}
+                                                                    alt={state.getProductName(item.product)}
+                                                                    className="w-full h-full object-contain p-2"
+                                                                />
+                                                            </Show>
+                                                        </div>
+                                                        <div className="text-sm font-medium text-gray-600 leading-tight mb-1">
+                                                            {state.getProductName(item.product) || 'Product ' + item.productId}
+                                                        </div>
+                                                        <Show when={!state.getHidePrices() && item.price}>
+                                                            <div className="text-sm font-semibold text-gray-900">
+                                                                {state.formatPrice(state.getItemPrice(item))}
+                                                                <span className="text-xs font-normal text-gray-500 ml-1">
+                                                                    {state.getIncludeTax()
+                                                                        ? state.getLabel('inclTax', 'incl. VAT')
+                                                                        : state.getLabel('exclTax', 'excl. VAT')}
+                                                                </span>
+                                                            </div>
+                                                        </Show>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </For>
-                                </div>
-                            </Show>
-
-                            {/* Bundle pricing + add to cart */}
-                            <Show when={!state.getHidePrices()}>
-                                <div className="flex items-center justify-between p-4 border-t bg-white">
-                                    <div className="flex items-center gap-4">
-                                        <Show when={state.hasDiscount(bundle)}>
-                                            <span className="text-gray-400 line-through text-sm">
-                                                {state.formatPrice(state.getOriginalPrice(bundle))}
-                                            </span>
-                                        </Show>
-                                        <span className="text-xl font-bold text-blue-600">
-                                            {state.formatPrice(state.getBundlePrice(bundle))}
-                                        </span>
-                                        <Show when={state.hasDiscount(bundle)}>
-                                            <span className="text-sm text-green-600 font-medium">
-                                                {state.getLabel('youSave', 'You save')} {state.formatPrice(state.getOriginalPrice(bundle) - state.getBundlePrice(bundle))}
-                                            </span>
-                                        </Show>
+                                            )}
+                                        </For>
                                     </div>
-                                    <button
-                                        onClick={() => state.handleAddToCart(bundle)}
-                                        disabled={state.addingBundleId === bundle.id}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {state.addingBundleId === bundle.id
-                                            ? state.getLabel('adding', 'Adding...')
-                                            : state.getLabel('addToCart', 'Add bundle to cart')}
-                                    </button>
-                                </div>
-                            </Show>
+                                </Show>
 
-                            {/* Semi-closed: login prompt */}
-                            <Show when={state.getHidePrices()}>
-                                <div className="p-4 border-t bg-gray-50 text-center text-sm text-gray-500">
-                                    {state.getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
+                                {/* Discount separator */}
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5M3.75 7.5h16.5" />
+                                    </svg>
                                 </div>
-                            </Show>
+
+                                {/* Summary panel */}
+                                <div className="flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
+                                    <h3 className="text-xl font-bold text-gray-700 mb-1">
+                                        {bundle.name || state.getLabel('title', 'Combo deal')}
+                                    </h3>
+                                    <Show when={bundle.description}>
+                                        <p className="text-sm text-gray-600 mb-3">{bundle.description}</p>
+                                    </Show>
+                                    <Show when={bundle.condition}>
+                                        <p className="text-xs text-gray-500 mb-3">
+                                            {bundle.condition === Enums.BundleCondition.ALL
+                                                ? state.getLabel('condition_ALL', 'Discount on all items')
+                                                : state.getLabel('condition_EP', 'Discount on extra items')}
+                                        </p>
+                                    </Show>
+
+                                    <Show when={!state.getHidePrices()}>
+                                        <div className="mb-3">
+                                            <Show when={state.hasDiscount(bundle)}>
+                                                <span className="text-gray-400 line-through text-sm">
+                                                    {state.formatPrice(state.getOriginalPrice(bundle))}
+                                                </span>
+                                            </Show>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-2xl font-bold text-gray-900">
+                                                    {state.formatPrice(state.getBundlePrice(bundle))}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {state.getIncludeTax()
+                                                        ? state.getLabel('inclTax', 'incl. VAT')
+                                                        : state.getLabel('exclTax', 'excl. VAT')}
+                                                </span>
+                                            </div>
+                                            <Show when={state.hasDiscount(bundle)}>
+                                                <div className="mt-2 inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-md">
+                                                    {state.getLabel('youSave', 'Your savings:')} {state.formatPrice(state.getOriginalPrice(bundle) - state.getBundlePrice(bundle))}
+                                                </div>
+                                            </Show>
+                                        </div>
+                                        <button
+                                            onClick={() => state.handleAddToCart(bundle)}
+                                            disabled={state.addingBundleId === bundle.id}
+                                            className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                                        >
+                                            {state.addingBundleId === bundle.id
+                                                ? state.getLabel('adding', 'Adding...')
+                                                : state.getLabel('addToCart', 'In cart')}
+                                        </button>
+                                    </Show>
+
+                                    <Show when={state.getHidePrices()}>
+                                        <div className="text-center text-sm text-gray-500 py-2">
+                                            {state.getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
+                                        </div>
+                                    </Show>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </For>
@@ -664,11 +680,11 @@ export default function ProductBundles(props: ProductBundlesProps) {
                             <div className="px-6 py-5 flex items-start gap-4">
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900">
-                                        {(state.lastAddedBundle as any)?.name || state.getLabel('title', 'Bundle')}
+                                        {state.lastAddedBundle?.name || state.getLabel('title', 'Bundle')}
                                     </p>
                                     <Show when={!state.getHidePrices() && state.lastAddedBundle}>
                                         <p className="text-sm font-semibold text-blue-600 mt-1">
-                                            {state.formatPrice(state.getBundlePrice(state.lastAddedBundle))}
+                                            {state.formatPrice(state.getBundlePrice(state.lastAddedBundle!))}
                                         </p>
                                     </Show>
                                 </div>

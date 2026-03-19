@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { Category, Contact, Customer, GraphQLClient, LocalizedString } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
 
 export interface MenuProps {
   /**
@@ -399,11 +400,7 @@ function Menu(props: MenuProps) {
                 key={l1.categoryId || idx}
                 onMouseEnter={(event) => setHoveredL1(l1.categoryId)}
                 onClick={(e) => handleItemClick(l1, e)}
-                className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
-                  hoveredL1Id === l1.categoryId
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-foreground hover:text-primary hover:border-primary/50'
-                }`}
+                className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${hoveredL1Id === l1.categoryId ? 'border-primary text-primary' : 'border-transparent text-foreground hover:text-primary hover:border-primary/50'}`}
               >
                 {getCategoryName(l1)}
               </button>

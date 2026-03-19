@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
-const tsconfigPath = new URL('../tsconfig.json', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const tsconfigPath = new URL('../tsconfig.json', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
 const original = readFileSync(tsconfigPath, 'utf8');
 

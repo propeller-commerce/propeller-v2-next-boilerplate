@@ -81,7 +81,7 @@ export default function ProductPage() {
 
                 {product?.inventory && (
                   <div className="mt-4">
-                    <ItemStock inventory={product.inventory} />
+                    <ItemStock inventory={product.inventory} showAvailability={false}/>
                   </div>
                 )}
               </div>
@@ -110,27 +110,51 @@ export default function ProductPage() {
             </div>
           </div>
           <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} />
-          <ProductBundles
+          <div className="my-6">
+            <ProductBundles
+              graphqlClient={graphqlClient}
+              productId={productId}
+              language="NL"
+              cartId={cart?.cartId}
+              taxZone="NL"
+              includeTax={includeTax}
+              configuration={config}
+              user={state.user}
+              createCart={true}
+              showModal={true}
+              onCartCreated={(newCart) => saveCart(newCart)}
+              afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
+              onProceedToCheckout={() => router.push('/checkout')}
+            />
+          </div>
+          <ProductSlider
             graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
             productId={productId}
             language="NL"
-            cartId={cart?.cartId}
             taxZone="NL"
-            configuration={config}
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
             user={state.user}
+            cartId={cart?.cartId}
             createCart={true}
-            showModal={true}
             onCartCreated={(newCart) => saveCart(newCart)}
-            afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
             onProceedToCheckout={() => router.push('/checkout')}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES, Enums.CrossupsellType.RELATED]}
+            crossUpsellTypes={[Enums.CrossupsellType.RELATED]}
             productId={productId}
             language="NL"
             taxZone="NL"
-            title="Related Products"
+            showAvailability={false}
+            showStock={true}
             includeTax={includeTax}
             user={state.user}
             cartId={cart?.cartId}

@@ -1,8 +1,9 @@
+import * as React from 'react';
 import {
-  LocalizedString,
-  LocalizedVideo,
-  MediaVideo,
   PaginatedMediaVideoResponse,
+  MediaVideo,
+  LocalizedVideo,
+  LocalizedString,
 } from 'propeller-sdk-v2';
 
 export interface ProductVideosProps {

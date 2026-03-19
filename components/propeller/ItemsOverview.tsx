@@ -1,5 +1,5 @@
 'use client';
-import { Cart, CartMainItem } from 'propeller-sdk-v2';
+import * as React from 'react';
 
 export interface ItemsOverviewProps {
   /** Shopping cart object from which the cart items overview will be displayed */
@@ -44,6 +44,7 @@ interface ItemsOverviewState {
   isInStock: (item: any) => boolean;
   handleItemNameClick: (item: any) => void;
 }
+import { Cart, CartMainItem } from 'propeller-sdk-v2';
 function ItemsOverview(props: ItemsOverviewProps) {
   function containerClass(): ReturnType<ItemsOverviewState['containerClass']> {
     return props.itemsOverviewContainerClass || 'cart-items-overview';

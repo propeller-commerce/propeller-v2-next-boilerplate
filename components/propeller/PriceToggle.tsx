@@ -1,6 +1,7 @@
 'use client';
+import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface PriceToggleProps {
   /**
@@ -32,7 +33,7 @@ interface PriceToggleState {
 }
 
 function PriceToggle(props: PriceToggleProps) {
-  const isOn = props.initialState ?? true;
+  const [isOn, setIsOn] = useState<PriceToggleState['isOn']>(() => props.initialState ?? true);
 
   function getLabel(): ReturnType<PriceToggleState['getLabel']> {
     return (props.label as string) || 'Prices:';
@@ -43,10 +44,23 @@ function PriceToggle(props: PriceToggleProps) {
   }
 
   function handleToggle(): ReturnType<PriceToggleState['handleToggle']> {
+    const newValue = !isOn;
+    setIsOn(newValue);
     if (props.inclExclVatSwitched) {
-      props.inclExclVatSwitched(!isOn);
+      props.inclExclVatSwitched(newValue);
     }
+    window.dispatchEvent(
+      new CustomEvent('priceToggleChanged', {
+        detail: newValue,
+      })
+    );
   }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOn(props.initialState ?? true);
+    }
+  }, []);
 
   return (
     <div className={`price-toggle flex items-center gap-2 ${(props.className as string) || ''}`}>
@@ -56,7 +70,7 @@ function PriceToggle(props: PriceToggleProps) {
         role="switch"
         className="hover:opacity-80 transition-opacity text-xs font-medium"
         aria-checked={isOn}
-        onClick={() => handleToggle()}
+        onClick={(event) => handleToggle()}
       >
         {getStatusText()}
       </button>

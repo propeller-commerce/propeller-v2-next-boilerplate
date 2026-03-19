@@ -1,22 +1,23 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
-  Cart,
-  CartMainItem,
+  GraphQLClient,
+  ProductService,
+  CrossupsellService,
+  Product,
   Cluster,
   Contact,
-  Crossupsell,
-  CrossupsellService,
-  CrossupsellsQueryVariables,
   Customer,
+  Cart,
+  CartMainItem,
   Enums,
-  GraphQLClient,
-  Product,
-  ProductService,
+  CrossupsellsQueryVariables,
+  Crossupsell,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
-import ClusterCard from './ClusterCard';
 import ProductCard from './ProductCard';
+import ClusterCard from './ClusterCard';
 
 export interface ProductSliderProps {
   // === Data source ===

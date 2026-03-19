@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { AttributeFilter, Contact, Customer } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Contact, Customer, AttributeFilter } from 'propeller-sdk-v2';
 
 export interface GridFiltersProps {
   /**
@@ -264,9 +265,7 @@ function GridFilters(props: GridFiltersProps) {
 
   return (
     <div
-      className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${
-        (props.className as string) || ''
-      }`}
+      className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}
     >
       {showPriceFilter() && (props.priceMin !== undefined || props.priceMax !== undefined) ? (
         <>
@@ -351,9 +350,7 @@ function GridFilters(props: GridFiltersProps) {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 ${
-                isExpanded(getFilterName(filter)) ? 'rotate-180' : ''
-              }`}
+              className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 ${isExpanded(getFilterName(filter)) ? 'rotate-180' : ''}`}
             >
               <path
                 strokeLinecap="round"

@@ -44,8 +44,8 @@ import { join, extname } from 'path';
 // Resolve output dirs relative to this script's location.
 function resolve(rel) {
     return new URL(rel, import.meta.url).pathname
-        // On Windows, url.pathname starts with /D:/... — strip the leading slash.
-        .replace(/^\/([A-Z]:)/, '$1');
+        // On Windows, url.pathname starts with /C:/... — strip the leading slash.
+        .replace(/^\/([A-Za-z]:)/, '$1');
 }
 
 // ── mid-file import hoisting ─────────────────────────────────────────────────
@@ -332,6 +332,72 @@ const FILE_PATCHES = [
             '  }',
         ].join('\n'),
     },
+    {
+        // Mitosis compiles `state.clickOutsideListener = listener` to
+        // `setClickOutsideListener(listener)`. React treats the function argument
+        // as an updater and calls it with null (the previous state), crashing with
+        // "Cannot read properties of null (reading 'target')".
+        //
+        // Fix: remove the unused clickOutsideListener useState, merge the listener
+        // creation and cleanup into a single useEffect with a return cleanup.
+        file: resolve('../output/react/ui-components/SearchBar.tsx'),
+        label: 'React → SearchBar: fix click-outside listener useState setter bug',
+        from: [
+            '  useEffect(() => {',
+            '    const listener = (e: MouseEvent) => {',
+            '      const target = e.target as HTMLElement;',
+            '      if (target && !target.closest(\'[data-search-bar]\')) {',
+            '        setShowDropdown(false);',
+            '      }',
+            '    };',
+            '    setClickOutsideListener(listener);',
+            '    document.addEventListener(\'mousedown\', listener);',
+            '  }, []);',
+            '',
+            '  useEffect(() => {',
+            '    return () => {',
+            '      if (clickOutsideListener) {',
+            '        document.removeEventListener(\'mousedown\', clickOutsideListener);',
+            '      }',
+            '      if (debounceTimer) {',
+            '        clearTimeout(debounceTimer);',
+            '      }',
+            '    };',
+            '  }, []);',
+        ].join('\n'),
+        to: [
+            '  useEffect(() => {',
+            '    const listener = (e: MouseEvent) => {',
+            '      const target = e.target as HTMLElement;',
+            '      if (target && !target.closest(\'[data-search-bar]\')) {',
+            '        setShowDropdown(false);',
+            '      }',
+            '    };',
+            '    document.addEventListener(\'mousedown\', listener);',
+            '    return () => {',
+            '      document.removeEventListener(\'mousedown\', listener);',
+            '      if (debounceTimer) {',
+            '        clearTimeout(debounceTimer);',
+            '      }',
+            '    };',
+            '  }, []);',
+        ].join('\n'),
+    },
+];
+
+// ── post-patch: remove unused useState declarations ─────────────────────────
+//
+// After the file patches above remove references to certain useState variables
+// (e.g. clickOutsideListener), we also need to strip the now-unused useState
+// declarations to avoid lint warnings.
+
+const UNUSED_STATE_REMOVALS = [
+    {
+        file: resolve('../output/react/ui-components/SearchBar.tsx'),
+        // Remove the clickOutsideListener useState (4 lines including blank line after)
+        pattern: /\s*const \[clickOutsideListener, setClickOutsideListener\] = useState<[^>]+>\(\(\) => null\);\n/g,
+        label: 'React → SearchBar: remove unused clickOutsideListener useState',
+    },
 ];
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -411,33 +477,43 @@ function fixCompiledInterfacesForGetters(dir) {
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
+//
+// When invoked with `--patches-only`, skip the pre-Prettier fixes (import
+// hoisting, getter interfaces, global regexes) and only apply the exact-string
+// FILE_PATCHES and unused-state removals.  This is used in the build pipeline
+// where the script runs twice: once before Prettier (full) and once after
+// Prettier (patches-only), because FILE_PATCHES match Prettier-formatted code.
+
+const patchesOnly = process.argv.includes('--patches-only');
 
 let totalFixes = 0;
 
-// Hoist mid-file imports to the top (must run before other patches)
-totalFixes += hoistImports(resolve('../output/react/ui-components'));
+if (!patchesOnly) {
+    // Hoist mid-file imports to the top (must run before other patches)
+    totalFixes += hoistImports(resolve('../output/react/ui-components'));
 
-// Fix compiled interface types for getter-derived properties
-totalFixes += fixCompiledInterfacesForGetters(resolve('../output/react/ui-components'));
+    // Fix compiled interface types for getter-derived properties
+    totalFixes += fixCompiledInterfacesForGetters(resolve('../output/react/ui-components'));
 
-for (const { dir, ext, pattern, replace, label } of TARGETS) {
-    const files = collectFiles(dir, ext);
-    let targetFixes = 0;
+    for (const { dir, ext, pattern, replace, label } of TARGETS) {
+        const files = collectFiles(dir, ext);
+        let targetFixes = 0;
 
-    for (const file of files) {
-        const fixes = patchFile(file, pattern, replace);
-        if (fixes > 0) {
-            const rel = file.replace(dir, `output/${label.toLowerCase()}/ui-components`);
-            console.log(`  [${label}] ✓ ${rel} — fixed ${fixes} callback${fixes > 1 ? 's' : ''}`);
-            targetFixes += fixes;
+        for (const file of files) {
+            const fixes = patchFile(file, pattern, replace);
+            if (fixes > 0) {
+                const rel = file.replace(dir, `output/${label.toLowerCase()}/ui-components`);
+                console.log(`  [${label}] ✓ ${rel} — fixed ${fixes} callback${fixes > 1 ? 's' : ''}`);
+                targetFixes += fixes;
+            }
         }
-    }
 
-    if (targetFixes === 0) {
-        console.log(`  [${label}] ✓ nothing to patch`);
-    }
+        if (targetFixes === 0) {
+            console.log(`  [${label}] ✓ nothing to patch`);
+        }
 
-    totalFixes += targetFixes;
+        totalFixes += targetFixes;
+    }
 }
 
 let patchFixes = 0;
@@ -450,6 +526,21 @@ if (patchFixes === 0) {
 }
 
 totalFixes += patchFixes;
+
+// Remove unused useState declarations left behind by file patches
+for (const { file, pattern, label } of UNUSED_STATE_REMOVALS) {
+    try {
+        const content = readFileSync(file, 'utf8');
+        const matches = (content.match(pattern) || []).length;
+        if (matches > 0) {
+            writeFileSync(file, content.replace(pattern, '\n'), 'utf8');
+            console.log(`  [Cleanup] ✓ ${label}`);
+            totalFixes += matches;
+        }
+    } catch {
+        // File doesn't exist — skip
+    }
+}
 
 if (totalFixes > 0) {
     console.log(`\n  fix-mitosis-callbacks: ${totalFixes} total fix${totalFixes > 1 ? 'es' : ''} applied`);

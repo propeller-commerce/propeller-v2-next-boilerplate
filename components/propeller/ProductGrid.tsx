@@ -1,25 +1,26 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
-  AttributeFilter,
-  Cart,
-  CartMainItem,
-  Category,
-  CategoryProductSearchInput,
-  CategoryQueryVariables,
-  CategoryService,
+  GraphQLClient,
+  Product,
   Cluster,
   Contact,
   Customer,
+  Cart,
+  CartMainItem,
   Enums,
-  GraphQLClient,
-  Product,
+  CategoryService,
+  CategoryProductSearchInput,
+  CategoryQueryVariables,
+  AttributeFilter,
   ProductTextFilterInput,
   ProductsResponse,
+  Category,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
-import ClusterCard from './ClusterCard';
 import ProductCard from './ProductCard';
+import ClusterCard from './ClusterCard';
 
 export interface ProductGridProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -372,8 +373,8 @@ function ProductGrid(props: ProductGridProps) {
       const catId = isWideSearch
         ? (props.configuration?.baseCategoryId as number) || 0
         : props.categoryId
-        ? props.categoryId
-        : (props.configuration?.baseCategoryId as number) || 0;
+          ? props.categoryId
+          : (props.configuration?.baseCategoryId as number) || 0;
       if (props.term && !currentSortField) setCurrentSortField(Enums.ProductSortField.RELEVANCE);
       const result = await service.getCategory({
         categoryId: catId,

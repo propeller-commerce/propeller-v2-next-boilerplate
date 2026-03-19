@@ -1,4 +1,5 @@
-import { ClusterOption, Contact, Customer, Enums, Product, ProductPrice } from 'propeller-sdk-v2';
+import * as React from 'react';
+import { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 export interface ProductPriceProps {
   /**

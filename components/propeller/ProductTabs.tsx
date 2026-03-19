@@ -1,16 +1,17 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
-  AttributeResult,
+  Product,
   GraphQLClient,
   PaginatedMediaDocumentResponse,
   PaginatedMediaVideoResponse,
-  Product,
+  AttributeResult,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
 import ProductDescription from './ProductDescription';
-import ProductDownloads from './ProductDownloads';
 import ProductSpecifications from './ProductSpecifications';
+import ProductDownloads from './ProductDownloads';
 import ProductVideos from './ProductVideos';
 
 export interface ProductTabsProps {
@@ -170,6 +171,12 @@ function ProductTabs(props: ProductTabsProps) {
       setActiveTab('videos');
     }
   }, []);
+  useEffect(() => {
+    // Re-evaluate first visible tab when product data arrives
+    if (props.showDescription !== false && hasDescription()) {
+      setActiveTab('description');
+    }
+  }, [props.product]);
 
   return (
     <div className={`product-tabs ${(props.className as string) || ''}`}>
@@ -178,11 +185,7 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('description')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              isActive('description')
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            }`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
           >
             {getLabel('description', 'Description')}
           </button>
@@ -191,11 +194,7 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('specifications')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              isActive('specifications')
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            }`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
           >
             {getLabel('specifications', 'Specifications')}
           </button>
@@ -204,11 +203,7 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('downloads')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              isActive('downloads')
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            }`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
           >
             {getLabel('downloads', 'Downloads')}
           </button>
@@ -217,11 +212,7 @@ function ProductTabs(props: ProductTabsProps) {
           <button
             type="button"
             onClick={(event) => selectTab('videos')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              isActive('videos')
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            }`}
+            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
           >
             {getLabel('videos', 'Videos')}
           </button>

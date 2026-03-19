@@ -554,8 +554,8 @@ async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     const catId = isWideSearch
       ? (props.configuration?.baseCategoryId as number) || 0
       : props.categoryId
-      ? props.categoryId
-      : (props.configuration?.baseCategoryId as number) || 0;
+        ? props.categoryId
+        : (props.configuration?.baseCategoryId as number) || 0;
     if (props.term && !currentSortField.value)
       currentSortField.value = Enums.ProductSortField.RELEVANCE;
     const result = await service.getCategory({

@@ -1,4 +1,5 @@
 'use client';
+import * as React from 'react';
 
 import { useState } from 'react';
 
@@ -111,9 +112,7 @@ function ProductGallery(props: ProductGalleryProps) {
             alt="Product image"
             src={getMainImage()}
             onClick={(event) => openLightbox()}
-            className={`h-full w-full object-contain p-8 transition-transform duration-200 ${
-              props.enableZoom !== false ? 'cursor-zoom-in hover:scale-105' : ''
-            }`}
+            className={`h-full w-full object-contain p-8 transition-transform duration-200 ${props.enableZoom !== false ? 'cursor-zoom-in hover:scale-105' : ''}`}
           />
         ) : null}
       </div>
@@ -124,11 +123,7 @@ function ProductGallery(props: ProductGalleryProps) {
               type="button"
               key={index}
               onClick={(event) => selectImage(index)}
-              className={`relative flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all bg-white ${
-                selectedIndex === index
-                  ? 'border-primary ring-2 ring-primary/20'
-                  : 'border-transparent hover:border-border'
-              }`}
+              className={`relative flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all bg-white ${selectedIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-border'}`}
             >
               <img
                 className="w-full h-full object-contain p-1"

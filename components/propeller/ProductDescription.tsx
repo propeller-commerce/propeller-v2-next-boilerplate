@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import type { Cluster, LocalizedString, Product } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 export interface ProductDescriptionProps {
   /**

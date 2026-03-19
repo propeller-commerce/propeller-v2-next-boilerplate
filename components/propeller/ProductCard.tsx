@@ -1,16 +1,17 @@
 'use client';
+import * as React from 'react';
 
+import { useState } from 'react';
 import {
-  AttributeResult,
-  Cart,
-  CartChildItemInput,
-  CartMainItem,
-  Contact,
-  Customer,
   GraphQLClient,
   Product,
+  Contact,
+  Customer,
+  Cart,
+  CartMainItem,
+  CartChildItemInput,
+  AttributeResult,
 } from 'propeller-sdk-v2';
-import { useState } from 'react';
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
 
@@ -337,15 +338,11 @@ function ProductCard(props: ProductCardProps) {
 
   return (
     <div
-      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
-        isRow() ? 'flex-row items-center' : 'flex-col'
-      } ${props.className || ''}`}
+      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
     >
       {props.showImage !== false ? (
         <div
-          className={`relative overflow-hidden bg-gray-50 ${
-            isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'
-          }`}
+          className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}
         >
           <a
             className="block h-full w-full"
@@ -392,11 +389,7 @@ function ProductCard(props: ProductCardProps) {
                   ? getLabel('removeFromFavorites', 'Remove from favourites')
                   : getLabel('addToFavorites', 'Add to favourites')
               }
-              className={`absolute right-2 top-2 rounded-full border bg-white p-1.5 shadow-sm transition-colors ${
-                isFavorite
-                  ? 'border-red-200 text-red-500'
-                  : 'border-gray-100 text-gray-300 hover:text-red-400'
-              }`}
+              className={`absolute right-2 top-2 rounded-full border bg-white p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-red-200 text-red-500' : 'border-gray-100 text-gray-300 hover:text-red-400'}`}
             >
               <svg
                 stroke="currentColor"
@@ -416,9 +409,7 @@ function ProductCard(props: ProductCardProps) {
         </div>
       ) : null}
       <div
-        className={`flex flex-1 ${
-          isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'
-        }`}
+        className={`flex flex-1 ${isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'}`}
       >
         {props.showSku !== false && !!getProductSku() ? (
           <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
@@ -427,9 +418,7 @@ function ProductCard(props: ProductCardProps) {
           <a
             href={getProductUrl()}
             onClick={(e) => handleProductClick(e)}
-            className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${
-              isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'
-            }`}
+            className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'}`}
           >
             {getProductName()}
           </a>
@@ -458,9 +447,7 @@ function ProductCard(props: ProductCardProps) {
         {!!getProductPrice() ? (
           <div className={isRow() ? '' : 'mt-auto pt-2'}>
             <span
-              className={`font-bold text-gray-900 ${
-                isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'
-              }`}
+              className={`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}
             >
               {getProductPrice()}
             </span>

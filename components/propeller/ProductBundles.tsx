@@ -1,23 +1,26 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
-  Address,
-  Bundle,
-  BundleQueryVariables,
+  GraphQLClient,
   BundleService,
-  Cart,
-  CartAddBundleVariables,
-  CartQueryVariables,
-  CartSearchInput,
   CartService,
-  CartStartInput,
-  CartStartVariables,
+  BundleQueryVariables,
   Contact,
   Customer,
+  Cart,
   Enums,
-  GraphQLClient,
+  CartAddBundleVariables,
+  CartSearchInput,
+  Bundle,
+  BundleItem,
+  Product,
+  CartQueryVariables,
+  CartStartInput,
+  CartStartVariables,
+  Address,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
 
 export interface ProductBundlesProps {
   // === Core ===
@@ -148,13 +151,13 @@ interface ProductBundlesState {
   getHidePrices: () => boolean;
   getLabel: (key: string, fallback: string) => string;
   formatPrice: (value: number) => string;
-  getBundlePrice: (bundle: any) => number;
-  getOriginalPrice: (bundle: any) => number;
-  getItemPrice: (item: any) => number;
-  hasDiscount: (bundle: any) => boolean;
-  getDiscountPercentage: (bundle: any) => number;
-  getProductImage: (product: any) => string;
-  getProductName: (product: any) => string;
+  getBundlePrice: (bundle: Bundle) => number;
+  getOriginalPrice: (bundle: Bundle) => number;
+  getItemPrice: (item: BundleItem) => number;
+  hasDiscount: (bundle: Bundle) => boolean;
+  getDiscountPercentage: (bundle: Bundle) => number;
+  getProductImage: (product: Product) => string;
+  getProductName: (product: Product) => string;
   showToast: (message: string, type: string) => void;
   dismissToast: () => void;
   closeModal: () => void;
@@ -223,37 +226,37 @@ function ProductBundles(props: ProductBundlesProps) {
     return '\u20AC' + Number(value).toFixed(2);
   }
 
-  function getBundlePrice(bundle: any): ReturnType<ProductBundlesState['getBundlePrice']> {
+  function getBundlePrice(bundle: Bundle): ReturnType<ProductBundlesState['getBundlePrice']> {
     return getIncludeTax() ? bundle.price?.net || 0 : bundle.price?.gross || 0;
   }
 
-  function getOriginalPrice(bundle: any): ReturnType<ProductBundlesState['getOriginalPrice']> {
+  function getOriginalPrice(bundle: Bundle): ReturnType<ProductBundlesState['getOriginalPrice']> {
     return getIncludeTax() ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
   }
 
-  function getItemPrice(item: any): ReturnType<ProductBundlesState['getItemPrice']> {
+  function getItemPrice(item: BundleItem): ReturnType<ProductBundlesState['getItemPrice']> {
     return getIncludeTax() ? item.price?.net || 0 : item.price?.gross || 0;
   }
 
-  function hasDiscount(bundle: any): ReturnType<ProductBundlesState['hasDiscount']> {
+  function hasDiscount(bundle: Bundle): ReturnType<ProductBundlesState['hasDiscount']> {
     const current: number = getBundlePrice(bundle);
     const original: number = getOriginalPrice(bundle);
     return original > 0 && current < original;
   }
 
   function getDiscountPercentage(
-    bundle: any
+    bundle: Bundle
   ): ReturnType<ProductBundlesState['getDiscountPercentage']> {
     const original: number = getOriginalPrice(bundle);
     if (original <= 0) return 0;
     return Math.round(((original - getBundlePrice(bundle)) / original) * 100);
   }
 
-  function getProductImage(product: any): ReturnType<ProductBundlesState['getProductImage']> {
+  function getProductImage(product: Product): ReturnType<ProductBundlesState['getProductImage']> {
     return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
 
-  function getProductName(product: any): ReturnType<ProductBundlesState['getProductName']> {
+  function getProductName(product: Product): ReturnType<ProductBundlesState['getProductName']> {
     return product?.names?.[0]?.value || '';
   }
 
@@ -482,7 +485,7 @@ function ProductBundles(props: ProductBundlesProps) {
         setLastAddedBundle(bundle);
         setModalVisible(true);
       } else {
-        const bundleName = (bundle as any).name || getLabel('title', 'Bundle');
+        const bundleName = bundle.name || getLabel('title', 'Bundle');
         showToast(`${bundleName} ${getLabel('addedToCart', 'added to cart')}`, 'success');
       }
     } catch (error) {
@@ -507,119 +510,151 @@ function ProductBundles(props: ProductBundlesProps) {
         <>
           <div className={props.className || 'mb-12'}>
             {bundles?.map((bundle, bundleIdx) => (
-              <div className="border rounded-lg overflow-hidden mb-6" key={bundle.id || bundleIdx}>
-                <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-bold">
-                      {bundle.name || getLabel('title', 'Combo deal')}
-                    </h3>
-                    {!getHidePrices() && hasDiscount(bundle) ? (
-                      <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-0.5 rounded">
-                        -{getDiscountPercentage(bundle)}%
-                      </span>
-                    ) : null}
-                  </div>
-                  {bundle.condition ? (
-                    <span className="text-xs text-gray-500">
-                      {bundle.condition === 'ALL' ? (
-                        <>{getLabel('condition_ALL', 'Discount on all items')}</>
-                      ) : (
-                        <>{getLabel('condition_EP', 'Discount on extra items')}</>
-                      )}
-                    </span>
-                  ) : null}
-                </div>
-                {getShowItems() &&
-                getLayout() !== 'compact' &&
-                bundle.items &&
-                bundle.items.length > 0 ? (
-                  <div className="p-4">
-                    {bundle.items?.map((item, idx) => (
-                      <div
-                        className="flex items-center gap-3 mb-3"
-                        key={item.productId + '-' + idx}
-                      >
-                        <div className="w-16 h-16 bg-gray-50 rounded overflow-hidden flex-shrink-0">
-                          {getProductImage(item.product) ? (
-                            <img
-                              className="w-full h-full object-contain p-1"
-                              src={getProductImage(item.product)}
-                              alt={getProductName(item.product)}
-                            />
-                          ) : null}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">
-                            {getProductName(item.product) || 'Product ' + item.productId}
-                          </div>
-                          {item.product?.sku ? (
-                            <div className="text-xs text-gray-500">SKU: {item.product.sku}</div>
-                          ) : null}
-                          {!getHidePrices() && item.price ? (
-                            <div className="text-sm text-gray-700 mt-0.5">
-                              {formatPrice(getItemPrice(item))}
+              <div
+                className="border border-gray-200 rounded-xl bg-white shadow-sm mb-6 p-6"
+                key={bundle.id || bundleIdx}
+              >
+                <div className="flex flex-col lg:flex-row items-center gap-6">
+                  {getShowItems() &&
+                  getLayout() !== 'compact' &&
+                  bundle.items &&
+                  bundle.items.length > 0 ? (
+                    <div className="flex flex-wrap items-center justify-center gap-2 flex-1">
+                      {bundle.items?.map((item, idx) => (
+                        <div className="flex items-center gap-2" key={item.productId + '-' + idx}>
+                          {idx > 0 ? (
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                              <svg
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                className="w-5 h-5 text-white"
+                                strokeWidth={2.5}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M12 4.5v15m7.5-7.5h-15"
+                                />
+                              </svg>
                             </div>
                           ) : null}
-                          {item.isLeader === 'Y' ? (
-                            <span className="text-xs text-blue-600 font-medium">
-                              {getLabel('leaderItem', 'Main product')}
+                          <div className="flex flex-col items-center text-center w-40">
+                            <div className="w-32 h-32 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 mb-2">
+                              {getProductImage(item.product) ? (
+                                <img
+                                  className="w-full h-full object-contain p-2"
+                                  src={getProductImage(item.product)}
+                                  alt={getProductName(item.product)}
+                                />
+                              ) : null}
+                            </div>
+                            <div className="text-sm font-medium text-gray-600 leading-tight mb-1">
+                              {getProductName(item.product) || 'Product ' + item.productId}
+                            </div>
+                            {!getHidePrices() && item.price ? (
+                              <div className="text-sm font-semibold text-gray-900">
+                                {formatPrice(getItemPrice(item))}
+                                <span className="text-xs font-normal text-gray-500 ml-1">
+                                  {getIncludeTax() ? (
+                                    <>{getLabel('inclTax', 'incl. VAT')}</>
+                                  ) : (
+                                    <>{getLabel('exclTax', 'excl. VAT')}</>
+                                  )}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                    <svg
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      className="w-5 h-5 text-white"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.75 12h16.5M3.75 7.5h16.5"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
+                    <h3 className="text-xl font-bold text-gray-700 mb-1">
+                      {bundle.name || getLabel('title', 'Combo deal')}
+                    </h3>
+                    {bundle.description ? (
+                      <p className="text-sm text-gray-600 mb-3">{bundle.description}</p>
+                    ) : null}
+                    {bundle.condition ? (
+                      <p className="text-xs text-gray-500 mb-3">
+                        {bundle.condition === Enums.BundleCondition.ALL ? (
+                          <>{getLabel('condition_ALL', 'Discount on all items')}</>
+                        ) : (
+                          <>{getLabel('condition_EP', 'Discount on extra items')}</>
+                        )}
+                      </p>
+                    ) : null}
+                    {!getHidePrices() ? (
+                      <>
+                        <div className="mb-3">
+                          {hasDiscount(bundle) ? (
+                            <span className="text-gray-400 line-through text-sm">
+                              {formatPrice(getOriginalPrice(bundle))}
                             </span>
                           ) : null}
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {formatPrice(getBundlePrice(bundle))}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {getIncludeTax() ? (
+                                <>{getLabel('inclTax', 'incl. VAT')}</>
+                              ) : (
+                                <>{getLabel('exclTax', 'excl. VAT')}</>
+                              )}
+                            </span>
+                          </div>
+                          {hasDiscount(bundle) ? (
+                            <div className="mt-2 inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-md">
+                              {getLabel('youSave', 'Your savings:')}
+                              {formatPrice(getOriginalPrice(bundle) - getBundlePrice(bundle))}
+                            </div>
+                          ) : null}
                         </div>
+                        <button
+                          className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                          onClick={(event) => handleAddToCart(bundle)}
+                          disabled={addingBundleId === bundle.id}
+                        >
+                          {addingBundleId === bundle.id ? (
+                            <>{getLabel('adding', 'Adding...')}</>
+                          ) : (
+                            <>{getLabel('addToCart', 'In cart')}</>
+                          )}
+                        </button>
+                      </>
+                    ) : null}
+                    {getHidePrices() ? (
+                      <div className="text-center text-sm text-gray-500 py-2">
+                        {getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
                       </div>
-                    ))}
+                    ) : null}
                   </div>
-                ) : null}
-                {!getHidePrices() ? (
-                  <div className="flex items-center justify-between p-4 border-t bg-white">
-                    <div className="flex items-center gap-4">
-                      {hasDiscount(bundle) ? (
-                        <span className="text-gray-400 line-through text-sm">
-                          {formatPrice(getOriginalPrice(bundle))}
-                        </span>
-                      ) : null}
-                      <span className="text-xl font-bold text-blue-600">
-                        {formatPrice(getBundlePrice(bundle))}
-                      </span>
-                      {hasDiscount(bundle) ? (
-                        <span className="text-sm text-green-600 font-medium">
-                          {getLabel('youSave', 'You save')}
-                          {formatPrice(getOriginalPrice(bundle) - getBundlePrice(bundle))}
-                        </span>
-                      ) : null}
-                    </div>
-                    <button
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={(event) => handleAddToCart(bundle)}
-                      disabled={addingBundleId === bundle.id}
-                    >
-                      {addingBundleId === bundle.id ? (
-                        <>{getLabel('adding', 'Adding...')}</>
-                      ) : (
-                        <>{getLabel('addToCart', 'Add bundle to cart')}</>
-                      )}
-                    </button>
-                  </div>
-                ) : null}
-                {getHidePrices() ? (
-                  <div className="p-4 border-t bg-gray-50 text-center text-sm text-gray-500">
-                    {getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
-                  </div>
-                ) : null}
+                </div>
               </div>
             ))}
             {toastVisible ? (
               <div
-                className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${
-                  toastType === 'success'
-                    ? 'bg-green-50 border border-green-200'
-                    : 'bg-red-50 border border-red-200'
-                }`}
+                className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
               >
                 <div
-                  className={`flex-shrink-0 w-5 h-5 mt-0.5 ${
-                    toastType === 'success' ? 'text-green-500' : 'text-red-500'
-                  }`}
+                  className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}
                 >
                   {toastType === 'success' ? (
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -637,20 +672,14 @@ function ProductBundles(props: ProductBundlesProps) {
                   ) : null}
                 </div>
                 <p
-                  className={`flex-1 text-sm font-medium ${
-                    toastType === 'success' ? 'text-green-800' : 'text-red-800'
-                  }`}
+                  className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}
                 >
                   {toastMessage}
                 </p>
                 <button
                   type="button"
                   onClick={(event) => dismissToast()}
-                  className={`flex-shrink-0 rounded focus:outline-none ${
-                    toastType === 'success'
-                      ? 'text-green-400 hover:text-green-600'
-                      : 'text-red-400 hover:text-red-600'
-                  }`}
+                  className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
                 >
                   <svg
                     fill="none"
@@ -704,11 +733,11 @@ function ProductBundles(props: ProductBundlesProps) {
                   <div className="px-6 py-5 flex items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">
-                        {(lastAddedBundle as any)?.name || getLabel('title', 'Bundle')}
+                        {lastAddedBundle?.name || getLabel('title', 'Bundle')}
                       </p>
                       {!getHidePrices() && lastAddedBundle ? (
                         <p className="text-sm font-semibold text-blue-600 mt-1">
-                          {formatPrice(getBundlePrice(lastAddedBundle))}
+                          {formatPrice(getBundlePrice(lastAddedBundle!))}
                         </p>
                       ) : null}
                     </div>

@@ -1,13 +1,14 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
+  Product,
   AttributeResult,
   ClusterConfig,
   ClusterConfigSetting,
   Enums,
-  Product,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
 
 /**
  * A computed object containing a cluster config setting enriched with
@@ -461,13 +462,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                   {setting.availableValues?.map((val) => (
                     <label
                       key={val}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${
-                        setting.disabled
-                          ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400'
-                          : setting.selectedValue === val
-                          ? 'border-violet-500 bg-violet-50 text-violet-700 cursor-pointer'
-                          : 'border-gray-200 text-gray-700 hover:border-violet-300 cursor-pointer'
-                      }`}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-violet-500 bg-violet-50 text-violet-700 cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-violet-300 cursor-pointer'}`}
                     >
                       <input
                         type="radio"
@@ -495,13 +490,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                       style={{
                         backgroundColor: val,
                       }}
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${
-                        setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                      } ${
-                        setting.selectedValue === val
-                          ? 'border-violet-600 ring-2 ring-violet-300 ring-offset-1 scale-110'
-                          : 'border-gray-300 hover:scale-105'
-                      }`}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-violet-600 ring-2 ring-violet-300 ring-offset-1 scale-110' : 'border-gray-300 hover:scale-105'}`}
                     />
                   ))}
                 </div>
@@ -514,13 +503,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                       key={val}
                       disabled={setting.disabled}
                       onClick={(event) => handleAttributeSelect(setting.name, val)}
-                      className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${
-                        setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                      } ${
-                        setting.selectedValue === val
-                          ? 'border-violet-600 ring-2 ring-violet-300 ring-offset-1'
-                          : 'border-gray-200 hover:border-violet-300'
-                      }`}
+                      className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-violet-600 ring-2 ring-violet-300 ring-offset-1' : 'border-gray-200 hover:border-violet-300'}`}
                     >
                       <img className="w-full h-full object-cover" src={val} alt={val} />
                       {setting.selectedValue === val ? (
@@ -553,13 +536,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                       key={val}
                       disabled={setting.disabled}
                       onClick={(event) => handleAttributeSelect(setting.name, val)}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                        setting.disabled
-                          ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400'
-                          : setting.selectedValue === val
-                          ? 'border-violet-500 bg-violet-50 text-violet-700 cursor-pointer'
-                          : 'border-gray-200 text-gray-700 hover:border-violet-300 cursor-pointer'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-violet-500 bg-violet-50 text-violet-700 cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-violet-300 cursor-pointer'}`}
                     >
                       {val}
                     </button>

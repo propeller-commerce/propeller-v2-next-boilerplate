@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { Company, Contact } from 'propeller-sdk-v2';
 import { useState } from 'react';
+import { Contact, Company } from 'propeller-sdk-v2';
 
 export interface CompanySwitcherProps {
   /** The contact to whom the companies are assigned. Default company is user.company, all companies are in user.companies. */
@@ -99,9 +100,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
         </span>
         <span
           aria-hidden="true"
-          className={`company-switcher__chevron flex-shrink-0 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : 'rotate-0'
-          }`}
+          className={`company-switcher__chevron flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         >
           <svg
             width="12"
@@ -129,9 +128,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
               key={String(company.companyId)}
               aria-selected={isActive(company)}
               onClick={(event) => selectCompany(company)}
-              className={`company-switcher__option flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground ${
-                isActive(company) ? 'font-semibold text-primary' : 'font-normal text-foreground'
-              }`}
+              className={`company-switcher__option flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground ${isActive(company) ? 'font-semibold text-primary' : 'font-normal text-foreground'}`}
             >
               <span className="company-switcher__option-name flex-1 truncate">{company.name}</span>
               {isActive(company) ? (

@@ -1,4 +1,5 @@
 'use client';
+import * as React from 'react';
 import { ProductsResponse } from 'propeller-sdk-v2';
 
 // Built-in label defaults (can be overridden via the labels prop).

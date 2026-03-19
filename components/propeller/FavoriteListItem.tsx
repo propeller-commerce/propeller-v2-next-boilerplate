@@ -1,17 +1,18 @@
 'use client';
+import * as React from 'react';
 
+import { useState } from 'react';
 import {
-  Cart,
-  CartChildItemInput,
-  CartMainItem,
+  Product,
   Cluster,
+  GraphQLClient,
   Contact,
   Customer,
-  GraphQLClient,
-  Product,
+  Cart,
+  CartMainItem,
+  CartChildItemInput,
   ProductPrice,
 } from 'propeller-sdk-v2';
-import { useState } from 'react';
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
 import ProductPriceDisplay from './ProductPrice';
@@ -195,9 +196,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
 
   return (
     <div
-      className={`group flex flex-row items-center gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-        props.className || ''
-      }`}
+      className={`group flex flex-row items-center gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${props.className || ''}`}
     >
       <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-2">
         {props.titleLinkable !== false ? (

@@ -1,4 +1,5 @@
 'use client';
+import * as React from 'react';
 import { Cart } from 'propeller-sdk-v2';
 
 export interface CartSummaryProps {

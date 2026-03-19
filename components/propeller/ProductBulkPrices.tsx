@@ -1,6 +1,5 @@
-'use client';
-
-import { Contact, Customer, ProductPrice } from 'propeller-sdk-v2';
+import * as React from 'react';
+import { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
 import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
 
 export interface ProductBulkPricesProps {

@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { Address, Company, Contact, Customer } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
 
 export interface UserDetailsProps {
   /** The currently logged in user (Contact or Customer) */
@@ -25,10 +26,9 @@ export interface UserDetailsProps {
   listAllContactCompanies?: boolean;
 
   /**
-   * Display details of the user's default invoice address  * @default true  */ showDefaultInvoiceAddress?: boolean
-  /**  * Display details of the user's default delivery address
+   * Display details of the user's default invoice address  * @default true  */ showDefaultInvoiceAddress?: boolean; /**  * Display details of the user's default delivery address
    * @default false
-   */;
+   */
   showDefaultDeliveryAddress?: boolean;
 }
 interface UserDetailsState {
@@ -203,11 +203,7 @@ function UserDetails(props: UserDetailsProps) {
                   {getCompanies()?.map((company) => (
                     <li
                       key={String(company.companyId)}
-                      className={`flex items-center gap-2 py-2 px-3 rounded-md ${
-                        getActiveCompany()?.companyId === company.companyId
-                          ? 'bg-primary/10 font-semibold text-primary'
-                          : 'text-foreground'
-                      }`}
+                      className={`flex items-center gap-2 py-2 px-3 rounded-md ${getActiveCompany()?.companyId === company.companyId ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground'}`}
                     >
                       <span className="truncate">{company.name}</span>
                       {getActiveCompany()?.companyId === company.companyId ? (

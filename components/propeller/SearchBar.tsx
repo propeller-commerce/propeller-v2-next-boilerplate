@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { Cluster, Enums, GraphQLClient, Product, ProductService } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { GraphQLClient, ProductService, Product, Cluster, Enums } from 'propeller-sdk-v2';
 
 export interface SearchBarResult {
   /** Unique identifier */
@@ -94,10 +95,6 @@ function SearchBar(props: SearchBarProps) {
   const [itemsFound, setItemsFound] = useState<SearchBarState['itemsFound']>(() => 0);
 
   const [debounceTimer, setDebounceTimer] = useState<SearchBarState['debounceTimer']>(() => null);
-
-  const [clickOutsideListener, setClickOutsideListener] = useState<
-    SearchBarState['clickOutsideListener']
-  >(() => null);
 
   function placeholder(): ReturnType<SearchBarState['placeholder']> {
     return props.placeholder || 'Search products...';
@@ -261,15 +258,9 @@ function SearchBar(props: SearchBarProps) {
         setShowDropdown(false);
       }
     };
-    setClickOutsideListener(listener);
     document.addEventListener('mousedown', listener);
-  }, []);
-
-  useEffect(() => {
     return () => {
-      if (clickOutsideListener) {
-        document.removeEventListener('mousedown', clickOutsideListener);
-      }
+      document.removeEventListener('mousedown', listener);
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }

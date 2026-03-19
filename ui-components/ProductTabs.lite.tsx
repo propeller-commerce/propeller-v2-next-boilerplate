@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     onMount,
+    onUpdate,
 } from '@builder.io/mitosis';
 import {
     Product,
@@ -174,6 +175,13 @@ export default function ProductTabs(props: ProductTabsProps) {
             state.activeTab = 'videos';
         }
     });
+
+    onUpdate(() => {
+        // Re-evaluate first visible tab when product data arrives
+        if (props.showDescription !== false && state.hasDescription) {
+            state.activeTab = 'description';
+        }
+    }, [props.product]);
 
     return (
         <div className={`product-tabs ${(props.className as string) || ''}`}>

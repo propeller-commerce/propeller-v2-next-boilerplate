@@ -1,19 +1,21 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
+  OrderService,
+  OrderSearchArguments,
+  OrderResponse,
+  Order,
   Contact,
   Customer,
+  GraphQLClient,
+  Enums,
+  OrderStatus,
   DateSearchInput,
   DecimalSearchInput,
-  Enums,
-  GraphQLClient,
-  Order,
-  OrderResponse,
-  OrderSearchArguments,
-  OrderService,
   OrderSortInput,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -530,9 +532,7 @@ function OrderList(props: OrderListProps) {
                       {columns?.map((col) => (
                         <th
                           key={col}
-                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                            col === 'action' || col === 'total' ? 'text-right' : ''
-                          }`}
+                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
                         >
                           {getColumnLabel(col)}
                         </th>
@@ -549,9 +549,7 @@ function OrderList(props: OrderListProps) {
                         {columns?.map((col) => (
                           <td
                             key={col}
-                            className={`px-6 py-4 whitespace-nowrap text-sm ${
-                              col === 'id' || col === 'action' ? 'font-medium' : 'text-gray-500'
-                            } ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
+                            className={`px-6 py-4 whitespace-nowrap text-sm ${col === 'id' || col === 'action' ? 'font-medium' : 'text-gray-500'} ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
                           >
                             {col === 'id' ? (
                               <span className="text-gray-900">{order.id}</span>
@@ -561,9 +559,7 @@ function OrderList(props: OrderListProps) {
                             ) : null}
                             {col === 'status' ? (
                               <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                                  order.status
-                                )}`}
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
                               >
                                 {order.status}
                               </span>

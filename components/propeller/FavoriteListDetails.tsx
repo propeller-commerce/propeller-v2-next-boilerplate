@@ -1,19 +1,20 @@
 'use client';
+import * as React from 'react';
 
+import { useState, useEffect } from 'react';
 import {
-  Cart,
-  CartChildItemInput,
-  CartMainItem,
+  Product,
   Cluster,
-  Contact,
-  Customer,
   FavoriteList,
   FavoriteListService,
   GraphQLClient,
-  Product,
+  Contact,
+  Customer,
+  Cart,
+  CartMainItem,
+  CartChildItemInput,
   ProductsResponse,
 } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */

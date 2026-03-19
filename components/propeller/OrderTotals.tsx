@@ -1,4 +1,5 @@
-import { Enums, Order } from 'propeller-sdk-v2';
+import * as React from 'react';
+import { Order, Enums } from 'propeller-sdk-v2';
 
 export interface OrderTotalsProps {
   /** The order/quote used to populate the summary data */

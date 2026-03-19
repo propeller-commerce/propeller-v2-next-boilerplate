@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
 import { useState } from 'react';
+import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */

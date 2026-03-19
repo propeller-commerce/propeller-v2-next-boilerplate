@@ -8,7 +8,7 @@ import { usePrice } from '@/context/PriceContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-// import SearchBar from '@/components/common/SearchBar';
+import SearchBar from '@/components/propeller/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
@@ -29,7 +29,6 @@ export default function Header() {
   const { setSelectedCompany } = useCompany();
   const { includeTax, setIncludeTax } = usePrice();
   const globalData = useGlobal();
-  const [isMounted, setIsMounted] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
@@ -53,10 +52,6 @@ export default function Header() {
   const showCategoriesMenu = globalData?.showCategoriesMenu ?? true;
   const categoriesMenuLabel = globalData?.categoriesMenuLabel || 'Browse Categories';
   const topBarAnnouncementEnabled = globalData?.topBarAnnouncementEnabled ?? false;
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Close main menu on outside click
   useEffect(() => {
@@ -187,11 +182,19 @@ export default function Header() {
               </Link>
 
               {/* Search Bar */}
-              {/* {showSearch && (
+              {showSearch && (
                 <div className="hidden lg:block flex-1 max-w-2xl">
-                  <SearchBar />
+                  <SearchBar
+                    graphqlClient={graphqlClient}
+                    language={language}
+                    onSubmit={(term) => router.push(`/search?q=${encodeURIComponent(term)}`)}
+                    onResultClick={(result) => {
+                      if (result.url) router.push(result.url);
+                    }}
+                    onViewAllClick={(term) => router.push(`/search?q=${encodeURIComponent(term)}`)}
+                  />
                 </div>
-              )} */}
+              )}
 
               {/* Right Section */}
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">

@@ -1,7 +1,8 @@
 'use client';
+import * as React from 'react';
 
-import { Cart, CartActionCodeVariables, CartService, GraphQLClient } from 'propeller-sdk-v2';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { GraphQLClient, CartService, Cart, CartActionCodeVariables } from 'propeller-sdk-v2';
 
 export interface ActionCodeProps {
   /** GraphQL client for the Propeller SDK */

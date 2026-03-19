@@ -11,7 +11,7 @@
     "mitosis:fix": "node scripts/fix-mitosis-callbacks.mjs",
     "mitosis:format": "prettier --ignore-path /dev/null --write \"output/react/**/*.tsx\" \"output/vue/**/*.vue\"",
     "mitosis:copy": "cp -f output/react/ui-components/*.tsx components/propeller/",
-    "mitosis:build": "node scripts/mitosis-build.mjs && npm run mitosis:fix && npm run mitosis:format && npm run mitosis:copy",
+    "mitosis:build": "node scripts/mitosis-build.mjs && npm run mitosis:fix && npm run mitosis:format && node scripts/fix-mitosis-callbacks.mjs --patches-only && npm run mitosis:copy",
     "sdk:sync": "npm update propeller-sdk-v2 && npm install --install-links"
   },
   "dependencies": {

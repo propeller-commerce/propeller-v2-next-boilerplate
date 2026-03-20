@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { orderService } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import OrderSummary from '@/components/propeller/OrderSummary';
 import { OrderItem } from 'propeller-sdk-v2';
@@ -21,6 +22,7 @@ interface OrderDetails {
 export default function ThankYouPage() {
   const params = useParams();
   const orderId = params?.orderId as string;
+  const { state: authState } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,12 +220,14 @@ export default function ThankYouPage() {
 
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-                <Link
-                  href="/account/orders"
-                  className="px-8 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition text-center"
-                >
-                  View Order History
-                </Link>
+                {authState.isAuthenticated && (
+                  <Link
+                    href="/account/orders"
+                    className="px-8 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition text-center"
+                  >
+                    View Order History
+                  </Link>
+                )}
                 <Link
                   href="/"
                   className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-center"

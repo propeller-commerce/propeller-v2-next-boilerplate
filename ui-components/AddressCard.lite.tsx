@@ -126,7 +126,7 @@ interface AddressCardState {
     editEmail: string;
     editPhone: string;
     editNotes: string;
-    editIcp: Enums.YesNo | boolean;
+    editIcp: Enums.YesNo;
     getLabel: (key: string, fallback: string) => string;
     getCountryName: (code: string) => string;
     addr: any;
@@ -249,7 +249,7 @@ export default function AddressCard(props: AddressCardProps) {
             state.editEmail = a?.email || '';
             state.editPhone = a?.phone || '';
             state.editNotes = a?.notes || '';
-            state.editIcp = a?.icp || false;
+            state.editIcp = a?.icp || Enums.YesNo.N;
             state.showEditModal = true;
         },
 
@@ -491,8 +491,8 @@ export default function AddressCard(props: AddressCardProps) {
                                     <input
                                         type="checkbox"
                                         id="icp-inline"
-                                        checked={!!state.editIcp}
-                                        onChange={(e) => { state.editIcp = e.target.checked; }}
+                                        checked={state.editIcp === Enums.YesNo.Y}
+                                        onChange={(e) => { state.editIcp = e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N; }}
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
                                     <label htmlFor="icp-inline" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
@@ -620,8 +620,8 @@ export default function AddressCard(props: AddressCardProps) {
                                         <input
                                             type="checkbox"
                                             id="icp-modal"
-                                            checked={!!state.editIcp}
-                                            onChange={(e) => { state.editIcp = e.target.checked; }}
+                                            checked={state.editIcp === Enums.YesNo.Y}
+                                            onChange={(e) => { state.editIcp = e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N; }}
                                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         <label htmlFor="icp-modal" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>

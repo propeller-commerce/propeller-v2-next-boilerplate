@@ -126,7 +126,7 @@ interface AddressCardState {
   editEmail: string;
   editPhone: string;
   editNotes: string;
-  editIcp: Enums.YesNo | boolean;
+  editIcp: Enums.YesNo;
   getLabel: (key: string, fallback: string) => string;
   getCountryName: (code: string) => string;
   addr: () => any;
@@ -276,7 +276,7 @@ function AddressCard(props: AddressCardProps) {
     setEditEmail(a?.email || '');
     setEditPhone(a?.phone || '');
     setEditNotes(a?.notes || '');
-    setEditIcp(a?.icp || false);
+    setEditIcp(a?.icp || Enums.YesNo.N);
     setShowEditModal(true);
   }
 
@@ -623,9 +623,9 @@ function AddressCard(props: AddressCardProps) {
                     type="checkbox"
                     id="icp-inline"
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    checked={!!editIcp}
+                    checked={editIcp === Enums.YesNo.Y}
                     onChange={(e) => {
-                      setEditIcp(e.target.checked);
+                      setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
                     }}
                   />
                   <label htmlFor="icp-inline" className="text-sm font-medium">
@@ -880,9 +880,9 @@ function AddressCard(props: AddressCardProps) {
                       type="checkbox"
                       id="icp-modal"
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={!!editIcp}
+                      checked={editIcp === Enums.YesNo.Y}
                       onChange={(e) => {
-                        setEditIcp(e.target.checked);
+                        setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
                       }}
                     />
                     <label htmlFor="icp-modal" className="text-sm font-medium">

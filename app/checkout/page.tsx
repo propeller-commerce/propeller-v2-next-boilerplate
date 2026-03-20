@@ -37,6 +37,7 @@ interface CheckoutState {
   selectedDeliveryDate: string;
   loading: boolean;
   error: string | null;
+  sameAsInvoice: boolean;
 }
 
 /** Recursively strips underscore-prefixed keys from SDK class instances */
@@ -74,7 +75,8 @@ export default function CheckoutPage() {
     selectedCarrier: '',
     selectedDeliveryDate: '',
     loading: false,
-    error: null
+    error: null,
+    sameAsInvoice: false
   });
 
   useEffect(() => {
@@ -347,10 +349,46 @@ export default function CheckoutPage() {
         await updateUserAddress(addressData, type);
       }
 
+      // Anonymous user: if "same as invoice" is checked, also save as delivery address
+      if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && state.sameAsInvoice) {
+        const deliveryInput: CartUpdateAddressInput = {
+          ...input,
+          type: Enums.CartAddressType.DELIVERY,
+        };
+        const cartWithDelivery = await cartService.updateCartAddress({
+          id: updatedCart.cartId,
+          input: deliveryInput,
+          imageVariantFilters: imageVariantFiltersSmall,
+          imageSearchFilters: imageSearchFiltersGrid,
+          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+        });
+        localStorage.setItem('cart', serializeCart(cartWithDelivery));
+        setState(prev => ({
+          ...prev,
+          cart: cartWithDelivery,
+          currentStep: 3, // Skip delivery step
+          loading: false
+        }));
+        return;
+      }
+
+      let nextStep = (prev: CheckoutState) => prev.currentStep;
+      if (advance) {
+        const hasInvoice = !!updatedCart.invoiceAddress?.street;
+        const hasDelivery = !!updatedCart.deliveryAddress?.street;
+        if (hasInvoice && hasDelivery) {
+          nextStep = () => 3;
+        } else if (hasInvoice) {
+          nextStep = () => 2;
+        } else {
+          nextStep = prev => prev.currentStep + 1;
+        }
+      }
+
       setState(prev => ({
         ...prev,
         cart: updatedCart,
-        currentStep: advance ? prev.currentStep + 1 : prev.currentStep,
+        currentStep: advance ? nextStep(prev) : prev.currentStep,
         loading: false
       }));
 
@@ -525,16 +563,29 @@ export default function CheckoutPage() {
                         </Button>
                       </div>
                     ) : (
-                      <AddressCard
-                        address={null}
-                        inline
-                        isNew
-                        addressType={CartAddressType.INVOICE}
-                        showIcp={false}
-                        beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
-                        onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
-                        countries={COUNTRIES}
-                      />
+                      <div className="space-y-4">
+                        <AddressCard
+                          address={null}
+                          inline
+                          isNew
+                          addressType={CartAddressType.INVOICE}
+                          showIcp={false}
+                          beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
+                          onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
+                          countries={COUNTRIES}
+                        />
+                        {!authState.isAuthenticated && (
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={state.sameAsInvoice}
+                              onChange={(e) => setState(prev => ({ ...prev, sameAsInvoice: e.target.checked }))}
+                              className="rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            Delivery address same as invoice address
+                          </label>
+                        )}
+                      </div>
                     )}
                   </CardContent>
                 )}

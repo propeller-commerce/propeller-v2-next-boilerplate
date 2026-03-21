@@ -186,7 +186,7 @@ export default function ClusterInfo(props: ClusterInfoProps) {
             .catch(() => {
                 state.loading = false;
             });
-    }, [props.clusterId, props.cluster]);
+    }, [props.clusterId, props.cluster, props.language]);
 
     return (
         <div className={`cluster-info ${(props.className as string) || ''}`}>

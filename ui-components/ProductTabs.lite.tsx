@@ -177,11 +177,11 @@ export default function ProductTabs(props: ProductTabsProps) {
     });
 
     onUpdate(() => {
-        // Re-evaluate first visible tab when product data arrives
+        // Re-evaluate first visible tab when product data or language changes
         if (props.showDescription !== false && state.hasDescription) {
             state.activeTab = 'description';
         }
-    }, [props.product]);
+    }, [props.product, props.language]);
 
     return (
         <div className={`product-tabs ${(props.className as string) || ''}`}>

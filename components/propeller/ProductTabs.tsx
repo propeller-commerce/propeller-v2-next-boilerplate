@@ -172,11 +172,11 @@ function ProductTabs(props: ProductTabsProps) {
     }
   }, []);
   useEffect(() => {
-    // Re-evaluate first visible tab when product data arrives
+    // Re-evaluate first visible tab when product data or language changes
     if (props.showDescription !== false && hasDescription()) {
       setActiveTab('description');
     }
-  }, [props.product]);
+  }, [props.product, props.language]);
 
   return (
     <div className={`product-tabs ${(props.className as string) || ''}`}>

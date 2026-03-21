@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { usePrice } from '@/context/PriceContext';
+import { useLanguage } from '@/context/LanguageContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
@@ -36,6 +37,7 @@ export default function CategoryPage() {
   const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
   const [clearSignal, setClearSignal] = useState(0);
   const [itemsFound, setItemsFound] = useState<number>(0);
+  const [pageItemCount, setPageItemCount] = useState<number>(0);
   const [offset, setOffset] = useState(12);
   const [sortField, setSortField] = useState<Enums.ProductSortField>(Enums.ProductSortField.CATEGORY_ORDER);
   const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(Enums.SortOrder.ASC);
@@ -44,6 +46,7 @@ export default function CategoryPage() {
   const { cart, addToCart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
   const { includeTax } = usePrice();
+  const { language } = useLanguage();
 
   // CMS banner
   const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
@@ -75,6 +78,19 @@ export default function CategoryPage() {
   useEffect(() => {
     getCategoryBanner(String(categoryId)).then(setBanner);
   }, [categoryId]);
+
+  // Update URL slug when language or category changes — use history.replaceState
+  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
+  useEffect(() => {
+    if (!category) return;
+    const match = category.slug?.find((s: { language?: string; value?: string }) => s.language === language);
+    const newSlug = match?.value || category.slug?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (newSlug && newSlug !== currentSlug) {
+      const search = window.location.search;
+      window.history.replaceState(null, '', `/category/${categoryId}/${newSlug}${search}`);
+    }
+  }, [category, language, categoryId]);
 
   const updateURL = (
     newFilters: Record<string, string[]>,
@@ -148,7 +164,7 @@ export default function CategoryPage() {
   };
 
   const productClick = (product: Product) => {
-    router.push(config.urls.getProductUrl(product));
+    router.push(config.urls.getProductUrl(product, language));
   };
 
   // Stable defaultSort reference for GridToolbar — only changes when URL sort params change.
@@ -158,7 +174,11 @@ export default function CategoryPage() {
     [sortField, sortOrder]
   );
 
-  const categoryName = (category?.name?.[0]?.value as string) || 'Category';
+  const categoryName = (
+    category?.name?.find((n: { language?: string; value?: string }) => n.language === language)?.value
+    || category?.name?.[0]?.value
+    || 'Category'
+  ) as string;
   const products = (category?.products?.items || []) as (Product | Cluster)[];
   const totalPages = category?.products?.pages || 1;
   const hasActiveFilters = Object.keys(filters).length > 0 || minPrice !== undefined || maxPrice !== undefined;
@@ -180,7 +200,7 @@ export default function CategoryPage() {
       <main className="flex-1 py-8">
         <div className="container-width">
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs categoryPath={category?.categoryPath || []} language="NL" showCurrent={true} configuration={config} />
+            <Breadcrumbs categoryPath={category?.categoryPath || []} language={language} showCurrent={true} configuration={config} />
           </div>
           {/* CMS Category Banner */}
           {banner && <CategoryBanner banner={banner} />}
@@ -188,12 +208,12 @@ export default function CategoryPage() {
           {/* Category Header */}
           <GridTitle
             title={categoryName}
-            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+            language={language}
           />
 
           <CategoryDescription
             category={category}
-            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+            language={language}
           />
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -203,7 +223,7 @@ export default function CategoryPage() {
                 filters={gridFilters}
                 priceMin={priceBoundsMin}
                 priceMax={priceBoundsMax}
-                language="NL"
+                language={language}
                 onFilterChange={handleFilterChange}
                 onPriceChange={handlePriceRangeChange}
                 onClearFilters={clearAllFilters}
@@ -222,6 +242,9 @@ export default function CategoryPage() {
               <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
                 <GridToolbar
                   itemsFound={itemsFound}
+                  page={currentPage}
+                  pageSize={offset}
+                  pageItemCount={pageItemCount}
                   activeTextFilters={filters}
                   priceFilterMin={minPrice}
                   priceFilterMax={maxPrice}
@@ -242,7 +265,7 @@ export default function CategoryPage() {
                 configuration={config}
                 user={state.user}
                 onProductClick={productClick}
-                language='NL'
+                language={language}
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}
@@ -265,6 +288,7 @@ export default function CategoryPage() {
                   setPriceBoundsMax(max);
                 }}
                 onItemsFoundChange={setItemsFound}
+                onPageItemCountChange={setPageItemCount}
                 page={currentPage}
                 onPageChange={setCurrentPage}
                 afterAddToCart={(cart, item) => {
@@ -276,7 +300,7 @@ export default function CategoryPage() {
                 onProductsResponse={setProductsResponse}
                 onCategoryChange={setCategory}
                 onClusterClick={(cluster: Cluster) => {
-                  router.push(config.urls.getClusterUrl(cluster));
+                  router.push(config.urls.getClusterUrl(cluster, language));
                 }}
               />
 

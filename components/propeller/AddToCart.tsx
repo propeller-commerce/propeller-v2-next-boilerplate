@@ -220,7 +220,7 @@ function AddToCart(props: AddToCartProps) {
   }
 
   function getProductUrl(): ReturnType<AddToCartState['getProductUrl']> {
-    return props.configuration.urls.getProductUrl(props.product);
+    return props.configuration.urls.getProductUrl(props.product, props.language);
   }
 
   function getProductImageUrl(): ReturnType<AddToCartState['getProductImageUrl']> {

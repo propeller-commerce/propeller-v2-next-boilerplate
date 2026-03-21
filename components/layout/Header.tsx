@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { usePrice } from '@/context/PriceContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -28,16 +29,11 @@ export default function Header() {
   const { state, logout, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
   const { includeTax, setIncludeTax } = usePrice();
+  const { language, setLanguage } = useLanguage();
   const globalData = useGlobal();
   const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
-  const [language, setLanguage] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('preferred_language') || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-    }
-    return process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-  });
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -147,9 +143,7 @@ export default function Header() {
                       <select
                         value={language}
                         onChange={(e) => {
-                          const lang = e.target.value;
-                          setLanguage(lang);
-                          localStorage.setItem('preferred_language', lang);
+                          setLanguage(e.target.value);
                         }}
                         className="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
                       >
@@ -305,7 +299,7 @@ export default function Header() {
                       configuration={config}
                       onMenuItemClick={(category) => {
                         setShowMainMenu(false);
-                        router.push(config.urls.getCategoryUrl(category));
+                        router.push(config.urls.getCategoryUrl(category, language));
                       }}
                     />
                   </div>

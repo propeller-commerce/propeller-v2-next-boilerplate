@@ -433,12 +433,12 @@ export default function ProductSlider(props: ProductSliderProps) {
     onUpdate(() => {
         state.doFetch();
         // NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
-    }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds)]);
+    }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds), props.language]);
 
     onUpdate(() => {
         state.doFetch();
         // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
-    }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
+    }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId, props.language]);
 
     onUpdate(() => {
         // Initialize scroll dimensions once sliderId is set and items are rendered
@@ -523,6 +523,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                                             cluster={item as Cluster}
                                             configuration={props.configuration}
                                             includeTax={props.includeTax}
+                                            language={props.language}
                                             columns={3}
                                             enableAddFavorite={props.enableAddFavorite}
                                             showStock={props.showStock}
@@ -579,6 +580,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                                             user={(props.user as Contact | Customer | null) || null}
                                             configuration={props.configuration}
                                             includeTax={props.includeTax}
+                                            language={props.language}
                                             columns={3}
                                             enableAddFavorite={props.enableAddFavorite}
                                             showStock={props.showStock}

@@ -113,6 +113,9 @@ export interface ClusterCardProps {
 
     /** Include tax in the price display */
     includeTax?: boolean;
+
+    /** Language code used to resolve localised names and slugs. Defaults to 'NL'. */
+    language?: string;
 }
 
 interface ClusterCardState {
@@ -148,11 +151,13 @@ export default function ClusterCard(props: ClusterCardProps) {
         },
 
         getClusterName() {
-            return (
-                (props.cluster as Cluster)?.names?.[0]?.value ||
-                (props.cluster as Cluster)?.defaultProduct?.names?.[0]?.value ||
-                'Cluster'
-            );
+            const lang = (props.language as string) || 'NL';
+            const names = (props.cluster as Cluster)?.names;
+            const match = names?.find((n: any) => n.language === lang);
+            if (match?.value) return match.value;
+            const dpNames = (props.cluster as Cluster)?.defaultProduct?.names;
+            const dpMatch = dpNames?.find((n: any) => n.language === lang);
+            return dpMatch?.value || names?.[0]?.value || dpNames?.[0]?.value || 'Cluster';
         },
 
         getClusterSku() {
@@ -171,15 +176,17 @@ export default function ClusterCard(props: ClusterCardProps) {
         },
 
         getClusterUrl() {
-            return props.configuration.urls.getClusterUrl(props.cluster);
+            return props.configuration.urls.getClusterUrl(props.cluster, props.language);
         },
 
         getClusterShortDescription() {
-            return (
-                (props.cluster as Cluster)?.shortDescriptions?.[0]?.value ||
-                (props.cluster as Cluster)?.defaultProduct?.shortDescriptions?.[0]?.value ||
-                ''
-            );
+            const lang = (props.language as string) || 'NL';
+            const descs = (props.cluster as Cluster)?.shortDescriptions;
+            const match = descs?.find((d: any) => d.language === lang);
+            if (match?.value) return match.value;
+            const dpDescs = (props.cluster as Cluster)?.defaultProduct?.shortDescriptions;
+            const dpMatch = dpDescs?.find((d: any) => d.language === lang);
+            return dpMatch?.value || descs?.[0]?.value || dpDescs?.[0]?.value || '';
         },
 
         getClusterManufacturer() {

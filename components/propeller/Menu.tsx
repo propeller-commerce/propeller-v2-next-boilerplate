@@ -220,7 +220,7 @@ function Menu(props: MenuProps) {
   }
 
   function getCategoryUrl(cat: Category): ReturnType<MenuState['getCategoryUrl']> {
-    return props.configuration.urls.getCategoryUrl(cat);
+    return props.configuration.urls.getCategoryUrl(cat, props.language);
   }
 
   function getSubCategories(cat: Category): ReturnType<MenuState['getSubCategories']> {

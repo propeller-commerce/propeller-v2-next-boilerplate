@@ -156,7 +156,7 @@ function CartItem(props: CartItemProps) {
 
   function getProductUrl(): ReturnType<CartItemState['getProductUrl']> {
     if (props.configuration && props.configuration.urls) {
-      return props.configuration.urls.getProductUrl(props.cartItem.product);
+      return props.configuration.urls.getProductUrl(props.cartItem.product, props.language);
     }
     return '#';
   }
@@ -409,7 +409,7 @@ function CartItem(props: CartItemProps) {
   function getCrossupsellUrl(item: Crossupsell): ReturnType<CartItemState['getCrossupsellUrl']> {
     const product = item?.productTo || item?.clusterTo;
     if (props.configuration && props.configuration.urls && product) {
-      return props.configuration.urls.getProductUrl(product);
+      return props.configuration.urls.getProductUrl(product, props.language);
     }
     return '#';
   }

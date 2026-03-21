@@ -207,7 +207,7 @@ export default function AddToCart(props: AddToCartProps) {
         },
 
         getProductUrl() {
-            return props.configuration.urls.getProductUrl(props.product);
+            return props.configuration.urls.getProductUrl(props.product, props.language);
         },
 
         getProductImageUrl() {

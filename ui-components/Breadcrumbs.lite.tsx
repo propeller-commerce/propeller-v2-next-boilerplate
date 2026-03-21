@@ -102,7 +102,7 @@ export default function Breadcrumbs(props: BreadcrumbsProps) {
             if (props.getUrl) {
                 return (props.getUrl as (cat: Category, index: number) => string)(cat, index);
             }
-            return props.configuration.urls.getCategoryUrl(cat);
+            return props.configuration.urls.getCategoryUrl(cat, props.language);
         },
 
         isCurrentItem(index: number): boolean {

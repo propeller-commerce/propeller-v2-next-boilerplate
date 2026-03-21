@@ -221,7 +221,7 @@ export default function Menu(props: MenuProps) {
         },
 
         getCategoryUrl(cat: Category): string {
-            return props.configuration.urls.getCategoryUrl(cat);
+            return props.configuration.urls.getCategoryUrl(cat, props.language);
         },
 
         getSubCategories(cat: Category): Category[] {

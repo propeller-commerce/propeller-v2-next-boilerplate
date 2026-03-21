@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
@@ -22,6 +22,7 @@ import ItemStock from '@/components/propeller/ItemStock';
 import AddToCart from '@/components/propeller/AddToCart';
 import ProductTabs from '@/components/propeller/ProductTabs';
 import { usePrice } from '@/context/PriceContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
 
@@ -36,6 +37,7 @@ export default function ClusterPage() {
   const { cart, saveCart, addToCart } = useCart();
   const { state } = useAuth();
   const { includeTax } = usePrice();
+  const { language } = useLanguage();
   const router = useRouter();
 
   // ── Old fetch effect — now handled by ClusterInfo via onClusterLoaded ──────
@@ -128,6 +130,19 @@ export default function ClusterPage() {
     );
   };
 
+  // Update URL slug when language or cluster changes — use history.replaceState
+  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
+  useEffect(() => {
+    if (!cluster) return;
+    const slugs = cluster.slugs || cluster.defaultProduct?.slugs;
+    const match = slugs?.find((s: { language?: string; value?: string }) => s.language === language);
+    const slug = match?.value || slugs?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (slug && slug !== currentSlug) {
+      window.history.replaceState(null, '', `/cluster/${clusterId}/${slug}`);
+    }
+  }, [cluster, language, clusterId]);
+
   // ── Derived display values ─────────────────────────────────────────────────
 
   const displayProduct = selectedProduct || cluster?.defaultProduct;
@@ -142,7 +157,7 @@ export default function ClusterPage() {
       <main className="flex-1 py-12">
         <div className="container-width">
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs categoryPath={selectedProduct?.categoryPath || []} language="NL" configuration={config} showCurrent={true} />
+            <Breadcrumbs categoryPath={selectedProduct?.categoryPath || []} language={language} configuration={config} showCurrent={true} />
           </div>
 
           {/* Main Content */}
@@ -162,7 +177,7 @@ export default function ClusterPage() {
                   clusterId={clusterId}
                   graphqlClient={graphqlClient}
                   onClusterLoaded={handleClusterLoaded}
-                  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+                  language={language}
                   configuration={config}
                 />
 
@@ -178,7 +193,7 @@ export default function ClusterPage() {
                     <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} includeTax={includeTax} />
 
                     <div className="mt-6">
-                      <ProductShortDescription product={selectedProduct as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />
+                      <ProductShortDescription product={selectedProduct as Product} language={language} />
                     </div>
 
                     {selectedProduct?.inventory && (
@@ -237,7 +252,7 @@ export default function ClusterPage() {
             </div>
           </div>
           {/* Product Tabs - Description, Specifications, etc. */}
-          <ProductTabs product={selectedProduct as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />
+          <ProductTabs product={selectedProduct as Product} language={language} />
         </div>
       </main>
       <Footer />

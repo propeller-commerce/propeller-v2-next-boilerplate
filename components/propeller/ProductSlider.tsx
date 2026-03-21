@@ -467,11 +467,11 @@ function ProductSlider(props: ProductSliderProps) {
   useEffect(() => {
     doFetch();
     // NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
-  }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds)]);
+  }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds), props.language]);
   useEffect(() => {
     doFetch();
     // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
-  }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId]);
+  }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId, props.language]);
   useEffect(() => {
     // Initialize scroll dimensions once sliderId is set and items are rendered
     if (sliderId && items().length > 0) {
@@ -563,6 +563,7 @@ function ProductSlider(props: ProductSliderProps) {
                         cluster={item as Cluster}
                         configuration={props.configuration}
                         includeTax={props.includeTax}
+                        language={props.language}
                         columns={3}
                         enableAddFavorite={props.enableAddFavorite}
                         showStock={props.showStock}
@@ -615,6 +616,7 @@ function ProductSlider(props: ProductSliderProps) {
                         user={(props.user as Contact | Customer | null) || null}
                         configuration={props.configuration}
                         includeTax={props.includeTax}
+                        language={props.language}
                         columns={3}
                         enableAddFavorite={props.enableAddFavorite}
                         showStock={props.showStock}

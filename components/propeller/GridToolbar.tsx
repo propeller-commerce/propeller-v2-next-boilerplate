@@ -67,6 +67,26 @@ export interface GridToolbarProps {
   itemsFound?: number;
 
   /**
+   * Current page number. Used together with `pageSize` and `itemsFound`
+   * to display a range indicator (e.g. "1–10 from 594 results").
+   * When omitted the component falls back to a simple total count.
+   */
+  page?: number;
+
+  /**
+   * Items per page. Used together with `page` and `itemsFound`
+   * to compute the result range. Defaults to 12.
+   */
+  pageSize?: number;
+
+  /**
+   * Actual number of items visible on the current page.
+   * When provided, overrides `pageSize` for the range end calculation
+   * (e.g. when client-side filtering reduces the count below `pageSize`).
+   */
+  pageItemCount?: number;
+
+  /**
    * Currently active attribute filter selections.
    * Key = attribute name, value = array of selected values.
    * Used to render removable filter badges.
@@ -181,6 +201,8 @@ const DEFAULT_LABELS: Record<string, string> = {
   [Enums.SortOrder.DESC]: 'High to Low',
   clearAll: 'Clear All',
   products: ' Products',
+  from: 'from',
+  results: 'results',
   perPage: ' per page',
   price: 'Price',
   switchToList: 'Switch to list view',

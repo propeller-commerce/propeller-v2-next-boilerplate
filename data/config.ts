@@ -68,23 +68,24 @@ export const config = {
     pattern: 'page/id/slug',
 
     /** Generate a canonical product URL from a Product object. */
-    getProductUrl(product: Product): string {
-      const slug = product?.slugs?.[0]?.value || '';
+    getProductUrl(product: Product, language?: string): string {
+      const slug = (language && product?.slugs?.find(s => s.language === language)?.value)
+        || product?.slugs?.[0]?.value || '';
       return buildEntityUrl('product', product?.productId, slug, this.pattern);
     },
 
     /** Generate a canonical cluster URL from a Cluster object. */
-    getClusterUrl(cluster: Cluster): string {
-      const slug =
-        cluster?.slugs?.[0]?.value ||
-        cluster?.defaultProduct?.slugs?.[0]?.value ||
-        '';
+    getClusterUrl(cluster: Cluster, language?: string): string {
+      const slugs = cluster?.slugs || cluster?.defaultProduct?.slugs;
+      const slug = (language && slugs?.find((s: any) => s.language === language)?.value)
+        || slugs?.[0]?.value || '';
       return buildEntityUrl('cluster', cluster?.clusterId, slug, this.pattern);
     },
 
     /** Generate a canonical category URL from a Category object. */
-    getCategoryUrl(category: Category): string {
-      const slug = category?.slug?.[0]?.value || '';
+    getCategoryUrl(category: Category, language?: string): string {
+      const slug = (language && category?.slug?.find((s: any) => s.language === language)?.value)
+        || category?.slug?.[0]?.value || '';
       return buildEntityUrl('category', category?.categoryId, slug, this.pattern);
     },
   },

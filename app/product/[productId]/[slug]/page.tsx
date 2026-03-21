@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
@@ -24,6 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import ProductSlider from '@/components/propeller/ProductSlider';
 import ProductBundles from '@/components/propeller/ProductBundles';
+import { useLanguage } from '@/context/LanguageContext';
 
 
 export default function ProductPage() {
@@ -34,11 +35,24 @@ export default function ProductPage() {
   const { cart, saveCart } = useCart();
   const router = useRouter();
   const { includeTax } = usePrice();
+  const { language } = useLanguage();
   const images: string[] = product?.media?.images?.items?.flatMap(
     image => image.imageVariants?.map(variant => variant.url).filter((url): url is string => !!url) ?? []
   ) ?? [];
 
   const price = product?.price as ProductPriceSDK;
+
+  // Update URL slug when language or product changes — use history.replaceState
+  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
+  useEffect(() => {
+    if (!product) return;
+    const match = product.slugs?.find((s: { language?: string; value?: string }) => s.language === language);
+    const slug = match?.value || product.slugs?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (slug && slug !== currentSlug) {
+      window.history.replaceState(null, '', `/product/${productId}/${slug}`);
+    }
+  }, [product, language, productId]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -46,7 +60,7 @@ export default function ProductPage() {
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs categoryPath={product?.categoryPath || []} language="NL" configuration={config} showCurrent={true} />
+            <Breadcrumbs categoryPath={product?.categoryPath || []} language={language} configuration={config} showCurrent={true} />
           </div>
 
           {/* Main Content */}
@@ -64,7 +78,7 @@ export default function ProductPage() {
                   user={state.user}
                   productId={productId}
                   graphqlClient={graphqlClient}
-                  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+                  language={language}
                   imageSearchFilters={imageSearchFilters}
                   imageVariantFilters={imageVariantFiltersLarge}
                   onProductLoaded={setProduct}
@@ -76,7 +90,7 @@ export default function ProductPage() {
                   <ProductBulkPrices bulkPrices={product?.bulkPrices || []} includeTax={includeTax} labels={{ title: '' }} />
                 </div>
                 <div className="mt-6">
-                  <ProductShortDescription product={product as Product} language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'} />
+                  <ProductShortDescription product={product as Product} language={language} />
                 </div>
 
                 {product?.inventory && (
@@ -109,12 +123,12 @@ export default function ProductPage() {
 
             </div>
           </div>
-          <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} />
+          <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} language={language} />
           <div className="my-6">
             <ProductBundles
               graphqlClient={graphqlClient}
               productId={productId}
-              language="NL"
+              language={language}
               cartId={cart?.cartId}
               taxZone="NL"
               includeTax={includeTax}
@@ -131,7 +145,7 @@ export default function ProductPage() {
             graphqlClient={graphqlClient}
             crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
             productId={productId}
-            language="NL"
+            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
@@ -144,14 +158,14 @@ export default function ProductPage() {
             showModal={true}
             onProceedToCheckout={() => router.push('/checkout')}
             configuration={config}
-            onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
-            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
           <ProductSlider
             graphqlClient={graphqlClient}
             crossUpsellTypes={[Enums.CrossupsellType.RELATED]}
             productId={productId}
-            language="NL"
+            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
@@ -164,8 +178,8 @@ export default function ProductPage() {
             showModal={true}
             onProceedToCheckout={() => router.push('/checkout')}
             configuration={config}
-            onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
-            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
         </div>
       </main>

@@ -177,6 +177,12 @@ export interface ProductGridProps {
     onItemsFoundChange?: (count: number) => void;
 
     /**
+     * Called after each fetch with the number of items visible on the current page
+     * (after client-side language filtering).
+     */
+    onPageItemCountChange?: (count: number) => void;
+
+    /**
      * Called when the user clicks Previous / Next in the built-in pagination —
      * use to keep the parent URL / page state in sync.
      */
@@ -441,9 +447,18 @@ export default function ProductGrid(props: ProductGridProps) {
                     } as CategoryProductSearchInput,
                 } as CategoryQueryVariables);
 
-                state.internalProducts = (result?.products?.items || []) as (Product | Cluster)[];
-                state.totalPages = result?.products?.pages || 1;
-                state.itemsFound = result?.products?.itemsFound || 0;
+                const lang = (props.language as string) || 'NL';
+                const allItems = (result?.products?.items || []) as (Product | Cluster)[];
+                const filteredItems = allItems.filter((item) => {
+                  const names = (item as Product).names || (item as Cluster).names || [];
+                  return names.some((n: { language?: string }) => n.language === lang);
+                });
+
+                state.internalProducts = filteredItems;
+                const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
+                const totalPages = result?.products?.pages || 1;
+                state.totalPages = totalPages;
+                state.itemsFound = totalPages <= 1 ? filteredItems.length : apiTotal;
 
                 if (props.onProductsResponse && result?.products) {
                     props.onProductsResponse(result.products as ProductsResponse);
@@ -462,7 +477,10 @@ export default function ProductGrid(props: ProductGridProps) {
                     }
                 }
                 if (props.onItemsFoundChange) {
-                    props.onItemsFoundChange(result?.products?.itemsFound || 0);
+                    props.onItemsFoundChange(totalPages <= 1 ? filteredItems.length : apiTotal);
+                }
+                if (props.onPageItemCountChange) {
+                    props.onPageItemCountChange(filteredItems.length);
                 }
             } catch {
                 state.internalProducts = [];
@@ -524,7 +542,7 @@ export default function ProductGrid(props: ProductGridProps) {
             state.currentPage = 1;
             state.fetchProducts();
         }
-    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize]);
+    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language]);
 
     // Re-fetch when an external page prop changes (e.g. driven by GridPagination).
     // Only acts when props.page is defined — falls back to internal state otherwise.
@@ -609,6 +627,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                                 cluster={item as Cluster}
                                                 configuration={props.configuration}
                                                 includeTax={props.includeTax as boolean}
+                                                language={(props.language as string) || 'NL'}
                                                 showStock={props.showStock as boolean}
                                                 showAvailability={props.showAvailability as boolean}
                                                 stockLabels={props.stockLabels}
@@ -671,6 +690,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                                     graphqlClient={props.graphqlClient as GraphQLClient}
                                                     user={(props.user as Contact | Customer | null) || null}
                                                     configuration={props.configuration}
+                                                    language={(props.language as string) || 'NL'}
                                                     cartId={props.cartId as string}
                                                     enableAddFavorite={props.enableAddFavorite as boolean}
                                                     showStock={props.showStock as boolean}

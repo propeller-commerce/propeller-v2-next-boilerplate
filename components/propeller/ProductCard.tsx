@@ -252,7 +252,10 @@ function ProductCard(props: ProductCardProps) {
   }
 
   function getProductName(): ReturnType<ProductCardState['getProductName']> {
-    return (props.product as Product)?.names?.[0]?.value || 'Product';
+    const lang = (props.language as string) || 'NL';
+    const names = (props.product as Product)?.names;
+    const match = names?.find((n: { language?: string; value?: string }) => n.language === lang);
+    return match?.value || names?.[0]?.value || 'Product';
   }
 
   function getProductSku(): ReturnType<ProductCardState['getProductSku']> {
@@ -272,13 +275,16 @@ function ProductCard(props: ProductCardProps) {
   }
 
   function getProductUrl(): ReturnType<ProductCardState['getProductUrl']> {
-    return props.configuration.urls.getProductUrl(props.product);
+    return props.configuration.urls.getProductUrl(props.product, props.language);
   }
 
   function getProductShortDescription(): ReturnType<
     ProductCardState['getProductShortDescription']
   > {
-    return (props.product as Product)?.shortDescriptions?.[0]?.value || '';
+    const lang = (props.language as string) || 'NL';
+    const descs = (props.product as Product)?.shortDescriptions;
+    const match = descs?.find((d: { language?: string; value?: string }) => d.language === lang);
+    return match?.value || descs?.[0]?.value || '';
   }
 
   function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {

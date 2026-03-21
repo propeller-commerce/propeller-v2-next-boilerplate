@@ -14,6 +14,8 @@ import GridTitle from '@/components/propeller/GridTitle';
 import { useAuth } from '@/context/AuthContext';
 import { config } from '@/data/config';
 import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { usePrice } from '@/context/PriceContext';
 
 export default function SearchPage() {
   const params = useParams();
@@ -58,11 +60,14 @@ export default function SearchPage() {
   const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
   const [clearSignal, setClearSignal] = useState(0);
   const [itemsFound, setItemsFound] = useState<number>(0);
+  const [pageItemCount, setPageItemCount] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
 
   const { state } = useAuth();
   const { cart, saveCart } = useCart();
+  const { language } = useLanguage();
+  const { includeTax } = usePrice();
 
   const updateURL = (
     newFilters: Record<string, string[]>,
@@ -143,7 +148,7 @@ export default function SearchPage() {
           {/* Search Header */}
           <GridTitle
             title={`Search results for "${term}"`}
-            language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+            language={language}
           />
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -153,7 +158,7 @@ export default function SearchPage() {
                 filters={gridFilters}
                 priceMin={priceBoundsMin}
                 priceMax={priceBoundsMax}
-                language="NL"
+                language={language}
                 onFilterChange={handleFilterChange}
                 onPriceChange={handlePriceRangeChange}
                 onClearFilters={clearAllFilters}
@@ -172,6 +177,9 @@ export default function SearchPage() {
               <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
                 <GridToolbar
                   itemsFound={itemsFound}
+                  page={currentPage}
+                  pageSize={offset}
+                  pageItemCount={pageItemCount}
                   activeTextFilters={filters}
                   priceFilterMin={minPrice}
                   priceFilterMax={maxPrice}
@@ -191,10 +199,13 @@ export default function SearchPage() {
                 term={term}
                 configuration={config}
                 user={state.user}
-                language='NL'
+                language={language}
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}
+                includeTax={includeTax}
+                showAvailability={false}
+                showStock={true}
                 onCartCreated={(newCart) => {
                   saveCart(newCart);
                 }}
@@ -211,6 +222,7 @@ export default function SearchPage() {
                   setPriceBoundsMax(max);
                 }}
                 onItemsFoundChange={setItemsFound}
+                onPageItemCountChange={setPageItemCount}
                 page={currentPage}
                 afterAddToCart={(updatedCart) => {
                   saveCart(updatedCart);

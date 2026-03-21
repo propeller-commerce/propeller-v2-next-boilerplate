@@ -150,7 +150,7 @@ export default function CartItem(props: CartItemProps) {
 
         getProductUrl(): string {
             if (props.configuration && props.configuration.urls) {
-                return props.configuration.urls.getProductUrl(props.cartItem.product);
+                return props.configuration.urls.getProductUrl(props.cartItem.product, props.language);
             }
             return '#';
         },
@@ -369,7 +369,7 @@ export default function CartItem(props: CartItemProps) {
         getCrossupsellUrl(item: Crossupsell): string {
             const product = item?.productTo || item?.clusterTo;
             if (props.configuration && props.configuration.urls && product) {
-                return props.configuration.urls.getProductUrl(product);
+                return props.configuration.urls.getProductUrl(product, props.language);
             }
             return '#';
         },

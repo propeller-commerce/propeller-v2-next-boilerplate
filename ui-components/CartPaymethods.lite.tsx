@@ -11,8 +11,6 @@ export interface CartPaymethodsProps {
     /** The CSS class for the payment methods container */
     paymentsContainerClass?: string;
 
-    /** Display the payment method logo */
-    showPaymentMethodLogo?: boolean;
 
     /** Display the on account payment method for anonymous users */
     showOnAccountForGuests?: boolean;
@@ -30,14 +28,12 @@ export interface CartPaymethodsProps {
 interface CartPaymethodsState {
     selectedCode: string;
     containerClass: string;
-    showLogo: boolean;
     showOnAccountForGuests: boolean;
     isGuest: boolean;
     payMethods: CartPaymethod[];
     isOnAccountMethod: (method: CartPaymethod) => boolean;
     getLabel: (key: string, fallback: string) => string;
     formatMethodPrice: (price: number) => string;
-    getLogoUrl: (method: CartPaymethod) => string;
     handleSelect: (method: CartPaymethod) => void;
 }
 
@@ -47,10 +43,6 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
 
         get containerClass(): string {
             return props.paymentsContainerClass || 'cart-paymethods';
-        },
-
-        get showLogo(): boolean {
-            return props.showPaymentMethodLogo !== undefined ? props.showPaymentMethodLogo : true;
         },
 
         get showOnAccountForGuests(): boolean {
@@ -88,21 +80,6 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
             return '\u20AC' + Number(price || 0).toFixed(2);
         },
 
-        getLogoUrl(method: CartPaymethod): string {
-            const code = (method.code || '').toLowerCase();
-            const logoMap: Record<string, string> = {
-                'ideal': 'https://cdn.propellor.cloud/payment-logos/ideal.svg',
-                'bancontact': 'https://cdn.propellor.cloud/payment-logos/bancontact.svg',
-                'creditcard': 'https://cdn.propellor.cloud/payment-logos/creditcard.svg',
-                'paypal': 'https://cdn.propellor.cloud/payment-logos/paypal.svg',
-                'klarna': 'https://cdn.propellor.cloud/payment-logos/klarna.svg',
-                'sofort': 'https://cdn.propellor.cloud/payment-logos/sofort.svg',
-                'giropay': 'https://cdn.propellor.cloud/payment-logos/giropay.svg',
-                'eps': 'https://cdn.propellor.cloud/payment-logos/eps.svg',
-            };
-            return logoMap[code] || '';
-        },
-
         handleSelect(method: CartPaymethod): void {
             state.selectedCode = method.code;
             if (props.onPaymethodSelect) {
@@ -124,13 +101,6 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
                             >
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">
-                                        <Show when={state.showLogo && state.getLogoUrl(method)}>
-                                            <img
-                                                src={state.getLogoUrl(method)}
-                                                alt={method.name || method.code}
-                                                className="h-6 w-auto"
-                                            />
-                                        </Show>
                                         <span className="font-medium">{method.name || method.code}</span>
                                     </div>
                                     <Show when={method.price > 0}>

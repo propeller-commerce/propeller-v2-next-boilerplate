@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import Header from '@/components/layout/Header';
@@ -38,6 +38,7 @@ interface CheckoutState {
   loading: boolean;
   error: string | null;
   sameAsInvoice: boolean;
+  step3Submitted: boolean;
 }
 
 /** Recursively strips underscore-prefixed keys from SDK class instances */
@@ -76,8 +77,10 @@ export default function CheckoutPage() {
     selectedDeliveryDate: '',
     loading: false,
     error: null,
-    sameAsInvoice: false
+    sameAsInvoice: false,
+    step3Submitted: false
   });
+  const sameAsInvoiceRef = useRef(false);
 
   useEffect(() => {
     /** Get the user's default address of a given type */
@@ -192,7 +195,12 @@ export default function CheckoutPage() {
         }
 
         setState(prev => {
-          if (prev.cart?.cartId === cartToUse?.cartId && prev.cart?.invoiceAddress?.street === cartToUse?.invoiceAddress?.street) return prev;
+          // Skip if cart hasn't changed (prevents overriding step set by handleAddressSubmit)
+          if (
+            prev.cart?.cartId === cartToUse?.cartId &&
+            prev.cart?.invoiceAddress?.street === cartToUse?.invoiceAddress?.street &&
+            prev.cart?.deliveryAddress?.street === cartToUse?.deliveryAddress?.street
+          ) return prev;
           const updatedHasInvoice = !!cartToUse?.invoiceAddress?.street;
           const updatedHasDelivery = !!cartToUse?.deliveryAddress?.street;
           if (updatedHasInvoice && updatedHasDelivery) {
@@ -207,7 +215,7 @@ export default function CheckoutPage() {
     };
     initializeCheckout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contextCart, router, state.loading, authState.isAuthenticated, authState.user]);
+  }, [contextCart, router, authState.isAuthenticated, authState.user]);
 
   useEffect(() => {
     if (state.currentStep) {
@@ -350,7 +358,7 @@ export default function CheckoutPage() {
       }
 
       // Anonymous user: if "same as invoice" is checked, also save as delivery address
-      if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && state.sameAsInvoice) {
+      if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && sameAsInvoiceRef.current) {
         const deliveryInput: CartUpdateAddressInput = {
           ...input,
           type: Enums.CartAddressType.DELIVERY,
@@ -400,7 +408,7 @@ export default function CheckoutPage() {
 
   const handleStep3Continue = async () => {
     if (!state.selectedPayment || !state.selectedCarrier || !state.selectedDeliveryDate) {
-      setState(prev => ({ ...prev, error: 'Please select payment method, carrier, and delivery date' }));
+      setState(prev => ({ ...prev, step3Submitted: true }));
       return;
     }
 
@@ -579,7 +587,7 @@ export default function CheckoutPage() {
                             <input
                               type="checkbox"
                               checked={state.sameAsInvoice}
-                              onChange={(e) => setState(prev => ({ ...prev, sameAsInvoice: e.target.checked }))}
+                              onChange={(e) => { sameAsInvoiceRef.current = e.target.checked; setState(prev => ({ ...prev, sameAsInvoice: e.target.checked })); }}
                               className="rounded border-gray-300 text-primary focus:ring-primary"
                             />
                             Delivery address same as invoice address
@@ -646,6 +654,9 @@ export default function CheckoutPage() {
                     {/* Payment */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><CreditCard className="w-4 h-4" /> Payment Method</h3>
+                      {state.step3Submitted && !state.selectedPayment && (
+                        <p className="text-sm text-destructive">Please select a payment method</p>
+                      )}
                       <CartPaymethods
                         user={authState.user}
                         cart={state.cart}
@@ -656,8 +667,12 @@ export default function CheckoutPage() {
                     {/* Carrier */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Truck className="w-4 h-4" /> Carrier</h3>
+                      {state.step3Submitted && !state.selectedCarrier && (
+                        <p className="text-sm text-destructive">Please select a carrier</p>
+                      )}
                       <CartCarriers
                         cart={state.cart}
+                        showPrice={false}
                         onCarrierSelect={(carrier) => setState(prev => ({ ...prev, selectedCarrier: carrier.name }))}
                       />
                     </div>
@@ -665,6 +680,9 @@ export default function CheckoutPage() {
                     {/* Delivery Date */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Calendar className="w-4 h-4" /> Delivery Date</h3>
+                      {state.step3Submitted && !state.selectedDeliveryDate && (
+                        <p className="text-sm text-destructive">Please select a delivery date</p>
+                      )}
                       <DeliveryDate
                         onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
                       />

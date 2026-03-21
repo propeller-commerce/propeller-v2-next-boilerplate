@@ -20,6 +20,9 @@ export interface CartCarriersProps {
   /** Custom price formatting function */
   formatPrice?: (price: number) => string;
 
+  /** Show carrier price (default: true) */
+  showPrice?: boolean;
+
   /** Labels for the component */
   labels?: Record<string, string>;
 }
@@ -88,9 +91,11 @@ function CartCarriers(props: CartCarriersProps) {
                   ) : null}
                   <span className="font-medium">{carrier.name}</span>
                 </div>
-                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                  {formatCarrierPrice(carrier.price)}
-                </span>
+                {props.showPrice !== false && (
+                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                    {formatCarrierPrice(carrier.price)}
+                  </span>
+                )}
               </div>
               {carrier.deliveryDeadline ? (
                 <p className="text-xs text-gray-500">

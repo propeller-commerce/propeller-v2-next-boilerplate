@@ -5,6 +5,8 @@ import Footer from '@/components/layout/Footer';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 
@@ -16,13 +18,14 @@ export default function AccountLayout({
     const { state, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    const { language } = useLanguage();
 
     // Protect account routes — wait for auth to finish loading before checking
     useEffect(() => {
         if (!state.isLoading && !state.isAuthenticated) {
-            router.push('/login');
+            router.push(localizeHref('/login', language));
         }
-    }, [state.isLoading, state.isAuthenticated, router]);
+    }, [state.isLoading, state.isAuthenticated, router, language]);
 
     if (state.isLoading || !state.isAuthenticated) {
         return null;
@@ -41,14 +44,14 @@ export default function AccountLayout({
                                     variant="sidebar"
                                     currentPath={pathname}
                                     user={state.user}
-                                    onMenuItemClick={(href) => router.push(href)}
+                                    onMenuItemClick={(href) => router.push(localizeHref(href, language))}
                                     onLogoutClick={() => logout()}
                                     menuLinks={[
-                                        { label: 'Dashboard', href: '/account' },
-                                        { label: 'Addresses', href: '/account/addresses' },
-                                        { label: 'Orders', href: '/account/orders' },
-                                        { label: 'Quotes', href: '/account/quotes' },
-                                        { label: 'Favorites', href: '/account/favorites' },
+                                        { label: 'Dashboard', href: localizeHref('/account', language) },
+                                        { label: 'Addresses', href: localizeHref('/account/addresses', language) },
+                                        { label: 'Orders', href: localizeHref('/account/orders', language) },
+                                        { label: 'Quotes', href: localizeHref('/account/quotes', language) },
+                                        { label: 'Favorites', href: localizeHref('/account/favorites', language) },
                                     ]}
                                 />
                             </Card>

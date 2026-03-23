@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import { OrderService, Order, OrderItem, Base64File } from 'propeller-sdk-v2';
 import OrderSummary from '@/components/propeller/OrderSummary';
@@ -26,6 +28,7 @@ const COUNTRIES = [
 export default function OrderDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
+    const { language } = useLanguage();
     const params = useParams();
     const orderId = params.id as string;
     const [order, setOrder] = useState<Order | null>(null);
@@ -170,7 +173,7 @@ export default function OrderDetailPage() {
             {error && (
                 <Card className="p-8 text-center">
                     <p className="text-destructive mb-4">{error}</p>
-                    <Link href="/account/orders" className="text-primary hover:underline">
+                    <Link href={localizeHref('/account/orders', language)} className="text-primary hover:underline">
                         Return to Orders
                     </Link>
                 </Card>

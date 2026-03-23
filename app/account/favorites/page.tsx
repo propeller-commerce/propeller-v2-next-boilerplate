@@ -2,12 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import FavoriteLists from '@/components/propeller/FavoriteLists';
 import { graphqlClient } from '@/lib/api';
 
 export default function FavoritesPage() {
   const { state: authState } = useAuth();
   const router = useRouter();
+  const { language } = useLanguage();
 
   if (!authState.isAuthenticated) return null;
 
@@ -18,7 +21,7 @@ export default function FavoritesPage() {
       <FavoriteLists
         user={authState.user}
         graphqlClient={graphqlClient}
-        onListClick={(listId) => router.push(`/account/favorites/${listId}`)}
+        onListClick={(listId) => router.push(localizeHref(`/account/favorites/${listId}`, language))}
         showActions={true}
         allowFavoriteListCreate={true}
       />

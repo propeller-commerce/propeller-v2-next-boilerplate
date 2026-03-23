@@ -9,12 +9,15 @@ import { Button } from '@/components/ui/Button';
 import LoginForm from '@/components/propeller/LoginForm';
 import { graphqlClient } from '@/lib/api';
 import { useCompany } from '@/context/CompanyContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Company, Contact } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
+import { localizeHref } from '@/data/config';
 
 export default function LoginPage() {
   const { state, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
+  const { language } = useLanguage();
   const router = useRouter();
 
   return (
@@ -31,10 +34,10 @@ export default function LoginPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <Button className="w-full" onClick={() => router.push('/account')}>
+                <Button className="w-full" onClick={() => router.push(localizeHref('/account', language))}>
                   Go to My Account
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
+                <Button variant="outline" className="w-full" onClick={() => router.push(localizeHref('/', language))}>
                   Go to Home
                 </Button>
               </CardContent>
@@ -54,8 +57,8 @@ export default function LoginPage() {
                   title=""
                   accountHeaderLoginForm={false}
                   displayGuestCheckoutLink={false}
-                  onForgotPasswordClick={() => router.push('/forgot-password')}
-                  onRegisterClick={() => router.push('/register')}
+                  onForgotPasswordClick={() => router.push(localizeHref('/forgot-password', language))}
+                  onRegisterClick={() => router.push(localizeHref('/register', language))}
                   afterLogin={(user, accessToken, refreshToken, expiresAt) => {
                     const loggedInUser = stripLeadingUnderscores(user);
                     localStorage.setItem('user', JSON.stringify(loggedInUser));
@@ -76,7 +79,7 @@ export default function LoginPage() {
                       window.dispatchEvent(new CustomEvent('userLoggedIn'));
                     }
 
-                    router.push('/account')
+                    router.push(localizeHref('/account', language))
                   }}
                 />
               </CardContent>

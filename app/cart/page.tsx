@@ -11,6 +11,8 @@ import CartSummary from '@/components/propeller/CartSummary';
 import ActionCode from '@/components/propeller/ActionCode';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import { type CartMainItem, type Cart, type Contact, type Customer, Enums } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
@@ -23,6 +25,7 @@ export default function CartPage() {
   const { includeTax } = usePrice();
   const { state } = useAuth();
   const router = useRouter();
+  const { language } = useLanguage();
 
   const items = mounted ? (cart?.items || []) : [];
 
@@ -37,7 +40,7 @@ export default function CartPage() {
             <div className="text-center py-12">
               <p className="text-xl text-muted-foreground mb-4">Your cart is empty</p>
               <Link
-                href="/"
+                href={localizeHref('/', language)}
                 className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition"
               >
                 Continue Shopping
@@ -72,7 +75,7 @@ export default function CartPage() {
                   <>
                     <CartSummary
                       cart={cart}
-                      onCheckoutButtonClick={() => router.push('/checkout')}
+                      onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
                     />
                     <ActionCode
                       graphqlClient={graphqlClient}

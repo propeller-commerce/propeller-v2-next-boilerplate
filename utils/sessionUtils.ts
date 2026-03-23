@@ -2,6 +2,7 @@
  * Utility functions for debugging and fixing session issues
  * These functions can be called from the browser console
  */
+import { localizeHref } from '@/data/config';
 
 /**
  * Clears all session data - useful for fixing corrupted sessions
@@ -53,7 +54,8 @@ export function showPropellerStorage(): void {
 export function forceReLogin(): void {
   clearSession();
   if (typeof window !== 'undefined') {
-    window.location.href = '/login';
+    const lang = localStorage.getItem('preferred_language') || 'NL';
+    window.location.href = localizeHref('/login', lang);
   }
 }
 

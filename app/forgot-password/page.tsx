@@ -5,8 +5,12 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ForgotPassword from '@/components/propeller/ForgotPassword';
 import { graphqlClient } from '@/lib/api';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ForgotPasswordPage() {
+  const { language } = useLanguage();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -17,7 +21,7 @@ export default function ForgotPasswordPage() {
           />
 
           <div className="mt-6 text-center">
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href={localizeHref('/login', language)} className="text-blue-600 hover:underline">
               Back to Login
             </Link>
           </div>

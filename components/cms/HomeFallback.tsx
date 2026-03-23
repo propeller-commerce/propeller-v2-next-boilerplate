@@ -12,6 +12,8 @@ import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaul
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface CategoryDisplay {
   id: number;
@@ -25,6 +27,7 @@ export default function HomeFallback() {
   const [featuredProducts, setFeaturedProducts] = useState<(Product | Cluster)[]>([]);
   const [categories, setCategories] = useState<CategoryDisplay[]>([]);
   const [loading, setLoading] = useState(true);
+  const { language } = useLanguage();
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -145,7 +148,7 @@ export default function HomeFallback() {
               {categories.map((category) => (
                 <Link
                   key={category.categoryId}
-                  href={`/category/${category.categoryId}/${category.slug}`}
+                  href={localizeHref(`/category/${category.categoryId}/${category.slug}`, language)}
                   className="group"
                 >
                   <Card className="h-full border-border/60 hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-1 bg-white">
@@ -170,7 +173,7 @@ export default function HomeFallback() {
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Featured Products</h2>
             </div>
             <Button variant="ghost" className="hidden sm:flex group font-semibold" asChild>
-              <Link href="/">
+              <Link href={localizeHref('/', language)}>
                 View All Products
                 <span className="ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
               </Link>

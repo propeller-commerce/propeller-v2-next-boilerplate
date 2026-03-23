@@ -15,7 +15,7 @@ import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon } from 'lucide-react';
-import { config } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
@@ -165,7 +165,7 @@ export default function Header() {
           <div className="container-width">
             <div className="flex items-center justify-between h-16 sm:h-20 gap-4 sm:gap-8">
               {/* Logo — CMS or fallback */}
-              <Link href="/" className="flex-shrink-0 relative h-10 sm:h-12 w-auto">
+              <Link href={localizeHref('/', language)} className="flex-shrink-0 relative h-10 sm:h-12 w-auto">
                 <Image
                   src={logoSrc}
                   alt={logoAlt}
@@ -182,11 +182,11 @@ export default function Header() {
                   <SearchBar
                     graphqlClient={graphqlClient}
                     language={language}
-                    onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+                    onSubmit={(term) => router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
                     }}
-                    onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+                    onViewAllClick={(term) => router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language))}
                   />
                 </div>
               )}
@@ -218,21 +218,21 @@ export default function Header() {
                         window.dispatchEvent(new CustomEvent('userLoggedIn'));
                       }
 
-                      router.push('/account')
+                      router.push(localizeHref('/account', language))
                     }}
                     onMenuItemClick={(href) => router.push(href)}
                     onLogoutClick={async () => {
                       try { await logout(); } catch (e) { console.error('Logout failed:', e); }
                     }}
-                    onForgotPasswordClick={() => router.push('/forgot-password')}
-                    onRegisterClick={() => router.push('/register')}
+                    onForgotPasswordClick={() => router.push(localizeHref('/forgot-password', language))}
+                    onRegisterClick={() => router.push(localizeHref('/register', language))}
                     accountHeaderLoginForm={true}
                     menuLinks={[
-                        { label: 'Dashboard', href: '/account' },
-                        { label: 'Addresses', href: '/account/addresses' },
-                        { label: 'Orders', href: '/account/orders' },
-                        { label: 'Quotes', href: '/account/quotes' },
-                        { label: 'Favorites', href: '/account/favorites' },
+                        { label: 'Dashboard', href: localizeHref('/account', language) },
+                        { label: 'Addresses', href: localizeHref('/account/addresses', language) },
+                        { label: 'Orders', href: localizeHref('/account/orders', language) },
+                        { label: 'Quotes', href: localizeHref('/account/quotes', language) },
+                        { label: 'Favorites', href: localizeHref('/account/favorites', language) },
                     ]}
                   />
                 )}
@@ -241,8 +241,8 @@ export default function Header() {
                 {showCart && (
                   <CartIconAndSidebar
                     cart={cart as Cart}
-                    onCheckoutButtonClick={(cart) => router.push('/checkout')}
-                    onCartPageButtonClick={(cart) => router.push('/cart')}
+                    onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
+                    onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                   />
@@ -316,7 +316,7 @@ export default function Header() {
                   globalData.navLinks.map((link, i) => (
                     <Link
                       key={i}
-                      href={link.url}
+                      href={localizeHref(link.url, language)}
                       className={cn(
                         "hover:text-primary transition-colors",
                         link.highlight && "text-destructive"
@@ -327,9 +327,9 @@ export default function Header() {
                   ))
                 ) : (
                   <>
-                    <Link href="/new-arrivals" className="hover:text-primary transition-colors">New Arrivals</Link>
-                    <Link href="/best-sellers" className="hover:text-primary transition-colors">Best Sellers</Link>
-                    <Link href="/sale" className="hover:text-primary transition-colors text-destructive">Sale</Link>
+                    <Link href={localizeHref('/new-arrivals', language)} className="hover:text-primary transition-colors">New Arrivals</Link>
+                    <Link href={localizeHref('/best-sellers', language)} className="hover:text-primary transition-colors">Best Sellers</Link>
+                    <Link href={localizeHref('/sale', language)} className="hover:text-primary transition-colors text-destructive">Sale</Link>
                   </>
                 )}
               </div>

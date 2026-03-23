@@ -3,6 +3,8 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import OrderList from '@/components/propeller/OrderList';
 import { Contact, Customer, Company } from 'propeller-sdk-v2';
@@ -12,6 +14,7 @@ export default function QuotesPage() {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const router = useRouter();
+  const { language } = useLanguage();
 
   const isContact = (u: Contact | Customer | null): u is Contact =>
     u !== null && 'company' in u;
@@ -61,7 +64,7 @@ export default function QuotesPage() {
           graphqlClient={graphqlClient}
           user={state.user}
           companyId={companyId}
-          onOrderClick={(orderId) => router.push(`/account/quotes/${orderId}`)}
+          onOrderClick={(orderId) => router.push(localizeHref(`/account/quotes/${orderId}`, language))}
           orderStatus={["QUOTATION"]}
           labels={paginationLabels}
           rowsClickable={true}

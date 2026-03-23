@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartSummary from '@/components/propeller/CartSummary';
@@ -67,6 +69,7 @@ const COUNTRIES = [
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { language } = useLanguage();
   const { cart: contextCart, getCart } = useCart();
   const { state: authState } = useAuth();
   const [state, setState] = useState<CheckoutState>({
@@ -469,7 +472,7 @@ export default function CheckoutPage() {
           localStorage.removeItem('cart');
           if (getCart) await getCart();
         }
-        router.push(`/checkout/thank-you/${orderId}`);
+        router.push(localizeHref(`/checkout/thank-you/${orderId}`, language));
       } else {
         throw new Error("No Order ID returned");
       }

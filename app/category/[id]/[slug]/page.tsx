@@ -13,7 +13,7 @@ import GridPagination from '@/components/propeller/GridPagination';
 import GridTitle from '@/components/propeller/GridTitle';
 import CategoryDescription from '@/components/propeller/CategoryDescription';
 import { useAuth } from '@/context/AuthContext';
-import { config } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -88,7 +88,7 @@ export default function CategoryPage() {
     const currentSlug = window.location.pathname.split('/').pop();
     if (newSlug && newSlug !== currentSlug) {
       const search = window.location.search;
-      window.history.replaceState(null, '', `/category/${categoryId}/${newSlug}${search}`);
+      window.history.replaceState(null, '', localizeHref(`/category/${categoryId}/${newSlug}`, language) + search);
     }
   }, [category, language, categoryId]);
 
@@ -118,7 +118,7 @@ export default function CategoryPage() {
     if (newSortOrder !== undefined && newSortOrder !== 'ASC') searchParams.set('sortOrder', newSortOrder);
 
     const newSearch = searchParams.toString();
-    router.push(`/category/${categoryId}/${params.slug}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
+    router.push(`${localizeHref(`/category/${categoryId}/${params.slug}`, language)}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   };
 
@@ -296,7 +296,7 @@ export default function CategoryPage() {
                   console.log('Cart updated:', cart);
                   console.log('Added item:', item);
                 }}
-                onProceedToCheckout={() => router.push('/checkout')}
+                onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
                 onProductsResponse={setProductsResponse}
                 onCategoryChange={setCategory}
                 onClusterClick={(cluster: Cluster) => {

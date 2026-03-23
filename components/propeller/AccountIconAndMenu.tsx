@@ -237,7 +237,10 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
 
   function isActiveLink(href: string): ReturnType<AccountIconAndMenuState['isActiveLink']> {
     if (!props.currentPath) return false;
-    if (href === '/account') return props.currentPath === '/account';
+    // Exact match for dashboard (account root) — handle both /account and /en/account
+    if (href.endsWith('/account') && !href.endsWith('/account/')) {
+      return props.currentPath === href;
+    }
     return props.currentPath.startsWith(href);
   }
 

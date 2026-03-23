@@ -13,7 +13,7 @@ import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import ProductGallery from '@/components/propeller/ProductGallery';
 import Breadcrumbs from '@/components/propeller/Breadcrumbs';
-import { config } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import { useAuth } from '@/context/AuthContext';
 import ProductPriceDisplay from '@/components/propeller/ProductPrice';
 import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
@@ -139,7 +139,7 @@ export default function ClusterPage() {
     const slug = match?.value || slugs?.[0]?.value || '';
     const currentSlug = window.location.pathname.split('/').pop();
     if (slug && slug !== currentSlug) {
-      window.history.replaceState(null, '', `/cluster/${clusterId}/${slug}`);
+      window.history.replaceState(null, '', localizeHref(`/cluster/${clusterId}/${slug}`, language));
     }
   }, [cluster, language, clusterId]);
 
@@ -247,7 +247,7 @@ export default function ClusterPage() {
                   afterAddToCart={(cart) => {
                     saveCart(cart);
                   }}
-                  onProceedToCheckout={() => router.push('/checkout')} />
+                  onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
               </div>
             </div>
           </div>

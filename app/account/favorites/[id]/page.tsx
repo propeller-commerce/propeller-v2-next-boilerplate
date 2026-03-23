@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
 import { Contact, Customer, FavoriteListService, type FavoriteList } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
@@ -17,6 +19,7 @@ export default function FavoriteListPage() {
   const { cart, saveCart } = useCart();
   const params = useParams();
   const listId = params?.id as string;
+  const { language } = useLanguage();
 
   const [listName, setListName] = useState('');
 
@@ -81,7 +84,7 @@ export default function FavoriteListPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild className="gap-2">
-          <Link href="/account/favorites">← Back to Lists</Link>
+          <Link href={localizeHref('/account/favorites', language)}>← Back to Lists</Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           {listName || 'Loading...'}

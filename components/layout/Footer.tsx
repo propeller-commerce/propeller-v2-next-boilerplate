@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { useGlobal } from '@/context/GlobalContext';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Footer() {
   const globalData = useGlobal();
+  const { language } = useLanguage();
 
   // Fallback data when CMS is not available
   const description = globalData?.footerDescription ||
@@ -38,7 +41,7 @@ export default function Footer() {
                 <ul className="space-y-3 text-sm text-slate-400">
                   {column.links.map((link, j) => (
                     <li key={j}>
-                      <Link href={link.url} className="hover:text-white transition-colors">
+                      <Link href={localizeHref(link.url, language)} className="hover:text-white transition-colors">
                         {link.label}
                       </Link>
                     </li>
@@ -51,19 +54,19 @@ export default function Footer() {
               <div>
                 <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Shop</h4>
                 <ul className="space-y-3 text-sm text-slate-400">
-                  <li><Link href="/" className="hover:text-white transition-colors">All Products</Link></li>
-                  <li><Link href="/" className="hover:text-white transition-colors">Featured</Link></li>
-                  <li><Link href="/" className="hover:text-white transition-colors">New Arrivals</Link></li>
+                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">All Products</Link></li>
+                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">Featured</Link></li>
+                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">New Arrivals</Link></li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Support</h4>
                 <ul className="space-y-3 text-sm text-slate-400">
-                  <li><Link href="/account" className="hover:text-white transition-colors">My Account</Link></li>
-                  <li><Link href="/terms-conditions" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
-                  <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                  <li><Link href="/returns" className="hover:text-white transition-colors">Returns</Link></li>
+                  <li><Link href={localizeHref("/account", language)} className="hover:text-white transition-colors">My Account</Link></li>
+                  <li><Link href={localizeHref("/terms-conditions", language)} className="hover:text-white transition-colors">Terms & Conditions</Link></li>
+                  <li><Link href={localizeHref("/privacy", language)} className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                  <li><Link href={localizeHref("/returns", language)} className="hover:text-white transition-colors">Returns</Link></li>
                 </ul>
               </div>
             </>

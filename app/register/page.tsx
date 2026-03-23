@@ -5,15 +5,18 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import RegisterForm from '@/components/propeller/RegisterForm';
 import { graphqlClient } from '@/lib/api';
 import { Company, Contact } from 'propeller-sdk-v2';
+import { localizeHref } from '@/data/config';
 
 export default function RegisterPage() {
   const { state, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
+  const { language } = useLanguage();
   const router = useRouter();
 
   return (
@@ -30,10 +33,10 @@ export default function RegisterPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <Button className="w-full" onClick={() => router.push('/account')}>
+                <Button className="w-full" onClick={() => router.push(localizeHref('/account', language))}>
                   Go to My Account
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
+                <Button variant="outline" className="w-full" onClick={() => router.push(localizeHref('/', language))}>
                   Go to Home
                 </Button>
               </CardContent>
@@ -52,7 +55,7 @@ export default function RegisterPage() {
                   graphqlClient={graphqlClient}
                   title=""
                   requiredFields={['firstName', 'lastName']}
-                  onLoginClick={() => router.push('/login')}
+                  onLoginClick={() => router.push(localizeHref('/login', language))}
                   automaticLogin={true}
                   countries={{
                     'NL': 'Netherlands',
@@ -77,7 +80,7 @@ export default function RegisterPage() {
                       localStorage.setItem('expiresAt', expiresAt);
                     }
 
-                    router.push('/account')
+                    router.push(localizeHref('/account', language))
                   }}
                 />
               </CardContent>

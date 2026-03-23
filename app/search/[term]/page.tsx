@@ -12,7 +12,7 @@ import GridFilters from '@/components/propeller/GridFilters';
 import GridPagination from '@/components/propeller/GridPagination';
 import GridTitle from '@/components/propeller/GridTitle';
 import { useAuth } from '@/context/AuthContext';
-import { config } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
@@ -95,7 +95,8 @@ export default function SearchPage() {
     if (newSortOrder !== undefined && newSortOrder !== 'ASC') urlParams.set('sortOrder', newSortOrder);
 
     const newSearch = urlParams.toString();
-    router.push(`/search/${encodeURIComponent(term)}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
+    const basePath = localizeHref('/search/' + encodeURIComponent(term), language);
+    router.push(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   };
 
@@ -227,7 +228,7 @@ export default function SearchPage() {
                 afterAddToCart={(updatedCart) => {
                   saveCart(updatedCart);
                 }}
-                onProceedToCheckout={() => router.push('/checkout')}
+                onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
                 onProductsResponse={setProductsResponse}
               />
 

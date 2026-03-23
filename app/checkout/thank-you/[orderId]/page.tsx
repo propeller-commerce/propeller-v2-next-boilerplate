@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
@@ -22,6 +24,7 @@ interface OrderDetails {
 export default function ThankYouPage() {
   const params = useParams();
   const orderId = params?.orderId as string;
+  const { language } = useLanguage();
   const { state: authState } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +84,7 @@ export default function ThankYouPage() {
         <main className="flex-1 container mx-auto px-4 py-12 text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Oops! Something went wrong</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <Link href="/" className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Return to Home</Link>
+          <Link href={localizeHref('/', language)} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Return to Home</Link>
         </main>
         <Footer />
       </div>
@@ -222,14 +225,14 @@ export default function ThankYouPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
                 {authState.isAuthenticated && (
                   <Link
-                    href="/account/orders"
+                    href={localizeHref('/account/orders', language)}
                     className="px-8 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition text-center"
                   >
                     View Order History
                   </Link>
                 )}
                 <Link
-                  href="/"
+                  href={localizeHref('/', language)}
                   className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-center"
                 >
                   Continue Shopping
@@ -237,7 +240,7 @@ export default function ThankYouPage() {
               </div>
 
               <div className="text-center text-gray-500 pt-4">
-                <p>If you have any questions about your order, please <Link href="/contact" className="text-blue-600 hover:underline">contact our customer service team</Link>.</p>
+                <p>If you have any questions about your order, please <Link href={localizeHref('/contact', language)} className="text-blue-600 hover:underline">contact our customer service team</Link>.</p>
               </div>
             </div>
           )}

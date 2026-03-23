@@ -10,6 +10,61 @@ import {
   imageVariantFiltersLarge,
 } from './defaults';
 
+const DEFAULT_LANG = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
+
+/**
+ * Returns the URL prefix for a given language.
+ * Default language (NL) gets no prefix; others get '/en', '/de', etc.
+ */
+export function getLanguagePrefix(language?: string): string {
+  if (!language || language.toUpperCase() === DEFAULT_LANG) return '';
+  return `/${language.toLowerCase()}`;
+}
+
+/**
+ * Prepends the language prefix to an absolute path.
+ * Default language paths remain unchanged.
+ *
+ * Examples:
+ *   localizeHref('/checkout', 'NL') → '/checkout'
+ *   localizeHref('/checkout', 'EN') → '/en/checkout'
+ *   localizeHref('/', 'EN')         → '/en'
+ */
+export function localizeHref(path: string, language?: string): string {
+  const prefix = getLanguagePrefix(language);
+  if (!prefix) return path;
+  // Don't double-prefix
+  if (path.startsWith(prefix + '/') || path === prefix) return path;
+  // '/' becomes '/en', '/foo' becomes '/en/foo'
+  return path === '/' ? prefix : prefix + path;
+}
+
+/**
+ * Strips any known language prefix from a pathname.
+ * '/en/category/5/shoes' → '/category/5/shoes'
+ * '/category/5/shoes'    → '/category/5/shoes'
+ */
+export function stripLanguagePrefix(pathname: string): string {
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/);
+  if (match && match[1].toUpperCase() !== DEFAULT_LANG) {
+    const rest = pathname.slice(3); // remove '/xx'
+    return rest || '/';
+  }
+  return pathname;
+}
+
+/**
+ * Detects the language from a URL pathname.
+ * '/en/category/5' → 'EN', '/category/5' → default language
+ */
+export function detectLanguageFromPath(pathname: string): string {
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/);
+  if (match && match[1].toUpperCase() !== DEFAULT_LANG) {
+    return match[1].toUpperCase();
+  }
+  return DEFAULT_LANG;
+}
+
 /**
  * Builds a URL from a pattern string.
  *
@@ -30,6 +85,7 @@ function buildEntityUrl(
   id: number | string | undefined,
   slug: string | undefined,
   pattern: string,
+  language?: string,
 ): string {
   const segments = pattern.split('/').map(token => {
     if (token === 'page') return page;
@@ -39,7 +95,8 @@ function buildEntityUrl(
   }).filter(s => s.length > 0);
 
   if (segments.length === 0) return '#';
-  return '/' + segments.join('/');
+  const base = '/' + segments.join('/');
+  return localizeHref(base, language);
 }
 
 export const config = {
@@ -71,7 +128,7 @@ export const config = {
     getProductUrl(product: Product, language?: string): string {
       const slug = (language && product?.slugs?.find(s => s.language === language)?.value)
         || product?.slugs?.[0]?.value || '';
-      return buildEntityUrl('product', product?.productId, slug, this.pattern);
+      return buildEntityUrl('product', product?.productId, slug, this.pattern, language);
     },
 
     /** Generate a canonical cluster URL from a Cluster object. */
@@ -79,14 +136,14 @@ export const config = {
       const slugs = cluster?.slugs || cluster?.defaultProduct?.slugs;
       const slug = (language && slugs?.find((s: any) => s.language === language)?.value)
         || slugs?.[0]?.value || '';
-      return buildEntityUrl('cluster', cluster?.clusterId, slug, this.pattern);
+      return buildEntityUrl('cluster', cluster?.clusterId, slug, this.pattern, language);
     },
 
     /** Generate a canonical category URL from a Category object. */
     getCategoryUrl(category: Category, language?: string): string {
       const slug = (language && category?.slug?.find((s: any) => s.language === language)?.value)
         || category?.slug?.[0]?.value || '';
-      return buildEntityUrl('category', category?.categoryId, slug, this.pattern);
+      return buildEntityUrl('category', category?.categoryId, slug, this.pattern, language);
     },
   },
 };

@@ -6,6 +6,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode, use
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
 import { graphqlClient } from '@/lib/api';
+import { localizeHref } from '@/data/config';
 
 type User = Contact | Customer;
 
@@ -195,6 +196,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
 
+    // Read language before clearing localStorage
+    const lang = typeof window !== 'undefined'
+      ? localStorage.getItem('preferred_language') || 'NL'
+      : 'NL';
+
     // Clear local storage except 'menuData'
     if (typeof window !== 'undefined') {
       const menuData = localStorage.getItem('menuData');
@@ -210,7 +216,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.dispatchEvent(new CustomEvent('userLoggedOut'));
 
     // Redirect to home
-    router.push('/');
+    router.push(localizeHref('/', lang));
   }, [router]);
 
   // Session timeout logic

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Category, LocalizedString } from 'propeller-sdk-v2';
+import { localizeHref } from '@/data/config';
 
 export interface BreadcrumbsProps {
   /**
@@ -120,7 +121,7 @@ function Breadcrumbs(props: BreadcrumbsProps) {
           <li className="flex items-center">
             <a
               className="hover:text-foreground transition-colors"
-              href={(props.homeUrl as string) || '/'}
+              href={(props.homeUrl as string) || localizeHref('/', props.language as string)}
             >
               {getLabel('home', 'Home')}
             </a>

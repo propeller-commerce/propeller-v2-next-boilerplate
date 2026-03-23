@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { config } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import type { CmsProductSlider } from '@/lib/cms/types';
 import type { Product, Cluster } from 'propeller-sdk-v2';
 
@@ -38,7 +38,7 @@ export default function ProductSliderBlock({ block }: { block: CmsProductSlider 
           showModal={true}
           onCartCreated={(newCart) => saveCart(newCart)}
           afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-          onProceedToCheckout={() => router.push('/checkout')}
+          onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           includeTax={includeTax}
           configuration={config}
           onProductClick={(product: Product) => {

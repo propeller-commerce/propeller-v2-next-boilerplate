@@ -21,7 +21,7 @@ import ProductTabs from '@/components/propeller/ProductTabs';
 import { usePrice } from '@/context/PriceContext';
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { config } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import ProductSlider from '@/components/propeller/ProductSlider';
 import ProductBundles from '@/components/propeller/ProductBundles';
 import { useLanguage } from '@/context/LanguageContext';
@@ -50,7 +50,7 @@ export default function ProductPage() {
     const slug = match?.value || product.slugs?.[0]?.value || '';
     const currentSlug = window.location.pathname.split('/').pop();
     if (slug && slug !== currentSlug) {
-      window.history.replaceState(null, '', `/product/${productId}/${slug}`);
+      window.history.replaceState(null, '', localizeHref(`/product/${productId}/${slug}`, language));
     }
   }, [product, language, productId]);
 
@@ -117,7 +117,7 @@ export default function ProductPage() {
                     afterAddToCart={(cart) => {
                       saveCart(cart);
                     }}
-                    onProceedToCheckout={() => router.push('/checkout')} />
+                    onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
                 </Card>
               )}
 
@@ -138,7 +138,7 @@ export default function ProductPage() {
               showModal={true}
               onCartCreated={(newCart) => saveCart(newCart)}
               afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
-              onProceedToCheckout={() => router.push('/checkout')}
+              onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             />
           </div>
           <ProductSlider
@@ -156,7 +156,7 @@ export default function ProductPage() {
             onCartCreated={(newCart) => saveCart(newCart)}
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
             showModal={true}
-            onProceedToCheckout={() => router.push('/checkout')}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
@@ -176,7 +176,7 @@ export default function ProductPage() {
             onCartCreated={(newCart) => saveCart(newCart)}
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
             showModal={true}
-            onProceedToCheckout={() => router.push('/checkout')}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}

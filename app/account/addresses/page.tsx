@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
@@ -54,10 +54,26 @@ export default function AddressesPage() {
     return u !== null && 'customerId' in u;
   };
 
-  /** Resolve the active company for a Contact user (respects company switcher) */
+  /** Resolve the active company for a Contact user (respects company switcher).
+   *  Always reads from authState.user (source of truth) using selectedCompany only for the ID. */
   const getActiveCompany = (): Company | null => {
-    if (!user || !isContact(user)) return null;  
-    return (selectedCompany) ?? null;
+    if (!user || !isContact(user)) return null;
+    const targetId = selectedCompany?.companyId;
+    if (targetId) {
+      // Look up company from user data by ID — authState.user is refreshed after edits
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const companiesRaw = (user as any).companies;
+      const items = (companiesRaw?.items ?? companiesRaw) as Company[] | undefined;
+      if (Array.isArray(items)) {
+        const found = items.find((c: Company) => c.companyId === targetId);
+        if (found) return found;
+      }
+      // Check primary company
+      if (user.company?.companyId === targetId) {
+        return user.company as Company;
+      }
+    }
+    return (user.company as Company | undefined) ?? null;
   };
 
   const getAllAddresses = (): Address[] => {
@@ -100,16 +116,13 @@ export default function AddressesPage() {
       const userService = new UserService(graphqlClient);
       const viewerData = await userService.getViewer({});
       if (viewerData) {
-        // Use deepPlain to strip SDK underscore prefixes (same as login flow)
         const plainUser = deepPlain(viewerData);
         localStorage.setItem('user', JSON.stringify(plainUser));
-        // Trigger AuthContext to re-read from localStorage (same event login uses)
         window.dispatchEvent(new CustomEvent('userLoggedIn'));
       }
     } catch (error: unknown) {
       console.error('Error refreshing user data:', error);
 
-      // Handle case where we have "partial" data but also errors (common in GraphQL)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const err = error as Record<string, any>;
       const potentialData = err?.response?.data?.viewer || err?.data?.viewer;
@@ -305,6 +318,7 @@ export default function AddressesPage() {
             </h3>
             {defaultAddresses.invoice ? (
               <AddressCard
+                key={`inv-${defaultAddresses.invoice.id}-${selectedCompany?.companyId ?? 'default'}`}
                 graphqlClient={graphqlClient}
                 address={defaultAddresses.invoice}
                 enableDelete={false}
@@ -326,6 +340,7 @@ export default function AddressesPage() {
             </h3>
             {defaultAddresses.delivery ? (
               <AddressCard
+                key={`del-${defaultAddresses.delivery.id}-${selectedCompany?.companyId ?? 'default'}`}
                 graphqlClient={graphqlClient}
                 address={defaultAddresses.delivery}
                 enableDelete={false}
@@ -357,7 +372,7 @@ export default function AddressesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {billingAddresses.map((address: Address) => (
               <AddressCard
-                key={address.id}
+                key={`${address.id}-${selectedCompany?.companyId ?? 'default'}`}
                 graphqlClient={graphqlClient}
                 address={address}
                 onEdit={handleEditAddress}
@@ -385,7 +400,7 @@ export default function AddressesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {deliveryAddresses.map((address: Address) => (
               <AddressCard
-                key={address.id}
+                key={`${address.id}-${selectedCompany?.companyId ?? 'default'}`}
                 graphqlClient={graphqlClient}
                 address={address}
                 onEdit={handleEditAddress}

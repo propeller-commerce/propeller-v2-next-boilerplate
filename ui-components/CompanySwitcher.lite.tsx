@@ -15,6 +15,9 @@ export interface CompanySwitcherProps {
     /** Icon identifier for the company switcher trigger button. @default 'default-company-switch-icon' */
     icon?: string;
 
+    /** Currently selected company ID (from CompanyContext). Syncs the switcher with external state. */
+    selectedCompanyId?: number;
+
     /** Callback fired when the user selects a company. */
     onCompanyChange: (company: Company) => void;
 }
@@ -52,10 +55,11 @@ export default function CompanySwitcher(props: CompanySwitcherProps) {
         },
 
         getActiveCompany(): Company | null {
-            if (state.activeCompanyId !== null) {
+            const idToUse = state.activeCompanyId ?? (props.selectedCompanyId as number | undefined) ?? null;
+            if (idToUse !== null) {
                 const companies = state.getCompanies();
                 const found = companies.find(
-                    (c: Company) => c.companyId === state.activeCompanyId
+                    (c: Company) => c.companyId === idToUse
                 );
                 return found ?? null;
             }

@@ -27,7 +27,7 @@ export default function Header() {
   const router = useRouter();
   const { cart } = useCart();
   const { state, logout, updateUser } = useAuth();
-  const { setSelectedCompany } = useCompany();
+  const { selectedCompany, setSelectedCompany } = useCompany();
   const { includeTax, setIncludeTax } = usePrice();
   const { language, setLanguage } = useLanguage();
   const globalData = useGlobal();
@@ -125,6 +125,7 @@ export default function Header() {
                   {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && (
                     <CompanySwitcher
                       user={state.user as Contact}
+                      selectedCompanyId={selectedCompany?.companyId}
                       onCompanyChange={setSelectedCompany}
                     />
                   )}

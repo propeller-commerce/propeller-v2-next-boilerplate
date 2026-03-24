@@ -254,7 +254,7 @@ function ProductCard(props: ProductCardProps) {
   function getProductName(): ReturnType<ProductCardState['getProductName']> {
     const lang = (props.language as string) || 'NL';
     const names = (props.product as Product)?.names;
-    const match = names?.find((n: { language?: string; value?: string }) => n.language === lang);
+    const match = names?.find((n: any) => n.language === lang);
     return match?.value || names?.[0]?.value || 'Product';
   }
 
@@ -283,7 +283,7 @@ function ProductCard(props: ProductCardProps) {
   > {
     const lang = (props.language as string) || 'NL';
     const descs = (props.product as Product)?.shortDescriptions;
-    const match = descs?.find((d: { language?: string; value?: string }) => d.language === lang);
+    const match = descs?.find((d: any) => d.language === lang);
     return match?.value || descs?.[0]?.value || '';
   }
 

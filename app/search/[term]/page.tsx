@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { graphqlClient } from '@/lib/api';
-import { AttributeFilter, Enums, ProductsResponse } from 'propeller-sdk-v2';
+import { AttributeFilter, Cluster, Enums, Product, ProductsResponse } from 'propeller-sdk-v2';
 import ProductGrid from '@/components/propeller/ProductGrid';
 import GridToolbar from '@/components/propeller/GridToolbar';
 import GridFilters from '@/components/propeller/GridFilters';
@@ -230,6 +230,12 @@ export default function SearchPage() {
                 }}
                 onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
                 onProductsResponse={setProductsResponse}
+                onProductClick={(product: Product) => {
+                  router.push(config.urls.getProductUrl(product, language));
+                }}
+                onClusterClick={(cluster: Cluster) => {
+                  router.push(config.urls.getClusterUrl(cluster, language));
+                }}
               />
 
               {/* Pagination */}

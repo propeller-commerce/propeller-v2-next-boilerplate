@@ -337,6 +337,7 @@ interface ProductGridState {
     itemsFound: number;
     currentSortField: string;
     currentSortOrder: string;
+    fetchId: number;
     fetchProducts: () => Promise<void>;
     isClusterItem: (item: Product | Cluster) => boolean;
     getGridColsClass: () => string;
@@ -356,10 +357,15 @@ export default function ProductGrid(props: ProductGridProps) {
         itemsFound: 0,
         currentSortField: '',
         currentSortOrder: 'ASC',
+        fetchId: 0,
 
         async fetchProducts() {
             if (!props.graphqlClient) return;
-            state.isInternalLoading = true;
+            const myFetchId = ++state.fetchId;
+            // Always show loading on first load; skip skeleton only for language switch with existing products
+            if (state.internalProducts.length === 0) {
+                state.isInternalLoading = true;
+            }
             try {
                 const service = new CategoryService(props.graphqlClient as GraphQLClient);
                 const taxZone = props.taxZone || 'NL';
@@ -447,6 +453,8 @@ export default function ProductGrid(props: ProductGridProps) {
                     } as CategoryProductSearchInput,
                 } as CategoryQueryVariables);
 
+                // Discard result if a newer fetch was triggered while this one was in-flight
+                if (myFetchId !== state.fetchId) return;
                 const lang = (props.language as string) || 'NL';
                 const allItems = (result?.products?.items || []) as (Product | Cluster)[];
                 const filteredItems = allItems.filter((item) => {
@@ -456,9 +464,12 @@ export default function ProductGrid(props: ProductGridProps) {
 
                 state.internalProducts = filteredItems;
                 const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
+                // Decrement itemsFound for untranslated products on this page (WordPress pattern)
+                const untranslatedCount = allItems.length - filteredItems.length;
+                const adjustedTotal = apiTotal - untranslatedCount;
                 const totalPages = result?.products?.pages || 1;
                 state.totalPages = totalPages;
-                state.itemsFound = totalPages <= 1 ? filteredItems.length : apiTotal;
+                state.itemsFound = adjustedTotal;
 
                 if (props.onProductsResponse && result?.products) {
                     props.onProductsResponse(result.products as ProductsResponse);
@@ -477,15 +488,19 @@ export default function ProductGrid(props: ProductGridProps) {
                     }
                 }
                 if (props.onItemsFoundChange) {
-                    props.onItemsFoundChange(totalPages <= 1 ? filteredItems.length : apiTotal);
+                    props.onItemsFoundChange(adjustedTotal);
                 }
                 if (props.onPageItemCountChange) {
                     props.onPageItemCountChange(filteredItems.length);
                 }
             } catch {
-                state.internalProducts = [];
+                if (myFetchId === state.fetchId) {
+                    state.internalProducts = [];
+                }
             } finally {
-                state.isInternalLoading = false;
+                if (myFetchId === state.fetchId) {
+                    state.isInternalLoading = false;
+                }
             }
         },
 

@@ -120,6 +120,9 @@ export interface FavoriteListDetailsProps {
 
   /** Label overrides for FavoriteListItem UI strings */
   itemLabels?: Record<string, string>;
+
+  /** Include tax in prices. Pass from PriceContext's usePrice() */
+  includeTax?: boolean;
 }
 interface FavoriteListDetailsState {
   loading: boolean;
@@ -353,6 +356,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                     showDelete={props.showDelete}
                     onDelete={(itemId) => handleItemDelete(itemId)}
                     onItemClick={props.onItemClick}
+                    includeTax={props.includeTax}
                   />
                 </div>
               ))}

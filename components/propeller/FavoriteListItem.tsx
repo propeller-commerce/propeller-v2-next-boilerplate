@@ -1,7 +1,6 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import {
   Product,
   Cluster,
@@ -105,8 +104,6 @@ export interface FavoriteListItemProps {
   stockLabels?: Record<string, string>;
 }
 interface FavoriteListItemState {
-  _includeTax: boolean;
-  _priceListener: any;
   isProduct: () => boolean;
   getProduct: () => Product;
   getCluster: () => Cluster;
@@ -122,7 +119,6 @@ interface FavoriteListItemState {
 }
 
 function FavoriteListItem(props: FavoriteListItemProps) {
-  const [_includeTax, set_includeTax] = useState<FavoriteListItemState['_includeTax']>(() => true);
 
   function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
     return 'productId' in props.item;
@@ -176,7 +172,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
   }
 
   function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
-    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : _includeTax;
+    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : true;
     let priceObj: any = null;
     if (isProduct()) {
       priceObj = getProduct()?.price;
@@ -206,19 +202,6 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     }
   }
 
-  useEffect(() => {
-    const stored = localStorage.getItem('price_include_tax');
-    if (stored !== null) {
-      set_includeTax(stored === 'true');
-    }
-    const listener = (e: Event) => {
-      set_includeTax(!!(e as CustomEvent).detail);
-    };
-    window.addEventListener('priceToggleChanged', listener);
-    return () => {
-      window.removeEventListener('priceToggleChanged', listener);
-    };
-  }, []);
 
   return (
     <div

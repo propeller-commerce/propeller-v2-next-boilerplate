@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 import { Contact, Customer, FavoriteListService, type FavoriteList } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
+import { usePrice } from '@/context/PriceContext';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,7 @@ export default function FavoriteListPage() {
   const params = useParams();
   const listId = params?.id as string;
   const { language } = useLanguage();
+  const { includeTax } = usePrice();
 
   const [listName, setListName] = useState('');
 
@@ -105,6 +107,7 @@ export default function FavoriteListPage() {
         itemsPerPage={12}
         showPagination={true}
         showStockComponent={true}
+        includeTax={includeTax}
       />
     </div>
   );

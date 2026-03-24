@@ -175,6 +175,12 @@ export interface ProductGridProps {
   onItemsFoundChange?: (count: number) => void;
 
   /**
+   * Called after each fetch with the number of items visible on the current page
+   * (after client-side language filtering).
+   */
+  onPageItemCountChange?: (count: number) => void;
+
+  /**
    * Called when the user clicks Previous / Next in the built-in pagination —
    * use to keep the parent URL / page state in sync.
    */
@@ -328,6 +334,7 @@ interface ProductGridState {
   itemsFound: number;
   currentSortField: string;
   currentSortOrder: string;
+  fetchId: number;
   fetchProducts: () => Promise<void>;
   isClusterItem: (item: Product | Cluster) => boolean;
   getGridColsClass: () => string;
@@ -361,9 +368,15 @@ function ProductGrid(props: ProductGridProps) {
     () => 'ASC'
   );
 
+  const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);
+
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
-    setIsInternalLoading(true);
+    const myFetchId = ++fetchId;
+    // Always show loading on first load; skip skeleton only for language switch with existing products
+    if (internalProducts.length === 0) {
+      setIsInternalLoading(true);
+    }
     try {
       const service = new CategoryService(props.graphqlClient as GraphQLClient);
       const taxZone = props.taxZone || 'NL';
@@ -464,9 +477,23 @@ function ProductGrid(props: ProductGridProps) {
           }),
         } as CategoryProductSearchInput,
       } as CategoryQueryVariables);
-      setInternalProducts((result?.products?.items || []) as (Product | Cluster)[]);
-      setTotalPages(result?.products?.pages || 1);
-      setItemsFound(result?.products?.itemsFound || 0);
+
+      // Discard result if a newer fetch was triggered while this one was in-flight
+      if (myFetchId !== fetchId) return;
+      const lang = (props.language as string) || 'NL';
+      const allItems = (result?.products?.items || []) as (Product | Cluster)[];
+      const filteredItems = allItems.filter((item) => {
+        const names = (item as Product).names || (item as Cluster).names || [];
+        return names.some((n: { language?: string }) => n.language === lang);
+      });
+      setInternalProducts(filteredItems);
+      const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
+      // Decrement itemsFound for untranslated products on this page (WordPress pattern)
+      const untranslatedCount = allItems.length - filteredItems.length;
+      const adjustedTotal = apiTotal - untranslatedCount;
+      const totalPages = result?.products?.pages || 1;
+      setTotalPages(totalPages);
+      setItemsFound(adjustedTotal);
       if (props.onProductsResponse && result?.products) {
         props.onProductsResponse(result.products as ProductsResponse);
       }
@@ -484,12 +511,19 @@ function ProductGrid(props: ProductGridProps) {
         }
       }
       if (props.onItemsFoundChange) {
-        props.onItemsFoundChange(result?.products?.itemsFound || 0);
+        props.onItemsFoundChange(adjustedTotal);
+      }
+      if (props.onPageItemCountChange) {
+        props.onPageItemCountChange(filteredItems.length);
       }
     } catch {
-      setInternalProducts([]);
+      if (myFetchId === fetchId) {
+        setInternalProducts([]);
+      }
     } finally {
-      setIsInternalLoading(false);
+      if (myFetchId === fetchId) {
+        setIsInternalLoading(false);
+      }
     }
   }
 
@@ -553,6 +587,7 @@ function ProductGrid(props: ProductGridProps) {
     props.sortField,
     props.sortOrder,
     props.pageSize,
+    props.language,
   ]);
   useEffect(() => {
     if (props.products === undefined && props.page !== undefined) {
@@ -626,6 +661,7 @@ function ProductGrid(props: ProductGridProps) {
                           cluster={item as Cluster}
                           configuration={props.configuration}
                           includeTax={props.includeTax as boolean}
+                          language={(props.language as string) || 'NL'}
                           showStock={props.showStock as boolean}
                           showAvailability={props.showAvailability as boolean}
                           stockLabels={props.stockLabels}
@@ -689,6 +725,7 @@ function ProductGrid(props: ProductGridProps) {
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}
+                              language={(props.language as string) || 'NL'}
                               cartId={props.cartId as string}
                               enableAddFavorite={props.enableAddFavorite as boolean}
                               showStock={props.showStock as boolean}

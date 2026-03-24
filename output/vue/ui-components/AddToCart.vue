@@ -7,18 +7,23 @@
             type="button"
             class="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
             @click="async (event) => decrement()"
-            :disabled="quantity <= 1 || loading"
+            :disabled="quantity <= getMinQuantity() || loading"
           >
             -</button
           ><input
             type="number"
-            class="w-10 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            :min="1"
+            class="w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            :min="getMinQuantity()"
+            :step="getStep()"
             :value="quantity"
             @change="
               async (e) => {
                 const val = parseInt(e.target.value, 10);
-                if (val >= 1) quantity = val;
+                const min = getMinQuantity();
+                const step = getStep();
+                if (!isNaN(val) && val >= min) {
+                  quantity = Math.round((val - min) / step) * step + min;
+                }
               }
             "
           /><button
@@ -36,12 +41,17 @@
         <input
           type="number"
           class="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          :min="1"
+          :min="getMinQuantity()"
+          :step="getStep()"
           :value="quantity"
           @change="
             async (e) => {
               const val = parseInt(e.target.value, 10);
-              if (val >= 1) quantity = val;
+              const min = getMinQuantity();
+              const step = getStep();
+              if (!isNaN(val) && val >= min) {
+                quantity = Math.round((val - min) / step) * step + min;
+              }
             }
           "
         />
@@ -153,35 +163,71 @@
               </svg>
             </button>
           </div>
-          <div class="px-6 py-5 flex items-start gap-4">
-            <template v-if="!!getProductImageUrl()">
-              <img
-                class="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
-                :src="getProductImageUrl()"
-                :alt="getProductName()"
-              />
-            </template>
+          <div class="px-6 py-5">
+            <div class="flex items-start gap-4">
+              <template v-if="!!getModalImageUrl()">
+                <img
+                  class="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                  :src="getModalImageUrl()"
+                  :alt="getModalName()"
+                />
+              </template>
 
-            <div class="flex-1 min-w-0">
-              <a
-                class="text-sm font-medium text-violet-600 leading-tight hover:underline"
-                :href="getProductUrl()"
-                >{{ getProductName() }}</a
-              >
-              <template v-if="!!getProductSku()">
-                <p class="text-xs text-gray-400 mt-0.5">SKU: {{ getProductSku() }}</p>
+              <template v-if="!getModalImageUrl()">
+                <div
+                  class="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50"
+                >
+                  <svg
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    class="w-8 h-8 text-gray-300"
+                    :strokeWidth="1.5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                    ></path>
+                  </svg>
+                </div>
               </template>
-            </div>
-            <div class="flex-shrink-0 text-right">
-              <p class="text-xs text-gray-500">
-                {{ getLabel('quantity', 'Quantity') }}: {{ quantity }}
-              </p>
-              <template v-if="!!getProductPrice()">
-                <p class="text-sm font-semibold text-gray-900 mt-0.5">
-                  {{ getProductPrice() }}
+
+              <div class="flex-1 min-w-0">
+                <a
+                  class="text-sm font-medium text-violet-600 leading-tight hover:underline line-clamp-2"
+                  :href="getProductUrl()"
+                  >{{ getModalName() }}</a
+                >
+                <template v-if="!!getModalSku()">
+                  <p class="text-xs text-gray-400 mt-0.5">SKU: {{ getModalSku() }}</p>
+                </template>
+              </div>
+              <div class="flex-shrink-0 text-right">
+                <p class="text-xs text-gray-500">
+                  {{ getLabel('quantity', 'Quantity') }}: {{ quantity }}
                 </p>
-              </template>
+                <template v-if="!!getModalPrice()">
+                  <p class="text-sm font-semibold text-gray-900 mt-0.5">
+                    {{ getModalPrice() }}
+                  </p>
+                </template>
+              </div>
             </div>
+            <template v-if="getChildItems().length > 0">
+              <div class="mt-3 ml-20 space-y-1 border-l-2 border-gray-100 pl-2">
+                <template :key="idx" v-for="(child, idx) in getChildItems()">
+                  <div class="flex justify-between items-center text-xs text-gray-600">
+                    <span class="line-clamp-1">{{
+                      child.product?.names?.[0]?.value || 'Option'
+                    }}</span
+                    ><span class="text-gray-400 whitespace-nowrap ml-2">{{
+                      '\u20AC' + (child.totalSum?.toFixed(2) || '0.00')
+                    }}</span>
+                  </div>
+                </template>
+              </div>
+            </template>
           </div>
           <div class="flex gap-3 px-6 py-4 border-t border-gray-100">
             <button
@@ -210,10 +256,10 @@
 </template>
 
 <script setup lang="ts">
-     import { ref } from "vue"
+     import { onMounted, ref } from "vue"
 
 
-   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, Cluster } from 'propeller-sdk-v2';
+   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, CartBaseItem, Cluster } from 'propeller-sdk-v2';
 
 
 
@@ -349,6 +395,8 @@ interface AddToCartState {
  toastMessage: string;
  toastType: string;
  toastVisible: boolean;
+ getMinQuantity: () => number;
+ getStep: () => number;
  increment: () => void;
  decrement: () => void;
  showToast: (message: string, type: string) => void;
@@ -358,6 +406,12 @@ interface AddToCartState {
  getProductImageUrl: () => string;
  getProductSku: () => string;
  getProductPrice: () => string;
+ addedCartItem: CartMainItem | null;
+ getModalImageUrl: () => string;
+ getModalName: () => string;
+ getModalPrice: () => string;
+ getModalSku: () => string;
+ getChildItems: () => CartBaseItem[];
  initCart: () => Promise<string>;
  handleAddToCart: () => Promise<void>;
  closeModal: () => void;
@@ -373,6 +427,7 @@ const activeCartId= ref<AddToCartState["activeCartId"]>('')
 const toastMessage= ref<AddToCartState["toastMessage"]>('')
 const toastType= ref<AddToCartState["toastType"]>('')
 const toastVisible= ref<AddToCartState["toastVisible"]>(false)
+const addedCartItem= ref<AddToCartState["addedCartItem"]>(null)
 
 
 
@@ -381,19 +436,29 @@ const toastVisible= ref<AddToCartState["toastVisible"]>(false)
 
 
 
+  onMounted(() => { quantity.value = getMinQuantity() })
 
 
 
 
 
 
-
-   function increment(): ReturnType<AddToCartState["increment"]>{
-quantity.value = quantity.value + 1;
+   function getMinQuantity(): ReturnType<AddToCartState["getMinQuantity"]>{
+const min = (props.product as any)?.minimumQuantity;
+return min && min > 0 ? min : 1;
+}
+function getStep(): ReturnType<AddToCartState["getStep"]>{
+const unit = (props.product as any)?.unit;
+return unit && unit > 0 ? unit : 1;
+}
+function increment(): ReturnType<AddToCartState["increment"]>{
+quantity.value = quantity.value + getStep();
 }
 function decrement(): ReturnType<AddToCartState["decrement"]>{
-if (quantity.value > 1) {
-  quantity.value = quantity.value - 1;
+const min = getMinQuantity();
+const step = getStep();
+if (quantity.value - step >= min) {
+  quantity.value = quantity.value - step;
 }
 }
 function showToast(message: string, type: string): ReturnType<AddToCartState["showToast"]>{
@@ -411,7 +476,7 @@ function getProductName(): ReturnType<AddToCartState["getProductName"]>{
 return (props.product as any)?.names?.[0]?.value || 'Product';
 }
 function getProductUrl(): ReturnType<AddToCartState["getProductUrl"]>{
-return props.configuration.urls.getProductUrl(props.product);
+return props.configuration.urls.getProductUrl(props.product, props.language);
 }
 function getProductImageUrl(): ReturnType<AddToCartState["getProductImageUrl"]>{
 return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
@@ -574,7 +639,9 @@ try {
   if (props.onAddToCart) {
     // Consumer-provided handler
     const cart = props.onAddToCart(props.product, props.cluster?.clusterId, quantity.value, childItems, props.notes, props.price, props.showModal);
-    props.afterAddToCart?.(cart, cart.items?.find(item => item.productId === props.product.productId));
+    const addedItem = cart.items?.find(item => item.productId === props.product.productId);
+    addedCartItem.value = addedItem || null;
+    props.afterAddToCart?.(cart, addedItem);
   } else {
     // Internal CartService fallback — resolve cart ID
     let cartId = props.cartId || activeCartId.value;
@@ -610,7 +677,9 @@ try {
       imageSearchFilters: props.configuration.imageSearchFiltersGrid,
       imageVariantFilters: props.configuration.imageVariantFiltersSmall
     });
-    props.afterAddToCart?.(cart, cart.items?.find(item => item.productId === props.product.productId));
+    const addedItem = cart.items?.find(item => item.productId === props.product.productId);
+    addedCartItem.value = addedItem || null;
+    props.afterAddToCart?.(cart, addedItem);
   }
   success.value = true;
   if (props.showModal) {
@@ -625,9 +694,38 @@ try {
   loading.value = false;
 }
 }
+function getModalImageUrl(): ReturnType<AddToCartState["getModalImageUrl"]>{
+if (addedCartItem.value) {
+  const img = addedCartItem.value.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+  if (img) return img;
+}
+return getProductImageUrl();
+}
+function getModalName(): ReturnType<AddToCartState["getModalName"]>{
+if (addedCartItem.value) {
+  return addedCartItem.value.product?.names?.[0]?.value || getProductName();
+}
+return getProductName();
+}
+function getModalPrice(): ReturnType<AddToCartState["getModalPrice"]>{
+if (addedCartItem.value) {
+  return '\u20AC' + Number(addedCartItem.value.totalSumNet).toFixed(2);
+}
+return getProductPrice();
+}
+function getModalSku(): ReturnType<AddToCartState["getModalSku"]>{
+if (addedCartItem.value) return addedCartItem.value.product?.sku || '';
+return getProductSku();
+}
+function getChildItems(): ReturnType<AddToCartState["getChildItems"]>{
+const children = addedCartItem.value?.childItems;
+if (!children || !Array.isArray(children)) return [];
+return children;
+}
 function closeModal(): ReturnType<AddToCartState["closeModal"]>{
 modalVisible.value = false;
 success.value = false;
+addedCartItem.value = null;
 }
 function getLabel(key: string, fallback: string): ReturnType<AddToCartState["getLabel"]>{
 return (props.labels as any)?.[key] || fallback;

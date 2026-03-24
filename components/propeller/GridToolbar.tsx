@@ -81,8 +81,7 @@ export interface GridToolbarProps {
 
   /**
    * Actual number of items visible on the current page.
-   * When provided, overrides `pageSize` for the range end calculation
-   * (e.g. when client-side filtering reduces the count below `pageSize`).
+   * When provided, overrides `pageSize` for the range end calculation.
    */
   pageItemCount?: number;
 

@@ -14,7 +14,6 @@ export interface CartPaymethodsProps {
   /** The CSS class for the payment methods container */
   paymentsContainerClass?: string;
 
-
   /** Display the on account payment method for anonymous users */
   showOnAccountForGuests?: boolean;
 

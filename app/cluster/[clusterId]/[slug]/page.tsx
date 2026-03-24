@@ -198,7 +198,7 @@ export default function ClusterPage() {
 
                     {selectedProduct?.inventory && (
                       <div className="mt-4">
-                        <ItemStock inventory={selectedProduct.inventory} />
+                        <ItemStock inventory={selectedProduct.inventory} showAvailability={false} />
                       </div>
                     )}
 

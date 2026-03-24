@@ -413,7 +413,10 @@ function isRow(): ReturnType<ProductCardState['isRow']> {
   return (props.columns as number) === 1;
 }
 function getProductName(): ReturnType<ProductCardState['getProductName']> {
-  return (props.product as Product)?.names?.[0]?.value || 'Product';
+  const lang = (props.language as string) || 'NL';
+  const names = (props.product as Product)?.names;
+  const match = names?.find((n: any) => n.language === lang);
+  return match?.value || names?.[0]?.value || 'Product';
 }
 function getProductSku(): ReturnType<ProductCardState['getProductSku']> {
   return (props.product as Product)?.sku || '';
@@ -430,10 +433,13 @@ function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
   return `\u20AC${Number(value).toFixed(2)}`;
 }
 function getProductUrl(): ReturnType<ProductCardState['getProductUrl']> {
-  return props.configuration.urls.getProductUrl(props.product);
+  return props.configuration.urls.getProductUrl(props.product, props.language);
 }
 function getProductShortDescription(): ReturnType<ProductCardState['getProductShortDescription']> {
-  return (props.product as Product)?.shortDescriptions?.[0]?.value || '';
+  const lang = (props.language as string) || 'NL';
+  const descs = (props.product as Product)?.shortDescriptions;
+  const match = descs?.find((d: any) => d.language === lang);
+  return match?.value || descs?.[0]?.value || '';
 }
 function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {
   return (props.product as Product)?.manufacturer || '';

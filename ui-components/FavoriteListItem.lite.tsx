@@ -1,7 +1,6 @@
 import {
     useStore,
     Show,
-    onMount,
 } from '@builder.io/mitosis';
 import {
     Product,
@@ -107,8 +106,6 @@ export interface FavoriteListItemProps {
 }
 
 interface FavoriteListItemState {
-    _includeTax: boolean;
-    _priceListener: any;
     isProduct: () => boolean;
     getProduct: () => Product;
     getCluster: () => Cluster;
@@ -125,9 +122,6 @@ interface FavoriteListItemState {
 
 export default function FavoriteListItem(props: FavoriteListItemProps) {
     const state = useStore<FavoriteListItemState>({
-        _includeTax: true,
-        _priceListener: null as any,
-
         isProduct(): boolean {
             return 'productId' in props.item;
         },
@@ -178,7 +172,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
         },
 
         getItemPrice(): string {
-            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state._includeTax;
+            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : true;
             let priceObj: any = null;
             if (state.isProduct()) {
                 priceObj = state.getProduct()?.price;
@@ -207,17 +201,6 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                 props.onDelete(state.getItemId());
             }
         },
-    });
-
-    onMount(() => {
-        const stored = localStorage.getItem('price_include_tax');
-        if (stored !== null) {
-            state._includeTax = stored === 'true';
-        }
-        state._priceListener = ((e: any) => {
-            state._includeTax = !!(e as CustomEvent).detail;
-        }) as any;
-        window.addEventListener('priceToggleChanged', state._priceListener as any);
     });
 
     return (

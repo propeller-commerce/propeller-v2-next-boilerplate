@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CartService,
   CartChildItemInput,
@@ -161,6 +161,8 @@ interface AddToCartState {
   toastMessage: string;
   toastType: string;
   toastVisible: boolean;
+  getMinQuantity: () => number;
+  getStep: () => number;
   increment: () => void;
   decrement: () => void;
   showToast: (message: string, type: string) => void;
@@ -170,6 +172,12 @@ interface AddToCartState {
   getProductImageUrl: () => string;
   getProductSku: () => string;
   getProductPrice: () => string;
+  addedCartItem: CartMainItem | null;
+  getModalImageUrl: () => string;
+  getModalName: () => string;
+  getModalPrice: () => string;
+  getModalSku: () => string;
+  getChildItems: () => CartBaseItem[];
   initCart: () => Promise<string>;
   handleAddToCart: () => Promise<void>;
   closeModal: () => void;
@@ -177,10 +185,7 @@ interface AddToCartState {
 }
 
 function AddToCart(props: AddToCartProps) {
-  const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => {
-    const min = props.product?.minimumQuantity;
-    return min && min > 0 ? min : 1;
-  });
+  const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => 1);
 
   const [loading, setLoading] = useState<AddToCartState['loading']>(() => false);
 
@@ -196,15 +201,15 @@ function AddToCart(props: AddToCartProps) {
 
   const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
 
-  const [addedCartItem, setAddedCartItem] = useState<CartMainItem | null>(null);
+  const [addedCartItem, setAddedCartItem] = useState<AddToCartState['addedCartItem']>(() => null);
 
-  function getMinQuantity(): number {
-    const min = props.product?.minimumQuantity;
+  function getMinQuantity(): ReturnType<AddToCartState['getMinQuantity']> {
+    const min = (props.product as any)?.minimumQuantity;
     return min && min > 0 ? min : 1;
   }
 
-  function getStep(): number {
-    const unit = props.product?.unit;
+  function getStep(): ReturnType<AddToCartState['getStep']> {
+    const unit = (props.product as any)?.unit;
     return unit && unit > 0 ? unit : 1;
   }
 
@@ -483,19 +488,7 @@ function AddToCart(props: AddToCartProps) {
     }
   }
 
-  function closeModal(): ReturnType<AddToCartState['closeModal']> {
-    setModalVisible(false);
-    setSuccess(false);
-    setAddedCartItem(null);
-  }
-
-  function getChildItems(): CartBaseItem[] {
-    const children = addedCartItem?.childItems;
-    if (!children || !Array.isArray(children)) return [];
-    return children;
-  }
-
-  function getModalImageUrl(): string {
+  function getModalImageUrl(): ReturnType<AddToCartState['getModalImageUrl']> {
     if (addedCartItem) {
       const img = addedCartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
       if (img) return img;
@@ -503,28 +496,44 @@ function AddToCart(props: AddToCartProps) {
     return getProductImageUrl();
   }
 
-  function getModalName(): string {
+  function getModalName(): ReturnType<AddToCartState['getModalName']> {
     if (addedCartItem) {
       return addedCartItem.product?.names?.[0]?.value || getProductName();
     }
     return getProductName();
   }
 
-  function getModalPrice(): string {
+  function getModalPrice(): ReturnType<AddToCartState['getModalPrice']> {
     if (addedCartItem) {
-      return `\u20AC${Number(addedCartItem.totalSumNet).toFixed(2)}`;
+      return '\u20AC' + Number(addedCartItem.totalSumNet).toFixed(2);
     }
     return getProductPrice();
   }
 
-  function getModalSku(): string {
+  function getModalSku(): ReturnType<AddToCartState['getModalSku']> {
     if (addedCartItem) return addedCartItem.product?.sku || '';
     return getProductSku();
+  }
+
+  function getChildItems(): ReturnType<AddToCartState['getChildItems']> {
+    const children = addedCartItem?.childItems;
+    if (!children || !Array.isArray(children)) return [];
+    return children;
+  }
+
+  function closeModal(): ReturnType<AddToCartState['closeModal']> {
+    setModalVisible(false);
+    setSuccess(false);
+    setAddedCartItem(null);
   }
 
   function getLabel(key: string, fallback: string): ReturnType<AddToCartState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
+
+  useEffect(() => {
+    setQuantity(getMinQuantity());
+  }, []);
 
   return (
     <div className={props.className}>
@@ -676,13 +685,24 @@ function AddToCart(props: AddToCartProps) {
                     src={getModalImageUrl()}
                     alt={getModalName()}
                   />
-                ) : (
+                ) : null}
+                {!getModalImageUrl() ? (
                   <div className="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50">
-                    <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    <svg
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      className="w-8 h-8 text-gray-300"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                      />
                     </svg>
                   </div>
-                )}
+                ) : null}
                 <div className="flex-1 min-w-0">
                   <a
                     className="text-sm font-medium text-violet-600 leading-tight hover:underline line-clamp-2"
@@ -703,16 +723,18 @@ function AddToCart(props: AddToCartProps) {
                   ) : null}
                 </div>
               </div>
-              {/* Cluster child items */}
               {getChildItems().length > 0 ? (
                 <div className="mt-3 ml-20 space-y-1 border-l-2 border-gray-100 pl-2">
-                  {getChildItems().map((child, idx) => (
-                    <div className="flex justify-between items-center text-xs text-gray-600" key={idx}>
+                  {getChildItems()?.map((child, idx) => (
+                    <div
+                      className="flex justify-between items-center text-xs text-gray-600"
+                      key={idx}
+                    >
                       <span className="line-clamp-1">
                         {child.product?.names?.[0]?.value || 'Option'}
                       </span>
                       <span className="text-gray-400 whitespace-nowrap ml-2">
-                        &euro;{child.totalSum?.toFixed(2) || '0.00'}
+                        {'\u20AC' + (child.totalSum?.toFixed(2) || '0.00')}
                       </span>
                     </div>
                   ))}

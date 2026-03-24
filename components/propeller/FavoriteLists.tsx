@@ -150,7 +150,6 @@ function FavoriteLists(props: FavoriteListsProps) {
     if (!props.user || !props.graphqlClient) return;
     setLoading(true);
     try {
-      const service = new FavoriteListService(props.graphqlClient);
       const isContact = 'contactId' in props.user;
       const searchInput: FavoriteListsSearchInput = {};
       if (isContact) {
@@ -158,6 +157,8 @@ function FavoriteLists(props: FavoriteListsProps) {
       } else {
         searchInput.customerId = (props.user as Customer).customerId;
       }
+
+      const service = new FavoriteListService(props.graphqlClient);
       const response = await service.getFavoriteLists(searchInput);
       setLists(response.items || []);
     } catch (error) {
@@ -359,9 +360,6 @@ function FavoriteLists(props: FavoriteListsProps) {
 
   useEffect(() => {
     setIsMounted(true);
-    if (props.user) {
-      fetchLists();
-    }
   }, []);
   useEffect(() => {
     if (props.user) {
@@ -538,9 +536,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                                   <line x1="12" x2="12" y1="22" y2="12" />
                                 </svg>
                                 {getTotalCount(list)}
-                                {getLabel('items', 'items')} ({getProductCount(list)}
-                                {getLabel('products', 'products')}, {getClusterCount(list)}
-                                {getLabel('clusters', 'clusters')})
+                                {getLabel('items', 'items')}
                               </div>
                             ) : null}
                           </div>

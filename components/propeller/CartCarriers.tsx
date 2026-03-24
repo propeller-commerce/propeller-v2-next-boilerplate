@@ -91,11 +91,11 @@ function CartCarriers(props: CartCarriersProps) {
                   ) : null}
                   <span className="font-medium">{carrier.name}</span>
                 </div>
-                {props.showPrice !== false && (
+                {props.showPrice !== false ? (
                   <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                     {formatCarrierPrice(carrier.price)}
                   </span>
-                )}
+                ) : null}
               </div>
               {carrier.deliveryDeadline ? (
                 <p className="text-xs text-gray-500">

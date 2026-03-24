@@ -151,10 +151,10 @@ function ClusterCard(props: ClusterCardProps) {
   function getClusterName(): ReturnType<ClusterCardState['getClusterName']> {
     const lang = (props.language as string) || 'NL';
     const names = (props.cluster as Cluster)?.names;
-    const match = names?.find((n: { language?: string; value?: string }) => n.language === lang);
+    const match = names?.find((n: any) => n.language === lang);
     if (match?.value) return match.value;
     const dpNames = (props.cluster as Cluster)?.defaultProduct?.names;
-    const dpMatch = dpNames?.find((n: { language?: string; value?: string }) => n.language === lang);
+    const dpMatch = dpNames?.find((n: any) => n.language === lang);
     return dpMatch?.value || names?.[0]?.value || dpNames?.[0]?.value || 'Cluster';
   }
 
@@ -178,10 +178,10 @@ function ClusterCard(props: ClusterCardProps) {
   > {
     const lang = (props.language as string) || 'NL';
     const descs = (props.cluster as Cluster)?.shortDescriptions;
-    const match = descs?.find((d: { language?: string; value?: string }) => d.language === lang);
+    const match = descs?.find((d: any) => d.language === lang);
     if (match?.value) return match.value;
     const dpDescs = (props.cluster as Cluster)?.defaultProduct?.shortDescriptions;
-    const dpMatch = dpDescs?.find((d: { language?: string; value?: string }) => d.language === lang);
+    const dpMatch = dpDescs?.find((d: any) => d.language === lang);
     return dpMatch?.value || descs?.[0]?.value || dpDescs?.[0]?.value || '';
   }
 

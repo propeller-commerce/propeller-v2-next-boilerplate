@@ -334,6 +334,7 @@ interface ProductGridState {
   itemsFound: number;
   currentSortField: string;
   currentSortOrder: string;
+  fetchId: number;
   fetchProducts: () => Promise<void>;
   isClusterItem: (item: Product | Cluster) => boolean;
   getGridColsClass: () => string;
@@ -367,12 +368,13 @@ function ProductGrid(props: ProductGridProps) {
     () => 'ASC'
   );
 
-  // Track whether this is a soft refresh (language change) to avoid skeleton flash
-  const softRefresh = useRef(false);
+  const fetchIdRef = useRef(0);
 
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
-    if (!softRefresh.current) {
+    const myFetchId = ++fetchIdRef.current;
+    // Always show loading on first load; skip skeleton only for language switch with existing products
+    if (internalProducts.length === 0) {
       setIsInternalLoading(true);
     }
     try {
@@ -475,20 +477,23 @@ function ProductGrid(props: ProductGridProps) {
           }),
         } as CategoryProductSearchInput,
       } as CategoryQueryVariables);
+
+      // Discard result if a newer fetch was triggered while this one was in-flight
+      if (myFetchId !== fetchIdRef.current) return;
       const lang = (props.language as string) || 'NL';
       const allItems = (result?.products?.items || []) as (Product | Cluster)[];
       const filteredItems = allItems.filter((item) => {
         const names = (item as Product).names || (item as Cluster).names || [];
         return names.some((n: { language?: string }) => n.language === lang);
       });
-
       setInternalProducts(filteredItems);
-      setTotalPages(result?.products?.pages || 1);
       const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
+      // Decrement itemsFound for untranslated products on this page (WordPress pattern)
+      const untranslatedCount = allItems.length - filteredItems.length;
+      const adjustedTotal = apiTotal - untranslatedCount;
       const totalPages = result?.products?.pages || 1;
-      // When all results fit on one page, use filtered count (accurate).
-      // When paginated, use API total (we can't know filtered total across all pages).
-      setItemsFound(totalPages <= 1 ? filteredItems.length : apiTotal);
+      setTotalPages(totalPages);
+      setItemsFound(adjustedTotal);
       if (props.onProductsResponse && result?.products) {
         props.onProductsResponse(result.products as ProductsResponse);
       }
@@ -506,16 +511,19 @@ function ProductGrid(props: ProductGridProps) {
         }
       }
       if (props.onItemsFoundChange) {
-        props.onItemsFoundChange(totalPages <= 1 ? filteredItems.length : apiTotal);
+        props.onItemsFoundChange(adjustedTotal);
       }
       if (props.onPageItemCountChange) {
         props.onPageItemCountChange(filteredItems.length);
       }
     } catch {
-      setInternalProducts([]);
+      if (myFetchId === fetchIdRef.current) {
+        setInternalProducts([]);
+      }
     } finally {
-      setIsInternalLoading(false);
-      softRefresh.current = false;
+      if (myFetchId === fetchIdRef.current) {
+        setIsInternalLoading(false);
+      }
     }
   }
 
@@ -579,18 +587,8 @@ function ProductGrid(props: ProductGridProps) {
     props.sortField,
     props.sortOrder,
     props.pageSize,
+    props.language,
   ]);
-
-  // Re-fetch from API when language changes (soft refresh — no skeleton)
-  useEffect(() => {
-    if (props.products === undefined && props.graphqlClient) {
-      softRefresh.current = true;
-      setCurrentPage(1);
-      fetchProducts();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.language]);
-
   useEffect(() => {
     if (props.products === undefined && props.page !== undefined) {
       setCurrentPage(props.page as number);

@@ -476,7 +476,8 @@ function RegisterForm(props: RegisterFormProps) {
           },
         };
         response = await userService.registerContact(contactInput);
-        userId = Number((response as RegisterContactResponse)?.contact?.id || 0);
+        const contactData = (response as RegisterContactResponse)?.contact as any;
+        userId = Number(contactData?.contactId || contactData?.id || 0);
 
         // Authenticate before creating company/addresses
         const session = (response as RegisterContactResponse)?.session;
@@ -499,7 +500,8 @@ function RegisterForm(props: RegisterFormProps) {
           customerAttributesInput: {},
         };
         response = await userService.registerCustomer(customerInput);
-        userId = Number((response as RegisterCustomerResponse)?.customer?.id || 0);
+        const customerData = (response as RegisterCustomerResponse)?.customer as any;
+        userId = Number(customerData?.customerId || customerData?.id || 0);
 
         // Authenticate before creating addresses
         const session = (response as RegisterCustomerResponse)?.session;

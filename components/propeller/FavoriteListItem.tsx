@@ -199,6 +199,9 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     if (props.onItemClick) {
       e.preventDefault();
       props.onItemClick(props.item);
+    } else if (getItemUrl()) {
+      e.preventDefault();
+      window.location.href = getItemUrl();
     }
   }
 
@@ -211,7 +214,8 @@ function FavoriteListItem(props: FavoriteListItemProps) {
 
   return (
     <div
-      className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-violet-200 hover:shadow-sm ${props.className || ''}`}
+      className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-violet-200 hover:shadow-sm cursor-pointer ${props.className || ''}`}
+      onClick={(e) => handleItemClick(e)}
     >
       <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
         {props.titleLinkable !== false ? (
@@ -315,7 +319,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
           {getItemPrice()}
         </span>
       ) : null}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         {props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
           <AddToCart
             className="flex items-center gap-2"

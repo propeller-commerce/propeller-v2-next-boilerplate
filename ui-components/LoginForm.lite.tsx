@@ -269,7 +269,7 @@ export default function LoginForm(props: LoginFormProps) {
                     props.afterLogin(user as unknown as Contact | Customer, accessToken, refreshToken, session?.expirationTime);
                 }
             } catch (err: any) {
-                state.error = err?.message || 'Login failed. Please check your credentials.';
+                state.error = 'The credentials you entered don\'t match our records. Please try again.';
             } finally {
                 state.loading = false;
             }

@@ -328,7 +328,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
       {sidebarOpen ? (
         <div
           aria-hidden="true"
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70]"
           onClick={(event) => closeSidebar()}
         />
       ) : null}
@@ -336,7 +336,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         role="dialog"
         aria-modal="true"
         aria-label={getSidebarTitle()}
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
+        className={`fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
       >
         <div className="flex flex-col h-full">
           {isMounted ? (

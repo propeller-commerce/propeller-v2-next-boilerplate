@@ -101,6 +101,7 @@ interface FavoriteListsState {
     newListName: string;
     newSetAsDefault: boolean;
     isMounted: boolean;
+    saving: boolean;
     fetchLists: () => Promise<void>;
     handleEditList: (list: FavoriteList) => void;
     handleCancelEdit: () => void;
@@ -131,6 +132,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         newListName: '',
         newSetAsDefault: false,
         isMounted: false,
+        saving: false,
 
         async fetchLists() {
             if (!props.user || !props.graphqlClient) return;
@@ -170,7 +172,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         },
 
         async handleUpdateList(listId: string) {
-            if (!state.editListName.trim()) return;
+            if (!state.editListName.trim() || state.saving) return;
 
             const formData = { name: state.editListName, isDefault: state.editSetAsDefault };
 
@@ -181,10 +183,23 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                 return;
             }
 
-            if (!props.graphqlClient) return;
+            if (!props.graphqlClient || state.saving) return;
+            state.saving = true;
 
             try {
                 const service = new FavoriteListService(props.graphqlClient);
+
+                // If setting as default, first unset the current default
+                if (formData.isDefault) {
+                    const currentDefault = state.lists.find((l: FavoriteList) => l.isDefault && String(l.id) !== listId);
+                    if (currentDefault) {
+                        await service.updateFavoriteList(String(currentDefault.id), {
+                            name: currentDefault.name,
+                            isDefault: false,
+                        });
+                    }
+                }
+
                 await service.updateFavoriteList(listId, {
                     name: formData.name,
                     isDefault: formData.isDefault,
@@ -205,6 +220,8 @@ export default function FavoriteLists(props: FavoriteListsProps) {
             } catch (error) {
                 console.error('Error updating favorite list:', error);
                 state.fetchLists();
+            } finally {
+                state.saving = false;
             }
         },
 
@@ -255,7 +272,8 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         },
 
         async handleCreateList() {
-            if (!state.newListName.trim()) return;
+            if (!state.newListName.trim() || state.saving) return;
+            state.saving = true;
 
             const formData = { name: state.newListName, isDefault: state.newSetAsDefault };
 
@@ -272,6 +290,18 @@ export default function FavoriteLists(props: FavoriteListsProps) {
 
             try {
                 const service = new FavoriteListService(props.graphqlClient);
+
+                // If setting as default, first unset the current default
+                if (formData.isDefault) {
+                    const currentDefault = state.lists.find((l: FavoriteList) => l.isDefault);
+                    if (currentDefault) {
+                        await service.updateFavoriteList(String(currentDefault.id), {
+                            name: currentDefault.name,
+                            isDefault: false,
+                        });
+                    }
+                }
+
                 const isContact = 'contactId' in props.user;
                 const contactId = isContact ? (props.user as Contact).contactId : undefined;
                 const customerId = !isContact ? (props.user as Customer).customerId : undefined;
@@ -290,6 +320,8 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                 state.fetchLists();
             } catch (error) {
                 console.error('Error creating favorite list:', error);
+            } finally {
+                state.saving = false;
             }
         },
 

@@ -316,7 +316,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
             {/* Sidebar overlay */}
             <Show when={state.sidebarOpen}>
                 <div
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70]"
                     onClick={() => state.closeSidebar()}
                     aria-hidden="true"
                 />
@@ -324,7 +324,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
 
             {/* Cart sidebar */}
             <div
-                className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${state.sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
+                className={`fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${state.sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
                 role="dialog"
                 aria-modal="true"
                 aria-label={state.getSidebarTitle()}

@@ -138,8 +138,9 @@ function OrderList(props: OrderListProps) {
 
   const [searchForm, setSearchForm] = useState<OrderListState['searchForm']>(() => ({}));
 
-  async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
+  async function fetchOrders(page: number = 1, searchFormOverride?: OrderListState['searchForm']): ReturnType<OrderListState['fetchOrders']> {
     if (!props.user || !props.graphqlClient || fetching) return;
+    const activeSearchForm = searchFormOverride !== undefined ? searchFormOverride : searchForm;
     setFetching(true);
     setLoading(true);
     try {
@@ -168,25 +169,29 @@ function OrderList(props: OrderListProps) {
         }),
         page: page,
         offset: itemsPerPage,
-        term: searchForm.term || '',
+        term: activeSearchForm.term || '',
         termFields: props.termFields || [
           Enums.OrderSearchFields.REFERENCE,
           Enums.OrderSearchFields.ITEM_SKU,
+          Enums.OrderSearchFields.ID,
+          Enums.OrderSearchFields.ITEM_NAME,
+          Enums.OrderSearchFields.REMARKS
+
         ],
-        ...(searchForm.createdAt && {
-          createdAt: searchForm.createdAt,
+        ...(activeSearchForm.createdAt && {
+          createdAt: activeSearchForm.createdAt,
         }),
-        ...(searchForm.lastModifiedAt && {
-          lastModifiedAt: searchForm.lastModifiedAt,
+        ...(activeSearchForm.lastModifiedAt && {
+          lastModifiedAt: activeSearchForm.lastModifiedAt,
         }),
-        ...(searchForm.price && {
-          price: searchForm.price,
+        ...(activeSearchForm.price && {
+          price: activeSearchForm.price,
         }),
-        ...(searchForm.sortInput && {
-          sortInput: searchForm.sortInput,
+        ...(activeSearchForm.sortInput && {
+          sortInput: activeSearchForm.sortInput,
         }),
-        ...(searchForm.type && {
-          type: searchForm.type,
+        ...(activeSearchForm.type && {
+          type: activeSearchForm.type,
         }),
       };
       const response: OrderResponse = await orderService.getOrders(searchArgs);
@@ -507,7 +512,7 @@ function OrderList(props: OrderListProps) {
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               onClick={(event) => {
                 setSearchForm({});
-                fetchOrders(1);
+                fetchOrders(1, {});
               }}
             >
               Clear

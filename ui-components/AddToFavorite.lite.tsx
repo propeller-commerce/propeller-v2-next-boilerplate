@@ -36,7 +36,7 @@ export interface AddToFavoriteProps {
 interface AddToFavoriteState {
     lists: FavoriteList[];
     /** IDs of lists that contain this product/cluster */
-    memberListIds: Set<number | string>;
+    memberListIds: Set<string>;
     loading: boolean;
     showModal: boolean;
     selectedListId: string;
@@ -62,7 +62,7 @@ interface AddToFavoriteState {
 export default function AddToFavorite(props: AddToFavoriteProps) {
     const state = useStore<AddToFavoriteState>({
         lists: [] as FavoriteList[],
-        memberListIds: new Set() as Set<number | string>,
+        memberListIds: new Set<string>(),
         loading: false,
         showModal: false,
         selectedListId: '',
@@ -100,9 +100,9 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                     memberSearch.clusterIds = [state.itemId];
                 }
                 const memberResponse = await service.getFavoriteLists(memberSearch);
-                const memberIds = new Set<number | string>();
+                const memberIds = new Set<string>();
                 (memberResponse.items || []).forEach((list: FavoriteList) => {
-                    memberIds.add(list.id);
+                    memberIds.add(String(list.id));
                 });
                 state.memberListIds = memberIds;
             } catch (error) {
@@ -137,9 +137,9 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 }
 
                 const memberResponse = await service.getFavoriteLists(memberSearch);
-                const memberIds = new Set<number | string>();
+                const memberIds = new Set<string>();
                 (memberResponse.items || []).forEach((list: FavoriteList) => {
-                    memberIds.add(list.id);
+                    memberIds.add(String(list.id));
                 });
                 state.memberListIds = memberIds;
             } catch (error) {
@@ -168,6 +168,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             try {
                 const service = new FavoriteListService(props.graphqlClient);
                 const fetchParams = {
+                    language: 'NL',
                     imageSearchFilters: { page: 1, offset: 100 },
                     imageVariantFilters: { transformations: [{ name: 'thumb', transformation: { format: 'WEBP', height: 100, width: 100, fit: 'BOUNDS' } }] },
                 };
@@ -175,13 +176,16 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
 
                 const productIds: number[] = [];
                 const clusterIds: number[] = [];
-                const productsRef = list?.products as { items?: { productId?: number }[] } | undefined;
+                const productsRef = list?.products as { items?: { productId?: number; clusterId?: number }[] } | undefined;
                 if (productsRef?.items) {
-                    productsRef.items.forEach((item) => { if (item.productId) productIds.push(item.productId); });
+                    productsRef.items.forEach((item) => {
+                        if (item.productId) productIds.push(item.productId);
+                        if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId);
+                    });
                 }
                 const clustersRef = list?.clusters as { items?: { clusterId?: number }[] } | undefined;
                 if (clustersRef?.items) {
-                    clustersRef.items.forEach((item) => { if (item.clusterId) clusterIds.push(item.clusterId); });
+                    clustersRef.items.forEach((item) => { if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId); });
                 }
 
                 if (state.isProduct && !productIds.includes(state.itemId)) {
@@ -195,7 +199,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 });
 
                 const newMemberIds = new Set(state.memberListIds);
-                newMemberIds.add(Number(state.selectedListId) || state.selectedListId);
+                newMemberIds.add(String(state.selectedListId));
                 state.memberListIds = newMemberIds;
                 state.selectedListId = '';
                 state.showModal = false;
@@ -213,6 +217,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             try {
                 const service = new FavoriteListService(props.graphqlClient);
                 const fetchParams = {
+                    language: 'NL',
                     imageSearchFilters: { page: 1, offset: 100 },
                     imageVariantFilters: { transformations: [{ name: 'thumb', transformation: { format: 'WEBP', height: 100, width: 100, fit: 'BOUNDS' } }] },
                 };
@@ -220,13 +225,16 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
 
                 const productIds: number[] = [];
                 const clusterIds: number[] = [];
-                const productsRef = list?.products as { items?: { productId?: number }[] } | undefined;
+                const productsRef = list?.products as { items?: { productId?: number; clusterId?: number }[] } | undefined;
                 if (productsRef?.items) {
-                    productsRef.items.forEach((item) => { if (item.productId) productIds.push(item.productId); });
+                    productsRef.items.forEach((item) => {
+                        if (item.productId) productIds.push(item.productId);
+                        if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId);
+                    });
                 }
                 const clustersRef = list?.clusters as { items?: { clusterId?: number }[] } | undefined;
                 if (clustersRef?.items) {
-                    clustersRef.items.forEach((item) => { if (item.clusterId) clusterIds.push(item.clusterId); });
+                    clustersRef.items.forEach((item) => { if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId); });
                 }
 
                 await service.updateFavoriteList(listId, {
@@ -237,7 +245,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 });
 
                 const newMemberIds = new Set(state.memberListIds);
-                newMemberIds.delete(Number(listId) || listId);
+                newMemberIds.delete(String(listId));
                 state.memberListIds = newMemberIds;
                 state.showModal = false;
             } catch (error) {
@@ -253,11 +261,11 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         },
 
         getMemberLists(): FavoriteList[] {
-            return state.lists.filter((list: FavoriteList) => state.memberListIds.has(list.id));
+            return state.lists.filter((list: FavoriteList) => state.memberListIds.has(String(list.id)));
         },
 
         getNonMemberLists(): FavoriteList[] {
-            return state.lists.filter((list: FavoriteList) => !state.memberListIds.has(list.id));
+            return state.lists.filter((list: FavoriteList) => !state.memberListIds.has(String(list.id)));
         },
     });
 

@@ -146,6 +146,8 @@ function FavoriteLists(props: FavoriteListsProps) {
 
   const [isMounted, setIsMounted] = useState<FavoriteListsState['isMounted']>(() => false);
 
+  const [saving, setSaving] = useState(false);
+
   async function fetchLists(): ReturnType<FavoriteListsState['fetchLists']> {
     if (!props.user || !props.graphqlClient) return;
     setLoading(true);
@@ -196,9 +198,22 @@ function FavoriteLists(props: FavoriteListsProps) {
       handleCancelEdit();
       return;
     }
-    if (!props.graphqlClient) return;
+    if (!props.graphqlClient || saving) return;
+    setSaving(true);
     try {
       const service = new FavoriteListService(props.graphqlClient);
+
+      // If setting as default, first unset the current default
+      if (formData.isDefault) {
+        const currentDefault = lists.find((l: FavoriteList) => l.isDefault && String(l.id) !== listId);
+        if (currentDefault) {
+          await service.updateFavoriteList(String(currentDefault.id), {
+            name: currentDefault.name,
+            isDefault: false,
+          });
+        }
+      }
+
       await service.updateFavoriteList(listId, {
         name: formData.name,
         isDefault: formData.isDefault,
@@ -227,6 +242,8 @@ function FavoriteLists(props: FavoriteListsProps) {
     } catch (error) {
       console.error('Error updating favorite list:', error);
       fetchLists();
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -273,7 +290,8 @@ function FavoriteLists(props: FavoriteListsProps) {
   }
 
   async function handleCreateList(): ReturnType<FavoriteListsState['handleCreateList']> {
-    if (!newListName.trim()) return;
+    if (!newListName.trim() || saving) return;
+    setSaving(true);
     const formData = {
       name: newListName,
       isDefault: newSetAsDefault,
@@ -290,6 +308,18 @@ function FavoriteLists(props: FavoriteListsProps) {
     if (!props.graphqlClient || !props.user) return;
     try {
       const service = new FavoriteListService(props.graphqlClient);
+
+      // If setting as default, first unset the current default
+      if (formData.isDefault) {
+        const currentDefault = lists.find((l: FavoriteList) => l.isDefault);
+        if (currentDefault) {
+          await service.updateFavoriteList(String(currentDefault.id), {
+            name: currentDefault.name,
+            isDefault: false,
+          });
+        }
+      }
+
       const isContact = 'contactId' in props.user;
       const contactId = isContact ? (props.user as Contact).contactId : undefined;
       const customerId = !isContact ? (props.user as Customer).customerId : undefined;
@@ -307,6 +337,8 @@ function FavoriteLists(props: FavoriteListsProps) {
       fetchLists();
     } catch (error) {
       console.error('Error creating favorite list:', error);
+    } finally {
+      setSaving(false);
     }
   }
 

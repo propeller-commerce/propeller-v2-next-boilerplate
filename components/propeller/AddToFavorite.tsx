@@ -34,7 +34,7 @@ export interface AddToFavoriteProps {
 
 function AddToFavorite(props: AddToFavoriteProps) {
   const [lists, setLists] = useState<FavoriteList[]>([]);
-  const [memberListIds, setMemberListIds] = useState<Set<number | string>>(
+  const [memberListIds, setMemberListIds] = useState<Set<string>>(
     () => new Set()
   );
   const [loading, setLoading] = useState(false);
@@ -72,9 +72,9 @@ function AddToFavorite(props: AddToFavoriteProps) {
         memberSearch.clusterIds = [itemId];
       }
       const memberResponse = await service.getFavoriteLists(memberSearch);
-      const memberIds = new Set<number | string>();
+      const memberIds = new Set<string>();
       (memberResponse.items || []).forEach((list: FavoriteList) => {
-        memberIds.add(list.id);
+        memberIds.add(String(list.id));
       });
       setMemberListIds(memberIds);
     } catch (error) {
@@ -102,9 +102,9 @@ function AddToFavorite(props: AddToFavoriteProps) {
       }
 
       const memberResponse = await service.getFavoriteLists(memberSearch);
-      const memberIds = new Set<number | string>();
+      const memberIds = new Set<string>();
       (memberResponse.items || []).forEach((list: FavoriteList) => {
-        memberIds.add(list.id);
+        memberIds.add(String(list.id));
       });
       setMemberListIds(memberIds);
     } catch (error) {
@@ -129,22 +129,24 @@ function AddToFavorite(props: AddToFavoriteProps) {
   function getListIds(list: FavoriteList): { productIds: number[]; clusterIds: number[] } {
     const productIds: number[] = [];
     const clusterIds: number[] = [];
-    const productsRef = list?.products as { items?: { productId?: number }[] } | undefined;
+    const productsRef = list?.products as { items?: { productId?: number; clusterId?: number }[] } | undefined;
     if (productsRef?.items) {
       productsRef.items.forEach((item) => {
         if (item.productId) productIds.push(item.productId);
+        if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId);
       });
     }
     const clustersRef = list?.clusters as { items?: { clusterId?: number }[] } | undefined;
     if (clustersRef?.items) {
       clustersRef.items.forEach((item) => {
-        if (item.clusterId) clusterIds.push(item.clusterId);
+        if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId);
       });
     }
     return { productIds, clusterIds };
   }
 
   const favoriteListFetchParams = {
+    language: 'NL',
     imageSearchFilters: { page: 1, offset: 100 },
     imageVariantFilters: { transformations: [{ name: 'thumb', transformation: { format: 'WEBP', height: 100, width: 100, fit: 'BOUNDS' } }] },
   };
@@ -173,7 +175,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
 
       setMemberListIds((prev) => {
         const next = new Set(prev);
-        next.add(Number(selectedListId) || selectedListId);
+        next.add(String(selectedListId));
         return next;
       });
       setSelectedListId('');
@@ -196,16 +198,24 @@ function AddToFavorite(props: AddToFavoriteProps) {
       const list = await service.getFavoriteList({ id: listId, ...favoriteListFetchParams });
       const { productIds, clusterIds } = getListIds(list);
 
-      await service.updateFavoriteList(listId, {
+      console.log('[AddToFavorite] removeFromList — listId:', listId, 'itemId:', itemId, 'isProduct:', isProduct);
+      console.log('[AddToFavorite] fetched list clusters:', list?.clusters);
+      console.log('[AddToFavorite] fetched list products:', list?.products);
+      console.log('[AddToFavorite] extracted productIds:', productIds, 'clusterIds:', clusterIds);
+
+      const updateInput = {
         name: list.name,
         isDefault: list.isDefault,
         productIds: isProduct ? productIds.filter((id: number) => id !== itemId) : productIds,
         clusterIds: !isProduct ? clusterIds.filter((id: number) => id !== itemId) : clusterIds,
-      });
+      };
+      console.log('[AddToFavorite] updateFavoriteList input:', updateInput);
+
+      await service.updateFavoriteList(listId, updateInput);
 
       setMemberListIds((prev) => {
         const next = new Set(prev);
-        next.delete(Number(listId) || listId);
+        next.delete(String(listId));
         return next;
       });
       setShowModal(false);
@@ -223,11 +233,11 @@ function AddToFavorite(props: AddToFavoriteProps) {
   }
 
   function getMemberLists(): FavoriteList[] {
-    return lists.filter((list: FavoriteList) => memberListIds.has(list.id));
+    return lists.filter((list: FavoriteList) => memberListIds.has(String(list.id)));
   }
 
   function getNonMemberLists(): FavoriteList[] {
-    return lists.filter((list: FavoriteList) => !memberListIds.has(list.id));
+    return lists.filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
   }
 
   useEffect(() => {

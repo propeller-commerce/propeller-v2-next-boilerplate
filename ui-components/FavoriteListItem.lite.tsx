@@ -199,6 +199,9 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
             if (props.onItemClick) {
                 e.preventDefault();
                 props.onItemClick(props.item);
+            } else if (state.getItemUrl()) {
+                e.preventDefault();
+                window.location.href = state.getItemUrl();
             }
         },
 
@@ -210,7 +213,10 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
     });
 
     return (
-        <div className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-violet-200 hover:shadow-sm ${props.className || ''}`}>
+        <div
+            className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-violet-200 hover:shadow-sm cursor-pointer ${props.className || ''}`}
+            onClick={(e: Event) => state.handleItemClick(e)}
+        >
             {/* ── Image ──────────────────────────────────── */}
             <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
                 <Show when={props.titleLinkable !== false}>
@@ -322,7 +328,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
             </Show>
 
             {/* ── Actions ─────────────────────────────────── */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0" onClick={(e: Event) => e.stopPropagation()}>
                 <Show when={props.allowAddToCart !== false && state.isProduct() && !!props.graphqlClient}>
                     <AddToCart
                         graphqlClient={props.graphqlClient!}

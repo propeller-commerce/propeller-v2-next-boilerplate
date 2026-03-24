@@ -48,8 +48,6 @@ export default function Header() {
   const categoriesMenuLabel = globalData?.categoriesMenuLabel || 'Browse Categories';
   const topBarAnnouncementEnabled = globalData?.topBarAnnouncementEnabled ?? false;
 
-  // Top bar is 40px; use negative sticky top to slide it off naturally
-  const topBarHeight = topBarEnabled ? 40 : 0;
 
   // Close main menu on outside click
   useEffect(() => {
@@ -74,18 +72,13 @@ export default function Header() {
 
   return (
     <>
-      <header
-        ref={headerRef}
-        className="w-full z-50 bg-background shadow-sm sticky"
-        style={{ top: -topBarHeight }}
-      >
-        {/* Top Info Bar — scrolls off naturally via negative sticky top */}
-        {topBarEnabled && (
-          <div
-            data-topbar
-            className="relative z-[60] h-10"
-            style={{ background: '#242526' }}
-          >
+      {/* Top Info Bar — outside sticky header, scrolls away naturally */}
+      {topBarEnabled && (
+        <div
+          data-topbar
+          className="relative z-50 h-10"
+          style={{ background: '#242526' }}
+        >
             <div className="container-width h-full">
               <div className="flex items-center justify-between h-full text-xs font-medium text-white">
                 {/* Left: Phone + Announcement */}
@@ -144,8 +137,12 @@ export default function Header() {
               </div>
             </div>
           </div>
-        )}
+      )}
 
+      <header
+        ref={headerRef}
+        className="w-full z-50 bg-background shadow-sm sticky top-0"
+      >
         {/* Middle Section */}
         <div style={{ backgroundColor: '#242526' }}>
           <div className="container-width">
@@ -285,7 +282,7 @@ export default function Header() {
 
                   <div className={cn(
                     "absolute left-0 top-full z-50",
-                    showMainMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
+                    showMainMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none h-0 overflow-hidden"
                   )}>
                     <PropellerMenu
                       graphqlClient={graphqlClient}

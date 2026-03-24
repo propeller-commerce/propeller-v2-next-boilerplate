@@ -285,7 +285,7 @@ function LoginForm(props: LoginFormProps) {
         );
       }
     } catch (err: any) {
-      setError(err?.message || 'Login failed. Please check your credentials.');
+      setError('The credentials you entered don\'t match our records. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -161,7 +161,10 @@ export default function OrderList(props: OrderListProps) {
                     term: state.searchForm.term || "",
                     termFields: props.termFields || [
                         Enums.OrderSearchFields.REFERENCE,
-                        Enums.OrderSearchFields.ITEM_SKU
+                        Enums.OrderSearchFields.ITEM_SKU,
+                        Enums.OrderSearchFields.ID,
+                        Enums.OrderSearchFields.ITEM_NAME,
+                        Enums.OrderSearchFields.REMARKS
                     ],
                     ...(state.searchForm.createdAt && { createdAt: state.searchForm.createdAt }),
                     ...(state.searchForm.lastModifiedAt && { lastModifiedAt: state.searchForm.lastModifiedAt }),

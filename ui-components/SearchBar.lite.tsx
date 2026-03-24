@@ -224,7 +224,7 @@ export default function SearchBar(props: SearchBarProps) {
         handleSubmit(e: any) {
             e.preventDefault();
             const term = state.searchTerm.trim();
-            if (term && props.onSubmit) {
+            if (props.onSubmit) {
                 props.onSubmit(term);
                 state.showDropdown = false;
             }
@@ -273,15 +273,20 @@ export default function SearchBar(props: SearchBarProps) {
         >
             <form onSubmit={(e) => state.handleSubmit(e)}>
                 <div className="relative">
-                    <svg
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <button
+                        type="submit"
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer"
                     >
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="m21 21-4.35-4.35" />
-                    </svg>
+                        <svg
+                            className="w-5 h-5 text-gray-400 hover:text-gray-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                        </svg>
+                    </button>
                     <input
                         type="search"
                         placeholder={state.placeholder}

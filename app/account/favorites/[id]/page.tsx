@@ -107,6 +107,8 @@ export default function FavoriteListPage() {
         itemsPerPage={12}
         showPagination={true}
         showStockComponent={true}
+        showAvailability={false}
+        showStock={true}
         includeTax={includeTax}
       />
     </div>

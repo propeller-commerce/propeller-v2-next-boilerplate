@@ -60,6 +60,12 @@ export interface FavoriteListDetailsProps {
   /** Show stock availability on items (default: false) */
   showStockComponent?: boolean;
 
+  /** Show availability status (e.g. "In stock") inside ItemStock (default: true) */
+  showAvailability?: boolean;
+
+  /** Show numeric stock quantity inside ItemStock (default: true) */
+  showStock?: boolean;
+
   /** Display the SKU beneath item names (default: true) */
   showSku?: boolean;
 
@@ -351,6 +357,8 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                     configuration={props.configuration}
                     titleLinkable={props.titleLinkable}
                     showStockComponent={props.showStockComponent}
+                    showAvailability={props.showAvailability}
+                    showStock={props.showStock}
                     showSku={props.showSku}
                     allowAddToCart={props.allowAddToCart}
                     showDelete={props.showDelete}

@@ -208,7 +208,7 @@ function OrderItemCard(props: OrderItemCardProps) {
             ) : null}
             <div>
               {titleLinkable() && productUrl() && !isChildItem() ? (
-                <a className="font-medium text-blue-600 hover:underline" href={productUrl()}>
+                <a className="font-medium text-foreground hover:text-primary hover:underline" href={productUrl()}>
                   {productName()}
                 </a>
               ) : null}

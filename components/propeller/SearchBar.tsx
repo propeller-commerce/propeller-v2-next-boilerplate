@@ -228,7 +228,7 @@ function SearchBar(props: SearchBarProps) {
   function handleSubmit(e: any): ReturnType<SearchBarState['handleSubmit']> {
     e.preventDefault();
     const term = searchTerm.trim();
-    if (term && props.onSubmit) {
+    if (props.onSubmit) {
       props.onSubmit(term);
       setShowDropdown(false);
     }
@@ -271,15 +271,20 @@ function SearchBar(props: SearchBarProps) {
     <div data-search-bar className={props.containerClassName || 'relative flex-1 max-w-2xl mx-8'}>
       <form onSubmit={(e) => handleSubmit(e)}>
         <div className="relative">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+          <button
+            type="submit"
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer"
           >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
+            <svg
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              className="w-5 h-5 text-gray-400 hover:text-gray-600"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+          </button>
           <input
             type="search"
             autoComplete="off"

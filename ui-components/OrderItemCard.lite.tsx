@@ -187,7 +187,7 @@ export default function OrderItemCard(props: OrderItemCardProps) {
               <Show when={state.titleLinkable && state.productUrl && !state.isChildItem}>
                 <a
                   href={state.productUrl}
-                  className="font-medium text-blue-600 hover:underline"
+                  className="font-medium text-foreground hover:text-primary hover:underline"
                 >
                   {state.productName}
                 </a>

@@ -24,6 +24,12 @@ export interface FavoriteListItemProps {
   /** Should the stock be displayed in the favorite list item (default: false) */
   showStockComponent?: boolean;
 
+  /** Show availability status (e.g. "In stock") inside ItemStock (default: true) */
+  showAvailability?: boolean;
+
+  /** Show numeric stock quantity inside ItemStock (default: true) */
+  showStock?: boolean;
+
   /** Display the SKU of the item beneath the item name (default: true) */
   showSku?: boolean;
 
@@ -274,8 +280,8 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         <div className="flex-shrink-0">
           <ItemStock
             inventory={getProduct().inventory!}
-            showAvailability
-            showStock
+            showAvailability={props.showAvailability !== false}
+            showStock={props.showStock !== false}
             labels={props.stockLabels}
           />
         </div>

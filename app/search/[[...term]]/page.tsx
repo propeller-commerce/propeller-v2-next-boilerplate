@@ -21,7 +21,9 @@ export default function SearchPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const term = decodeURIComponent(params.term as string);
+  const termSegments = params.term as string[] | undefined;
+  const term = termSegments?.[0] ? decodeURIComponent(termSegments[0]) : '';
+  const isAllProducts = !term;
 
   // Derive URL-driven state from searchParams (no useEffect needed)
   const currentPage = parseInt(searchParams.get('page') || '1');
@@ -197,7 +199,8 @@ export default function SearchPage() {
               {/* Grid */}
               <ProductGrid
                 graphqlClient={graphqlClient}
-                term={term}
+                term={isAllProducts ? undefined : term}
+                categoryId={isAllProducts ? config.baseCategoryId : undefined}
                 configuration={config}
                 user={state.user}
                 language={language}

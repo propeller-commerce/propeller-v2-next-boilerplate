@@ -427,8 +427,13 @@ function FavoriteLists(props: FavoriteListsProps) {
             <div className="space-y-4">
               {displayedLists()?.map((list) => (
                 <div
-                  className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors"
+                  className={`border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors${editingListId !== String(list.id) && props.onListClick ? ' cursor-pointer' : ''}`}
                   key={list.id}
+                  onClick={() => {
+                    if (editingListId !== String(list.id) && props.onListClick) {
+                      props.onListClick(list.id);
+                    }
+                  }}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -482,12 +487,9 @@ function FavoriteLists(props: FavoriteListsProps) {
                       {editingListId !== String(list.id) ? (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <button
-                              className="text-xl font-semibold hover:text-primary transition-colors text-left"
-                              onClick={(event) => props.onListClick && props.onListClick(list.id)}
-                            >
+                            <span className="text-xl font-semibold">
                               {list.name}
-                            </button>
+                            </span>
                             {props.showDefaultIndicator !== false && list.isDefault ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                 {getLabel('defaultBadge', 'Default')}
@@ -548,7 +550,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                         <button
                           title="Edit"
                           className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                          onClick={(event) => handleEditList(list)}
+                          onClick={(event) => { event.stopPropagation(); handleEditList(list); }}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -568,7 +570,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                         <button
                           title="Delete"
                           className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={(event) => handleDeleteList(list)}
+                          onClick={(event) => { event.stopPropagation(); handleDeleteList(list); }}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"

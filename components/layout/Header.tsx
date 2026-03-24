@@ -31,12 +31,10 @@ export default function Header() {
   const { includeTax, setIncludeTax } = usePrice();
   const { language, setLanguage } = useLanguage();
   const globalData = useGlobal();
-  const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
 
   // CMS settings with defaults
   const topBarEnabled = globalData?.topBarEnabled ?? true;
@@ -49,6 +47,9 @@ export default function Header() {
   const showCategoriesMenu = globalData?.showCategoriesMenu ?? true;
   const categoriesMenuLabel = globalData?.categoriesMenuLabel || 'Browse Categories';
   const topBarAnnouncementEnabled = globalData?.topBarAnnouncementEnabled ?? false;
+
+  // Top bar is 40px; use negative sticky top to slide it off naturally
+  const topBarHeight = topBarEnabled ? 40 : 0;
 
   // Close main menu on outside click
   useEffect(() => {
@@ -67,40 +68,24 @@ export default function Header() {
     };
   }, [showMainMenu]);
 
-  // Scroll detection for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsSticky(window.scrollY > 40);
-    };
-
-    if (headerRef.current) {
-      setHeaderHeight(headerRef.current.offsetHeight);
-    }
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   // Logo: CMS image or fallback
   const logoSrc = globalData?.logo?.url || '/propeller_logo.webp';
   const logoAlt = globalData?.logoAlt || globalData?.siteName || 'Logo';
 
   return (
     <>
-      <div style={{ height: isSticky ? headerHeight : 0 }} className="transition-all duration-0" />
       <header
         ref={headerRef}
-        className={cn(
-          "w-full z-50 bg-background transition-all duration-300 shadow-sm",
-          isSticky ? "fixed top-0 left-0 shadow-sm animate-in slide-in-from-top-4 duration-300" : "relative"
-        )}
+        className="w-full z-50 bg-background shadow-sm sticky"
+        style={{ top: -topBarHeight }}
       >
-        {/* Top Info Bar */}
+        {/* Top Info Bar — scrolls off naturally via negative sticky top */}
         {topBarEnabled && (
-          <div className={cn(
-            "transition-all duration-200",
-            isSticky ? 'h-0 opacity-5 -translate-y-2 overflow-hidden' : 'h-10 opacity-100 translate-y-0'
-          )} style={{ background: '#242526' }}>
+          <div
+            data-topbar
+            className="relative z-[60] h-10"
+            style={{ background: '#242526' }}
+          >
             <div className="container-width h-full">
               <div className="flex items-center justify-between h-full text-xs font-medium text-white">
                 {/* Left: Phone + Announcement */}
@@ -123,7 +108,7 @@ export default function Header() {
                 {/* Right: Company Switcher, VAT Switcher & Language Switcher */}
                 <div className="flex items-center gap-4">
                   {/* Company Switcher — Contact users only */}
-                  {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && (
+                  {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && ((state.user as Contact).companies!.items?.length || 0) > 1 && (
                     <CompanySwitcher
                       user={state.user as Contact}
                       selectedCompanyId={selectedCompany?.companyId}
@@ -196,7 +181,7 @@ export default function Header() {
                   <SearchBar
                     graphqlClient={graphqlClient}
                     language={language}
-                    onSubmit={(term) => router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language))}
+                    onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
                     }}
@@ -280,10 +265,7 @@ export default function Header() {
         </div>
 
         {/* Bottom Navigation Menu — desktop only */}
-        <div className={cn(
-          "hidden md:block border-t border-border bg-background transition-all duration-200",
-          isSticky ? 'h-10' : 'h-12'
-        )}>
+        <div className="hidden md:block border-t border-border bg-background h-12">
           <div className="container-width h-full">
             <nav className="flex items-center h-full">
               {/* Categories Dropdown Trigger */}
@@ -361,7 +343,7 @@ export default function Header() {
                   language={language}
                   onSubmit={(term) => {
                     setShowMobileMenu(false);
-                    router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language));
+                    router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language));
                   }}
                   onResultClick={(result) => {
                     setShowMobileMenu(false);

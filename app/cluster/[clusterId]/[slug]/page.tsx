@@ -20,6 +20,7 @@ import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
 import ProductShortDescription from '@/components/propeller/ProductShortDescription';
 import ItemStock from '@/components/propeller/ItemStock';
 import AddToCart from '@/components/propeller/AddToCart';
+import AddToFavorite from '@/components/propeller/AddToFavorite';
 import ProductTabs from '@/components/propeller/ProductTabs';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -229,25 +230,32 @@ export default function ClusterPage() {
                   </>
                 )}
 
-                <AddToCart
-                  user={state.user}
-                  product={selectedProduct as Product}
-                  cluster={cluster as Cluster}
-                  beforeAddToCart={validateClusterOptions}
-                  childItems={Object.values(selectedOptionProducts).map((p) => p.productId)}
-                  cartId={cart?.cartId}
-                  graphqlClient={graphqlClient}
-                  createCart={true}
-                  onCartCreated={(cart) => {
-                    saveCart(cart);
-                  }}
-                  className='flex items-center w-full gap-2'
-                  configuration={config}
-                  showModal={true}
-                  afterAddToCart={(cart) => {
-                    saveCart(cart);
-                  }}
-                  onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
+                <div className="flex items-center gap-2">
+                  <AddToCart
+                    user={state.user}
+                    product={selectedProduct as Product}
+                    cluster={cluster as Cluster}
+                    beforeAddToCart={validateClusterOptions}
+                    childItems={Object.values(selectedOptionProducts).map((p) => p.productId)}
+                    cartId={cart?.cartId}
+                    graphqlClient={graphqlClient}
+                    createCart={true}
+                    onCartCreated={(cart) => {
+                      saveCart(cart);
+                    }}
+                    className='flex items-center w-full gap-2'
+                    configuration={config}
+                    showModal={true}
+                    afterAddToCart={(cart) => {
+                      saveCart(cart);
+                    }}
+                    onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
+                  <AddToFavorite
+                    graphqlClient={graphqlClient}
+                    user={state.user}
+                    clusterId={clusterId}
+                  />
+                </div>
               </div>
             </div>
           </div>

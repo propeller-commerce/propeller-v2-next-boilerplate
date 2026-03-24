@@ -353,11 +353,11 @@ export default function ProductCard(props: ProductCardProps) {
 
     return (
         <div
-            className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${state.isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
+            className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${state.isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
         >
             {/* ── Image area ──────────────────────────────────── */}
             <Show when={props.showImage !== false}>
-                <div className={`relative overflow-hidden bg-gray-50 ${state.isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}>
+                <div className={`relative overflow-hidden bg-gray-50 ${state.isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}>
                     <a
                         href={state.getProductUrl()}
                         onClick={(e: any) => state.handleProductClick(e)}
@@ -448,115 +448,153 @@ export default function ProductCard(props: ProductCardProps) {
                 </div>
             </Show>
 
-            {/* ── Text content ─────────────────────────────────── */}
-            <div className={`flex flex-1 ${state.isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'}`}>
-                {/* SKU */}
-                <Show
-                    when={props.showSku !== false && !!state.getProductSku()}
-                >
-                    <div className="font-mono text-xs text-gray-400">
-                        {state.getProductSku()}
+            {/* ── Row view ─────────────────────────────────────── */}
+            <Show when={state.isRow()}>
+                {/* Top section: SKU + name */}
+                <div className="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                        <Show when={props.showSku !== false && !!state.getProductSku()}>
+                            <div className="font-mono text-xs text-gray-400">
+                                {state.getProductSku()}
+                            </div>
+                        </Show>
+                        <Show when={props.showName !== false}>
+                            <a
+                                href={state.getProductUrl()}
+                                onClick={(e: any) => state.handleProductClick(e)}
+                                className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+                            >
+                                {state.getProductName()}
+                            </a>
+                        </Show>
+                        <Show when={!!props.textLabels && props.textLabels.length > 0 && state.computedTextLabels().length > 0}>
+                            <div className="flex flex-col gap-0.5">
+                                <For each={state.computedTextLabels()}>
+                                    {(item: { name: string; value: string }) => (
+                                        <div className="text-xs text-gray-500">{item.value}</div>
+                                    )}
+                                </For>
+                            </div>
+                        </Show>
+                        <Show when={props.showManufacturer && !!state.getProductManufacturer()}>
+                            <div className="text-xs text-gray-500">{state.getProductManufacturer()}</div>
+                        </Show>
+                        <Show when={props.showShortDescription && !!state.getProductShortDescription()}>
+                            <p className="line-clamp-2 text-xs text-gray-500">{state.getProductShortDescription()}</p>
+                        </Show>
                     </div>
-                </Show>
-
-                {/* Product name */}
-                <Show when={props.showName !== false}>
-                    <a
-                        href={state.getProductUrl()}
-                        onClick={(e: any) => state.handleProductClick(e)}
-                        className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${state.isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'}`}
-                    >
-                        {state.getProductName()}
-                    </a>
-                </Show>
-
-                {/* Attribute text labels */}
-                <Show
-                    when={
-                        !!props.textLabels &&
-                        props.textLabels.length > 0 &&
-                        state.computedTextLabels().length > 0
-                    }
-                >
-                    <div className="flex flex-col gap-0.5">
-                        <For each={state.computedTextLabels()}>
-                            {(item: { name: string; value: string }) => (
-                                <div className="text-xs text-gray-500">
-                                    {item.value}
-                                </div>
-                            )}
-                        </For>
-                    </div>
-                </Show>
-
-                {/* Stock / availability */}
-                <Show when={props.showStock && !!props.product.inventory}>
-                    <ItemStock
-                        inventory={props.product.inventory!}
-                        showAvailability={props.showAvailability !== false}
-                        showStock={true}
-                        labels={props.stockLabels}
-                    />
-                </Show>
-
-                {/* Manufacturer */}
-                <Show
-                    when={
-                        props.showManufacturer &&
-                        !!state.getProductManufacturer()
-                    }
-                >
-                    <div className="text-xs text-gray-500">
-                        {state.getProductManufacturer()}
-                    </div>
-                </Show>
-
-                {/* Short description */}
-                <Show
-                    when={
-                        props.showShortDescription &&
-                        !!state.getProductShortDescription()
-                    }
-                >
-                    <p className="line-clamp-2 text-xs text-gray-500">
-                        {state.getProductShortDescription()}
-                    </p>
-                </Show>
-
-                {/* Price */}
-                <Show when={!!state.getProductPrice()}>
-                    <div className={state.isRow() ? '' : 'mt-auto pt-2'}>
-                        <span className={`font-bold text-gray-900 ${state.isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}>
+                </div>
+                {/* Bottom section on mobile: stock + price + add-to-cart */}
+                <div className="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100">
+                    <Show when={props.showStock && !!props.product.inventory}>
+                        <ItemStock
+                            inventory={props.product.inventory!}
+                            showAvailability={false}
+                            showStock={true}
+                            labels={props.stockLabels}
+                        />
+                    </Show>
+                    <Show when={!!state.getProductPrice()}>
+                        <span className="font-bold text-gray-900 text-sm whitespace-nowrap">
                             {state.getProductPrice()}
                         </span>
+                    </Show>
+                    <div className="flex-shrink-0 ml-auto">
+                        <AddToCart
+                            graphqlClient={props.graphqlClient}
+                            user={props.user}
+                            product={props.product}
+                            cartId={props.cartId}
+                            configuration={props.configuration}
+                            childItems={props.childItems}
+                            notes={props.notes}
+                            price={props.price}
+                            createCart={props.createCart}
+                            onCartCreated={props.onCartCreated}
+                            onAddToCart={props.onAddToCart}
+                            afterAddToCart={props.afterAddToCart}
+                            showModal={props.showModal}
+                            allowIncrDecr={props.allowIncrDecr}
+                            enableStockValidation={props.enableStockValidation}
+                            language={props.language}
+                            onProceedToCheckout={props.onProceedToCheckout}
+                            labels={props.addToCartLabels}
+                            className="flex w-full items-center gap-2"
+                        />
                     </div>
-                </Show>
-            </div>
+                </div>
+            </Show>
 
-            {/* ── Add to cart ──────────────────────────────────── */}
-            <div className={state.isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}>
-                <AddToCart
-                    graphqlClient={props.graphqlClient}
-                    user={props.user}
-                    product={props.product}
-                    cartId={props.cartId}
-                    configuration={props.configuration}
-                    childItems={props.childItems}
-                    notes={props.notes}
-                    price={props.price}
-                    createCart={props.createCart}
-                    onCartCreated={props.onCartCreated}
-                    onAddToCart={props.onAddToCart}
-                    afterAddToCart={props.afterAddToCart}
-                    showModal={props.showModal}
-                    allowIncrDecr={props.allowIncrDecr}
-                    enableStockValidation={props.enableStockValidation}
-                    language={props.language}
-                    onProceedToCheckout={props.onProceedToCheckout}
-                    labels={props.addToCartLabels}
-                    className="flex w-full items-center gap-2"
-                />
-            </div>
+            {/* ── Grid view ──────────────────────────────────────── */}
+            <Show when={!state.isRow()}>
+                <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+                    <Show when={props.showSku !== false && !!state.getProductSku()}>
+                        <div className="font-mono text-xs text-gray-400">{state.getProductSku()}</div>
+                    </Show>
+                    <Show when={props.showName !== false}>
+                        <a
+                            href={state.getProductUrl()}
+                            onClick={(e: any) => state.handleProductClick(e)}
+                            className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+                        >
+                            {state.getProductName()}
+                        </a>
+                    </Show>
+                    <Show when={!!props.textLabels && props.textLabels.length > 0 && state.computedTextLabels().length > 0}>
+                        <div className="flex flex-col gap-0.5">
+                            <For each={state.computedTextLabels()}>
+                                {(item: { name: string; value: string }) => (
+                                    <div className="text-xs text-gray-500">{item.value}</div>
+                                )}
+                            </For>
+                        </div>
+                    </Show>
+                    <Show when={props.showStock && !!props.product.inventory}>
+                        <ItemStock
+                            inventory={props.product.inventory!}
+                            showAvailability={props.showAvailability !== false}
+                            showStock={true}
+                            labels={props.stockLabels}
+                        />
+                    </Show>
+                    <Show when={props.showManufacturer && !!state.getProductManufacturer()}>
+                        <div className="text-xs text-gray-500">{state.getProductManufacturer()}</div>
+                    </Show>
+                    <Show when={props.showShortDescription && !!state.getProductShortDescription()}>
+                        <p className="line-clamp-2 text-xs text-gray-500">{state.getProductShortDescription()}</p>
+                    </Show>
+                    <Show when={!!state.getProductPrice()}>
+                        <div className="mt-auto pt-1">
+                            <span className="font-bold text-gray-900 text-base sm:text-lg">
+                                {state.getProductPrice()}
+                            </span>
+                        </div>
+                    </Show>
+                </div>
+                <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+                    <AddToCart
+                        graphqlClient={props.graphqlClient}
+                        user={props.user}
+                        product={props.product}
+                        cartId={props.cartId}
+                        configuration={props.configuration}
+                        childItems={props.childItems}
+                        notes={props.notes}
+                        price={props.price}
+                        createCart={props.createCart}
+                        onCartCreated={props.onCartCreated}
+                        onAddToCart={props.onAddToCart}
+                        afterAddToCart={props.afterAddToCart}
+                        showModal={props.showModal}
+                        allowIncrDecr={props.allowIncrDecr}
+                        enableStockValidation={props.enableStockValidation}
+                        language={props.language}
+                        onProceedToCheckout={props.onProceedToCheckout}
+                        labels={props.addToCartLabels}
+                        className="flex w-full items-center gap-2"
+                    />
+                </div>
+            </Show>
         </div>
     );
 }

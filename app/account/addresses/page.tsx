@@ -313,9 +313,6 @@ export default function AddressesPage() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" /> Default Invoice
-            </h3>
             {defaultAddresses.invoice ? (
               <AddressCard
                 key={`inv-${defaultAddresses.invoice.id}-${selectedCompany?.companyId ?? 'default'}`}
@@ -335,9 +332,6 @@ export default function AddressesPage() {
             )}
           </div>
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-              <Truck className="w-4 h-4" /> Default Delivery
-            </h3>
             {defaultAddresses.delivery ? (
               <AddressCard
                 key={`del-${defaultAddresses.delivery.id}-${selectedCompany?.companyId ?? 'default'}`}

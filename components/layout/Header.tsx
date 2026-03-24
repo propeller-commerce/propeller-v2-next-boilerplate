@@ -33,6 +33,7 @@ export default function Header() {
   const globalData = useGlobal();
   const [isSticky, setIsSticky] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -90,8 +91,8 @@ export default function Header() {
       <header
         ref={headerRef}
         className={cn(
-          "w-full z-50 bg-background transition-all duration-300 border-b",
-          isSticky ? "fixed top-0 left-0 shadow-md animate-in slide-in-from-top-4 duration-300" : "relative"
+          "w-full z-50 bg-background transition-all duration-300 shadow-sm",
+          isSticky ? "fixed top-0 left-0 shadow-sm animate-in slide-in-from-top-4 duration-300" : "relative"
         )}
       >
         {/* Top Info Bar */}
@@ -99,7 +100,7 @@ export default function Header() {
           <div className={cn(
             "transition-all duration-200",
             isSticky ? 'h-0 opacity-5 -translate-y-2 overflow-hidden' : 'h-10 opacity-100 translate-y-0'
-          )} style={{ background: 'linear-gradient(to bottom, #433183ff, #180147)' }}>
+          )} style={{ background: '#242526' }}>
             <div className="container-width h-full">
               <div className="flex items-center justify-between h-full text-xs font-medium text-white">
                 {/* Left: Phone + Announcement */}
@@ -161,9 +162,22 @@ export default function Header() {
         )}
 
         {/* Middle Section */}
-        <div style={{ backgroundColor: '#180147' }}>
+        <div style={{ backgroundColor: '#242526' }}>
           <div className="container-width">
             <div className="flex items-center justify-between h-16 sm:h-20 gap-4 sm:gap-8">
+              {/* Mobile hamburger */}
+              <button
+                type="button"
+                className="md:hidden text-white p-2 -ml-2"
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+              >
+                {showMobileMenu ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                ) : (
+                  <MenuIcon className="w-6 h-6" />
+                )}
+              </button>
+
               {/* Logo — CMS or fallback */}
               <Link href={localizeHref('/', language)} className="flex-shrink-0 relative h-10 sm:h-12 w-auto">
                 <Image
@@ -265,9 +279,9 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Bottom Navigation Menu */}
+        {/* Bottom Navigation Menu — desktop only */}
         <div className={cn(
-          "border-t border-border bg-background transition-all duration-200",
+          "hidden md:block border-t border-border bg-background transition-all duration-200",
           isSticky ? 'h-10' : 'h-12'
         )}>
           <div className="container-width h-full">
@@ -318,7 +332,7 @@ export default function Header() {
                       key={i}
                       href={localizeHref(link.url, language)}
                       className={cn(
-                        "hover:text-primary transition-colors",
+                        "hover:text-foreground transition-colors",
                         link.highlight && "text-destructive"
                       )}
                     >
@@ -327,15 +341,82 @@ export default function Header() {
                   ))
                 ) : (
                   <>
-                    <Link href={localizeHref('/new-arrivals', language)} className="hover:text-primary transition-colors">New Arrivals</Link>
-                    <Link href={localizeHref('/best-sellers', language)} className="hover:text-primary transition-colors">Best Sellers</Link>
-                    <Link href={localizeHref('/sale', language)} className="hover:text-primary transition-colors text-destructive">Sale</Link>
+                    <Link href={localizeHref('/new-arrivals', language)} className="hover:text-foreground transition-colors">New Arrivals</Link>
+                    <Link href={localizeHref('/best-sellers', language)} className="hover:text-foreground transition-colors">Best Sellers</Link>
+                    <Link href={localizeHref('/sale', language)} className="hover:text-foreground transition-colors text-destructive">Sale</Link>
                   </>
                 )}
               </div>
             </nav>
           </div>
         </div>
+        {/* Mobile slide-down menu */}
+        {showMobileMenu && (
+          <div className="md:hidden bg-background border-t border-border overflow-y-auto max-h-[calc(100vh-64px)]">
+            {/* Mobile search */}
+            {showSearch && (
+              <div className="p-4 border-b border-border">
+                <SearchBar
+                  graphqlClient={graphqlClient}
+                  language={language}
+                  onSubmit={(term) => {
+                    setShowMobileMenu(false);
+                    router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language));
+                  }}
+                  onResultClick={(result) => {
+                    setShowMobileMenu(false);
+                    if (result.url) router.push(result.url);
+                  }}
+                  onViewAllClick={(term) => {
+                    setShowMobileMenu(false);
+                    router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language));
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Mobile categories */}
+            {showCategoriesMenu && (
+              <PropellerMenu
+                graphqlClient={graphqlClient}
+                categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
+                language={language}
+                menuStyle="dropdown-vertical"
+                user={state.user}
+                configuration={config}
+                onMenuItemClick={(category) => {
+                  setShowMobileMenu(false);
+                  router.push(config.urls.getCategoryUrl(category, language));
+                }}
+              />
+            )}
+
+            {/* Mobile nav links */}
+            <div className="border-t border-border divide-y divide-border">
+              {globalData?.navLinks && globalData.navLinks.length > 0 ? (
+                globalData.navLinks.map((link, i) => (
+                  <Link
+                    key={i}
+                    href={localizeHref(link.url, language)}
+                    className={cn(
+                      "block px-4 py-3 text-sm font-medium text-foreground",
+                      link.highlight && "text-destructive"
+                    )}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))
+              ) : (
+                <>
+                  <Link href={localizeHref('/new-arrivals', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>New Arrivals</Link>
+                  <Link href={localizeHref('/best-sellers', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>Best Sellers</Link>
+                  <Link href={localizeHref('/sale', language)} className="block px-4 py-3 text-sm font-medium text-destructive" onClick={() => setShowMobileMenu(false)}>Sale</Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </header>
     </>
   );

@@ -134,7 +134,7 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
                                         <td className="px-4 py-2 text-foreground font-medium">
                                             {state.getQuantityLabel(tier, index)}
                                         </td>
-                                        <td className="px-4 py-2 text-right text-primary font-semibold">
+                                        <td className="px-4 py-2 text-right text-foreground font-semibold">
                                             {state.getPrice(tier)}
                                         </td>
                                     </tr>

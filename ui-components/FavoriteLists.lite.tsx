@@ -359,7 +359,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                 <div className="flex justify-end mb-4">
                     <button
                         onClick={() => { state.showCreateModal = true; }}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
                         {state.getLabel('createButton', 'Create New List')}
@@ -409,7 +409,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                                             value={state.editListName}
                                                             onChange={(e) => { state.editListName = e.target.value; }}
                                                             placeholder="Enter list name"
-                                                            className="max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                            className="max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                                                         />
                                                     </div>
                                                     <div className="flex items-center space-x-2">
@@ -428,7 +428,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                                         <button
                                                             onClick={() => state.handleUpdateList(String(list.id))}
                                                             disabled={!state.editListName.trim()}
-                                                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                                                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                                                         >
                                                             {state.getLabel('editSave', 'Save')}
                                                         </button>
@@ -447,12 +447,12 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => props.onListClick && props.onListClick(list.id)}
-                                                            className="text-xl font-semibold hover:text-blue-600 transition-colors text-left"
+                                                            className="text-xl font-semibold hover:text-primary transition-colors text-left"
                                                         >
                                                             {list.name}
                                                         </button>
                                                         <Show when={props.showDefaultIndicator !== false && list.isDefault}>
-                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                                                 {state.getLabel('defaultBadge', 'Default')}
                                                             </span>
                                                         </Show>
@@ -513,7 +513,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                         <Show when={props.allowFavoriteListCreate !== false}>
                             <button
                                 onClick={() => { state.showCreateModal = true; }}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
                             >
                                 {state.getLabel('createFirstList', 'Create your first list')}
                             </button>
@@ -543,7 +543,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                     value={state.newListName}
                                     onChange={(e) => { state.newListName = e.target.value; }}
                                     placeholder={state.getLabel('createPlaceholder', 'Enter list name')}
-                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                                 />
                             </div>
                             <div className="flex items-center space-x-2">
@@ -568,7 +568,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                 <button
                                     onClick={() => state.handleCreateList()}
                                     disabled={!state.newListName.trim()}
-                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                                 >
                                     {state.getLabel('saveButton', 'Save')}
                                 </button>

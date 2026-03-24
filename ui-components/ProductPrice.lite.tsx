@@ -171,7 +171,7 @@ export default function ProductPriceDisplay(props: ProductPriceProps) {
             <Show when={!state.isHidden() && !!state.getLeadingPrice()}>
                 <div className="flex flex-col gap-0.5">
                     <div className="flex items-baseline gap-2">
-                        <span className={`${(props.priceSize as string) || 'text-3xl'} font-bold text-primary`}>
+                        <span className={`${(props.priceSize as string) || 'text-3xl'} font-bold text-foreground`}>
                             {state.getLeadingPrice()}
                         </span>
                         <span className="text-sm text-muted-foreground">

@@ -321,7 +321,7 @@ function SearchBar(props: SearchBarProps) {
                     ) : null}
                   </div>
                   {result.price !== undefined && result.price !== null ? (
-                    <div className="text-lg font-bold text-blue-600 flex-shrink-0">
+                    <div className="text-sm font-semibold text-foreground flex-shrink-0">
                       {formatItemPrice(result.price!)}
                     </div>
                   ) : null}
@@ -329,7 +329,7 @@ function SearchBar(props: SearchBarProps) {
               ))}
               {itemsFound > maxResults() ? (
                 <div
-                  className="p-3 text-center text-blue-600 hover:bg-blue-50 cursor-pointer font-semibold"
+                  className="p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
                   onClick={(event) => handleViewAllClick()}
                 >
                   {getLabel('viewAll', 'View all results')} ({itemsFound})

@@ -657,7 +657,7 @@ function RegisterForm(props: RegisterFormProps) {
                     className={
                       'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
                       (selectedUserType === 'Contact'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        ? 'border-primary bg-primary/5 text-primary'
                         : 'border-gray-300 hover:bg-gray-50')
                     }
                   >
@@ -671,7 +671,7 @@ function RegisterForm(props: RegisterFormProps) {
                     className={
                       'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
                       (selectedUserType === 'Customer'
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        ? 'border-primary bg-primary/5 text-primary'
                         : 'border-gray-300 hover:bg-gray-50')
                     }
                   >
@@ -688,7 +688,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="radio"
                     name="gender"
                     value="M"
-                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                     checked={gender === Enums.Gender.M}
                     onChange={(event) => {
                       setGender(Enums.Gender.M);
@@ -702,7 +702,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="radio"
                     name="gender"
                     value="F"
-                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                     checked={gender === Enums.Gender.F}
                     onChange={(event) => {
                       setGender(Enums.Gender.F);
@@ -716,7 +716,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="radio"
                     name="gender"
                     value="U"
-                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                     checked={gender === Enums.Gender.U}
                     onChange={(event) => {
                       setGender(Enums.Gender.U);
@@ -736,7 +736,7 @@ function RegisterForm(props: RegisterFormProps) {
                 type="email"
                 id="register-email"
                 name="email"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={email}
                 onChange={(e) => {
                   setEmail((e.target as HTMLInputElement).value);
@@ -763,7 +763,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-vatNumber"
                       name="vatNumber"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={vatNumber}
                       onChange={(e) => {
                         setVatNumber((e.target as HTMLInputElement).value);
@@ -786,7 +786,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-cocNumber"
                       name="cocNumber"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={cocNumber}
                       onChange={(e) => {
                         setCocNumber((e.target as HTMLInputElement).value);
@@ -810,7 +810,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="text"
                     id="register-companyName"
                     name="companyName"
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     value={companyName}
                     onChange={(e) => {
                       setCompanyName((e.target as HTMLInputElement).value);
@@ -831,7 +831,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-firstName"
                   name="firstName"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={firstName}
                   onChange={(e) => {
                     setFirstName((e.target as HTMLInputElement).value);
@@ -848,7 +848,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-middleName"
                   name="middleName"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={middleName}
                   onChange={(e) => {
                     setMiddleName((e.target as HTMLInputElement).value);
@@ -867,7 +867,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-lastName"
                   name="lastName"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={lastName}
                   onChange={(e) => {
                     setLastName((e.target as HTMLInputElement).value);
@@ -885,7 +885,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="tel"
                   id="register-phone"
                   name="phone"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={phone}
                   onChange={(e) => {
                     setPhone((e.target as HTMLInputElement).value);
@@ -911,7 +911,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-billingPostalCode"
                   name="billingPostalCode"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingPostalCode}
                   onChange={(e) => {
                     setBillingPostalCode((e.target as HTMLInputElement).value);
@@ -932,7 +932,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-billingStreet"
                   name="billingStreet"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingStreet}
                   onChange={(e) => {
                     setBillingStreet((e.target as HTMLInputElement).value);
@@ -955,7 +955,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-billingNumber"
                   name="billingNumber"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingNumber}
                   onChange={(e) => {
                     setBillingNumber((e.target as HTMLInputElement).value);
@@ -975,7 +975,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-billingNumberExtension"
                   name="billingNumberExtension"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingNumberExtension}
                   onChange={(e) => {
                     setBillingNumberExtension((e.target as HTMLInputElement).value);
@@ -994,7 +994,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-billingCity"
                   name="billingCity"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingCity}
                   onChange={(e) => {
                     setBillingCity((e.target as HTMLInputElement).value);
@@ -1014,7 +1014,7 @@ function RegisterForm(props: RegisterFormProps) {
                 <select
                   id="register-billingCountry"
                   name="billingCountry"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingCountry}
                   onChange={(e) => {
                     setBillingCountry((e.target as HTMLSelectElement).value);
@@ -1039,7 +1039,7 @@ function RegisterForm(props: RegisterFormProps) {
                 type="checkbox"
                 id="register-sameAsDelivery"
                 name="sameAsDelivery"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 checked={sameAsDelivery}
                 onChange={(e) => {
                   setSameAsDelivery((e.target as HTMLInputElement).checked);
@@ -1065,7 +1065,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-deliveryPostalCode"
                       name="deliveryPostalCode"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryPostalCode}
                       onChange={(e) => {
                         setDeliveryPostalCode((e.target as HTMLInputElement).value);
@@ -1086,7 +1086,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-deliveryStreet"
                       name="deliveryStreet"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryStreet}
                       onChange={(e) => {
                         setDeliveryStreet((e.target as HTMLInputElement).value);
@@ -1109,7 +1109,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-deliveryNumber"
                       name="deliveryNumber"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryNumber}
                       onChange={(e) => {
                         setDeliveryNumber((e.target as HTMLInputElement).value);
@@ -1129,7 +1129,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-deliveryNumberExtension"
                       name="deliveryNumberExtension"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryNumberExtension}
                       onChange={(e) => {
                         setDeliveryNumberExtension((e.target as HTMLInputElement).value);
@@ -1151,7 +1151,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-deliveryCity"
                       name="deliveryCity"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryCity}
                       onChange={(e) => {
                         setDeliveryCity((e.target as HTMLInputElement).value);
@@ -1171,7 +1171,7 @@ function RegisterForm(props: RegisterFormProps) {
                     <select
                       id="register-deliveryCountry"
                       name="deliveryCountry"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryCountry}
                       onChange={(e) => {
                         setDeliveryCountry((e.target as HTMLSelectElement).value);
@@ -1202,7 +1202,7 @@ function RegisterForm(props: RegisterFormProps) {
                 type="password"
                 id="register-password"
                 name="password"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={password}
                 onChange={(e) => {
                   setPassword((e.target as HTMLInputElement).value);
@@ -1224,7 +1224,7 @@ function RegisterForm(props: RegisterFormProps) {
                 type="password"
                 id="register-confirmPassword"
                 name="confirmPassword"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword((e.target as HTMLInputElement).value);
@@ -1240,7 +1240,7 @@ function RegisterForm(props: RegisterFormProps) {
           ) : null}
           <button
             type="submit"
-            className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
             {loading ? (
@@ -1296,7 +1296,7 @@ function RegisterForm(props: RegisterFormProps) {
             <p className="text-sm text-gray-500 mb-2">{loginText()}</p>
             <button
               type="button"
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary hover:underline"
               onClick={(event) => {
                 if (props.onLoginClick) props.onLoginClick();
               }}

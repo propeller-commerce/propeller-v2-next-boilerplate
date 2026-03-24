@@ -21,7 +21,7 @@ export default function ForgotPasswordPage() {
           />
 
           <div className="mt-6 text-center">
-            <Link href={localizeHref('/login', language)} className="text-blue-600 hover:underline">
+            <Link href={localizeHref('/login', language)} className="text-primary hover:underline">
               Back to Login
             </Link>
           </div>

@@ -325,7 +325,7 @@ export default function SearchBar(props: SearchBarProps) {
                                         </Show>
                                     </div>
                                     <Show when={result.price !== undefined && result.price !== null}>
-                                        <div className="text-lg font-bold text-blue-600 flex-shrink-0">
+                                        <div className="text-sm font-semibold text-foreground flex-shrink-0">
                                             {state.formatItemPrice(result.price!)}
                                         </div>
                                     </Show>
@@ -335,7 +335,7 @@ export default function SearchBar(props: SearchBarProps) {
                         <Show when={state.itemsFound > state.maxResults}>
                             <div
                                 onClick={() => state.handleViewAllClick()}
-                                className="p-3 text-center text-blue-600 hover:bg-blue-50 cursor-pointer font-semibold"
+                                className="p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
                             >
                                 {state.getLabel('viewAll', 'View all results')} ({state.itemsFound})
                             </div>

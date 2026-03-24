@@ -344,11 +344,11 @@ function ProductCard(props: ProductCardProps) {
 
   return (
     <div
-      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
+      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
     >
       {props.showImage !== false ? (
         <div
-          className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}
+          className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
         >
           <a
             className="block h-full w-full"
@@ -414,75 +414,147 @@ function ProductCard(props: ProductCardProps) {
           ) : null}
         </div>
       ) : null}
-      <div
-        className={`flex flex-1 ${isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'}`}
-      >
-        {props.showSku !== false && !!getProductSku() ? (
-          <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
-        ) : null}
-        {props.showName !== false ? (
-          <a
-            href={getProductUrl()}
-            onClick={(e) => handleProductClick(e)}
-            className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'}`}
-          >
-            {getProductName()}
-          </a>
-        ) : null}
-        {!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
-          <div className="flex flex-col gap-0.5">
-            {computedTextLabels()?.map((item) => (
-              <div className="text-xs text-gray-500">{item.value}</div>
-            ))}
+      {isRow() ? (
+        <>
+          {/* Row view: top section = SKU + name */}
+          <div className="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              {props.showSku !== false && !!getProductSku() ? (
+                <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
+              ) : null}
+              {props.showName !== false ? (
+                <a
+                  href={getProductUrl()}
+                  onClick={(e) => handleProductClick(e)}
+                  className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+                >
+                  {getProductName()}
+                </a>
+              ) : null}
+              {!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
+                <div className="flex flex-col gap-0.5">
+                  {computedTextLabels()?.map((item) => (
+                    <div className="text-xs text-gray-500">{item.value}</div>
+                  ))}
+                </div>
+              ) : null}
+              {props.showManufacturer && !!getProductManufacturer() ? (
+                <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
+              ) : null}
+              {props.showShortDescription && !!getProductShortDescription() ? (
+                <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
+              ) : null}
+            </div>
           </div>
-        ) : null}
-        {props.showStock && !!props.product.inventory ? (
-          <ItemStock
-            inventory={props.product.inventory!}
-            showAvailability={props.showAvailability !== false}
-            showStock
-            labels={props.stockLabels}
-          />
-        ) : null}
-        {props.showManufacturer && !!getProductManufacturer() ? (
-          <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
-        ) : null}
-        {props.showShortDescription && !!getProductShortDescription() ? (
-          <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
-        ) : null}
-        {!!getProductPrice() ? (
-          <div className={isRow() ? '' : 'mt-auto pt-2'}>
-            <span
-              className={`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}
-            >
-              {getProductPrice()}
-            </span>
+          {/* Row view: bottom section on mobile, inline on desktop = stock + price + add-to-cart */}
+          <div className="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100">
+            {props.showStock && !!props.product.inventory ? (
+              <ItemStock
+                inventory={props.product.inventory!}
+                showAvailability={false}
+                showStock
+                labels={props.stockLabels}
+              />
+            ) : null}
+            {!!getProductPrice() ? (
+              <span className="font-bold text-gray-900 text-sm whitespace-nowrap">
+                {getProductPrice()}
+              </span>
+            ) : null}
+            <div className="flex-shrink-0 ml-auto">
+              <AddToCart
+                className="flex w-full items-center gap-2"
+                graphqlClient={props.graphqlClient}
+                user={props.user}
+                product={props.product}
+                cartId={props.cartId}
+                configuration={props.configuration}
+                childItems={props.childItems}
+                notes={props.notes}
+                price={props.price}
+                createCart={props.createCart}
+                onCartCreated={props.onCartCreated}
+                onAddToCart={props.onAddToCart}
+                afterAddToCart={props.afterAddToCart}
+                showModal={props.showModal}
+                allowIncrDecr={props.allowIncrDecr}
+                enableStockValidation={props.enableStockValidation}
+                language={props.language}
+                onProceedToCheckout={props.onProceedToCheckout}
+                labels={props.addToCartLabels}
+              />
+            </div>
           </div>
-        ) : null}
-      </div>
-      <div className={isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}>
-        <AddToCart
-          className="flex w-full items-center gap-2"
-          graphqlClient={props.graphqlClient}
-          user={props.user}
-          product={props.product}
-          cartId={props.cartId}
-          configuration={props.configuration}
-          childItems={props.childItems}
-          notes={props.notes}
-          price={props.price}
-          createCart={props.createCart}
-          onCartCreated={props.onCartCreated}
-          onAddToCart={props.onAddToCart}
-          afterAddToCart={props.afterAddToCart}
-          showModal={props.showModal}
-          allowIncrDecr={props.allowIncrDecr}
-          enableStockValidation={props.enableStockValidation}
-          language={props.language}
-          onProceedToCheckout={props.onProceedToCheckout}
-          labels={props.addToCartLabels}
-        />
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+            {props.showSku !== false && !!getProductSku() ? (
+              <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
+            ) : null}
+            {props.showName !== false ? (
+              <a
+                href={getProductUrl()}
+                onClick={(e) => handleProductClick(e)}
+                className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+              >
+                {getProductName()}
+              </a>
+            ) : null}
+            {!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
+              <div className="flex flex-col gap-0.5">
+                {computedTextLabels()?.map((item) => (
+                  <div className="text-xs text-gray-500">{item.value}</div>
+                ))}
+              </div>
+            ) : null}
+            {props.showStock && !!props.product.inventory ? (
+              <ItemStock
+                inventory={props.product.inventory!}
+                showAvailability={props.showAvailability !== false}
+                showStock
+                labels={props.stockLabels}
+              />
+            ) : null}
+            {props.showManufacturer && !!getProductManufacturer() ? (
+              <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
+            ) : null}
+            {props.showShortDescription && !!getProductShortDescription() ? (
+              <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
+            ) : null}
+            {!!getProductPrice() ? (
+              <div className="mt-auto pt-1">
+                <span className="font-bold text-gray-900 text-base sm:text-lg">
+                  {getProductPrice()}
+                </span>
+              </div>
+            ) : null}
+          </div>
+          <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+            <AddToCart
+              className="flex w-full items-center gap-2"
+              graphqlClient={props.graphqlClient}
+              user={props.user}
+              product={props.product}
+              cartId={props.cartId}
+              configuration={props.configuration}
+              childItems={props.childItems}
+              notes={props.notes}
+              price={props.price}
+              createCart={props.createCart}
+              onCartCreated={props.onCartCreated}
+              onAddToCart={props.onAddToCart}
+              afterAddToCart={props.afterAddToCart}
+              showModal={props.showModal}
+              allowIncrDecr={props.allowIncrDecr}
+              enableStockValidation={props.enableStockValidation}
+              language={props.language}
+              onProceedToCheckout={props.onProceedToCheckout}
+              labels={props.addToCartLabels}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

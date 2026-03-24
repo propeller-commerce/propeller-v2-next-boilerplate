@@ -549,7 +549,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         className={
                                             'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
                                             (state.selectedUserType === 'Contact'
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                ? 'border-primary bg-primary/5 text-primary'
                                                 : 'border-gray-300 hover:bg-gray-50')
                                         }
                                     >
@@ -561,7 +561,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         className={
                                             'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
                                             (state.selectedUserType === 'Customer'
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                ? 'border-primary bg-primary/5 text-primary'
                                                 : 'border-gray-300 hover:bg-gray-50')
                                         }
                                     >
@@ -582,7 +582,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         value="M"
                                         checked={state.gender === Enums.Gender.M}
                                         onChange={() => { state.gender = Enums.Gender.M; }}
-                                        className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                                         disabled={state.loading}
                                     />
                                     Mr.
@@ -594,7 +594,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         value="F"
                                         checked={state.gender === Enums.Gender.F}
                                         onChange={() => { state.gender = Enums.Gender.F; }}
-                                        className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                                         disabled={state.loading}
                                     />
                                     Mrs.
@@ -606,7 +606,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         value="U"
                                         checked={state.gender === Enums.Gender.U}
                                         onChange={() => { state.gender = Enums.Gender.U; }}
-                                        className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                                         disabled={state.loading}
                                     />
                                     Other
@@ -628,7 +628,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 onChange={(e) => { state.email = (e.target as HTMLInputElement).value; }}
                                 placeholder={state.emailPlaceholder}
                                 required
-                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={state.loading}
                             />
                         </div>
@@ -651,7 +651,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.vatNumber}
                                             onChange={(e) => { state.vatNumber = (e.target as HTMLInputElement).value; }}
                                             required={state.isFieldRequired('vatNumber')}
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -669,7 +669,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.cocNumber}
                                             onChange={(e) => { state.cocNumber = (e.target as HTMLInputElement).value; }}
                                             required={state.isFieldRequired('cocNumber')}
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -688,7 +688,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                         value={state.companyName}
                                         onChange={(e) => { state.companyName = (e.target as HTMLInputElement).value; }}
                                         required={state.isFieldRequired('companyName')}
-                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                         disabled={state.loading}
                                     />
                                 </div>
@@ -709,7 +709,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.firstName}
                                     onChange={(e) => { state.firstName = (e.target as HTMLInputElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -723,7 +723,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     name="middleName"
                                     value={state.middleName}
                                     onChange={(e) => { state.middleName = (e.target as HTMLInputElement).value; }}
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -742,7 +742,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.lastName}
                                     onChange={(e) => { state.lastName = (e.target as HTMLInputElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -760,7 +760,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.phone}
                                     onChange={(e) => { state.phone = (e.target as HTMLInputElement).value; }}
                                     required={state.isFieldRequired('phone')}
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -784,7 +784,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.billingPostalCode}
                                     onChange={(e) => { state.billingPostalCode = (e.target as HTMLInputElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -800,7 +800,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.billingStreet}
                                     onChange={(e) => { state.billingStreet = (e.target as HTMLInputElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -819,7 +819,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.billingNumber}
                                     onChange={(e) => { state.billingNumber = (e.target as HTMLInputElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -833,7 +833,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     name="billingNumberExtension"
                                     value={state.billingNumberExtension}
                                     onChange={(e) => { state.billingNumberExtension = (e.target as HTMLInputElement).value; }}
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -852,7 +852,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.billingCity}
                                     onChange={(e) => { state.billingCity = (e.target as HTMLInputElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 />
                             </div>
@@ -867,7 +867,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                     value={state.billingCountry}
                                     onChange={(e) => { state.billingCountry = (e.target as HTMLSelectElement).value; }}
                                     required
-                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={state.loading}
                                 >
                                     <option value="">Select country</option>
@@ -890,7 +890,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 name="sameAsDelivery"
                                 checked={state.sameAsDelivery}
                                 onChange={(e) => { state.sameAsDelivery = (e.target as HTMLInputElement).checked; }}
-                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 disabled={state.loading}
                             />
                             <label htmlFor="register-sameAsDelivery" className="text-sm font-medium leading-none">
@@ -913,7 +913,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.deliveryPostalCode}
                                             onChange={(e) => { state.deliveryPostalCode = (e.target as HTMLInputElement).value; }}
                                             required
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -929,7 +929,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.deliveryStreet}
                                             onChange={(e) => { state.deliveryStreet = (e.target as HTMLInputElement).value; }}
                                             required
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -948,7 +948,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.deliveryNumber}
                                             onChange={(e) => { state.deliveryNumber = (e.target as HTMLInputElement).value; }}
                                             required
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -962,7 +962,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             name="deliveryNumberExtension"
                                             value={state.deliveryNumberExtension}
                                             onChange={(e) => { state.deliveryNumberExtension = (e.target as HTMLInputElement).value; }}
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -981,7 +981,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.deliveryCity}
                                             onChange={(e) => { state.deliveryCity = (e.target as HTMLInputElement).value; }}
                                             required
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         />
                                     </div>
@@ -996,7 +996,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                             value={state.deliveryCountry}
                                             onChange={(e) => { state.deliveryCountry = (e.target as HTMLSelectElement).value; }}
                                             required
-                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={state.loading}
                                         >
                                             <option value="">Select country</option>
@@ -1027,7 +1027,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 onChange={(e) => { state.password = (e.target as HTMLInputElement).value; }}
                                 placeholder={state.passwordPlaceholder}
                                 required
-                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={state.loading}
                             />
                         </div>
@@ -1045,7 +1045,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                                 onChange={(e) => { state.confirmPassword = (e.target as HTMLInputElement).value; }}
                                 placeholder={state.passwordPlaceholder}
                                 required
-                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={state.loading}
                             />
                         </div>
@@ -1062,7 +1062,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                     <button
                         type="submit"
                         disabled={state.loading}
-                        className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Show when={state.loading}>
                             <svg
@@ -1122,7 +1122,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                         <button
                             type="button"
                             onClick={() => { if (props.onLoginClick) props.onLoginClick(); }}
-                            className="text-sm text-blue-600 hover:underline"
+                            className="text-sm text-primary hover:underline"
                         >
                             {state.loginLinkText}
                         </button>

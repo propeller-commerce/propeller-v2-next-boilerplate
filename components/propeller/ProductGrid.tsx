@@ -534,9 +534,9 @@ function ProductGrid(props: ProductGridProps) {
   function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
     const cols = (props.columns as number) || 3;
     if (cols === 1) return 'flex flex-col gap-4';
-    if (cols === 2) return 'grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr';
-    if (cols === 4) return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr';
-    return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr';
+    if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
+    return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
 
   function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {

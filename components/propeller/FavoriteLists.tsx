@@ -375,7 +375,7 @@ function FavoriteLists(props: FavoriteListsProps) {
       displayedLists().length > 0 ? (
         <div className="flex justify-end mb-4">
           <button
-            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
             onClick={(event) => {
               setShowCreateModal(true);
             }}
@@ -438,7 +438,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                             <input
                               type="text"
                               placeholder="Enter list name"
-                              className="max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                              className="max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                               value={editListName}
                               onChange={(e) => {
                                 setEditListName(e.target.value);
@@ -464,7 +464,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                               onClick={(event) => handleUpdateList(String(list.id))}
                               disabled={!editListName.trim()}
                             >
@@ -483,13 +483,13 @@ function FavoriteLists(props: FavoriteListsProps) {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <button
-                              className="text-xl font-semibold hover:text-blue-600 transition-colors text-left"
+                              className="text-xl font-semibold hover:text-primary transition-colors text-left"
                               onClick={(event) => props.onListClick && props.onListClick(list.id)}
                             >
                               {list.name}
                             </button>
                             {props.showDefaultIndicator !== false && list.isDefault ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                 {getLabel('defaultBadge', 'Default')}
                               </span>
                             ) : null}
@@ -622,7 +622,7 @@ function FavoriteLists(props: FavoriteListsProps) {
               </div>
               {props.allowFavoriteListCreate !== false ? (
                 <button
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
                   onClick={(event) => {
                     setShowCreateModal(true);
                   }}
@@ -653,7 +653,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                 <label className="text-sm font-medium">Name</label>
                 <input
                   type="text"
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                   value={newListName}
                   onChange={(e) => {
                     setNewListName(e.target.value);
@@ -685,7 +685,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                   {getLabel('cancelButton', 'Cancel')}
                 </button>
                 <button
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                   onClick={(event) => handleCreateList()}
                   disabled={!newListName.trim()}
                 >

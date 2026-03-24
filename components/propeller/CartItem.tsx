@@ -426,9 +426,9 @@ function CartItem(props: CartItemProps) {
 
   return (
     <div
-      className={`flex gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${props.className || ''}`}
+      className={`flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${props.className || ''}`}
     >
-      <div className="w-24 h-24 flex-shrink-0 bg-gray-50 rounded border border-gray-200 flex items-center justify-center overflow-hidden relative">
+      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-50 flex items-center justify-center overflow-hidden relative">
         {!!getProductImageUrl() ? (
           <img
             className="w-full h-full object-contain p-1"
@@ -453,8 +453,11 @@ function CartItem(props: CartItemProps) {
         ) : null}
       </div>
       <div className="flex-1 min-w-0">
+        {!isBundleItem() && props.showSku !== false && !!getProductSku() ? (
+          <p className="font-mono text-xs text-gray-400">{getProductSku()}</p>
+        ) : null}
         {isBundleItem() ? (
-          <span className="font-semibold text-lg text-gray-900 line-clamp-2">
+          <span className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">
             {getBundleName()}
           </span>
         ) : null}
@@ -462,46 +465,34 @@ function CartItem(props: CartItemProps) {
           <>
             {props.titleLinkable !== false ? (
               <a
-                className="font-semibold text-lg text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"
+                className="font-semibold text-sm md:text-base text-gray-900 hover:text-foreground transition-colors line-clamp-2"
                 href={getProductUrl()}
               >
                 {getProductName()}
               </a>
             ) : null}
             {props.titleLinkable === false ? (
-              <span className="font-semibold text-lg text-gray-900 line-clamp-2">
+              <span className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">
                 {getProductName()}
               </span>
             ) : null}
           </>
-        ) : null}
-        {!isBundleItem() && props.showSku !== false && !!getProductSku() ? (
-          <p className="text-sm text-gray-500 mt-0.5">{getProductSku()}</p>
         ) : null}
         {props.showStockComponent === true && !!getInventory() ? (
           <div className="mt-1">
             <div data-cart-item-stock="true" data-inventory={JSON.stringify(getInventory())} />
           </div>
         ) : null}
+        {/* Price moved to right column */}
         {isBundleItem() ? (
-          <>
-            {!!getBundlePrice() ? (
-              <p className="text-lg font-bold text-violet-600 mt-2">{getBundlePrice()}</p>
-            ) : null}
-          </>
-        ) : null}
-        {!isBundleItem() ? (
-          <p className="text-lg font-bold text-violet-600 mt-2">{getFormattedPrice()}</p>
-        ) : null}
-        {isBundleItem() ? (
-          <div className="mt-3 space-y-1.5 border-l-2 border-violet-200 pl-3">
+          <div className="mt-3 space-y-1.5 border-l-2 border-border pl-3">
             {!!getBundleLeaderName() ? (
               <div className="flex flex-wrap gap-x-2 text-sm text-gray-700">
-                <span className="font-semibold text-violet-700">{getBundleLeaderName()}</span>
+                <span className="font-semibold text-foreground">{getBundleLeaderName()}</span>
                 {!!getBundleLeaderPrice() ? (
                   <>
                     <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
-                    <span className="font-semibold text-violet-600">{getBundleLeaderPrice()}</span>
+                    <span className="font-semibold text-foreground">{getBundleLeaderPrice()}</span>
                   </>
                 ) : null}
               </div>
@@ -512,7 +503,7 @@ function CartItem(props: CartItemProps) {
                 {!!getBundleItemPrice(bundleItem) ? (
                   <>
                     <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
-                    <span className="font-semibold text-violet-600">
+                    <span className="font-semibold text-foreground">
                       {getBundleItemPrice(bundleItem)}
                     </span>
                   </>
@@ -534,7 +525,7 @@ function CartItem(props: CartItemProps) {
                 <span className="text-gray-400 hidden sm:inline">-</span>
                 <span className="text-gray-400 text-xs self-center">{child.product.sku}</span>
                 <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
-                <span className="font-semibold text-violet-600">€{child.totalSum.toFixed(2)}</span>
+                <span className="font-semibold text-foreground">€{child.totalSum.toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -561,7 +552,7 @@ function CartItem(props: CartItemProps) {
             <div className="flex gap-3 overflow-x-auto">
               {getVisibleCrossupsells()?.map((item, idx) => (
                 <a
-                  className="flex-shrink-0 flex items-center gap-2 p-2 rounded-md border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-colors max-w-[200px]"
+                  className="flex-shrink-0 flex items-center gap-2 p-2 rounded-md border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors max-w-[200px]"
                   key={idx}
                   href={getCrossupsellUrl(item)}
                   onClick={(e) => {
@@ -589,12 +580,22 @@ function CartItem(props: CartItemProps) {
           </div>
         ) : null}
       </div>
-      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+      {/* Price + Quantity + Delete — single row, wraps to new line on mobile */}
+      <div className="w-full md:w-auto flex items-center gap-3 md:gap-4 border-t md:border-t-0 border-gray-100 pt-2 md:pt-0 flex-shrink-0">
+        {/* Price */}
+        {isBundleItem() && !!getBundlePrice() ? (
+          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">{getBundlePrice()}</p>
+        ) : null}
+        {!isBundleItem() ? (
+          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">{getFormattedPrice()}</p>
+        ) : null}
+
+        {/* Quantity controls */}
         {props.enableIncrementDecrement !== false ? (
-          <div className="flex items-center border border-gray-300 rounded-md bg-white h-10">
+          <div className="flex items-center border border-gray-300 rounded-md bg-white h-9">
             <button
               type="button"
-              className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
+              className="px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
               onClick={(event) => handleQuantityChange(quantity - 1)}
               disabled={quantity <= 1 || loading}
             >
@@ -602,7 +603,7 @@ function CartItem(props: CartItemProps) {
             </button>
             <input
               type="number"
-              className="w-12 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-10 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               min={1}
               value={quantity}
               onChange={(e) => {
@@ -612,7 +613,7 @@ function CartItem(props: CartItemProps) {
             />
             <button
               type="button"
-              className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
+              className="px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
               onClick={(event) => handleQuantityChange(quantity + 1)}
               disabled={loading}
             >
@@ -623,7 +624,7 @@ function CartItem(props: CartItemProps) {
         {props.enableIncrementDecrement === false ? (
           <input
             type="number"
-            className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-14 h-9 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             min={1}
             value={quantity}
             onChange={(e) => {
@@ -635,14 +636,24 @@ function CartItem(props: CartItemProps) {
         {loading ? (
           <span className="text-xs text-gray-400">{getLabel('updating', 'Updating...')}</span>
         ) : null}
+
+        {/* Delete — bin icon (same as FavoriteListItem) */}
         <button
           type="button"
-          className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-50"
+          className="h-8 w-8 p-0 ml-auto inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
           onClick={(event) => handleDelete()}
           disabled={deleting}
+          title={getLabel('remove', 'Remove')}
         >
-          {deleting ? <>{getLabel('deleting', 'Removing...')}</> : null}
-          {!deleting ? <>{getLabel('remove', 'Remove')}</> : null}
+          {deleting ? (
+            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          )}
         </button>
       </div>
     </div>

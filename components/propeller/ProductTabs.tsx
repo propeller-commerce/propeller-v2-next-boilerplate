@@ -165,6 +165,7 @@ function ProductTabs(props: ProductTabsProps) {
       setActiveTab('description');
     } else if (props.showSpecifications !== false) {
       setActiveTab('specifications');
+      setSpecsVisited(true);
     } else if (props.showDownloads !== false) {
       setActiveTab('downloads');
     } else {
@@ -178,82 +179,183 @@ function ProductTabs(props: ProductTabsProps) {
     }
   }, [props.product, props.language]);
 
+  const descriptionContent = isTabVisible('description') ? (
+    <ProductDescription
+      product={props.product}
+      language={props.language}
+      collapsed={props.descriptionCollapsed}
+      maxLength={props.descriptionMaxLength}
+    />
+  ) : null;
+
+  const specificationsContent = isTabVisible('specifications') && props.product ? (
+    <ProductSpecifications
+      attributes={props.product.attributes?.items as AttributeResult[]}
+      productId={props.productId}
+      graphqlClient={props.graphqlClient}
+      language={props.language}
+      layout={props.specificationsLayout}
+      grouping={props.specificationsGrouping}
+    />
+  ) : null;
+
+  const downloadsContent = isTabVisible('downloads') && props.product ? (
+    <ProductDownloads
+      downloads={
+        (props.product as Product).media?.documents as PaginatedMediaDocumentResponse
+      }
+      language={(props.language as string) || 'NL'}
+      labels={props.downloadsLabels}
+    />
+  ) : null;
+
+  const videosContent = isTabVisible('videos') && props.product ? (
+    <ProductVideos
+      videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
+      language={(props.language as string) || 'NL'}
+      labels={props.videosLabels}
+    />
+  ) : null;
+
+  const chevronIcon = (open: boolean) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`transition-transform ${open ? 'rotate-180' : ''}`}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+
   return (
     <div className={`product-tabs ${(props.className as string) || ''}`}>
-      <div className="flex border-b border-border">
-        {isTabVisible('description') ? (
-          <button
-            type="button"
-            onClick={(event) => selectTab('description')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-          >
-            {getLabel('description', 'Description')}
-          </button>
-        ) : null}
-        {isTabVisible('specifications') ? (
-          <button
-            type="button"
-            onClick={(event) => selectTab('specifications')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-          >
-            {getLabel('specifications', 'Specifications')}
-          </button>
-        ) : null}
-        {isTabVisible('downloads') ? (
-          <button
-            type="button"
-            onClick={(event) => selectTab('downloads')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-          >
-            {getLabel('downloads', 'Downloads')}
-          </button>
-        ) : null}
-        {isTabVisible('videos') ? (
-          <button
-            type="button"
-            onClick={(event) => selectTab('videos')}
-            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-          >
-            {getLabel('videos', 'Videos')}
-          </button>
-        ) : null}
+      {/* ── Desktop: horizontal tabs ── */}
+      <div className="hidden md:block">
+        <div className="flex border-b border-border">
+          {isTabVisible('description') ? (
+            <button
+              type="button"
+              onClick={() => selectTab('description')}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            >
+              {getLabel('description', 'Description')}
+            </button>
+          ) : null}
+          {isTabVisible('specifications') ? (
+            <button
+              type="button"
+              onClick={() => selectTab('specifications')}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            >
+              {getLabel('specifications', 'Specifications')}
+            </button>
+          ) : null}
+          {isTabVisible('downloads') ? (
+            <button
+              type="button"
+              onClick={() => selectTab('downloads')}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            >
+              {getLabel('downloads', 'Downloads')}
+            </button>
+          ) : null}
+          {isTabVisible('videos') ? (
+            <button
+              type="button"
+              onClick={() => selectTab('videos')}
+              className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+            >
+              {getLabel('videos', 'Videos')}
+            </button>
+          ) : null}
+        </div>
+        <div className="pt-6">
+          {isActive('description') && isTabVisible('description') ? descriptionContent : null}
+          {specsVisited && isTabVisible('specifications') ? (
+            <div className={isActive('specifications') ? '' : 'hidden'}>
+              {specificationsContent}
+            </div>
+          ) : null}
+          {isActive('downloads') && isTabVisible('downloads') ? downloadsContent : null}
+          {isActive('videos') && isTabVisible('videos') ? videosContent : null}
+        </div>
       </div>
-      <div className="pt-6">
-        {isActive('description') && isTabVisible('description') ? (
-          <ProductDescription
-            product={props.product}
-            language={props.language}
-            collapsed={props.descriptionCollapsed}
-            maxLength={props.descriptionMaxLength}
-          />
-        ) : null}
-        {specsVisited && isTabVisible('specifications') ? (
-          <div className={isActive('specifications') ? '' : 'hidden'}>
-            <ProductSpecifications
-              attributes={props.product.attributes?.items as AttributeResult[]}
-              productId={props.productId}
-              graphqlClient={props.graphqlClient}
-              language={props.language}
-              layout={props.specificationsLayout}
-              grouping={props.specificationsGrouping}
-            />
+
+      {/* ── Mobile: accordion ── */}
+      <div className="md:hidden divide-y divide-border border border-border rounded-lg">
+        {isTabVisible('description') ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'description' ? '' : 'description')}
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+            >
+              {getLabel('description', 'Description')}
+              {chevronIcon(isActive('description'))}
+            </button>
+            {isActive('description') ? (
+              <div className="px-4 pb-4">{descriptionContent}</div>
+            ) : null}
           </div>
         ) : null}
-        {isActive('downloads') && isTabVisible('downloads') ? (
-          <ProductDownloads
-            downloads={
-              (props.product as Product).media?.documents as PaginatedMediaDocumentResponse
-            }
-            language={(props.language as string) || 'NL'}
-            labels={props.downloadsLabels}
-          />
+        {isTabVisible('specifications') ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                if (activeTab !== 'specifications') {
+                  setSpecsVisited(true);
+                  setActiveTab('specifications');
+                } else {
+                  setActiveTab('');
+                }
+              }}
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+            >
+              {getLabel('specifications', 'Specifications')}
+              {chevronIcon(isActive('specifications'))}
+            </button>
+            {specsVisited && isActive('specifications') ? (
+              <div className="px-4 pb-4">{specificationsContent}</div>
+            ) : null}
+          </div>
         ) : null}
-        {isActive('videos') && isTabVisible('videos') ? (
-          <ProductVideos
-            videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
-            language={(props.language as string) || 'NL'}
-            labels={props.videosLabels}
-          />
+        {isTabVisible('downloads') ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'downloads' ? '' : 'downloads')}
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+            >
+              {getLabel('downloads', 'Downloads')}
+              {chevronIcon(isActive('downloads'))}
+            </button>
+            {isActive('downloads') ? (
+              <div className="px-4 pb-4">{downloadsContent}</div>
+            ) : null}
+          </div>
+        ) : null}
+        {isTabVisible('videos') ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'videos' ? '' : 'videos')}
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+            >
+              {getLabel('videos', 'Videos')}
+              {chevronIcon(isActive('videos'))}
+            </button>
+            {isActive('videos') ? (
+              <div className="px-4 pb-4">{videosContent}</div>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </div>

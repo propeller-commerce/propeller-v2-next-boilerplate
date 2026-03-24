@@ -162,6 +162,7 @@ export default function CartOverview(props: CartOverviewProps) {
 
         handlePurchaseClick(): void {
             if (state.isPurchaseDisabled) return;
+            state.loading = true;
             if (props.onPurchaseButtonClick) {
                 props.onPurchaseButtonClick(props.cart, state.reference, state.notes);
             }
@@ -292,14 +293,14 @@ export default function CartOverview(props: CartOverviewProps) {
                             id="cart-overview-terms"
                             checked={state.termsAccepted}
                             onChange={(event) => state.handleTermsChange(event.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                         />
                         <label htmlFor="cart-overview-terms" className="text-sm leading-none">
                             {state.getLabel('termsPrefix', 'I agree to the')}{' '}
                             <a
                                 href="#"
                                 onClick={(event) => state.handleTermsLinkClick(event as unknown as Event)}
-                                className="text-violet-600 hover:underline font-medium"
+                                className="text-primary hover:underline font-medium"
                             >
                                 {state.getLabel('termsLink', 'Terms and Conditions')}
                             </a>
@@ -312,9 +313,17 @@ export default function CartOverview(props: CartOverviewProps) {
                         type="button"
                         onClick={() => state.handlePurchaseClick()}
                         disabled={state.isPurchaseDisabled}
-                        className="block w-full bg-violet-600 text-white text-center py-3 rounded-lg hover:bg-violet-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                        className="flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     >
-                        {state.getLabel('purchaseButton', 'Place Order')}
+                        <Show when={state.loading}>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        </Show>
+                        <Show when={state.loading}>
+                            {state.getLabel('processing', 'Processing...')}
+                        </Show>
+                        <Show when={!state.loading}>
+                            {state.getLabel('purchaseButton', 'Place Order')}
+                        </Show>
                     </button>
                 </Show>
             </div>

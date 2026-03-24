@@ -86,6 +86,8 @@ interface MenuState {
     hasError: boolean;
     hoveredL1Id: number | null;
     hoveredL2Id: number | null;
+    expandedL1: number | null;
+    expandedL2: number | null;
     prevUserKey: string;
     fetchMenu: () => Promise<void>;
     getCacheKey: () => string;
@@ -111,6 +113,8 @@ export default function Menu(props: MenuProps) {
         hasError: false,
         hoveredL1Id: null,
         hoveredL2Id: null,
+        expandedL1: null as number | null,
+        expandedL2: null as number | null,
         prevUserKey: '',
 
         async fetchMenu() {
@@ -300,93 +304,101 @@ export default function Menu(props: MenuProps) {
                 </div>
             </Show>
 
-            {/* ── Dropdown Vertical ─────────────────────────────────── */}
+            {/* ── Desktop: Dropdown Vertical (columns) ─────────────── */}
             <Show when={!state.isLoading && !state.hasError && state.rootCategory !== null && state.getSubCategories(state.rootCategory as Category).length > 0 && state.getMenuStyle() === 'dropdown-vertical'}>
-                <nav className={`propeller-menu-dropdown ${(props.menuClass as string) || ''}`}>
-                    <ul className="bg-popover border border-border shadow-lg w-64 py-1">
+                <nav className={`propeller-menu-dropdown hidden md:block ${(props.menuClass as string) || ''}`}>
+                    <div className="flex bg-popover border border-border shadow-lg">
+                        {/* L1 column */}
+                        <ul className="w-64 py-1 border-r border-border flex-shrink-0">
+                            <For each={state.getSubCategories(state.rootCategory as Category)}>
+                                {(l1: Category, idx: number) => (
+                                    <li
+                                        key={l1.categoryId || idx}
+                                        onMouseEnter={() => state.setHoveredL1(l1.categoryId)}
+                                    >
+                                        <a
+                                            href={state.getCategoryUrl(l1)}
+                                            onClick={(e) => state.handleItemClick(l1, e)}
+                                            className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${state.hoveredL1Id === l1.categoryId ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'}`}
+                                        >
+                                            <span className="font-medium truncate">{state.getCategoryName(l1)}</span>
+                                            <Show when={state.getSubCategories(l1).length > 0}>
+                                                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </Show>
+                                        </a>
+                                    </li>
+                                )}
+                            </For>
+                        </ul>
+
+                        {/* L2 column */}
                         <For each={state.getSubCategories(state.rootCategory as Category)}>
                             {(l1: Category, idx: number) => (
-                                <li
-                                    key={l1.categoryId || idx}
-                                    className="relative"
-                                    onMouseEnter={() => state.setHoveredL1(l1.categoryId)}
-                                    onMouseLeave={() => state.setHoveredL1(null)}
-                                >
-                                    <a
-                                        href={state.getCategoryUrl(l1)}
-                                        onClick={(e) => state.handleItemClick(l1, e)}
-                                        className="flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    >
-                                        <span className="font-medium truncate">{state.getCategoryName(l1)}</span>
-                                        <Show when={state.getSubCategories(l1).length > 0}>
-                                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </Show>
-                                    </a>
-
-                                    {/* Level 2 flyout */}
-                                    <Show when={state.hoveredL1Id === l1.categoryId && state.getSubCategories(l1).length > 0}>
-                                        <div className="absolute left-full top-0 bottom-0 -ml-1 pl-1 z-50">
-                                            <ul className="bg-popover border border-border shadow-lg w-64 py-1 min-h-full">
-                                                <For each={state.getSubCategories(l1)}>
-                                                    {(l2: Category, idx2: number) => (
-                                                        <li
-                                                            key={l2.categoryId || idx2}
-                                                            className="relative"
-                                                            onMouseEnter={() => state.setHoveredL2(l2.categoryId)}
-                                                            onMouseLeave={() => state.setHoveredL2(null)}
-                                                        >
-                                                            <a
-                                                                href={state.getCategoryUrl(l2)}
-                                                                onClick={(e) => state.handleItemClick(l2, e)}
-                                                                className="flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                                            >
-                                                                <span className="truncate">{state.getCategoryName(l2)}</span>
-                                                                <Show when={state.getSubCategories(l2).length > 0}>
-                                                                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                    </svg>
-                                                                </Show>
-                                                            </a>
-
-                                                            {/* Level 3 flyout */}
-                                                            <Show when={state.hoveredL2Id === l2.categoryId && state.getSubCategories(l2).length > 0}>
-                                                                <div className="absolute left-full top-0 bottom-0 -ml-1 pl-1 z-50">
-                                                                    <ul className="bg-popover border border-border shadow-lg w-64 py-1 min-h-full">
-                                                                        <For each={state.getSubCategories(l2)}>
-                                                                            {(l3: Category, idx3: number) => (
-                                                                                <li key={l3.categoryId || idx3}>
-                                                                                    <a
-                                                                                        href={state.getCategoryUrl(l3)}
-                                                                                        onClick={(e) => state.handleItemClick(l3, e)}
-                                                                                        className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                                                                                    >
-                                                                                        {state.getCategoryName(l3)}
-                                                                                    </a>
-                                                                                </li>
-                                                                            )}
-                                                                        </For>
-                                                                    </ul>
-                                                                </div>
-                                                            </Show>
-                                                        </li>
-                                                    )}
-                                                </For>
-                                            </ul>
-                                        </div>
-                                    </Show>
-                                </li>
+                                <Show key={l1.categoryId || idx} when={state.hoveredL1Id === l1.categoryId && state.getSubCategories(l1).length > 0}>
+                                    <ul className="w-64 py-1 border-r border-border flex-shrink-0">
+                                        <For each={state.getSubCategories(l1)}>
+                                            {(l2: Category, idx2: number) => (
+                                                <li
+                                                    key={l2.categoryId || idx2}
+                                                    onMouseEnter={() => state.setHoveredL2(l2.categoryId)}
+                                                >
+                                                    <a
+                                                        href={state.getCategoryUrl(l2)}
+                                                        onClick={(e) => state.handleItemClick(l2, e)}
+                                                        className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${state.hoveredL2Id === l2.categoryId ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'}`}
+                                                    >
+                                                        <span className="truncate">{state.getCategoryName(l2)}</span>
+                                                        <Show when={state.getSubCategories(l2).length > 0}>
+                                                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </Show>
+                                                    </a>
+                                                </li>
+                                            )}
+                                        </For>
+                                    </ul>
+                                </Show>
                             )}
                         </For>
-                    </ul>
+
+                        {/* L3 column */}
+                        <For each={state.getSubCategories(state.rootCategory as Category)}>
+                            {(l1: Category) => (
+                                <Show when={state.hoveredL1Id === l1.categoryId}>
+                                    <For each={state.getSubCategories(l1)}>
+                                        {(l2: Category) => (
+                                            <Show when={state.hoveredL2Id === l2.categoryId && state.getSubCategories(l2).length > 0}>
+                                                <ul className="w-64 py-1 flex-shrink-0">
+                                                    <For each={state.getSubCategories(l2)}>
+                                                        {(l3: Category, idx3: number) => (
+                                                            <li key={l3.categoryId || idx3}>
+                                                                <a
+                                                                    href={state.getCategoryUrl(l3)}
+                                                                    onClick={(e) => state.handleItemClick(l3, e)}
+                                                                    className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent/50 transition-colors"
+                                                                >
+                                                                    {state.getCategoryName(l3)}
+                                                                </a>
+                                                            </li>
+                                                        )}
+                                                    </For>
+                                                </ul>
+                                            </Show>
+                                        )}
+                                    </For>
+                                </Show>
+                            )}
+                        </For>
+                    </div>
                 </nav>
             </Show>
 
-            {/* ── Jumbotron / Mega Menu ─────────────────────────────── */}
+            {/* ── Desktop: Jumbotron / Mega Menu ───────────────────── */}
             <Show when={!state.isLoading && !state.hasError && state.rootCategory !== null && state.getSubCategories(state.rootCategory as Category).length > 0 && state.getMenuStyle() === 'jumbotron'}>
-                <nav className={`propeller-menu-jumbotron ${(props.menuClass as string) || ''}`}>
-                    {/* Top-level tabs */}
+                <nav className={`propeller-menu-jumbotron hidden md:block ${(props.menuClass as string) || ''}`}>
                     <div className="flex items-center border-b border-border">
                         <For each={state.getSubCategories(state.rootCategory as Category)}>
                             {(l1: Category, idx: number) => (
@@ -402,7 +414,6 @@ export default function Menu(props: MenuProps) {
                         </For>
                     </div>
 
-                    {/* Mega panel — shows subcategories in a grid */}
                     <For each={state.getSubCategories(state.rootCategory as Category)}>
                         {(l1: Category, idx: number) => (
                             <Show key={l1.categoryId || idx} when={state.hoveredL1Id === l1.categoryId && state.getSubCategories(l1).length > 0}>
@@ -422,7 +433,6 @@ export default function Menu(props: MenuProps) {
                                                     >
                                                         {state.getCategoryName(l2)}
                                                     </a>
-
                                                     <Show when={state.getSubCategories(l2).length > 0}>
                                                         <ul className="mt-2 space-y-1">
                                                             <For each={state.getSubCategories(l2)}>
@@ -448,6 +458,87 @@ export default function Menu(props: MenuProps) {
                             </Show>
                         )}
                     </For>
+                </nav>
+            </Show>
+
+            {/* ── Mobile: Accordion ────────────────────────────────── */}
+            <Show when={!state.isLoading && !state.hasError && state.rootCategory !== null && state.getSubCategories(state.rootCategory as Category).length > 0}>
+                <nav className={`propeller-menu-mobile md:hidden ${(props.menuClass as string) || ''}`}>
+                    <ul className="divide-y divide-border">
+                        <For each={state.getSubCategories(state.rootCategory as Category)}>
+                            {(l1: Category, idx: number) => (
+                                <li key={l1.categoryId || idx}>
+                                    <div className="flex items-center">
+                                        <a
+                                            className="flex-1 px-4 py-3 text-sm font-medium text-foreground"
+                                            href={state.getCategoryUrl(l1)}
+                                            onClick={(e) => state.handleItemClick(l1, e)}
+                                        >
+                                            {state.getCategoryName(l1)}
+                                        </a>
+                                        <Show when={state.getSubCategories(l1).length > 0}>
+                                            <button
+                                                type="button"
+                                                className="px-4 py-3 text-muted-foreground"
+                                                onClick={() => { state.expandedL1 = state.expandedL1 === l1.categoryId ? null : l1.categoryId; }}
+                                            >
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className={`w-4 h-4 transition-transform ${state.expandedL1 === l1.categoryId ? 'rotate-180' : ''}`}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 9 6 6 6-6" />
+                                                </svg>
+                                            </button>
+                                        </Show>
+                                    </div>
+                                    <Show when={state.expandedL1 === l1.categoryId && state.getSubCategories(l1).length > 0}>
+                                        <ul className="bg-accent/30">
+                                            <For each={state.getSubCategories(l1)}>
+                                                {(l2: Category, idx2: number) => (
+                                                    <li key={l2.categoryId || idx2}>
+                                                        <div className="flex items-center">
+                                                            <a
+                                                                className="flex-1 pl-8 pr-4 py-2.5 text-sm text-foreground"
+                                                                href={state.getCategoryUrl(l2)}
+                                                                onClick={(e) => state.handleItemClick(l2, e)}
+                                                            >
+                                                                {state.getCategoryName(l2)}
+                                                            </a>
+                                                            <Show when={state.getSubCategories(l2).length > 0}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="px-4 py-2.5 text-muted-foreground"
+                                                                    onClick={() => { state.expandedL2 = state.expandedL2 === l2.categoryId ? null : l2.categoryId; }}
+                                                                >
+                                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className={`w-3.5 h-3.5 transition-transform ${state.expandedL2 === l2.categoryId ? 'rotate-180' : ''}`}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 9 6 6 6-6" />
+                                                                    </svg>
+                                                                </button>
+                                                            </Show>
+                                                        </div>
+                                                        <Show when={state.expandedL2 === l2.categoryId && state.getSubCategories(l2).length > 0}>
+                                                            <ul className="bg-accent/20">
+                                                                <For each={state.getSubCategories(l2)}>
+                                                                    {(l3: Category, idx3: number) => (
+                                                                        <li key={l3.categoryId || idx3}>
+                                                                            <a
+                                                                                className="block pl-12 pr-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                                                                href={state.getCategoryUrl(l3)}
+                                                                                onClick={(e) => state.handleItemClick(l3, e)}
+                                                                            >
+                                                                                {state.getCategoryName(l3)}
+                                                                            </a>
+                                                                        </li>
+                                                                    )}
+                                                                </For>
+                                                            </ul>
+                                                        </Show>
+                                                    </li>
+                                                )}
+                                            </For>
+                                        </ul>
+                                    </Show>
+                                </li>
+                            )}
+                        </For>
+                    </ul>
                 </nav>
             </Show>
         </div>

@@ -267,7 +267,7 @@ export default function OrderList(props: OrderListProps) {
                             </label>
                             <input
                                 type="text"
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                 value={state.searchForm.term || ''}
                                 onChange={(e) => {
                                     state.searchForm = { ...state.searchForm, term: e.target.value };
@@ -295,7 +295,7 @@ export default function OrderList(props: OrderListProps) {
                                         <div className="flex space-x-2 w-full">
                                             <input
                                                 type="date"
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 placeholder="From"
                                                 value={state.searchForm.createdAt?.greaterThan ? (state.searchForm.createdAt.greaterThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
@@ -309,7 +309,7 @@ export default function OrderList(props: OrderListProps) {
                                             />
                                             <input
                                                 type="date"
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 placeholder="To"
                                                 value={state.searchForm.createdAt?.lessThan ? (state.searchForm.createdAt.lessThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
@@ -328,7 +328,7 @@ export default function OrderList(props: OrderListProps) {
                                         <div className="flex space-x-2 w-full">
                                             <input
                                                 type="date"
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 placeholder="From"
                                                 value={state.searchForm.lastModifiedAt?.greaterThan ? (state.searchForm.lastModifiedAt.greaterThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
@@ -342,7 +342,7 @@ export default function OrderList(props: OrderListProps) {
                                             />
                                             <input
                                                 type="date"
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 placeholder="To"
                                                 value={state.searchForm.lastModifiedAt?.lessThan ? (state.searchForm.lastModifiedAt.lessThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
@@ -361,7 +361,7 @@ export default function OrderList(props: OrderListProps) {
                                         <div className="flex space-x-2 w-full">
                                             <input
                                                 type="number"
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 placeholder="Min"
                                                 value={state.searchForm.price?.greaterThan || ''}
                                                 onChange={(e) => {
@@ -374,7 +374,7 @@ export default function OrderList(props: OrderListProps) {
                                             />
                                             <input
                                                 type="number"
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 placeholder="Max"
                                                 value={state.searchForm.price?.lessThan || ''}
                                                 onChange={(e) => {
@@ -390,7 +390,7 @@ export default function OrderList(props: OrderListProps) {
                                     <Show when={field === 'sortInput'}>
                                         <div className="flex space-x-2 w-full">
                                             <select
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 value={state.searchForm.sortInput?.field || ''}
                                                 onChange={(e) => {
                                                     const current = state.searchForm.sortInput || {};
@@ -410,7 +410,7 @@ export default function OrderList(props: OrderListProps) {
                                                 </For>
                                             </select>
                                             <select
-                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 value={state.searchForm.sortInput?.order || ''}
                                                 onChange={(e) => {
                                                     const current = state.searchForm.sortInput || {};
@@ -434,7 +434,7 @@ export default function OrderList(props: OrderListProps) {
                                     <Show when={field === 'type'}>
                                         <div className="flex space-x-2">
                                             <select
-                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                                                 value={state.searchForm.type || ''}
                                                 onChange={(e) => {
                                                     state.searchForm = {
@@ -464,13 +464,13 @@ export default function OrderList(props: OrderListProps) {
                                 state.searchForm = {};
                                 state.fetchOrders(1);
                             }}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                         >
                             Clear
                         </button>
                         <button
                             onClick={() => state.fetchOrders(1)}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                         >
                             Search
                         </button>
@@ -527,7 +527,7 @@ export default function OrderList(props: OrderListProps) {
                                                                         event.preventDefault();
                                                                         props.onOrderClick(order.id);
                                                                     }}
-                                                                    className="text-blue-600 hover:text-blue-900 cursor-pointer"
+                                                                    className="text-primary hover:text-primary/70 cursor-pointer"
                                                                 >
                                                                     {state.getLabel('view', 'View')}
                                                                 </button>

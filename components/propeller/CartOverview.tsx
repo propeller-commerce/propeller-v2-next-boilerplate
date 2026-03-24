@@ -172,6 +172,7 @@ function CartOverview(props: CartOverviewProps) {
 
   function handlePurchaseClick(): ReturnType<CartOverviewState['handlePurchaseClick']> {
     if (isPurchaseDisabled()) return;
+    setLoading(true);
     if (props.onPurchaseButtonClick) {
       props.onPurchaseButtonClick(props.cart, reference, notes);
     }
@@ -284,7 +285,7 @@ function CartOverview(props: CartOverviewProps) {
             </label>
             <input
               type="text"
-              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
               value={reference}
               onChange={(event) => handleReferenceChange(event.target.value)}
               placeholder={getLabel('referencePlaceholder', 'Your reference number')}
@@ -297,7 +298,7 @@ function CartOverview(props: CartOverviewProps) {
               {getLabel('notesLabel', 'Order Notes (Optional)')}
             </label>
             <textarea
-              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[80px]"
+              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px]"
               value={notes}
               onChange={(event) => handleNotesChange(event.target.value)}
               placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}
@@ -309,7 +310,7 @@ function CartOverview(props: CartOverviewProps) {
             <input
               type="checkbox"
               id="cart-overview-terms"
-              className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               checked={termsAccepted}
               onChange={(event) => handleTermsChange(event.target.checked)}
             />
@@ -317,7 +318,7 @@ function CartOverview(props: CartOverviewProps) {
               {getLabel('termsPrefix', 'I agree to the')}
               <a
                 href="#"
-                className="text-violet-600 hover:underline font-medium"
+                className="text-primary hover:underline font-medium"
                 onClick={(event) => handleTermsLinkClick(event as unknown as Event)}
               >
                 {getLabel('termsLink', 'Terms and Conditions')}
@@ -328,11 +329,14 @@ function CartOverview(props: CartOverviewProps) {
         {showPurchaseButton() ? (
           <button
             type="button"
-            className="block w-full bg-violet-600 text-white text-center py-3 rounded-lg hover:bg-violet-700 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             onClick={(event) => handlePurchaseClick()}
             disabled={isPurchaseDisabled()}
           >
-            {getLabel('purchaseButton', 'Place Order')}
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : null}
+            {loading ? getLabel('processing', 'Processing...') : getLabel('purchaseButton', 'Place Order')}
           </button>
         ) : null}
       </div>

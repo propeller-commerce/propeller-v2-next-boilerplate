@@ -169,6 +169,7 @@ export default function ProductTabs(props: ProductTabsProps) {
             state.activeTab = 'description';
         } else if (props.showSpecifications !== false) {
             state.activeTab = 'specifications';
+            state.specsVisited = true;
         } else if (props.showDownloads !== false) {
             state.activeTab = 'downloads';
         } else {
@@ -185,92 +186,242 @@ export default function ProductTabs(props: ProductTabsProps) {
 
     return (
         <div className={`product-tabs ${(props.className as string) || ''}`}>
-            {/* Tab button bar */}
-            <div className="flex border-b border-border">
-                <Show when={state.isTabVisible('description')}>
-                    <button
-                        type="button"
-                        onClick={() => state.selectTab('description')}
-                        className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('description') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-                    >
-                        {state.getLabel('description', 'Description')}
-                    </button>
-                </Show>
+            {/* ── Desktop: horizontal tabs ── */}
+            <div className="hidden md:block">
+                <div className="flex border-b border-border">
+                    <Show when={state.isTabVisible('description')}>
+                        <button
+                            type="button"
+                            onClick={() => state.selectTab('description')}
+                            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('description') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                        >
+                            {state.getLabel('description', 'Description')}
+                        </button>
+                    </Show>
 
-                <Show when={state.isTabVisible('specifications')}>
-                    <button
-                        type="button"
-                        onClick={() => state.selectTab('specifications')}
-                        className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('specifications') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-                    >
-                        {state.getLabel('specifications', 'Specifications')}
-                    </button>
-                </Show>
+                    <Show when={state.isTabVisible('specifications')}>
+                        <button
+                            type="button"
+                            onClick={() => state.selectTab('specifications')}
+                            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('specifications') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                        >
+                            {state.getLabel('specifications', 'Specifications')}
+                        </button>
+                    </Show>
 
-                <Show when={state.isTabVisible('downloads')}>
-                    <button
-                        type="button"
-                        onClick={() => state.selectTab('downloads')}
-                        className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('downloads') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-                    >
-                        {state.getLabel('downloads', 'Downloads')}
-                    </button>
-                </Show>
+                    <Show when={state.isTabVisible('downloads')}>
+                        <button
+                            type="button"
+                            onClick={() => state.selectTab('downloads')}
+                            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('downloads') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                        >
+                            {state.getLabel('downloads', 'Downloads')}
+                        </button>
+                    </Show>
 
-                <Show when={state.isTabVisible('videos')}>
-                    <button
-                        type="button"
-                        onClick={() => state.selectTab('videos')}
-                        className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('videos') ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
-                    >
-                        {state.getLabel('videos', 'Videos')}
-                    </button>
-                </Show>
+                    <Show when={state.isTabVisible('videos')}>
+                        <button
+                            type="button"
+                            onClick={() => state.selectTab('videos')}
+                            className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${state.isActive('videos') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                        >
+                            {state.getLabel('videos', 'Videos')}
+                        </button>
+                    </Show>
+                </div>
+
+                <div className="pt-6">
+                    <Show when={state.isActive('description') && state.isTabVisible('description')}>
+                        <ProductDescription
+                            product={props.product}
+                            language={props.language}
+                            collapsed={props.descriptionCollapsed}
+                            maxLength={props.descriptionMaxLength}
+                        />
+                    </Show>
+
+                    <Show when={state.specsVisited && state.isTabVisible('specifications')}>
+                        <div className={state.isActive('specifications') ? '' : 'hidden'}>
+                            <ProductSpecifications
+                                attributes={props.product.attributes?.items as AttributeResult[]}
+                                productId={props.productId}
+                                graphqlClient={props.graphqlClient}
+                                language={props.language}
+                                layout={props.specificationsLayout}
+                                grouping={props.specificationsGrouping}
+                            />
+                        </div>
+                    </Show>
+
+                    <Show when={state.isActive('downloads') && state.isTabVisible('downloads')}>
+                        <ProductDownloads
+                            downloads={(props.product as Product).media?.documents as PaginatedMediaDocumentResponse}
+                            language={(props.language as string) || 'NL'}
+                            labels={props.downloadsLabels}
+                        />
+                    </Show>
+
+                    <Show when={state.isActive('videos') && state.isTabVisible('videos')}>
+                        <ProductVideos
+                            videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
+                            language={(props.language as string) || 'NL'}
+                            labels={props.videosLabels}
+                        />
+                    </Show>
+                </div>
             </div>
 
-            {/* Tab content panels */}
-            <div className="pt-6">
-                <Show when={state.isActive('description') && state.isTabVisible('description')}>
-                    <ProductDescription
-                        product={props.product}
-                        language={props.language}
-                        collapsed={props.descriptionCollapsed}
-                        maxLength={props.descriptionMaxLength}
-                    />
-                </Show>
-
-                {/*
-                  Specs panel: mounted once on first click (specsVisited), then kept in the DOM
-                  and hidden with CSS when another tab is active. This prevents re-fetching on
-                  every tab switch while still using productId-based fetching for accuracy.
-                */}
-                <Show when={state.specsVisited && state.isTabVisible('specifications')}>
-                    <div className={state.isActive('specifications') ? '' : 'hidden'}>
-                        <ProductSpecifications
-                            attributes={props.product.attributes?.items as AttributeResult[]}
-                            productId={props.productId}
-                            graphqlClient={props.graphqlClient}
-                            language={props.language}
-                            layout={props.specificationsLayout}
-                            grouping={props.specificationsGrouping}
-                        />
+            {/* ── Mobile: accordion ── */}
+            <div className="md:hidden divide-y divide-border border border-border rounded-lg">
+                <Show when={state.isTabVisible('description')}>
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => { state.activeTab = state.activeTab === 'description' ? '' : 'description'; }}
+                            className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                        >
+                            {state.getLabel('description', 'Description')}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`transition-transform ${state.isActive('description') ? 'rotate-180' : ''}`}
+                            >
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                        <Show when={state.isActive('description')}>
+                            <div className="px-4 pb-4">
+                                <ProductDescription
+                                    product={props.product}
+                                    language={props.language}
+                                    collapsed={props.descriptionCollapsed}
+                                    maxLength={props.descriptionMaxLength}
+                                />
+                            </div>
+                        </Show>
                     </div>
                 </Show>
 
-                <Show when={state.isActive('downloads') && state.isTabVisible('downloads')}>
-                    <ProductDownloads
-                        downloads={(props.product as Product).media?.documents as PaginatedMediaDocumentResponse}
-                        language={(props.language as string) || 'NL'}
-                        labels={props.downloadsLabels}
-                    />
+                <Show when={state.isTabVisible('specifications')}>
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (state.activeTab !== 'specifications') {
+                                    state.specsVisited = true;
+                                    state.activeTab = 'specifications';
+                                } else {
+                                    state.activeTab = '';
+                                }
+                            }}
+                            className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                        >
+                            {state.getLabel('specifications', 'Specifications')}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`transition-transform ${state.isActive('specifications') ? 'rotate-180' : ''}`}
+                            >
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                        <Show when={state.specsVisited && state.isActive('specifications')}>
+                            <div className="px-4 pb-4">
+                                <ProductSpecifications
+                                    attributes={props.product.attributes?.items as AttributeResult[]}
+                                    productId={props.productId}
+                                    graphqlClient={props.graphqlClient}
+                                    language={props.language}
+                                    layout={props.specificationsLayout}
+                                    grouping={props.specificationsGrouping}
+                                />
+                            </div>
+                        </Show>
+                    </div>
                 </Show>
 
-                <Show when={state.isActive('videos') && state.isTabVisible('videos')}>
-                    <ProductVideos
-                        videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
-                        language={(props.language as string) || 'NL'}
-                        labels={props.videosLabels}
-                    />
+                <Show when={state.isTabVisible('downloads')}>
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => { state.activeTab = state.activeTab === 'downloads' ? '' : 'downloads'; }}
+                            className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                        >
+                            {state.getLabel('downloads', 'Downloads')}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`transition-transform ${state.isActive('downloads') ? 'rotate-180' : ''}`}
+                            >
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                        <Show when={state.isActive('downloads')}>
+                            <div className="px-4 pb-4">
+                                <ProductDownloads
+                                    downloads={(props.product as Product).media?.documents as PaginatedMediaDocumentResponse}
+                                    language={(props.language as string) || 'NL'}
+                                    labels={props.downloadsLabels}
+                                />
+                            </div>
+                        </Show>
+                    </div>
+                </Show>
+
+                <Show when={state.isTabVisible('videos')}>
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => { state.activeTab = state.activeTab === 'videos' ? '' : 'videos'; }}
+                            className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                        >
+                            {state.getLabel('videos', 'Videos')}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`transition-transform ${state.isActive('videos') ? 'rotate-180' : ''}`}
+                            >
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                        <Show when={state.isActive('videos')}>
+                            <div className="px-4 pb-4">
+                                <ProductVideos
+                                    videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
+                                    language={(props.language as string) || 'NL'}
+                                    labels={props.videosLabels}
+                                />
+                            </div>
+                        </Show>
+                    </div>
                 </Show>
             </div>
         </div>

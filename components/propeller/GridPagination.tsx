@@ -215,7 +215,7 @@ function GridPagination(props: GridPaginationProps) {
                       onClick={(event) => handlePageChange(item.value)}
                       className={
                         item.value === getCurrentPage()
-                          ? 'inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-blue-600 bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm'
+                          ? 'inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-primary bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm'
                           : 'inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50'
                       }
                     >

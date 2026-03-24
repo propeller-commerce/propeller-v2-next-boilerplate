@@ -293,7 +293,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
 
                     {/* Item count badge */}
                     <Show when={state.isMounted && props.showBadge !== false && state.getTotalItems() > 0}>
-                        <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold pointer-events-none">
+                        <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold pointer-events-none">
                             {state.getTotalItems()}
                         </span>
                     </Show>

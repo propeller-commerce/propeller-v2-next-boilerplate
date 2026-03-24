@@ -24,6 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import ProductSlider from '@/components/propeller/ProductSlider';
 import ProductBundles from '@/components/propeller/ProductBundles';
+import AddToFavorite from '@/components/propeller/AddToFavorite';
 import { useLanguage } from '@/context/LanguageContext';
 
 
@@ -102,22 +103,29 @@ export default function ProductPage() {
 
               {product && (
                 <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
-                  <AddToCart
-                    user={state.user}
-                    product={product}
-                    cartId={cart?.cartId}
-                    graphqlClient={graphqlClient}
-                    createCart={true}
-                    onCartCreated={(cart) => {
-                      saveCart(cart);
-                    }}
-                    className='flex items-center w-full gap-2'
-                    configuration={config}
-                    showModal={true}
-                    afterAddToCart={(cart) => {
-                      saveCart(cart);
-                    }}
-                    onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
+                  <div className="flex items-center gap-2">
+                    <AddToCart
+                      user={state.user}
+                      product={product}
+                      cartId={cart?.cartId}
+                      graphqlClient={graphqlClient}
+                      createCart={true}
+                      onCartCreated={(cart) => {
+                        saveCart(cart);
+                      }}
+                      className='flex items-center w-full gap-2'
+                      configuration={config}
+                      showModal={true}
+                      afterAddToCart={(cart) => {
+                        saveCart(cart);
+                      }}
+                      onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
+                    <AddToFavorite
+                      graphqlClient={graphqlClient}
+                      user={state.user}
+                      productId={product.productId}
+                    />
+                  </div>
                 </Card>
               )}
 

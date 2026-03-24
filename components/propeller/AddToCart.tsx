@@ -18,6 +18,7 @@ import {
   Address,
   Enums,
   CartMainItem,
+  CartBaseItem,
   Cluster,
 } from 'propeller-sdk-v2';
 
@@ -191,6 +192,8 @@ function AddToCart(props: AddToCartProps) {
   const [toastType, setToastType] = useState<AddToCartState['toastType']>(() => '');
 
   const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
+
+  const [addedCartItem, setAddedCartItem] = useState<CartMainItem | null>(null);
 
   function increment(): ReturnType<AddToCartState['increment']> {
     setQuantity(quantity + 1);
@@ -409,10 +412,9 @@ function AddToCart(props: AddToCartProps) {
           props.price,
           props.showModal
         );
-        props.afterAddToCart?.(
-          cart,
-          cart.items?.find((item) => item.productId === props.product.productId)
-        );
+        const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+        setAddedCartItem(addedItem || null);
+        props.afterAddToCart?.(cart, addedItem);
       } else {
         // Internal CartService fallback — resolve cart ID
         let cartId = props.cartId || activeCartId;
@@ -448,10 +450,9 @@ function AddToCart(props: AddToCartProps) {
           imageSearchFilters: props.configuration.imageSearchFiltersGrid,
           imageVariantFilters: props.configuration.imageVariantFiltersSmall,
         });
-        props.afterAddToCart?.(
-          cart,
-          cart.items?.find((item) => item.productId === props.product.productId)
-        );
+        const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+        setAddedCartItem(addedItem || null);
+        props.afterAddToCart?.(cart, addedItem);
       }
       setSuccess(true);
       if (props.showModal) {
@@ -470,6 +471,40 @@ function AddToCart(props: AddToCartProps) {
   function closeModal(): ReturnType<AddToCartState['closeModal']> {
     setModalVisible(false);
     setSuccess(false);
+    setAddedCartItem(null);
+  }
+
+  function getChildItems(): CartBaseItem[] {
+    const children = addedCartItem?.childItems;
+    if (!children || !Array.isArray(children)) return [];
+    return children;
+  }
+
+  function getModalImageUrl(): string {
+    if (addedCartItem) {
+      const img = addedCartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+      if (img) return img;
+    }
+    return getProductImageUrl();
+  }
+
+  function getModalName(): string {
+    if (addedCartItem) {
+      return addedCartItem.product?.names?.[0]?.value || getProductName();
+    }
+    return getProductName();
+  }
+
+  function getModalPrice(): string {
+    if (addedCartItem) {
+      return `\u20AC${Number(addedCartItem.totalSumNet).toFixed(2)}`;
+    }
+    return getProductPrice();
+  }
+
+  function getModalSku(): string {
+    if (addedCartItem) return addedCartItem.product?.sku || '';
+    return getProductSku();
   }
 
   function getLabel(key: string, fallback: string): ReturnType<AddToCartState['getLabel']> {
@@ -608,33 +643,56 @@ function AddToCart(props: AddToCartProps) {
                 </svg>
               </button>
             </div>
-            <div className="px-6 py-5 flex items-start gap-4">
-              {!!getProductImageUrl() ? (
-                <img
-                  className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
-                  src={getProductImageUrl()}
-                  alt={getProductName()}
-                />
+            <div className="px-6 py-5">
+              <div className="flex items-start gap-4">
+                {!!getModalImageUrl() ? (
+                  <img
+                    className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                    src={getModalImageUrl()}
+                    alt={getModalName()}
+                  />
+                ) : (
+                  <div className="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50">
+                    <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <a
+                    className="text-sm font-medium text-violet-600 leading-tight hover:underline line-clamp-2"
+                    href={getProductUrl()}
+                  >
+                    {getModalName()}
+                  </a>
+                  {!!getModalSku() ? (
+                    <p className="text-xs text-gray-400 mt-0.5">SKU: {getModalSku()}</p>
+                  ) : null}
+                </div>
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-xs text-gray-500">
+                    {getLabel('quantity', 'Quantity')}: {quantity}
+                  </p>
+                  {!!getModalPrice() ? (
+                    <p className="text-sm font-semibold text-gray-900 mt-0.5">{getModalPrice()}</p>
+                  ) : null}
+                </div>
+              </div>
+              {/* Cluster child items */}
+              {getChildItems().length > 0 ? (
+                <div className="mt-3 ml-20 space-y-1 border-l-2 border-gray-100 pl-2">
+                  {getChildItems().map((child, idx) => (
+                    <div className="flex justify-between items-center text-xs text-gray-600" key={idx}>
+                      <span className="line-clamp-1">
+                        {child.product?.names?.[0]?.value || 'Option'}
+                      </span>
+                      <span className="text-gray-400 whitespace-nowrap ml-2">
+                        &euro;{child.totalSum?.toFixed(2) || '0.00'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               ) : null}
-              <div className="flex-1 min-w-0">
-                <a
-                  className="text-sm font-medium text-violet-600 leading-tight hover:underline"
-                  href={getProductUrl()}
-                >
-                  {getProductName()}
-                </a>
-                {!!getProductSku() ? (
-                  <p className="text-xs text-gray-400 mt-0.5">SKU: {getProductSku()}</p>
-                ) : null}
-              </div>
-              <div className="flex-shrink-0 text-right">
-                <p className="text-xs text-gray-500">
-                  {getLabel('quantity', 'Quantity')}: {quantity}
-                </p>
-                {!!getProductPrice() ? (
-                  <p className="text-sm font-semibold text-gray-900 mt-0.5">{getProductPrice()}</p>
-                ) : null}
-              </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
               <button

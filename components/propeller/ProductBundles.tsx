@@ -708,7 +708,7 @@ function ProductBundles(props: ProductBundlesProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <h3 className="flex-1 text-base font-semibold text-gray-900">
-                      {getLabel('modalTitle', 'Bundle added to cart')}
+                      {getLabel('modalTitle', 'Added to cart')}
                     </h3>
                     <button
                       type="button"
@@ -730,17 +730,58 @@ function ProductBundles(props: ProductBundlesProps) {
                       </svg>
                     </button>
                   </div>
-                  <div className="px-6 py-5 flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {lastAddedBundle?.name || getLabel('title', 'Bundle')}
-                      </p>
-                      {!getHidePrices() && lastAddedBundle ? (
-                        <p className="text-sm font-semibold text-blue-600 mt-1">
-                          {formatPrice(getBundlePrice(lastAddedBundle!))}
+                  <div className="px-6 py-5">
+                    <div className="flex items-start gap-4">
+                      {lastAddedBundle && lastAddedBundle.items && lastAddedBundle.items.length > 0 && getProductImage(lastAddedBundle.items[0].product) ? (
+                        <img
+                          className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                          src={getProductImage(lastAddedBundle.items[0].product)}
+                          alt={lastAddedBundle?.name || 'Bundle'}
+                        />
+                      ) : (
+                        <div className="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50">
+                          <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {lastAddedBundle?.name || getLabel('title', 'Bundle')}
                         </p>
-                      ) : null}
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-xs text-gray-500">
+                          {getLabel('quantity', 'Quantity')}: 1
+                        </p>
+                        {!getHidePrices() && lastAddedBundle ? (
+                          <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                            {formatPrice(getBundlePrice(lastAddedBundle!))}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
+                    {/* Bundle sub-items */}
+                    {lastAddedBundle && lastAddedBundle.items && lastAddedBundle.items.length > 0 ? (
+                      <div className="mt-3 ml-20 space-y-1 border-l-2 border-violet-100 pl-2">
+                        {lastAddedBundle.items.map((item, idx) => (
+                          <div className="flex justify-between items-center text-xs text-gray-600" key={item.productId + '-' + idx}>
+                            <span className="line-clamp-1">
+                              {item.isLeader === Enums.YesNo.Y ? (
+                                <span className="font-medium text-gray-800">{getProductName(item.product) || 'Product'}</span>
+                              ) : (
+                                <>{getProductName(item.product) || 'Product'}</>
+                              )}
+                            </span>
+                            {!getHidePrices() && item.price ? (
+                              <span className="text-gray-400 whitespace-nowrap ml-2">
+                                {formatPrice(getItemPrice(item))}
+                              </span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
                     <button

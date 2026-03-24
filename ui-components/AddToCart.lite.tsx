@@ -1,6 +1,7 @@
 import {
     useStore,
     Show,
+    For,
 } from '@builder.io/mitosis';
 import {
     CartService,
@@ -18,6 +19,7 @@ import {
     Address,
     Enums,
     CartMainItem,
+    CartBaseItem,
     Cluster
 } from 'propeller-sdk-v2';
 
@@ -162,6 +164,12 @@ interface AddToCartState {
     getProductImageUrl: () => string;
     getProductSku: () => string;
     getProductPrice: () => string;
+    addedCartItem: CartMainItem | null;
+    getModalImageUrl: () => string;
+    getModalName: () => string;
+    getModalPrice: () => string;
+    getModalSku: () => string;
+    getChildItems: () => CartBaseItem[];
     initCart: () => Promise<string>;
     handleAddToCart: () => Promise<void>;
     closeModal: () => void;
@@ -178,6 +186,7 @@ export default function AddToCart(props: AddToCartProps) {
         toastMessage: '',
         toastType: '',
         toastVisible: false,
+        addedCartItem: null as CartMainItem | null,
 
         increment() {
             state.quantity = state.quantity + 1;
@@ -402,8 +411,9 @@ export default function AddToCart(props: AddToCartProps) {
                         props.price,
                         props.showModal,
                     );
-
-                    props.afterAddToCart?.(cart, cart.items?.find((item) => item.productId === props.product.productId));
+                    const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+                    state.addedCartItem = addedItem || null;
+                    props.afterAddToCart?.(cart, addedItem);
                 } else {
                     // Internal CartService fallback — resolve cart ID
                     let cartId = props.cartId || state.activeCartId;
@@ -435,7 +445,9 @@ export default function AddToCart(props: AddToCartProps) {
                         imageVariantFilters: props.configuration.imageVariantFiltersSmall,
                     });
 
-                    props.afterAddToCart?.(cart, cart.items?.find((item) => item.productId === props.product.productId));
+                    const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+                    state.addedCartItem = addedItem || null;
+                    props.afterAddToCart?.(cart, addedItem);
                 }
 
                 state.success = true;
@@ -453,9 +465,43 @@ export default function AddToCart(props: AddToCartProps) {
             }
         },
 
+        getModalImageUrl() {
+            if (state.addedCartItem) {
+                const img = state.addedCartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+                if (img) return img;
+            }
+            return state.getProductImageUrl();
+        },
+
+        getModalName() {
+            if (state.addedCartItem) {
+                return state.addedCartItem.product?.names?.[0]?.value || state.getProductName();
+            }
+            return state.getProductName();
+        },
+
+        getModalPrice() {
+            if (state.addedCartItem) {
+                return '\u20AC' + Number(state.addedCartItem.totalSumNet).toFixed(2);
+            }
+            return state.getProductPrice();
+        },
+
+        getModalSku() {
+            if (state.addedCartItem) return state.addedCartItem.product?.sku || '';
+            return state.getProductSku();
+        },
+
+        getChildItems(): CartBaseItem[] {
+            const children = state.addedCartItem?.childItems;
+            if (!children || !Array.isArray(children)) return [];
+            return children;
+        },
+
         closeModal() {
             state.modalVisible = false;
             state.success = false;
+            state.addedCartItem = null;
         },
 
         getLabel(key: string, fallback: string) {
@@ -589,35 +635,61 @@ export default function AddToCart(props: AddToCartProps) {
                         </div>
 
                         {/* Product info */}
-                        <div className="px-6 py-5 flex items-start gap-4">
-                            <Show when={!!state.getProductImageUrl()}>
-                                <img
-                                    src={state.getProductImageUrl()}
-                                    alt={state.getProductName()}
-                                    className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
-                                />
-                            </Show>
-                            <div className="flex-1 min-w-0">
-                                <a
-                                    href={state.getProductUrl()}
-                                    className="text-sm font-medium text-violet-600 leading-tight hover:underline"
-                                >
-                                    {state.getProductName()}
-                                </a>
-                                <Show when={!!state.getProductSku()}>
-                                    <p className="text-xs text-gray-400 mt-0.5">SKU: {state.getProductSku()}</p>
+                        <div className="px-6 py-5">
+                            <div className="flex items-start gap-4">
+                                <Show when={!!state.getModalImageUrl()}>
+                                    <img
+                                        src={state.getModalImageUrl()}
+                                        alt={state.getModalName()}
+                                        className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                                    />
                                 </Show>
-                            </div>
-                            <div className="flex-shrink-0 text-right">
-                                <p className="text-xs text-gray-500">
-                                    {state.getLabel('quantity', 'Quantity')}: {state.quantity}
-                                </p>
-                                <Show when={!!state.getProductPrice()}>
-                                    <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                                        {state.getProductPrice()}
+                                <Show when={!state.getModalImageUrl()}>
+                                    <div className="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50">
+                                        <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                                        </svg>
+                                    </div>
+                                </Show>
+                                <div className="flex-1 min-w-0">
+                                    <a
+                                        href={state.getProductUrl()}
+                                        className="text-sm font-medium text-violet-600 leading-tight hover:underline line-clamp-2"
+                                    >
+                                        {state.getModalName()}
+                                    </a>
+                                    <Show when={!!state.getModalSku()}>
+                                        <p className="text-xs text-gray-400 mt-0.5">SKU: {state.getModalSku()}</p>
+                                    </Show>
+                                </div>
+                                <div className="flex-shrink-0 text-right">
+                                    <p className="text-xs text-gray-500">
+                                        {state.getLabel('quantity', 'Quantity')}: {state.quantity}
                                     </p>
-                                </Show>
+                                    <Show when={!!state.getModalPrice()}>
+                                        <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                                            {state.getModalPrice()}
+                                        </p>
+                                    </Show>
+                                </div>
                             </div>
+                            {/* Cluster child items */}
+                            <Show when={state.getChildItems().length > 0}>
+                                <div className="mt-3 ml-20 space-y-1 border-l-2 border-gray-100 pl-2">
+                                    <For each={state.getChildItems()}>
+                                        {(child: CartBaseItem, idx: number) => (
+                                            <div className="flex justify-between items-center text-xs text-gray-600" key={idx}>
+                                                <span className="line-clamp-1">
+                                                    {child.product?.names?.[0]?.value || 'Option'}
+                                                </span>
+                                                <span className="text-gray-400 whitespace-nowrap ml-2">
+                                                    {'\u20AC' + (child.totalSum?.toFixed(2) || '0.00')}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </For>
+                                </div>
+                            </Show>
                         </div>
 
                         {/* Buttons */}

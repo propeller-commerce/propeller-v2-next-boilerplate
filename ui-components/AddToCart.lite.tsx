@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
 } from '@builder.io/mitosis';
 import {
     CartService,
@@ -155,6 +156,8 @@ interface AddToCartState {
     toastMessage: string;
     toastType: string;
     toastVisible: boolean;
+    getMinQuantity: () => number;
+    getStep: () => number;
     increment: () => void;
     decrement: () => void;
     showToast: (message: string, type: string) => void;
@@ -188,13 +191,25 @@ export default function AddToCart(props: AddToCartProps) {
         toastVisible: false,
         addedCartItem: null as CartMainItem | null,
 
+        getMinQuantity() {
+            const min = (props.product as any)?.minimumQuantity;
+            return min && min > 0 ? min : 1;
+        },
+
+        getStep() {
+            const unit = (props.product as any)?.unit;
+            return unit && unit > 0 ? unit : 1;
+        },
+
         increment() {
-            state.quantity = state.quantity + 1;
+            state.quantity = state.quantity + state.getStep();
         },
 
         decrement() {
-            if (state.quantity > 1) {
-                state.quantity = state.quantity - 1;
+            const min = state.getMinQuantity();
+            const step = state.getStep();
+            if (state.quantity - step >= min) {
+                state.quantity = state.quantity - step;
             }
         },
 
@@ -509,6 +524,10 @@ export default function AddToCart(props: AddToCartProps) {
         },
     });
 
+    onMount(() => {
+        state.quantity = state.getMinQuantity();
+    });
+
     return (
         <div className={props.className}>
             {/* Add-to-cart row */}
@@ -520,20 +539,25 @@ export default function AddToCart(props: AddToCartProps) {
                         <button
                             type="button"
                             onClick={() => state.decrement()}
-                            disabled={state.quantity <= 1 || state.loading}
+                            disabled={state.quantity <= state.getMinQuantity() || state.loading}
                             className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
                         >
                             -
                         </button>
                         <input
                             type="number"
-                            min={1}
+                            min={state.getMinQuantity()}
+                            step={state.getStep()}
                             value={state.quantity}
                             onChange={(e) => {
                                 const val = parseInt(e.target.value, 10);
-                                if (val >= 1) state.quantity = val;
+                                const min = state.getMinQuantity();
+                                const step = state.getStep();
+                                if (!isNaN(val) && val >= min) {
+                                    state.quantity = Math.round((val - min) / step) * step + min;
+                                }
                             }}
-                            className="w-10 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <button
                             type="button"
@@ -550,11 +574,16 @@ export default function AddToCart(props: AddToCartProps) {
                 <Show when={props.allowIncrDecr === false}>
                     <input
                         type="number"
-                        min={1}
+                        min={state.getMinQuantity()}
+                        step={state.getStep()}
                         value={state.quantity}
                         onChange={(e) => {
                             const val = parseInt(e.target.value, 10);
-                            if (val >= 1) state.quantity = val;
+                            const min = state.getMinQuantity();
+                            const step = state.getStep();
+                            if (!isNaN(val) && val >= min) {
+                                state.quantity = Math.round((val - min) / step) * step + min;
+                            }
                         }}
                         className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />

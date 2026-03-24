@@ -177,7 +177,10 @@ interface AddToCartState {
 }
 
 function AddToCart(props: AddToCartProps) {
-  const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => 1);
+  const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => {
+    const min = props.product?.minimumQuantity;
+    return min && min > 0 ? min : 1;
+  });
 
   const [loading, setLoading] = useState<AddToCartState['loading']>(() => false);
 
@@ -195,13 +198,25 @@ function AddToCart(props: AddToCartProps) {
 
   const [addedCartItem, setAddedCartItem] = useState<CartMainItem | null>(null);
 
+  function getMinQuantity(): number {
+    const min = props.product?.minimumQuantity;
+    return min && min > 0 ? min : 1;
+  }
+
+  function getStep(): number {
+    const unit = props.product?.unit;
+    return unit && unit > 0 ? unit : 1;
+  }
+
   function increment(): ReturnType<AddToCartState['increment']> {
-    setQuantity(quantity + 1);
+    setQuantity(quantity + getStep());
   }
 
   function decrement(): ReturnType<AddToCartState['decrement']> {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
+    const min = getMinQuantity();
+    const step = getStep();
+    if (quantity - step >= min) {
+      setQuantity(quantity - step);
     }
   }
 
@@ -520,18 +535,23 @@ function AddToCart(props: AddToCartProps) {
               type="button"
               className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
               onClick={(event) => decrement()}
-              disabled={quantity <= 1 || loading}
+              disabled={quantity <= getMinQuantity() || loading}
             >
               -
             </button>
             <input
               type="number"
-              className="w-10 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              min={1}
+              className="w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              min={getMinQuantity()}
+              step={getStep()}
               value={quantity}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
-                if (val >= 1) setQuantity(val);
+                const min = getMinQuantity();
+                const step = getStep();
+                if (!isNaN(val) && val >= min) {
+                  setQuantity(Math.round((val - min) / step) * step + min);
+                }
               }}
             />
             <button
@@ -548,11 +568,16 @@ function AddToCart(props: AddToCartProps) {
           <input
             type="number"
             className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            min={1}
+            min={getMinQuantity()}
+            step={getStep()}
             value={quantity}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10);
-              if (val >= 1) setQuantity(val);
+              const min = getMinQuantity();
+              const step = getStep();
+              if (!isNaN(val) && val >= min) {
+                setQuantity(Math.round((val - min) / step) * step + min);
+              }
             }}
           />
         ) : null}

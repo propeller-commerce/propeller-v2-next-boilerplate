@@ -88,8 +88,8 @@ interface MenuState {
     hoveredL2Id: number | null;
     expandedL1: number | null;
     expandedL2: number | null;
-    prevUserKey: string;
     fetchMenu: () => Promise<void>;
+    getUserKey: () => string;
     getCacheKey: () => string;
     getCachedMenu: () => Category | null;
     cacheMenu: (data: Category) => void;
@@ -115,7 +115,6 @@ export default function Menu(props: MenuProps) {
         hoveredL2Id: null,
         expandedL1: null as number | null,
         expandedL2: null as number | null,
-        prevUserKey: '',
 
         async fetchMenu() {
             if (!props.graphqlClient) return;
@@ -157,7 +156,14 @@ export default function Menu(props: MenuProps) {
                     }
                 `;
 
-                const variables = { categoryId: props.categoryId as number, language };
+                const variables: Record<string, any> = { categoryId: props.categoryId as number, language };
+                if (props.user) {
+                    if ('contactId' in (props.user as any)) {
+                        variables.contactId = (props.user as Contact).contactId;
+                    } else {
+                        variables.customerId = (props.user as Customer).customerId;
+                    }
+                }
                 const response = await (props.graphqlClient as GraphQLClient).execute({ query: gql, variables });
                 const menuData = (response as any)?.data || response;
                 const root = (menuData as any)?.category || null;
@@ -174,9 +180,16 @@ export default function Menu(props: MenuProps) {
             }
         },
 
+        getUserKey(): string {
+            if (!props.user) return '';
+            if ('contactId' in (props.user as any)) return `c${(props.user as Contact).contactId}`;
+            return `u${(props.user as Customer).customerId}`;
+        },
+
         getCacheKey(): string {
             const lang = (props.language as string) || 'NL';
-            return `propeller_menu_${props.categoryId}_${lang}`;
+            const userKey = state.getUserKey();
+            return `propeller_menu_${props.categoryId}_${lang}${userKey ? `_${userKey}` : ''}`;
         },
 
         getCachedMenu(): Category | null {
@@ -266,18 +279,12 @@ export default function Menu(props: MenuProps) {
         },
     });
 
+    // Single effect covering all fetch-relevant deps including user identity.
+    // Cache keys are user-specific (see getCacheKey), so login/logout naturally
+    // uses a different cache bucket — no need to explicitly clear on transition.
     onUpdate(() => {
         state.fetchMenu();
-    }, [props.graphqlClient, props.categoryId, props.language]);
-
-    onUpdate(() => {
-        const userKey: string = props.user ? 'auth' : 'anon';
-        if (state.prevUserKey !== '' && state.prevUserKey !== userKey) {
-            state.clearCache();
-            state.fetchMenu();
-        }
-        state.prevUserKey = userKey;
-    }, [props.user]);
+    }, [props.graphqlClient, props.categoryId, props.language, props.user]);
 
     return (
         <div className={`propeller-menu ${(props.className as string) || ''}`}>

@@ -77,12 +77,11 @@ interface MenuState {
   hasError: boolean;
   hoveredL1Id: number | null;
   hoveredL2Id: number | null;
-  prevUserKey: string;
   fetchMenu: () => Promise<void>;
+  getUserKey: () => string;
   getCacheKey: () => string;
   getCachedMenu: () => Category | null;
   cacheMenu: (data: Category) => void;
-  clearCache: () => void;
   getCategoryName: (cat: Category) => string;
   getCategorySlug: (cat: Category) => string;
   getCategoryUrl: (cat: Category) => string;
@@ -105,8 +104,6 @@ function Menu(props: MenuProps) {
   const [hoveredL1Id, setHoveredL1Id] = useState<MenuState['hoveredL1Id']>(() => null);
 
   const [hoveredL2Id, setHoveredL2Id] = useState<MenuState['hoveredL2Id']>(() => null);
-
-  const [prevUserKey, setPrevUserKey] = useState<MenuState['prevUserKey']>(() => '');
 
   // Mobile accordion state
   const [expandedL1, setExpandedL1] = useState<number | null>(null);
@@ -170,9 +167,16 @@ function Menu(props: MenuProps) {
     }
   }
 
+  function getUserKey(): ReturnType<MenuState['getUserKey']> {
+    const user = props.user as any;
+    if (user?.contactId) return `c${user.contactId}`;
+    if (user?.customerId) return `u${user.customerId}`;
+    return '';
+  }
+
   function getCacheKey(): ReturnType<MenuState['getCacheKey']> {
     const lang = (props.language as string) || 'NL';
-    return `propeller_menu_${props.categoryId}_${lang}`;
+    return `propeller_menu_${props.categoryId}_${lang}_${getUserKey()}`;
   }
 
   function getCachedMenu(): ReturnType<MenuState['getCachedMenu']> {
@@ -204,11 +208,6 @@ function Menu(props: MenuProps) {
     } catch {
       // ignore — quota exceeded etc.
     }
-  }
-
-  function clearCache(): ReturnType<MenuState['clearCache']> {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(getCacheKey());
   }
 
   function getCategoryName(cat: Category): ReturnType<MenuState['getCategoryName']> {
@@ -266,15 +265,7 @@ function Menu(props: MenuProps) {
 
   useEffect(() => {
     fetchMenu();
-  }, [props.graphqlClient, props.categoryId, props.language]);
-  useEffect(() => {
-    const userKey: string = props.user ? 'auth' : 'anon';
-    if (prevUserKey !== '' && prevUserKey !== userKey) {
-      clearCache();
-      fetchMenu();
-    }
-    setPrevUserKey(userKey);
-  }, [props.user]);
+  }, [props.graphqlClient, props.categoryId, props.language, props.user]);
 
   const chevron = (open: boolean, direction: 'right' | 'down' = 'right') => (
     <svg

@@ -29,50 +29,15 @@ export default function FavoriteListPage() {
     setListName(list?.name || '');
   }
 
-  async function handleItemDelete(itemId: string) {
+  async function handleItemDelete(itemId: string, item?: { type: 'product' | 'cluster' }) {
     try {
       const service = new FavoriteListService(graphqlClient);
-      // Remove the item from the favorite list via SDK
-      // Get current product/cluster IDs, filter out the deleted one, then update
-      const list = await service.getFavoriteList({
-        id: listId,
-        language: 'NL',
-        imageSearchFilters: { page: 1, offset: 1 },
-        imageVariantFilters: {
-          transformations: [{
-            name: 'cart_thumb',
-            transformation: { format: 'WEBP', height: 200, width: 200, fit: 'BOUNDS' },
-          }],
-        },
-      });
-      const productIds: number[] = [];
-      const clusterIds: number[] = [];
-
-      const productsRef = list?.products as { items?: { productId: number }[] } | undefined;
-      if (productsRef?.items) {
-        productsRef.items.forEach((item) => {
-          if (String(item.productId) !== itemId) {
-            productIds.push(item.productId);
-          }
-        });
-      }
-
-      const clustersRef = list?.clusters as { items?: { clusterId: number }[] } | undefined;
-      if (clustersRef?.items) {
-        clustersRef.items.forEach((item) => {
-          if (String(item.clusterId) !== itemId) {
-            clusterIds.push(item.clusterId);
-          }
-        });
-      }
-
-      await service.updateFavoriteList(listId, {
-        name: list.name,
-        isDefault: list.isDefault,
-        productIds,
-        clusterIds,
-      });
-
+      const numericId = Number(itemId);
+      // Use removeFavoriteListItems for direct removal (works even for last item)
+      const input = item?.type === 'cluster'
+        ? { clusterIds: [numericId] }
+        : { productIds: [numericId] };
+      await service.removeFavoriteListItems(listId, input);
       toast.success('Item removed from list');
     } catch (error) {
       console.error('Error removing item from list:', error);

@@ -357,7 +357,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     />
                   </svg>
                   <h2 className="text-base font-semibold text-gray-900">{getSidebarTitle()}</h2>
-                  <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                  <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-secondary/10 text-secondary text-xs font-bold">
                     {getTotalItems()}
                   </span>
                 </div>
@@ -399,7 +399,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     </p>
                     <button
                       type="button"
-                      className="text-sm text-violet-600 hover:underline"
+                      className="text-sm text-secondary hover:underline"
                       onClick={(event) => closeSidebar()}
                     >
                       {getLabel('continueShopping', 'Continue Shopping')}
@@ -448,7 +448,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     </span>
                                   ) : null}
                                 </div>
-                                <div className="mt-1.5 space-y-1 border-l-2 border-violet-100 pl-2">
+                                <div className="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                                   {!!getBundleLeaderName(item) ? (
                                     <div className="flex justify-between items-center text-xs">
                                       <span className="font-medium text-gray-800">
@@ -490,7 +490,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                               <div>
                                 <div className="flex justify-between items-start gap-2">
                                   <a
-                                    className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"
+                                    className="text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
                                     href={getItemProductUrl(item)}
                                     onClick={(event) => closeSidebar()}
                                   >
@@ -545,7 +545,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                   {props.cartCheckoutButton !== false ? (
                     <button
                       type="button"
-                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
                       onClick={(event) => handleCheckoutClick()}
                     >
                       {getLabel('checkoutButton', 'Checkout')}

@@ -599,7 +599,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                         <button
                                             onClick={() => state.handleAddToCart(bundle)}
                                             disabled={state.addingBundleId === bundle.id}
-                                            className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                                            className="w-full px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
                                         >
                                             {state.addingBundleId === bundle.id
                                                 ? state.getLabel('adding', 'Adding...')
@@ -711,7 +711,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                 </div>
                                 {/* Bundle sub-items */}
                                 <Show when={state.lastAddedBundle && state.lastAddedBundle.items && state.lastAddedBundle.items.length > 0}>
-                                    <div className="mt-3 ml-20 space-y-1 border-l-2 border-violet-100 pl-2">
+                                    <div className="mt-3 ml-20 space-y-1 border-l-2 border-secondary/10 pl-2">
                                         <For each={state.lastAddedBundle?.items}>
                                             {(item: BundleItem, idx: number) => (
                                                 <div className="flex justify-between items-center text-xs text-gray-600" key={item.productId + '-' + idx}>
@@ -735,7 +735,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                 <button
                                     type="button"
                                     onClick={() => state.closeModal()}
-                                    className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                                 >
                                     {state.getLabel('continueShopping', 'Continue shopping')}
                                 </button>
@@ -745,7 +745,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                                         state.closeModal();
                                         if (props.onProceedToCheckout) props.onProceedToCheckout();
                                     }}
-                                    className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                                 >
                                     {state.getLabel('proceedToCheckout', 'Proceed to checkout')}
                                 </button>

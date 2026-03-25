@@ -219,7 +219,7 @@ export default function OrderSummary(props: OrderSummaryProps) {
                 <Show when={state.showOrderStatus && state.orderStatus}>
                     <div>
                         <p className="text-sm text-gray-500 mb-1">{state.getLabel('status', 'Status')}</p>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
                             {state.orderStatus}
                         </span>
                     </div>

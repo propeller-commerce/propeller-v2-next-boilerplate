@@ -497,7 +497,7 @@ export default function CartItem(props: CartItemProps) {
                             onChange={(e) => state.handleNoteChange(e.target.value)}
                             placeholder={state.getLabel('notesPlaceholder', 'Add a note for this item...')}
                             rows={2}
-                            className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                            className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
                         />
                     </div>
                 </Show>

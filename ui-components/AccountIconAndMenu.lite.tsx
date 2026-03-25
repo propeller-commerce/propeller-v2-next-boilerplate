@@ -333,7 +333,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => state.handleMenuItemClick(link.href)}
-                                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${state.isActiveLink(link.href) ? 'bg-violet-50 text-violet-700 border-l-2 border-violet-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                                                className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${state.isActiveLink(link.href) ? 'bg-secondary/5 text-secondary border-l-2 border-secondary' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                                             >
                                                 {link.label}
                                             </button>
@@ -474,7 +474,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                                     <button
                                         type="button"
                                         onClick={() => { state.closeMenu(); if (props.onAccountIconClick) props.onAccountIconClick(); }}
-                                        className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                                        className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
                                     >
                                         {state.getLabel('loginButton', 'Log In')}
                                     </button>

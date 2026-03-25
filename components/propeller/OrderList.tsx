@@ -233,7 +233,7 @@ function OrderList(props: OrderListProps) {
     switch (status) {
       case 'COMPLETE':
       case 'QUOTE_ACCEPTED':
-        return 'bg-violet-100 text-violet-800';
+        return 'bg-secondary/10 text-secondary';
       case 'CANCELLED':
       case 'QUOTE_REJECTED':
         return 'bg-red-100 text-red-800';

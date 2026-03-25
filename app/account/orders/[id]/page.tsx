@@ -303,10 +303,10 @@ export default function OrderDetailPage() {
                     {/* Order Bottom Actions & Totals */}
                     <div className="flex flex-col md:flex-row justify-between gap-8 pt-6 border-t md:border-none">
                         <div className="order-actions flex flex-wrap gap-4 h-fit">
-                            <button onClick={handleDownloadPDF} className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">
+                            <button onClick={handleDownloadPDF} className="text-primary hover:text-primary/80 text-sm font-medium hover:underline">
                                 Order confirmation (PDF)
                             </button>
-                            <button onClick={handleOrderAgain} className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">
+                            <button onClick={handleOrderAgain} className="text-primary hover:text-primary/80 text-sm font-medium hover:underline">
                                 Order again
                             </button>
                         </div>

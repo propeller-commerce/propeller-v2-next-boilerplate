@@ -288,14 +288,14 @@ function SearchBar(props: SearchBarProps) {
           <input
             type="search"
             autoComplete="off"
-            className="w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-gray-500"
+            className="w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-gray-500"
             placeholder={placeholder()}
             value={searchTerm}
             onChange={(e) => handleInputChange((e.target as HTMLInputElement).value)}
           />
           {isLoading ? (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
             </div>
           ) : null}
         </div>

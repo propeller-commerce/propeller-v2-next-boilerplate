@@ -174,7 +174,7 @@ function OrderTotals(props: OrderTotalsProps) {
       ) : null}
       {showDiscount() && hasDiscount() ? (
         <>
-          <div className="flex justify-between text-violet-600">
+          <div className="flex justify-between text-secondary">
             <span>{getLabel('discount', 'Discount:')}</span>
             <span>{discountDisplay()}</span>
           </div>

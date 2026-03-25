@@ -474,7 +474,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                                                 e.target.value,
                                             )
                                         }
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
                                     >
                                         <option value="">
                                             {state.getLabel('selectOption', '— Select —')}
@@ -496,7 +496,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                                             {(val: string) => (
                                                 <label
                                                     key={val}
-                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-violet-500 bg-violet-50 text-violet-700 cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-violet-300 cursor-pointer'}`}
+                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'}`}
                                                 >
                                                     <input
                                                         type="radio"
@@ -535,7 +535,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                                                             val,
                                                         )
                                                     }
-                                                    className={`w-8 h-8 rounded-full border-2 transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-violet-600 ring-2 ring-violet-300 ring-offset-1 scale-110' : 'border-gray-300 hover:scale-105'}`}
+                                                    className={`w-8 h-8 rounded-full border-2 transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1 scale-110' : 'border-gray-300 hover:scale-105'}`}
                                                     style={{ backgroundColor: val }}
                                                 />
                                             )}
@@ -558,7 +558,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                                                             val,
                                                         )
                                                     }
-                                                    className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-violet-600 ring-2 ring-violet-300 ring-offset-1' : 'border-gray-200 hover:border-violet-300'}`}
+                                                    className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1' : 'border-gray-200 hover:border-secondary/30'}`}
                                                 >
                                                     <img
                                                         src={val}
@@ -570,9 +570,9 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                                                             setting.selectedValue === val
                                                         }
                                                     >
-                                                        <div className="absolute inset-0 bg-violet-600 bg-opacity-20 flex items-center justify-center">
+                                                        <div className="absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center">
                                                             <svg
-                                                                className="w-5 h-5 text-violet-700"
+                                                                className="w-5 h-5 text-secondary"
                                                                 fill="currentColor"
                                                                 viewBox="0 0 20 20"
                                                             >
@@ -612,7 +612,7 @@ export default function ClusterConfigurator(props: ClusterConfiguratorProps) {
                                                             val,
                                                         )
                                                     }
-                                                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-violet-500 bg-violet-50 text-violet-700 cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-violet-300 cursor-pointer'}`}
+                                                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'}`}
                                                 >
                                                     {val}
                                                 </button>

@@ -585,7 +585,7 @@ export default function AddToCart(props: AddToCartProps) {
                                 state.quantity = Math.round((val - min) / step) * step + min;
                             }
                         }}
-                        className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                 </Show>
 
@@ -594,7 +594,7 @@ export default function AddToCart(props: AddToCartProps) {
                     type="button"
                     onClick={() => state.handleAddToCart()}
                     disabled={state.loading}
-                    className="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     <Show when={state.loading}>
                         {state.getLabel('adding', 'Adding...')}
@@ -683,7 +683,7 @@ export default function AddToCart(props: AddToCartProps) {
                                 <div className="flex-1 min-w-0">
                                     <a
                                         href={state.getProductUrl()}
-                                        className="text-sm font-medium text-violet-600 leading-tight hover:underline line-clamp-2"
+                                        className="text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
                                     >
                                         {state.getModalName()}
                                     </a>
@@ -726,7 +726,7 @@ export default function AddToCart(props: AddToCartProps) {
                             <button
                                 type="button"
                                 onClick={() => state.closeModal()}
-                                className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                                className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                             >
                                 {state.getLabel('continueShopping', 'Continue shopping')}
                             </button>
@@ -736,7 +736,7 @@ export default function AddToCart(props: AddToCartProps) {
                                     state.closeModal();
                                     if (props.onProceedToCheckout) props.onProceedToCheckout();
                                 }}
-                                className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                                className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                             >
                                 {state.getLabel('proceedToCheckout', 'Proceed to checkout')}
                             </button>

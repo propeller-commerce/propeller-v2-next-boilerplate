@@ -536,7 +536,7 @@ function CartItem(props: CartItemProps) {
               {getLabel('notes', 'Notes')}
             </label>
             <textarea
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
               value={notes}
               onChange={(e) => handleNoteChange(e.target.value)}
               placeholder={getLabel('notesPlaceholder', 'Add a note for this item...')}

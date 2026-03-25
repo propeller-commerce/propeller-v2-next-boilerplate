@@ -628,7 +628,7 @@ function ProductBundles(props: ProductBundlesProps) {
                           ) : null}
                         </div>
                         <button
-                          className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                          className="w-full px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
                           onClick={(event) => handleAddToCart(bundle)}
                           disabled={addingBundleId === bundle.id}
                         >
@@ -785,7 +785,7 @@ function ProductBundles(props: ProductBundlesProps) {
                     {lastAddedBundle &&
                     lastAddedBundle.items &&
                     lastAddedBundle.items.length > 0 ? (
-                      <div className="mt-3 ml-20 space-y-1 border-l-2 border-violet-100 pl-2">
+                      <div className="mt-3 ml-20 space-y-1 border-l-2 border-secondary/10 pl-2">
                         {lastAddedBundle?.items?.map((item, idx) => (
                           <div
                             className="flex justify-between items-center text-xs text-gray-600"
@@ -807,14 +807,14 @@ function ProductBundles(props: ProductBundlesProps) {
                   <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
                     <button
                       type="button"
-                      className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       onClick={(event) => closeModal()}
                     >
                       {getLabel('continueShopping', 'Continue shopping')}
                     </button>
                     <button
                       type="button"
-                      className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       onClick={(event) => {
                         closeModal();
                         if (props.onProceedToCheckout) props.onProceedToCheckout();

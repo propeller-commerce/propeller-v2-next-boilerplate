@@ -86,6 +86,10 @@ export default function CheckoutPage() {
   const sameAsInvoiceRef = useRef(false);
 
   useEffect(() => {
+    // Wait for auth to finish hydrating before initializing checkout
+    // This prevents the flash where addresses aren't loaded yet
+    if (authState.isLoading) return;
+
     /** Get the user's default address of a given type */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getUserDefaultAddress = (type: 'invoice' | 'delivery'): any | null => {
@@ -218,7 +222,7 @@ export default function CheckoutPage() {
     };
     initializeCheckout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contextCart, router, authState.isAuthenticated, authState.user]);
+  }, [contextCart, router, authState.isAuthenticated, authState.isLoading, authState.user]);
 
   useEffect(() => {
     if (state.currentStep) {
@@ -488,10 +492,75 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex flex-col bg-muted/20">
         <Header />
         <main className="flex-1 py-8">
-          <div className="container-width max-w-7xl flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-muted-foreground">Loading checkout...</p>
+          <div className="container-width max-w-7xl">
+            <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+
+            {/* Skeleton step indicator */}
+            <div className="flex justify-between max-w-2xl mb-8 px-2">
+              {['Details', 'Shipping', 'Payment', 'Review'].map((label, i) => (
+                <React.Fragment key={label}>
+                  {i > 0 && <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />}
+                  <div className="flex items-center gap-2 text-muted-foreground/50">
+                    <div className="w-8 h-8 rounded-full border-2 border-muted-foreground/20 flex items-center justify-center text-sm">{i + 1}</div>
+                    <span className="hidden md:inline">{label}</span>
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Left column skeleton */}
+              <div className="lg:w-2/3 space-y-6">
+                {[1, 2, 3].map((n) => (
+                  <Card key={n} className="opacity-60">
+                    <CardHeader>
+                      <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+                    </CardHeader>
+                    {n === 1 && (
+                      <CardContent className="space-y-3">
+                        <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                      </CardContent>
+                    )}
+                  </Card>
+                ))}
+              </div>
+
+              {/* Right column skeleton */}
+              <div className="lg:w-1/3">
+                <div className="sticky top-24 space-y-6">
+                  <Card className="border-none opacity-60">
+                    <CardHeader className="p-0 px-6 pt-6">
+                      <div className="h-5 w-28 bg-muted rounded animate-pulse" />
+                    </CardHeader>
+                    <CardContent className="space-y-3 pt-4">
+                      {[1, 2].map((n) => (
+                        <div key={n} className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-muted rounded animate-pulse shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-3 w-3/4 bg-muted rounded animate-pulse" />
+                            <div className="h-3 w-1/3 bg-muted rounded animate-pulse" />
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                  <Card className="border-none opacity-60">
+                    <CardContent className="space-y-3 pt-6">
+                      <div className="h-5 w-32 bg-muted rounded animate-pulse" />
+                      <div className="space-y-2">
+                        {[1, 2, 3].map((n) => (
+                          <div key={n} className="flex justify-between">
+                            <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+                            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         </main>

@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Contact, Company } from 'propeller-sdk-v2';
 
 export interface CompanySwitcherProps {
@@ -85,8 +85,21 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     props.onCompanyChange(company);
   }
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
   return (
-    <div className="company-switcher relative inline-block">
+    <div ref={containerRef} className="company-switcher relative inline-block">
       <button
         type="button"
         aria-haspopup="listbox"
@@ -124,7 +137,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
         <ul
           role="listbox"
           aria-label="Companies"
-          className="company-switcher__dropdown absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
+          className="company-switcher__dropdown absolute left-0 top-full z-[60] mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
         >
           {getCompanies()?.map((company) => (
             <li

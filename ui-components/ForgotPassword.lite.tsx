@@ -107,7 +107,7 @@ export default function ForgotPassword(props: ForgotPasswordProps) {
                     props.afterForgotPassword(result);
                 }
             } catch (err: any) {
-                state.error = err?.message || 'Something went wrong. Please try again.';
+                state.error = 'We couldn\'t find an account with that email address. Please double-check and try again. If you don\'t receive an email within a few minutes, please check that you entered the correct email address and try again.';
 
                 if (props.afterForgotPassword) {
                     props.afterForgotPassword(false);

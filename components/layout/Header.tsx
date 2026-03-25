@@ -76,7 +76,7 @@ export default function Header() {
       {topBarEnabled && (
         <div
           data-topbar
-          className="relative z-50 h-10"
+          className="relative h-10"
           style={{ background: '#242526' }}
         >
             <div className="container-width h-full">

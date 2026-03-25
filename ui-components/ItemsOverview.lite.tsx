@@ -136,8 +136,8 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
         getItemAvailability(item: any) {
             const stock = item.product?.inventory?.totalQuantity;
             if (stock === undefined || stock === null) return '';
-            if (stock > 0) return state.getLabel('inStock', 'In stock');
-            return state.getLabel('outOfStock', 'Out of stock');
+            if (stock > 0) return props.labels?.['inStock'] || 'In stock';
+            return props.labels?.['outOfStock'] || 'Out of stock';
         },
 
         isInStock(item: any) {
@@ -146,7 +146,7 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
         },
 
         handleItemNameClick(item: any) {
-            if (state.itemNameClickable && props.onCartItemNameClick) {
+            if ((props.itemNameClickable !== undefined ? props.itemNameClickable : true) && props.onCartItemNameClick) {
                 props.onCartItemNameClick(item as CartMainItem);
             }
         },

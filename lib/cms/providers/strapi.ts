@@ -293,8 +293,8 @@ export function createStrapiProvider(): CmsProvider {
         const entry = data?.data?.[0];
         if (!entry) return null;
         return normalizeCategoryBanner(strapiUrl, entry);
-      } catch (error) {
-        console.error(`[CMS:Strapi] Failed to fetch category banner for "${categoryId}":`, error);
+      } catch {
+        // Silently return null — banner is optional; Strapi may not be reachable from client
         return null;
       }
     },

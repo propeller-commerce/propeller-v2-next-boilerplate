@@ -1,5 +1,7 @@
 import {
     useStore,
+    useRef,
+    onUpdate,
     Show,
     For,
 } from '@builder.io/mitosis';
@@ -35,6 +37,7 @@ interface CompanySwitcherState {
 }
 
 export default function CompanySwitcher(props: CompanySwitcherProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
     const state = useStore<CompanySwitcherState>({
         isOpen: false,
         activeCompanyId: null,
@@ -91,8 +94,19 @@ export default function CompanySwitcher(props: CompanySwitcherProps) {
         },
     });
 
+    onUpdate(() => {
+        if (!state.isOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (containerRef && !(containerRef as any).contains(e.target)) {
+                state.isOpen = false;
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [state.isOpen]);
+
     return (
-        <div className="company-switcher relative inline-block">
+        <div ref={containerRef} className="company-switcher relative inline-block">
             <button
                 type="button"
                 onClick={() => state.toggleDropdown()}
@@ -131,7 +145,7 @@ export default function CompanySwitcher(props: CompanySwitcherProps) {
                 <ul
                     role="listbox"
                     aria-label="Companies"
-                    className="company-switcher__dropdown absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
+                    className="company-switcher__dropdown absolute left-0 top-full z-[60] mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
                 >
                     <For each={state.getCompanies()}>
                         {(company: Company) => (

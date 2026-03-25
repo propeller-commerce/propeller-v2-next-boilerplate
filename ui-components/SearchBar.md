@@ -1,26 +1,119 @@
 # SearchBar
 
-A framework-agnostic search bar with autocomplete dropdown. Uses `graphqlClient` to fetch products internally via `ProductService`. Supports debounced search, result display with images/prices, and "View all results" link.
+A self-contained search bar with autocomplete dropdown. Fetches product results internally via `ProductService` and displays them with images, prices, and SKUs. Supports debounced input, configurable result limits, and click-outside dismissal.
+
+## Usage
+
+### Basic usage in a header
+
+```tsx
+import SearchBar from '@/components/propeller/SearchBar';
+import { graphqlClient } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+
+function Header() {
+  const router = useRouter();
+
+  return (
+    <SearchBar
+      graphqlClient={graphqlClient}
+      onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+      onResultClick={(result) => result.url && router.push(result.url)}
+      onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+    />
+  );
+}
+```
+
+### With custom language, fallback image, and price formatter
+
+```tsx
+<SearchBar
+  graphqlClient={graphqlClient}
+  language="EN"
+  placeholder="Search our catalog..."
+  noImageUrl="/images/no-image.webp"
+  formatPrice={(price) => `$${price.toFixed(2)}`}
+  onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+  onResultClick={(result) => result.url && router.push(result.url)}
+  onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+/>
+```
+
+### With stricter debounce and fewer results
+
+```tsx
+<SearchBar
+  graphqlClient={graphqlClient}
+  minSearchLength={2}
+  debounceMs={500}
+  maxResults={5}
+  labels={{
+    viewAll: 'Show all products',
+    noResults: 'Nothing found for',
+  }}
+  onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+  onResultClick={(result) => result.url && router.push(result.url)}
+  onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+/>
+```
+
+### Custom container styling
+
+```tsx
+<SearchBar
+  graphqlClient={graphqlClient}
+  containerClassName="relative w-full max-w-lg"
+  onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
+  onResultClick={(result) => result.url && router.push(result.url)}
+/>
+```
 
 ## Props
 
-| Prop | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `graphqlClient` | `GraphQLClient` | **Yes** | — | Propeller SDK GraphQL client. The component creates `ProductService` internally. |
-| `language` | `string` | No | `'NL'` | Language code for search requests. |
-| `placeholder` | `string` | No | `'Search products...'` | Placeholder text for the search input. |
-| `minSearchLength` | `number` | No | `3` | Minimum characters before search triggers. |
-| `debounceMs` | `number` | No | `300` | Debounce delay in milliseconds. |
-| `maxResults` | `number` | No | `8` | Maximum number of results shown in dropdown. |
-| `noImageUrl` | `string` | No | `''` | Fallback image URL when a result has no image. |
-| `onSubmit` | `(term: string) => void` | No | — | Fires when the form is submitted (Enter key). |
-| `onResultClick` | `(result: SearchBarResult) => void` | No | — | Fires when a result item is clicked. |
-| `onViewAllClick` | `(term: string) => void` | No | — | Fires when "View all results" is clicked. |
-| `formatPrice` | `(price: number) => string` | No | `€{price}` | Custom price formatting function. |
-| `labels` | `Record<string, string>` | No | — | Customizable labels (see Labels section). |
-| `containerClassName` | `string` | No | `'relative flex-1 max-w-2xl mx-8'` | Additional class name for the container. |
+### Required
+
+| Prop | Type | Description |
+|---|---|---|
+| `graphqlClient` | `GraphQLClient` | Propeller SDK GraphQL client instance. The component creates `ProductService` internally. |
+
+### Search Configuration
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `language` | `string` | `'NL'` | Language code sent with search requests. |
+| `placeholder` | `string` | `'Search products...'` | Placeholder text for the input field. |
+| `minSearchLength` | `number` | `3` | Minimum characters typed before a search request fires. |
+| `debounceMs` | `number` | `300` | Milliseconds to wait after the last keystroke before searching. |
+| `maxResults` | `number` | `8` | Maximum number of suggestion results shown in the dropdown. |
+
+### Display
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `noImageUrl` | `string` | `''` | Fallback image URL when a result has no product image. |
+| `formatPrice` | `(price: number) => string` | Formats as `€{price}` | Custom price formatting function. |
+| `labels` | `Record<string, string>` | See Labels table | Customizable UI text strings. |
+| `containerClassName` | `string` | `'relative flex-1 max-w-2xl mx-8'` | CSS class for the outermost container element. |
+
+### Callbacks
+
+| Prop | Type | Description |
+|---|---|---|
+| `onSubmit` | `(term: string) => void` | Fires when the form is submitted (Enter key). Receives the trimmed search term. |
+| `onResultClick` | `(result: SearchBarResult) => void` | Fires when a dropdown result is clicked. Receives the `SearchBarResult` object. |
+| `onViewAllClick` | `(term: string) => void` | Fires when "View all results" is clicked. Receives the current search term. |
+
+### Labels
+
+| Key | Default | Description |
+|---|---|---|
+| `viewAll` | `'View all results'` | Text for the "view all" link at the bottom of the dropdown. |
+| `noResults` | `'No products found for'` | Prefix text shown when no results match the query. |
 
 ### SearchBarResult Interface
+
+The result object passed to `onResultClick` and used internally:
 
 ```ts
 interface SearchBarResult {
@@ -34,42 +127,169 @@ interface SearchBarResult {
 }
 ```
 
-### Labels
+## SDK Services
 
-| Key | Default | Description |
-|---|---|---|
-| `viewAll` | `'View all results'` | "View all" link text |
-| `noResults` | `'No products found for'` | No results message prefix |
+The component uses **`ProductService`** from `propeller-sdk-v2` to fetch search suggestions. It creates the service instance internally:
 
-## Usage
-
-```tsx
-import SearchBar from '@/components/propeller/SearchBar';
-import { graphqlClient } from '@/lib/api';
-
-<SearchBar
-  graphqlClient={graphqlClient}
-  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
-  onSubmit={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
-  onResultClick={(result) => result.url && router.push(result.url)}
-  onViewAllClick={(term) => router.push(`/search/${encodeURIComponent(term)}`)}
-  noImageUrl="https://example.com/no-image.webp"
-/>
+```ts
+const productService = new ProductService(graphqlClient);
+const response = await productService.getProducts({ input, imageSearchFilters, imageVariantFilters });
 ```
+
+The response items (which can be `Product` or `Cluster` objects) are mapped to `SearchBarResult` objects. For clusters, the `defaultProduct` is used for price and image data.
+
+### Search parameters
+
+The component searches with these fixed parameters:
+
+- **Statuses**: `A` (active), `P` (published), `T` (temporary), `S` (special)
+- **Sort**: `RELEVANCE` descending
+- **Hidden**: `false`
+- **Searchable attributes only**: `isSearchable: true`
+- **Pagination**: page 1, offset = `maxResults`
+
+## GraphQL Query
+
+Under the hood, `ProductService.getProducts()` executes a query similar to:
+
+```graphql
+query SearchProducts($input: ProductSearchInput!, $imageSearchFilters: ImageSearchInput, $imageVariantFilters: ImageVariantSearchInput) {
+  products(input: $input) {
+    itemsFound
+    items {
+      productId
+      clusterId
+      sku
+      names { value }
+      slugs { value }
+      price { gross net }
+      defaultProduct {
+        sku
+        price { gross net }
+        media {
+          images(input: $imageSearchFilters) {
+            items {
+              imageVariants(input: $imageVariantFilters) {
+                url
+              }
+            }
+          }
+        }
+      }
+      media {
+        images(input: $imageSearchFilters) {
+          items {
+            imageVariants(input: $imageVariantFilters) {
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Variables sent by the component:
+
+```ts
+{
+  input: {
+    term: "search text",
+    language: "NL",
+    page: 1,
+    offset: 8,
+    statuses: ["A", "P", "T", "S"],
+    hidden: false,
+    sortInputs: [{ field: "RELEVANCE", order: "DESC" }],
+  },
+  imageSearchFilters: { page: 1, offset: 1 },
+  imageVariantFilters: {
+    transformations: [{
+      name: "thumb",
+      transformation: {
+        format: "WEBP",
+        height: 100,
+        width: 100,
+        fit: "BOUNDS",
+      },
+    }],
+  },
+}
+```
+
+**IMPORTANT**: `imageVariantFilters` must NOT be an empty object `{}`. The Propeller API rejects empty variant filters. You must always include a `transformations` array with at least one entry.
 
 ## Behavior
 
-- **Internal SDK usage**: Creates `new ProductService(graphqlClient)` internally and calls `getProducts()` with the search term. Maps SDK `Product`/`Cluster` results to `SearchBarResult` objects.
-- **Search parameters**: Filters by statuses `A`, `P`, `T`, `S`; sorted by `RELEVANCE` descending; `hidden: false`; `isSearchable: true`.
-- **Debounced search**: Waits `debounceMs` after typing stops before fetching.
-- **Minimum length**: Does not search until `minSearchLength` characters are entered.
-- **Loading spinner**: Shows while the search request is pending.
-- **Click outside**: Dropdown closes when clicking outside the component.
-- **Form submit**: Pressing Enter calls `onSubmit` with the trimmed search term.
-- **Result click**: Clears search term and closes dropdown after clicking a result.
-- **View all**: Shown when total results exceed `maxResults`.
-- **Result URLs**: Auto-generated as `/cluster/{id}/{slug}` or `/product/{id}/{slug}`.
+### Debounce and minimum characters
 
-## Mitosis Source
+The component waits `debounceMs` (default 300ms) after the user stops typing before making a search request. No request is made until at least `minSearchLength` (default 3) characters have been entered. If the user clears the input below the minimum length, the dropdown closes immediately.
 
-`ui-components/SearchBar.lite.tsx`
+### Image variants
+
+Search results request 100x100 WEBP thumbnails via the `imageVariantFilters` parameter. The `imageVariantFilters` must contain a `transformations` array -- passing an empty object `{}` causes the Propeller API to return an error. If a result has no image and `noImageUrl` is provided, the fallback image is shown instead.
+
+### Navigation on select
+
+When a user clicks a result, the component:
+1. Calls `onResultClick(result)` with the full `SearchBarResult` object
+2. Closes the dropdown
+3. Clears the search input
+
+Result URLs are auto-generated as `/cluster/{id}/{slug}` for clusters or `/product/{id}/{slug}` for products. The parent component handles actual navigation in the `onResultClick` callback.
+
+### Form submission
+
+Pressing Enter submits the form and calls `onSubmit` with the trimmed search term. This is typically used to navigate to a full search results page.
+
+### View all results
+
+When the total number of matching items (`itemsFound`) exceeds `maxResults`, a "View all results (N)" link appears at the bottom of the dropdown. Clicking it calls `onViewAllClick` with the current search term.
+
+### Click outside dismissal
+
+The dropdown closes automatically when the user clicks anywhere outside the search bar. This is handled via a `mousedown` listener on `document`.
+
+### Loading state
+
+A spinning indicator appears in the input field while a search request is in progress.
+
+## Building Your Own
+
+To build a custom search component that uses the same Propeller product search:
+
+1. **Create a `ProductService` instance** with your `GraphQLClient`:
+   ```ts
+   import { ProductService, GraphQLClient } from 'propeller-sdk-v2';
+
+   const productService = new ProductService(graphqlClient);
+   ```
+
+2. **Call `getProducts()`** with a search term and image variant filters:
+   ```ts
+   const response = await productService.getProducts({
+     input: {
+       term: searchTerm,
+       language: 'NL',
+       page: 1,
+       offset: 10,
+       statuses: [Enums.ProductStatus.A, Enums.ProductStatus.P],
+       hidden: false,
+       sortInputs: [{ field: Enums.ProductSortField.RELEVANCE, order: Enums.SortOrder.DESC }],
+     },
+     imageSearchFilters: { page: 1, offset: 1 },
+     imageVariantFilters: {
+       transformations: [{
+         name: 'thumb',
+         transformation: { format: Enums.Format.WEBP, height: 100, width: 100, fit: Enums.Fit.BOUNDS },
+       }],
+     },
+   });
+   ```
+
+3. **Map the results**: Each item in `response.items` is either a `Product` or a `Cluster`. Check for `clusterId` to distinguish them. For clusters, use `cluster.defaultProduct` for price and image data.
+
+4. **Handle debouncing**: Use `setTimeout`/`clearTimeout` or a library like `lodash.debounce` to avoid excessive API calls on every keystroke.
+
+5. **Remember**: Never pass an empty `imageVariantFilters` object. Always include at least one transformation entry, or omit the parameter entirely.

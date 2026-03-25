@@ -1,61 +1,36 @@
-# FavoriteLists Component
+# FavoriteLists
 
-Displays a list of the user's favorite lists with inline edit, delete confirmation modal, and create modal. Supports showing all lists or limiting to the last N most recently modified.
-
-## Props
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `graphqlClient` | `GraphQLClient` | Yes | - | GraphQL client for the Propeller SDK |
-| `user` | `Contact \| Customer` | Yes | - | The logged in user for which favorites lists are going to be listed for |
-| `onListClick` | `(listId: string \| number) => void` | No | - | Callback when a list name is clicked (parent handles navigation) |
-| `limit` | `number` | No | - | Show only the last N modified lists. `undefined` = show all |
-| `showDefaultIndicator` | `boolean` | No | `true` | Displays the "Default" badge in the favorite list |
-| `showLastModified` | `boolean` | No | `true` | Displays the last modified date the favorite list |
-| `showItemsCount` | `boolean` | No | `true` | Displays number of products and clusters contained in the favorite list |
-| `showActions` | `boolean` | No | `true` | Displays the actions "Edit" and "Delete" the favorite list |
-| `allowFavoriteListCreate` | `boolean` | No | `true` | Displays create new favorite list button that opens a modal with a form for creating a new favorite list |
-| `className` | `string` | No | - | Custom CSS class |
-| `formatDate` | `(dateString: string) => string` | No | `dd/mm/YYYY` | Function that formats the favorite lists dates. If not provided the fallback date formatting function is used |
-| `labels` | `object` | No | - | Localization labels (see below) |
-| `onCreate` | `(favoriteListData: FavoriteListFormData) => void` | No | - | Action function triggered when creating a new favorite list. If not provided the default action in the component is executed |
-| `onEdit` | `(favoriteListId: string, favoriteListData: FavoriteListFormData) => void` | No | - | Action function triggered when editing a favorite list. If not provided the default action in the component is executed |
-| `onDelete` | `(favoriteListId: string) => void` | No | - | Action function triggered when deleting a favorite list. If not provided the default action in the component is executed |
-
-## Types
-
-```tsx
-interface FavoriteListFormData {
-  name: string;
-  isDefault: boolean;
-}
-```
-
-## Labels
-
-All labels are optional with English defaults:
-
-- `lastModified`, `items`, `products`, `clusters`, `defaultBadge`
-- `editSave`, `editCancel`, `makeDefault`
-- `deleteTitle`, `deleteConfirm`, `deleteWarning`, `deleteButton`, `cancelButton`
-- `createTitle`, `createButton`, `createPlaceholder`, `setAsDefault`, `saveButton`
-- `noLists`, `noListsDescription`, `createFirstList`, `loading`
+Displays a user's favorite lists with full CRUD support: inline renaming, delete confirmation modal, and a create modal. Lists can be limited to the most recently modified N items, making the component suitable for both dedicated pages and compact dashboard widgets.
 
 ## Usage
 
-### All lists (favorites page)
+### Full favorites page
+
+All lists visible, with edit/delete actions and a create button.
 
 ```tsx
-<FavoriteLists
-  user={authState.user}
-  graphqlClient={graphqlClient}
-  onListClick={(id) => router.push(`/account/favorites/${id}`)}
-  showActions={true}
-  allowFavoriteListCreate={true}
-/>
+import FavoriteLists from '@/components/propeller/FavoriteLists';
+import { useAuth } from '@/context/AuthContext';
+import { graphqlClient } from '@/lib/graphql';
+import { useRouter } from 'next/navigation';
+
+export default function FavoritesPage() {
+  const { state: authState } = useAuth();
+  const router = useRouter();
+
+  return (
+    <FavoriteLists
+      user={authState.user}
+      graphqlClient={graphqlClient}
+      onListClick={(id) => router.push(`/account/favorites/${id}`)}
+    />
+  );
+}
 ```
 
-### Last 3 modified lists (dashboard widget)
+### Dashboard widget with limit
+
+Show only the 3 most recently modified lists, read-only, without the create button.
 
 ```tsx
 <FavoriteLists
@@ -68,19 +43,56 @@ All labels are optional with English defaults:
 />
 ```
 
-### With custom action handlers
+### Custom labels (localization)
+
+Override any label for internationalization or branding.
 
 ```tsx
 <FavoriteLists
   user={authState.user}
   graphqlClient={graphqlClient}
-  onCreate={(data) => console.log('Creating:', data)}
-  onEdit={(id, data) => console.log('Editing:', id, data)}
-  onDelete={(id) => console.log('Deleting:', id)}
+  onListClick={(id) => router.push(`/account/favorites/${id}`)}
+  labels={{
+    lastModified: 'Laatst gewijzigd',
+    items: 'artikelen',
+    defaultBadge: 'Standaard',
+    createButton: 'Nieuwe lijst',
+    createTitle: 'Nieuwe lijst aanmaken',
+    deleteTitle: 'Lijst verwijderen',
+    deleteConfirm: 'Weet je zeker dat je wilt verwijderen',
+    deleteWarning: 'Deze actie kan niet ongedaan worden gemaakt.',
+    noLists: 'Geen favorieten lijsten',
+    noListsDescription: 'Maak een nieuwe lijst aan om je producten op te slaan.',
+    createFirstList: 'Maak je eerste lijst',
+  }}
 />
 ```
 
-### Minimal display (no metadata)
+### Custom action handlers
+
+Delegate create, edit, and delete to parent logic instead of using the built-in SDK calls.
+
+```tsx
+<FavoriteLists
+  user={authState.user}
+  graphqlClient={graphqlClient}
+  onCreate={(data) => {
+    // data: { name: string, isDefault: boolean }
+    myCustomCreateHandler(data);
+  }}
+  onEdit={(listId, data) => {
+    myCustomEditHandler(listId, data);
+  }}
+  onDelete={(listId) => {
+    myCustomDeleteHandler(listId);
+  }}
+  onListClick={(id) => router.push(`/account/favorites/${id}`)}
+/>
+```
+
+### Minimal read-only display
+
+Strip all metadata and actions for a compact list-name-only view.
 
 ```tsx
 <FavoriteLists
@@ -91,12 +103,376 @@ All labels are optional with English defaults:
   showItemsCount={false}
   showActions={false}
   allowFavoriteListCreate={false}
+  onListClick={(id) => router.push(`/account/favorites/${id}`)}
 />
 ```
 
-## Optimistic Updates
+## Props
 
-- **Rename**: Updates the list name/default status in local state immediately, refetches on error.
-- **Delete**: Removes the list from local state immediately, refetches on error.
-- **Create**: Refetches the full list after creation to get server-assigned data.
-- **Set as default**: Clears default from all other lists when setting a new default.
+### Required
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `user` | `Contact \| Customer \| null` | The authenticated user. Lists are fetched for this user's `contactId` (B2B) or `customerId` (B2C). |
+| `graphqlClient` | `GraphQLClient` | Initialized SDK GraphQL client used for all API calls. |
+
+### Display options
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `limit` | `number` | `undefined` | When set, shows only the last N modified lists (sorted by `updatedAt` descending). `undefined` shows all. |
+| `showDefaultIndicator` | `boolean` | `true` | Show a "Default" badge next to the default list. |
+| `showLastModified` | `boolean` | `true` | Show the last modified date on each list card. |
+| `showItemsCount` | `boolean` | `true` | Show the total number of products and clusters in each list. |
+| `showActions` | `boolean` | `true` | Show edit and delete buttons on each list card. |
+| `allowFavoriteListCreate` | `boolean` | `true` | Show the "Create New List" button (top of list and in empty state). |
+| `className` | `string` | `undefined` | Custom CSS class applied to the root container. |
+
+### Callbacks
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `onListClick` | `(listId: string \| number) => void` | Called when a list card is clicked. Typically used for navigation. |
+| `onCreate` | `(data: FavoriteListFormData) => void` | Override default create behavior. When provided, the component delegates to this callback instead of calling the SDK. |
+| `onEdit` | `(listId: string, data: FavoriteListFormData) => void` | Override default edit behavior. When provided, the component delegates to this callback instead of calling the SDK. |
+| `onDelete` | `(listId: string) => void` | Override default delete behavior. When provided, the component delegates to this callback instead of calling the SDK. |
+
+### Formatting and labels
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `formatDate` | `(dateString: string) => string` | `dd/mm/YYYY` | Custom date formatter. Receives the raw ISO date string, returns the display string. |
+| `labels` | `object` | English defaults | Localization overrides (see Labels section below). |
+
+## Types
+
+```ts
+interface FavoriteListFormData {
+  name: string;
+  isDefault: boolean;
+}
+```
+
+This is the shape passed to `onCreate` and `onEdit` callbacks and used internally for create/update API calls.
+
+## Labels
+
+All labels are optional. Provide any subset to override the English defaults.
+
+| Key | Default | Used in |
+|-----|---------|---------|
+| `lastModified` | `"Last modified"` | Date label on each list card |
+| `items` | `"items"` | Item count label on each list card |
+| `products` | `"products"` | Product count (if shown separately) |
+| `clusters` | `"clusters"` | Cluster count (if shown separately) |
+| `defaultBadge` | `"Default"` | Badge text on the default list |
+| `editSave` | `"Save"` | Save button in inline edit form |
+| `editCancel` | `"Cancel"` | Cancel button in inline edit form |
+| `makeDefault` | `"Make default"` | Checkbox label in edit form |
+| `deleteTitle` | `"Delete Favorite List"` | Delete modal heading |
+| `deleteConfirm` | `"Are you sure you want to delete"` | Delete modal body text |
+| `deleteWarning` | `"This action cannot be undone."` | Delete modal warning |
+| `deleteButton` | `"Delete"` | Delete modal confirm button |
+| `cancelButton` | `"Cancel"` | Cancel button in modals |
+| `createTitle` | `"Create New List"` | Create modal heading |
+| `createButton` | `"Create New List"` | Create button above list |
+| `createPlaceholder` | `"Enter list name"` | Input placeholder in create modal |
+| `setAsDefault` | `"Set as default favorite list"` | Checkbox label in create modal |
+| `saveButton` | `"Save"` | Save button in create modal |
+| `noLists` | `"No favorite lists"` | Empty state heading |
+| `noListsDescription` | `"Start by creating a new list to save your items."` | Empty state description |
+| `createFirstList` | `"Create your first list"` | Empty state create button |
+| `loading` | `"Loading..."` | Loading state text |
+
+## SDK Services
+
+The component uses `FavoriteListService` from `propeller-sdk-v2` for all CRUD operations.
+
+### Service initialization
+
+```ts
+import { FavoriteListService, GraphQLClient } from 'propeller-sdk-v2';
+
+const service = new FavoriteListService(graphqlClient);
+```
+
+### Fetching lists
+
+Lists are fetched using `getFavoriteLists()` with a search input scoped to either `contactId` (B2B Contact) or `customerId` (B2C Customer):
+
+```ts
+import { FavoriteListsSearchInput } from 'propeller-sdk-v2';
+
+// For B2B Contact users
+const searchInput: FavoriteListsSearchInput = {
+  contactId: user.contactId,
+};
+
+// For B2C Customer users
+const searchInput: FavoriteListsSearchInput = {
+  customerId: user.customerId,
+};
+
+const response = await service.getFavoriteLists(searchInput);
+const lists = response.items; // FavoriteList[]
+```
+
+### Creating a list
+
+```ts
+await service.createFavoriteList({
+  name: 'My new list',
+  isDefault: false,
+  contactId: user.contactId, // or customerId for B2C
+});
+```
+
+### Renaming / updating a list
+
+```ts
+await service.updateFavoriteList(listId, {
+  name: 'Renamed list',
+  isDefault: true,
+});
+```
+
+### Deleting a list
+
+```ts
+await service.deleteFavoriteList(listId);
+```
+
+## GraphQL Queries and Mutations
+
+The SDK service methods correspond to the following Propeller GraphQL operations.
+
+### Query: list favorite lists
+
+```graphql
+query FavoriteLists($input: FavoriteListsSearchInput) {
+  favoriteLists(input: $input) {
+    itemsFound
+    items {
+      id
+      name
+      isDefault
+      updatedAt
+      products {
+        itemsFound
+        items {
+          productId
+        }
+      }
+      clusters {
+        itemsFound
+        items {
+          clusterId
+        }
+      }
+    }
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "contactId": 123
+  }
+}
+```
+
+### Mutation: create a favorite list
+
+```graphql
+mutation CreateFavoriteList($input: FavoriteListCreateInput!) {
+  favoriteListCreate(input: $input) {
+    id
+    name
+    isDefault
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "name": "Weekend project parts",
+    "isDefault": false,
+    "contactId": 123
+  }
+}
+```
+
+### Mutation: update a favorite list
+
+```graphql
+mutation UpdateFavoriteList($id: ID!, $input: FavoriteListUpdateInput!) {
+  favoriteListUpdate(id: $id, input: $input) {
+    id
+    name
+    isDefault
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "id": "456",
+  "input": {
+    "name": "Renamed list",
+    "isDefault": true
+  }
+}
+```
+
+### Mutation: delete a favorite list
+
+```graphql
+mutation DeleteFavoriteList($id: ID!) {
+  favoriteListDelete(id: $id)
+}
+```
+
+Variables:
+
+```json
+{
+  "id": "456"
+}
+```
+
+## Building Your Own
+
+To build a custom favorite lists UI while reusing the same data layer:
+
+1. **Initialize the service** with your `GraphQLClient` instance.
+2. **Fetch lists** using `getFavoriteLists()` with the appropriate search input for your user type.
+3. **Determine user type** by checking for the presence of `contactId` on the user object (`'contactId' in user`). Contact users are B2B; Customer users are B2C.
+4. **Sort by recency** if needed: sort the returned `items` array by `updatedAt` descending and slice to your desired limit.
+5. **Count items** per list using `list.products.itemsFound` and `list.clusters.itemsFound`. Fall back to `list.products.items.length` if `itemsFound` is not available.
+6. **Handle default list switching**: before setting a new list as default, update the current default list to `isDefault: false` first, then set the new one. The API does not auto-unset the previous default.
+7. **Error recovery**: wrap mutations in try/catch. On failure, refetch the full list from the API to restore consistent state.
+
+Example skeleton:
+
+```tsx
+import { FavoriteListService, FavoriteList } from 'propeller-sdk-v2';
+import { useState, useEffect } from 'react';
+
+function useMyFavoriteLists(graphqlClient, user) {
+  const [lists, setLists] = useState<FavoriteList[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const service = new FavoriteListService(graphqlClient);
+    const isContact = 'contactId' in user;
+
+    service
+      .getFavoriteLists(
+        isContact ? { contactId: user.contactId } : { customerId: user.customerId }
+      )
+      .then((res) => setLists(res.items || []));
+  }, [user, graphqlClient]);
+
+  const createList = async (name: string, isDefault: boolean) => {
+    const service = new FavoriteListService(graphqlClient);
+    const isContact = 'contactId' in user;
+
+    if (isDefault) {
+      const currentDefault = lists.find((l) => l.isDefault);
+      if (currentDefault) {
+        await service.updateFavoriteList(String(currentDefault.id), {
+          name: currentDefault.name,
+          isDefault: false,
+        });
+      }
+    }
+
+    await service.createFavoriteList({
+      name,
+      isDefault,
+      ...(isContact
+        ? { contactId: user.contactId }
+        : { customerId: user.customerId }),
+    });
+
+    // Refetch to get server-assigned ID and timestamps
+    const res = await service.getFavoriteLists(
+      isContact ? { contactId: user.contactId } : { customerId: user.customerId }
+    );
+    setLists(res.items || []);
+  };
+
+  const renameList = async (listId: string, name: string) => {
+    const service = new FavoriteListService(graphqlClient);
+    // Optimistic update
+    setLists((prev) =>
+      prev.map((l) => (String(l.id) === listId ? { ...l, name } : l))
+    );
+    try {
+      await service.updateFavoriteList(listId, { name });
+    } catch {
+      // Rollback on error
+      const res = await service.getFavoriteLists(/* ... */);
+      setLists(res.items || []);
+    }
+  };
+
+  const deleteList = async (listId: string) => {
+    const service = new FavoriteListService(graphqlClient);
+    // Optimistic update
+    setLists((prev) => prev.filter((l) => String(l.id) !== listId));
+    try {
+      await service.deleteFavoriteList(listId);
+    } catch {
+      const res = await service.getFavoriteLists(/* ... */);
+      setLists(res.items || []);
+    }
+  };
+
+  return { lists, createList, renameList, deleteList };
+}
+```
+
+## Behavior
+
+### Optimistic updates
+
+The component updates local state immediately after user actions to provide instant feedback, without waiting for the API response:
+
+- **Rename**: The list name and default status update in-place instantly. On API error, the full list is refetched from the server.
+- **Delete**: The list is removed from the displayed array instantly. On API error, the full list is refetched.
+- **Create**: After the API call succeeds, the full list is refetched to obtain the server-assigned ID and timestamps (no optimistic insert).
+- **Set as default**: When a list is marked as default, the component clears the `isDefault` flag on the previously default list both in local state and via a separate API call before applying the new default.
+
+### Modals
+
+- **Create modal**: Opens from the "Create New List" button. Contains a name input and a "Set as default" checkbox. The save button is disabled when the name is empty. The modal closes on save or cancel.
+- **Delete modal**: Opens when the delete button is clicked on a list card. Shows a confirmation prompt with the list name and a warning that the action is irreversible. Confirm triggers deletion; cancel closes the modal.
+
+### Inline editing
+
+Clicking the edit button on a list card replaces the list name and metadata with an inline form containing a name input, a "Make default" checkbox, and save/cancel buttons. Only one list can be edited at a time. Clicking the list card while in edit mode does not trigger `onListClick`.
+
+### Sorting and limiting
+
+When the `limit` prop is set, the component sorts all fetched lists by `updatedAt` descending (most recently modified first) and displays only the first N. Without `limit`, lists are displayed in the order returned by the API.
+
+### Loading state
+
+While lists are being fetched, the component renders animated placeholder skeleton cards. The create button and empty state are hidden during loading.
+
+### Empty state
+
+When the user has no favorite lists, the component shows a centered empty state with a heart icon, a heading, a description, and (if `allowFavoriteListCreate` is `true`) a "Create your first list" button that opens the create modal.
+
+### User type detection
+
+The component determines whether the user is a B2B Contact or B2C Customer by checking for the presence of `contactId` on the user object. This determines which search field (`contactId` or `customerId`) is used when fetching and creating lists.

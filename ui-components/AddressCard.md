@@ -1,59 +1,242 @@
 # AddressCard
 
-The AddressCard component renders a structured view of a single address and integrates with the Propeller SDK. It supports multiple address sources (`Address`, `CartAddress`, `WarehouseAddress`, `ExternalAddress`) and provides granular visibility control for company name, personal details, and location fields.
+A complete address display and management component that integrates with the Propeller SDK. It renders a structured address card with optional edit, delete, and set-as-default actions. Supports multiple address types (`Address`, `CartAddress`, `WarehouseAddress`, `OrderAddress`) and two form rendering modes: **modal** (default overlay) and **inline** (embedded in page flow).
 
-The component optionally enables address management actions such as edit, delete, and set-as-default, each with configurable callbacks and lifecycle hooks. It encapsulates address presentation and interaction while delegating persistence and business logic to the parent application.
+## Usage
 
-It supports two form rendering modes: **modal** (default) for overlay-based editing, and **inline** for embedded forms (e.g., checkout flows where the form should appear within the page).
+### Full CRUD on an addresses page
 
-## Source Files
+```tsx
+import AddressCard from '@/components/propeller/AddressCard';
+import { graphqlClient } from '@/lib/api';
+import { AddressService, UserService } from 'propeller-sdk-v2';
+import countries from '@/data/countries';
+import toast from 'react-hot-toast';
 
-- **Mitosis source**: `ui-components/AddressCard.lite.tsx`
-- **Compiled React**: `components/propeller/AddressCard.tsx`
-- **Compiled Vue**: `output/vue/ui-components/AddressCard.vue`
+const addressService = new AddressService(graphqlClient);
+const userService = new UserService(graphqlClient);
+
+function AddressesPage({ addresses }: { addresses: Address[] }) {
+  const handleEdit = async (editedAddress: Address) => {
+    await addressService.updateAddress({
+      id: editedAddress.id,
+      input: {
+        firstName: editedAddress.firstName,
+        lastName: editedAddress.lastName,
+        street: editedAddress.street,
+        number: editedAddress.number,
+        numberExtension: editedAddress.numberExtension,
+        postalCode: editedAddress.postalCode,
+        city: editedAddress.city,
+        country: editedAddress.country,
+        email: editedAddress.email,
+        phone: editedAddress.phone,
+        company: editedAddress.company,
+        gender: editedAddress.gender,
+        icp: editedAddress.icp,
+      },
+    });
+  };
+
+  const handleDelete = async (address: Address) => {
+    await addressService.deleteAddress({ id: address.id });
+  };
+
+  const handleSetDefault = async (address: Address) => {
+    await userService.setDefaultAddress({ addressId: address.id });
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {addresses.map((addr) => (
+        <AddressCard
+          key={addr.id}
+          graphqlClient={graphqlClient}
+          address={addr}
+          countries={countries}
+          onEdit={handleEdit}
+          afterEdit={() => toast.success('Address updated')}
+          onDelete={handleDelete}
+          afterDelete={() => toast.success('Address deleted')}
+          onSetDefault={handleSetDefault}
+          afterSetDefault={() => toast.success('Default address updated')}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+### Read-only display (order detail page)
+
+```tsx
+<AddressCard address={order.invoiceAddress} enableActions={false} />
+<AddressCard address={order.deliveryAddress} enableActions={false} />
+```
+
+### New address creation (modal)
+
+```tsx
+const [showNewForm, setShowNewForm] = useState(false);
+
+{showNewForm && (
+  <AddressCard
+    graphqlClient={graphqlClient}
+    address={null}
+    isNew
+    addressType="DELIVERY"
+    countries={countries}
+    onEdit={async (newAddress) => {
+      await addressService.createAddress({ input: newAddress });
+      await refreshAddresses();
+    }}
+    onCancel={() => setShowNewForm(false)}
+  />
+)}
+```
+
+### Inline form for checkout
+
+```tsx
+<AddressCard
+  address={null}
+  inline
+  isNew
+  addressType="INVOICE"
+  title="Invoice Address"
+  showIcp
+  countries={countries}
+  onEdit={(addressData) => handleCheckoutAddress(addressData, 'INVOICE')}
+/>
+```
+
+### Checkout with existing address (logged-in user)
+
+```tsx
+<AddressCard
+  address={cart.invoiceAddress}
+  enableDelete={false}
+  enableSetDefault={false}
+  countries={countries}
+  onEdit={(addressData) => handleAddressSubmit(addressData, 'INVOICE')}
+  afterEdit={() => toast.success('Address updated')}
+/>
+```
+
+### With custom labels (localization)
+
+```tsx
+<AddressCard
+  address={null}
+  inline
+  isNew
+  addressType="INVOICE"
+  countries={countries}
+  labels={{
+    firstName: 'Voornaam',
+    lastName: 'Achternaam',
+    street: 'Straat',
+    number: 'Huisnr',
+    postalCode: 'Postcode',
+    city: 'Plaats',
+    country: 'Land',
+    selectCountry: 'Selecteer land',
+    save: 'Opslaan',
+    cancel: 'Annuleren',
+    newTitle: 'Nieuw adres',
+  }}
+  onEdit={handleSave}
+/>
+```
+
+### With async lifecycle hooks
+
+```tsx
+<AddressCard
+  graphqlClient={graphqlClient}
+  address={address}
+  countries={countries}
+  beforeSave={() => setLoading(true)}
+  onEdit={async (editedAddress) => {
+    await addressService.updateAddress({ id: editedAddress.id, input: editedAddress });
+    await refreshUserData();
+  }}
+  afterEdit={() => setLoading(false)}
+  onDelete={(addr) => addressService.deleteAddress({ id: addr.id })}
+  afterDelete={() => toast.success('Address deleted')}
+/>
+```
 
 ## Props
 
+### Core
+
 | Prop | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `graphqlClient` | `GraphQLClient` | No | — | GraphQL client for the Propeller SDK (only needed when editing) |
-| `address` | `Address \| CartAddress \| WarehouseAddress \| ExternalAddress` | Yes | — | The address to display |
-| `showCompanyName` | `boolean` | No | `true` | Display company name |
-| `showSalutation` | `boolean` | No | `true` | Display salutation (Mr./Mrs.) in the name line |
-| `showFullName` | `boolean` | No | `true` | Display full name line |
-| `showStreet` | `boolean` | No | `true` | Display street line |
-| `showNumberExtension` | `boolean` | No | `true` | Display house number and extension in street line |
-| `showPostalCode` | `boolean` | No | `true` | Display postal code in city line |
-| `showCity` | `boolean` | No | `true` | Display city in city line |
-| `showCountry` | `boolean` | No | `true` | Display country name |
-| `enableActions` | `boolean` | No | `true` | Show action buttons (edit, delete, set default) |
-| `enableEdit` | `boolean` | No | `true` | Show Edit button (launches modal with address form) |
-| `enableDelete` | `boolean` | No | `true` | Show Delete button (with confirmation dialog) |
-| `enableSetDefault` | `boolean` | No | `true` | Show Set Default button (hidden when already default) |
-| `onEdit` | `(address) => void \| Promise<void>` | No | — | Called when address is edited via the form (supports async) |
-| `afterEdit` | `(address) => void \| Promise<void>` | No | — | Called after edit completes (supports async) |
-| `onDelete` | `(addressId: number) => void` | No | — | Called when address is deleted (after confirmation) |
-| `afterDelete` | `(addressId: number) => void` | No | — | Called after deletion completes |
-| `onSetDefault` | `(address) => void` | No | — | Called when Set Default is clicked |
-| `afterSetDefault` | `(address) => void` | No | — | Called after set-default completes |
-| `countries` | `{ code: string; name: string }[]` | No | — | Country list for dropdown (Mitosis only; React version imports from `@/data/countries`) |
-| `isNew` | `boolean` | No | `false` | When true, renders in "new address" mode: auto-opens edit form, hides card body |
-| `onCancel` | `() => void` | No | — | Called when the form is cancelled in `isNew` mode |
-| `inline` | `boolean` | No | `false` | When true, renders the form inline instead of in a modal overlay |
-| `addressType` | `string` | No | — | Address type for new addresses (e.g., `'DELIVERY'`, `'INVOICE'`). Included in the edited address object when the address has no existing type. |
-| `showIcp` | `boolean` | No | `false` | Show ICP/ICS (intra-community supply) checkbox in the form |
-| `title` | `string` | No | — | Custom title for the form. Falls back to "New Address" (isNew) or "Edit Address" |
-| `labels` | `Record<string, string>` | No | `{}` | Custom labels for form fields and buttons |
-| `beforeSave` | `() => void` | No | — | Called before save starts (before `onEdit`) |
+| `graphqlClient` | `GraphQLClient` | No | -- | GraphQL client instance. Only needed when the parent performs SDK operations in callbacks. Omit for read-only use. |
+| `address` | `Address \| CartAddress \| WarehouseAddress \| OrderAddress \| null` | Yes | -- | The address object to display. Pass `null` for new address forms. |
+| `countries` | `{ code: string; name: string }[]` | No | -- | Country list for the country dropdown. Each entry has a 2-letter ISO `code` and display `name`. |
+
+### Visibility
+
+All visibility props default to `true`. Pass `false` to hide.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `showCompanyName` | `boolean` | `true` | Display company name |
+| `showSalutation` | `boolean` | `true` | Display salutation (Mr./Mrs.) in the name line |
+| `showFullName` | `boolean` | `true` | Display full name line |
+| `showStreet` | `boolean` | `true` | Display street line |
+| `showNumberExtension` | `boolean` | `true` | Display house number and extension in street line |
+| `showPostalCode` | `boolean` | `true` | Display postal code in city line |
+| `showCity` | `boolean` | `true` | Display city in city line |
+| `showCountry` | `boolean` | `true` | Display country name |
+| `showEmail` | `boolean` | `false` | Display email address |
+| `showPhone` | `boolean` | `false` | Display phone number |
+| `showIcp` | `boolean` | `false` | Show ICP/ICS (intra-community supply) checkbox in the edit form |
+
+### Actions
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `enableActions` | `boolean` | `true` | Show the action buttons area (edit, delete, set default) |
+| `enableEdit` | `boolean` | `true` | Show Edit button |
+| `enableDelete` | `boolean` | `true` | Show Delete button |
+| `enableSetDefault` | `boolean` | `true` | Show Set Default button (auto-hidden when address is already default) |
+
+### Callbacks
+
+| Prop | Type | Description |
+|---|---|---|
+| `beforeSave` | `() => void` | Called before any save processing begins |
+| `onEdit` | `(address: Address) => void \| Promise<void>` | Called when the user submits the edit form. Receives the full edited address object. Supports async -- the form waits for resolution before closing. |
+| `afterEdit` | `(address: Address) => void \| Promise<void>` | Called after `onEdit` completes. Use for notifications, loading state cleanup, etc. |
+| `onDelete` | `(address: Address) => void` | Called when the user confirms deletion. Receives the address object. |
+| `afterDelete` | `(address: Address) => void` | Called after `onDelete` completes. |
+| `onSetDefault` | `(address: Address) => void` | Called when Set Default is clicked. |
+| `afterSetDefault` | `(address: Address) => void` | Called after `onSetDefault` completes. |
+| `onCancel` | `() => void` | Called when the form is cancelled in `isNew` mode. Use to hide the component or reset parent state. |
+
+### Form configuration
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `isNew` | `boolean` | `false` | New address mode: auto-opens the edit form on mount, hides the card body, calls `onCancel` on dismiss |
+| `inline` | `boolean` | `false` | Render the form inline (embedded in page) instead of in a modal overlay |
+| `addressType` | `string` | -- | Address type for new addresses (e.g., `'DELIVERY'`, `'INVOICE'`). Included in the edited address when the address has no existing type. |
+| `title` | `string` | -- | Custom title for the form. Falls back to "New Address" (`isNew`) or "Edit Address" |
+| `labels` | `Record<string, string>` | `{}` | Custom labels for all form fields, buttons, and titles. See Label Keys below. |
 
 ## Label Keys
 
-| Key | Default | Description |
-|-----|---------|-------------|
+All text in the component is customizable via the `labels` prop.
+
+| Key | Default | Used for |
+|-----|---------|---------|
 | `gender` | `'Gender'` | Gender field label |
-| `genderMale` | `'Male'` | Male option text |
-| `genderFemale` | `'Female'` | Female option text |
-| `genderOther` | `'Other'` | Other option text |
+| `genderMale` | `'Male'` | Male option |
+| `genderFemale` | `'Female'` | Female option |
+| `genderOther` | `'Other'` | Other option |
 | `company` | `'Company'` | Company field label |
 | `firstName` | `'First Name'` | First name field label |
 | `middleName` | `'Middle Name'` | Middle name field label |
@@ -75,154 +258,390 @@ It supports two form rendering modes: **modal** (default) for overlay-based edit
 | `cancel` | `'Cancel'` | Cancel button text |
 | `newTitle` | `'New Address'` | Form title in new mode |
 | `editTitle` | `'Edit Address'` | Form title in edit mode |
-| `confirmDeleteTitle` | `'Confirm Delete'` | Delete confirmation title |
-| `confirmDeleteMessage` | `'Are you sure you want to delete this address?'` | Delete confirmation message |
+| `confirmDeleteTitle` | `'Confirm Delete'` | Delete confirmation dialog title |
+| `confirmDeleteMessage` | `'Are you sure you want to delete this address?'` | Delete confirmation dialog message |
 
-## Usage
+## SDK Services
 
-### Read-only display (e.g., order detail page, cart)
+AddressCard delegates persistence to the parent via callbacks. The parent typically uses these `propeller-sdk-v2` services:
 
-```tsx
-<AddressCard address={address} enableActions={false} />
+### AddressService
+
+Used for creating, updating, and deleting addresses.
+
+```ts
+import { AddressService, GraphQLClient } from 'propeller-sdk-v2';
+
+const addressService = new AddressService(graphqlClient);
+
+// Create
+await addressService.createAddress({
+  input: {
+    type: 'DELIVERY',
+    firstName: 'Jan',
+    lastName: 'de Vries',
+    street: 'Keizersgracht',
+    number: '100',
+    postalCode: '1015AA',
+    city: 'Amsterdam',
+    country: 'NL',
+    email: 'jan@example.com',
+  },
+});
+
+// Update
+await addressService.updateAddress({
+  id: 42,
+  input: {
+    firstName: 'Jan',
+    lastName: 'de Vries',
+    street: 'Herengracht',
+    number: '200',
+    postalCode: '1016BS',
+    city: 'Amsterdam',
+    country: 'NL',
+  },
+});
+
+// Delete
+await addressService.deleteAddress({ id: 42 });
 ```
 
-### Editable with all defaults
+### UserService
 
-```tsx
-import AddressCard from '@/components/propeller/AddressCard';
-import { graphqlClient } from '@/lib/api';
+Used for setting a default address on the user profile.
 
-<AddressCard
-  graphqlClient={graphqlClient}
-  address={address}
-  onEdit={handleEdit}
-  onDelete={handleDelete}
-  onSetDefault={handleSetDefault}
-/>
+```ts
+import { UserService } from 'propeller-sdk-v2';
+
+const userService = new UserService(graphqlClient);
+
+// Set default address
+await userService.setDefaultAddress({ addressId: 42 });
 ```
 
-### New address creation mode (modal)
+## GraphQL Mutation Examples
 
-```tsx
-<AddressCard
-  graphqlClient={graphqlClient}
-  address={{ type: 'invoice' }}
-  isNew
-  onEdit={handleSaveNewAddress}
-  onCancel={() => setShowModal(false)}
-  enableActions={false}
-/>
+These are the underlying mutations the SDK services execute:
+
+### Create address
+
+```graphql
+mutation CreateAddress($input: AddressInput!) {
+  addressCreate(input: $input) {
+    id
+    type
+    firstName
+    lastName
+    street
+    number
+    numberExtension
+    postalCode
+    city
+    country
+    email
+    phone
+    company
+    gender
+    isDefault
+    icp
+  }
+}
 ```
 
-### Inline form for checkout (guest user, no existing address)
+### Update address
 
-```tsx
-<AddressCard
-  address={null}
-  inline
-  isNew
-  addressType="INVOICE"
-  title="Invoice Address"
-  showIcp
-  onEdit={(addressData) => handleAddressSubmit(addressData, 'INVOICE')}
-/>
+```graphql
+mutation UpdateAddress($id: Int!, $input: AddressInput!) {
+  addressUpdate(id: $id, input: $input) {
+    id
+    type
+    firstName
+    lastName
+    street
+    number
+    numberExtension
+    postalCode
+    city
+    country
+    email
+    phone
+    company
+    gender
+    isDefault
+    icp
+  }
+}
 ```
 
-### Checkout with existing address (logged-in user)
+### Delete address
 
-```tsx
-<AddressCard
-  address={cart.invoiceAddress}
-  enableDelete={false}
-  enableSetDefault={false}
-  onEdit={(addressData) => handleAddressSubmit(addressData, 'INVOICE')}
-  afterEdit={() => toast.success('Address updated')}
-/>
+```graphql
+mutation DeleteAddress($id: Int!) {
+  addressDelete(id: $id)
+}
 ```
 
-### With ICP checkbox
+### Set default address
 
-```tsx
-<AddressCard
-  address={null}
-  inline
-  isNew
-  addressType="DELIVERY"
-  showIcp
-  onEdit={handleSave}
-/>
+```graphql
+mutation SetDefaultAddress($addressId: Int!) {
+  userSetDefaultAddress(addressId: $addressId) {
+    id
+    isDefault
+  }
+}
 ```
 
-### With custom labels
+## Behavior
 
-```tsx
-<AddressCard
-  address={null}
-  inline
-  isNew
-  addressType="INVOICE"
-  labels={{
-    firstName: 'Voornaam',
-    lastName: 'Achternaam',
-    street: 'Straat',
-    save: 'Opslaan',
-    cancel: 'Annuleren',
-  }}
-  onEdit={handleSave}
-/>
-```
+### Address Display Structure
 
-### With async lifecycle hooks
+The card renders address fields in this order:
 
-```tsx
-<AddressCard
-  graphqlClient={graphqlClient}
-  address={address}
-  beforeSave={() => setLoading(true)}
-  onEdit={async (editedAddress) => {
-    await updateAddress(editedAddress);
-    await refreshUserData();
-  }}
-  afterEdit={() => setLoading(false)}
-  onDelete={(id) => deleteAddress(id)}
-  afterDelete={(id) => toast.success('Address deleted')}
-/>
-```
-
-## Features
-
-- **Two form modes**: Modal (default overlay) and inline (embedded in page flow, controlled by `inline` prop)
-- **Edit Modal**: Built-in form with fields for gender, company, name, street, postal code, city, country (dropdown), email, phone, and optional ICP checkbox
-- **Async callbacks**: `onEdit` and `afterEdit` are awaited, ensuring async operations complete before the form closes
-- **Optimistic updates**: `_localAddress` state overrides `props.address` for immediate UI feedback
-- **New address mode**: `isNew` prop auto-opens the form on mount, hides the card body, and calls `onCancel` on dismiss
-- **Inline auto-open**: When `inline` is true and no address is provided, the form auto-opens on mount
-- **Address type**: `addressType` prop sets the type field on new addresses (e.g., `'DELIVERY'`, `'INVOICE'`)
-- **ICP/ICS checkbox**: Shown when `showIcp` is true, value included in the edited address as `icp: boolean`
-- **Custom labels**: All text (field labels, button text, titles) customizable via `labels` prop
-- **beforeSave hook**: Called before any save processing begins
-- **Delete Confirmation**: Inline confirmation dialog before deletion
-- **Set Default**: Button automatically hidden when the address is already the default
-- **Default Badge**: Shows a violet badge when `address.isDefault === 'Y'`
-- **Country dropdown**: React version auto-imports from `@/data/countries`; Mitosis receives via `countries` prop
-- **Country name display**: React version uses `getCountryName()` to display full country names
-
-## Address Display Structure
-
-1. Company name (bold, large)
-2. Full name with salutation (medium weight)
-3. Street + number + extension
+1. Company name (bold, large text)
+2. Full name with salutation -- Mr./Mrs. prefix based on `gender` field (M/F/U)
+3. Street + house number + extension
 4. Postal code + city
-5. Country name (full name in React, code in Mitosis)
-6. Default badge (if applicable)
+5. Country (full name resolved from the `countries` list, falls back to the 2-letter code)
+6. Email and phone (only when `showEmail` / `showPhone` are `true`)
+7. Default badge -- a colored badge reading "Default DELIVERY Address" (or similar) when `isDefault === 'Y'`
+
+### Edit Form
+
+The edit form contains fields for: gender (dropdown), company, first name, middle name, last name, street, house number, number extension, postal code, city, country (dropdown from `countries` prop), email, phone, and optionally ICP/ICS checkbox.
+
+Required fields (enforced by HTML validation): first name, last name, street, number, postal code, city, country, email.
+
+The form can render in two modes controlled by the `inline` prop:
+- **Modal** (default): Opens as a centered overlay with backdrop. Includes a close button in the header.
+- **Inline**: Renders embedded in the page flow without any overlay. Useful for checkout forms.
+
+### Delete Confirmation Modal
+
+Clicking "Delete" opens a confirmation dialog. The address is only deleted (via `onDelete`) after the user confirms. The dialog text is customizable via `confirmDeleteTitle` and `confirmDeleteMessage` labels.
+
+### isNew Mode
+
+When `isNew` is `true`:
+- The address card body is hidden
+- The edit form auto-opens on mount
+- Clicking "Cancel" calls the `onCancel` callback (e.g., to unmount the component)
+- The `addressType` prop fills the `type` field on the resulting address object
+
+### Optimistic Updates
+
+After the user saves the form, the component immediately updates its internal display using a local state copy of the address (`localAddress`). This provides instant visual feedback while the parent performs the actual API call in `onEdit`. If the API call fails, the parent should handle reverting.
+
+### Country Dropdown
+
+The country dropdown is populated from the `countries` prop -- an array of `{ code: string; name: string }` objects. The `code` is stored as the address's `country` value (2-letter ISO code, e.g., `'NL'`, `'DE'`). The card display resolves the code back to the full country name using `getCountryName()`.
+
+### CartAddress Limitations
+
+`CartAddress` objects typically lack `id`, `isDefault`, and `type` fields. When displaying a `CartAddress`, the delete and set-default actions will gracefully no-op because there is no `id` to act on.
+
+## Building Your Own
+
+If you need full control over address management without using the AddressCard component, here is a standalone implementation:
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { GraphQLClient, AddressService, UserService, Address } from 'propeller-sdk-v2';
+import countries from '@/data/countries';
+import toast from 'react-hot-toast';
+
+interface AddressManagerProps {
+  graphqlClient: GraphQLClient;
+}
+
+export default function AddressManager({ graphqlClient }: AddressManagerProps) {
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    street: '',
+    number: '',
+    numberExtension: '',
+    postalCode: '',
+    city: '',
+    country: '',
+    email: '',
+    phone: '',
+    company: '',
+    gender: 'M' as 'M' | 'F' | 'U',
+  });
+
+  const addressService = new AddressService(graphqlClient);
+  const userService = new UserService(graphqlClient);
+
+  // Fetch addresses from the user profile
+  async function fetchAddresses() {
+    const viewer = await userService.getViewer({});
+    // Addresses are available on the user/contact object
+    const userAddresses = viewer?.addresses || [];
+    setAddresses(userAddresses);
+  }
+
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  // Create a new address
+  async function handleCreate() {
+    try {
+      await addressService.createAddress({
+        input: {
+          type: 'DELIVERY',
+          ...formData,
+        },
+      });
+      toast.success('Address created');
+      await fetchAddresses();
+    } catch (err) {
+      toast.error('Failed to create address');
+    }
+  }
+
+  // Update an existing address
+  async function handleUpdate(id: number) {
+    try {
+      await addressService.updateAddress({
+        id,
+        input: formData,
+      });
+      toast.success('Address updated');
+      setEditingId(null);
+      await fetchAddresses();
+    } catch (err) {
+      toast.error('Failed to update address');
+    }
+  }
+
+  // Delete an address
+  async function handleDelete(id: number) {
+    if (!confirm('Are you sure?')) return;
+    try {
+      await addressService.deleteAddress({ id });
+      toast.success('Address deleted');
+      await fetchAddresses();
+    } catch (err) {
+      toast.error('Failed to delete address');
+    }
+  }
+
+  // Set as default address
+  async function handleSetDefault(addressId: number) {
+    try {
+      await userService.setDefaultAddress({ addressId });
+      toast.success('Default address updated');
+      await fetchAddresses();
+    } catch (err) {
+      toast.error('Failed to set default address');
+    }
+  }
+
+  // Populate form for editing
+  function startEdit(address: Address) {
+    setEditingId(address.id);
+    setFormData({
+      firstName: address.firstName || '',
+      lastName: address.lastName || '',
+      street: address.street || '',
+      number: address.number || '',
+      numberExtension: address.numberExtension || '',
+      postalCode: address.postalCode || '',
+      city: address.city || '',
+      country: address.country || '',
+      email: address.email || '',
+      phone: address.phone || '',
+      company: address.company || '',
+      gender: (address.gender as 'M' | 'F' | 'U') || 'M',
+    });
+  }
+
+  return (
+    <div>
+      <h2>My Addresses</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {addresses.map((addr) => (
+          <div key={addr.id} className="border rounded-lg p-4">
+            <p className="font-bold">{addr.company}</p>
+            <p>{addr.firstName} {addr.lastName}</p>
+            <p>{addr.street} {addr.number} {addr.numberExtension}</p>
+            <p>{addr.postalCode} {addr.city}</p>
+            <p>{countries.find((c) => c.code === addr.country)?.name || addr.country}</p>
+
+            {addr.isDefault === 'Y' && (
+              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                Default
+              </span>
+            )}
+
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => startEdit(addr)}>Edit</button>
+              <button onClick={() => handleDelete(addr.id)}>Delete</button>
+              {addr.isDefault !== 'Y' && (
+                <button onClick={() => handleSetDefault(addr.id)}>Set Default</button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Simple form for create/edit */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          editingId ? handleUpdate(editingId) : handleCreate();
+        }}
+      >
+        <input
+          placeholder="First Name"
+          value={formData.firstName}
+          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+          required
+        />
+        <input
+          placeholder="Last Name"
+          value={formData.lastName}
+          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+          required
+        />
+        <input
+          placeholder="Street"
+          value={formData.street}
+          onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+          required
+        />
+        <select
+          value={formData.country}
+          onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+          required
+        >
+          <option value="">Select country</option>
+          {countries.map((c) => (
+            <option key={c.code} value={c.code}>{c.name}</option>
+          ))}
+        </select>
+        {/* ... remaining fields ... */}
+        <button type="submit">{editingId ? 'Update' : 'Create'}</button>
+        {editingId && (
+          <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
+        )}
+      </form>
+    </div>
+  );
+}
+```
 
 ## Notes
 
-- `graphqlClient` is optional — omit it for read-only use cases
-- `CartAddress` does not have `id`, `isDefault`, or `type` fields — delete and set-default actions will gracefully no-op
-- The `onEdit` callback receives the full edited address object (including `id`, `type`, `isDefault`, `icp`)
-- All `show*` and `enable*` props default to `true` — pass `false` to hide
+- `graphqlClient` is optional -- omit it for read-only use cases (order detail, cart sidebar)
+- The `onEdit` callback receives the full edited address object including `id`, `type`, `isDefault`, and `icp`
+- The country field sends 2-letter ISO codes (e.g., `"NL"`) -- the Propeller GraphQL API requires max 2-character country codes
 - The `inline` prop only affects form rendering; the card display is unaffected
-- When `inline` + `isNew` (or no address), the card is hidden and the form shows directly
-- The country field sends 2-letter ISO codes (e.g., "DE") — the GraphQL API requires max 2-char codes
-- The React version extracts form fields into a `renderFormFields()` helper to avoid duplication between inline and modal modes
+- When `inline` is `true` and no address is provided, the form auto-opens on mount (same as `isNew`)

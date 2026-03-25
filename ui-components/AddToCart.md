@@ -1,20 +1,17 @@
 # AddToCart
 
-A self-contained Mitosis UI component that renders a quantity selector and an **Add** button. It handles cart resolution (existing cart lookup or new cart creation), optional stock validation, and user feedback via a fixed toast notification or a modal popup.
-
-**Source:** `ui-components/AddToCart.lite.tsx`
-**Compiled React:** `output/react/ui-components/AddToCart`
-**Compiled Vue:** `output/vue/ui-components/AddToCart`
+A self-contained component that renders a quantity selector and an **Add** button for adding products to a Propeller Commerce cart. It handles cart resolution (existing cart lookup or new cart creation), optional stock validation, and user feedback via a toast notification or a confirmation modal.
 
 ---
 
 ## Usage
 
-### Minimal (with external cart management)
+### Simple product
 
 ```tsx
-import AddToCart from '@/output/react/ui-components/AddToCart';
-import { graphqlClient } from '@/lib/api';
+import AddToCart from '@/components/propeller/AddToCart';
+import { graphqlClient } from '@/lib/graphql';
+import config from '@/data/config';
 
 <AddToCart
   graphqlClient={graphqlClient}
@@ -27,6 +24,8 @@ import { graphqlClient } from '@/lib/api';
 ```
 
 ### With automatic cart creation
+
+When no cart exists yet, `createCart` tells the component to find or create one automatically. Always pair it with `onCartCreated` so the new cart ID is persisted in your app state.
 
 ```tsx
 <AddToCart
@@ -43,22 +42,60 @@ import { graphqlClient } from '@/lib/api';
 />
 ```
 
-### With cluster / configurable product
+### Cluster product with selected options
+
+For configurable products (clusters), pass the `cluster` object and the selected child product IDs. The component converts `childItems` into `CartChildItemInput[]` internally.
 
 ```tsx
 <AddToCart
   graphqlClient={graphqlClient}
   user={authState.user}
-  product={product}
+  product={selectedVariant}
   cartId={cart?.cartId}
   configuration={config}
-  clusterId={selectedClusterId}
+  cluster={cluster}
   childItems={[optionProductId1, optionProductId2]}
   afterAddToCart={(cart) => saveCart(cart)}
 />
 ```
 
-### With modal popup instead of toast
+### Bundle with custom price
+
+Override the calculated price when you manage pricing externally (e.g. bundle discounts).
+
+```tsx
+<AddToCart
+  graphqlClient={graphqlClient}
+  user={authState.user}
+  product={bundleProduct}
+  cartId={cart?.cartId}
+  configuration={config}
+  price={49.95}
+  notes="Bundle: Summer starter pack"
+  afterAddToCart={(cart) => saveCart(cart)}
+/>
+```
+
+### Quantity rules (minimumQuantity and unit)
+
+The component reads `product.minimumQuantity` and `product.unit` to enforce step increments and a minimum starting quantity. For example, a product sold in packs of 6 with a minimum of 12:
+
+```tsx
+// product.minimumQuantity = 12, product.unit = 6
+// Quantity input starts at 12 and increments/decrements by 6
+
+<AddToCart
+  graphqlClient={graphqlClient}
+  user={authState.user}
+  product={bulkProduct}  // { minimumQuantity: 12, unit: 6, ... }
+  cartId={cart?.cartId}
+  configuration={config}
+  allowIncrDecr={true}
+  afterAddToCart={(cart) => saveCart(cart)}
+/>
+```
+
+### Modal confirmation instead of toast
 
 ```tsx
 <AddToCart
@@ -73,24 +110,24 @@ import { graphqlClient } from '@/lib/api';
 />
 ```
 
-### With custom add-to-cart handler
+### Custom add-to-cart handler
+
+Bypass the internal `CartService` call entirely by providing `onAddToCart`. You must return a `Cart` object.
 
 ```tsx
 <AddToCart
   graphqlClient={graphqlClient}
   user={authState.user}
   product={product}
-  cartId={cart?.cartId}
   configuration={config}
   onAddToCart={(product, clusterId, quantity, childItems, notes, price) => {
-    // custom logic — must return a Cart object
     return myCustomAddToCart(product.productId, quantity);
   }}
   afterAddToCart={(cart) => saveCart(cart)}
 />
 ```
 
-### Fully localised (Dutch)
+### Localized labels (Dutch)
 
 ```tsx
 <AddToCart
@@ -124,98 +161,288 @@ import { graphqlClient } from '@/lib/api';
 
 | Prop | Type | Description |
 |---|---|---|
-| `graphqlClient` | `GraphQLClient` | Initialised Propeller SDK GraphQL client |
-| `user` | `Contact \| Customer \| null` | Authenticated user — used for cart creation/lookup |
-| `product` | `Product` | The product to add. `product.productId` is used for the cart mutation; `product.names[0].value` is used in the toast message |
+| `graphqlClient` | `GraphQLClient` | Initialized Propeller SDK GraphQL client |
+| `user` | `Contact \| Customer \| null` | Authenticated user, used for cart creation and lookup |
+| `product` | `Product` | The product to add. `product.productId` is sent to the cart mutation; `product.names[0].value` appears in the toast message |
+| `configuration` | `any` | Config object providing `imageSearchFiltersGrid`, `imageVariantFiltersSmall`, and `urls.getProductUrl()` for cart API calls and modal links |
 
 ### Cart
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `cartId` | `string` | — | ID of an existing cart to add the item to. Required when `onAddToCart` is not provided and `createCart` is `false` |
-| `createCart` | `boolean` | `false` | When `true` and no `cartId` is available, the component automatically looks up or creates a cart for the user via `CartService`. **Always pair with `onCartCreated`** to persist the new cart ID |
-| `onCartCreated` | `(cart: Cart) => void` | — | Called after a new cart is created internally. Use this to store the `cartId` in your app state/context. Without it, a new cart is created on every add-to-cart click |
-| `configuration` | `any` | — | Config object providing `imageSearchFiltersGrid` and `imageVariantFiltersSmall` for cart API calls (same object used in `CartContext`) |
+| `cartId` | `string` | -- | ID of an existing cart to add the item to. Required when `onAddToCart` is not provided and `createCart` is `false` |
+| `createCart` | `boolean` | `false` | When `true` and no `cartId` is available, the component looks up or creates a cart via `CartService`. Always pair with `onCartCreated` |
+| `onCartCreated` | `(cart: Cart) => void` | -- | Called after a new cart is created internally. Use this to persist the cart in your app state. Without it, a new cart is created on every click |
 | `language` | `string` | `'NL'` | Language code forwarded to all CartService operations |
 
 ### Product / Item
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `clusterId` | `number` | — | Cluster ID for configurable products |
-| `childItems` | `number[]` | — | Product IDs of the selected cluster child options. Internally converted to `CartChildItemInput[]` |
-| `notes` | `string` | — | Free-text notes attached to the cart item |
-| `price` | `number` | — | Custom unit price override (external pricing). Omit to use the calculated price |
+| `cluster` | `Cluster` | -- | Cluster object for configurable products. `cluster.clusterId` is sent in the cart mutation |
+| `childItems` | `number[]` | -- | Product IDs of the selected cluster child options. Converted to `CartChildItemInput[]` internally |
+| `notes` | `string` | -- | Free-text notes attached to the cart item |
+| `price` | `number` | -- | Custom unit price override. Omit to use the calculated price |
 
-### Behaviour
+### Behavior
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `allowIncrDecr` | `boolean` | `true` | Renders `−` and `+` buttons flanking the quantity input. Set to `false` for a plain `<input type="number">` |
+| `allowIncrDecr` | `boolean` | `true` | Renders `-` and `+` buttons beside the quantity input. Set to `false` for a plain number input |
 | `enableStockValidation` | `boolean` | `false` | Checks `product.inventory.totalQuantity` before adding. Shows an error toast if quantity exceeds available stock |
-| `showModal` | `boolean` | `false` | After a successful add, shows a modal instead of the toast. The modal displays the product image, name (linked to the product page), SKU, quantity and price, with **Continue shopping** and **Proceed to checkout** buttons |
+| `showModal` | `boolean` | `false` | After a successful add, shows a confirmation modal instead of the toast |
+| `beforeAddToCart` | `() => boolean` | -- | Called before adding. Return `false` to abort (e.g. failed form validation) |
 
 ### Callbacks
 
 | Prop | Type | Description |
 |---|---|---|
-| `onAddToCart` | `(product, clusterId?, quantity?, childItems?, notes?, price?, showModal?) => Cart` | Fully replaces the internal `CartService.addItemToCart` call. The returned `Cart` is passed on to `afterAddToCart` |
-| `afterAddToCart` | `(cart: Cart, item?: CartMainItem) => void` | Called after every successful add — whether via `onAddToCart` or the internal service. Receives the updated cart and the matching `CartMainItem` (found by `productId`) |
-| `onProceedToCheckout` | `() => void` | Called when the user clicks **Proceed to checkout** in the modal (only relevant when `showModal` is `true`) |
+| `onAddToCart` | `(product, clusterId?, quantity?, childItems?, notes?, price?, showModal?) => Cart` | Fully replaces the internal `CartService.addItemToCart` call. The returned `Cart` is passed to `afterAddToCart` |
+| `afterAddToCart` | `(cart: Cart, item?: CartMainItem) => void` | Called after every successful add. Receives the updated cart and the matching `CartMainItem` (found by `productId`) |
+| `onProceedToCheckout` | `() => void` | Called when the user clicks "Proceed to checkout" in the modal |
 
 ### Appearance
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `className` | `string` | — | CSS class applied to the root `<div>` |
-| `labels` | `Record<string, string>` | — | Override any UI string. See table below |
+| `className` | `string` | -- | CSS class applied to the root `<div>` |
+| `labels` | `Record<string, string>` | -- | Override any UI string. See Labels table below |
 
 ---
 
 ## Labels
 
-| Key | Default value | Shown when |
+| Key | Default | Shown when |
 |---|---|---|
 | `add` | `'Add'` | Button idle state |
 | `adding` | `'Adding...'` | Button loading state |
-| `addedToCart` | `'added to cart'` | Success toast suffix — full message is `"{productName} added to cart"` |
-| `outOfStock` | `'Insufficient stock available'` | Error toast when `enableStockValidation` blocks the add |
-| `noCartId` | `'No cart ID provided'` | Error toast when no cart is available and `createCart` is `false` |
+| `addedToCart` | `'added to cart'` | Success toast (appended to product name) |
+| `outOfStock` | `'Insufficient stock available'` | Error toast when stock validation blocks the add |
+| `noCartId` | `'No cart ID provided'` | Error toast when no cart is available |
 | `errorAdding` | `'Failed to add item to cart'` | Error toast on API exception |
-| `modalTitle` | `'Added to cart'` | Modal title bar heading (only when `showModal: true`) |
-| `quantity` | `'Quantity'` | Label preceding the quantity value in the modal product row |
+| `modalTitle` | `'Added to cart'` | Modal title bar heading |
+| `quantity` | `'Quantity'` | Label in the modal product row |
 | `continueShopping` | `'Continue shopping'` | Left modal button |
 | `proceedToCheckout` | `'Proceed to checkout'` | Right modal button |
 
 ---
 
-## Internal behaviour
+## SDK Services
 
-### Cart ID resolution (when `onAddToCart` is not provided)
-1. Uses `props.cartId` if present
-2. Falls back to an internally cached `state.activeCartId` (set by a previous `initCart` call in the same session)
-3. If neither exists and `createCart: true`:
-   - Calls `CartService.getCarts` to find the most recent existing cart for the user
-   - If found, adopts it and fires `onCartCreated`
-   - If not found, calls `CartService.startCart`, assigns default invoice/delivery addresses from the user's address book, then fires `onCartCreated`
-4. If still no cart ID → shows `noCartId` error toast
+The component uses the following services from `propeller-sdk-v2`:
+
+| Service | Methods used | Purpose |
+|---|---|---|
+| `CartService` | `addItemToCart` | Adds the product (with optional cluster, child items, notes, price) to the cart |
+| `CartService` | `getCarts` | Finds existing carts for the user when `createCart` is enabled |
+| `CartService` | `startCart` | Creates a new cart when no existing cart is found |
+| `CartService` | `getCart` | Fetches full cart data after finding an existing cart |
+| `CartService` | `updateCartAddress` | Assigns default invoice and delivery addresses from the user's address book to a newly created cart |
+
+All SDK types used: `GraphQLClient`, `Product`, `Cart`, `Cluster`, `Contact`, `Customer`, `CartService`, `CartChildItemInput`, `CartSearchInput`, `CartStartInput`, `CartStartVariables`, `CartMainItem`, `CartBaseItem`, `Address`, `Enums`.
+
+---
+
+## GraphQL Mutation
+
+Under the hood, `CartService.addItemToCart` executes a mutation like the following:
+
+```graphql
+mutation CartAddItem(
+  $id: String!
+  $input: CartItemInput!
+  $language: String
+  $imageSearchFilters: MediaImageProductSearchInput
+  $imageVariantFilters: TransformationsInput
+) {
+  cartAddItem(id: $id, input: $input) {
+    cartId
+    items {
+      productId
+      quantity
+      totalSum
+      totalSumNet
+      product {
+        productId
+        sku
+        names(language: $language) { value }
+        media {
+          images(search: $imageSearchFilters) {
+            items {
+              imageVariants(input: $imageVariantFilters) { url }
+            }
+          }
+        }
+      }
+      childItems {
+        productId
+        quantity
+        totalSum
+        product {
+          names(language: $language) { value }
+        }
+      }
+    }
+    total { subTotal totalNet totalGross }
+  }
+}
+```
+
+Variables for a simple product:
+
+```json
+{
+  "id": "cart-abc-123",
+  "input": {
+    "productId": 42,
+    "quantity": 2
+  },
+  "language": "NL"
+}
+```
+
+Variables for a cluster product with child options:
+
+```json
+{
+  "id": "cart-abc-123",
+  "input": {
+    "productId": 42,
+    "quantity": 1,
+    "clusterId": 100,
+    "childItems": [
+      { "productId": 201, "quantity": 1 },
+      { "productId": 202, "quantity": 1 }
+    ]
+  },
+  "language": "NL"
+}
+```
+
+---
+
+## Behavior
+
+### Quantity rules
+
+The component reads two properties from the `product` object to control quantity behavior:
+
+- **`product.minimumQuantity`** -- The lowest allowed quantity. The quantity input initializes to this value on mount. If not set or zero, defaults to `1`.
+- **`product.unit`** -- The step increment for the `+`/`-` buttons. For example, a `unit` of `6` means quantity moves in steps of 6. If not set or zero, defaults to `1`.
+
+When the user types a value manually, the component snaps it to the nearest valid step: `Math.round((value - min) / step) * step + min`.
+
+### Cart ID resolution
+
+When `onAddToCart` is not provided, the component resolves the cart ID in this order:
+
+1. Uses `props.cartId` if present.
+2. Falls back to an internally cached `activeCartId` (set by a previous `initCart` call in the same session).
+3. If neither exists and `createCart` is `true`:
+   - Calls `CartService.getCarts()` to find existing carts for the user (by `contactId`/`companyId` for B2B or `customerId` for B2C).
+   - If found, adopts the most recent one and fires `onCartCreated`.
+   - If not found, calls `CartService.startCart()`, assigns default invoice and delivery addresses from the user's address book, then fires `onCartCreated`.
+4. If still no cart ID, shows the `noCartId` error toast.
+
+### New cart address assignment
+
+When a new cart is created, the component automatically finds the user's default invoice and delivery addresses (where `isDefault === 'Y'`) and assigns them via `CartService.updateCartAddress`. For B2B (Contact) users, addresses come from `user.company.addresses`; for B2C (Customer) users, from `user.addresses`.
 
 ### Toast notifications
-- Position: `fixed top-4 right-4 z-50`
-- Width: `w-80` (320 px)
-- Auto-dismisses after **3 seconds**
-- Can be dismissed immediately with the × button
-- Green (success) or red (error) colour scheme
-- Suppressed for success when `showModal: true` (modal takes over); error toasts still show
 
-### Modal (`showModal: true`)
-- Backdrop: `bg-gray-500/20` — subtle, slightly opaque veil, clickable to close
-- Panel: `max-w-lg` (512 px), white, `shadow-2xl`
-- **Title bar** — green checkmark icon + `modalTitle` label + × close button
-- **Product row** — thumbnail image (`media.images[0].imageVariants[0].url`), product name as a link to `/product/{productId}/{slug}`, SKU, quantity and formatted price; each field is only rendered when the data is present
-- **Buttons** — `continueShopping` (outlined) closes the modal; `proceedToCheckout` (violet filled) closes the modal and fires `onProceedToCheckout`
+- Position: fixed, top-right corner (`top-4 right-4`).
+- Auto-dismisses after 3 seconds; can be closed immediately with the dismiss button.
+- Green for success, red for errors.
+- Suppressed on success when `showModal` is `true` (the modal takes over). Error toasts still appear.
+
+### Modal confirmation (`showModal: true`)
+
+- A backdrop overlay covers the page; clicking it closes the modal.
+- The modal panel displays: product image, product name (linked to the product page), SKU, quantity, price, and any cluster child items with their names and prices.
+- Two action buttons: "Continue shopping" (closes modal) and "Proceed to checkout" (closes modal and fires `onProceedToCheckout`).
 
 ### Stock validation (`enableStockValidation: true`)
-- Reads `props.product.inventory.totalQuantity`
-- Blocks the add and shows the `outOfStock` toast if requested quantity exceeds available stock
-- No additional API call is made — relies on the `inventory` field already present on the `Product` object
+
+- Reads `product.inventory.totalQuantity` before adding.
+- Blocks the add and shows the `outOfStock` toast if the requested quantity exceeds available stock.
+- No additional API call is made; it relies on the `inventory` field already present on the `Product` object.
+
+---
+
+## Building Your Own
+
+If you need full control over the add-to-cart flow without using this component, here is a standalone implementation using `CartService` directly:
+
+```tsx
+import { CartService, GraphQLClient, Product, Cart } from 'propeller-sdk-v2';
+
+async function addProductToCart(
+  graphqlClient: GraphQLClient,
+  cartId: string,
+  product: Product,
+  quantity: number,
+  options?: {
+    clusterId?: number;
+    childItems?: { productId: number; quantity: number }[];
+    notes?: string;
+    price?: number;
+    language?: string;
+  }
+): Promise<Cart> {
+  const cartService = new CartService(graphqlClient);
+
+  const cart = await cartService.addItemToCart({
+    id: cartId,
+    input: {
+      productId: product.productId,
+      quantity,
+      ...(options?.clusterId !== undefined && { clusterId: options.clusterId }),
+      ...(options?.childItems && { childItems: options.childItems }),
+      ...(options?.notes && { notes: options.notes }),
+      ...(options?.price !== undefined && { price: options.price }),
+    },
+    language: options?.language || 'NL',
+    // Include image filters so the returned cart has product images
+    imageSearchFilters: { type: ['default'] },
+    imageVariantFilters: {
+      transformations: [{ name: 'w', value: '200' }, { name: 'h', value: '200' }],
+    },
+  });
+
+  return cart;
+}
+
+// Usage:
+const updatedCart = await addProductToCart(graphqlClient, 'cart-abc-123', product, 2);
+```
+
+To also create a cart from scratch:
+
+```tsx
+import { CartService, CartStartInput, CartStartVariables } from 'propeller-sdk-v2';
+
+async function createCart(
+  graphqlClient: GraphQLClient,
+  userId: { contactId?: number; companyId?: number; customerId?: number }
+): Promise<Cart> {
+  const cartService = new CartService(graphqlClient);
+
+  const input: CartStartInput = {
+    language: 'NL',
+    ...(userId.contactId && { contactId: userId.contactId }),
+    ...(userId.companyId && { companyId: userId.companyId }),
+    ...(userId.customerId && { customerId: userId.customerId }),
+  };
+
+  const vars: CartStartVariables = {
+    input,
+    language: 'NL',
+    imageSearchFilters: { type: ['default'] },
+    imageVariantFilters: {
+      transformations: [{ name: 'w', value: '200' }, { name: 'h', value: '200' }],
+    },
+  };
+
+  return await cartService.startCart(vars);
+}
+```

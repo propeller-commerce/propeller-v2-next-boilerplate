@@ -1,56 +1,12 @@
 # ProductSlider
 
-Displays products and/or clusters in a horizontally scrollable slider with navigation arrows. Supports two fetching modes:
-
-1. **CMS mode** — Fetches products/clusters by IDs (configured by CMS editors)
-2. **Cross-upsell mode** — Fetches cross-sell/upsell items for a given product or cluster
-
-Can also accept pre-loaded items via `products` prop to skip fetching entirely.
-
-## Props
-
-| Prop | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `graphqlClient` | `GraphQLClient` | **Yes** | — | Propeller SDK GraphQL client. |
-| `products` | `(Product \| Cluster)[]` | No | `[]` | Pre-loaded items. When provided, skips internal fetching. |
-| `productIds` | `number[]` | No | — | Product IDs to fetch (CMS mode). |
-| `clusterIds` | `number[]` | No | — | Cluster IDs to fetch (CMS mode). |
-| `crossUpsellTypes` | `string[]` | No | — | Cross-upsell types to fetch. Enables cross-upsell mode. Values: `'ACCESSORIES'`, `'ALTERNATIVES'`, `'RELATED'`, `'OPTIONS'`, `'PARTS'`. |
-| `productId` | `number` | No | — | Source product ID for cross-upsell lookup. Required when `crossUpsellTypes` is set. |
-| `clusterId` | `number` | No | — | Source cluster ID for cross-upsell lookup. Required when `crossUpsellTypes` is set. |
-| `language` | `string` | **Yes** | — | Language code for API requests. |
-| `taxZone` | `string` | **Yes** | — | Tax zone for price calculations. |
-| `portalMode` | `'open' \| 'semi-closed'` | No | `'open'` | Portal mode controlling add-to-cart visibility. |
-| `user` | `Contact \| Customer \| null` | No | `null` | Authenticated user for cart operations. |
-| `includeTax` | `boolean` | No | — | Override VAT toggle. When omitted, follows `price_include_tax` localStorage + `priceToggleChanged` event. |
-| `stockValidation` | `boolean` | No | `false` | Validate stock before adding to cart. |
-| `showIncrDecr` | `boolean` | No | `true` | Show increment/decrement buttons on add-to-cart. |
-| `itemsPerView` | `{ mobile?: number; tablet?: number; desktop?: number }` | No | `{ mobile: 1, tablet: 2, desktop: 4 }` | Items visible per breakpoint. |
-| `title` | `string` | No | — | Slider heading. |
-| `noImageUrl` | `string` | No | — | Fallback image URL. |
-| `cartId` | `string` | No | — | Existing cart ID. |
-| `createCart` | `boolean` | No | — | Auto-create cart if none exists. |
-| `onCartCreated` | `(cart: Cart) => void` | No | — | Called after new cart creation. |
-| `afterAddToCart` | `(cart: Cart, item?) => void` | No | — | Called after successful add-to-cart. |
-| `onProductClick` | `(product: Product) => void` | No | — | Called when a product card is clicked. |
-| `onClusterClick` | `(cluster: Cluster) => void` | No | — | Called when a cluster card is clicked. |
-| `urlPattern` | `string` | No | — | URL pattern for product links. |
-| `configuration` | `any` | No | — | Configuration object for cards (URL generation, feature flags). |
-| `labels` | `Record<string, string>` | No | — | UI string overrides (see Labels section). |
-| `containerClassName` | `string` | No | `'mb-12'` | Container CSS class. |
-
-### Labels
-
-| Key | Default | Description |
-|---|---|---|
-| `scrollLeft` | `'Scroll left'` | Left arrow aria-label |
-| `scrollRight` | `'Scroll right'` | Right arrow aria-label |
-| `viewCluster` | `'View options'` | Cluster card CTA text (Mitosis only) |
-| `noProducts` | `'No products found'` | Empty state message |
+A horizontally scrollable product carousel with built-in data fetching, navigation arrows, and responsive breakpoints. Renders ProductCard and ClusterCard components with full add-to-cart, stock, and favorites support.
 
 ## Usage
 
-### CMS mode — fetch by IDs
+### CMS-driven slider -- fetch products by ID
+
+Content editors define which products appear. The component fetches them internally using `ProductService.getProducts()`.
 
 ```tsx
 <ProductSlider
@@ -71,7 +27,9 @@ Can also accept pre-loaded items via `products` prop to skip fetching entirely.
 />
 ```
 
-### Cross-upsell mode — on product page
+### Cross-upsell slider on a product detail page
+
+Fetches accessories and related products for a specific product via `CrossupsellService.getCrossupsells()`. The title auto-generates from the cross-upsell types (e.g., "Accessories & Related products") unless overridden.
 
 ```tsx
 <ProductSlider
@@ -80,7 +38,6 @@ Can also accept pre-loaded items via `products` prop to skip fetching entirely.
   productId={product.productId}
   language="NL"
   taxZone="NL"
-  title="Related Products"
   user={authState.user}
   cartId={cart?.cartId}
   createCart={true}
@@ -92,7 +49,7 @@ Can also accept pre-loaded items via `products` prop to skip fetching entirely.
 />
 ```
 
-### Cross-upsell mode — for a cluster
+### Cross-upsell slider for a cluster
 
 ```tsx
 <ProductSlider
@@ -101,13 +58,14 @@ Can also accept pre-loaded items via `products` prop to skip fetching entirely.
   clusterId={cluster.clusterId}
   language="NL"
   taxZone="NL"
-  title="Alternative Products"
   configuration={config}
   onProductClick={(product) => router.push(config.urls.getProductUrl(product))}
 />
 ```
 
-### Pre-loaded items (no fetch)
+### Pre-loaded items (skip fetching)
+
+Pass an array of already-fetched Product or Cluster objects. No API call is made.
 
 ```tsx
 <ProductSlider
@@ -121,48 +79,383 @@ Can also accept pre-loaded items via `products` prop to skip fetching entirely.
 />
 ```
 
+### Catalog-only mode (no add-to-cart)
+
+Set `portalMode="semi-closed"` to hide the add-to-cart button on each card.
+
+```tsx
+<ProductSlider
+  graphqlClient={graphqlClient}
+  productIds={[10, 20, 30]}
+  language="NL"
+  taxZone="NL"
+  portalMode="semi-closed"
+  configuration={config}
+  onProductClick={(product) => router.push(config.urls.getProductUrl(product))}
+/>
+```
+
+### Custom responsive layout
+
+```tsx
+<ProductSlider
+  graphqlClient={graphqlClient}
+  productIds={[10, 20, 30, 40, 50, 60]}
+  language="NL"
+  taxZone="NL"
+  itemsPerView={{ mobile: 2, tablet: 3, desktop: 5 }}
+  configuration={config}
+/>
+```
+
+## Props
+
+### Data Source
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | Yes | -- | Propeller SDK client for API calls. |
+| `products` | `(Product \| Cluster)[]` | No | `[]` | Pre-loaded items. Skips all internal fetching when provided. |
+| `productIds` | `number[]` | No | -- | Product IDs to fetch (CMS mode). |
+| `clusterIds` | `number[]` | No | -- | Cluster IDs to fetch (CMS mode). |
+| `crossUpsellTypes` | `string[]` | No | -- | Enables cross-upsell mode. Values: `'ACCESSORIES'`, `'ALTERNATIVES'`, `'RELATED'`, `'OPTIONS'`, `'PARTS'`. |
+| `productId` | `number` | No | -- | Source product for cross-upsell lookup. Required when `crossUpsellTypes` is set. |
+| `clusterId` | `number` | No | -- | Source cluster for cross-upsell lookup. Required when `crossUpsellTypes` is set. |
+
+### Locale and Pricing
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `language` | `string` | Yes | -- | Language code for API requests and localized content. |
+| `taxZone` | `string` | Yes | -- | Tax zone for price calculations. |
+| `includeTax` | `boolean` | No | -- | Override the VAT toggle. When omitted, follows the `price_include_tax` localStorage value and `priceToggleChanged` event. |
+
+### Layout
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `title` | `string` | No | -- | Heading displayed above the slider. In cross-upsell mode, auto-generates from the type names if omitted. |
+| `itemsPerView` | `{ mobile?: number; tablet?: number; desktop?: number }` | No | `{ mobile: 1, tablet: 2, desktop: 4 }` | Number of visible cards at each breakpoint. |
+| `containerClassName` | `string` | No | `'mb-12'` | CSS class for the outermost wrapper. |
+
+### Portal and Visibility
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `portalMode` | `'open' \| 'semi-closed'` | No | `'open'` | `'open'` shows add-to-cart on product cards. `'semi-closed'` hides it for a catalog-only view. |
+| `user` | `Contact \| Customer \| null` | No | `null` | Authenticated user, forwarded to cards for cart and pricing operations. |
+
+### Cart Integration
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `cartId` | `string` | No | -- | Existing cart ID to add items to. |
+| `createCart` | `boolean` | No | `false` | Auto-create a cart when none exists. Pair with `onCartCreated`. |
+| `onCartCreated` | `(cart: Cart) => void` | No | -- | Called after a new cart is created internally. |
+| `afterAddToCart` | `(cart: Cart, item?: CartMainItem) => void` | No | -- | Called after every successful add-to-cart with the updated cart. |
+| `stockValidation` | `boolean` | No | `false` | Validate stock before adding to cart. |
+| `showIncrDecr` | `boolean` | No | `true` | Show +/- stepper buttons on add-to-cart. |
+| `showModal` | `boolean` | No | `false` | Show a success modal instead of a toast after adding to cart. |
+| `onProceedToCheckout` | `() => void` | No | -- | Called when "Proceed to checkout" is clicked in the add-to-cart modal. |
+
+### Stock Display
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `showStock` | `boolean` | No | `false` | Show the stock/availability widget on each card. |
+| `showAvailability` | `boolean` | No | `true` | Show only the availability indicator (Available / Not available). |
+| `stockLabels` | `Record<string, string>` | No | -- | Label overrides for ItemStock. Keys: `inStock`, `outOfStock`, `lowStock`, `available`, `notAvailable`, `pieces`. |
+
+### Favorites
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `enableAddFavorite` | `boolean` | No | `false` | Show a heart-icon toggle on each card. |
+| `onToggleFavorite` | `(item: Product \| Cluster, isFavorite: boolean) => void` | No | -- | Called when a favorite is toggled. |
+
+### Navigation Callbacks
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `onProductClick` | `(product: Product) => void` | No | -- | Called when a product card is clicked. Use for SPA-style routing. |
+| `onClusterClick` | `(cluster: Cluster) => void` | No | -- | Called when a cluster card is clicked. |
+
+### Labels and Configuration
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `configuration` | `any` | No | -- | App config object providing `imageSearchFiltersGrid`, `imageVariantFiltersMedium`, and `urls` for URL generation. |
+| `labels` | `Record<string, string>` | No | -- | UI string overrides (see table below). |
+| `addToCartLabels` | `Record<string, string>` | No | -- | Label overrides forwarded to the AddToCart component inside each card. Keys: `add`, `adding`, `addedToCart`, `outOfStock`, `noCartId`, `errorAdding`, `modalTitle`, `quantity`, `continueShopping`, `proceedToCheckout`. |
+
+#### Label Keys
+
+| Key | Default | Description |
+|---|---|---|
+| `scrollLeft` | `'Scroll left'` | Left arrow aria-label. |
+| `scrollRight` | `'Scroll right'` | Right arrow aria-label. |
+| `noProducts` | `'No products found'` | Empty state message (CMS mode only). |
+| `ACCESSORIES` | `'Accessories'` | Cross-upsell type display name. |
+| `ALTERNATIVES` | `'Alternatives'` | Cross-upsell type display name. |
+| `RELATED` | `'Related products'` | Cross-upsell type display name. |
+| `OPTIONS` | `'Options'` | Cross-upsell type display name. |
+| `PARTS` | `'Parts'` | Cross-upsell type display name. |
+
+## SDK Services
+
+### ProductService -- CMS mode
+
+When `productIds` or `clusterIds` are provided (and `products` is not), the component calls `ProductService.getProducts()` internally:
+
+```ts
+const productService = new ProductService(graphqlClient);
+const response = await productService.getProducts({
+  input: {
+    productIds: [123, 456],
+    clusterIds: [101],
+    language: 'NL',
+    page: 1,
+    offset: 50,
+    statuses: [
+      Enums.ProductStatus.A,  // Active
+      Enums.ProductStatus.P,  // Published
+      Enums.ProductStatus.T,  // Temporary
+      Enums.ProductStatus.S,  // Stock
+    ],
+  },
+  imageSearchFilters: configuration?.imageSearchFiltersGrid || { page: 1, offset: 1 },
+  imageVariantFilters: configuration?.imageVariantFiltersMedium || {
+    transformations: [{
+      name: 'grid',
+      transformation: {
+        format: Enums.Format.WEBP,
+        height: 300,
+        width: 300,
+        fit: Enums.Fit.BOUNDS,
+      },
+    }],
+  },
+  filterAvailableAttributeInput: { isSearchable: true },
+});
+```
+
+The response shape is `{ items: (Product | Cluster)[] }`. Both products and clusters can appear in a single response.
+
+### CrossupsellService -- cross-upsell mode
+
+When `crossUpsellTypes` is set along with `productId` or `clusterId`, the component calls `CrossupsellService.getCrossupsells()`:
+
+```ts
+const crossupsellService = new CrossupsellService(graphqlClient);
+const result = await crossupsellService.getCrossupsells({
+  input: {
+    types: ['ACCESSORIES', 'RELATED'],
+    page: 1,
+    offset: 50,
+    productIdsFrom: [product.productId],
+    // or: clusterIdsFrom: [cluster.clusterId],
+  },
+  language: 'NL',
+  imageSearchFilters: configuration?.imageSearchFiltersGrid,
+  imageVariantFilters: configuration?.imageVariantFiltersMedium,
+  priceCalculateProductInput: {
+    taxZone: 'NL',
+    companyId: user?.company?.companyId,   // B2B Contact
+    contactId: user?.contactId,            // B2B Contact
+    customerId: user?.customerId,          // B2C Customer
+  },
+});
+```
+
+The response contains `{ items: Crossupsell[] }`. Each `Crossupsell` has either a `productTo` or `clusterTo` field referencing the related item.
+
+**Known limitation**: `CrossupsellService.getCrossupsells()` has a known SDK bug where undeclared fragment variables cause an HTTP 400. Cross-upsell results may not display until the SDK is fixed. The error is caught silently.
+
+## GraphQL Query Examples
+
+### Fetch products by ID (what ProductService.getProducts sends)
+
+```graphql
+query products(
+  $input: ProductSearchInput!
+  $imageSearchFilters: ProductImageSearchInput
+  $imageVariantFilters: ProductImageVariantSearchInput
+) {
+  products(input: $input) {
+    items {
+      productId
+      sku
+      name { value language }
+      slug { value language }
+      price { net gross }
+      media(input: $imageSearchFilters) {
+        images {
+          url
+          variants(input: $imageVariantFilters) { url }
+        }
+      }
+    }
+    itemsFound
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "productIds": [123, 456],
+    "language": "NL",
+    "page": 1,
+    "offset": 50,
+    "statuses": ["A", "P", "T", "S"]
+  },
+  "imageSearchFilters": { "page": 1, "offset": 1 },
+  "imageVariantFilters": {
+    "transformations": [{
+      "name": "grid",
+      "transformation": { "format": "WEBP", "height": 300, "width": 300, "fit": "BOUNDS" }
+    }]
+  }
+}
+```
+
+### Fetch cross-upsells for a product
+
+```graphql
+query crossupsells(
+  $input: CrossupsellSearchInput!
+  $language: String
+  $imageSearchFilters: ProductImageSearchInput
+  $imageVariantFilters: ProductImageVariantSearchInput
+) {
+  crossupsells(input: $input) {
+    items {
+      type
+      productTo {
+        productId
+        name(language: $language) { value }
+        slug(language: $language) { value }
+        price { net gross }
+      }
+      clusterTo {
+        clusterId
+        name(language: $language) { value }
+        slug(language: $language) { value }
+      }
+    }
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "input": {
+    "types": ["ACCESSORIES", "RELATED"],
+    "productIdsFrom": [123],
+    "page": 1,
+    "offset": 50
+  },
+  "language": "NL"
+}
+```
+
+## Building Your Own
+
+To build a custom slider or replace the built-in fetching logic:
+
+1. **Fetch data externally** using `ProductService` or `CrossupsellService` as shown above.
+2. **Pass results via the `products` prop** to skip internal fetching entirely.
+3. **Wire up cart integration** by passing `cartId`, `createCart`, `onCartCreated`, and `afterAddToCart` to keep the app's CartContext in sync.
+4. **Handle routing** with `onProductClick` and `onClusterClick` callbacks rather than relying on anchor tags, so the slider works with any router.
+
+Example with external fetch and custom filtering:
+
+```tsx
+const [items, setItems] = useState<(Product | Cluster)[]>([]);
+
+useEffect(() => {
+  const productService = new ProductService(graphqlClient);
+  productService.getProducts({
+    input: {
+      productIds: cmsBlock.productIds,
+      language: 'NL',
+      page: 1,
+      offset: 20,
+      statuses: [Enums.ProductStatus.A],
+    },
+    imageSearchFilters: config.imageSearchFiltersGrid,
+    imageVariantFilters: config.imageVariantFiltersMedium,
+    filterAvailableAttributeInput: { isSearchable: true },
+  }).then(res => {
+    // Custom filter: only items with images
+    setItems((res.items || []).filter(item => item.media?.images?.length > 0));
+  });
+}, [cmsBlock.productIds]);
+
+return (
+  <ProductSlider
+    graphqlClient={graphqlClient}
+    products={items}
+    language="NL"
+    taxZone="NL"
+    title={cmsBlock.title}
+    user={authState.user}
+    cartId={cart?.cartId}
+    createCart={true}
+    onCartCreated={saveCart}
+    afterAddToCart={saveCart}
+    configuration={config}
+    onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
+    onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}
+  />
+);
+```
+
 ## Behavior
 
-### Fetching modes
+### Responsive Card Widths
 
-- **CMS mode** (default): When `productIds` or `clusterIds` are provided, calls `ProductService.getProducts()`.
-- **Cross-upsell mode**: When `crossUpsellTypes` is set with a `productId` or `clusterId`, calls `CrossupsellService.getCrossupsells()` and extracts `productTo`/`clusterTo` from the response.
-- **Pre-loaded**: When `products` prop has items, renders them directly without fetching.
-- Cross-upsell mode takes priority over CMS mode when `crossUpsellTypes` is set.
+Card widths are calculated with CSS `calc()` to fill the container minus gaps:
 
-### UI behavior
+- **Mobile** (default): `calc((100% - 1.5rem) / 1.5)` -- shows ~1.5 cards, hinting that more content is scrollable.
+- **Tablet** (`md`): `calc((100% - 3rem) / 2.5)` -- shows ~2.5 cards.
+- **Desktop** (`lg`): `calc((100% - 4.5rem) / 4)` -- shows 4 full cards.
 
-- **Re-fetch on prop change**: Automatically re-fetches when IDs, cross-upsell types, or source product/cluster change.
-- **Scroll navigation**: Left/right arrows scroll the track by 80% of visible width. Arrows disable at scroll boundaries.
-- **Loading skeleton**: Shows animated placeholder cards matching `desktopCount` while fetching.
-- **Empty state**: Shows "No products found" in CMS mode. Hidden in cross-upsell mode (no results is normal).
-- **Mixed content**: Supports both Products and Clusters in the same slider.
-- **Responsive width**: Card width is calculated as `calc((100% - gaps) / desktopCount)`.
-- **VAT toggle**: Reacts to the `priceToggleChanged` custom event. Can be overridden via `includeTax` prop.
+The partial-card pattern is intentional: it signals to the user that the row is scrollable.
 
-### Known limitation
+### Scroll Navigation
 
-`CrossupsellService.getCrossupsells()` has a known SDK bug (undeclared fragment variables cause HTTP 400). Cross-upsell results may not display until the SDK is fixed. The error is caught silently.
+- Left/right arrow buttons appear when the number of items exceeds the desktop count.
+- Each click scrolls the track by 80% of its visible width using `scrollBy({ behavior: 'smooth' })`.
+- Arrows disable automatically at scroll boundaries (left arrow at the start, right arrow at the end).
+- Scroll position is tracked via the native `onScroll` event.
 
-## Mitosis vs React Differences
+### Loading and Empty States
 
-The **Mitosis source** (`ui-components/ProductSlider.lite.tsx`) renders inline card markup because Mitosis cannot import other Mitosis components.
+- **Loading**: Displays four animated skeleton cards (gray pulsing rectangles) while fetching.
+- **Empty (CMS mode)**: Shows the `noProducts` label ("No products found" by default).
+- **Empty (cross-upsell mode)**: The entire component hides itself. This is intentional -- a product may have no cross-upsells, and showing an empty section would be confusing.
 
-The **React copy** (`components/propeller/ProductSlider.tsx`) renders actual `ProductCard` and `ClusterCard` components with full catalog-page features:
+### Re-fetching
 
-- Add-to-cart with quantity increment/decrement
-- Stock display and availability indicators
-- VAT toggle reactivity (via ProductCard's internal listener)
-- Cart integration (`cartId`, `createCart`, `onCartCreated`, `afterAddToCart`)
-- `useRef` for scroll track (supports multiple sliders on one page)
-- Scroll dimension updates via `useEffect` on items change + window resize listener
+The component re-fetches automatically when any of these props change:
+- `productIds` or `clusterIds` (compared by value, not reference)
+- `crossUpsellTypes` (compared by value)
+- `productId` or `clusterId` (cross-upsell source)
+- `language`
 
-When updating, edit the Mitosis source for props/fetching logic, then manually update the React copy for card rendering changes.
+### CMS-Driven Content (Strapi)
 
-## CMS Integration (Strapi)
+Add a `shared.product-slider` component in Strapi with fields for `title`, `productIds` (comma-separated text), and `clusterIds` (comma-separated text). A CMS block wrapper (`ProductSliderBlock`) parses these fields into number arrays and handles auth, cart, and configuration wiring automatically, so editors only need to enter IDs.
 
-Add a `shared.product-slider` component in Strapi with fields `title`, `productIds` (text, comma-separated), `clusterIds` (text, comma-separated). The CMS block wrapper `ProductSliderBlock` handles auth, cart, and config wiring automatically.
+### Mixed Content
 
-## Mitosis Source
+A single slider can contain both Product and Cluster items. The component detects the item type by checking for `clusterId` vs `productId` and renders the appropriate card (ClusterCard or ProductCard).
 
-`ui-components/ProductSlider.lite.tsx`
+### VAT Toggle
+
+Each card respects the global VAT toggle. The `includeTax` prop overrides the toggle when set explicitly. When omitted, cards read from `localStorage` (`price_include_tax`) and listen for the `priceToggleChanged` custom event.

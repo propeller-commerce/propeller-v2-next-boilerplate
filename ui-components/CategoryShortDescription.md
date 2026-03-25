@@ -1,37 +1,33 @@
 # CategoryShortDescription
 
-UI component that renders the short category description. It reads the `shortDescription` field from a Propeller `Category` object, resolves the matching language entry, and renders it as HTML. Unlike `CategoryDescription`, this component has no truncation or "Read more" toggle — it always renders the full short description.
-
-**Source:** `ui-components/CategoryShortDescription.lite.tsx`
-**Compiled React:** `output/react/ui-components/CategoryShortDescription`
-**Compiled Vue:** `output/vue/ui-components/CategoryShortDescription`
+Renders a category's short description. Resolves the correct language entry from the Propeller `Category` object and renders it as HTML. Unlike `CategoryDescription`, this component has no truncation or toggle -- it always renders the full short description.
 
 ---
 
 ## Usage
 
-### Minimal
+### Basic
 
 ```tsx
 import CategoryShortDescription from "@/components/propeller/CategoryShortDescription";
 
-<CategoryShortDescription category={category} language="NL" />;
+<CategoryShortDescription category={category} language="NL" />
 ```
 
-### On a category page (below the title)
+### Below a category title
 
 ```tsx
 <GridTitle
   title={categoryName}
-  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || "NL"}
 />
 <CategoryShortDescription
   category={category}
-  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'}
+  language={process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || "NL"}
 />
 ```
 
-### With custom class
+### Custom styling
 
 ```tsx
 <CategoryShortDescription
@@ -41,49 +37,116 @@ import CategoryShortDescription from "@/components/propeller/CategoryShortDescri
 />
 ```
 
+### Paired with CategoryDescription on a category page
+
+```tsx
+<CategoryShortDescription category={category} language="NL" />
+<ProductGrid ... />
+<CategoryDescription category={category} language="NL" maxLength={300} />
+```
+
 ---
 
 ## Props
 
-### Required
+### Data
 
-| Prop       | Type     | Description                                                                                            |
-| ---------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| `language` | `string` | Language code used to resolve the correct localised short description from `category.shortDescription` |
+| Prop       | Type       | Required | Default | Description                                                                                              |
+| ---------- | ---------- | -------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `category` | `Category` | No       | —       | Propeller `Category` object. The component reads the `shortDescription` array of `LocalizedString` items |
+| `language` | `string`   | Yes      | —       | Language code (e.g. `"NL"`, `"EN"`) used to match the correct `LocalizedString` entry                    |
 
-### Optional
+### Styling
 
-| Prop        | Type       | Default | Description                                                                                                                                                  |
-| ----------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `category`  | `Category` | —       | Propeller `Category` object. The component reads `category.shortDescription` (an array of `LocalizedString`) and renders the matching language entry as HTML |
-| `className` | `string`   | —       | Extra CSS class applied to the root element                                                                                                                  |
+| Prop        | Type     | Required | Default | Description                             |
+| ----------- | -------- | -------- | ------- | --------------------------------------- |
+| `className` | `string` | No       | —       | Extra CSS class applied to the root div |
 
 ---
 
-## Internal behaviour
+## SDK Services
+
+This component does not call any SDK service directly. It expects a `Category` object to be passed via props (typically fetched by `CategoryService.getCategory()` or a direct GraphQL query).
+
+### Category fields read
+
+| Field              | SDK Type            | Description                                                                                                       |
+| ------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `shortDescription` | `LocalizedString[]` | Array of `{ language: string; value: string }` entries. The component finds the entry matching the `language` prop and renders its `value` as HTML |
+
+---
+
+## GraphQL Query Example
+
+When fetching a category, include the `shortDescription` field to supply this component with data:
+
+```graphql
+query GetCategory($categoryId: Int!, $language: String) {
+  category(id: $categoryId) {
+    categoryId
+    name(language: $language) {
+      language
+      value
+    }
+    shortDescription(language: $language) {
+      language
+      value
+    }
+  }
+}
+```
+
+The returned `shortDescription` array is passed directly as `category.shortDescription`.
+
+---
+
+## Behavior
 
 ### Language resolution
 
-1. Reads `category.shortDescription` — an array of `LocalizedString` objects (`{ language, value }`)
+1. Reads `category.shortDescription` -- an array of `LocalizedString` objects (`{ language, value }`)
 2. Finds the entry where `language` matches the `language` prop
-3. Returns the `value` (HTML string) or an empty string if no match
+3. Returns the `value` (HTML string), or an empty string if no match is found
 
 ### Empty state
 
-- When the short description is empty (no category, no matching language, or empty value), the component renders **nothing** — no wrapper `<div>` is output to the DOM
+When the short description is empty (no `category` prop, no matching language entry, or an empty value), the component renders **nothing** -- no wrapper element is added to the DOM.
 
-### Styling
+### Styling details
 
 - Root element: `mb-6` bottom margin
 - Description text: `prose prose-slate max-w-none text-muted-foreground`
 
----
-
-## Comparison with CategoryDescription
+### Comparison with CategoryDescription
 
 | Feature            | CategoryShortDescription    | CategoryDescription                                |
 | ------------------ | --------------------------- | -------------------------------------------------- |
-| Source field       | `category.shortDescription` | `category.description`                             |
+| Source field        | `category.shortDescription` | `category.description`                             |
 | Truncation         | No                          | Yes (configurable via `collapsed` and `maxLength`) |
 | "Read more" toggle | No                          | Yes                                                |
 | Use case           | Brief summary below title   | Full description with expand/collapse              |
+
+---
+
+## Building Your Own
+
+To create a custom short description component:
+
+1. Fetch the `Category` object with the `shortDescription` field included (see the GraphQL query above)
+2. Resolve the correct language entry from `category.shortDescription` by matching the `language` field
+3. Render the `value` as HTML (it may contain rich formatting from the Propeller backend)
+4. Use `dangerouslySetInnerHTML` (React) or `v-html` (Vue) to render the HTML content
+
+```tsx
+function SimpleShortDescription({ category, language }: { category: Category; language: string }) {
+  const match = category.shortDescription?.find((d) => d.language === language);
+  if (!match?.value) return null;
+
+  return (
+    <div
+      className="prose max-w-none"
+      dangerouslySetInnerHTML={{ __html: match.value }}
+    />
+  );
+}
+```

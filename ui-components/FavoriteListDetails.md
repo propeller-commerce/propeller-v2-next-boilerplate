@@ -1,68 +1,28 @@
-# FavoriteListDetails Component
+# FavoriteListDetails
 
-Renders the contents of a selected favorite list for the logged-in user. Fetches the favorite list by ID, displays products and clusters using the `FavoriteListItem` component, and provides client-side pagination. Delegates item deletion to the parent via callback.
-
-## Props
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `graphqlClient` | `GraphQLClient` | Yes | - | GraphQL client for the Propeller SDK |
-| `user` | `Contact \| Customer` | Yes | - | The logged in user for which the favorite list is going to be displayed |
-| `favoriteListId` | `string` | Yes | - | The favorite list ID to fetch and display |
-| `onItemDelete` | `(itemId: string) => void` | No | - | Action method for deleting a favorite list item. The component optimistically removes the item from the UI and calls this callback so the parent can handle the SDK deletion |
-| `itemsPerPage` | `number` | No | `12` | Number of items to show per page |
-| `showPagination` | `boolean` | No | `true` | Show pagination controls below the items |
-| `paginationVariant` | `string` | No | `'compact'` | Pagination display variant: `'compact'` or `'full'` |
-| `className` | `string` | No | - | Extra CSS class on the root element |
-| `configuration` | `object` | No | - | Configuration object for URL generation (e.g., `config` from `@/data/config`) |
-| `labels` | `Record<string, string>` | No | - | UI string overrides (see Labels section) |
-
-### FavoriteListItem Display Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `titleLinkable` | `boolean` | `true` | Whether item titles link to the PDP |
-| `showStockComponent` | `boolean` | `false` | Show stock availability on items |
-| `showSku` | `boolean` | `true` | Display the SKU beneath item names |
-| `allowAddToCart` | `boolean` | `true` | Enable add to cart for products |
-| `showDelete` | `boolean` | `true` | Show delete button on each item |
-| `onItemClick` | `(item: Product \| Cluster) => void` | - | Callback when an item title or image is clicked |
-
-### AddToCart Pass-Through Props (products only)
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `cartId` | `string` | - | Existing cart ID |
-| `createCart` | `boolean` | - | Auto-create cart if none exists |
-| `onCartCreated` | `(cart: Cart) => void` | - | Called after a new cart is created |
-| `onAddToCart` | `(product, ...) => Cart` | - | Replaces internal add-to-cart logic |
-| `afterAddToCart` | `(cart: Cart, item?) => void` | - | Called after every successful add-to-cart |
-| `showModal` | `boolean` | `false` | Show modal after successful add |
-| `allowIncrDecr` | `boolean` | `true` | Show increment/decrement buttons |
-| `enableStockValidation` | `boolean` | `false` | Validate stock before adding to cart |
-| `language` | `string` | `'NL'` | Language code for CartService |
-| `onProceedToCheckout` | `() => void` | - | Checkout button callback |
-| `addToCartLabels` | `Record<string, string>` | - | Label overrides for AddToCart UI |
-| `stockLabels` | `Record<string, string>` | - | Label overrides for ItemStock UI |
-| `itemLabels` | `Record<string, string>` | - | Label overrides for FavoriteListItem UI |
-
-## Labels
-
-All labels are optional with English defaults:
-
-- `emptyTitle` — Empty state heading (default: "List is empty")
-- `emptyDescription` — Empty state description (default: "You haven't added any products or clusters to this list yet.")
+Renders the contents of a favorite list, displaying products and clusters with client-side pagination. Each item is rendered via `FavoriteListItem` and supports add-to-cart, deletion, stock display, and navigation.
 
 ## Usage
 
-### Favorites detail page (full integration)
+### Full integration on a favorites detail page
 
 ```tsx
+import FavoriteListDetails from '@/components/propeller/FavoriteListDetails';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { getGraphqlClient } from '@/lib/graphql';
+import config from '@/data/config';
+
+const graphqlClient = getGraphqlClient();
+const { state: authState } = useAuth();
+const { cart, saveCart } = useCart();
+
 <FavoriteListDetails
   graphqlClient={graphqlClient}
   user={authState.user}
   favoriteListId={listId}
   onItemDelete={handleItemDelete}
+  onListLoaded={(list) => setPageTitle(list.name)}
   configuration={config}
   cartId={cart?.cartId}
   createCart={true}
@@ -73,7 +33,7 @@ All labels are optional with English defaults:
 />
 ```
 
-### Read-only display (no add-to-cart, no delete)
+### Read-only display (no cart actions, no delete)
 
 ```tsx
 <FavoriteListDetails
@@ -86,7 +46,25 @@ All labels are optional with English defaults:
 />
 ```
 
-### With full pagination variant
+### Compact preview with limited items per page
+
+```tsx
+<FavoriteListDetails
+  graphqlClient={graphqlClient}
+  user={authState.user}
+  favoriteListId={listId}
+  itemsPerPage={4}
+  paginationVariant="compact"
+  showStockComponent={true}
+  showSku={false}
+  labels={{
+    emptyTitle: 'No items yet',
+    emptyDescription: 'Start adding products to this list.',
+  }}
+/>
+```
+
+### Full pagination variant with custom item labels
 
 ```tsx
 <FavoriteListDetails
@@ -95,13 +73,265 @@ All labels are optional with English defaults:
   favoriteListId={listId}
   itemsPerPage={6}
   paginationVariant="full"
+  itemLabels={{ deleteButton: 'Remove', viewCluster: 'View options' }}
+  addToCartLabels={{ addButton: 'Add to basket' }}
 />
+```
+
+### With stock validation and checkout flow
+
+```tsx
+<FavoriteListDetails
+  graphqlClient={graphqlClient}
+  user={authState.user}
+  favoriteListId={listId}
+  cartId={cart?.cartId}
+  createCart={true}
+  onCartCreated={(newCart) => saveCart(newCart)}
+  afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+  showStockComponent={true}
+  showAvailability={true}
+  showStock={true}
+  enableStockValidation={true}
+  showModal={true}
+  onProceedToCheckout={() => router.push('/checkout')}
+  configuration={config}
+/>
+```
+
+## Props
+
+### Core
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `graphqlClient` | `GraphQLClient` | Yes | -- | GraphQL client instance for the Propeller SDK |
+| `user` | `Contact \| Customer` | Yes | -- | Logged-in user whose favorite list is displayed |
+| `favoriteListId` | `string` | Yes | -- | ID of the favorite list to fetch |
+| `configuration` | `object` | No | -- | Configuration object for URL generation (e.g., `config` from `@/data/config`) |
+| `className` | `string` | No | -- | Extra CSS class on the root element |
+| `language` | `string` | No | `'NL'` | Language code forwarded to the SDK for localized data |
+| `includeTax` | `boolean` | No | -- | Whether prices include tax. Pass from your price context |
+
+### Callbacks
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `onItemDelete` | `(itemId: string, item?: { type: 'product' \| 'cluster' }) => void` | Called after an item is optimistically removed. The parent should perform the actual SDK deletion |
+| `onListLoaded` | `(list: FavoriteList) => void` | Called after the favorite list is fetched, with the full list object. Useful for setting the page title |
+| `onItemClick` | `(item: Product \| Cluster) => void` | Called when an item title or image is clicked |
+
+### Item Display
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `titleLinkable` | `boolean` | `true` | Whether item titles link to the product detail page |
+| `showStockComponent` | `boolean` | `false` | Show stock availability indicator on items |
+| `showAvailability` | `boolean` | `true` | Show availability status text (e.g., "In stock") inside stock indicator |
+| `showStock` | `boolean` | `true` | Show numeric stock quantity inside stock indicator |
+| `showSku` | `boolean` | `true` | Display the SKU beneath item names |
+| `allowAddToCart` | `boolean` | `true` | Enable add-to-cart for products. Clusters show a "View cluster" link instead |
+| `showDelete` | `boolean` | `true` | Show the delete button on each item |
+
+### Pagination
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `itemsPerPage` | `number` | `12` | Number of items shown per page |
+| `showPagination` | `boolean` | `true` | Show pagination controls below items |
+| `paginationVariant` | `string` | `'compact'` | Pagination style: `'compact'` or `'full'` |
+
+### Add-to-Cart (passed through to each FavoriteListItem / AddToCart)
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `cartId` | `string` | -- | Existing cart ID to add items to |
+| `createCart` | `boolean` | -- | Auto-create a cart if none exists |
+| `onCartCreated` | `(cart: Cart) => void` | -- | Called when a new cart is created internally |
+| `onAddToCart` | `(product, clusterId?, quantity?, childItems?, notes?, price?, showModal?) => Cart` | -- | Fully replaces the internal add-to-cart call |
+| `afterAddToCart` | `(cart: Cart, item?: CartMainItem) => void` | -- | Called after every successful add-to-cart |
+| `showModal` | `boolean` | `false` | Show confirmation modal after adding to cart |
+| `allowIncrDecr` | `boolean` | `true` | Render increment/decrement buttons beside quantity input |
+| `enableStockValidation` | `boolean` | `false` | Validate available stock before adding to cart |
+| `onProceedToCheckout` | `() => void` | -- | Called when "Proceed to checkout" is clicked in the add-to-cart modal |
+
+### Labels
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `labels` | `Record<string, string>` | UI string overrides for the component itself (see below) |
+| `addToCartLabels` | `Record<string, string>` | Label overrides passed to AddToCart |
+| `stockLabels` | `Record<string, string>` | Label overrides passed to ItemStock |
+| `itemLabels` | `Record<string, string>` | Label overrides passed to FavoriteListItem |
+
+**`labels` keys:**
+
+| Key | Default |
+|-----|---------|
+| `emptyTitle` | `"List is empty"` |
+| `emptyDescription` | `"You haven't added any products or clusters to this list yet."` |
+
+## SDK Services
+
+The component uses **`FavoriteListService`** from `propeller-sdk-v2` to fetch the favorite list and its items.
+
+### How it works
+
+1. A `FavoriteListService` instance is created from the provided `graphqlClient`.
+2. `service.getFavoriteList(variables)` is called with variables built internally from props.
+3. The response contains the list metadata plus `products` and `clusters` as `ProductsResponse` objects. Both are merged into a single array for display.
+
+### Variables built internally
+
+The component constructs query variables automatically based on props:
+
+```ts
+{
+  id: props.favoriteListId,
+  language: props.language || 'NL',
+  priceCalculateProductInput: {
+    taxZone: 'NL',
+    customerId: /* from user if Customer */,
+    contactId: /* from user if Contact */,
+    companyId: /* from user.company if Contact */,
+  },
+  imageSearchFilters: { page: 1, offset: 1 },
+  imageVariantFilters: {
+    transformations: [{
+      name: 'cart_thumb',
+      transformation: { format: 'WEBP', height: 200, width: 200, fit: 'BOUNDS' },
+    }],
+  },
+}
+```
+
+Price calculation input adapts to the user type: `customerId` for B2C `Customer` users, `contactId` + `companyId` for B2B `Contact` users.
+
+### GraphQL query example
+
+The SDK's `FavoriteListService.getFavoriteList()` sends a query similar to:
+
+```graphql
+query FavoriteList(
+  $id: String!
+  $language: String
+  $priceCalculateProductInput: PriceCalculateProductInput
+  $imageSearchFilters: ImageSearchInput
+  $imageVariantFilters: ImageVariantSearchInput
+) {
+  favoriteList(id: $id) {
+    id
+    name
+    description
+    products(
+      language: $language
+      calculatePrice: $priceCalculateProductInput
+    ) {
+      items {
+        productId
+        sku
+        name {
+          value
+        }
+        price {
+          net
+          gross
+        }
+        media(input: $imageSearchFilters) {
+          images(input: $imageVariantFilters) {
+            url
+          }
+        }
+        inventory {
+          totalQuantity
+        }
+      }
+    }
+    clusters(
+      language: $language
+      calculatePrice: $priceCalculateProductInput
+    ) {
+      items {
+        clusterId
+        sku
+        name {
+          value
+        }
+        price {
+          net
+          gross
+        }
+        media(input: $imageSearchFilters) {
+          images(input: $imageVariantFilters) {
+            url
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Building Your Own
+
+To build a custom favorite list detail view, you need:
+
+1. **Fetch the list** -- Create a `FavoriteListService` and call `getFavoriteList()` with the list ID, language, price input, and image filters.
+
+2. **Merge products and clusters** -- The response separates products and clusters into two `ProductsResponse` objects. Combine them into a single array for rendering.
+
+3. **Handle pagination** -- The SDK returns all items at once. Slice the merged array client-side based on page size and current page.
+
+4. **Handle deletion** -- Remove the item from local state optimistically, then call the SDK to persist the deletion. The `FavoriteListService` provides `removeProductFromFavoriteList()` and `removeClusterFromFavoriteList()` for this.
+
+5. **Determine item type** -- Check for `productId` vs `clusterId` on each item to distinguish products from clusters. This matters for deletion (different SDK methods) and for display (clusters show "View cluster" instead of add-to-cart).
+
+```tsx
+import { FavoriteListService, GraphQLClient } from 'propeller-sdk-v2';
+
+const service = new FavoriteListService(graphqlClient);
+
+// Fetch
+const list = await service.getFavoriteList({
+  id: listId,
+  language: 'NL',
+  priceCalculateProductInput: { taxZone: 'NL', customerId: user.customerId },
+  imageSearchFilters: { page: 1, offset: 1 },
+  imageVariantFilters: {
+    transformations: [{
+      name: 'cart_thumb',
+      transformation: { format: 'WEBP', height: 200, width: 200, fit: 'BOUNDS' },
+    }],
+  },
+});
+
+// Merge items
+const allItems = [
+  ...(list.products?.items || []),
+  ...(list.clusters?.items || []),
+];
+
+// Delete a product
+await service.removeProductFromFavoriteList({
+  favoriteListId: listId,
+  productId: itemId,
+});
+
+// Delete a cluster
+await service.removeClusterFromFavoriteList({
+  favoriteListId: listId,
+  clusterId: itemId,
+});
 ```
 
 ## Behavior
 
-- **Data fetching**: Fetches the favorite list on mount and when `favoriteListId` changes, using `FavoriteListService.getFavoriteList()` from the SDK.
-- **Client-side pagination**: The SDK returns all items in a single response. Pagination is handled client-side by slicing the combined products + clusters array.
-- **Optimistic delete**: When an item is deleted, it is immediately removed from the local items array. The `onItemDelete` callback is called so the parent can perform the actual SDK deletion.
-- **Page adjustment**: After item removal, if the current page exceeds the total pages, it is automatically adjusted.
-- **Empty state**: When the list has no items, a centered message with a heart icon is displayed.
+- **Data fetching**: Fetches the favorite list on mount via `FavoriteListService.getFavoriteList()`. Re-fetches automatically whenever `favoriteListId` changes.
+- **User-aware pricing**: Price calculation variables adapt to the user type -- `customerId` for B2C customers, `contactId` and `companyId` for B2B contacts.
+- **Client-side pagination**: The SDK returns all items in a single response. The component slices the combined products + clusters array based on `itemsPerPage` and the current page.
+- **Optimistic delete**: When an item is deleted, it is immediately removed from the local array before calling the `onItemDelete` callback. The parent is responsible for the actual SDK deletion call.
+- **Page adjustment**: After removing an item, if the current page exceeds the new total page count, the component automatically navigates to the last available page.
+- **Loading skeleton**: While fetching, three placeholder rows with animated pulse styling are shown.
+- **Empty state**: When the list contains no items, a centered message with a heart icon and customizable text is displayed.
+- **Hydration safety**: Uses an `isMounted` guard to prevent rendering client-only content during server-side rendering.
+- **Item type detection**: Products are identified by the presence of `productId`, clusters by `clusterId`. This determines whether add-to-cart or a "View cluster" link is shown.

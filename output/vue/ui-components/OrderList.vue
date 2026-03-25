@@ -10,7 +10,7 @@
             ><input
               type="text"
               placeholder="Search..."
-              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
               :value="searchForm.term || ''"
               @change="
                 async (e) => {
@@ -42,7 +42,7 @@
                   <input
                     type="date"
                     placeholder="From"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.greaterThan
                         ? searchForm.createdAt.greaterThan.split('T')[0]
@@ -64,7 +64,7 @@
                   /><input
                     type="date"
                     placeholder="To"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.createdAt?.lessThan
                         ? searchForm.createdAt.lessThan.split('T')[0]
@@ -92,7 +92,7 @@
                   <input
                     type="date"
                     placeholder="From"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.greaterThan
                         ? searchForm.lastModifiedAt.greaterThan.split('T')[0]
@@ -114,7 +114,7 @@
                   /><input
                     type="date"
                     placeholder="To"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="
                       searchForm.lastModifiedAt?.lessThan
                         ? searchForm.lastModifiedAt.lessThan.split('T')[0]
@@ -142,7 +142,7 @@
                   <input
                     type="number"
                     placeholder="Min"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.price?.greaterThan || ''"
                     @change="
                       async (e) => {
@@ -159,7 +159,7 @@
                   /><input
                     type="number"
                     placeholder="Max"
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.price?.lessThan || ''"
                     @change="
                       async (e) => {
@@ -180,7 +180,7 @@
               <template v-if="field === 'sortInput'">
                 <div class="flex space-x-2 w-full">
                   <select
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.sortInput?.field || ''"
                     @change="
                       async (e) => {
@@ -203,7 +203,7 @@
                       <option :value="sortField">{{ sortField }}</option>
                     </template></select
                   ><select
-                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.sortInput?.order || ''"
                     @change="
                       async (e) => {
@@ -229,7 +229,7 @@
               <template v-if="field === 'type'">
                 <div class="flex space-x-2">
                   <select
-                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                     :value="searchForm.type || ''"
                     @change="
                       async (e) => {
@@ -252,7 +252,7 @@
         </div>
         <div class="flex justify-end space-x-2">
           <button
-            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             @click="
               async (event) => {
                 searchForm = {};
@@ -262,7 +262,7 @@
           >
             Clear</button
           ><button
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             @click="async (event) => fetchOrders(1)"
           >
             Search
@@ -324,7 +324,7 @@
 
                         <template v-if="col === 'action' && !rowsClickable">
                           <button
-                            class="text-blue-600 hover:text-blue-900 cursor-pointer"
+                            class="text-primary hover:text-primary/70 cursor-pointer"
                             @click="
                               async (event) => {
                                 event.preventDefault();
@@ -610,6 +610,9 @@ async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOr
       termFields: props.termFields || [
         Enums.OrderSearchFields.REFERENCE,
         Enums.OrderSearchFields.ITEM_SKU,
+        Enums.OrderSearchFields.ID,
+        Enums.OrderSearchFields.ITEM_NAME,
+        Enums.OrderSearchFields.REMARKS,
       ],
       ...(searchForm.value.createdAt && {
         createdAt: searchForm.value.createdAt,

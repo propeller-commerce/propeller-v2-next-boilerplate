@@ -534,9 +534,9 @@ function ProductGrid(props: ProductGridProps) {
   function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
     const cols = (props.columns as number) || 3;
     if (cols === 1) return 'flex flex-col gap-4';
-    if (cols === 2) return 'grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr';
-    if (cols === 4) return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr';
-    return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr';
+    if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
+    return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
 
   function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
@@ -574,7 +574,9 @@ function ProductGrid(props: ProductGridProps) {
 
   useEffect(() => {
     if (props.products === undefined) {
-      setCurrentPage(1);
+      if (props.page !== undefined) {
+        setCurrentPage(props.page as number);
+      }
       fetchProducts();
     }
   }, [
@@ -588,13 +590,8 @@ function ProductGrid(props: ProductGridProps) {
     props.sortOrder,
     props.pageSize,
     props.language,
+    props.page,
   ]);
-  useEffect(() => {
-    if (props.products === undefined && props.page !== undefined) {
-      setCurrentPage(props.page as number);
-      fetchProducts();
-    }
-  }, [props.page]);
 
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>

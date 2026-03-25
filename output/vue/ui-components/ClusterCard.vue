@@ -1,13 +1,13 @@
 <template>
   <div
     :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
-      isRow() ? 'flex-row items-center' : 'flex-col'
+      isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'
     } ${className || ''}`"
   >
     <template v-if="showImage !== false">
       <div
         :class="`relative overflow-hidden bg-gray-50 ${
-          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'
+          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
         }`"
       >
         <a
@@ -82,70 +82,137 @@
       </div>
     </template>
 
-    <div
-      :class="`flex flex-1 ${
-        isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'
-      }`"
-    >
-      <template v-if="showSku !== false && !!getClusterSku()">
-        <div class="font-mono text-xs text-gray-400">{{ getClusterSku() }}</div>
-      </template>
+    <template v-if="isRow()">
+      <div class="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+        <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+          <template v-if="showSku !== false && !!getClusterSku()">
+            <div class="font-mono text-xs text-gray-400">
+              {{ getClusterSku() }}
+            </div>
+          </template>
 
-      <template v-if="showName !== false">
-        <a
-          :href="getClusterUrl()"
-          @click="async (e) => handleClusterClick(e)"
-          :class="`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${
-            isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'
-          }`"
-          >{{ getClusterName() }}</a
-        >
-      </template>
+          <template v-if="showName !== false">
+            <a
+              class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+              :href="getClusterUrl()"
+              @click="async (e) => handleClusterClick(e)"
+              >{{ getClusterName() }}</a
+            >
+          </template>
 
-      <template v-if="showStock && !!cluster.defaultProduct?.inventory">
-        <ItemStock
-          :inventory="cluster.defaultProduct?.inventory"
-          :showAvailability="showAvailability !== false"
-          :showStock="true"
-          :labels="stockLabels"
-        ></ItemStock>
-      </template>
+          <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
+            <div class="flex flex-col gap-0.5">
+              <template :key="index" v-for="(item, index) in computedTextLabels()">
+                <div class="text-xs text-gray-500">{{ item.value }}</div>
+              </template>
+            </div>
+          </template>
 
-      <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
-        <div class="flex flex-col gap-0.5">
-          <template :key="index" v-for="(item, index) in computedTextLabels()">
-            <div class="text-xs text-gray-500">{{ item.value }}</div>
+          <template v-if="showManufacturer && !!getClusterManufacturer()">
+            <div class="text-xs text-gray-500">
+              {{ getClusterManufacturer() }}
+            </div>
+          </template>
+
+          <template v-if="showShortDescription && !!getClusterShortDescription()">
+            <p class="line-clamp-2 text-xs text-gray-500">
+              {{ getClusterShortDescription() }}
+            </p>
           </template>
         </div>
-      </template>
+      </div>
+      <div
+        class="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100"
+      >
+        <template v-if="showStock && !!cluster.defaultProduct?.inventory">
+          <ItemStock
+            :inventory="cluster.defaultProduct?.inventory"
+            :showAvailability="false"
+            :showStock="true"
+            :labels="stockLabels"
+          ></ItemStock>
+        </template>
 
-      <template v-if="showManufacturer && !!getClusterManufacturer()">
-        <div class="text-xs text-gray-500">{{ getClusterManufacturer() }}</div>
-      </template>
+        <template v-if="!!getClusterPrice()">
+          <span class="font-bold text-gray-900 text-sm whitespace-nowrap">{{
+            getClusterPrice()
+          }}</span>
+        </template>
 
-      <template v-if="showShortDescription && !!getClusterShortDescription()">
-        <p class="line-clamp-2 text-xs text-gray-500">
-          {{ getClusterShortDescription() }}
-        </p>
-      </template>
-
-      <template v-if="!!getClusterPrice()">
-        <div :class="isRow() ? '' : 'mt-auto pt-2'">
-          <span
-            :class="`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`"
-            >{{ getClusterPrice() }}</span
+        <div class="flex-shrink-0 ml-auto">
+          <a
+            class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            :href="getClusterUrl()"
+            @click="async (e) => handleClusterClick(e)"
+            >{{ getLabel('viewCluster', 'View cluster') }}</a
           >
         </div>
-      </template>
-    </div>
-    <div :class="isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'">
-      <a
-        class="flex w-full items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
-        :href="getClusterUrl()"
-        @click="async (e) => handleClusterClick(e)"
-        >{{ getLabel('viewCluster', 'View cluster') }}</a
-      >
-    </div>
+      </div>
+    </template>
+
+    <template v-if="!isRow()">
+      <div class="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+        <template v-if="showSku !== false && !!getClusterSku()">
+          <div class="font-mono text-xs text-gray-400">
+            {{ getClusterSku() }}
+          </div>
+        </template>
+
+        <template v-if="showName !== false">
+          <a
+            class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+            :href="getClusterUrl()"
+            @click="async (e) => handleClusterClick(e)"
+            >{{ getClusterName() }}</a
+          >
+        </template>
+
+        <template v-if="showStock && !!cluster.defaultProduct?.inventory">
+          <ItemStock
+            :inventory="cluster.defaultProduct?.inventory"
+            :showAvailability="showAvailability !== false"
+            :showStock="true"
+            :labels="stockLabels"
+          ></ItemStock>
+        </template>
+
+        <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
+          <div class="flex flex-col gap-0.5">
+            <template :key="index" v-for="(item, index) in computedTextLabels()">
+              <div class="text-xs text-gray-500">{{ item.value }}</div>
+            </template>
+          </div>
+        </template>
+
+        <template v-if="showManufacturer && !!getClusterManufacturer()">
+          <div class="text-xs text-gray-500">
+            {{ getClusterManufacturer() }}
+          </div>
+        </template>
+
+        <template v-if="showShortDescription && !!getClusterShortDescription()">
+          <p class="line-clamp-2 text-xs text-gray-500">
+            {{ getClusterShortDescription() }}
+          </p>
+        </template>
+
+        <template v-if="!!getClusterPrice()">
+          <div class="mt-auto pt-1">
+            <span class="font-bold text-gray-900 text-base sm:text-lg">{{
+              getClusterPrice()
+            }}</span>
+          </div>
+        </template>
+      </div>
+      <div class="px-3 pb-3 sm:px-4 sm:pb-4">
+        <a
+          class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          :href="getClusterUrl()"
+          @click="async (e) => handleClusterClick(e)"
+          >{{ getLabel('viewCluster', 'View cluster') }}</a
+        >
+      </div>
+    </template>
   </div>
 </template>
 

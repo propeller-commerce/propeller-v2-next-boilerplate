@@ -550,23 +550,19 @@ export default function ProductGrid(props: ProductGridProps) {
         }
     });
 
-    // Re-fetch when filter/sort/query props change from outside (e.g. FiltersSidebar)
+    // Re-fetch when any query/filter/sort/page prop changes from outside.
     // onUpdate fires on initial mount too — no separate onMount fetch needed.
+    // props.page is included here so page navigation doesn't require a second hook.
+    // When filter/sort props change the parent resets its page state to 1, so
+    // props.page will already be 1 when those deps fire — no explicit reset needed.
     onUpdate(() => {
         if (props.products === undefined) {
-            state.currentPage = 1;
+            if (props.page !== undefined) {
+                state.currentPage = props.page as number;
+            }
             state.fetchProducts();
         }
-    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language]);
-
-    // Re-fetch when an external page prop changes (e.g. driven by GridPagination).
-    // Only acts when props.page is defined — falls back to internal state otherwise.
-    onUpdate(() => {
-        if (props.products === undefined && props.page !== undefined) {
-            state.currentPage = props.page as number;
-            state.fetchProducts();
-        }
-    }, [props.page]);
+    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page]);
 
     return (
         <div className={`w-full ${(props.className as string) || ''}`}>

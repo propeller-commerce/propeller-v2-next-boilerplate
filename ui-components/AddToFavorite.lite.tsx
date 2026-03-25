@@ -10,7 +10,6 @@ import {
     GraphQLClient,
     Contact,
     Customer,
-    FavoriteListsSearchInput,
 } from 'propeller-sdk-v2';
 
 export interface AddToFavoriteProps {
@@ -34,10 +33,8 @@ export interface AddToFavoriteProps {
 }
 
 interface AddToFavoriteState {
-    lists: FavoriteList[];
-    /** IDs of lists that contain this product/cluster */
+    /** IDs of lists that contain this product/cluster (optimistic local tracking) */
     memberListIds: Set<string>;
-    loading: boolean;
     showModal: boolean;
     selectedListId: string;
     addLoading: boolean;
@@ -48,8 +45,6 @@ interface AddToFavoriteState {
     isProduct: boolean;
     itemId: number;
 
-    checkMembership: () => Promise<void>;
-    fetchLists: () => Promise<void>;
     toggleModal: () => void;
     closeModal: () => void;
     handleAddToList: () => Promise<void>;
@@ -61,9 +56,7 @@ interface AddToFavoriteState {
 
 export default function AddToFavorite(props: AddToFavoriteProps) {
     const state = useStore<AddToFavoriteState>({
-        lists: [] as FavoriteList[],
         memberListIds: new Set<string>(),
-        loading: false,
         showModal: false,
         selectedListId: '',
         addLoading: false,
@@ -82,78 +75,8 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             return (props.productId || props.clusterId || 0) as number;
         },
 
-        // Lightweight check — only queries lists containing this item
-        async checkMembership() {
-            if (!props.user || !props.graphqlClient || !state.itemId) return;
-            try {
-                const service = new FavoriteListService(props.graphqlClient);
-                const isContact = 'contactId' in props.user;
-                const memberSearch: FavoriteListsSearchInput = {};
-                if (isContact) {
-                    memberSearch.contactId = (props.user as Contact).contactId;
-                } else {
-                    memberSearch.customerId = (props.user as Customer).customerId;
-                }
-                if (state.isProduct) {
-                    memberSearch.productIds = [state.itemId];
-                } else {
-                    memberSearch.clusterIds = [state.itemId];
-                }
-                const memberResponse = await service.getFavoriteLists(memberSearch);
-                const memberIds = new Set<string>();
-                (memberResponse.items || []).forEach((list: FavoriteList) => {
-                    memberIds.add(String(list.id));
-                });
-                state.memberListIds = memberIds;
-            } catch (error) {
-                console.error('Error checking favorite membership:', error);
-            }
-        },
-
-        // Full fetch — gets all lists + membership (used when modal opens)
-        async fetchLists() {
-            if (!props.user || !props.graphqlClient) return;
-
-            state.loading = true;
-            try {
-                const service = new FavoriteListService(props.graphqlClient);
-                const isContact = 'contactId' in props.user;
-                const searchInput: FavoriteListsSearchInput = {};
-
-                if (isContact) {
-                    searchInput.contactId = (props.user as Contact).contactId;
-                } else {
-                    searchInput.customerId = (props.user as Customer).customerId;
-                }
-
-                const response = await service.getFavoriteLists(searchInput);
-                state.lists = response.items || [];
-
-                const memberSearch: FavoriteListsSearchInput = { ...searchInput };
-                if (state.isProduct) {
-                    memberSearch.productIds = [state.itemId];
-                } else {
-                    memberSearch.clusterIds = [state.itemId];
-                }
-
-                const memberResponse = await service.getFavoriteLists(memberSearch);
-                const memberIds = new Set<string>();
-                (memberResponse.items || []).forEach((list: FavoriteList) => {
-                    memberIds.add(String(list.id));
-                });
-                state.memberListIds = memberIds;
-            } catch (error) {
-                console.error('Error fetching favorite lists:', error);
-            } finally {
-                state.loading = false;
-            }
-        },
-
         toggleModal() {
             if (!props.user) return;
-            if (!state.showModal) {
-                state.fetchLists();
-            }
             state.showModal = !state.showModal;
         },
 
@@ -167,12 +90,8 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             state.addLoading = true;
             try {
                 const service = new FavoriteListService(props.graphqlClient);
-                const fetchParams = {
-                    language: 'NL',
-                    imageSearchFilters: { page: 1, offset: 100 },
-                    imageVariantFilters: { transformations: [{ name: 'thumb', transformation: { format: 'WEBP', height: 100, width: 100, fit: 'BOUNDS' } }] },
-                };
-                const list = await service.getFavoriteList({ id: state.selectedListId, ...fetchParams });
+                const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+                const list = userLists?.find((l: FavoriteList) => String(l.id) === String(state.selectedListId));
 
                 const productIds: number[] = [];
                 const clusterIds: number[] = [];
@@ -195,7 +114,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 }
 
                 await service.updateFavoriteList(state.selectedListId, {
-                    name: list.name, isDefault: list.isDefault, productIds, clusterIds,
+                    name: list?.name, isDefault: list?.isDefault, productIds, clusterIds,
                 });
 
                 const newMemberIds = new Set(state.memberListIds);
@@ -216,12 +135,8 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             state.removeLoading = true;
             try {
                 const service = new FavoriteListService(props.graphqlClient);
-                const fetchParams = {
-                    language: 'NL',
-                    imageSearchFilters: { page: 1, offset: 100 },
-                    imageVariantFilters: { transformations: [{ name: 'thumb', transformation: { format: 'WEBP', height: 100, width: 100, fit: 'BOUNDS' } }] },
-                };
-                const list = await service.getFavoriteList({ id: listId, ...fetchParams });
+                const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+                const list = userLists?.find((l: FavoriteList) => String(l.id) === String(listId));
 
                 const productIds: number[] = [];
                 const clusterIds: number[] = [];
@@ -238,8 +153,8 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 }
 
                 await service.updateFavoriteList(listId, {
-                    name: list.name,
-                    isDefault: list.isDefault,
+                    name: list?.name,
+                    isDefault: list?.isDefault,
                     productIds: state.isProduct ? productIds.filter((id: number) => id !== state.itemId) : productIds,
                     clusterIds: !state.isProduct ? clusterIds.filter((id: number) => id !== state.itemId) : clusterIds,
                 });
@@ -261,11 +176,13 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         },
 
         getMemberLists(): FavoriteList[] {
-            return state.lists.filter((list: FavoriteList) => state.memberListIds.has(String(list.id)));
+            const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+            return (userLists || []).filter((list: FavoriteList) => state.memberListIds.has(String(list.id)));
         },
 
         getNonMemberLists(): FavoriteList[] {
-            return state.lists.filter((list: FavoriteList) => !state.memberListIds.has(String(list.id)));
+            const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+            return (userLists || []).filter((list: FavoriteList) => !state.memberListIds.has(String(list.id)));
         },
     });
 
@@ -273,12 +190,28 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         state._isMounted = true;
     }, []);
 
-    // Check membership on page load so heart is filled if item is already favorited
+    // Derive membership from props.user.favoriteLists.items — no service call needed
     onUpdate(() => {
-        if (props.user) {
-            state.checkMembership();
-        }
-    }, [props.user]);
+        if (!props.user || !state.itemId) return;
+        const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
+        const memberIds = new Set<string>();
+        (userLists || []).forEach((list: FavoriteList) => {
+            const productsRef = list?.products as { items?: { productId?: number; clusterId?: number }[] } | undefined;
+            const clustersRef = list?.clusters as { items?: { clusterId?: number }[] } | undefined;
+            if (state.isProduct) {
+                if (productsRef?.items?.some((item) => item.productId === state.itemId)) {
+                    memberIds.add(String(list.id));
+                }
+            } else {
+                const inProducts = productsRef?.items?.some((item) => item.clusterId === state.itemId);
+                const inClusters = clustersRef?.items?.some((item) => item.clusterId === state.itemId);
+                if (inProducts || inClusters) {
+                    memberIds.add(String(list.id));
+                }
+            }
+        });
+        state.memberListIds = memberIds;
+    }, [props.user, props.productId, props.clusterId]);
 
     return (
         <Show when={props.user}>
@@ -328,93 +261,84 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                         </div>
 
                         <div className="px-6 pb-6 space-y-4">
-                            {/* Loading state */}
-                            <Show when={state.loading}>
-                                <div className="py-4 text-center text-gray-500">
-                                    {state.getLabel('loading', 'Loading lists...')}
+                            {/* Lists where item IS a member — clickable to remove */}
+                            <Show when={state.getMemberLists().length > 0}>
+                                <div className="space-y-2">
+                                    <For each={state.getMemberLists()}>
+                                        {(list: FavoriteList) => (
+                                            <button
+                                                key={list.id}
+                                                type="button"
+                                                onClick={() => state.handleRemoveFromList(String(list.id))}
+                                                disabled={state.removeLoading}
+                                                className="flex items-center gap-2 py-2 w-full text-left hover:bg-gray-50 rounded-md px-1 transition-colors disabled:opacity-50"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary flex-shrink-0">
+                                                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                                                    <path d="m9 12 2 2 4-4" />
+                                                </svg>
+                                                <span className="text-sm font-medium">{list.name}</span>
+                                            </button>
+                                        )}
+                                    </For>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const memberLists = state.getMemberLists();
+                                            if (memberLists.length > 0) {
+                                                state.handleRemoveFromList(String(memberLists[0].id));
+                                            }
+                                        }}
+                                        disabled={state.removeLoading}
+                                        className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                                    >
+                                        {state.removeLoading
+                                            ? state.getLabel('removing', 'Removing...')
+                                            : state.getLabel('removeFromFavorites', 'Remove from favorites')}
+                                    </button>
+                                </div>
+                                <div className="border-t border-gray-200" />
+                            </Show>
+
+                            {/* Dropdown to select a list + add button */}
+                            <Show when={state.getNonMemberLists().length > 0}>
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500">
+                                            {state.getLabel('chooseList', 'Choose a favorites list*')}
+                                        </label>
+                                        <select
+                                            value={state.selectedListId}
+                                            onChange={(e) => { state.selectedListId = e.target.value; }}
+                                            className="block w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
+                                        >
+                                            <For each={state.getNonMemberLists()}>
+                                                {(list: FavoriteList) => (
+                                                    <option key={list.id} value={String(list.id)}>
+                                                        {list.name}
+                                                    </option>
+                                                )}
+                                            </For>
+                                        </select>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => state.handleAddToList()}
+                                        disabled={!state.selectedListId || state.addLoading}
+                                        className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                                    >
+                                        {state.addLoading
+                                            ? state.getLabel('adding', 'Adding...')
+                                            : state.getLabel('addToFavorites', 'Add to favorites')}
+                                    </button>
                                 </div>
                             </Show>
 
-                            <Show when={!state.loading}>
-                                {/* Lists where item IS a member — clickable to remove */}
-                                <Show when={state.getMemberLists().length > 0}>
-                                    <div className="space-y-2">
-                                        <For each={state.getMemberLists()}>
-                                            {(list: FavoriteList) => (
-                                                <button
-                                                    key={list.id}
-                                                    type="button"
-                                                    onClick={() => state.handleRemoveFromList(String(list.id))}
-                                                    disabled={state.removeLoading}
-                                                    className="flex items-center gap-2 py-2 w-full text-left hover:bg-gray-50 rounded-md px-1 transition-colors disabled:opacity-50"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary flex-shrink-0">
-                                                        <rect width="18" height="18" x="3" y="3" rx="2" />
-                                                        <path d="m9 12 2 2 4-4" />
-                                                    </svg>
-                                                    <span className="text-sm font-medium">{list.name}</span>
-                                                </button>
-                                            )}
-                                        </For>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const memberLists = state.getMemberLists();
-                                                if (memberLists.length > 0) {
-                                                    state.handleRemoveFromList(String(memberLists[0].id));
-                                                }
-                                            }}
-                                            disabled={state.removeLoading}
-                                            className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
-                                        >
-                                            {state.removeLoading
-                                                ? state.getLabel('removing', 'Removing...')
-                                                : state.getLabel('removeFromFavorites', 'Remove from favorites')}
-                                        </button>
-                                    </div>
-                                    <div className="border-t border-gray-200" />
-                                </Show>
-
-                                {/* Dropdown to select a list + add button */}
-                                <Show when={state.getNonMemberLists().length > 0}>
-                                    <div className="space-y-3">
-                                        <div className="space-y-1">
-                                            <label className="text-xs text-gray-500">
-                                                {state.getLabel('chooseList', 'Choose a favorites list*')}
-                                            </label>
-                                            <select
-                                                value={state.selectedListId}
-                                                onChange={(e) => { state.selectedListId = e.target.value; }}
-                                                className="block w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
-                                            >
-                                                <For each={state.getNonMemberLists()}>
-                                                    {(list: FavoriteList) => (
-                                                        <option key={list.id} value={String(list.id)}>
-                                                            {list.name}
-                                                        </option>
-                                                    )}
-                                                </For>
-                                            </select>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => state.handleAddToList()}
-                                            disabled={!state.selectedListId || state.addLoading}
-                                            className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
-                                        >
-                                            {state.addLoading
-                                                ? state.getLabel('adding', 'Adding...')
-                                                : state.getLabel('addToFavorites', 'Add to favorites')}
-                                        </button>
-                                    </div>
-                                </Show>
-
-                                {/* No lists at all */}
-                                <Show when={state.lists.length === 0}>
-                                    <div className="py-4 text-center text-gray-500 text-sm">
-                                        {state.getLabel('noLists', 'You have no favorite lists. Create one in your account first.')}
-                                    </div>
-                                </Show>
+                            {/* No lists at all */}
+                            <Show when={state.getMemberLists().length === 0 && state.getNonMemberLists().length === 0}>
+                                <div className="py-4 text-center text-gray-500 text-sm">
+                                    {state.getLabel('noLists', 'You have no favorite lists. Create one in your account first.')}
+                                </div>
                             </Show>
                         </div>
                     </div>

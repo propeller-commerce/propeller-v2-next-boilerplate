@@ -34,8 +34,8 @@ export default function ClusterPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedOptionProducts, setSelectedOptionProducts] = useState<Record<number, Product>>({});
   const [showClusterErrors, setShowClusterErrors] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const { cart, saveCart, addToCart } = useCart();
+
+  const { cart, saveCart } = useCart();
   const { state } = useAuth();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
@@ -111,24 +111,6 @@ export default function ClusterPage() {
     if (option) {
       setSelectedOptionProducts(prev => ({ ...prev, [option.id]: product }));
     }
-  };
-
-  const handleAddToCart = async () => {
-    if (!selectedProduct) return;
-
-    const childItems: { productId: number; quantity: number }[] = Object.values(
-      selectedOptionProducts
-    ).map((p: Product) => ({ productId: p.productId, quantity }));
-
-    const mainProductName = selectedProduct.names?.[0]?.value || cluster?.names?.[0]?.value || 'Product';
-
-    await addToCart(
-      selectedProduct.productId,
-      quantity,
-      mainProductName,
-      clusterId,
-      childItems.length > 0 ? childItems : undefined
-    );
   };
 
   // Update URL slug when language or cluster changes — use history.replaceState

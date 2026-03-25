@@ -1,13 +1,13 @@
 <template>
   <div
     :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
-      isRow() ? 'flex-row items-center' : 'flex-col'
+      isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'
     } ${className || ''}`"
   >
     <template v-if="showImage !== false">
       <div
         :class="`relative overflow-hidden bg-gray-50 ${
-          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'
+          isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'
         }`"
       >
         <a
@@ -82,84 +82,165 @@
       </div>
     </template>
 
-    <div
-      :class="`flex flex-1 ${
-        isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'
-      }`"
-    >
-      <template v-if="showSku !== false && !!getProductSku()">
-        <div class="font-mono text-xs text-gray-400">{{ getProductSku() }}</div>
-      </template>
+    <template v-if="isRow()">
+      <div class="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+        <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+          <template v-if="showSku !== false && !!getProductSku()">
+            <div class="font-mono text-xs text-gray-400">
+              {{ getProductSku() }}
+            </div>
+          </template>
 
-      <template v-if="showName !== false">
-        <a
-          :href="getProductUrl()"
-          @click="async (e) => handleProductClick(e)"
-          :class="`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${
-            isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'
-          }`"
-          >{{ getProductName() }}</a
-        >
-      </template>
+          <template v-if="showName !== false">
+            <a
+              class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+              :href="getProductUrl()"
+              @click="async (e) => handleProductClick(e)"
+              >{{ getProductName() }}</a
+            >
+          </template>
 
-      <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
-        <div class="flex flex-col gap-0.5">
-          <template :key="index" v-for="(item, index) in computedTextLabels()">
-            <div class="text-xs text-gray-500">{{ item.value }}</div>
+          <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
+            <div class="flex flex-col gap-0.5">
+              <template :key="index" v-for="(item, index) in computedTextLabels()">
+                <div class="text-xs text-gray-500">{{ item.value }}</div>
+              </template>
+            </div>
+          </template>
+
+          <template v-if="showManufacturer && !!getProductManufacturer()">
+            <div class="text-xs text-gray-500">
+              {{ getProductManufacturer() }}
+            </div>
+          </template>
+
+          <template v-if="showShortDescription && !!getProductShortDescription()">
+            <p class="line-clamp-2 text-xs text-gray-500">
+              {{ getProductShortDescription() }}
+            </p>
           </template>
         </div>
-      </template>
+      </div>
+      <div
+        class="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100"
+      >
+        <template v-if="showStock && !!product.inventory">
+          <ItemStock
+            :inventory="product.inventory"
+            :showAvailability="false"
+            :showStock="true"
+            :labels="stockLabels"
+          ></ItemStock>
+        </template>
 
-      <template v-if="showStock && !!product.inventory">
-        <ItemStock
-          :inventory="product.inventory"
-          :showAvailability="showAvailability !== false"
-          :showStock="true"
-          :labels="stockLabels"
-        ></ItemStock>
-      </template>
+        <template v-if="!!getProductPrice()">
+          <span class="font-bold text-gray-900 text-sm whitespace-nowrap">{{
+            getProductPrice()
+          }}</span>
+        </template>
 
-      <template v-if="showManufacturer && !!getProductManufacturer()">
-        <div class="text-xs text-gray-500">{{ getProductManufacturer() }}</div>
-      </template>
-
-      <template v-if="showShortDescription && !!getProductShortDescription()">
-        <p class="line-clamp-2 text-xs text-gray-500">
-          {{ getProductShortDescription() }}
-        </p>
-      </template>
-
-      <template v-if="!!getProductPrice()">
-        <div :class="isRow() ? '' : 'mt-auto pt-2'">
-          <span
-            :class="`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`"
-            >{{ getProductPrice() }}</span
-          >
+        <div class="flex-shrink-0 ml-auto">
+          <AddToCart
+            :graphqlClient="graphqlClient"
+            :user="user"
+            :product="product"
+            :cartId="cartId"
+            :configuration="configuration"
+            :childItems="childItems"
+            :notes="notes"
+            :price="price"
+            :createCart="createCart"
+            :onCartCreated="onCartCreated"
+            :onAddToCart="onAddToCart"
+            :afterAddToCart="afterAddToCart"
+            :showModal="showModal"
+            :allowIncrDecr="allowIncrDecr"
+            :enableStockValidation="enableStockValidation"
+            :language="language"
+            :onProceedToCheckout="onProceedToCheckout"
+            :labels="addToCartLabels"
+          ></AddToCart>
         </div>
-      </template>
-    </div>
-    <div :class="isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'">
-      <AddToCart
-        :graphqlClient="graphqlClient"
-        :user="user"
-        :product="product"
-        :cartId="cartId"
-        :configuration="configuration"
-        :childItems="childItems"
-        :notes="notes"
-        :price="price"
-        :createCart="createCart"
-        :onCartCreated="onCartCreated"
-        :onAddToCart="onAddToCart"
-        :afterAddToCart="afterAddToCart"
-        :showModal="showModal"
-        :allowIncrDecr="allowIncrDecr"
-        :enableStockValidation="enableStockValidation"
-        :language="language"
-        :onProceedToCheckout="onProceedToCheckout"
-        :labels="addToCartLabels"
-      ></AddToCart>
-    </div>
+      </div>
+    </template>
+
+    <template v-if="!isRow()">
+      <div class="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+        <template v-if="showSku !== false && !!getProductSku()">
+          <div class="font-mono text-xs text-gray-400">
+            {{ getProductSku() }}
+          </div>
+        </template>
+
+        <template v-if="showName !== false">
+          <a
+            class="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+            :href="getProductUrl()"
+            @click="async (e) => handleProductClick(e)"
+            >{{ getProductName() }}</a
+          >
+        </template>
+
+        <template v-if="!!textLabels && textLabels.length > 0 && computedTextLabels().length > 0">
+          <div class="flex flex-col gap-0.5">
+            <template :key="index" v-for="(item, index) in computedTextLabels()">
+              <div class="text-xs text-gray-500">{{ item.value }}</div>
+            </template>
+          </div>
+        </template>
+
+        <template v-if="showStock && !!product.inventory">
+          <ItemStock
+            :inventory="product.inventory"
+            :showAvailability="showAvailability !== false"
+            :showStock="true"
+            :labels="stockLabels"
+          ></ItemStock>
+        </template>
+
+        <template v-if="showManufacturer && !!getProductManufacturer()">
+          <div class="text-xs text-gray-500">
+            {{ getProductManufacturer() }}
+          </div>
+        </template>
+
+        <template v-if="showShortDescription && !!getProductShortDescription()">
+          <p class="line-clamp-2 text-xs text-gray-500">
+            {{ getProductShortDescription() }}
+          </p>
+        </template>
+
+        <template v-if="!!getProductPrice()">
+          <div class="mt-auto pt-1">
+            <span class="font-bold text-gray-900 text-base sm:text-lg">{{
+              getProductPrice()
+            }}</span>
+          </div>
+        </template>
+      </div>
+      <div class="px-3 pb-3 sm:px-4 sm:pb-4">
+        <AddToCart
+          :graphqlClient="graphqlClient"
+          :user="user"
+          :product="product"
+          :cartId="cartId"
+          :configuration="configuration"
+          :childItems="childItems"
+          :notes="notes"
+          :price="price"
+          :createCart="createCart"
+          :onCartCreated="onCartCreated"
+          :onAddToCart="onAddToCart"
+          :afterAddToCart="afterAddToCart"
+          :showModal="showModal"
+          :allowIncrDecr="allowIncrDecr"
+          :enableStockValidation="enableStockValidation"
+          :language="language"
+          :onProceedToCheckout="onProceedToCheckout"
+          :labels="addToCartLabels"
+        ></AddToCart>
+      </div>
+    </template>
   </div>
 </template>
 

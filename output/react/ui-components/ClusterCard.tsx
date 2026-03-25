@@ -264,11 +264,11 @@ function ClusterCard(props: ClusterCardProps) {
 
   return (
     <div
-      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row items-center' : 'flex-col'} ${props.className || ''}`}
+      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
     >
       {props.showImage !== false ? (
         <div
-          className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-square p-4'}`}
+          className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
         >
           <a
             className="block h-full w-full"
@@ -334,61 +334,122 @@ function ClusterCard(props: ClusterCardProps) {
           ) : null}
         </div>
       ) : null}
-      <div
-        className={`flex flex-1 ${isRow() ? 'flex-row items-center gap-4 px-4 py-2 min-w-0' : 'flex-col gap-2 p-4'}`}
-      >
-        {props.showSku !== false && !!getClusterSku() ? (
-          <div className="font-mono text-xs text-gray-400">{getClusterSku()}</div>
-        ) : null}
-        {props.showName !== false ? (
-          <a
-            href={getClusterUrl()}
-            onClick={(e) => handleClusterClick(e)}
-            className={`text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 ${isRow() ? 'line-clamp-1 flex-1 min-w-0' : 'line-clamp-2'}`}
-          >
-            {getClusterName()}
-          </a>
-        ) : null}
-        {props.showStock && !!props.cluster.defaultProduct?.inventory ? (
-          <ItemStock
-            inventory={props.cluster.defaultProduct?.inventory!}
-            showAvailability={props.showAvailability !== false}
-            showStock
-            labels={props.stockLabels}
-          />
-        ) : null}
-        {!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
-          <div className="flex flex-col gap-0.5">
-            {computedTextLabels()?.map((item) => (
-              <div className="text-xs text-gray-500">{item.value}</div>
-            ))}
+      {isRow() ? (
+        <>
+          <div className="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              {props.showSku !== false && !!getClusterSku() ? (
+                <div className="font-mono text-xs text-gray-400">{getClusterSku()}</div>
+              ) : null}
+              {props.showName !== false ? (
+                <a
+                  className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+                  href={getClusterUrl()}
+                  onClick={(e) => handleClusterClick(e)}
+                >
+                  {getClusterName()}
+                </a>
+              ) : null}
+              {!!props.textLabels &&
+              props.textLabels.length > 0 &&
+              computedTextLabels().length > 0 ? (
+                <div className="flex flex-col gap-0.5">
+                  {computedTextLabels()?.map((item) => (
+                    <div className="text-xs text-gray-500">{item.value}</div>
+                  ))}
+                </div>
+              ) : null}
+              {props.showManufacturer && !!getClusterManufacturer() ? (
+                <div className="text-xs text-gray-500">{getClusterManufacturer()}</div>
+              ) : null}
+              {props.showShortDescription && !!getClusterShortDescription() ? (
+                <p className="line-clamp-2 text-xs text-gray-500">{getClusterShortDescription()}</p>
+              ) : null}
+            </div>
           </div>
-        ) : null}
-        {props.showManufacturer && !!getClusterManufacturer() ? (
-          <div className="text-xs text-gray-500">{getClusterManufacturer()}</div>
-        ) : null}
-        {props.showShortDescription && !!getClusterShortDescription() ? (
-          <p className="line-clamp-2 text-xs text-gray-500">{getClusterShortDescription()}</p>
-        ) : null}
-        {!!getClusterPrice() ? (
-          <div className={isRow() ? '' : 'mt-auto pt-2'}>
-            <span
-              className={`font-bold text-gray-900 ${isRow() ? 'text-sm whitespace-nowrap' : 'text-lg'}`}
+          <div className="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100">
+            {props.showStock && !!props.cluster.defaultProduct?.inventory ? (
+              <ItemStock
+                inventory={props.cluster.defaultProduct?.inventory!}
+                showAvailability={false}
+                showStock
+                labels={props.stockLabels}
+              />
+            ) : null}
+            {!!getClusterPrice() ? (
+              <span className="font-bold text-gray-900 text-sm whitespace-nowrap">
+                {getClusterPrice()}
+              </span>
+            ) : null}
+            <div className="flex-shrink-0 ml-auto">
+              <a
+                className="flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                href={getClusterUrl()}
+                onClick={(e) => handleClusterClick(e)}
+              >
+                {getLabel('viewCluster', 'View cluster')}
+              </a>
+            </div>
+          </div>
+        </>
+      ) : null}
+      {!isRow() ? (
+        <>
+          <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+            {props.showSku !== false && !!getClusterSku() ? (
+              <div className="font-mono text-xs text-gray-400">{getClusterSku()}</div>
+            ) : null}
+            {props.showName !== false ? (
+              <a
+                className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+                href={getClusterUrl()}
+                onClick={(e) => handleClusterClick(e)}
+              >
+                {getClusterName()}
+              </a>
+            ) : null}
+            {props.showStock && !!props.cluster.defaultProduct?.inventory ? (
+              <ItemStock
+                inventory={props.cluster.defaultProduct?.inventory!}
+                showAvailability={props.showAvailability !== false}
+                showStock
+                labels={props.stockLabels}
+              />
+            ) : null}
+            {!!props.textLabels &&
+            props.textLabels.length > 0 &&
+            computedTextLabels().length > 0 ? (
+              <div className="flex flex-col gap-0.5">
+                {computedTextLabels()?.map((item) => (
+                  <div className="text-xs text-gray-500">{item.value}</div>
+                ))}
+              </div>
+            ) : null}
+            {props.showManufacturer && !!getClusterManufacturer() ? (
+              <div className="text-xs text-gray-500">{getClusterManufacturer()}</div>
+            ) : null}
+            {props.showShortDescription && !!getClusterShortDescription() ? (
+              <p className="line-clamp-2 text-xs text-gray-500">{getClusterShortDescription()}</p>
+            ) : null}
+            {!!getClusterPrice() ? (
+              <div className="mt-auto pt-1">
+                <span className="font-bold text-gray-900 text-base sm:text-lg">
+                  {getClusterPrice()}
+                </span>
+              </div>
+            ) : null}
+          </div>
+          <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+            <a
+              className="flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              href={getClusterUrl()}
+              onClick={(e) => handleClusterClick(e)}
             >
-              {getClusterPrice()}
-            </span>
+              {getLabel('viewCluster', 'View cluster')}
+            </a>
           </div>
-        ) : null}
-      </div>
-      <div className={isRow() ? 'flex-shrink-0 pr-4' : 'px-4 pb-4'}>
-        <a
-          className="flex w-full items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
-          href={getClusterUrl()}
-          onClick={(e) => handleClusterClick(e)}
-        >
-          {getLabel('viewCluster', 'View cluster')}
-        </a>
-      </div>
+        </>
+      ) : null}
     </div>
   );
 }

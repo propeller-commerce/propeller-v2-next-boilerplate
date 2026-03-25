@@ -572,9 +572,34 @@ function ProductGrid(props: ProductGridProps) {
     return items;
   }
 
+  // Tracks the serialised dep values of the last fetch that was actually started.
+  // Prevents duplicate API calls when React fires this effect more than once with
+  // identical prop values (e.g. after a parent re-render that doesn't change anything
+  // meaningful, or a searchParams object reference change with the same URL content).
+  const lastFetchDepsRef = useRef<string>('');
+
   useEffect(() => {
     if (props.products === undefined) {
-      setCurrentPage(1);
+      if (props.page !== undefined) {
+        setCurrentPage(props.page as number);
+      }
+      // Serialise the deps that actually affect the query.  Skip the fetch when
+      // nothing has changed so rapid re-renders don't cause duplicate requests.
+      const depsKey = JSON.stringify({
+        textFilters: props.textFilters,
+        priceFilterMin: props.priceFilterMin,
+        priceFilterMax: props.priceFilterMax,
+        categoryId: props.categoryId,
+        term: props.term,
+        brand: props.brand,
+        sortField: props.sortField,
+        sortOrder: props.sortOrder,
+        pageSize: props.pageSize,
+        language: props.language,
+        page: props.page,
+      });
+      if (lastFetchDepsRef.current === depsKey) return;
+      lastFetchDepsRef.current = depsKey;
       fetchProducts();
     }
   }, [
@@ -588,13 +613,8 @@ function ProductGrid(props: ProductGridProps) {
     props.sortOrder,
     props.pageSize,
     props.language,
+    props.page,
   ]);
-  useEffect(() => {
-    if (props.products === undefined && props.page !== undefined) {
-      setCurrentPage(props.page as number);
-      fetchProducts();
-    }
-  }, [props.page]);
 
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>

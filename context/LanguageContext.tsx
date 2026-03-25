@@ -25,7 +25,10 @@ function subscribeToLanguageChange(callback: () => void) {
 
 function getLanguageSnapshot(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY) || DEFAULT_LANGUAGE;
+    // URL is the authoritative source for the current page language.
+    // Reading localStorage here would return a stale value from a previous
+    // session and cause a hydration mismatch → extra re-render → extra fetch.
+    return detectLanguageFromPath(window.location.pathname);
   } catch {
     return DEFAULT_LANGUAGE;
   }
@@ -55,9 +58,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const setLanguage = useCallback((value: string) => {
     const prev = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANGUAGE;
     localStorage.setItem(STORAGE_KEY, value);
-    window.dispatchEvent(new CustomEvent('languageChanged', { detail: value }));
 
-    // Update URL prefix when language changes
+    // Update URL prefix BEFORE dispatching the event so that getLanguageSnapshot()
+    // (which reads the URL) returns the new language when triggered by the event.
     if (prev !== value && typeof window !== 'undefined') {
       const basePath = stripLanguagePrefix(window.location.pathname);
       const newPrefix = getLanguagePrefix(value);
@@ -65,6 +68,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       const search = window.location.search;
       window.history.replaceState(null, '', (newPath || '/') + search);
     }
+
+    window.dispatchEvent(new CustomEvent('languageChanged', { detail: value }));
   }, []);
 
   return (

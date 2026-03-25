@@ -28,22 +28,41 @@ export default function CategoryPage() {
   const router = useRouter();
   const categoryId = parseInt(params.id as string);
   const [category, setCategory] = useState<Category>();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Record<string, string[]>>({});
-  const [minPrice, setMinPrice] = useState<number | undefined>();
-  const [maxPrice, setMaxPrice] = useState<number | undefined>();
+  // Initialise URL-derived state directly from searchParams so the useEffect
+  // below produces no state changes (and therefore no extra fetches) on first load.
+  const [currentPage, setCurrentPage] = useState(() => parseInt(searchParams.get('page') || '1'));
+  const [filters, setFilters] = useState<Record<string, string[]>>(() => {
+    const initial: Record<string, string[]> = {};
+    searchParams.forEach((value, key) => {
+      if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
+        try { initial[key] = JSON.parse(decodeURIComponent(value)); }
+        catch { initial[key] = [decodeURIComponent(value)]; }
+      }
+    });
+    return initial;
+  });
+  const [minPrice, setMinPrice] = useState<number | undefined>(() =>
+    searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined
+  );
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(() =>
+    searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
+  );
   const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
   const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
   const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
   const [clearSignal, setClearSignal] = useState(0);
   const [itemsFound, setItemsFound] = useState<number>(0);
   const [pageItemCount, setPageItemCount] = useState<number>(0);
-  const [offset, setOffset] = useState(12);
-  const [sortField, setSortField] = useState<Enums.ProductSortField>(Enums.ProductSortField.CATEGORY_ORDER);
-  const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(Enums.SortOrder.ASC);
+  const [offset, setOffset] = useState(() => parseInt(searchParams.get('offset') || '12'));
+  const [sortField, setSortField] = useState<Enums.ProductSortField>(() =>
+    (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.CATEGORY_ORDER
+  );
+  const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(() =>
+    (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.ASC
+  );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { state } = useAuth();
-  const { cart, addToCart, saveCart } = useCart();
+  const { cart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
   const { includeTax } = usePrice();
   const { language } = useLanguage();
@@ -66,7 +85,12 @@ export default function CategoryPage() {
     });
 
     setCurrentPage(parseInt(searchParams.get('page') || '1'));
-    setFilters(newFilters);
+    // Use functional update so React can bail out when content is unchanged,
+    // avoiding a spurious re-render (and downstream ProductGrid re-fetch) when
+    // the searchParams object reference changes but the URL content is the same.
+    setFilters(prev =>
+      JSON.stringify(prev) === JSON.stringify(newFilters) ? prev : newFilters
+    );
     setMinPrice(searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined);
     setMaxPrice(searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined);
     setOffset(parseInt(searchParams.get('offset') || '12'));

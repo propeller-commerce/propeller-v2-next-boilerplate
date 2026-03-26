@@ -135,14 +135,14 @@ interface ClusterCardState {
     name: string;
     value: string;
   }[];
-}
-function ClusterCard(props: ClusterCardProps) {
+};
+  function ClusterCard(props: ClusterCardProps) {
   const [isFavorite, setIsFavorite] = useState<ClusterCardState['isFavorite']>(() => false);
   const [includeTax, setIncludeTax] = useState<ClusterCardState['includeTax']>(() => true);
   const [priceListener, setPriceListener] = useState<ClusterCardState['priceListener']>(() => null);
   function isRow(): ReturnType<ClusterCardState['isRow']> {
     return (props.columns as number) === 1;
-  }
+  };
   function getClusterName(): ReturnType<ClusterCardState['getClusterName']> {
     const lang = (props.language as string) || 'NL';
     const names = (props.cluster as Cluster)?.names;
@@ -151,19 +151,19 @@ function ClusterCard(props: ClusterCardProps) {
     const dpNames = (props.cluster as Cluster)?.defaultProduct?.names;
     const dpMatch = dpNames?.find((n: any) => n.language === lang);
     return dpMatch?.value || names?.[0]?.value || dpNames?.[0]?.value || 'Cluster';
-  }
+  };
   function getClusterSku(): ReturnType<ClusterCardState['getClusterSku']> {
     return (props.cluster as Cluster)?.sku || (props.cluster as Cluster)?.defaultProduct?.sku || '';
-  }
+  };
   function getClusterImageUrl(): ReturnType<ClusterCardState['getClusterImageUrl']> {
     return (
       (props.cluster as Cluster)?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]
         ?.url || ''
     );
-  }
+  };
   function getClusterUrl(): ReturnType<ClusterCardState['getClusterUrl']> {
     return props.configuration.urls.getClusterUrl(props.cluster, props.language);
-  }
+  };
   function getClusterShortDescription(): ReturnType<
     ClusterCardState['getClusterShortDescription']
   > {
@@ -174,43 +174,43 @@ function ClusterCard(props: ClusterCardProps) {
     const dpDescs = (props.cluster as Cluster)?.defaultProduct?.shortDescriptions;
     const dpMatch = dpDescs?.find((d: any) => d.language === lang);
     return dpMatch?.value || descs?.[0]?.value || dpDescs?.[0]?.value || '';
-  }
+  };
   function getClusterManufacturer(): ReturnType<ClusterCardState['getClusterManufacturer']> {
     return (props.cluster as Cluster)?.defaultProduct?.manufacturer || '';
-  }
+  };
   function getStockQuantity(): ReturnType<ClusterCardState['getStockQuantity']> {
     const qty = (props.cluster as Cluster)?.defaultProduct?.inventory?.totalQuantity;
     return qty !== undefined && qty !== null ? qty : -1;
-  }
+  };
   function getStockStatusLabel(): ReturnType<ClusterCardState['getStockStatusLabel']> {
     const qty = getStockQuantity();
     if (qty < 0) return '';
     if (qty === 0) return getLabel('outOfStock', 'Out of stock');
     if (qty <= 5) return getLabel('lowStock', 'Low stock');
     return getLabel('inStock', 'In stock');
-  }
+  };
   function getStockStatusClass(): ReturnType<ClusterCardState['getStockStatusClass']> {
     const qty = getStockQuantity();
     if (qty <= 0) return 'text-red-600 bg-red-50';
     if (qty <= 5) return 'text-amber-600 bg-amber-50';
     return 'text-green-600 bg-green-50';
-  }
+  };
   function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
     const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
     const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
     const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
     if (!value && value !== 0) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
-  }
+  };
   function getLabel(key: string, fallback: string): ReturnType<ClusterCardState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
+  };
   function handleClusterClick(e: any): ReturnType<ClusterCardState['handleClusterClick']> {
     if (props.onClusterClick) {
       e.preventDefault();
       props.onClusterClick(props.cluster);
     }
-  }
+  };
   function handleToggleFavorite(e: any): ReturnType<ClusterCardState['handleToggleFavorite']> {
     e.preventDefault();
     e.stopPropagation();
@@ -218,7 +218,7 @@ function ClusterCard(props: ClusterCardProps) {
     if (props.onToggleFavorite) {
       props.onToggleFavorite(props.cluster, isFavorite);
     }
-  }
+  };
   function computedImageLabels(): ReturnType<ClusterCardState['computedImageLabels']> {
     if (!props.imageLabels || (props.imageLabels as string[]).length === 0) return [];
     const attrs = (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
@@ -228,7 +228,7 @@ function ClusterCard(props: ClusterCardProps) {
         return found?.value?.value || '';
       })
       .filter((v: string) => v.length > 0);
-  }
+  };
   function computedTextLabels(): ReturnType<ClusterCardState['computedTextLabels']> {
     if (!props.textLabels || (props.textLabels as string[]).length === 0) return [];
     const attrs = (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
@@ -241,7 +241,7 @@ function ClusterCard(props: ClusterCardProps) {
         };
       })
       .filter((item: { name: string; value: string }) => item.value.length > 0);
-  }
+  };
   return (
     <div
       className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}

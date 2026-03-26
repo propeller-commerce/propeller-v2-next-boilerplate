@@ -107,6 +107,12 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
 
         toggleModal() {
             if (!props.user) return;
+            if (!state.showModal) {
+                const nonMember = state.getNonMemberLists;
+                if (nonMember.length > 0 && !state.selectedListId) {
+                    state.selectedListId = String(nonMember[0].id);
+                }
+            }
             state.showModal = !state.showModal;
         },
 
@@ -152,6 +158,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 const newMemberIds = new Set(state.memberListIds);
                 newMemberIds.delete(String(listId));
                 state.memberListIds = newMemberIds;
+                state.selectedListId = '';
                 state.showModal = false;
                 state.refreshUserData();
             } catch (error) {
@@ -203,6 +210,44 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         });
         state.memberListIds = memberIds;
     }, [props.user, props.productId, props.clusterId]);
+
+    // Listen for user data changes (e.g. after favorite list modifications on other pages)
+    onMount(() => {
+        const handler = () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    const freshUser = JSON.parse(storedUser);
+                    const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
+                    const memberIds = new Set<string>();
+                    const myItemId = (props.productId || props.clusterId || 0) as number;
+                    const myIsProduct = !!props.productId;
+                    (userLists || []).forEach((list: FavoriteList) => {
+                        const productsRef = list?.products as any;
+                        const clustersRef = list?.clusters as any;
+                        if (myIsProduct) {
+                            if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
+                                memberIds.add(String(list.id));
+                            }
+                        } else {
+                            const inProducts = productsRef?.items?.some((item: any) => item.clusterId === myItemId);
+                            const inClusters = clustersRef?.items?.some((item: any) => item.clusterId === myItemId);
+                            if (inProducts || inClusters) {
+                                memberIds.add(String(list.id));
+                            }
+                        }
+                    });
+                    state.memberListIds = memberIds;
+                } catch (e) {
+                    // ignore parse errors
+                }
+            }
+        };
+        window.addEventListener('userLoggedIn', handler);
+        onUnMount(() => {
+            window.removeEventListener('userLoggedIn', handler);
+        });
+    });
 
     return (
         <Show when={props.user}>

@@ -76,16 +76,16 @@ function GridPagination(props: GridPaginationProps) {
   function getLabel(key: string): ReturnType<GridPaginationState['getLabel']> {
     const labels = (props.labels as Record<string, string>) || {};
     return labels[key] !== undefined ? labels[key] : DEFAULT_LABELS[key] || key;
-  }
+  };
   function getTotalPages(): ReturnType<GridPaginationState['getTotalPages']> {
     return (props.products as ProductsResponse)?.pages || 1;
-  }
+  };
   function getCurrentPage(): ReturnType<GridPaginationState['getCurrentPage']> {
     return (props.products as ProductsResponse)?.page || 1;
-  }
+  };
   function showPagination(): ReturnType<GridPaginationState['showPagination']> {
     return getTotalPages() > 1;
-  }
+  };
   function getFullPages(): ReturnType<GridPaginationState['getFullPages']> {
     const total = getTotalPages();
     const current = getCurrentPage();
@@ -151,10 +151,10 @@ function GridPagination(props: GridPaginationProps) {
       value: total,
     });
     return items;
-  }
+  };
   function handlePageChange(page: number): ReturnType<GridPaginationState['handlePageChange']> {
     if (props.onPageChange) props.onPageChange(page);
-  }
+  };
   return (
     <div className={`${(props.className as string) || ''}`}>
       {showPagination() ? (

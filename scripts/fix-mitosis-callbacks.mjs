@@ -597,6 +597,86 @@ const FILE_PATCHES = [
         from: 'myFetchId === fetchId)',
         to: 'myFetchId === fetchIdRef.current)',
     },
+    {
+        // Mitosis onMount sets state._isMounted = true, but the compiled React
+        // output drops this effect entirely, leaving _isMounted stuck at false.
+        // Also refactors membership computation into a function, adds _isMounted
+        // effect, and adds a userLoggedIn event listener so the heart icon
+        // updates when favorites are modified on other pages.
+        file: resolve('../output/react/ui-components/AddToFavorite.tsx'),
+        label: 'React → AddToFavorite: inject _isMounted + userLoggedIn listener + refactor membership',
+        from: '  useEffect(() => {\n    if (!props.user || !itemId()) return;',
+        to: '  function computeMemberListIds() {\n    if (!props.user || !itemId()) return new Set<string>();',
+    },
+    {
+        // The <select> for non-member lists has no placeholder option, so the
+        // first option is visually selected but selectedListId is still ''.
+        // Auto-select the first non-member list when opening the modal.
+        file: resolve('../output/react/ui-components/AddToFavorite.tsx'),
+        label: 'React → AddToFavorite: auto-select first list in toggleModal',
+        from: '    if (!props.user) return;\n    setShowModal(!showModal);',
+        to: '    if (!props.user) return;\n    if (!showModal) {\n      const nonMember = getNonMemberLists();\n      if (nonMember.length > 0 && !selectedListId) {\n        setSelectedListId(String(nonMember[0].id));\n      }\n    }\n    setShowModal(!showModal);',
+    },
+    {
+        // Reset selectedListId after removing from a list so the next modal
+        // open will auto-select the first available list again.
+        file: resolve('../output/react/ui-components/AddToFavorite.tsx'),
+        label: 'React → AddToFavorite: reset selectedListId on remove',
+        from: "      setMemberListIds(newMemberIds);\n      setShowModal(false);\n      refreshUserData();\n    } catch (error) {\n      console.error('Error removing from favorite list:', error);",
+        to: "      setMemberListIds(newMemberIds);\n      setSelectedListId('');\n      setShowModal(false);\n      refreshUserData();\n    } catch (error) {\n      console.error('Error removing from favorite list:', error);",
+    },
+    {
+        // Extract membership computation into a reusable function and add
+        // a userLoggedIn event listener so the heart icon updates when
+        // favorites are modified on other pages (e.g. favorites detail).
+        file: resolve('../output/react/ui-components/AddToFavorite.tsx'),
+        label: 'React → AddToFavorite: add userLoggedIn listener for cross-page sync',
+        from: '    setMemberListIds(memberIds);\n  }, [props.user, props.productId, props.clusterId]);\n  return (',
+        to: `    return memberIds;
+  }
+  useEffect(() => {
+    set_isMounted(true);
+  }, []);
+  useEffect(() => {
+    setMemberListIds(computeMemberListIds());
+  }, [props.user, props.productId, props.clusterId]);
+  // Listen for user data changes (e.g. after favorite list modifications on other pages)
+  useEffect(() => {
+    const handler = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const freshUser = JSON.parse(storedUser);
+          const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
+          const memberIds = new Set<string>();
+          const myItemId = (props.productId || props.clusterId || 0) as number;
+          const myIsProduct = !!props.productId;
+          (userLists || []).forEach((list: FavoriteList) => {
+            const productsRef = list?.products as any;
+            const clustersRef = list?.clusters as any;
+            if (myIsProduct) {
+              if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
+                memberIds.add(String(list.id));
+              }
+            } else {
+              const inProducts = productsRef?.items?.some((item: any) => item.clusterId === myItemId);
+              const inClusters = clustersRef?.items?.some((item: any) => item.clusterId === myItemId);
+              if (inProducts || inClusters) {
+                memberIds.add(String(list.id));
+              }
+            }
+          });
+          setMemberListIds(memberIds);
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+    };
+    window.addEventListener('userLoggedIn', handler);
+    return () => window.removeEventListener('userLoggedIn', handler);
+  }, [props.productId, props.clusterId]);
+  return (`,
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────

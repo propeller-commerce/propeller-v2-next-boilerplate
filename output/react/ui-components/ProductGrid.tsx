@@ -1,8 +1,10 @@
 'use client';
 import * as React from 'react';
-
 import { useState, useEffect, useRef } from 'react';
+
 import {
+import ProductCard from './ProductCard';
+import ClusterCard from './ClusterCard';
   GraphQLClient,
   Product,
   Cluster,
@@ -19,8 +21,9 @@ import {
   ProductsResponse,
   Category,
 } from 'propeller-sdk-v2';
-import ProductCard from './ProductCard';
-import ClusterCard from './ClusterCard';
+
+
+
 
 export interface ProductGridProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -343,9 +346,8 @@ interface ProductGridState {
   getIsLoading: () => boolean;
   showAddToCart: () => boolean;
   getSkeletonItems: () => number[];
-}
-
-function ProductGrid(props: ProductGridProps) {
+};
+  function ProductGrid(props: ProductGridProps) {
   const [internalProducts, setInternalProducts] = useState<ProductGridState['internalProducts']>(
     () => []
   );
@@ -517,26 +519,22 @@ function ProductGrid(props: ProductGridProps) {
         setIsInternalLoading(false);
       }
     }
-  }
-
+  };
   function isClusterItem(item: Product | Cluster): ReturnType<ProductGridState['isClusterItem']> {
     return !!(item as any)?.clusterId;
-  }
-
+  };
   function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
     const cols = (props.columns as number) || 3;
     if (cols === 1) return 'flex flex-col gap-4';
     if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
     if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
     return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
-  }
-
+  };
   function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
     setCurrentPage(page);
     fetchProducts();
     if (props.onPageChange) props.onPageChange(page);
-  }
-
+  };
   function getDisplayProducts(): ReturnType<ProductGridState['getDisplayProducts']> {
     // Use props.products when explicitly provided (even if empty array).
     // Fall through to internally fetched products only when prop is absent.
@@ -544,18 +542,15 @@ function ProductGrid(props: ProductGridProps) {
       return (props.products as (Product | Cluster)[]) || [];
     }
     return internalProducts;
-  }
-
+  };
   function getIsLoading(): ReturnType<ProductGridState['getIsLoading']> {
     return !!(props.isLoading as boolean) || isInternalLoading;
-  }
-
+  };
   function showAddToCart(): ReturnType<ProductGridState['showAddToCart']> {
     const mode = (props.portalMode as string) || 'open';
     const allow = (props.allowAddToCart as boolean) !== false;
     return mode === 'open' && allow;
-  }
-
+  };
   function getSkeletonItems(): ReturnType<ProductGridState['getSkeletonItems']> {
     const cols = (props.columns as number) || 3;
     const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;

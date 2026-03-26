@@ -1,7 +1,7 @@
 'use client';
 
 // 'use client' is already at the top of the file, this replacement starts after line 1.
-import { Contact, Customer } from 'propeller-sdk-v2';
+import { Contact, Customer, UserService } from 'propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
@@ -24,6 +24,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 type AuthAction =
@@ -289,6 +290,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [state.user]);
 
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      const userService = new UserService(graphqlClient);
+      const viewerData = await userService.getViewer({});
+      if (viewerData) {
+        const strip = (obj: any): any => {
+          if (obj === null || obj === undefined) return obj;
+          if (Array.isArray(obj)) return obj.map(strip);
+          if (typeof obj === 'object') {
+            const r: any = {};
+            for (const [k, val] of Object.entries(obj)) {
+              r[k.startsWith('_') ? k.slice(1) : k] = strip(val);
+            }
+            return r;
+          }
+          return obj;
+        };
+        const plain = strip(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)));
+        const storedToken = localStorage.getItem('accessToken');
+        localStorage.setItem('user', JSON.stringify(plain));
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: { user: plain as User, accessToken: storedToken || '' },
+        });
+      }
+    } catch (e) {
+      console.error('Error refreshing user data:', e);
+    }
+  }, []);
+
   // Listen for external auth events (e.g. from other tabs)
   useEffect(() => {
     const handleUserLoggedIn = () => {
@@ -325,7 +356,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     clearError,
-    updateUser
+    updateUser,
+    refreshUser
   };
 
   return (

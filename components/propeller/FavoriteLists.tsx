@@ -83,6 +83,9 @@ export interface FavoriteListsProps {
 
   /** Action function triggered when deleting a favorite list. If not provided, the default action is executed */
   onDelete?: (favoriteListId: string) => void;
+
+  /** Called after any list mutation (create, edit, delete) succeeds */
+  onListChanged?: () => void;
 }
 interface FavoriteListsState {
   lists: FavoriteList[];
@@ -224,6 +227,7 @@ function FavoriteLists(props: FavoriteListsProps) {
         })
       );
       handleCancelEdit();
+      props.onListChanged?.();
     } catch (error) {
       console.error('Error updating favorite list:', error);
       fetchLists();
@@ -257,6 +261,7 @@ function FavoriteLists(props: FavoriteListsProps) {
       setLists(lists.filter((l: FavoriteList) => String(l.id) !== deletedId));
       setShowDeleteModal(false);
       setListToDelete(null);
+      props.onListChanged?.();
     } catch (error) {
       console.error('Error deleting favorite list:', error);
       fetchLists();
@@ -314,6 +319,7 @@ function FavoriteLists(props: FavoriteListsProps) {
 
       // Refetch to get the complete list
       fetchLists();
+      props.onListChanged?.();
     } catch (error) {
       console.error('Error creating favorite list:', error);
     } finally {

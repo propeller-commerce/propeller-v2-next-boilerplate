@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import FavoriteListDetails from '@/components/propeller/FavoriteListDetails';
 
 export default function FavoriteListPage() {
-  const { state: authState } = useAuth();
+  const { state: authState, refreshUser } = useAuth();
   const { cart, saveCart } = useCart();
   const params = useParams();
   const listId = params?.id as string;
@@ -33,12 +33,12 @@ export default function FavoriteListPage() {
     try {
       const service = new FavoriteListService(graphqlClient);
       const numericId = Number(itemId);
-      // Use removeFavoriteListItems for direct removal (works even for last item)
       const input = itemType === 'cluster'
         ? { clusterIds: [numericId] }
         : { productIds: [numericId] };
       await service.removeFavoriteListItems(listId, input);
       toast.success('Item removed from list');
+      refreshUser();
     } catch (error) {
       console.error('Error removing item from list:', error);
       toast.error('Failed to remove item');

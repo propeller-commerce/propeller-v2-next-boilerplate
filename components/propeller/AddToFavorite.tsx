@@ -101,6 +101,12 @@ function AddToFavorite(props: AddToFavoriteProps) {
   }
   function toggleModal(): ReturnType<AddToFavoriteState['toggleModal']> {
     if (!props.user) return;
+    if (!showModal) {
+      const nonMember = getNonMemberLists();
+      if (nonMember.length > 0 && !selectedListId) {
+        setSelectedListId(String(nonMember[0].id));
+      }
+    }
     setShowModal(!showModal);
   }
   function closeModal(): ReturnType<AddToFavoriteState['closeModal']> {
@@ -149,6 +155,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
       const newMemberIds = new Set(memberListIds);
       newMemberIds.delete(String(listId));
       setMemberListIds(newMemberIds);
+      setSelectedListId('');
       setShowModal(false);
       refreshUserData();
     } catch (error) {
@@ -169,6 +176,9 @@ function AddToFavorite(props: AddToFavoriteProps) {
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
     return (userLists || []).filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
   }
+  useEffect(() => {
+    set_isMounted(true);
+  }, []);
   useEffect(() => {
     if (!props.user || !itemId()) return;
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;

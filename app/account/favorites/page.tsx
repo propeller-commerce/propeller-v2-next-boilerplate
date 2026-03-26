@@ -8,7 +8,7 @@ import FavoriteLists from '@/components/propeller/FavoriteLists';
 import { graphqlClient } from '@/lib/api';
 
 export default function FavoritesPage() {
-  const { state: authState } = useAuth();
+  const { state: authState, refreshUser } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
 
@@ -24,6 +24,7 @@ export default function FavoritesPage() {
         onListClick={(listId) => router.push(localizeHref(`/account/favorites/${listId}`, language))}
         showActions={true}
         allowFavoriteListCreate={true}
+        onListChanged={refreshUser}
       />
     </div>
   );

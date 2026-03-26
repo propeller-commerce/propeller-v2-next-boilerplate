@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # LoginForm
 
 A modular authentication form component with two operating modes: self-contained (handles login internally via the SDK) and delegation (parent handles authentication). Supports standalone login pages, header dropdowns, checkout flows, and modals.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Self-contained mode (recommended)
 
@@ -115,7 +121,115 @@ When used inside a header dropdown, set `accountHeaderLoginForm` to render a com
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+If you need a custom login form with different UI but the same authentication flow, you can use the SDK services directly:
+
+### Self-contained login flow
+
+```ts
+import {
+  GraphQLClient,
+  LoginService,
+  UserService,
+  LoginInput,
+} from 'propeller-sdk-v2';
+
+// pseudo-code: maintain state for email, password, loading, and error in your framework
+
+async function handleLogin(graphqlClient: GraphQLClient, email: string, password: string) {
+  // Step 1: Authenticate with credentials
+  const loginService = new LoginService(graphqlClient);
+  const loginInput: LoginInput = { email, password };
+  const loginResponse = await loginService.login(loginInput);
+
+  const session = loginResponse.session;
+  if (!session?.accessToken || !session?.refreshToken) {
+    throw new Error('Missing authentication tokens');
+  }
+
+  // Step 2: Update GraphQL client with auth header
+  const currentConfig = graphqlClient.getConfig();
+  graphqlClient.updateConfig({
+    headers: {
+      ...currentConfig.headers,
+      Authorization: `Bearer ${session.accessToken}`,
+    },
+  });
+
+  // Step 3: Fetch authenticated user profile
+  const userService = new UserService(graphqlClient);
+  const user = await userService.getViewer({});
+
+  // Step 4: Store tokens in localStorage for persistence
+  localStorage.setItem('accessToken', session.accessToken);
+  localStorage.setItem('refreshToken', session.refreshToken);
+
+  // Step 5: Notify other components via custom event
+  window.dispatchEvent(new CustomEvent('userLoggedIn'));
+
+  return { user, session };
+  // On success: clear the form fields and navigate or update your app state
+  // On failure: display an error message like "Invalid credentials"
+}
+```
+
+### Delegation mode
+
+```ts
+// When you want the parent to handle authentication:
+// Collect email and password from your form, then call the parent's handler.
+
+async function handleDelegatedLogin(
+  email: string,
+  password: string,
+  onLoginSubmit: (email: string, password: string) => void
+) {
+  onLoginSubmit(email, password);
+  // Parent controls loading state and error messages
+}
+```
+
+### Checkout flow
+
+```ts
+// Same as self-contained login, but after successful login navigate to checkout:
+const { user, session } = await handleLogin(graphqlClient, email, password);
+// Navigate to /checkout
+```
+
+### Header dropdown (compact mode)
+
+```ts
+// Same login flow as self-contained mode.
+// The only difference is the UI layout (compact inline links).
+// Use the same handleLogin function above.
+```
+
+### Minimal form
+
+```ts
+// Same login flow as self-contained mode.
+// Omit forgot-password, register, and guest checkout links from your UI.
+```
+
+Your UI should render an email input, a password input, an error message area, and a submit button. Disable inputs while `loading` is true. On form submission, call `handleLogin()` and handle the result.
+
+### Key integration points
+
+- **`userLoggedIn` event**: Dispatch `new CustomEvent('userLoggedIn')` on `window` after storing tokens. The app's `AuthContext` listens for this event to update global auth state.
+- **Token refresh**: Use `LoginService.exchangeRefreshToken(refreshToken)` to obtain a new access token when the current one expires.
+- **Logout**: Use `UserService.logout()` and dispatch `new CustomEvent('userLoggedOut')` to clear auth state.
+- **User type detection**: The `viewer` query returns either a `Contact` (B2B user with company) or `Customer` (B2C user). Check `__typename` or look for the `company` property to distinguish them.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core props
 
@@ -135,7 +249,7 @@ When used inside a header dropdown, set `accountHeaderLoginForm` to render a com
 | `displayForgotPasswordLink` | `boolean` | `true` | Show/hide the forgot password link. |
 | `displayRegisterLink` | `boolean` | `true` | Show/hide the registration link/button. |
 | `displayGuestCheckoutLink` | `boolean` | `true` | Show/hide the guest checkout link. |
-| `labels` | `Record<string, string>` | `{}` | Override default label text (see Label Keys below). |
+| `labels` | `Record<string, string>` | `{}` | Override default label text (see Labels section). |
 
 ### Callback props
 
@@ -156,9 +270,71 @@ These props are only used when `onLoginSubmit` is provided. In self-contained mo
 | `loginLoading` | `boolean` | `false` | Shows loading spinner on the submit button. |
 | `loginError` | `string` | -- | Error message displayed in the form. |
 
-## Label keys
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-Pass these keys in the `labels` prop to override default text:
+### Function signature
+
+```ts
+import { LoginService, UserService, LoginInput, GraphQLClient } from 'propeller-sdk-v2';
+
+const loginService = new LoginService(graphqlClient);
+const userService = new UserService(graphqlClient);
+
+// Authenticate
+async function login(input: LoginInput): Promise<Login>
+
+// Fetch user profile after login
+async function getViewer(params: {}): Promise<Contact | Customer>
+
+// Refresh token
+async function exchangeRefreshToken(refreshToken: string): Promise<Login>
+
+// Logout
+async function logout(): Promise<void>
+```
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | -- | Client instance passed to `LoginService` and `UserService` constructors |
+| `email` | `string` | -- | `LoginInput.email` in `loginService.login()` |
+| `password` | `string` | -- | `LoginInput.password` in `loginService.login()` |
+
+### Callbacks table
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `onLoginSubmit` | Form submitted (delegation mode) | Handle authentication externally, manage loading/error state |
+| `beforeLogin` | Before login process starts (both modes) | Any pre-login logic (e.g., analytics, form validation) |
+| `afterLogin` | After successful login (self-contained mode) | Navigate to account/checkout, update app state with user and tokens |
+| `onForgotPasswordClick` | Forgot password link clicked | Navigate to forgot password page |
+| `onRegisterClick` | Register link/button clicked | Navigate to registration page |
+| `onGuestCheckoutClick` | Guest checkout link clicked | Navigate to guest checkout flow |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `title` -- form title text
+- `subtitle` -- subtitle text below title
+- `buttonText` -- submit button label
+- `accountHeaderLoginForm` -- compact layout toggle for header dropdowns
+- `displayForgotPasswordLink` -- show/hide forgot password link
+- `displayRegisterLink` -- show/hide registration link
+- `displayGuestCheckoutLink` -- show/hide guest checkout link
+- `loginLoading` -- loading state for delegation mode
+- `loginError` -- error message for delegation mode
+- `labels` -- UI string overrides
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Description |
 |---|---|---|
@@ -172,50 +348,74 @@ Pass these keys in the `labels` prop to override default text:
 | `guestCheckoutLink` | `"Continue as Guest"` | Guest checkout link text |
 | `noAccount` | `"Don't have an account?"` | Text before register link (compact/header mode only) |
 
-## SDK Services
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-The component uses two services from `propeller-sdk-v2` in self-contained mode:
-
-### LoginService
-
-Handles user authentication via the `login` GraphQL mutation.
-
-```tsx
-import { LoginService, LoginInput, GraphQLClient } from 'propeller-sdk-v2';
-
-const loginService = new LoginService(graphqlClient);
-
-const loginInput: LoginInput = {
-  email: 'user@example.com',
-  password: 'password123',
+```ts
+const defaultLabels = {
+  email: 'Email',
+  password: 'Password',
+  emailPlaceholder: 'name@example.com',
+  passwordPlaceholder: '••••••••',
+  forgotPassword: 'Forgot password?',
+  registerText: "Don't have an account?",
+  registerLink: 'Create an Account',
+  guestCheckoutLink: 'Continue as Guest',
+  noAccount: "Don't have an account?",
 };
-
-const loginResponse = await loginService.login(loginInput);
-
-// loginResponse is a Login object with:
-// - loginResponse.session.accessToken  (string)
-// - loginResponse.session.refreshToken (string)
-// - loginResponse.session.expirationTime (string | undefined)
 ```
 
-### UserService
+These are suggested defaults. Override per-key to support localization.
 
-Fetches the authenticated user's profile after login via the `viewer` GraphQL query.
+  </TabItem>
+</Tabs>
 
-```tsx
-import { UserService, GraphQLClient } from 'propeller-sdk-v2';
+---
 
-const userService = new UserService(graphqlClient);
+## Behavior
 
-// After setting the Authorization header on graphqlClient:
-const user = await userService.getViewer({});
+### Self-contained authentication flow
 
-// user is either a Contact (B2B) or Customer (B2C) based on __typename
-// Contact has: company, addresses, firstName, lastName, email, etc.
-// Customer has: addresses, firstName, lastName, email, etc.
-```
+When `graphqlClient` is provided and `onLoginSubmit` is absent, the component executes this sequence on form submit:
 
-## GraphQL queries and mutations
+1. Calls `beforeLogin()` callback if provided.
+2. Sets internal loading state to `true` and clears any previous error.
+3. Creates `LoginService` and `UserService` instances from the provided `graphqlClient`.
+4. Calls `loginService.login({ email, password })` which executes the `login` GraphQL mutation.
+5. Extracts `accessToken` and `refreshToken` from the response session.
+6. Updates the `graphqlClient` headers with `Authorization: Bearer {accessToken}` so subsequent requests are authenticated.
+7. Calls `userService.getViewer({})` to fetch the authenticated user profile (Contact or Customer).
+8. Dispatches a `userLoggedIn` custom event on `window` -- this is picked up by `AuthContext` to update global auth state.
+9. Resets the email and password form fields.
+10. Calls `afterLogin(user, accessToken, refreshToken, expirationTime)` callback if provided.
+
+If any step fails, the component displays a generic error message: "The credentials you entered don't match our records. Please try again."
+
+### Delegation flow
+
+When `onLoginSubmit` is provided:
+
+1. Calls `beforeLogin()` callback if provided.
+2. Calls `onLoginSubmit(email, password)` -- the parent handles authentication.
+3. Loading state is controlled via `loginLoading` prop.
+4. Error messages are controlled via `loginError` prop.
+
+### Compact header mode
+
+When `accountHeaderLoginForm` is `true`:
+- The forgot password link and register section below the form are hidden.
+- Instead, compact inline links for forgot password and register appear below the submit button.
+- The full-width register button and guest checkout link are not rendered.
+
+### Form states
+
+- **Idle**: Form fields enabled, submit button shows `buttonText`.
+- **Loading**: Form fields disabled, submit button shows a spinner and "Logging in..." text.
+- **Error**: Red error banner appears between the password field and the submit button.
+
+---
+
+## GraphQL Queries and Mutations
 
 ### `login` mutation
 
@@ -324,103 +524,47 @@ query viewer {
 }
 ```
 
-## Behavior
+---
 
-### Self-contained authentication flow
+## SDK Services
 
-When `graphqlClient` is provided and `onLoginSubmit` is absent, the component executes this sequence on form submit:
+The component uses two services from `propeller-sdk-v2` in self-contained mode:
 
-1. Calls `beforeLogin()` callback if provided.
-2. Sets internal loading state to `true` and clears any previous error.
-3. Creates `LoginService` and `UserService` instances from the provided `graphqlClient`.
-4. Calls `loginService.login({ email, password })` which executes the `login` GraphQL mutation.
-5. Extracts `accessToken` and `refreshToken` from the response session.
-6. Updates the `graphqlClient` headers with `Authorization: Bearer {accessToken}` so subsequent requests are authenticated.
-7. Calls `userService.getViewer({})` to fetch the authenticated user profile (Contact or Customer).
-8. Dispatches a `userLoggedIn` custom event on `window` -- this is picked up by `AuthContext` to update global auth state.
-9. Resets the email and password form fields.
-10. Calls `afterLogin(user, accessToken, refreshToken, expirationTime)` callback if provided.
+### LoginService
 
-If any step fails, the component displays a generic error message: "The credentials you entered don't match our records. Please try again."
+Handles user authentication via the `login` GraphQL mutation.
 
-### Delegation flow
+```tsx
+import { LoginService, LoginInput, GraphQLClient } from 'propeller-sdk-v2';
 
-When `onLoginSubmit` is provided:
+const loginService = new LoginService(graphqlClient);
 
-1. Calls `beforeLogin()` callback if provided.
-2. Calls `onLoginSubmit(email, password)` -- the parent handles authentication.
-3. Loading state is controlled via `loginLoading` prop.
-4. Error messages are controlled via `loginError` prop.
+const loginInput: LoginInput = {
+  email: 'user@example.com',
+  password: 'password123',
+};
 
-### Compact header mode
+const loginResponse = await loginService.login(loginInput);
 
-When `accountHeaderLoginForm` is `true`:
-- The forgot password link and register section below the form are hidden.
-- Instead, compact inline links for forgot password and register appear below the submit button.
-- The full-width register button and guest checkout link are not rendered.
-
-### Form states
-
-- **Idle**: Form fields enabled, submit button shows `buttonText`.
-- **Loading**: Form fields disabled, submit button shows a spinner and "Logging in..." text.
-- **Error**: Red error banner appears between the password field and the submit button.
-
-## Building your own
-
-If you need a custom login form with different UI but the same authentication flow, you can use the SDK services directly:
-
-```ts
-import {
-  GraphQLClient,
-  LoginService,
-  UserService,
-  LoginInput,
-} from 'propeller-sdk-v2';
-
-// pseudo-code: maintain state for email, password, loading, and error in your framework
-
-async function handleLogin(graphqlClient: GraphQLClient, email: string, password: string) {
-  // Step 1: Authenticate with credentials
-  const loginService = new LoginService(graphqlClient);
-  const loginInput: LoginInput = { email, password };
-  const loginResponse = await loginService.login(loginInput);
-
-  const session = loginResponse.session;
-  if (!session?.accessToken || !session?.refreshToken) {
-    throw new Error('Missing authentication tokens');
-  }
-
-  // Step 2: Update GraphQL client with auth header
-  const currentConfig = graphqlClient.getConfig();
-  graphqlClient.updateConfig({
-    headers: {
-      ...currentConfig.headers,
-      Authorization: `Bearer ${session.accessToken}`,
-    },
-  });
-
-  // Step 3: Fetch authenticated user profile
-  const userService = new UserService(graphqlClient);
-  const user = await userService.getViewer({});
-
-  // Step 4: Store tokens in localStorage for persistence
-  localStorage.setItem('accessToken', session.accessToken);
-  localStorage.setItem('refreshToken', session.refreshToken);
-
-  // Step 5: Notify other components via custom event
-  window.dispatchEvent(new CustomEvent('userLoggedIn'));
-
-  return { user, session };
-  // On success: clear the form fields and navigate or update your app state
-  // On failure: display an error message like "Invalid credentials"
-}
+// loginResponse is a Login object with:
+// - loginResponse.session.accessToken  (string)
+// - loginResponse.session.refreshToken (string)
+// - loginResponse.session.expirationTime (string | undefined)
 ```
 
-Your UI should render an email input, a password input, an error message area, and a submit button. Disable inputs while `loading` is true. On form submission, call `handleLogin()` and handle the result.
+### UserService
 
-### Key integration points
+Fetches the authenticated user's profile after login via the `viewer` GraphQL query.
 
-- **`userLoggedIn` event**: Dispatch `new CustomEvent('userLoggedIn')` on `window` after storing tokens. The app's `AuthContext` listens for this event to update global auth state.
-- **Token refresh**: Use `LoginService.exchangeRefreshToken(refreshToken)` to obtain a new access token when the current one expires.
-- **Logout**: Use `UserService.logout()` and dispatch `new CustomEvent('userLoggedOut')` to clear auth state.
-- **User type detection**: The `viewer` query returns either a `Contact` (B2B user with company) or `Customer` (B2C user). Check `__typename` or look for the `company` property to distinguish them.
+```tsx
+import { UserService, GraphQLClient } from 'propeller-sdk-v2';
+
+const userService = new UserService(graphqlClient);
+
+// After setting the Authorization header on graphqlClient:
+const user = await userService.getViewer({});
+
+// user is either a Contact (B2B) or Customer (B2C) based on __typename
+// Contact has: company, addresses, firstName, lastName, email, etc.
+// Customer has: addresses, firstName, lastName, email, etc.
+```

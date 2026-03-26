@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # FavoriteLists
 
 Displays a user's favorite lists with full CRUD support: inline renaming, delete confirmation modal, and a create modal. Lists can be limited to the most recently modified N items, making the component suitable for both dedicated pages and compact dashboard widgets.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Full favorites page
 
@@ -107,7 +113,107 @@ Strip all metadata and actions for a compact list-name-only view.
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To build a custom favorite lists UI while reusing the same data layer:
+
+1. **Initialize the service** with your `GraphQLClient` instance.
+2. **Fetch lists** using `getFavoriteLists()` with the appropriate search input for your user type.
+3. **Determine user type** by checking for the presence of `contactId` on the user object (`'contactId' in user`). Contact users are B2B; Customer users are B2C.
+4. **Sort by recency** if needed: sort the returned `items` array by `updatedAt` descending and slice to your desired limit.
+5. **Count items** per list using `list.products.itemsFound` and `list.clusters.itemsFound`. Fall back to `list.products.items.length` if `itemsFound` is not available.
+6. **Handle default list switching**: before setting a new list as default, update the current default list to `isDefault: false` first, then set the new one. The API does not auto-unset the previous default.
+7. **Error recovery**: wrap mutations in try/catch. On failure, refetch the full list from the API to restore consistent state.
+
+### Service setup
+
+```ts
+import { FavoriteListService, FavoriteList } from 'propeller-sdk-v2';
+
+const service = new FavoriteListService(graphqlClient);
+
+// Determine user type
+const isContact = 'contactId' in user;
+const searchInput = isContact
+  ? { contactId: user.contactId }
+  : { customerId: user.customerId };
+```
+
+### Fetch lists
+
+```ts
+async function fetchLists(): Promise<FavoriteList[]> {
+  const res = await service.getFavoriteLists(searchInput);
+  return res.items || [];
+}
+```
+
+### Create a list
+
+```ts
+async function createList(name: string, isDefault: boolean, currentLists: FavoriteList[]) {
+  // If setting as default, unset the current default first
+  if (isDefault) {
+    const currentDefault = currentLists.find((l) => l.isDefault);
+    if (currentDefault) {
+      await service.updateFavoriteList(String(currentDefault.id), {
+        name: currentDefault.name,
+        isDefault: false,
+      });
+    }
+  }
+
+  await service.createFavoriteList({
+    name,
+    isDefault,
+    ...(isContact
+      ? { contactId: user.contactId }
+      : { customerId: user.customerId }),
+  });
+
+  // Refetch to get server-assigned ID and timestamps
+  return fetchLists();
+}
+```
+
+### Rename a list
+
+```ts
+async function renameList(listId: string, name: string) {
+  // pseudo-code: optimistically update the list name in local state
+  try {
+    await service.updateFavoriteList(listId, { name });
+  } catch {
+    // pseudo-code: on error, refetch full list from API to restore consistent state
+  }
+}
+```
+
+### Delete a list
+
+```ts
+async function deleteList(listId: string) {
+  // pseudo-code: optimistically remove the list from local state
+  try {
+    await service.deleteFavoriteList(listId);
+  } catch {
+    // pseudo-code: on error, refetch full list from API to restore consistent state
+  }
+}
+```
+
+### Optimistic update pattern
+
+For rename and delete operations, update the in-memory list immediately to provide instant visual feedback. If the API call fails, refetch the full list from the server to roll back to a consistent state. For create operations, always refetch after the API call succeeds, since you need the server-assigned ID and timestamps.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required
 
@@ -145,7 +251,7 @@ Strip all metadata and actions for a compact list-name-only view.
 | `formatDate` | `(dateString: string) => string` | `dd/mm/YYYY` | Custom date formatter. Receives the raw ISO date string, returns the display string. |
 | `labels` | `object` | English defaults | Localization overrides (see Labels section below). |
 
-## Types
+### Types
 
 ```ts
 interface FavoriteListFormData {
@@ -156,7 +262,53 @@ interface FavoriteListFormData {
 
 This is the shape passed to `onCreate` and `onEdit` callbacks and used internally for create/update API calls.
 
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function manageFavoriteLists(options: FavoriteListsOptions): Promise<void>
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `user` | `Contact \| Customer \| null` | (required) | `user` prop |
+| `graphqlClient` | `GraphQLClient` | (required) | `graphqlClient` prop |
+| `limit` | `number` | `undefined` | `limit` prop |
+
+### Callbacks
+
+| Field | Type | Maps to |
+|-------|------|---------|
+| `onListClick` | `(listId: string \| number) => void` | `onListClick` prop |
+| `onCreate` | `(data: FavoriteListFormData) => void` | `onCreate` prop |
+| `onEdit` | `(listId: string, data: FavoriteListFormData) => void` | `onEdit` prop |
+| `onDelete` | `(listId: string) => void` | `onDelete` prop |
+| `onListChanged` | `() => void` | `onListChanged` prop |
+
+### UI-only props
+
+The following props are UI-specific and do not apply when building your own:
+
+- `showDefaultIndicator` -- Badge visibility
+- `showLastModified` -- Date display toggle
+- `showItemsCount` -- Item count display toggle
+- `showActions` -- Edit/delete button visibility
+- `allowFavoriteListCreate` -- Create button visibility
+- `className` -- CSS class on root container
+- `formatDate` -- Date formatting function
+- `labels` -- UI string overrides
+
+  </TabItem>
+</Tabs>
+
 ## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 All labels are optional. Provide any subset to override the English defaults.
 
@@ -184,6 +336,87 @@ All labels are optional. Provide any subset to override the English defaults.
 | `noListsDescription` | `"Start by creating a new list to save your items."` | Empty state description |
 | `createFirstList` | `"Create your first list"` | Empty state create button |
 | `loading` | `"Loading..."` | Loading state text |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  lastModified: "Last modified",
+  items: "items",
+  products: "products",
+  clusters: "clusters",
+  defaultBadge: "Default",
+  editSave: "Save",
+  editCancel: "Cancel",
+  makeDefault: "Make default",
+  deleteTitle: "Delete Favorite List",
+  deleteConfirm: "Are you sure you want to delete",
+  deleteWarning: "This action cannot be undone.",
+  deleteButton: "Delete",
+  cancelButton: "Cancel",
+  createTitle: "Create New List",
+  createButton: "Create New List",
+  createPlaceholder: "Enter list name",
+  setAsDefault: "Set as default favorite list",
+  saveButton: "Save",
+  noLists: "No favorite lists",
+  noListsDescription: "Start by creating a new list to save your items.",
+  createFirstList: "Create your first list",
+  loading: "Loading...",
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+### Optimistic updates
+
+The component updates local state immediately after user actions to provide instant feedback, without waiting for the API response:
+
+- **Rename**: The list name and default status update in-place instantly. On API error, the full list is refetched from the server.
+- **Delete**: The list is removed from the displayed array instantly. On API error, the full list is refetched.
+- **Create**: After the API call succeeds, the full list is refetched to obtain the server-assigned ID and timestamps (no optimistic insert).
+- **Set as default**: When a list is marked as default, the component clears the `isDefault` flag on the previously default list both in local state and via a separate API call before applying the new default.
+
+### Modals
+
+- **Create modal**: Opens from the "Create New List" button. Contains a name input and a "Set as default" checkbox. The save button is disabled when the name is empty. The modal closes on save or cancel.
+- **Delete modal**: Opens when the delete button is clicked on a list card. Shows a confirmation prompt with the list name and a warning that the action is irreversible. Confirm triggers deletion; cancel closes the modal.
+
+### Inline editing
+
+Clicking the edit button on a list card replaces the list name and metadata with an inline form containing a name input, a "Make default" checkbox, and save/cancel buttons. Only one list can be edited at a time. Clicking the list card while in edit mode does not trigger `onListClick`.
+
+### Sorting and limiting
+
+When the `limit` prop is set, the component sorts all fetched lists by `updatedAt` descending (most recently modified first) and displays only the first N. Without `limit`, lists are displayed in the order returned by the API.
+
+### Duplicate submission prevention
+
+A `saving` flag prevents double-submissions during async create/edit/delete operations. Buttons are implicitly disabled while a mutation is in flight.
+
+### Hydration safety
+
+The component uses an `isMounted` state guard to prevent server/client hydration mismatches. Content renders only after the component has mounted on the client; a skeleton loader is shown during SSR.
+
+### Loading state
+
+While lists are being fetched, the component renders animated placeholder skeleton cards. The create button and empty state are hidden during loading.
+
+### Empty state
+
+When the user has no favorite lists, the component shows a centered empty state with a heart icon, a heading, a description, and (if `allowFavoriteListCreate` is `true`) a "Create your first list" button that opens the create modal.
+
+### User type detection
+
+The component determines whether the user is a B2B Contact or B2C Customer by checking for the presence of `contactId` on the user object. This determines which search field (`contactId` or `customerId`) is used when fetching and creating lists.
 
 ## SDK Services
 
@@ -352,140 +585,3 @@ Variables:
   "id": "456"
 }
 ```
-
-## Building Your Own
-
-To build a custom favorite lists UI while reusing the same data layer:
-
-1. **Initialize the service** with your `GraphQLClient` instance.
-2. **Fetch lists** using `getFavoriteLists()` with the appropriate search input for your user type.
-3. **Determine user type** by checking for the presence of `contactId` on the user object (`'contactId' in user`). Contact users are B2B; Customer users are B2C.
-4. **Sort by recency** if needed: sort the returned `items` array by `updatedAt` descending and slice to your desired limit.
-5. **Count items** per list using `list.products.itemsFound` and `list.clusters.itemsFound`. Fall back to `list.products.items.length` if `itemsFound` is not available.
-6. **Handle default list switching**: before setting a new list as default, update the current default list to `isDefault: false` first, then set the new one. The API does not auto-unset the previous default.
-7. **Error recovery**: wrap mutations in try/catch. On failure, refetch the full list from the API to restore consistent state.
-
-### Service setup
-
-```ts
-import { FavoriteListService, FavoriteList } from 'propeller-sdk-v2';
-
-const service = new FavoriteListService(graphqlClient);
-
-// Determine user type
-const isContact = 'contactId' in user;
-const searchInput = isContact
-  ? { contactId: user.contactId }
-  : { customerId: user.customerId };
-```
-
-### Fetch lists
-
-```ts
-async function fetchLists(): Promise<FavoriteList[]> {
-  const res = await service.getFavoriteLists(searchInput);
-  return res.items || [];
-}
-```
-
-### Create a list
-
-```ts
-async function createList(name: string, isDefault: boolean, currentLists: FavoriteList[]) {
-  // If setting as default, unset the current default first
-  if (isDefault) {
-    const currentDefault = currentLists.find((l) => l.isDefault);
-    if (currentDefault) {
-      await service.updateFavoriteList(String(currentDefault.id), {
-        name: currentDefault.name,
-        isDefault: false,
-      });
-    }
-  }
-
-  await service.createFavoriteList({
-    name,
-    isDefault,
-    ...(isContact
-      ? { contactId: user.contactId }
-      : { customerId: user.customerId }),
-  });
-
-  // Refetch to get server-assigned ID and timestamps
-  return fetchLists();
-}
-```
-
-### Rename a list
-
-```ts
-async function renameList(listId: string, name: string) {
-  // pseudo-code: optimistically update the list name in local state
-  try {
-    await service.updateFavoriteList(listId, { name });
-  } catch {
-    // pseudo-code: on error, refetch full list from API to restore consistent state
-  }
-}
-```
-
-### Delete a list
-
-```ts
-async function deleteList(listId: string) {
-  // pseudo-code: optimistically remove the list from local state
-  try {
-    await service.deleteFavoriteList(listId);
-  } catch {
-    // pseudo-code: on error, refetch full list from API to restore consistent state
-  }
-}
-```
-
-### Optimistic update pattern
-
-For rename and delete operations, update the in-memory list immediately to provide instant visual feedback. If the API call fails, refetch the full list from the server to roll back to a consistent state. For create operations, always refetch after the API call succeeds, since you need the server-assigned ID and timestamps.
-
-## Behavior
-
-### Optimistic updates
-
-The component updates local state immediately after user actions to provide instant feedback, without waiting for the API response:
-
-- **Rename**: The list name and default status update in-place instantly. On API error, the full list is refetched from the server.
-- **Delete**: The list is removed from the displayed array instantly. On API error, the full list is refetched.
-- **Create**: After the API call succeeds, the full list is refetched to obtain the server-assigned ID and timestamps (no optimistic insert).
-- **Set as default**: When a list is marked as default, the component clears the `isDefault` flag on the previously default list both in local state and via a separate API call before applying the new default.
-
-### Modals
-
-- **Create modal**: Opens from the "Create New List" button. Contains a name input and a "Set as default" checkbox. The save button is disabled when the name is empty. The modal closes on save or cancel.
-- **Delete modal**: Opens when the delete button is clicked on a list card. Shows a confirmation prompt with the list name and a warning that the action is irreversible. Confirm triggers deletion; cancel closes the modal.
-
-### Inline editing
-
-Clicking the edit button on a list card replaces the list name and metadata with an inline form containing a name input, a "Make default" checkbox, and save/cancel buttons. Only one list can be edited at a time. Clicking the list card while in edit mode does not trigger `onListClick`.
-
-### Sorting and limiting
-
-When the `limit` prop is set, the component sorts all fetched lists by `updatedAt` descending (most recently modified first) and displays only the first N. Without `limit`, lists are displayed in the order returned by the API.
-
-### Duplicate submission prevention
-
-A `saving` flag prevents double-submissions during async create/edit/delete operations. Buttons are implicitly disabled while a mutation is in flight.
-
-### Hydration safety
-
-The component uses an `isMounted` state guard to prevent server/client hydration mismatches. Content renders only after the component has mounted on the client; a skeleton loader is shown during SSR.
-
-### Loading state
-
-While lists are being fetched, the component renders animated placeholder skeleton cards. The create button and empty state are hidden during loading.
-
-### Empty state
-
-When the user has no favorite lists, the component shows a centered empty state with a heart icon, a heading, a description, and (if `allowFavoriteListCreate` is `true`) a "Create your first list" button that opens the create modal.
-
-### User type detection
-
-The component determines whether the user is a B2B Contact or B2C Customer by checking for the presence of `contactId` on the user object. This determines which search field (`contactId` or `customerId`) is used when fetching and creating lists.

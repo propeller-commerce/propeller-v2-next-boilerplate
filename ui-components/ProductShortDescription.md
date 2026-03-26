@@ -1,10 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductShortDescription
 
 Renders a product's short description as HTML content, resolving the correct entry from the product's localized descriptions array.
 
----
-
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic usage with a product
 
@@ -65,9 +69,44 @@ function ProductDetail({ product }: { product: Product }) {
 </div>
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+To create a custom short description display, you need to:
+
+1. **Accept a product or cluster** and a language code as input.
+2. **Resolve the localized value** from the `shortDescriptions` array by matching the language.
+3. **Render HTML safely** since descriptions may contain markup.
+
+```ts
+import type { Product, Cluster } from 'propeller-sdk-v2';
+
+function getShortDescription(product: Product | Cluster, language: string = 'NL'): string {
+  const descriptions = (product as Product).shortDescriptions;
+  if (!descriptions?.length) return '';
+  const match = descriptions.find((d) => d.language === language);
+  return match?.value || descriptions[0]?.value || '';
+}
+
+// pseudo-code
+const html = getShortDescription(product, 'EN');
+// If `html` is empty, hide the element entirely.
+// Otherwise, render `html` as raw HTML in your template.
+```
+
+Key considerations:
+
+- **Sanitization**: If you do not trust the HTML content source, consider using a library like `dompurify` before rendering.
+- **Fallback language**: Always fall back to the first available description when the requested language is not found, so the user sees content rather than nothing.
+- **Empty state**: Hide the element entirely when no description exists to avoid rendering empty containers that may affect layout spacing.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data
 
@@ -87,7 +126,40 @@ function ProductDetail({ product }: { product: Product }) {
 |------|------|----------|---------|-------------|
 | `className` | `string` | No | `''` | Additional CSS class(es) applied to the root `<div>`. Appended after the default Tailwind classes. |
 
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function getShortDescription(product: Product | Cluster, language?: string): string
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `product` | `Product \| Cluster` | **required** | `product` prop |
+| `language` | `string` | `'NL'` | `language` prop |
+
+### UI-only props (React component only)
+
+The following props control visual presentation and have no equivalent in a custom implementation:
+
+- `className` — Additional CSS class(es) on the root element
+
+  </TabItem>
+</Tabs>
+
 ---
+
+## Behavior
+
+- **Conditional rendering**: The component renders nothing when there is no short description content. No empty wrapper element is added to the DOM.
+- **HTML content**: The short description value is rendered as raw HTML using `dangerouslySetInnerHTML`. Content from the Propeller API may include HTML tags such as `<p>`, `<strong>`, `<ul>`, etc.
+- **Reactivity**: The component recomputes the displayed description whenever `product` or `language` changes.
+- **Default styling**: The root element includes Tailwind prose classes (`prose prose-slate max-w-none text-muted-foreground`) for consistent typography of HTML content. These can be extended or overridden via the `className` prop.
+- **Type compatibility**: Accepts both `Product` and `Cluster` objects since both share the `shortDescriptions` field structure.
 
 ## SDK Services
 
@@ -114,9 +186,7 @@ interface LocalizedString {
 2. If no match is found, fall back to the first entry in the array (`shortDescriptions[0].value`).
 3. If `shortDescriptions` is empty or missing, nothing is rendered.
 
----
-
-## GraphQL Query Example
+## GraphQL Queries and Mutations
 
 When fetching products, include the `shortDescriptions` field:
 
@@ -153,45 +223,3 @@ query GetCluster($clusterId: Int!, $language: String) {
   }
 }
 ```
-
----
-
-## Behavior
-
-- **Conditional rendering**: The component renders nothing when there is no short description content. No empty wrapper element is added to the DOM.
-- **HTML content**: The short description value is rendered as raw HTML using `dangerouslySetInnerHTML`. Content from the Propeller API may include HTML tags such as `<p>`, `<strong>`, `<ul>`, etc.
-- **Reactivity**: The component recomputes the displayed description whenever `product` or `language` changes.
-- **Default styling**: The root element includes Tailwind prose classes (`prose prose-slate max-w-none text-muted-foreground`) for consistent typography of HTML content. These can be extended or overridden via the `className` prop.
-- **Type compatibility**: Accepts both `Product` and `Cluster` objects since both share the `shortDescriptions` field structure.
-
----
-
-## Building Your Own
-
-To create a custom short description display, you need to:
-
-1. **Accept a product or cluster** and a language code as input.
-2. **Resolve the localized value** from the `shortDescriptions` array by matching the language.
-3. **Render HTML safely** since descriptions may contain markup.
-
-```ts
-import type { Product, Cluster } from 'propeller-sdk-v2';
-
-function getShortDescription(product: Product | Cluster, language: string = 'NL'): string {
-  const descriptions = (product as Product).shortDescriptions;
-  if (!descriptions?.length) return '';
-  const match = descriptions.find((d) => d.language === language);
-  return match?.value || descriptions[0]?.value || '';
-}
-
-// pseudo-code
-const html = getShortDescription(product, 'EN');
-// If `html` is empty, hide the element entirely.
-// Otherwise, render `html` as raw HTML in your template.
-```
-
-Key considerations:
-
-- **Sanitization**: If you do not trust the HTML content source, consider using a library like `dompurify` before rendering.
-- **Fallback language**: Always fall back to the first available description when the requested language is not found, so the user sees content rather than nothing.
-- **Empty state**: Hide the element entirely when no description exists to avoid rendering empty containers that may affect layout spacing.

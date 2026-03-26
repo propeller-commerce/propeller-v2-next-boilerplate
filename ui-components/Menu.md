@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Menu
 
 A navigation component that renders a category hierarchy fetched from the Propeller GraphQL API. It supports two layout styles -- **dropdown-vertical** (nested flyout columns on hover) and **jumbotron** (full-width mega-menu panel) -- plus a mobile accordion view that shows automatically on smaller screens.
@@ -7,6 +10,9 @@ The component handles its own data fetching, caching, and localization internall
 ---
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic dropdown menu in a header
 
@@ -133,203 +139,8 @@ const [showMenu, setShowMenu] = useState(false);
 />
 ```
 
----
-
-## Props
-
-### Data & fetching
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `graphqlClient` | `GraphQLClient` | **required** | Initialized Propeller SDK GraphQL client used to fetch category data |
-| `categoryId` | `number` | **required** | Root category ID -- the top of the menu tree |
-| `language` | `string` | **required** | Language code for localized category names and slugs (e.g. `'NL'`, `'EN'`) |
-| `depth` | `number` | `3` | Maximum nesting depth of the category hierarchy |
-| `user` | `Contact \| Customer \| null` | `null` | Authenticated user. When the user changes (login/logout), the cache key changes and the menu re-fetches |
-| `configuration` | `any` | `undefined` | App configuration object (from `@/data/config`). Must include `urls.getCategoryUrl(category, language)` for URL generation |
-
-### Appearance
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `menuStyle` | `string` | `'dropdown-vertical'` | Layout variant: `'dropdown-vertical'` or `'jumbotron'` |
-| `menuClass` | `string` | -- | CSS class applied to the inner `<nav>` element |
-| `className` | `string` | -- | CSS class applied to the root `<div>` wrapper |
-| `menuLinkFormat` | `string` | -- | URL pattern with `{categoryId}` and `{slug}` placeholders (used as fallback if `configuration` is not provided) |
-
-### Callbacks & labels
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `onMenuItemClick` | `(category: Category) => void` | **required** | Called when a menu link is clicked. The default `<a>` navigation is prevented so the parent controls routing |
-| `labels` | `Record<string, string>` | -- | Override UI strings. Keys: `loading`, `error`, `empty` |
-
-### Label defaults
-
-| Key | Default | Shown when |
-|---|---|---|
-| `loading` | `'Loading menu...'` | Categories are being fetched |
-| `error` | `'Failed to load menu'` | The GraphQL request failed |
-| `empty` | `'No categories found'` | The root category has no visible subcategories |
-
----
-
-## Layout styles
-
-### `dropdown-vertical` (default)
-
-A vertical list of top-level categories. On hover, subcategories appear as flyout columns to the right, up to 3 levels deep. Desktop only -- on mobile the component renders an accordion instead.
-
-```
-+-----------------+
-| Computers       | -> +-----------------+
-| Peripherals     |    | Keyboards       | -> +-----------------+
-| Networking      |    | Mice            |    | Wireless        |
-| ...             |    | Monitors        |    | Wired           |
-+-----------------+    | ...             |    | Ergonomic       |
-                       +-----------------+    +-----------------+
-```
-
-### `jumbotron`
-
-Top-level categories render as horizontal tabs. The hovered tab reveals a full-width panel with subcategories in a responsive grid (2-4 columns). Level 3 items appear as lists beneath each level 2 heading.
-
-```
-[ Computers ] [ Peripherals ] [ Networking ] ...
-+------------------------------------------------------+
-|  Keyboards        Mice            Monitors            |
-|  - Wireless       - Gaming        - 4K                |
-|  - Mechanical     - Ergonomic     - Ultrawide         |
-|  - Compact        - Trackballs    - Curved            |
-+------------------------------------------------------+
-```
-
-### Mobile accordion (automatic)
-
-On screens narrower than the `md` breakpoint, both styles are hidden and a vertical accordion is shown instead. Tapping a category name navigates to it; tapping the chevron expands/collapses its children.
-
----
-
-## SDK Services
-
-### Why `graphqlClient.execute()` instead of `CategoryService`
-
-The Propeller SDK's `CategoryService.getCategory()` returns a flat category object -- it does **not** include nested subcategories. To fetch a full category tree (multiple levels deep), the Menu component builds a recursive GraphQL query and executes it directly via `graphqlClient.execute()`.
-
-### Internal query construction
-
-The component constructs its query using a recursive `buildCategoriesQuery(depth)` function:
-
-```typescript
-const buildCategoriesQuery = (currentDepth: number): string => {
-  if (currentDepth === 0) return '';
-  return `
-    categories {
-      categoryId
-      name(language: $language) { value language }
-      slug(language: $language) { value }
-      ${buildCategoriesQuery(currentDepth - 1)}
-    }
-  `;
-};
-```
-
-This produces a nested query where the `categories` field is repeated at each level. For `depth=3`, the generated query looks like:
-
-```graphql
-query Menu($categoryId: Float, $language: String) {
-  category(categoryId: $categoryId) {
-    categoryId
-    name(language: $language) { value language }
-    slug(language: $language) { value }
-    categories {
-      categoryId
-      name(language: $language) { value language }
-      slug(language: $language) { value }
-      categories {
-        categoryId
-        name(language: $language) { value language }
-        slug(language: $language) { value }
-        categories {
-          categoryId
-          name(language: $language) { value language }
-          slug(language: $language) { value }
-        }
-      }
-    }
-  }
-}
-```
-
-### Execution
-
-```typescript
-const response = await graphqlClient.execute({
-  query: gql,
-  variables: { categoryId: 17, language: 'NL' },
-});
-
-const rootCategory = response?.data?.category;
-// rootCategory.categories -> L1 categories
-// rootCategory.categories[0].categories -> L2 categories
-// etc.
-```
-
-When a `user` prop is provided, the component also passes `contactId` (for Contact users) or `customerId` (for Customer users) in the query variables so the API can apply user-specific category visibility rules.
-
----
-
-## Behavior
-
-### Caching
-
-The component always caches the fetched category tree in `localStorage` to avoid unnecessary API calls on every render.
-
-- **Cache key format**: `propeller_menu_{categoryId}_{language}` for anonymous users, or `propeller_menu_{categoryId}_{language}_c{contactId}` / `propeller_menu_{categoryId}_{language}_u{customerId}` for authenticated users.
-- **TTL**: 12 hours (43,200,000 ms). Expired entries are removed on the next fetch attempt.
-- **Quota safety**: `localStorage.setItem` is wrapped in a try/catch so the component degrades gracefully if storage is full.
-
-### Auth-based cache invalidation
-
-Because the cache key includes the user identifier, logging in or out automatically produces a different cache key. This means:
-
-- Anonymous and authenticated users never share cached data.
-- Switching between user accounts also uses separate cache buckets.
-- No explicit cache-clearing logic is needed on auth transitions -- the `user` prop change triggers a re-fetch against the new cache key.
-
-### Language support
-
-- Category names and slugs are fetched using the `language` variable in the GraphQL query.
-- Changing the `language` prop triggers a re-fetch (and uses a different cache key).
-- The component tries to find a localized string matching the requested language; if not found, it falls back to the first available translation.
-
-### Re-fetch triggers
-
-The menu re-fetches when any of these props change:
-- `graphqlClient`
-- `categoryId`
-- `language`
-- `user`
-
-On each fetch, the cache is checked first. If a valid (non-expired) cached entry exists for the current cache key, the API call is skipped entirely.
-
-### Hover state
-
-- **dropdown-vertical**: Tracks hovered L1 and L2 category IDs to show/hide flyout columns. Hovering a new L1 category resets the L2 hover state.
-- **jumbotron**: Tracks hovered L1 to display the mega panel. L2 and L3 categories are always visible within the panel.
-
-### CSS class hooks
-
-| Selector | Element |
-|---|---|
-| `.propeller-menu` | Root wrapper `<div>` |
-| `.propeller-menu-dropdown` | Desktop `<nav>` for `dropdown-vertical` style |
-| `.propeller-menu-jumbotron` | Desktop `<nav>` for `jumbotron` style |
-| `.propeller-menu-mobile` | Mobile accordion `<nav>` |
-
----
-
-## Building Your Own
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
 If you need full control over the menu rendering, you can fetch the category tree yourself and build a custom UI.
 
@@ -416,3 +227,267 @@ Key points when building your own:
 - Use `graphqlClient.execute()` with the recursive query pattern shown above.
 - The `language` variable controls which translations are returned for `name` and `slug` fields.
 - Authenticated users may see different categories, so include user identity in your cache key if you implement caching.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+### Data & fetching
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | **required** | Initialized Propeller SDK GraphQL client used to fetch category data |
+| `categoryId` | `number` | **required** | Root category ID -- the top of the menu tree |
+| `language` | `string` | **required** | Language code for localized category names and slugs (e.g. `'NL'`, `'EN'`) |
+| `depth` | `number` | `3` | Maximum nesting depth of the category hierarchy |
+| `user` | `Contact \| Customer \| null` | `null` | Authenticated user. When the user changes (login/logout), the cache key changes and the menu re-fetches |
+| `configuration` | `any` | `undefined` | App configuration object (from `@/data/config`). Must include `urls.getCategoryUrl(category, language)` for URL generation |
+
+### Appearance
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `menuStyle` | `string` | `'dropdown-vertical'` | Layout variant: `'dropdown-vertical'` or `'jumbotron'` |
+| `menuClass` | `string` | -- | CSS class applied to the inner `<nav>` element |
+| `className` | `string` | -- | CSS class applied to the root `<div>` wrapper |
+| `menuLinkFormat` | `string` | -- | URL pattern with `{categoryId}` and `{slug}` placeholders (used as fallback if `configuration` is not provided) |
+
+### Callbacks & labels
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `onMenuItemClick` | `(category: Category) => void` | **required** | Called when a menu link is clicked. The default `<a>` navigation is prevented so the parent controls routing |
+| `labels` | `Record<string, string>` | -- | Override UI strings. Keys: `loading`, `error`, `empty` |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function fetchCategoryTree(
+  client: GraphQLClient,
+  categoryId: number,
+  language: string,
+  depth?: number
+): Promise<CategoryTree | null>
+```
+
+Types: `GraphQLClient`, `Category`, `LocalizedString` from `propeller-sdk-v2`.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `client` | `GraphQLClient` | required | `graphqlClient` prop |
+| `categoryId` | `number` | required | `categoryId` prop |
+| `language` | `string` | required | `language` prop |
+| `depth` | `number` | `3` | `depth` prop |
+
+When a `user` is present, the component also passes `contactId` (for Contact users) or `customerId` (for Customer users) in the query variables so the API can apply user-specific category visibility rules.
+
+### Callbacks table
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `onMenuItemClick` | A menu link is clicked | Navigate to the category URL using your framework's router (e.g., `router.push(url)`) |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `menuStyle` — layout variant (`'dropdown-vertical'` or `'jumbotron'`)
+- `menuClass` — CSS class on the inner `<nav>`
+- `className` — CSS class on the root wrapper
+- `menuLinkFormat` — URL pattern fallback
+- `labels` — UI strings (`loading`, `error`, `empty`)
+- `configuration` — app config for URL generation
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+| Key | Default | Shown when |
+|---|---|---|
+| `loading` | `'Loading menu...'` | Categories are being fetched |
+| `error` | `'Failed to load menu'` | The GraphQL request failed |
+| `empty` | `'No categories found'` | The root category has no visible subcategories |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  loading: 'Loading menu...',
+  error: 'Failed to load menu',
+  empty: 'No categories found',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Layout styles
+
+### `dropdown-vertical` (default)
+
+A vertical list of top-level categories. On hover, subcategories appear as flyout columns to the right, up to 3 levels deep. Desktop only -- on mobile the component renders an accordion instead.
+
+```
++-----------------+
+| Computers       | -> +-----------------+
+| Peripherals     |    | Keyboards       | -> +-----------------+
+| Networking      |    | Mice            |    | Wireless        |
+| ...             |    | Monitors        |    | Wired           |
++-----------------+    | ...             |    | Ergonomic       |
+                       +-----------------+    +-----------------+
+```
+
+### `jumbotron`
+
+Top-level categories render as horizontal tabs. The hovered tab reveals a full-width panel with subcategories in a responsive grid (2-4 columns). Level 3 items appear as lists beneath each level 2 heading.
+
+```
+[ Computers ] [ Peripherals ] [ Networking ] ...
++------------------------------------------------------+
+|  Keyboards        Mice            Monitors            |
+|  - Wireless       - Gaming        - 4K                |
+|  - Mechanical     - Ergonomic     - Ultrawide         |
+|  - Compact        - Trackballs    - Curved            |
++------------------------------------------------------+
+```
+
+### Mobile accordion (automatic)
+
+On screens narrower than the `md` breakpoint, both styles are hidden and a vertical accordion is shown instead. Tapping a category name navigates to it; tapping the chevron expands/collapses its children.
+
+---
+
+## Behavior
+
+### Caching
+
+The component always caches the fetched category tree in `localStorage` to avoid unnecessary API calls on every render.
+
+- **Cache key format**: `propeller_menu_{categoryId}_{language}` for anonymous users, or `propeller_menu_{categoryId}_{language}_c{contactId}` / `propeller_menu_{categoryId}_{language}_u{customerId}` for authenticated users.
+- **TTL**: 12 hours (43,200,000 ms). Expired entries are removed on the next fetch attempt.
+- **Quota safety**: `localStorage.setItem` is wrapped in a try/catch so the component degrades gracefully if storage is full.
+
+### Auth-based cache invalidation
+
+Because the cache key includes the user identifier, logging in or out automatically produces a different cache key. This means:
+
+- Anonymous and authenticated users never share cached data.
+- Switching between user accounts also uses separate cache buckets.
+- No explicit cache-clearing logic is needed on auth transitions -- the `user` prop change triggers a re-fetch against the new cache key.
+
+### Language support
+
+- Category names and slugs are fetched using the `language` variable in the GraphQL query.
+- Changing the `language` prop triggers a re-fetch (and uses a different cache key).
+- The component tries to find a localized string matching the requested language; if not found, it falls back to the first available translation.
+
+### Re-fetch triggers
+
+The menu re-fetches when any of these props change:
+- `graphqlClient`
+- `categoryId`
+- `language`
+- `user`
+
+On each fetch, the cache is checked first. If a valid (non-expired) cached entry exists for the current cache key, the API call is skipped entirely.
+
+### Hover state
+
+- **dropdown-vertical**: Tracks hovered L1 and L2 category IDs to show/hide flyout columns. Hovering a new L1 category resets the L2 hover state.
+- **jumbotron**: Tracks hovered L1 to display the mega panel. L2 and L3 categories are always visible within the panel.
+
+### CSS class hooks
+
+| Selector | Element |
+|---|---|
+| `.propeller-menu` | Root wrapper `<div>` |
+| `.propeller-menu-dropdown` | Desktop `<nav>` for `dropdown-vertical` style |
+| `.propeller-menu-jumbotron` | Desktop `<nav>` for `jumbotron` style |
+| `.propeller-menu-mobile` | Mobile accordion `<nav>` |
+
+---
+
+## SDK Services
+
+### Why `graphqlClient.execute()` instead of `CategoryService`
+
+The Propeller SDK's `CategoryService.getCategory()` returns a flat category object -- it does **not** include nested subcategories. To fetch a full category tree (multiple levels deep), the Menu component builds a recursive GraphQL query and executes it directly via `graphqlClient.execute()`.
+
+### Internal query construction
+
+The component constructs its query using a recursive `buildCategoriesQuery(depth)` function:
+
+```typescript
+const buildCategoriesQuery = (currentDepth: number): string => {
+  if (currentDepth === 0) return '';
+  return `
+    categories {
+      categoryId
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      ${buildCategoriesQuery(currentDepth - 1)}
+    }
+  `;
+};
+```
+
+This produces a nested query where the `categories` field is repeated at each level. For `depth=3`, the generated query looks like:
+
+```graphql
+query Menu($categoryId: Float, $language: String) {
+  category(categoryId: $categoryId) {
+    categoryId
+    name(language: $language) { value language }
+    slug(language: $language) { value }
+    categories {
+      categoryId
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      categories {
+        categoryId
+        name(language: $language) { value language }
+        slug(language: $language) { value }
+        categories {
+          categoryId
+          name(language: $language) { value language }
+          slug(language: $language) { value }
+        }
+      }
+    }
+  }
+}
+```
+
+### Execution
+
+```typescript
+const response = await graphqlClient.execute({
+  query: gql,
+  variables: { categoryId: 17, language: 'NL' },
+});
+
+const rootCategory = response?.data?.category;
+// rootCategory.categories -> L1 categories
+// rootCategory.categories[0].categories -> L2 categories
+// etc.
+```
+
+When a `user` prop is provided, the component also passes `contactId` (for Contact users) or `customerId` (for Customer users) in the query variables so the API can apply user-specific category visibility rules.

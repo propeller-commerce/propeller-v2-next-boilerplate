@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # OrderItemCard
 
 A display-only component that renders a single line item within an order or quotation table. It shows product details (image, name, SKU), quantity, pricing, discounts, and optional notes. Supports parent/child item grouping for bundled products.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic order detail table
 
@@ -95,7 +101,100 @@ allProducts
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To create a custom order item display:
+
+1. Wrap your component in a `<tbody>` so it integrates with the parent `<table>`.
+2. Read product details from `orderItem.product` with fallbacks to top-level `orderItem` fields (the product association may not always be populated).
+3. Build the product URL from `productId` and `slug`: `/product/{productId}/{slug}`.
+4. Handle child items by accepting a `childItems` array and rendering them as indented sub-rows.
+5. Calculate discount percentage from `discount / originalPrice * 100` when both values are present.
+6. Accept a `formatPrice` callback so consumers can control currency formatting.
+
+### Basic order item rendering
+
+```tsx
+function CustomOrderItem({ orderItem, childItems = [] }) {
+  const name = orderItem?.product?.names?.[0]?.value || orderItem?.name || 'Unknown';
+  const sku = orderItem?.product?.sku || orderItem?.sku || '';
+  const imageUrl = orderItem?.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+  const productId = orderItem?.product?.productId;
+  const slug = orderItem?.product?.slugs?.[0]?.value;
+  const productUrl = productId && slug ? `/product/${productId}/${slug}` : '';
+
+  return (
+    <tbody>
+      <tr>
+        <td>
+          {productUrl ? <a href={productUrl}>{name}</a> : <span>{name}</span>}
+          {sku && <p>SKU: {sku}</p>}
+        </td>
+        <td>{orderItem?.quantity}</td>
+        <td>{orderItem?.priceTotal}</td>
+      </tr>
+      {childItems.map((child) => (
+        <tr key={child.id || child.uuid}>
+          <td style={{ paddingLeft: '2rem' }}>
+            {child.product?.names?.[0]?.value || child.name}
+          </td>
+          <td>{child.quantity}</td>
+          <td>{child.priceTotal}</td>
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+```
+
+### With discount display
+
+```tsx
+function CustomOrderItemWithDiscount({ orderItem, childItems = [], formatPrice }) {
+  const name = orderItem?.product?.names?.[0]?.value || orderItem?.name || 'Unknown';
+  const format = formatPrice || ((price: number) => `€${price.toFixed(2)}`);
+
+  const discountAmount = orderItem?.discount;
+  const originalPrice = orderItem?.originalPrice;
+  const discountPercentage = discountAmount && originalPrice
+    ? ((discountAmount / originalPrice) * 100).toFixed(2).replace('.', ',')
+    : null;
+
+  return (
+    <tbody>
+      <tr>
+        <td>{name}</td>
+        <td>{orderItem?.quantity}</td>
+        <td>
+          {discountAmount > 0 && (
+            <span>{format(discountAmount)} ({discountPercentage}%)</span>
+          )}
+        </td>
+        <td>{format(orderItem?.priceTotal)}</td>
+      </tr>
+      {childItems.map((child) => (
+        <tr key={child.id || child.uuid}>
+          <td style={{ paddingLeft: '2rem' }}>
+            {child.product?.names?.[0]?.value || child.name}
+          </td>
+          <td>{child.quantity}</td>
+          <td></td>
+          <td>{format(child.priceTotal)}</td>
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core Data
 
@@ -128,6 +227,48 @@ allProducts
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `formatPrice` | `(price: number) => string` | Formats as `€{price.toFixed(2)}` | Custom price formatting function applied to all price values in the component. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function CustomOrderItem(options: {
+  orderItem: any;
+  childItems?: any[];
+  formatPrice?: (price: number) => string;
+}): void
+```
+
+The component is display-only and does not call any SDK services.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `orderItem` | `any` | required | `orderItem` prop |
+| `childItems` | `any[]` | `[]` | `childItems` prop |
+| `formatPrice` | `(price: number) => string` | `€{price.toFixed(2)}` | `formatPrice` prop |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `titleLinkable` — whether the product name renders as a link
+- `showImage` — show/hide the product thumbnail
+- `showSku` — show/hide the SKU
+- `showQuantity` — show/hide the quantity column
+- `showPrice` — show/hide the price column
+- `showDiscount` — show/hide the discount column
+- `showItemNotes` — show/hide item notes
+- `showStockComponent` — show/hide stock info placeholder
+- `isChildItem` — render as an indented sub-item
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Order Item Fields
 
@@ -164,6 +305,8 @@ This component is display-only and does not call any SDK services. It reads the 
 | `orderItem.id` | Used as the React key when rendering |
 
 Child items read a subset: `product.names[0].value`, `name`, `quantity`, `priceTotal`, `id`, and `uuid`.
+
+---
 
 ## Behavior
 
@@ -214,47 +357,3 @@ When `showDiscount` is `true`:
 ### Stock Info
 
 The `showStockComponent` prop renders a placeholder text. Replace it with an actual stock display component as needed for your application.
-
-## Building Your Own
-
-To create a custom order item display:
-
-1. Wrap your component in a `<tbody>` so it integrates with the parent `<table>`.
-2. Read product details from `orderItem.product` with fallbacks to top-level `orderItem` fields (the product association may not always be populated).
-3. Build the product URL from `productId` and `slug`: `/product/{productId}/{slug}`.
-4. Handle child items by accepting a `childItems` array and rendering them as indented sub-rows.
-5. Calculate discount percentage from `discount / originalPrice * 100` when both values are present.
-6. Accept a `formatPrice` callback so consumers can control currency formatting.
-
-```tsx
-function CustomOrderItem({ orderItem, childItems = [] }) {
-  const name = orderItem?.product?.names?.[0]?.value || orderItem?.name || 'Unknown';
-  const sku = orderItem?.product?.sku || orderItem?.sku || '';
-  const imageUrl = orderItem?.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-  const productId = orderItem?.product?.productId;
-  const slug = orderItem?.product?.slugs?.[0]?.value;
-  const productUrl = productId && slug ? `/product/${productId}/${slug}` : '';
-
-  return (
-    <tbody>
-      <tr>
-        <td>
-          {productUrl ? <a href={productUrl}>{name}</a> : <span>{name}</span>}
-          {sku && <p>SKU: {sku}</p>}
-        </td>
-        <td>{orderItem?.quantity}</td>
-        <td>{orderItem?.priceTotal}</td>
-      </tr>
-      {childItems.map((child) => (
-        <tr key={child.id || child.uuid}>
-          <td style={{ paddingLeft: '2rem' }}>
-            {child.product?.names?.[0]?.value || child.name}
-          </td>
-          <td>{child.quantity}</td>
-          <td>{child.priceTotal}</td>
-        </tr>
-      ))}
-    </tbody>
-  );
-}
-```

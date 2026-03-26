@@ -1,18 +1,26 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # OrderSummary
 
 Displays a complete order overview including order metadata (number, date, status, total), invoice and delivery addresses, payment/carrier/delivery information, and order remarks. Designed for order detail and order confirmation pages.
 
 ## Usage
 
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+### Full order summary with all sections visible (default)
+
 ```tsx
 import OrderSummary from '@/components/propeller/OrderSummary';
 
-// Full order summary with all sections visible (default)
 <OrderSummary order={order} title="Order Summary" />
 ```
 
+### Minimal view — metadata only, no addresses or delivery info
+
 ```tsx
-// Minimal view — metadata only, no addresses or delivery info
 <OrderSummary
   order={order}
   title="Order #12345"
@@ -23,8 +31,9 @@ import OrderSummary from '@/components/propeller/OrderSummary';
 />
 ```
 
+### Custom price and date formatting with Dutch labels
+
 ```tsx
-// Custom price and date formatting with Dutch labels
 <OrderSummary
   order={order}
   formatPrice={(price) => `€ ${price.toFixed(2).replace('.', ',')}`}
@@ -51,8 +60,9 @@ import OrderSummary from '@/components/propeller/OrderSummary';
 />
 ```
 
+### With country code resolution
+
 ```tsx
-// With country code resolution
 import { countries } from '@/data/countries';
 
 <OrderSummary
@@ -61,8 +71,9 @@ import { countries } from '@/data/countries';
 />
 ```
 
+### Quote detail — hide total (shown separately via OrderTotals)
+
 ```tsx
-// Quote detail — hide total (shown separately via OrderTotals)
 <OrderSummary
   order={quote}
   title="Quote Details"
@@ -70,7 +81,61 @@ import { countries } from '@/data/countries';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To build a custom order summary that fits your design system:
+
+1. **Fetch the order** using `OrderService.getOrder({ id: orderId })` from the Propeller SDK.
+
+2. **Extract addresses** by filtering `order.addresses` on the `type` field:
+   ```tsx
+   const invoiceAddress = order.addresses?.find(a => a.type === 'invoice');
+   const deliveryAddress = order.addresses?.find(a => a.type === 'delivery');
+   ```
+
+3. **Read the total** from `order.total.net` (includes VAT). For a full financial breakdown, pair with the `OrderTotals` component.
+
+4. **Read delivery info** from `order.paymentData.method`, `order.postageData.carrier`, and `order.postageData.requestDate`.
+
+5. **Format prices and dates** consistently across your app by passing shared formatter functions.
+
+6. **Resolve country codes** by passing a country list. The `@/data/countries` module provides a ready-made list of `{ code, name }` objects.
+
+### Minimal example
+
+```ts
+// Fetch the order (using OrderService documented in SDK Services)
+// const order = await orderService.getOrder({ id: orderId });
+
+const invoiceAddress = order.addresses?.find(a => a.type === 'invoice');
+const deliveryAddress = order.addresses?.find(a => a.type === 'delivery');
+
+const orderTotal = order.total?.net ?? 0;
+const formattedTotal = `€${orderTotal.toFixed(2)}`;
+
+const orderDate = order.createdAt
+  ? new Date(order.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    })
+  : '';
+
+const paymentMethod = order.paymentData?.method;
+const carrier = order.postageData?.carrier;
+const deliveryDate = order.postageData?.requestDate;
+const reference = order.reference;
+const remarks = order.remarks;
+
+// Render these values in your custom layout
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core
 
@@ -104,7 +169,54 @@ All default to `true`. Set to `false` to hide the corresponding section.
 | `labels` | `Record<string, string>` | English defaults | Override any UI label (see Label Keys below) |
 | `countries` | `{ code: string; name: string }[]` | `[]` | Country list for resolving ISO codes to display names. When omitted, raw country codes are shown. |
 
-### Label Keys
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function renderOrderSummary(options: {
+  order: any;
+  formatPrice?: (price: number) => string;
+  formatDate?: (dateString: string) => string;
+  countries?: { code: string; name: string }[];
+}): void
+```
+
+The component is read-only. It receives an `Order` object (typically fetched via `OrderService.getOrder()`) and reads fields directly.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `order` | `any` | required | `order` prop |
+| `formatPrice` | `(price: number) => string` | `€X.XX` | `formatPrice` prop |
+| `formatDate` | `(dateString: string) => string` | `en-US` long date | `formatDate` prop |
+| `countries` | `{ code: string; name: string }[]` | `[]` | `countries` prop |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `title` — heading text above the summary
+- `orderSummaryContainerClass` — CSS class on the root container
+- `showOrderNumber` — toggle order number display
+- `showOrderDate` — toggle order date display
+- `showOrderStatus` — toggle status badge display
+- `showOrderTotal` — toggle total price display
+- `showInvoiceAddress` — toggle invoice address block
+- `showDeliveryAddress` — toggle delivery address block
+- `showDeliveryInfo` — toggle payment/carrier/delivery panel
+- `showRemarks` — toggle reference and remarks panel
+- `labels` — UI string overrides
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default Value |
 |---|---|
@@ -119,6 +231,32 @@ All default to `true`. Set to `false` to hide the corresponding section.
 | `deliveryDate` | `"Delivery Date:"` |
 | `reference` | `"Reference:"` |
 | `remarks` | `"Remarks:"` |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  orderNumber: 'Order Number',
+  orderDate: 'Order Date',
+  status: 'Status',
+  total: 'Total',
+  invoiceAddress: 'Invoice Address',
+  deliveryAddress: 'Delivery Address',
+  payment: 'Payment:',
+  carrier: 'Carrier:',
+  deliveryDate: 'Delivery Date:',
+  reference: 'Reference:',
+  remarks: 'Remarks:',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## SDK Services
 
@@ -161,6 +299,8 @@ The component filters `order.addresses` by `type` to find the invoice (`type ===
 | `order.postageData.carrier` | `string` | Carrier/shipping provider name |
 | `order.postageData.requestDate` | `string` | Requested delivery date, formatted via `formatDate` |
 
+---
+
 ## Behavior
 
 - **Layout**: The component renders in four visual sections stacked vertically:
@@ -178,23 +318,3 @@ The component filters `order.addresses` by `type` to find the invoice (`type ===
 - **Country resolution**: When the `countries` prop is provided, ISO country codes in addresses are resolved to full country names. When omitted or when no match is found, the raw code is displayed.
 
 - **Status badge**: The order status is rendered as a pill-shaped badge with `bg-secondary/10` and `text-secondary` styling.
-
-## Building Your Own
-
-To build a custom order summary that fits your design system:
-
-1. **Fetch the order** using `OrderService.getOrder({ id: orderId })` from the Propeller SDK.
-
-2. **Extract addresses** by filtering `order.addresses` on the `type` field:
-   ```tsx
-   const invoiceAddress = order.addresses?.find(a => a.type === 'invoice');
-   const deliveryAddress = order.addresses?.find(a => a.type === 'delivery');
-   ```
-
-3. **Read the total** from `order.total.net` (includes VAT). For a full financial breakdown, pair with the `OrderTotals` component.
-
-4. **Read delivery info** from `order.paymentData.method`, `order.postageData.carrier`, and `order.postageData.requestDate`.
-
-5. **Format prices and dates** consistently across your app by passing shared formatter functions.
-
-6. **Resolve country codes** by passing a country list. The `@/data/countries` module provides a ready-made list of `{ code, name }` objects.

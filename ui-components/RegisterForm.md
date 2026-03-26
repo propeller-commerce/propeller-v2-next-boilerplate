@@ -1,8 +1,14 @@
-# RegisterForm Component
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# RegisterForm
 
 A configurable user registration component that manages the full account creation flow for either Contact (B2B company) or Customer (B2C consumer) users, including company creation, address management, and automatic login.
 
-## Usage Examples
+## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic usage (both user types, full form)
 
@@ -85,7 +91,208 @@ import { countries } from '@/data/countries';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+If you need full control over the registration flow, you can build your own form using the same SDK services. Below is the complete Contact (B2B) registration flow.
+
+### Required form fields
+
+Your form needs to collect: `email`, `password`, `confirmPassword`, `firstName`, `lastName`, `companyName`, `vatNumber`, `cocNumber`, `phone`, `gender`, `street`, `number`, `numberExtension`, `postalCode`, `city`, `country`. Also track `loading`, `error`, and `userType` (Contact or Customer) state.
+
+### Registration flow (B2B Contact)
+
+```ts
+import {
+  GraphQLClient,
+  UserService,
+  CompanyService,
+  AddressService,
+  Enums,
+} from 'propeller-sdk-v2';
+
+// pseudo-code: maintain form field state and loading/error state in your framework
+
+async function registerContact(graphqlClient: GraphQLClient, formData: {
+  email: string; password: string; firstName: string; lastName: string;
+  companyName: string; vatNumber: string; phone: string;
+  street: string; number: string; postalCode: string; city: string; country: string;
+}) {
+  const userService = new UserService(graphqlClient);
+  const companyService = new CompanyService(graphqlClient);
+  const addressService = new AddressService(graphqlClient);
+
+  // Step 1: Create the company
+  const company = await companyService.createCompany({
+    name: formData.companyName,
+    taxNumber: formData.vatNumber,
+    email: formData.email,
+  });
+
+  // Step 2: Register the contact under the company
+  const response = await userService.registerContact({
+    contactRegisterInput: {
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      primaryLanguage: 'NL',
+      parentId: company.companyId,
+    },
+    companyAttributesInput: {},
+    contactAttributesInput: {},
+    contactPAConfigInput: { page: 1, offset: 10 },
+  });
+
+  // Step 3: Authenticate for subsequent address creation calls
+  const session = response.session;
+  if (session?.accessToken) {
+    const currentConfig = graphqlClient.getConfig();
+    graphqlClient.updateConfig({
+      headers: {
+        ...currentConfig.headers,
+        Authorization: `Bearer ${session.accessToken}`,
+      },
+    });
+  }
+
+  // Step 4: Create invoice address
+  await addressService.createCompanyAddress({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    company: formData.companyName,
+    street: formData.street,
+    number: formData.number,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    country: formData.country,
+    type: Enums.AddressType.invoice,
+    isDefault: Enums.YesNo.Y,
+    companyId: company.companyId,
+  });
+
+  // Step 5: Create delivery address (copy of invoice)
+  await addressService.createCompanyAddress({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    company: formData.companyName,
+    street: formData.street,
+    number: formData.number,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    country: formData.country,
+    type: Enums.AddressType.delivery,
+    isDefault: Enums.YesNo.Y,
+    companyId: company.companyId,
+  });
+
+  // Step 6: Trigger login event for other components
+  if (session?.accessToken && session?.refreshToken) {
+    window.dispatchEvent(new CustomEvent('userLoggedIn'));
+  }
+
+  return { user: response.contact, session };
+  // On success: navigate to the account page or show a success message
+  // On failure: display the error message to the user
+}
+```
+
+### Registration flow (B2C Customer)
+
+For a B2C (Customer) registration, replace `registerContact` with `registerCustomer`, skip the `CompanyService.createCompany()` step, and use `AddressService.createCustomerAddress()` instead of `createCompanyAddress()`.
+
+```ts
+import {
+  GraphQLClient,
+  UserService,
+  AddressService,
+  Enums,
+} from 'propeller-sdk-v2';
+
+async function registerCustomer(graphqlClient: GraphQLClient, formData: {
+  email: string; password: string; firstName: string; lastName: string;
+  phone: string; gender: string;
+  street: string; number: string; postalCode: string; city: string; country: string;
+}) {
+  const userService = new UserService(graphqlClient);
+  const addressService = new AddressService(graphqlClient);
+
+  // Step 1: Register the customer
+  const response = await userService.registerCustomer({
+    customerRegisterInput: {
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      gender: Enums.Gender.U,
+      primaryLanguage: 'NL',
+    },
+    customerAttributesInput: {},
+  });
+
+  // Step 2: Authenticate for subsequent address creation calls
+  const session = response.session;
+  if (session?.accessToken) {
+    const currentConfig = graphqlClient.getConfig();
+    graphqlClient.updateConfig({
+      headers: {
+        ...currentConfig.headers,
+        Authorization: `Bearer ${session.accessToken}`,
+      },
+    });
+  }
+
+  // Step 3: Create invoice address
+  await addressService.createCustomerAddress({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    street: formData.street,
+    number: formData.number,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    country: formData.country,
+    type: Enums.AddressType.invoice,
+    isDefault: Enums.YesNo.Y,
+    customerId: response.customer.customerId,
+  });
+
+  // Step 4: Create delivery address (copy of invoice)
+  await addressService.createCustomerAddress({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    street: formData.street,
+    number: formData.number,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    country: formData.country,
+    type: Enums.AddressType.delivery,
+    isDefault: Enums.YesNo.Y,
+    customerId: response.customer.customerId,
+  });
+
+  // Step 5: Trigger login event
+  if (session?.accessToken && session?.refreshToken) {
+    window.dispatchEvent(new CustomEvent('userLoggedIn'));
+  }
+
+  return { user: response.customer, session };
+}
+```
+
+### Post-registration flow
+
+1. Validate client-side that passwords match before making any API calls.
+2. Call the registration function above.
+3. If `automaticLogin` is desired and session tokens are present, dispatch `userLoggedIn` on `window` (picked up by AuthContext).
+4. Call your success callback with the created user and session tokens.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core Props
 
@@ -125,7 +332,88 @@ import { countries } from '@/data/countries';
 
 `firstName`, `middleName`, `lastName`, `email` (always required), `password` (always required), `phone`, `mobile`, `gender`, `companyName`, `vatNumber`, `cocNumber`, `street`, `number`, `numberExtension`, `postalCode`, `city`, `country`
 
-### Available Labels
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function registerUser(
+  graphqlClient: GraphQLClient,
+  formData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    companyName?: string;
+    vatNumber?: string;
+    cocNumber?: string;
+    phone?: string;
+    gender?: Enums.Gender;
+    street: string;
+    number: string;
+    numberExtension?: string;
+    postalCode: string;
+    city: string;
+    country: string;
+    preferredLanguage?: string;
+  },
+  userType: 'Contact' | 'Customer'
+): Promise<{ user: Contact | Customer; session: { accessToken: string; refreshToken: string; expirationTime: string } }>
+```
+
+Types from `propeller-sdk-v2`: `GraphQLClient`, `Contact`, `Customer`, `Enums`, `ContactRegisterInput`, `CustomerRegisterInput`, `CreateCompanyInput`, `CustomerAddressCreateInput`, `CompanyAddressCreateInput`.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `graphqlClient` | `GraphQLClient` | *required* | `graphqlClient` prop — SDK client for all service calls |
+| `email` | `string` | *required* | Form field — user email |
+| `password` | `string` | *required* | Form field — user password |
+| `firstName` | `string` | *required* | Form field — first name |
+| `lastName` | `string` | *required* | Form field — last name |
+| `companyName` | `string` | `undefined` | Form field — company name (Contact only) |
+| `vatNumber` | `string` | `undefined` | Form field — VAT / tax number (Contact only) |
+| `cocNumber` | `string` | `undefined` | Form field — Chamber of Commerce number (Contact only) |
+| `phone` | `string` | `undefined` | Form field — phone number |
+| `gender` | `Enums.Gender` | `Enums.Gender.U` | Form field — gender mapped from title radio buttons |
+| `street` | `string` | *required* | Form field — street name |
+| `number` | `string` | *required* | Form field — house number |
+| `numberExtension` | `string` | `undefined` | Form field — apt/suite/unit |
+| `postalCode` | `string` | *required* | Form field — postal code |
+| `city` | `string` | *required* | Form field — city |
+| `country` | `string` | *required* | Form field — country code |
+| `preferredLanguage` | `string` | `'NL'` | `preferredLanguage` prop — language code sent with registration |
+| `automaticLogin` | `boolean` | `true` | `automaticLogin` prop — whether to dispatch `userLoggedIn` event after registration |
+
+### Callbacks table
+
+| Callback | When it fires | What to implement |
+|----------|--------------|-------------------|
+| `beforeRegistration` | Before any API calls are made | Show loading state, disable form inputs |
+| `afterRegistration` | After successful registration (and optional auto-login) | Navigate to account page or show success message. Receives `(user, accessToken?, refreshToken?, expiresAt?)` |
+| `onLoginClick` | When the "Log in" link is clicked | Navigate to login page |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `title` — form title text
+- `subtitle` — subtitle below the title
+- `buttonText` — submit button label
+- `labels` — override default labels for form fields and sections
+- `requiredFields` — field names to mark as required in the UI
+- `displayLoginLink` — show/hide login link
+- `countries` — country dropdown options
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Description |
 |-----|---------|-------------|
@@ -159,6 +447,51 @@ import { countries } from '@/data/countries';
 | `passwordMismatch` | `"Passwords do not match"` | Validation error message |
 | `loginText` | `"Already have an account?"` | Login link prefix |
 | `loginLink` | `"Log in"` | Login link text |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const labels = {
+  personalDetailsTitle: 'Your details',
+  billingAddressTitle: 'Billing address',
+  deliveryAddressTitle: 'Delivery address',
+  passwordTitle: 'Password',
+  sameAsDelivery: 'Delivery address is the same as billing address',
+  firstName: 'First name',
+  middleName: 'Insertion',
+  lastName: 'Last name',
+  email: 'Email address',
+  password: 'Password',
+  confirmPassword: 'Repeat password',
+  phone: 'Phone number',
+  gender: 'Title',
+  companyName: 'Company name',
+  vatNumber: 'VAT number',
+  cocNumber: 'CoC number',
+  street: 'Street',
+  number: 'Number',
+  numberExtension: 'Apt/Suite/Unit',
+  postalCode: 'Postal code',
+  city: 'City',
+  country: 'Country',
+  userTypeLabel: 'Account type',
+  contactLabel: 'Company',
+  customerLabel: 'Consumer',
+  emailPlaceholder: 'name@example.com',
+  passwordPlaceholder: '••••••••',
+  passwordMismatch: 'Passwords do not match',
+  loginText: 'Already have an account?',
+  loginLink: 'Log in',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -205,6 +538,8 @@ The title radio buttons map to Propeller SDK `Enums.Gender` values:
 - Mr. = `Enums.Gender.M`
 - Mrs. = `Enums.Gender.F`
 - Other = `Enums.Gender.U` (default)
+
+---
 
 ## SDK Services
 
@@ -322,6 +657,8 @@ const companyAddress: CompanyAddressCreateInput = {
 await addressService.createCompanyAddress(companyAddress);
 ```
 
+---
+
 ## GraphQL Queries and Mutations
 
 ### registerContact mutation
@@ -402,117 +739,3 @@ mutation createCompanyAddress($input: CompanyAddressCreateInput!) {
   }
 }
 ```
-
-## Building Your Own
-
-If you need full control over the registration flow, you can build your own form using the same SDK services. Below is the complete Contact (B2B) registration flow:
-
-### Required form fields
-
-Your form needs to collect: `email`, `password`, `confirmPassword`, `firstName`, `lastName`, `companyName`, `vatNumber`, `cocNumber`, `phone`, `gender`, `street`, `number`, `numberExtension`, `postalCode`, `city`, `country`. Also track `loading`, `error`, and `userType` (Contact or Customer) state.
-
-### Registration flow (B2B Contact)
-
-```ts
-import {
-  GraphQLClient,
-  UserService,
-  CompanyService,
-  AddressService,
-  Enums,
-} from 'propeller-sdk-v2';
-
-// pseudo-code: maintain form field state and loading/error state in your framework
-
-async function registerContact(graphqlClient: GraphQLClient, formData: {
-  email: string; password: string; firstName: string; lastName: string;
-  companyName: string; vatNumber: string; phone: string;
-  street: string; number: string; postalCode: string; city: string; country: string;
-}) {
-  const userService = new UserService(graphqlClient);
-  const companyService = new CompanyService(graphqlClient);
-  const addressService = new AddressService(graphqlClient);
-
-  // Step 1: Create the company
-  const company = await companyService.createCompany({
-    name: formData.companyName,
-    taxNumber: formData.vatNumber,
-    email: formData.email,
-  });
-
-  // Step 2: Register the contact under the company
-  const response = await userService.registerContact({
-    contactRegisterInput: {
-      email: formData.email,
-      password: formData.password,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      primaryLanguage: 'NL',
-      parentId: company.companyId,
-    },
-    companyAttributesInput: {},
-    contactAttributesInput: {},
-    contactPAConfigInput: { page: 1, offset: 10 },
-  });
-
-  // Step 3: Authenticate for subsequent address creation calls
-  const session = response.session;
-  if (session?.accessToken) {
-    const currentConfig = graphqlClient.getConfig();
-    graphqlClient.updateConfig({
-      headers: {
-        ...currentConfig.headers,
-        Authorization: `Bearer ${session.accessToken}`,
-      },
-    });
-  }
-
-  // Step 4: Create invoice address
-  await addressService.createCompanyAddress({
-    firstName: formData.firstName,
-    lastName: formData.lastName,
-    company: formData.companyName,
-    street: formData.street,
-    number: formData.number,
-    postalCode: formData.postalCode,
-    city: formData.city,
-    country: formData.country,
-    type: Enums.AddressType.invoice,
-    isDefault: Enums.YesNo.Y,
-    companyId: company.companyId,
-  });
-
-  // Step 5: Create delivery address (copy of invoice)
-  await addressService.createCompanyAddress({
-    firstName: formData.firstName,
-    lastName: formData.lastName,
-    company: formData.companyName,
-    street: formData.street,
-    number: formData.number,
-    postalCode: formData.postalCode,
-    city: formData.city,
-    country: formData.country,
-    type: Enums.AddressType.delivery,
-    isDefault: Enums.YesNo.Y,
-    companyId: company.companyId,
-  });
-
-  // Step 6: Trigger login event for other components
-  if (session?.accessToken && session?.refreshToken) {
-    window.dispatchEvent(new CustomEvent('userLoggedIn'));
-  }
-
-  return { user: response.contact, session };
-  // On success: navigate to the account page or show a success message
-  // On failure: display the error message to the user
-}
-```
-
-### Post-registration flow
-
-1. Validate client-side that passwords match before making any API calls.
-2. Call the registration function above.
-3. If `automaticLogin` is desired and session tokens are present, dispatch `userLoggedIn` on `window` (picked up by AuthContext).
-4. Call your success callback with the created user and session tokens.
-
-For a B2C (Customer) registration, replace `registerContact` with `registerCustomer`, skip the `CompanyService.createCompany()` step, and use `AddressService.createCustomerAddress()` instead of `createCompanyAddress()`.

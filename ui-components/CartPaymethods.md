@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # CartPaymethods
 
 Displays available payment methods for a shopping cart and lets the user select one. Filters out invalid methods and hides "on account" options for guest users by default.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ```tsx
 import CartPaymethods from '@/components/propeller/CartPaymethods';
@@ -46,117 +52,8 @@ import CartPaymethods from '@/components/propeller/CartPaymethods';
 />
 ```
 
-## Props
-
-### Required
-
-| Prop | Type | Description |
-|---|---|---|
-| `cart` | `Cart` | Shopping cart object. Payment methods are read from `cart.payMethods`. |
-| `user` | `Contact \| Customer \| null` | Authenticated user. Pass `null` for guest checkout. Used to determine guest vs. logged-in filtering. |
-
-### Display
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `paymentsContainerClass` | `string` | `'cart-paymethods'` | CSS class applied to the outer container. |
-| `showOnAccountForGuests` | `boolean` | `false` | When `true`, "on account" methods remain visible for unauthenticated users. |
-
-### Callbacks
-
-| Prop | Type | Description |
-|---|---|---|
-| `onPaymethodSelect` | `(paymethod: CartPaymethod) => void` | Fired when the user clicks a payment method card. Receives the full `CartPaymethod` object. |
-
-### Formatting and Labels
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `formatPrice` | `(price: number) => string` | Formats as `€X.XX` | Override the default price formatter for method surcharges. |
-| `labels` | `Record<string, string>` | — | Label overrides. Supported keys: `noMethods` (empty-state message, default: `"No payment methods available."`). |
-
-## SDK Services
-
-CartPaymethods reads payment methods from the `Cart` object, which is populated by the Propeller SDK. The relevant services are:
-
-### Fetching payment methods
-
-Payment methods are included in the cart response when you fetch or start a cart via `CartService`:
-
-```ts
-import { CartService } from 'propeller-sdk-v2';
-
-const cartService = new CartService(graphqlClient);
-const cart = await cartService.getCart({ cartId: 'abc-123' });
-
-// cart.payMethods contains CartPaymethod[]
-// Each CartPaymethod has: code, name, price, externalCode, type
-```
-
-### Setting the selected payment method
-
-After the user selects a method (via `onPaymethodSelect`), persist it to the cart:
-
-```ts
-import { CartService } from 'propeller-sdk-v2';
-
-const cartService = new CartService(graphqlClient);
-await cartService.updateCart({
-  cartId: 'abc-123',
-  paymentData: {
-    method: selectedMethod.code,
-  },
-});
-```
-
-## GraphQL
-
-### Query — cart with payment methods
-
-```graphql
-query Cart($cartId: String!) {
-  cart(cartId: $cartId) {
-    cartId
-    payMethods {
-      code
-      name
-      price
-      externalCode
-      type
-    }
-  }
-}
-```
-
-### Mutation — set payment method on cart
-
-```graphql
-mutation CartUpdate($cartId: String!, $input: CartUpdateInput!) {
-  cartUpdate(cartId: $cartId, input: $input) {
-    cartId
-    payMethods {
-      code
-      name
-      price
-    }
-  }
-}
-```
-
-Variables:
-
-```json
-{
-  "cartId": "abc-123",
-  "input": {
-    "paymentData": {
-      "method": "ideal"
-    }
-  }
-}
-```
-
-## Building Your Own
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
 To build a custom payment method selector, you need:
 
@@ -205,6 +102,109 @@ const methods = getFilteredMethods(cart, user);
 // If `methods` is empty, show a "No payment methods available." message.
 ```
 
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+### Required
+
+| Prop | Type | Description |
+|---|---|---|
+| `cart` | `Cart` | Shopping cart object. Payment methods are read from `cart.payMethods`. |
+| `user` | `Contact \| Customer \| null` | Authenticated user. Pass `null` for guest checkout. Used to determine guest vs. logged-in filtering. |
+
+### Display
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `paymentsContainerClass` | `string` | `'cart-paymethods'` | CSS class applied to the outer container. |
+| `showOnAccountForGuests` | `boolean` | `false` | When `true`, "on account" methods remain visible for unauthenticated users. |
+
+### Callbacks
+
+| Prop | Type | Description |
+|---|---|---|
+| `onPaymethodSelect` | `(paymethod: CartPaymethod) => void` | Fired when the user clicks a payment method card. Receives the full `CartPaymethod` object. |
+
+### Formatting and Labels
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `formatPrice` | `(price: number) => string` | Formats as `€X.XX` | Override the default price formatter for method surcharges. |
+| `labels` | `Record<string, string>` | — | Label overrides. Supported keys: `noMethods` (empty-state message, default: `"No payment methods available."`). |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function cartPaymethods(cart: Cart, user: Contact | Customer | null): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `cart` | `Cart` | — | `cart` prop |
+| `user` | `Contact \| Customer \| null` | — | `user` prop |
+| `showOnAccountForGuests` | `boolean` | `false` | `showOnAccountForGuests` prop |
+| `formatPrice` | `(price: number) => string` | `€X.XX` | `formatPrice` prop |
+
+### Cart resolution
+
+Payment methods are read from `cart.payMethods`, an array of `CartPaymethod` objects:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `code` | `string` | Payment method identifier |
+| `name` | `string` | Display name |
+| `price` | `number` | Surcharge amount |
+| `externalCode` | `string` | External system code |
+| `type` | `string` | Payment type |
+
+### Callbacks
+
+| Callback | Signature | Description |
+|---|---|---|
+| `onPaymethodSelect` | `(paymethod: CartPaymethod) => void` | Fired when the user selects a payment method |
+
+### UI-only props
+
+The following props only affect visual presentation and have no BYO equivalent: `paymentsContainerClass`.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+| Key | Default value |
+|---|---|
+| `noMethods` | `"No payment methods available."` |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const labels = {
+  noMethods: "No payment methods available.",
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
+
 ## Behavior
 
 - **Filtering**: Methods without a `code` are excluded. "On account" variants (`on_account`, `onaccount`, `on-account`) are hidden for guest users unless `showOnAccountForGuests` is `true`.
@@ -213,3 +213,84 @@ const methods = getFilteredMethods(cart, user);
 - **Price badge**: Methods with `price > 0` display a formatted surcharge badge. The default format is `€X.XX`; override with `formatPrice`.
 - **Empty state**: When no methods pass filtering, a configurable message is shown (label key: `noMethods`).
 - **Layout**: Methods render in a responsive grid — 1 column on mobile, 2 on `sm`, 3 on `lg`.
+
+## SDK Services
+
+CartPaymethods reads payment methods from the `Cart` object, which is populated by the Propeller SDK. The relevant services are:
+
+### Fetching payment methods
+
+Payment methods are included in the cart response when you fetch or start a cart via `CartService`:
+
+```ts
+import { CartService } from 'propeller-sdk-v2';
+
+const cartService = new CartService(graphqlClient);
+const cart = await cartService.getCart({ cartId: 'abc-123' });
+
+// cart.payMethods contains CartPaymethod[]
+// Each CartPaymethod has: code, name, price, externalCode, type
+```
+
+### Setting the selected payment method
+
+After the user selects a method (via `onPaymethodSelect`), persist it to the cart:
+
+```ts
+import { CartService } from 'propeller-sdk-v2';
+
+const cartService = new CartService(graphqlClient);
+await cartService.updateCart({
+  cartId: 'abc-123',
+  paymentData: {
+    method: selectedMethod.code,
+  },
+});
+```
+
+## GraphQL Queries and Mutations
+
+### Query — cart with payment methods
+
+```graphql
+query Cart($cartId: String!) {
+  cart(cartId: $cartId) {
+    cartId
+    payMethods {
+      code
+      name
+      price
+      externalCode
+      type
+    }
+  }
+}
+```
+
+### Mutation — set payment method on cart
+
+```graphql
+mutation CartUpdate($cartId: String!, $input: CartUpdateInput!) {
+  cartUpdate(cartId: $cartId, input: $input) {
+    cartId
+    payMethods {
+      code
+      name
+      price
+    }
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "cartId": "abc-123",
+  "input": {
+    "paymentData": {
+      "method": "ideal"
+    }
+  }
+}
+```

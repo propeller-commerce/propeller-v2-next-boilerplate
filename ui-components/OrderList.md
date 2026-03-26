@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # OrderList
 
-A self-contained, paginated order list component that fetches orders from the Propeller GraphQL API. Supports text search, date/price range filters, sorting, status filtering, and company-aware queries for B2B users.
+A self-contained, paginated order list that fetches orders from the Propeller GraphQL API. Supports text search, date/price range filters, sorting, status filtering, and company-aware queries for B2B users.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Orders page (basic)
 
@@ -68,202 +74,8 @@ const getActiveCompany = () =>
 />
 ```
 
-## Props
-
-### Required
-
-| Prop | Type | Description |
-|---|---|---|
-| `user` | `Contact \| Customer \| null` | The authenticated user. Component does not fetch until a user is provided. |
-| `graphqlClient` | `GraphQLClient` | Initialized SDK GraphQL client instance. |
-| `onOrderClick` | `(orderId: number) => void` | Called when an order row or "View" button is clicked. |
-
-### Display
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `columns` | `string[]` | `['id', 'date', 'status', 'total']` | Column keys to render. Built-in renderers exist for `id`, `date`, `status`, `total`, `validUntil`, `action`. Any other key renders `order[key]` as plain text. |
-| `columnConfig` | `Record<string, string>` | Auto-capitalized key | Maps column keys to display labels for table headers. |
-| `className` | `string` | `undefined` | CSS class applied to the root wrapper `<div>`. |
-| `rowsClickable` | `boolean` | `false` | When `true`, the entire row is clickable (calls `onOrderClick`) and the `action` column button is hidden. |
-
-### Filtering and Search
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `orderStatus` | `string[]` | `['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER']` | Status codes to filter by. Use `['QUOTATION']` for quotes. |
-| `companyId` | `number` | `undefined` | Override company ID for order filtering. Falls back to `user.company.companyId` for Contact users. Omitted entirely for Customer users. |
-| `enableSearch` | `boolean` | `false` | Show the search panel above the table. |
-| `searchFields` | `string[]` | `[]` | Which search inputs to render. Options: `'term'`, `'createdAt'`, `'lastModifiedAt'`, `'price'`, `'sortInput'`, `'type'`. When `enableSearch` is `true`, `'term'` is automatically prepended if not already present. |
-| `termFields` | `OrderSearchFields[]` | `[REFERENCE, ITEM_SKU, ID, ITEM_NAME, REMARKS]` | Backend fields searched when the user types a text query. Uses `Enums.OrderSearchFields` values. |
-
-### Pagination
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `initialItemsPerPage` | `number` | `10` | Number of orders per page. |
-
-### Formatting and Localization
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `formatPrice` | `(price: number) => string` | Formats as `EUR X.XX` | Custom price formatter. |
-| `formatDate` | `(dateString: string) => string` | `toLocaleDateString()` | Custom date formatter. |
-| `getStatusColor` | `(status: string) => string` | Built-in color map | Returns Tailwind class string for the status badge. |
-| `labels` | `object` | English defaults | UI text overrides (see below). |
-
-### Labels Object
-
-All fields are optional. Defaults are English strings.
-
-```ts
-{
-  view?: string;        // "View" button text (default: "View")
-  previous?: string;    // Pagination previous button (default: "Previous")
-  next?: string;        // Pagination next button (default: "Next")
-  showingPage?: string; // Page indicator prefix (default: "Showing page")
-  of?: string;          // Page indicator separator (default: "of")
-  noOrders?: string;    // Empty state message (default: "No orders found.")
-  loading?: string;     // Loading spinner text (default: "Loading orders...")
-  order?: string;
-  date?: string;
-  status?: string;
-  total?: string;
-  action?: string;
-}
-```
-
-## SDK Services
-
-The component uses `OrderService` from `propeller-sdk-v2` internally:
-
-```ts
-import { OrderService, OrderSearchArguments, Enums } from 'propeller-sdk-v2';
-
-const orderService = new OrderService(graphqlClient);
-const response = await orderService.getOrders(searchArgs);
-// response.items    — Order[]
-// response.itemsFound — total count
-// response.offset   — items per page
-```
-
-The `OrderSearchArguments` object controls all filtering, pagination, and sorting:
-
-```ts
-const searchArgs: OrderSearchArguments = {
-  status: ['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER'],
-  userId: [userId],
-  companyIds: [companyId],       // optional, B2B only
-  page: 1,
-  offset: 10,                   // items per page
-  term: 'search text',
-  termFields: [
-    Enums.OrderSearchFields.REFERENCE,
-    Enums.OrderSearchFields.ITEM_SKU,
-    Enums.OrderSearchFields.ID,
-    Enums.OrderSearchFields.ITEM_NAME,
-    Enums.OrderSearchFields.REMARKS,
-  ],
-  createdAt: {                   // optional date range
-    greaterThan: '2025-01-01T00:00:00Z',
-    lessThan: '2025-12-31T23:59:59Z',
-  },
-  price: {                       // optional price range
-    greaterThan: 50.0,
-    lessThan: 500.0,
-  },
-  sortInput: {                   // optional sorting
-    field: Enums.OrderSortField.DATE,
-    order: Enums.SortOrder.DESC,
-  },
-  type: Enums.OrderType.ORDER,   // optional type filter
-};
-```
-
-## GraphQL Query Examples
-
-Under the hood, `OrderService.getOrders()` executes a GraphQL query. Here are equivalent raw queries for reference.
-
-### Paginated orders with search
-
-```graphql
-query Orders($input: OrderSearchArguments!) {
-  orders(input: $input) {
-    items {
-      id
-      date
-      createdAt
-      status
-      total {
-        net
-        gross
-      }
-    }
-    itemsFound
-    offset
-    page
-  }
-}
-```
-
-Variables for a basic paginated fetch:
-
-```json
-{
-  "input": {
-    "status": ["NEW", "CONFIRMED", "VALIDATED", "ORDER"],
-    "userId": [12345],
-    "page": 1,
-    "offset": 10,
-    "term": "",
-    "termFields": ["REFERENCE", "ITEM_SKU", "ID", "ITEM_NAME", "REMARKS"]
-  }
-}
-```
-
-### Quotes with company filter
-
-```json
-{
-  "input": {
-    "status": ["QUOTATION"],
-    "userId": [12345],
-    "companyIds": [678],
-    "page": 1,
-    "offset": 10,
-    "term": ""
-  }
-}
-```
-
-### Orders with date range and price filter
-
-```json
-{
-  "input": {
-    "status": ["NEW", "CONFIRMED", "ORDER"],
-    "userId": [12345],
-    "page": 1,
-    "offset": 20,
-    "term": "SKU-001",
-    "termFields": ["ITEM_SKU", "REFERENCE"],
-    "createdAt": {
-      "greaterThan": "2025-06-01T00:00:00Z",
-      "lessThan": "2025-12-31T23:59:59Z"
-    },
-    "price": {
-      "greaterThan": 100.0,
-      "lessThan": 1000.0
-    },
-    "sortInput": {
-      "field": "DATE",
-      "order": "DESC"
-    }
-  }
-}
-```
-
-## Building Your Own
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
 Standalone implementation using the SDK directly:
 
@@ -312,12 +124,180 @@ const totalPages = Math.ceil((response.itemsFound || 0) / itemsPerPage);
 | Status | `order.status` |
 | Total | `order.total?.net` (format as currency, e.g., `EUR X.XX`) |
 
+**Quotes with company filter:**
+
+```ts
+// pseudo-code: fetch quotes scoped to a specific company
+const quoteArgs: OrderSearchArguments = {
+  status: ['QUOTATION'],
+  userId: [userId],
+  companyIds: [companyId],
+  page: 1,
+  offset: 10,
+  term: '',
+  termFields: [
+    Enums.OrderSearchFields.REFERENCE,
+    Enums.OrderSearchFields.ITEM_SKU,
+    Enums.OrderSearchFields.ID,
+  ],
+};
+
+const quoteResponse = await orderService.getOrders(quoteArgs);
+```
+
 **UI structure:**
 
 - Show a loading indicator while fetching. Show an empty-state message when `orders` is empty.
 - Render a table with columns for order ID, date, status, and total. Each row should be clickable to navigate to the order detail.
 - When `totalPages > 1`, render Previous/Next pagination controls. Track the current page number in your framework's state mechanism and re-fetch orders when it changes.
 - Re-fetch when `userId`, `companyId`, or the current page changes.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+### Required
+
+| Prop | Type | Description |
+|---|---|---|
+| `user` | `Contact \| Customer \| null` | The authenticated user. Component does not fetch until a user is provided. |
+| `graphqlClient` | `GraphQLClient` | Initialized SDK GraphQL client instance. |
+| `onOrderClick` | `(orderId: number) => void` | Called when an order row or "View" button is clicked. |
+
+### Display
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `columns` | `string[]` | `['id', 'date', 'status', 'total']` | Column keys to render. Built-in renderers exist for `id`, `date`, `status`, `total`, `validUntil`, `action`. Any other key renders `order[key]` as plain text. |
+| `columnConfig` | `Record<string, string>` | Auto-capitalized key | Maps column keys to display labels for table headers. |
+| `className` | `string` | `undefined` | CSS class applied to the root wrapper `<div>`. |
+| `rowsClickable` | `boolean` | `false` | When `true`, the entire row is clickable (calls `onOrderClick`) and the `action` column button is hidden. |
+
+### Filtering and Search
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `orderStatus` | `string[]` | `['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER']` | Status codes to filter by. Use `['QUOTATION']` for quotes. |
+| `companyId` | `number` | `undefined` | Override company ID for order filtering. Falls back to `user.company.companyId` for Contact users. Omitted entirely for Customer users. |
+| `enableSearch` | `boolean` | `false` | Show the search panel above the table. |
+| `searchFields` | `string[]` | `[]` | Which search inputs to render. Options: `'term'`, `'createdAt'`, `'lastModifiedAt'`, `'price'`, `'sortInput'`, `'type'`. When `enableSearch` is `true`, `'term'` is automatically prepended if not already present. |
+| `termFields` | `OrderSearchFields[]` | `[REFERENCE, ITEM_SKU, ID, ITEM_NAME, REMARKS]` | Backend fields searched when the user types a text query. Uses `Enums.OrderSearchFields` values. |
+
+### Pagination
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `initialItemsPerPage` | `number` | `10` | Number of orders per page. |
+
+### Formatting and Localization
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `formatPrice` | `(price: number) => string` | Formats as `EUR X.XX` | Custom price formatter. |
+| `formatDate` | `(dateString: string) => string` | `toLocaleDateString()` | Custom date formatter. |
+| `getStatusColor` | `(status: string) => string` | Built-in color map | Returns Tailwind class string for the status badge. |
+| `labels` | `object` | English defaults | UI text overrides (see Labels section). |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function fetchOrders(
+  graphqlClient: GraphQLClient,
+  args: OrderSearchArguments
+): Promise<{ items: Order[]; itemsFound: number; offset: number }> {
+  const orderService = new OrderService(graphqlClient);
+  return await orderService.getOrders(args);
+}
+```
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `status` | `string[]` | `['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER']` | `orderStatus` prop |
+| `userId` | `number[]` | -- | Derived from `user` prop |
+| `companyIds` | `number[]` | -- | `companyId` prop |
+| `page` | `number` | `1` | Internal page counter |
+| `offset` | `number` | `10` | `initialItemsPerPage` prop |
+| `term` | `string` | `''` | Search text input |
+| `termFields` | `OrderSearchFields[]` | `[REFERENCE, ITEM_SKU, ID, ITEM_NAME, REMARKS]` | `termFields` prop |
+| `createdAt` | `{ greaterThan, lessThan }` | -- | `createdAt` search field |
+| `price` | `{ greaterThan, lessThan }` | -- | `price` search field |
+| `sortInput` | `{ field, order }` | -- | `sortInput` search field |
+| `type` | `OrderType` | -- | `type` search field |
+
+### Callbacks table
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `onOrderClick` | User clicks an order row or "View" button | Navigate to the order detail page |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. You are responsible for implementing equivalent behavior in your custom UI:
+
+`className`, `columns`, `columnConfig`, `rowsClickable`, `enableSearch`, `searchFields`, `formatPrice`, `formatDate`, `getStatusColor`, `labels`.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+All fields are optional. Defaults are English strings.
+
+```ts
+{
+  view?: string;        // "View" button text (default: "View")
+  previous?: string;    // Pagination previous button (default: "Previous")
+  next?: string;        // Pagination next button (default: "Next")
+  showingPage?: string; // Page indicator prefix (default: "Showing page")
+  of?: string;          // Page indicator separator (default: "of")
+  noOrders?: string;    // Empty state message (default: "No orders found.")
+  loading?: string;     // Loading spinner text (default: "Loading orders...")
+  order?: string;
+  date?: string;
+  status?: string;
+  total?: string;
+  action?: string;
+}
+```
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  view: 'View',
+  previous: 'Previous',
+  next: 'Next',
+  showingPage: 'Showing page',
+  of: 'of',
+  noOrders: 'No orders found.',
+  loading: 'Loading orders...',
+  order: 'order',
+  date: 'date',
+  status: 'status',
+  total: 'total',
+  action: 'action',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -404,3 +384,133 @@ The component fetches orders on mount and re-fetches when any of these change:
 - `companyId` (company switcher)
 
 A `fetching` guard prevents concurrent requests.
+
+## GraphQL Query Examples
+
+Under the hood, `OrderService.getOrders()` executes a GraphQL query. Here are equivalent raw queries for reference.
+
+### Paginated orders with search
+
+```graphql
+query Orders($input: OrderSearchArguments!) {
+  orders(input: $input) {
+    items {
+      id
+      date
+      createdAt
+      status
+      total {
+        net
+        gross
+      }
+    }
+    itemsFound
+    offset
+    page
+  }
+}
+```
+
+Variables for a basic paginated fetch:
+
+```json
+{
+  "input": {
+    "status": ["NEW", "CONFIRMED", "VALIDATED", "ORDER"],
+    "userId": [12345],
+    "page": 1,
+    "offset": 10,
+    "term": "",
+    "termFields": ["REFERENCE", "ITEM_SKU", "ID", "ITEM_NAME", "REMARKS"]
+  }
+}
+```
+
+### Quotes with company filter
+
+```json
+{
+  "input": {
+    "status": ["QUOTATION"],
+    "userId": [12345],
+    "companyIds": [678],
+    "page": 1,
+    "offset": 10,
+    "term": ""
+  }
+}
+```
+
+### Orders with date range and price filter
+
+```json
+{
+  "input": {
+    "status": ["NEW", "CONFIRMED", "ORDER"],
+    "userId": [12345],
+    "page": 1,
+    "offset": 20,
+    "term": "SKU-001",
+    "termFields": ["ITEM_SKU", "REFERENCE"],
+    "createdAt": {
+      "greaterThan": "2025-06-01T00:00:00Z",
+      "lessThan": "2025-12-31T23:59:59Z"
+    },
+    "price": {
+      "greaterThan": 100.0,
+      "lessThan": 1000.0
+    },
+    "sortInput": {
+      "field": "DATE",
+      "order": "DESC"
+    }
+  }
+}
+```
+
+## SDK Services
+
+The component uses `OrderService` from `propeller-sdk-v2` internally:
+
+```ts
+import { OrderService, OrderSearchArguments, Enums } from 'propeller-sdk-v2';
+
+const orderService = new OrderService(graphqlClient);
+const response = await orderService.getOrders(searchArgs);
+// response.items    — Order[]
+// response.itemsFound — total count
+// response.offset   — items per page
+```
+
+The `OrderSearchArguments` object controls all filtering, pagination, and sorting:
+
+```ts
+const searchArgs: OrderSearchArguments = {
+  status: ['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER'],
+  userId: [userId],
+  companyIds: [companyId],       // optional, B2B only
+  page: 1,
+  offset: 10,                   // items per page
+  term: 'search text',
+  termFields: [
+    Enums.OrderSearchFields.REFERENCE,
+    Enums.OrderSearchFields.ITEM_SKU,
+    Enums.OrderSearchFields.ID,
+    Enums.OrderSearchFields.ITEM_NAME,
+    Enums.OrderSearchFields.REMARKS,
+  ],
+  createdAt: {                   // optional date range
+    greaterThan: '2025-01-01T00:00:00Z',
+    lessThan: '2025-12-31T23:59:59Z',
+  },
+  price: {                       // optional price range
+    greaterThan: 50.0,
+    lessThan: 500.0,
+  },
+  sortInput: {                   // optional sorting
+    field: Enums.OrderSortField.DATE,
+    order: Enums.SortOrder.DESC,
+  },
+  type: Enums.OrderType.ORDER,   // optional type filter
+};
+```

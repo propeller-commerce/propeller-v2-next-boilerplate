@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # CartItem
 
 A self-contained cart line item component that handles quantity updates, item deletion, notes, stock display, bundle items, cluster children, cross-sell suggestions, and VAT-aware pricing -- all via the Propeller SDK.
@@ -5,6 +8,9 @@ A self-contained cart line item component that handles quantity updates, item de
 ---
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic Cart Item
 
@@ -118,9 +124,117 @@ When `onQuantityChange`, `onNoteChange`, or `onDelete` callbacks are provided, t
 />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+A standalone implementation of a cart item row requires three SDK operations: update quantity, update notes, and delete.
+
+```ts
+import { CartService, Cart, CartMainItem, GraphQLClient } from 'propeller-sdk-v2';
+
+// pseudo-code
+
+const cartService = new CartService(graphqlClient);
+const language = 'NL';
+
+// --- Reading item data ---
+const productName = cartItem.product?.names?.[0]?.value || 'Product';
+const productSku = cartItem.product?.sku || '';
+const price = cartItem.totalSum || 0;
+const imageUrl = cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+
+// --- Update quantity ---
+// Call immediately on +/- click. On failure, revert to the original quantity.
+async function updateQuantity(cartId: string, cartItem: CartMainItem, newQty: number): Promise<Cart> {
+  return await cartService.updateCartItem({
+    id: cartId,
+    itemId: cartItem.itemId.toString(),
+    input: { quantity: newQty },
+    language,
+  });
+}
+
+// --- Update notes ---
+// Use a debounce pattern: reset a timer on each keystroke, then call the API
+// after 500ms of inactivity. Store the timer reference so it can be cleared
+// on subsequent keystrokes.
+async function updateNotes(cartId: string, cartItem: CartMainItem, notes: string): Promise<Cart> {
+  return await cartService.updateCartItem({
+    id: cartId,
+    itemId: cartItem.itemId.toString(),
+    input: { notes },
+    language,
+  });
+}
+
+// --- Delete item ---
+// Disable the delete button while the request is in progress to prevent
+// duplicate calls.
+async function deleteItem(cartId: string, cartItem: CartMainItem): Promise<Cart> {
+  return await cartService.deleteCartItem({
+    id: cartId,
+    itemId: cartItem.itemId,
+    input: { itemId: cartItem.itemId },
+    language,
+  });
+}
+```
+
+### With Cross-Sell Accessories
+
+```ts
+import { CrossupsellService, GraphQLClient } from 'propeller-sdk-v2';
+
+const crossupsellService = new CrossupsellService(graphqlClient);
+
+// Fetch cross-sells for a cart item's product
+const crossupsells = await crossupsellService.getCrossupsells({
+  types: ['ACCESSORIES', 'RELATED'],
+  productIdsFrom: [cartItem.product.productId],
+  page: 1,
+  offset: 50,
+});
+
+// For cluster products, use clusterIdsFrom instead:
+// const crossupsells = await crossupsellService.getCrossupsells({
+//   types: ['ACCESSORIES'],
+//   clusterIdsFrom: [cartItem.clusterId],
+//   page: 1,
+//   offset: 50,
+// });
+
+// Limit the displayed results
+const limitedItems = crossupsells?.items?.slice(0, 4) || [];
+```
+
+### Delegation Mode (External Cart Mutations)
+
+```ts
+// When you want to handle cart mutations externally instead of using CartService:
+// Provide your own update/delete handlers and skip the SDK calls.
+
+function handleQuantityChange(item: CartMainItem, quantity: number): void {
+  // Your custom quantity update logic
+}
+
+function handleNoteChange(item: CartMainItem, note: string): void {
+  // Your custom note update logic
+}
+
+function handleDelete(item: CartMainItem): void {
+  // Your custom delete logic
+}
+```
+
+**UI structure:** Render each cart item as a row with a product image (or SVG placeholder if no image), product name, SKU, a quantity input with +/- buttons, the line total price, a notes textarea, and a delete button. Track `quantity`, `notes`, and loading/deleting flags in your framework's state mechanism. After each successful SDK call, forward the returned `Cart` object to your app's cart state so totals stay in sync.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required
 
@@ -170,9 +284,87 @@ When `onQuantityChange`, `onNoteChange`, or `onDelete` callbacks are provided, t
 | `user` | `Contact \| Customer \| null` | -- | Authenticated user; used for cross-sell price calculations (company/contact/customer IDs) |
 | `labels` | `Record<string, string>` | -- | Override UI strings (see Labels section) |
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+import { CartService, CrossupsellService, Cart, CartMainItem, GraphQLClient } from 'propeller-sdk-v2';
+
+const cartService = new CartService(graphqlClient);
+
+// Update quantity or notes
+async function updateCartItem(params: {
+  id: string;            // cartId
+  itemId: string;        // cartItem.itemId
+  input: { quantity?: number; notes?: string };
+  language: string;
+}): Promise<Cart>
+
+// Delete item
+async function deleteCartItem(params: {
+  id: string;            // cartId
+  itemId: string;        // cartItem.itemId
+  input: { itemId: string };
+  language: string;
+}): Promise<Cart>
+
+// Fetch cross-sells
+const crossupsellService = new CrossupsellService(graphqlClient);
+async function getCrossupsells(input: {
+  types: string[];
+  productIdsFrom?: number[];
+  clusterIdsFrom?: number[];
+  page?: number;
+  offset?: number;
+}): Promise<CrossupsellsResponse>
+```
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `cartId` | `string` | -- | `id` parameter in `updateCartItem` / `deleteCartItem` |
+| `cartItem` | `CartMainItem` | -- | Source of `itemId`, product data, pricing, child items |
+| `language` | `string` | `'NL'` | `language` parameter in CartService and CrossupsellService calls |
+| `taxZone` | `string` | `'NL'` | Tax zone for cross-sell price calculations |
+| `user` | `Contact \| Customer \| null` | -- | Used to build price calculation input for cross-sells (company/contact/customer IDs) |
+| `crossupsellTypes` | `string[]` | `['ACCESSORIES']` | `types` in `getCrossupsells` input |
+| `crossupsellLimit` | `number` | `3` | Limits how many cross-sell results to display |
+| `includeTax` | `boolean` | `false` | Selects `totalSumNet` (true) or `totalSum` (false) from cart item |
+
+### Callbacks table
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `onQuantityChange` | User changes quantity (overrides internal CartService call) | Call your own cart update logic with the item and new quantity |
+| `onNoteChange` | User changes notes (overrides internal CartService call) | Call your own cart update logic with the item and new note text |
+| `onDelete` | User clicks delete (overrides internal CartService call) | Call your own cart delete logic with the item |
+| `afterCartUpdate` | After any successful internal CartService mutation | Sync the returned `Cart` object with your app's cart state |
+| `onCrossupsellClick` | User clicks a cross-sell product | Navigate to the product detail page or handle as needed |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `titleLinkable` -- make the item title a clickable link
+- `showStockComponent` -- show/hide stock indicator
+- `showSku` -- show/hide product SKU
+- `enableIncrementDecrement` -- show/hide +/- buttons around quantity input
+- `showCartItemNotesField` -- show/hide notes textarea
+- `showCrossupsells` -- show/hide cross-sell section
+- `className` -- CSS class for styling
+- `labels` -- UI string overrides
+- `configuration` -- app config for image filters and URL generation
+
+  </TabItem>
+</Tabs>
 
 ## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Description |
 |---|---|---|
@@ -184,30 +376,80 @@ When `onQuantityChange`, `onNoteChange`, or `onDelete` callbacks are provided, t
 | `includedOptions` | `'Included Options:'` | Heading above cluster child items |
 | `crossupsellTitle` | `'You might also like'` | Cross-sell section heading |
 
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  remove: 'Remove',
+  deleting: 'Removing...',
+  updating: 'Updating...',
+  notes: 'Notes',
+  notesPlaceholder: 'Add a note for this item...',
+  includedOptions: 'Included Options:',
+  crossupsellTitle: 'You might also like',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
 ---
 
-## SDK Services
+## Behavior
 
-The component uses the following `propeller-sdk-v2` services internally:
+### Quantity Controls
 
-### CartService
+- By default, +/- buttons are shown around a numeric input (`enableIncrementDecrement={true}`).
+- Setting `enableIncrementDecrement={false}` renders a plain number input without buttons.
+- Minimum quantity is 1; the minus button is disabled at that value.
+- On change, `CartService.updateCartItem()` is called immediately (no debounce). If the API call fails, the quantity reverts to the original value.
+- While the update is in progress, the `loading` state disables the controls and shows the `updating` label.
 
-Used for quantity updates and item deletion. Each mutation returns the full updated `Cart` object, which is forwarded to `afterCartUpdate`.
+### Delete
 
-- **`CartService.updateCartItem()`** -- updates quantity or notes for a cart item
-- **`CartService.deleteCartItem()`** -- removes an item from the cart
+- Clicking the trash icon calls `CartService.deleteCartItem()`.
+- A spinner replaces the icon while the deletion is in progress, and the button is disabled to prevent duplicate calls.
+- The updated cart is forwarded to `afterCartUpdate`.
 
-### CrossupsellService
+### Notes
 
-Used to fetch cross-sell/upsell suggestions when `showCrossupsells` is enabled.
+- When `showCartItemNotesField={true}`, a textarea appears below the product info.
+- Changes are debounced at 500 ms before calling `CartService.updateCartItem()` with the `notes` field.
+- The debounce timer resets on each keystroke.
 
-- **`CrossupsellService.getCrossupsells()`** -- fetches related products by `productIdsFrom` or `clusterIdsFrom`, filtered by `types` (e.g., `ACCESSORIES`, `RELATED`)
+### Price Display
 
-> **Known SDK issue**: `CrossupsellService.getCrossupsells()` may return an HTTP 400 due to undeclared fragment variables in the SDK's internal query. The error is caught silently, and no cross-sells are displayed. This will resolve when the SDK is updated.
+- Prices are formatted as EUR with two decimal places.
+- When `includeTax` is `true`, the component uses `totalSumNet` (price including VAT).
+- When `includeTax` is `false` (default), it uses `totalSum` (price excluding VAT).
+- The component also listens for the `priceToggleChanged` custom event and reads `price_include_tax` from `localStorage` to stay in sync with the global VAT toggle.
 
-### ItemStock (via parent)
+### Stock Display
 
-Stock display relies on the `ItemStock` component rendered by the parent React copy. When `showStockComponent={true}` and the product has `inventory` data, a stock indicator is shown.
+- When `showStockComponent={true}` and the product has `inventory` data, a stock status indicator is rendered.
+- The compiled React copy uses the `ItemStock` component directly; the base component outputs a data-attribute placeholder for framework-specific rendering.
+
+### Bundle Items
+
+- When `cartItem.bundle` is present, the component renders the bundle name as the title instead of the product name.
+- Bundle items are listed beneath the title: the leader item is shown first (bold), followed by non-leader items. Each shows name and price connected by a dotted line.
+- The SKU line is hidden for bundle items.
+
+### Cluster Children
+
+- When `cartItem.clusterId` is set and `cartItem.childItems` contains entries, an "Included Options" section renders automatically.
+- Each child item shows its name, SKU, and price in a bordered list.
+
+### Cross-Sells
+
+- When `showCrossupsells={true}`, the component fetches cross-sell products on mount via `CrossupsellService.getCrossupsells()`.
+- Products are fetched using `productIdsFrom` (for simple products) or `clusterIdsFrom` (for cluster products).
+- Results are displayed as horizontally scrollable compact cards with thumbnail and name, limited by `crossupsellLimit` (default 3).
+- Clicking a cross-sell navigates to the product page, or calls `onCrossupsellClick` if provided.
+- Errors are caught silently -- the section simply does not appear.
 
 ---
 
@@ -332,114 +574,25 @@ Variables:
 
 ---
 
-## Behavior
+## SDK Services
 
-### Quantity Controls
+The component uses the following `propeller-sdk-v2` services internally:
 
-- By default, +/- buttons are shown around a numeric input (`enableIncrementDecrement={true}`).
-- Setting `enableIncrementDecrement={false}` renders a plain number input without buttons.
-- Minimum quantity is 1; the minus button is disabled at that value.
-- On change, `CartService.updateCartItem()` is called immediately (no debounce). If the API call fails, the quantity reverts to the original value.
-- While the update is in progress, the `loading` state disables the controls and shows the `updating` label.
+### CartService
 
-### Delete
+Used for quantity updates and item deletion. Each mutation returns the full updated `Cart` object, which is forwarded to `afterCartUpdate`.
 
-- Clicking the trash icon calls `CartService.deleteCartItem()`.
-- A spinner replaces the icon while the deletion is in progress, and the button is disabled to prevent duplicate calls.
-- The updated cart is forwarded to `afterCartUpdate`.
+- **`CartService.updateCartItem()`** -- updates quantity or notes for a cart item
+- **`CartService.deleteCartItem()`** -- removes an item from the cart
 
-### Notes
+### CrossupsellService
 
-- When `showCartItemNotesField={true}`, a textarea appears below the product info.
-- Changes are debounced at 500 ms before calling `CartService.updateCartItem()` with the `notes` field.
-- The debounce timer resets on each keystroke.
+Used to fetch cross-sell/upsell suggestions when `showCrossupsells` is enabled.
 
-### Price Display
+- **`CrossupsellService.getCrossupsells()`** -- fetches related products by `productIdsFrom` or `clusterIdsFrom`, filtered by `types` (e.g., `ACCESSORIES`, `RELATED`)
 
-- Prices are formatted as EUR with two decimal places.
-- When `includeTax` is `true`, the component uses `totalSumNet` (price including VAT).
-- When `includeTax` is `false` (default), it uses `totalSum` (price excluding VAT).
-- The component also listens for the `priceToggleChanged` custom event and reads `price_include_tax` from `localStorage` to stay in sync with the global VAT toggle.
+> **Known SDK issue**: `CrossupsellService.getCrossupsells()` may return an HTTP 400 due to undeclared fragment variables in the SDK's internal query. The error is caught silently, and no cross-sells are displayed. This will resolve when the SDK is updated.
 
-### Stock Display
+### ItemStock (via parent)
 
-- When `showStockComponent={true}` and the product has `inventory` data, a stock status indicator is rendered.
-- The compiled React copy uses the `ItemStock` component directly; the base component outputs a data-attribute placeholder for framework-specific rendering.
-
-### Bundle Items
-
-- When `cartItem.bundle` is present, the component renders the bundle name as the title instead of the product name.
-- Bundle items are listed beneath the title: the leader item is shown first (bold), followed by non-leader items. Each shows name and price connected by a dotted line.
-- The SKU line is hidden for bundle items.
-
-### Cluster Children
-
-- When `cartItem.clusterId` is set and `cartItem.childItems` contains entries, an "Included Options" section renders automatically.
-- Each child item shows its name, SKU, and price in a bordered list.
-
-### Cross-Sells
-
-- When `showCrossupsells={true}`, the component fetches cross-sell products on mount via `CrossupsellService.getCrossupsells()`.
-- Products are fetched using `productIdsFrom` (for simple products) or `clusterIdsFrom` (for cluster products).
-- Results are displayed as horizontally scrollable compact cards with thumbnail and name, limited by `crossupsellLimit` (default 3).
-- Clicking a cross-sell navigates to the product page, or calls `onCrossupsellClick` if provided.
-- Errors are caught silently -- the section simply does not appear.
-
----
-
-## Building Your Own
-
-A standalone implementation of a cart item row requires three SDK operations: update quantity, update notes, and delete.
-
-```ts
-import { CartService, Cart, CartMainItem, GraphQLClient } from 'propeller-sdk-v2';
-
-// pseudo-code
-
-const cartService = new CartService(graphqlClient);
-const language = 'NL';
-
-// --- Reading item data ---
-const productName = cartItem.product?.names?.[0]?.value || 'Product';
-const productSku = cartItem.product?.sku || '';
-const price = cartItem.totalSum || 0;
-const imageUrl = cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-
-// --- Update quantity ---
-// Call immediately on +/- click. On failure, revert to the original quantity.
-async function updateQuantity(cartId: string, cartItem: CartMainItem, newQty: number): Promise<Cart> {
-  return await cartService.updateCartItem({
-    id: cartId,
-    itemId: cartItem.itemId.toString(),
-    input: { quantity: newQty },
-    language,
-  });
-}
-
-// --- Update notes ---
-// Use a debounce pattern: reset a timer on each keystroke, then call the API
-// after 500ms of inactivity. Store the timer reference so it can be cleared
-// on subsequent keystrokes.
-async function updateNotes(cartId: string, cartItem: CartMainItem, notes: string): Promise<Cart> {
-  return await cartService.updateCartItem({
-    id: cartId,
-    itemId: cartItem.itemId.toString(),
-    input: { notes },
-    language,
-  });
-}
-
-// --- Delete item ---
-// Disable the delete button while the request is in progress to prevent
-// duplicate calls.
-async function deleteItem(cartId: string, cartItem: CartMainItem): Promise<Cart> {
-  return await cartService.deleteCartItem({
-    id: cartId,
-    itemId: cartItem.itemId,
-    input: { itemId: cartItem.itemId },
-    language,
-  });
-}
-```
-
-**UI structure:** Render each cart item as a row with a product image (or SVG placeholder if no image), product name, SKU, a quantity input with +/- buttons, the line total price, a notes textarea, and a delete button. Track `quantity`, `notes`, and loading/deleting flags in your framework's state mechanism. After each successful SDK call, forward the returned `Cart` object to your app's cart state so totals stay in sync.
+Stock display relies on the `ItemStock` component rendered by the parent React copy. When `showStockComponent={true}` and the product has `inventory` data, a stock indicator is shown.

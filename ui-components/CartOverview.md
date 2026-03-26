@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # CartOverview
 
 Renders a structured checkout summary displaying invoice and delivery addresses, payment and shipping details, optional reference and notes fields, terms and conditions acceptance, and a purchase button.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic checkout overview
 
@@ -80,7 +86,30 @@ import CartOverview from '@/components/propeller/CartOverview';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To build a custom checkout overview that replaces this component:
+
+1. **Read the Cart object** — all data comes from the `Cart` type in `propeller-sdk-v2`. No additional API calls are needed for the overview itself.
+
+2. **Address formatting** — access `cart.invoiceAddress` and `cart.deliveryAddress`. Both are `CartAddress` objects with the fields listed above. Render them in whatever layout suits your design.
+
+3. **Payment and shipping info** — read `cart.paymentData.method`, `cart.postageData.carrier`, and `cart.postageData.requestDate`. These are set during earlier checkout steps.
+
+4. **Order submission** — collect any user inputs (reference, notes, terms acceptance) and pass them along with the cart to your order placement logic. The component itself does not call any order API; that responsibility belongs to the parent.
+
+5. **Loading state** — manage your own loading indicator. This component sets loading internally on button click but has no way to reset it. If you need retry or error recovery, manage loading state in the parent.
+
+6. **Labels** — if you need i18n, pass translated strings through the `labels` prop or implement your own translation layer in a custom component.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required
 
@@ -113,7 +142,56 @@ import CartOverview from '@/components/propeller/CartOverview';
 | `onTermsAndConditionsClick` | `() => void` | Fires when the terms and conditions link is clicked (default click is prevented) |
 | `onPurchaseButtonClick` | `(cart: Cart, reference: string, notes: string) => void` | Fires when the purchase button is clicked; receives the cart, reference text, and notes text |
 
-### Label keys
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function cartOverview(cart: Cart): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `cart` | `Cart` | — | `cart` prop |
+| `title` | `string` | `undefined` | `title` prop |
+| `showNotes` | `boolean` | `true` | `showNotes` prop |
+| `showReference` | `boolean` | `true` | `showReference` prop |
+| `showTermsAndConditions` | `boolean` | `true` | `showTermsAndConditions` prop |
+| `showPurchaseButton` | `boolean` | `true` | `showPurchaseButton` prop |
+
+### Cart resolution
+
+All data comes from the `Cart` object:
+
+| Cart field | Used for |
+|---|---|
+| `cart.invoiceAddress` | Displays the billing address (company, name, street, postal code, city, country, email) |
+| `cart.deliveryAddress` | Displays the shipping address (same fields as invoice address) |
+| `cart.paymentData.method` | Shows the selected payment method name |
+| `cart.postageData.carrier` | Shows the selected shipping carrier name |
+| `cart.postageData.requestDate` | Shows the requested delivery date, formatted via `toLocaleDateString()` |
+
+### Callbacks
+
+| Callback | Signature | Description |
+|---|---|---|
+| `onTermsAndConditionsClick` | `() => void` | Fires when the terms link is clicked |
+| `onPurchaseButtonClick` | `(cart: Cart, reference: string, notes: string) => void` | Fires when the purchase button is clicked |
+
+### UI-only props
+
+The following props only affect visual presentation and have no BYO equivalent: `overviewContainerClass`.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 All labels can be overridden through the `labels` prop using these keys:
 
@@ -133,29 +211,33 @@ All labels can be overridden through the `labels` prop using these keys:
 | `purchaseButton` | `"Place Order"` |
 | `processing` | `"Processing..."` |
 
-## SDK Services and Cart Fields
-
-CartOverview does not call any SDK services directly. It reads the following fields from the `Cart` object passed via props:
-
-| Cart field | Used for |
-|---|---|
-| `cart.invoiceAddress` | Displays the billing address (company, name, street, postal code, city, country, email) |
-| `cart.deliveryAddress` | Displays the shipping address (same fields as invoice address) |
-| `cart.paymentData.method` | Shows the selected payment method name |
-| `cart.postageData.carrier` | Shows the selected shipping carrier name |
-| `cart.postageData.requestDate` | Shows the requested delivery date, formatted via `toLocaleDateString()` |
-
-The `graphqlClient` prop is accepted for interface consistency with other components but is not used internally by CartOverview itself. The parent page is responsible for populating the `Cart` object with address and payment/postage data before passing it in.
-
-### Related Cart types
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
 ```ts
-import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
+const labels = {
+  invoiceAddress: "Invoice Address",
+  deliveryAddress: "Delivery Address",
+  payment: "Payment:",
+  carrier: "Carrier:",
+  deliveryDate: "Delivery Date:",
+  referenceLabel: "Reference (Optional)",
+  referencePlaceholder: "Your reference number",
+  notesLabel: "Order Notes (Optional)",
+  notesPlaceholder: "Special instructions or comments",
+  termsPrefix: "I agree to the",
+  termsLink: "Terms and Conditions",
+  purchaseButton: "Place Order",
+  processing: "Processing...",
+};
 ```
 
-- **`CartAddress`** — Contains `company`, `firstName`, `middleName`, `lastName`, `street`, `number`, `numberExtension`, `postalCode`, `city`, `country`, `email`
-- **`cart.paymentData`** — Contains `method` (string)
-- **`cart.postageData`** — Contains `carrier` (string), `requestDate` (date string)
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -182,18 +264,26 @@ import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
 - Clicking it sets an internal `loading` flag (shows a spinner and "Processing..." text) and fires `onPurchaseButtonClick`.
 - The parent is responsible for resetting the component (e.g., navigating away on success or re-rendering on error).
 
-## Building Your Own
+## SDK Services and Cart Fields
 
-To build a custom checkout overview that replaces this component:
+CartOverview does not call any SDK services directly. It reads the following fields from the `Cart` object passed via props:
 
-1. **Read the Cart object** — all data comes from the `Cart` type in `propeller-sdk-v2`. No additional API calls are needed for the overview itself.
+| Cart field | Used for |
+|---|---|
+| `cart.invoiceAddress` | Displays the billing address (company, name, street, postal code, city, country, email) |
+| `cart.deliveryAddress` | Displays the shipping address (same fields as invoice address) |
+| `cart.paymentData.method` | Shows the selected payment method name |
+| `cart.postageData.carrier` | Shows the selected shipping carrier name |
+| `cart.postageData.requestDate` | Shows the requested delivery date, formatted via `toLocaleDateString()` |
 
-2. **Address formatting** — access `cart.invoiceAddress` and `cart.deliveryAddress`. Both are `CartAddress` objects with the fields listed above. Render them in whatever layout suits your design.
+The `graphqlClient` prop is accepted for interface consistency with other components but is not used internally by CartOverview itself. The parent page is responsible for populating the `Cart` object with address and payment/postage data before passing it in.
 
-3. **Payment and shipping info** — read `cart.paymentData.method`, `cart.postageData.carrier`, and `cart.postageData.requestDate`. These are set during earlier checkout steps.
+### Related Cart types
 
-4. **Order submission** — collect any user inputs (reference, notes, terms acceptance) and pass them along with the cart to your order placement logic. The component itself does not call any order API; that responsibility belongs to the parent.
+```ts
+import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
+```
 
-5. **Loading state** — manage your own loading indicator. This component sets loading internally on button click but has no way to reset it. If you need retry or error recovery, manage loading state in the parent.
-
-6. **Labels** — if you need i18n, pass translated strings through the `labels` prop or implement your own translation layer in a custom component.
+- **`CartAddress`** — Contains `company`, `firstName`, `middleName`, `lastName`, `street`, `number`, `numberExtension`, `postalCode`, `city`, `country`, `email`
+- **`cart.paymentData`** — Contains `method` (string)
+- **`cart.postageData`** — Contains `carrier` (string), `requestDate` (date string)

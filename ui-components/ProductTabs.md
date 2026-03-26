@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductTabs
 
 A tabbed content organizer for product detail pages. Combines four sub-components — Description, Specifications, Downloads, and Videos — into a unified interface with horizontal tabs on desktop and an accordion on mobile.
@@ -5,6 +8,9 @@ A tabbed content organizer for product detail pages. Combines four sub-component
 ---
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic usage with all tabs
 
@@ -71,9 +77,83 @@ A tabbed content organizer for product detail pages. Combines four sub-component
 />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+To create a custom tabbed product detail layout:
+
+1. **Fetch the product** with `descriptions`, `attributes`, and `media` fields populated in your GraphQL query.
+
+2. **Initialize the GraphQL client** for the Specifications tab to fetch attributes independently:
+   ```tsx
+   import { GraphQLClient } from 'propeller-sdk-v2';
+   const graphqlClient = new GraphQLClient({ endpoint, apiKey, authToken });
+   ```
+
+3. **Use individual sub-components** if you need full control over layout instead of the tab wrapper:
+   - `ProductDescription` — renders HTML description with optional collapse/expand
+   - `ProductSpecifications` — renders attributes as a table or list, optionally grouped
+   - `ProductDownloads` — renders downloadable document links
+   - `ProductVideos` — renders embedded video players
+
+4. **Implement responsive behavior** yourself. The built-in component uses `hidden md:block` / `md:hidden` Tailwind classes to switch between tabs and accordion. You can replace this with your own breakpoint logic or always use one layout.
+
+5. **Style with Tailwind** using semantic color tokens (`border-border`, `text-foreground`, `text-muted-foreground`) for theme compatibility. The active tab uses a bottom border (`border-b-2 border-foreground`) and the accordion chevron rotates 180 degrees when expanded.
+
+### Fetching attributes independently
+
+When `product.attributes` is not populated in the initial product query, you can fetch attributes via the SDK:
+
+```ts
+import { ProductService, GraphQLClient } from 'propeller-sdk-v2';
+
+const graphqlClient = new GraphQLClient({ endpoint, apiKey, authToken });
+const productService = new ProductService(graphqlClient);
+
+// Fetch public attributes for the specifications tab
+const attributes = await productService.getAttributeResultByProductId({
+  attributeDescription: { isPublic: true },
+  page: 1,
+  offset: 2000,
+});
+```
+
+### Basic tab layout skeleton
+
+```ts
+import { GraphQLClient, ProductService } from 'propeller-sdk-v2';
+
+// Assume `product` is already fetched with descriptions, attributes, media fields
+
+// Resolve description by language
+const language = 'NL';
+const description = product.descriptions?.find(d => d.language === language)
+  || product.descriptions?.[0];
+
+// Fetch attributes if not already populated
+const graphqlClient = new GraphQLClient({ endpoint, apiKey, authToken });
+const productService = new ProductService(graphqlClient);
+const attributes = await productService.getAttributeResultByProductId({
+  attributeDescription: { isPublic: true },
+  page: 1,
+  offset: 2000,
+});
+
+// Access documents and videos
+const documents = product.media?.documents;
+const videos = product.media?.videos;
+
+// Render your own tabbed UI with the data above
+// Not documented in source — implement based on your setup
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core
 
@@ -118,20 +198,47 @@ All default to `true`. Set to `false` to hide a tab entirely.
 | `downloadsLabels` | `Record<string, string>` | `{}` | Override UI strings for the Downloads section. Keys: `title`, `download`. |
 | `videosLabels` | `Record<string, string>` | `{}` | Override UI strings for the Videos section. Key: `title`. |
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## SDK Services & Product Fields
+### Function signature
 
-ProductTabs reads the following fields from the `Product` object (from `propeller-sdk-v2`):
+```ts
+function createProductTabs(options: {
+  product: Product;
+  graphqlClient?: GraphQLClient;
+  productId?: number;
+  language?: string;
+}): void
+```
 
-| Field | Used By | Purpose |
-|-------|---------|---------|
-| `product.descriptions` | Description tab | Array of `{ language, value }` objects. The component matches by `language` prop (default `'NL'`), falling back to the first entry. If no description exists, the Description tab is automatically hidden. |
-| `product.attributes.items` | Specifications tab | Array of `AttributeResult` objects passed directly to ProductSpecifications. |
-| `product.media.documents` | Downloads tab | `PaginatedMediaDocumentResponse` containing downloadable files associated with the product. |
-| `product.media.videos` | Videos tab | `PaginatedMediaVideoResponse` containing video entries associated with the product. |
+Types from `propeller-sdk-v2`: `Product`, `GraphQLClient`.
 
-The Specifications tab can also fetch attributes independently via `graphqlClient` and `productId`, which is useful when `product.attributes` is not populated in the initial product query. When fetching independently, the component calls `ProductService.getAttributeResultByProductId()` with `{ attributeDescription: { isPublic: true }, page: 1, offset: 2000 }`. This fetch is triggered only when the Specifications tab is first visited (lazy-loaded).
+### Options table
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `product` | `Product` | *required* | `product` prop — the product object with descriptions, attributes, media |
+| `graphqlClient` | `GraphQLClient` | `undefined` | `graphqlClient` prop — SDK client for fetching attributes independently |
+| `productId` | `number` | `undefined` | `productId` prop — product ID for attribute fetch via `ProductService.getAttributeResultByProductId()` |
+| `language` | `string` | `'NL'` | `language` prop — language code for localized content resolution |
+| `specificationsLayout` | `string` | `'table'` | `specificationsLayout` prop — `'table'` or `'list'` display format |
+| `specificationsGrouping` | `boolean` | `false` | `specificationsGrouping` prop — whether to group attributes by group field |
+| `descriptionCollapsed` | `boolean` | `false` | `descriptionCollapsed` prop — truncate description with expand toggle |
+| `descriptionMaxLength` | `number` | `0` | `descriptionMaxLength` prop — max characters when collapsed |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `className` — extra CSS class on the root element
+- `labels` — tab button label overrides (`description`, `specifications`, `downloads`, `videos`)
+- `showDescription`, `showSpecifications`, `showDownloads`, `showVideos` — tab visibility toggles
+- `downloadsLabels` — UI string overrides for the Downloads section
+- `videosLabels` — UI string overrides for the Videos section
+
+  </TabItem>
+</Tabs>
 
 ---
 
@@ -163,24 +270,15 @@ The Description tab is automatically excluded from the tab bar when the product 
 
 ---
 
-## Building Your Own
+## SDK Services & Product Fields
 
-To create a custom tabbed product detail layout:
+ProductTabs reads the following fields from the `Product` object (from `propeller-sdk-v2`):
 
-1. **Fetch the product** with `descriptions`, `attributes`, and `media` fields populated in your GraphQL query.
+| Field | Used By | Purpose |
+|-------|---------|---------|
+| `product.descriptions` | Description tab | Array of `{ language, value }` objects. The component matches by `language` prop (default `'NL'`), falling back to the first entry. If no description exists, the Description tab is automatically hidden. |
+| `product.attributes.items` | Specifications tab | Array of `AttributeResult` objects passed directly to ProductSpecifications. |
+| `product.media.documents` | Downloads tab | `PaginatedMediaDocumentResponse` containing downloadable files associated with the product. |
+| `product.media.videos` | Videos tab | `PaginatedMediaVideoResponse` containing video entries associated with the product. |
 
-2. **Initialize the GraphQL client** for the Specifications tab to fetch attributes independently:
-   ```tsx
-   import { GraphQLClient } from 'propeller-sdk-v2';
-   const graphqlClient = new GraphQLClient({ endpoint, apiKey, authToken });
-   ```
-
-3. **Use individual sub-components** if you need full control over layout instead of the tab wrapper:
-   - `ProductDescription` — renders HTML description with optional collapse/expand
-   - `ProductSpecifications` — renders attributes as a table or list, optionally grouped
-   - `ProductDownloads` — renders downloadable document links
-   - `ProductVideos` — renders embedded video players
-
-4. **Implement responsive behavior** yourself. The built-in component uses `hidden md:block` / `md:hidden` Tailwind classes to switch between tabs and accordion. You can replace this with your own breakpoint logic or always use one layout.
-
-5. **Style with Tailwind** using semantic color tokens (`border-border`, `text-foreground`, `text-muted-foreground`) for theme compatibility. The active tab uses a bottom border (`border-b-2 border-foreground`) and the accordion chevron rotates 180 degrees when expanded.
+The Specifications tab can also fetch attributes independently via `graphqlClient` and `productId`, which is useful when `product.attributes` is not populated in the initial product query. When fetching independently, the component calls `ProductService.getAttributeResultByProductId()` with `{ attributeDescription: { isPublic: true }, page: 1, offset: 2000 }`. This fetch is triggered only when the Specifications tab is first visited (lazy-loaded).

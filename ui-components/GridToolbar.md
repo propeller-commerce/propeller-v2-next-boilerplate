@@ -1,10 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # GridToolbar
 
 Toolbar for product grids that provides sort controls, per-page size selector, grid/list view toggle, result count display, and removable filter badges. Designed to sit above a ProductGrid and coordinate sorting, pagination size, view mode, and active filter visualization.
 
----
-
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic with sort and page size callbacks
 
@@ -79,9 +83,47 @@ import GridToolbar from "@/components/propeller/GridToolbar";
 />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+GridToolbar is a pure presentational + local-state component. To build a custom version:
+
+1. **Sort controls** -- Read `Enums.ProductSortField` keys for available sort fields. Emit `{ field, order }` on change.
+2. **Page size selector** -- Render options from an array of numbers. Emit the selected value on change.
+3. **View toggle** -- Track `'grid'` / `'list'` state and toggle on click.
+4. **Filter badges** -- Flatten `Record<string, string[]>` into individual badge items. Each badge needs the filter name + value so the parent can remove it.
+5. **Price badge** -- Render when `priceFilterMin` or `priceFilterMax` is defined. Display as a formatted range.
+6. **Sync from props** -- Watch `defaultSort`, `defaultOffset`, and `viewMode` for external state changes (e.g., URL-driven sort).
+
+### Integration with ProductGrid
+
+GridToolbar does not make API calls itself. It emits user intent via callbacks (`onSortChange`, `onOffsetChange`, etc.) that the parent page uses to update ProductGrid query variables:
+
+```ts
+// pseudo-code: maintain sort and page size as local state
+let sort = [{ field: "CATEGORY_ORDER", order: "ASC" }];
+let pageSize = 12;
+
+// When the user changes sort via the toolbar:
+function onSortChange(field: string, order: string) {
+  sort = [{ field, order }];
+  // re-fetch products with updated sort
+}
+
+// When the user changes page size via the toolbar:
+function onOffsetChange(size: number) {
+  pageSize = size;
+  // re-fetch products with updated offset
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data Display
 
@@ -140,9 +182,49 @@ import GridToolbar from "@/components/propeller/GridToolbar";
 | `labels`   | `Record<string, string>` | --      | Label overrides for any built-in text (see Label Keys below)       |
 | `className`| `string`                 | --      | Extra CSS class applied to the root element                        |
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Label Keys
+### Function signature
+
+```ts
+function gridToolbar(options: GridToolbarOptions): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `sortOptions` | `string[]` | All `ProductSortField` values | Sort field keys |
+| `defaultSort` | `{ field: string; order: string }[]` | `[{ field: 'CATEGORY_ORDER', order: 'ASC' }]` | Active sort state |
+| `offset` | `number[]` | `[12, 24, 48]` | Page size options |
+| `defaultOffset` | `number` | `12` | Selected page size |
+| `viewMode` | `string` | `'grid'` | Layout mode (`'grid'` or `'list'`) |
+| `portalMode` | `string` | `'open'` | Portal access level |
+| `user` | `Contact \| Customer \| null` | `null` | Authenticated user for portal gating |
+
+### Callbacks
+
+| Callback | Signature | Description |
+|---|---|---|
+| `onSortChange` | `(field: string, order: string) => void` | Sort field or direction changed |
+| `onOffsetChange` | `(offset: number) => void` | Page size changed |
+| `onViewChange` | `(mode: string) => void` | View toggle clicked |
+| `onFilterRemove` | `(filterName: string, value: string) => void` | Attribute filter badge removed |
+| `onPriceFilterRemove` | `() => void` | Price filter badge removed |
+| `onClearFilters` | `() => void` | Clear all filters clicked |
+
+### UI-only props
+
+The following props control display only and have no SDK equivalent: `itemsFound`, `page`, `pageSize`, `pageItemCount`, `activeTextFilters`, `priceFilterMin`, `priceFilterMax`, `labels`, `className`. Pass these to your custom UI as needed.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 Override any of these via the `labels` prop:
 
@@ -168,50 +250,37 @@ Override any of these via the `labels` prop:
 | `switchToList`       | `'Switch to list view'`| View toggle tooltip       |
 | `switchToGrid`       | `'Switch to grid view'`| View toggle tooltip       |
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## SDK Services & Types
-
-### Enums Used
-
-- **`Enums.ProductSortField`** -- Provides sort field constants: `CATEGORY_ORDER`, `NAME`, `PRICE`, `SKU`, `SUPPLIER_CODE`, `CREATED_AT`, `LAST_MODIFIED_AT`, `RELEVANCE`, `PRIORITY`
-- **`Enums.SortOrder`** -- Sort direction constants: `ASC`, `DESC`
-
-### User Types
-
-- **`Contact`** / **`Customer`** from `propeller-sdk-v2` -- Used for the `user` prop to determine portal access level
-
-### Integration with ProductGrid
-
-GridToolbar does not make API calls itself. It emits user intent via callbacks (`onSortChange`, `onOffsetChange`, etc.) that the parent page uses to update ProductGrid query variables:
-
-```tsx
-const [sort, setSort] = useState([{ field: "CATEGORY_ORDER", order: "ASC" }]);
-const [pageSize, setPageSize] = useState(12);
-
-<GridToolbar
-  defaultSort={sort}
-  defaultOffset={pageSize}
-  onSortChange={(field, order) => setSort([{ field, order }])}
-  onOffsetChange={(size) => setPageSize(size)}
-  itemsFound={products?.itemsFound}
-/>
-
-<ProductGrid sort={sort} offset={pageSize} /* ... */ />
+```ts
+const defaultLabels = {
+  CATEGORY_ORDER: 'Default Sorting',
+  NAME: 'Name',
+  PRICE: 'Price',
+  SKU: 'SKU',
+  SUPPLIER_CODE: 'Supplier Code',
+  CREATED_AT: 'Created Date',
+  LAST_MODIFIED_AT: 'Last Modified Date',
+  RELEVANCE: 'Relevance',
+  PRIORITY: 'Priority',
+  ASC: 'Low to High',
+  DESC: 'High to Low',
+  clearAll: 'Clear All',
+  products: ' Products',
+  from: 'from',
+  results: 'results',
+  perPage: ' per page',
+  price: 'Price',
+  switchToList: 'Switch to list view',
+  switchToGrid: 'Switch to grid view',
+};
 ```
 
----
+These are suggested defaults. Override per-key to support localization.
 
-## Building Your Own
-
-GridToolbar is a pure presentational + local-state component. To build a custom version:
-
-1. **Sort controls** -- Read `Enums.ProductSortField` keys for available sort fields. Emit `{ field, order }` on change.
-2. **Page size selector** -- Render options from an array of numbers. Emit the selected value on change.
-3. **View toggle** -- Track `'grid'` / `'list'` state and toggle on click.
-4. **Filter badges** -- Flatten `Record<string, string[]>` into individual badge items. Each badge needs the filter name + value so the parent can remove it.
-5. **Price badge** -- Render when `priceFilterMin` or `priceFilterMax` is defined. Display as a formatted range.
-6. **Sync from props** -- Watch `defaultSort`, `defaultOffset`, and `viewMode` for external state changes (e.g., URL-driven sort).
+  </TabItem>
+</Tabs>
 
 ---
 
@@ -225,3 +294,14 @@ GridToolbar is a pure presentational + local-state component. To build a custom 
 - **View toggle icon swap**: Shows a list icon when in grid mode (click to switch to list) and a grid icon when in list mode (click to switch to grid).
 - **Responsive layout**: Controls stack vertically on small screens (`flex-col`) and align horizontally on `sm:` and above.
 - **No API calls**: GridToolbar is purely a UI controller. All data fetching responsibility remains with the parent or sibling ProductGrid.
+
+## SDK Services & Types
+
+### Enums Used
+
+- **`Enums.ProductSortField`** -- Provides sort field constants: `CATEGORY_ORDER`, `NAME`, `PRICE`, `SKU`, `SUPPLIER_CODE`, `CREATED_AT`, `LAST_MODIFIED_AT`, `RELEVANCE`, `PRIORITY`
+- **`Enums.SortOrder`** -- Sort direction constants: `ASC`, `DESC`
+
+### User Types
+
+- **`Contact`** / **`Customer`** from `propeller-sdk-v2` -- Used for the `user` prop to determine portal access level

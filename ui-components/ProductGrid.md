@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductGrid
 
 A self-contained product listing component that handles data fetching, pagination, sorting, filtering, and cart integration. It can operate in two modes: **self-fetching** (provide a `graphqlClient` and let it query the API internally) or **controlled** (pass pre-fetched `products` directly).
@@ -5,6 +8,9 @@ A self-contained product listing component that handles data fetching, paginatio
 ---
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Category page
 
@@ -162,9 +168,161 @@ For a read-only catalog view, use `portalMode="semi-closed"` or `allowAddToCart=
 />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+To create a custom product grid that replaces or extends this component:
+
+### Category page — data fetching
+
+```ts
+import { CategoryService } from 'propeller-sdk-v2';
+import type { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
+
+const service = new CategoryService(graphqlClient);
+
+const variables: CategoryQueryVariables = {
+  categoryId: 42,
+  language: 'NL',
+  categoryProductSearchInput: {
+    language: 'NL',
+    page: 1,
+    offset: 12,
+    hidden: false,
+    statuses: ['A', 'P', 'T', 'S'],
+    sortInputs: [{ field: 'NAME', order: 'ASC' }],
+  },
+  priceCalculateProductInput: {
+    taxZone: 'NL',
+  },
+  // imageSearchFilters and imageVariantFilters from configuration
+};
+
+const result = await service.getCategory(variables);
+const products = result?.products?.items || [];
+const filters = result?.products?.filters || [];
+const minPrice = result?.products?.minPrice;
+const maxPrice = result?.products?.maxPrice;
+const itemsFound = result?.products?.itemsFound;
+```
+
+### Search results
+
+```ts
+const searchVariables: CategoryQueryVariables = {
+  categoryId: config.baseCategoryId, // e.g. 17
+  language: 'NL',
+  categoryProductSearchInput: {
+    language: 'NL',
+    page: 1,
+    offset: 12,
+    hidden: false,
+    statuses: ['A', 'P', 'T', 'S'],
+    term: 'laptop',
+    searchFields: [
+      {
+        fieldNames: ['NAME', 'KEYWORDS', 'SKU', 'CUSTOM_KEYWORDS'],
+        boost: 5,
+      },
+      {
+        fieldNames: ['DESCRIPTION', 'MANUFACTURER', 'MANUFACTURER_CODE', 'EAN_CODE', 'BAR_CODE', 'CLUSTER_ID', 'CUSTOM_KEYWORDS', 'PRODUCT_ID', 'SHORT_DESCRIPTION', 'SUPPLIER', 'SUPPLIER_CODE'],
+        boost: 1,
+      },
+    ],
+    sortInputs: [{ field: 'RELEVANCE', order: 'ASC' }],
+  },
+};
+
+const result = await service.getCategory(searchVariables);
+```
+
+### With text filters and price range
+
+```ts
+const filteredVariables: CategoryQueryVariables = {
+  categoryId: 42,
+  language: 'NL',
+  categoryProductSearchInput: {
+    language: 'NL',
+    page: 1,
+    offset: 12,
+    hidden: false,
+    statuses: ['A', 'P', 'T', 'S'],
+    textFilters: [
+      { searchId: 'color', values: ['red', 'blue'] },
+    ],
+    price: { from: 50, to: 200 },
+    sortInputs: [{ field: 'NAME', order: 'ASC' }],
+  },
+};
+
+const result = await service.getCategory(filteredVariables);
+// result.products.filters -> pass to filter sidebar
+// result.products.minPrice / maxPrice -> pass to price range slider
+```
+
+### Product type detection
+
+```ts
+// The API returns a mixed array of Product and Cluster items.
+// Distinguish them by checking for `clusterId`:
+for (const item of products) {
+  if ('clusterId' in item) {
+    // This is a Cluster
+  } else {
+    // This is a Product
+  }
+}
+```
+
+### Language filtering (client-side)
+
+```ts
+// Filter items to include only those with a translation for the active language
+const filtered = products.filter((item) =>
+  item.names?.some((n) => n.language === language)
+);
+const adjustedItemsFound = (itemsFound ?? 0) - (products.length - filtered.length);
+```
+
+### Cart integration
+
+```ts
+import { CartService } from 'propeller-sdk-v2';
+
+const cartService = new CartService(graphqlClient);
+
+// Create a new cart when none exists
+// Not documented in source — implement based on your setup
+
+// Add product to cart
+// Pass cartId and graphqlClient to your add-to-cart controls.
+// Handle the onCartCreated flow when no cart exists yet:
+// CartService will create one, and you must persist the new cart ID.
+```
+
+### Stale response handling
+
+```ts
+// When filter/sort/page changes trigger rapid re-fetches, use an
+// incrementing fetchId counter to discard responses from superseded requests.
+let fetchId = 0;
+
+async function fetchProducts(variables: CategoryQueryVariables) {
+  const currentFetchId = ++fetchId;
+  const result = await service.getCategory(variables);
+  if (currentFetchId !== fetchId) return; // discard stale response
+  // Apply result
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data Source
 
@@ -286,35 +444,149 @@ These props only apply when `graphqlClient` is provided and `products` is not.
 |------|------|-------------|
 | `configuration` | `any` | App config object providing `baseCategoryId`, `imageSearchFiltersGrid`, `imageVariantFiltersMedium`, and `urls.getProductUrl` / `urls.getClusterUrl` for card URL generation. |
 
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+import { CategoryService } from 'propeller-sdk-v2';
+import type { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
+
+async function fetchProductGrid(
+  graphqlClient: GraphQLClient,
+  variables: CategoryQueryVariables
+): Promise<Category>
+```
+
+Returns the `Category` object from `CategoryService.getCategory()`, which contains a `products` field with `items`, `filters`, `minPrice`, `maxPrice`, `itemsFound`, and `pages`.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `categoryId` | `number` | `config.baseCategoryId` | `categoryId` prop |
+| `language` | `string` | `'NL'` | `language` prop |
+| `taxZone` | `string` | `'NL'` | `taxZone` prop |
+| `page` | `number` | `1` | `page` prop |
+| `offset` | `number` | `12` | `pageSize` prop |
+| `term` | `string` | -- | `term` prop |
+| `brand` | `string` | -- | `brand` prop |
+| `textFilters` | `ProductTextFilterInput[]` | -- | `textFilters` prop |
+| `price.from` | `number` | -- | `priceFilterMin` prop |
+| `price.to` | `number` | -- | `priceFilterMax` prop |
+| `sortInputs` | `SortInput[]` | -- | `sortField` / `sortOrder` props |
+| `statuses` | `string[]` | `['A','P','T','S']` | Always include these statuses |
+| `cartId` | `string` | -- | `cartId` prop |
+
+### Cart resolution
+
+The grid passes cart props through to embedded `AddToCart` components. The SDK call sequence:
+
+1. If `cartId` is provided, use it directly for add-to-cart operations via `CartService`.
+2. If `createCart` is `true` and no `cartId` exists, `CartService` creates a new cart automatically.
+3. After cart creation, the `onCartCreated` callback fires — persist the new cart ID.
+4. After each successful add-to-cart, `afterAddToCart` fires with the updated cart.
+
+Refer to the Usage BYO tab examples for implementation details.
+
+### Callbacks table
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `onCartCreated` | After a new cart is created (when `createCart={true}` and no `cartId`) | Persist the new cart to your state/context |
+| `afterAddToCart` | After every successful add-to-cart | Update your cart state with the returned cart object |
+| `onFiltersChange` | After each product fetch | Update your filter sidebar with the new `AttributeFilter[]` |
+| `onPriceBoundsChange` | After each product fetch | Update your price range slider min/max |
+| `onItemsFoundChange` | After each product fetch | Update your result count display |
+| `onPageItemCountChange` | After each product fetch (post language filtering) | Update your visible item count |
+| `onPageChange` | On pagination | Update your page state |
+| `onProductsResponse` | After each product fetch | Feed a pagination component with the full response |
+| `onCategoryChange` | After each product fetch | Update title/description components |
+| `onSortChange` | On sort state changes | Sync a sibling toolbar component |
+| `onProductClick` | On product card click | Handle SPA routing |
+| `onClusterClick` | On cluster card click | Handle SPA routing |
+| `onToggleFavorite` | On favorite toggle | Update favorite state |
+| `onProceedToCheckout` | On "Proceed to checkout" click in modal | Navigate to checkout |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `columns` — grid column count
+- `className` — extra CSS class on the root element
+- `isLoading` — force skeleton loader display
+- `showModal` — show modal instead of toast after add-to-cart
+- `allowIncrDecr` — show quantity stepper buttons
+- `showStock` — show stock widget on cards
+- `showAvailability` — show availability indicator
+- `stockValidation` — block add-to-cart when exceeding stock
+- `portalMode` — control add-to-cart visibility
+- `allowAddToCart` — control add-to-cart button visibility
+- `enableAddFavorite` — show favorite toggle on cards
+- `includeTax` — toggle tax-inclusive price display
+- `renderProductCard` — custom product card renderer
+- `renderClusterCard` — custom cluster card renderer
+- `addToCartLabels` — label overrides for AddToCart
+- `stockLabels` — label overrides for ItemStock
+- `configuration` — app config object for image filters and URL generation
+
+  </TabItem>
+</Tabs>
+
 ---
 
-## SDK Services
+## Behavior
 
-ProductGrid uses three SDK services internally:
+### Grid vs List View
 
-### CategoryService
+The `columns` prop controls the grid layout:
+- `1` -- single-column flex layout (list view)
+- `2` -- 2-column grid
+- `3` (default) -- 2 columns on mobile, 3 on large screens
+- `4` -- 2 columns on mobile, 4 on large screens
 
-The primary service for fetching products. The grid creates a `CategoryService` instance from the provided `graphqlClient` and calls `getCategory()` with a full set of query variables including:
+All multi-column layouts use `auto-rows-fr` for equal row heights.
 
-- `categoryId` -- the target category (or `baseCategoryId` for search/brand queries)
-- `language` -- locale for product data
-- `imageSearchFilters` / `imageVariantFilters` -- from `configuration` for image optimization
-- `priceCalculateProductInput` -- includes `taxZone`, `companyId`, `contactId`, or `customerId` depending on user type
-- `categoryProductSearchInput` -- the main search input with pagination, sorting, filtering, status filtering, and search term/brand
+### Filtering
 
-The response provides `products.items`, `products.filters` (for sidebar), `products.minPrice`/`maxPrice` (for price range), `products.itemsFound`, and `products.pages`.
+The grid supports three types of filters, all controlled externally:
 
-### ProductService
+- **Text filters** (`textFilters` prop) -- attribute-based filters like color, size, brand. Built from `AttributeFilter` data emitted by `onFiltersChange`.
+- **Price range** (`priceFilterMin` / `priceFilterMax` props) -- numeric bounds. Initialize slider limits from `onPriceBoundsChange`.
+- **Brand** (`brand` prop) -- manufacturer name filter, switches to catalog-wide search.
 
-Not used directly by ProductGrid, but the embedded `ProductCard` components may use it for product-level operations.
+When any filter prop changes, the grid automatically re-fetches and the page resets to 1.
 
-### CartService
+### Sorting
 
-Used indirectly through the embedded `AddToCart` component inside each `ProductCard`. The grid passes cart-related props (`cartId`, `createCart`, `graphqlClient`, `user`) down to `ProductCard`, which forwards them to `AddToCart`. CartService handles:
+Sorting can be controlled externally via `sortField` and `sortOrder` props, or managed internally. Available sort fields include `NAME`, `PRICE`, `RELEVANCE` (auto-selected for search queries), and others from the `ProductSortField` enum. The `onSortChange` callback emits changes for syncing with a toolbar component.
 
-- Creating a new cart when `createCart` is true and no `cartId` exists
-- Adding products to the cart with the specified quantity
-- Returning the updated cart object through `afterAddToCart`
+### Pagination
+
+The grid supports both internal and external pagination:
+
+- **Internal** -- the grid tracks `currentPage` and provides `handlePageChange` for built-in Previous/Next controls.
+- **External** -- pass a `page` prop to control the current page. Wire `onPageChange` to update your state, and use `onProductsResponse` to feed a `GridPagination` component.
+
+The `pageSize` prop (default 12) sets items per page. Changing it triggers a re-fetch with page reset to 1.
+
+### Cart Integration
+
+The grid passes cart props through to embedded `ProductCard` > `AddToCart` components:
+
+- `cartId` -- ID of an existing cart. When provided, items are added to this cart.
+- `createCart` -- when true and no `cartId` is available, AddToCart creates a new cart automatically.
+- `onCartCreated` -- callback to persist the newly created cart. Always implement this when using `createCart={true}`.
+- `afterAddToCart` -- callback with the updated cart after each add. Use to sync your CartContext.
+
+The add-to-cart button visibility is controlled by `portalMode` and `allowAddToCart`. In `'semi-closed'` portal mode or when `allowAddToCart={false}`, product cards render without add-to-cart controls. Cluster cards always show their navigation button regardless of these settings.
+
+### Language Filtering
+
+After fetching products from the API, the grid filters items client-side to include only those with a `names` entry matching the current `language`. Products without a translation for the active language are excluded from display. The `itemsFound` count is adjusted downward to account for filtered-out untranslated items, ensuring accurate pagination metadata.
+
+When the `language` prop changes, the grid automatically re-fetches all data.
 
 ---
 
@@ -446,80 +718,30 @@ Variables with price range filter:
 
 ---
 
-## Building Your Own
+## SDK Services
 
-To create a custom product grid that replaces or extends this component:
+ProductGrid uses three SDK services internally:
 
-1. **Data fetching** -- Instantiate `CategoryService` with a `GraphQLClient` and call `getCategory()`. The key input is `CategoryProductSearchInput`, which controls pagination (`page`, `offset`), sorting (`sortInputs`), text filters (`textFilters`), price range (`price`), search term (`term`), and product statuses (`statuses`).
+### CategoryService
 
-2. **Product type detection** -- The API returns a mixed array of `Product` and `Cluster` items. Distinguish them by checking for `clusterId` on the item (clusters have it, products do not).
+The primary service for fetching products. The grid creates a `CategoryService` instance from the provided `graphqlClient` and calls `getCategory()` with a full set of query variables including:
 
-3. **Language filtering** -- The API returns products matching the category regardless of translation status. Filter items client-side by checking that `item.names` contains an entry with the desired `language` code. Adjust `itemsFound` accordingly.
+- `categoryId` -- the target category (or `baseCategoryId` for search/brand queries)
+- `language` -- locale for product data
+- `imageSearchFilters` / `imageVariantFilters` -- from `configuration` for image optimization
+- `priceCalculateProductInput` -- includes `taxZone`, `companyId`, `contactId`, or `customerId` depending on user type
+- `categoryProductSearchInput` -- the main search input with pagination, sorting, filtering, status filtering, and search term/brand
 
-4. **Stale response handling** -- When filter/sort/page changes trigger rapid re-fetches, the component uses an incrementing `fetchId` counter to discard responses from superseded requests. Only results where the fetch ID matches the current counter value are applied. Implement this pattern in custom implementations to prevent stale data from overwriting newer results.
+The response provides `products.items`, `products.filters` (for sidebar), `products.minPrice`/`maxPrice` (for price range), `products.itemsFound`, and `products.pages`.
 
-5. **Filter sidebar integration** -- The `products.filters` array from the API response contains `AttributeFilter` objects with searchable attribute metadata and value counts. Pass these to a filter UI component, collect selected values as `ProductTextFilterInput[]`, and feed them back into the next query.
+### ProductService
 
-6. **Price bounds** -- The API returns `minPrice` and `maxPrice` on the products response. Use these to initialize a price range slider. When the user adjusts the range, pass `price: { from, to }` in the search input.
+Not used directly by ProductGrid, but the embedded `ProductCard` components may use it for product-level operations.
 
-7. **Cart integration** -- Use `CartService` from the SDK. Pass `cartId` and the `graphqlClient` to your add-to-cart controls. Handle the `onCartCreated` flow when no cart exists yet: CartService will create one, and you must persist the new cart ID.
+### CartService
 
-8. **Status filtering** -- Always include `statuses: [A, P, T, S]` to show only active, pre-order, temporarily unavailable, and special products. Status `N` (not available) and `D` (deleted) should be excluded.
+Used indirectly through the embedded `AddToCart` component inside each `ProductCard`. The grid passes cart-related props (`cartId`, `createCart`, `graphqlClient`, `user`) down to `ProductCard`, which forwards them to `AddToCart`. CartService handles:
 
-9. **Search boosting** -- When building search queries, use `searchFields` with `boost` values to prioritize matches. Name/SKU/keyword matches should have higher boost (e.g., 5) than description/supplier matches (e.g., 1).
-
-10. **Skeleton loading** -- Show a skeleton grid with a count that matches your column layout (e.g., 6 items for 3 columns, 8 for 4 columns) during fetches for a smooth loading experience.
-
----
-
-## Behavior
-
-### Grid vs List View
-
-The `columns` prop controls the grid layout:
-- `1` -- single-column flex layout (list view)
-- `2` -- 2-column grid
-- `3` (default) -- 2 columns on mobile, 3 on large screens
-- `4` -- 2 columns on mobile, 4 on large screens
-
-All multi-column layouts use `auto-rows-fr` for equal row heights.
-
-### Filtering
-
-The grid supports three types of filters, all controlled externally:
-
-- **Text filters** (`textFilters` prop) -- attribute-based filters like color, size, brand. Built from `AttributeFilter` data emitted by `onFiltersChange`.
-- **Price range** (`priceFilterMin` / `priceFilterMax` props) -- numeric bounds. Initialize slider limits from `onPriceBoundsChange`.
-- **Brand** (`brand` prop) -- manufacturer name filter, switches to catalog-wide search.
-
-When any filter prop changes, the grid automatically re-fetches and the page resets to 1.
-
-### Sorting
-
-Sorting can be controlled externally via `sortField` and `sortOrder` props, or managed internally. Available sort fields include `NAME`, `PRICE`, `RELEVANCE` (auto-selected for search queries), and others from the `ProductSortField` enum. The `onSortChange` callback emits changes for syncing with a toolbar component.
-
-### Pagination
-
-The grid supports both internal and external pagination:
-
-- **Internal** -- the grid tracks `currentPage` and provides `handlePageChange` for built-in Previous/Next controls.
-- **External** -- pass a `page` prop to control the current page. Wire `onPageChange` to update your state, and use `onProductsResponse` to feed a `GridPagination` component.
-
-The `pageSize` prop (default 12) sets items per page. Changing it triggers a re-fetch with page reset to 1.
-
-### Cart Integration
-
-The grid passes cart props through to embedded `ProductCard` > `AddToCart` components:
-
-- `cartId` -- ID of an existing cart. When provided, items are added to this cart.
-- `createCart` -- when true and no `cartId` is available, AddToCart creates a new cart automatically.
-- `onCartCreated` -- callback to persist the newly created cart. Always implement this when using `createCart={true}`.
-- `afterAddToCart` -- callback with the updated cart after each add. Use to sync your CartContext.
-
-The add-to-cart button visibility is controlled by `portalMode` and `allowAddToCart`. In `'semi-closed'` portal mode or when `allowAddToCart={false}`, product cards render without add-to-cart controls. Cluster cards always show their navigation button regardless of these settings.
-
-### Language Filtering
-
-After fetching products from the API, the grid filters items client-side to include only those with a `names` entry matching the current `language`. Products without a translation for the active language are excluded from display. The `itemsFound` count is adjusted downward to account for filtered-out untranslated items, ensuring accurate pagination metadata.
-
-When the `language` prop changes, the grid automatically re-fetches all data.
+- Creating a new cart when `createCart` is true and no `cartId` exists
+- Adding products to the cart with the specified quantity
+- Returning the updated cart object through `afterAddToCart`

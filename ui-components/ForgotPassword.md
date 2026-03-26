@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ForgotPassword
 
 A self-contained password reset request component. It renders an email form, calls the Propeller API to trigger a password reset email, and displays a confirmation message on success. The component manages its own loading, error, and success states internally.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic
 
@@ -77,7 +83,49 @@ import { graphqlClient } from '@/lib/api';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+If you need full control over the password reset flow, you can build your own using the same SDK service:
+
+```ts
+import { UserService, GraphQLClient } from 'propeller-sdk-v2';
+
+// pseudo-code: maintain state for email, loading, submitted, and error in your framework
+
+async function handlePasswordReset(
+  graphqlClient: GraphQLClient,
+  email: string,
+  redirectUrl?: string,
+  language?: string,
+) {
+  const userService = new UserService(graphqlClient);
+  await userService.sendPasswordResetEmail({
+    email,
+    redirectUrl,
+    language,
+  });
+  // On success: transition to a "submitted" state showing a confirmation message
+  // On failure: display an error message to the user
+}
+```
+
+The state flow for this feature is:
+
+1. **Form** -- Render an email input and a submit button. On submit, call `handlePasswordReset()`.
+2. **Loading** -- Disable the input and button while the API call is in flight.
+3. **Success** -- Replace the form with a confirmation message (e.g., "If an account exists with this email, you will receive a reset link shortly."). This state is final.
+4. **Error** -- Show an error message. Keep the form interactive so the user can retry.
+
+This custom approach allows you to pass `redirectUrl` and `language` to the SDK (the built-in component only sends `email`) and gives you full control over markup, styling, and behavior.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core
 
@@ -100,6 +148,55 @@ import { graphqlClient } from '@/lib/api';
 |---|---|---|---|---|
 | `labels` | `Record<string, string>` | No | `{}` | Custom labels for form fields. |
 
+### Callbacks
+
+| Prop | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `beforeForgotPassword` | `() => void` | No | -- | Fired before the API call starts. Use for analytics, loading indicators, or validation. |
+| `afterForgotPassword` | `(result: boolean) => void` | No | -- | Fired after the API call completes. Receives `true` on success, `false` on error. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function handlePasswordReset(
+  graphqlClient: GraphQLClient,
+  email: string,
+  redirectUrl?: string,
+  language?: string,
+): Promise<boolean>
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | **required** | SDK client instance |
+| `email` | `string` | **required** | Email address for password reset |
+| `redirectUrl` | `string` | `undefined` | URL the user is redirected to after resetting their password |
+| `language` | `string` | `undefined` | Language code for the email template |
+
+### Callbacks
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `beforeForgotPassword` | Before the API call starts | Analytics tracking, loading indicators, or validation |
+| `afterForgotPassword` | After the API call completes | Handle success (show confirmation) or failure (show error). Receives `true` on success, `false` on error. |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer: `title`, `subtitle`, `buttonText`, `responseMessage`, `labels`. These are the developer's responsibility to implement.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
 Available label keys:
 
 | Key | Default | Description |
@@ -107,12 +204,22 @@ Available label keys:
 | `email` | `"Email"` | Label above the email input field. |
 | `emailPlaceholder` | `"name@example.com"` | Placeholder text inside the email input. |
 
-### Callbacks
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-| Prop | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `beforeForgotPassword` | `() => void` | No | -- | Fired before the API call starts. Use for analytics, loading indicators, or validation. |
-| `afterForgotPassword` | `(result: boolean) => void` | No | -- | Fired after the API call completes. Receives `true` on success, `false` on error. |
+```ts
+const defaultLabels = {
+  email: 'Email',
+  emailPlaceholder: 'name@example.com',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -127,6 +234,26 @@ Key details:
 - The component always shows the success message after a successful call, regardless of whether the email actually exists in the system. This is a security best practice to prevent email enumeration.
 - Multiple rapid submissions are prevented: `handleSubmit` returns early if `loading` is already `true`.
 - The `beforeForgotPassword` callback fires before the loading state is set. The `afterForgotPassword` callback fires after the API response is received, with the result.
+
+## GraphQL Mutation
+
+Internally, `UserService.sendPasswordResetEmail()` executes the following GraphQL mutation:
+
+```graphql
+mutation triggerPasswordSendResetEmailEvent($input: PasswordRecoveryLinkInput!) {
+  triggerPasswordSendResetEmailEvent(input: $input)
+}
+```
+
+The `PasswordRecoveryLinkInput` accepted by the API:
+
+```graphql
+input PasswordRecoveryLinkInput {
+  email: String!
+  redirectUrl: String
+  language: String
+}
+```
 
 ## SDK Services
 
@@ -162,58 +289,3 @@ interface PasswordResetInput {
 ```
 
 The component currently only passes `email`. The optional fields (`redirectUrl`, `language`, etc.) can be exposed as additional props if needed.
-
-### GraphQL Mutation
-
-Internally, `UserService.sendPasswordResetEmail()` executes the following GraphQL mutation:
-
-```graphql
-mutation triggerPasswordSendResetEmailEvent($input: PasswordRecoveryLinkInput!) {
-  triggerPasswordSendResetEmailEvent(input: $input)
-}
-```
-
-The `PasswordRecoveryLinkInput` accepted by the API:
-
-```graphql
-input PasswordRecoveryLinkInput {
-  email: String!
-  redirectUrl: String
-  language: String
-}
-```
-
-## Building Your Own
-
-If you need full control over the password reset flow, you can build your own using the same SDK service:
-
-```ts
-import { UserService, GraphQLClient } from 'propeller-sdk-v2';
-
-// pseudo-code: maintain state for email, loading, submitted, and error in your framework
-
-async function handlePasswordReset(
-  graphqlClient: GraphQLClient,
-  email: string,
-  redirectUrl?: string,
-  language?: string,
-) {
-  const userService = new UserService(graphqlClient);
-  await userService.sendPasswordResetEmail({
-    email,
-    redirectUrl,
-    language,
-  });
-  // On success: transition to a "submitted" state showing a confirmation message
-  // On failure: display an error message to the user
-}
-```
-
-The state flow for this feature is:
-
-1. **Form** -- Render an email input and a submit button. On submit, call `handlePasswordReset()`.
-2. **Loading** -- Disable the input and button while the API call is in flight.
-3. **Success** -- Replace the form with a confirmation message (e.g., "If an account exists with this email, you will receive a reset link shortly."). This state is final.
-4. **Error** -- Show an error message. Keep the form interactive so the user can retry.
-
-This custom approach allows you to pass `redirectUrl` and `language` to the SDK (the built-in component only sends `email`) and gives you full control over markup, styling, and behavior.

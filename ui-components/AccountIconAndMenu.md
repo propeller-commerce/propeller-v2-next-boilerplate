@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # AccountIconAndMenu
 
 A versatile user account component with two rendering modes: a **dropdown** (header icon + popup menu) and a **sidebar** (always-visible account navigation). Adapts its UI based on authentication state — showing a login form for guests and account navigation for authenticated users.
@@ -5,6 +8,9 @@ A versatile user account component with two rendering modes: a **dropdown** (hea
 Supports both **B2B** (`Contact`) and **B2C** (`Customer`) user types from the Propeller Commerce platform.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Dropdown Mode (Header)
 
@@ -148,7 +154,113 @@ Add a guest checkout option to the login dropdown (useful on cart/checkout pages
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+If you're building a custom account menu instead of using this component, here are the SDK calls and patterns you need:
+
+### Dropdown Mode (Self-Contained Login)
+
+```ts
+import {
+  GraphQLClient,
+  LoginService,
+  UserService,
+  LoginInput,
+  Contact,
+  Customer,
+} from 'propeller-sdk-v2';
+
+// 1. Initialize the GraphQL client
+const graphqlClient = new GraphQLClient({
+  endpoint: '/api/graphql',
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// 2. Check auth state
+// Read `accessToken` from localStorage. If present, the user is authenticated.
+// If not, show a login form. If yes, show the account navigation menu.
+
+// 3. Login flow
+async function login(email: string, password: string) {
+  const loginService = new LoginService(graphqlClient);
+  const { session } = await loginService.login({ email, password });
+
+  // Store tokens
+  localStorage.setItem('accessToken', session.accessToken);
+  localStorage.setItem('refreshToken', session.refreshToken);
+
+  // Update client with auth header
+  graphqlClient.updateConfig({
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.accessToken}`,
+    },
+  });
+
+  // Fetch user profile
+  const userService = new UserService(graphqlClient);
+  const user = await userService.getViewer({});
+
+  // Notify other components
+  window.dispatchEvent(new CustomEvent('userLoggedIn'));
+
+  return user;
+}
+
+// 4. Determine user type
+function isB2BUser(user: Contact | Customer): user is Contact {
+  return 'company' in user;
+}
+
+// 5. Logout
+function logout() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  window.dispatchEvent(new CustomEvent('userLoggedOut'));
+  // pseudo-code: clear your user state and show the login form
+}
+```
+
+### Dropdown with Delegation Mode
+
+```ts
+// When handling authentication yourself, no SDK calls are needed.
+// Simply forward credentials to your custom API:
+
+async function loginWithDelegation(email: string, password: string) {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  // Update your user state with data.user
+  return data.user;
+}
+```
+
+### Sidebar Mode
+
+```ts
+// Sidebar mode is purely presentational — no SDK calls needed.
+// Render an always-visible navigation with menu links.
+// Highlight the active link by comparing each link's href against the current route path:
+//   - Exact match for '/account'
+//   - Prefix match for sub-routes like '/account/orders'
+```
+
+Your UI should render:
+- **Unauthenticated**: A user icon that opens a dropdown with a login form (email, password, submit button, forgot password link, register link).
+- **Authenticated**: A greeting ("Hi, {firstName}") that opens a dropdown with account navigation links and a logout button.
+- For sidebar mode: always-visible navigation with active link highlighting based on the current route path.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
@@ -216,7 +328,89 @@ interface AccountMenuLink {
 ]
 ```
 
-### Labels
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function Signature
+
+```ts
+import {
+  GraphQLClient,
+  LoginService,
+  UserService,
+  LoginInput,
+  Contact,
+  Customer,
+} from 'propeller-sdk-v2';
+
+async function login(
+  graphqlClient: GraphQLClient,
+  email: string,
+  password: string
+): Promise<Contact | Customer> {
+  const loginService = new LoginService(graphqlClient);
+  const { session } = await loginService.login({ email, password });
+  graphqlClient.updateConfig({
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.accessToken}`,
+    },
+  });
+  const userService = new UserService(graphqlClient);
+  return await userService.getViewer({});
+}
+```
+
+### Options Table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `email` | `string` | — | `LoginInput.email` |
+| `password` | `string` | — | `LoginInput.password` |
+
+### Callbacks Table
+
+| Callback | When it fires | What to implement |
+|---|---|---|
+| `afterLogin` | After successful self-contained login | Store tokens (`accessToken`, `refreshToken`) in localStorage. Update user state. |
+| `onMenuItemClick` | Navigation link is clicked | Route to the target `href` using your router. |
+| `onLogoutClick` | Logout button is clicked | Clear tokens from localStorage. Clear user state. Dispatch `userLoggedOut` event. |
+| `onForgotPasswordClick` | "Forgot Password" is clicked | Route to your forgot-password page. |
+| `onRegisterClick` | "Register" is clicked | Route to your registration page. |
+| `onGuestCheckoutClick` | "Guest Checkout" is clicked | Route to your guest checkout flow. |
+| `onAccountIconClick` | Icon clicked when dropdown is disabled | Navigate to account page or open a custom menu. |
+| `beforeLogin` | Before the login process starts | Show loading state or perform pre-login validation. |
+| `onLoginSubmit` | Login form submitted (delegation mode) | Handle authentication via your own API. No SDK calls are made. |
+
+### UI-Only Props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `variant` — render mode (`'dropdown'` or `'sidebar'`)
+- `currentPath` — current route path for active link highlighting
+- `showAccountMenuOnClick` — whether to show dropdown on click
+- `accountMenuTitle` — dropdown title text
+- `accountHeaderLoginForm` — show inline login form vs redirect button
+- `menuLinks` — navigation link items
+- `labels` — customizable UI strings
+- `iconClassName` — CSS class for icon button
+- `menuClassName` — CSS class for dropdown panel
+- `loginLoading` — loading spinner state
+- `loginError` — error message string
+- `loginFormTitle` — login form title
+- `loginFormSubtitle` — login form subtitle
+- `loginButtonText` — login button text
+- `displayForgotPasswordLink` — show/hide forgot password link
+- `displayRegisterLink` — show/hide register link
+- `displayGuestCheckoutLink` — show/hide guest checkout link
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Used in |
 |---|---|---|
@@ -235,7 +429,115 @@ interface AccountMenuLink {
 | `registerLink` | `'Create an Account'` | Register link text |
 | `guestCheckoutLink` | `'Continue as Guest'` | Guest checkout link text |
 
-## Propeller SDK Services
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const labels = {
+  accountLabel: 'Account',
+  signedInAs: 'Signed in as',
+  logoutLabel: 'Log Out',
+  loginTitle: 'Welcome Back',
+  loginSubtitle: '',
+  loginButton: 'Log In',
+  email: 'Email',
+  emailPlaceholder: 'name@example.com',
+  password: 'Password',
+  passwordPlaceholder: '••••••••',
+  forgotPassword: 'Forgot password?',
+  registerText: "Don't have an account?",
+  registerLink: 'Create an Account',
+  guestCheckoutLink: 'Continue as Guest',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+### Dropdown Mode (default)
+
+- **Unauthenticated**: Shows "Account" label next to a user icon. Clicking opens a dropdown with a login form (email/password fields, login button, forgot password link, register link).
+- **Authenticated**: Shows "Hi, {firstName}" next to the icon. Dropdown displays user info, navigation links, and a logout button.
+- **Click outside**: Dropdown closes automatically when clicking outside the component.
+- **Login success**: Dropdown auto-closes and form resets when `user` prop changes from `null` to a user object.
+
+### Sidebar Mode
+
+- Always-visible vertical navigation with "Signed in as" header, menu links, and logout button.
+- Active link highlighting based on `currentPath`: exact match for `/account`, prefix match for sub-routes like `/account/orders`.
+- No dropdown toggle, click-outside listener, or login form.
+
+### Hydration
+
+Uses an internal mounted guard to prevent server/client rendering mismatches when user data comes from `localStorage`. User-dependent content (name, auth state) only renders after the component has mounted on the client.
+
+### Authentication Flow
+
+When the user submits the login form in self-contained mode, the following sequence occurs:
+
+1. `LoginService.login()` is called with the email and password
+2. The returned `accessToken` is injected into the `GraphQLClient` headers as `Authorization: Bearer <token>`
+3. `UserService.getViewer()` fetches the full user profile
+4. A `userLoggedIn` custom event is dispatched on `window` (for other components to react)
+5. The `afterLogin` callback is called with the user object and tokens
+
+```
+User submits form
+  → LoginService.login({ email, password })
+  → graphqlClient.updateConfig({ headers: { Authorization: 'Bearer <token>' } })
+  → UserService.getViewer({})
+  → window.dispatchEvent(new CustomEvent('userLoggedIn'))
+  → afterLogin(user, accessToken, refreshToken, expiresAt)
+```
+
+## GraphQL
+
+### Login Mutation
+
+```graphql
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    session {
+      accessToken
+      refreshToken
+      expirationTime
+    }
+  }
+}
+```
+
+### Viewer Query
+
+```graphql
+query Viewer {
+  viewer {
+    ... on Contact {
+      contactId
+      firstName
+      lastName
+      email
+      company {
+        companyId
+        name
+      }
+    }
+    ... on Customer {
+      customerId
+      firstName
+      lastName
+      email
+    }
+  }
+}
+```
+
+## SDK Services
 
 In **self-contained mode** (when `graphqlClient` is provided without `onLoginSubmit`), the component uses the following SDK services internally to handle authentication:
 
@@ -261,20 +563,6 @@ const response = await loginService.login(loginInput);
 // response.session.expirationTime — token expiry timestamp
 ```
 
-**GraphQL mutation executed internally:**
-
-```graphql
-mutation Login($input: LoginInput!) {
-  login(input: $input) {
-    session {
-      accessToken
-      refreshToken
-      expirationTime
-    }
-  }
-}
-```
-
 ### UserService
 
 Fetches the authenticated user's profile after login.
@@ -291,137 +579,3 @@ const viewer = await userService.getViewer({});
 // viewer.firstName, viewer.lastName, viewer.email
 // viewer.company (Contact only — B2B company data)
 ```
-
-**GraphQL query executed internally:**
-
-```graphql
-query Viewer {
-  viewer {
-    ... on Contact {
-      contactId
-      firstName
-      lastName
-      email
-      company {
-        companyId
-        name
-      }
-    }
-    ... on Customer {
-      customerId
-      firstName
-      lastName
-      email
-    }
-  }
-}
-```
-
-### Authentication Flow
-
-When the user submits the login form in self-contained mode, the following sequence occurs:
-
-1. `LoginService.login()` is called with the email and password
-2. The returned `accessToken` is injected into the `GraphQLClient` headers as `Authorization: Bearer <token>`
-3. `UserService.getViewer()` fetches the full user profile
-4. A `userLoggedIn` custom event is dispatched on `window` (for other components to react)
-5. The `afterLogin` callback is called with the user object and tokens
-
-```
-User submits form
-  → LoginService.login({ email, password })
-  → graphqlClient.updateConfig({ headers: { Authorization: 'Bearer <token>' } })
-  → UserService.getViewer({})
-  → window.dispatchEvent(new CustomEvent('userLoggedIn'))
-  → afterLogin(user, accessToken, refreshToken, expiresAt)
-```
-
-### Building Your Own Component
-
-If you're building a custom account menu instead of using this component, here are the SDK calls and patterns you need:
-
-```ts
-import {
-  GraphQLClient,
-  LoginService,
-  UserService,
-  LoginInput,
-  Contact,
-  Customer,
-} from 'propeller-sdk-v2';
-
-// 1. Initialize the GraphQL client
-const graphqlClient = new GraphQLClient({
-  endpoint: '/api/graphql',
-  headers: { 'Content-Type': 'application/json' },
-});
-
-// 2. Check auth state
-// Read `accessToken` from localStorage. If present, the user is authenticated.
-// If not, show a login form. If yes, show the account navigation menu.
-
-// 3. Login flow
-async function login(email: string, password: string) {
-  const loginService = new LoginService(graphqlClient);
-  const { session } = await loginService.login({ email, password });
-
-  // Store tokens
-  localStorage.setItem('accessToken', session.accessToken);
-  localStorage.setItem('refreshToken', session.refreshToken);
-
-  // Update client with auth header
-  graphqlClient.updateConfig({
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.accessToken}`,
-    },
-  });
-
-  // Fetch user profile
-  const userService = new UserService(graphqlClient);
-  const user = await userService.getViewer({});
-
-  // Notify other components
-  window.dispatchEvent(new CustomEvent('userLoggedIn'));
-
-  return user;
-}
-
-// 4. Determine user type
-function isB2BUser(user: Contact | Customer): user is Contact {
-  return 'company' in user;
-}
-
-// 5. Logout
-function logout() {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  window.dispatchEvent(new CustomEvent('userLoggedOut'));
-  // pseudo-code: clear your user state and show the login form
-}
-```
-
-Your UI should render:
-- **Unauthenticated**: A user icon that opens a dropdown with a login form (email, password, submit button, forgot password link, register link).
-- **Authenticated**: A greeting ("Hi, {firstName}") that opens a dropdown with account navigation links and a logout button.
-- For sidebar mode: always-visible navigation with active link highlighting based on the current route path.
-
-## Behavior
-
-### Dropdown Mode (default)
-
-- **Unauthenticated**: Shows "Account" label next to a user icon. Clicking opens a dropdown with a login form (email/password fields, login button, forgot password link, register link).
-- **Authenticated**: Shows "Hi, {firstName}" next to the icon. Dropdown displays user info, navigation links, and a logout button.
-- **Click outside**: Dropdown closes automatically when clicking outside the component.
-- **Login success**: Dropdown auto-closes and form resets when `user` prop changes from `null` to a user object.
-
-### Sidebar Mode
-
-- Always-visible vertical navigation with "Signed in as" header, menu links, and logout button.
-- Active link highlighting based on `currentPath`: exact match for `/account`, prefix match for sub-routes like `/account/orders`.
-- No dropdown toggle, click-outside listener, or login form.
-
-### Hydration
-
-Uses an internal mounted guard to prevent server/client rendering mismatches when user data comes from `localStorage`. User-dependent content (name, auth state) only renders after the component has mounted on the client.
-

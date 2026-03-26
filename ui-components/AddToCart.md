@@ -1,10 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # AddToCart
 
 A self-contained component that renders a quantity selector and an **Add** button for adding products to a Propeller Commerce cart. It handles cart resolution (existing cart lookup or new cart creation), optional stock validation, and user feedback via a toast notification or a confirmation modal.
 
----
-
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Simple product
 
@@ -153,9 +157,92 @@ Bypass the internal `CartService` call entirely by providing `onAddToCart`. You 
 />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+If you need full control over the add-to-cart flow without using this component, here is a standalone implementation using `CartService` directly:
+
+```tsx
+import { CartService, GraphQLClient, Product, Cart } from 'propeller-sdk-v2';
+
+async function addProductToCart(
+  graphqlClient: GraphQLClient,
+  cartId: string,
+  product: Product,
+  quantity: number,
+  options?: {
+    clusterId?: number;
+    childItems?: { productId: number; quantity: number }[];
+    notes?: string;
+    price?: number;
+    language?: string;
+  }
+): Promise<Cart> {
+  const cartService = new CartService(graphqlClient);
+
+  const cart = await cartService.addItemToCart({
+    id: cartId,
+    input: {
+      productId: product.productId,
+      quantity,
+      ...(options?.clusterId !== undefined && { clusterId: options.clusterId }),
+      ...(options?.childItems && { childItems: options.childItems }),
+      ...(options?.notes && { notes: options.notes }),
+      ...(options?.price !== undefined && { price: options.price }),
+    },
+    language: options?.language || 'NL',
+    // Include image filters so the returned cart has product images
+    imageSearchFilters: { type: ['default'] },
+    imageVariantFilters: {
+      transformations: [{ name: 'w', value: '200' }, { name: 'h', value: '200' }],
+    },
+  });
+
+  return cart;
+}
+
+// Usage:
+const updatedCart = await addProductToCart(graphqlClient, 'cart-abc-123', product, 2);
+```
+
+To also create a cart from scratch:
+
+```tsx
+import { CartService, CartStartInput, CartStartVariables } from 'propeller-sdk-v2';
+
+async function createCart(
+  graphqlClient: GraphQLClient,
+  userId: { contactId?: number; companyId?: number; customerId?: number }
+): Promise<Cart> {
+  const cartService = new CartService(graphqlClient);
+
+  const input: CartStartInput = {
+    language: 'NL',
+    ...(userId.contactId && { contactId: userId.contactId }),
+    ...(userId.companyId && { companyId: userId.companyId }),
+    ...(userId.customerId && { customerId: userId.customerId }),
+  };
+
+  const vars: CartStartVariables = {
+    input,
+    language: 'NL',
+    imageSearchFilters: { type: ['default'] },
+    imageVariantFilters: {
+      transformations: [{ name: 'w', value: '200' }, { name: 'h', value: '200' }],
+    },
+  };
+
+  return await cartService.startCart(vars);
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required
 
@@ -208,9 +295,69 @@ Bypass the internal `CartService` call entirely by providing `onAddToCart`. You 
 | `className` | `string` | -- | CSS class applied to the root `<div>` |
 | `labels` | `Record<string, string>` | -- | Override any UI string. See Labels table below |
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function addProductToCart(
+  graphqlClient: GraphQLClient,
+  cartId: string,
+  product: Product,
+  quantity: number,
+  options?: {
+    clusterId?: number;
+    childItems?: { productId: number; quantity: number }[];
+    notes?: string;
+    price?: number;
+    language?: string;
+  }
+): Promise<Cart>
+```
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `cartId` | `string` | *required* | `id` in `CartService.addItemToCart()` |
+| `product.productId` | `number` | *required* | `input.productId` |
+| `quantity` | `number` | *required* | `input.quantity` |
+| `clusterId` | `number` | -- | `input.clusterId` |
+| `childItems` | `{ productId: number; quantity: number }[]` | -- | `input.childItems` |
+| `notes` | `string` | -- | `input.notes` |
+| `price` | `number` | -- | `input.price` |
+| `language` | `string` | `'NL'` | `language` param on all CartService operations |
+
+### Cart resolution
+
+When no cart ID is available:
+
+1. Call `CartService.getCarts()` to find existing carts for the user (by `contactId`/`companyId` for B2B or `customerId` for B2C).
+2. If found, adopt the most recent one.
+3. If not found, call `CartService.startCart()` with a `CartStartInput` containing the user IDs and language.
+4. After creating a new cart, assign default invoice and delivery addresses from the user's address book via `CartService.updateCartAddress`.
+
+### Callbacks table
+
+| Callback | Purpose |
+|---|---|
+| `onCartCreated` | Persist the new cart in your app state after automatic cart creation |
+| `afterAddToCart` | Sync the updated cart to your app state after a successful add |
+| `onProceedToCheckout` | Navigate to checkout from the confirmation modal |
+| `beforeAddToCart` | Gate the add operation (return `false` to abort) |
+
+### UI-only props (no SDK equivalent)
+
+The following props control visual presentation only and have no SDK counterpart: `allowIncrDecr`, `showModal`, `className`, `labels`.
+
+  </TabItem>
+</Tabs>
 
 ## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Shown when |
 |---|---|---|
@@ -225,23 +372,76 @@ Bypass the internal `CartService` call entirely by providing `onAddToCart`. You 
 | `continueShopping` | `'Continue shopping'` | Left modal button |
 | `proceedToCheckout` | `'Proceed to checkout'` | Right modal button |
 
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  add: 'Add',
+  adding: 'Adding...',
+  addedToCart: 'added to cart',
+  outOfStock: 'Insufficient stock available',
+  noCartId: 'No cart ID provided',
+  errorAdding: 'Failed to add item to cart',
+  modalTitle: 'Added to cart',
+  quantity: 'Quantity',
+  continueShopping: 'Continue shopping',
+  proceedToCheckout: 'Proceed to checkout',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
 ---
 
-## SDK Services
+## Behavior
 
-The component uses the following services from `propeller-sdk-v2`:
+### Quantity rules
 
-| Service | Methods used | Purpose |
-|---|---|---|
-| `CartService` | `addItemToCart` | Adds the product (with optional cluster, child items, notes, price) to the cart |
-| `CartService` | `getCarts` | Finds existing carts for the user when `createCart` is enabled |
-| `CartService` | `startCart` | Creates a new cart when no existing cart is found |
-| `CartService` | `getCart` | Fetches full cart data after finding an existing cart |
-| `CartService` | `updateCartAddress` | Assigns default invoice and delivery addresses from the user's address book to a newly created cart |
+The component reads two properties from the `product` object to control quantity behavior:
 
-All SDK types used: `GraphQLClient`, `Product`, `Cart`, `Cluster`, `Contact`, `Customer`, `CartService`, `CartChildItemInput`, `CartSearchInput`, `CartStartInput`, `CartStartVariables`, `CartMainItem`, `CartBaseItem`, `Address`, `Enums`.
+- **`product.minimumQuantity`** -- The lowest allowed quantity. The quantity input initializes to this value on mount. If not set or zero, defaults to `1`.
+- **`product.unit`** -- The step increment for the `+`/`-` buttons. For example, a `unit` of `6` means quantity moves in steps of 6. If not set or zero, defaults to `1`.
 
----
+When the user types a value manually, the component snaps it to the nearest valid step: `Math.round((value - min) / step) * step + min`.
+
+### Cart ID resolution
+
+When `onAddToCart` is not provided, the component resolves the cart ID in this order:
+
+1. Uses `props.cartId` if present.
+2. Falls back to an internally cached `activeCartId` (set by a previous `initCart` call in the same session).
+3. If neither exists and `createCart` is `true`:
+   - Calls `CartService.getCarts()` to find existing carts for the user (by `contactId`/`companyId` for B2B or `customerId` for B2C).
+   - If found, adopts the most recent one and fires `onCartCreated`.
+   - If not found, calls `CartService.startCart()`, assigns default invoice and delivery addresses from the user's address book, then fires `onCartCreated`.
+4. If still no cart ID, shows the `noCartId` error toast.
+
+### New cart address assignment
+
+When a new cart is created, the component automatically finds the user's default invoice and delivery addresses (where `isDefault === 'Y'`) and assigns them via `CartService.updateCartAddress`. For B2B (Contact) users, addresses come from `user.company.addresses`; for B2C (Customer) users, from `user.addresses`.
+
+### Toast notifications
+
+- Position: fixed, top-right corner (`top-4 right-4`).
+- Auto-dismisses after 3 seconds; can be closed immediately with the dismiss button.
+- Green for success, red for errors.
+- Suppressed on success when `showModal` is `true` (the modal takes over). Error toasts still appear.
+
+### Modal confirmation (`showModal: true`)
+
+- A backdrop overlay covers the page; clicking it closes the modal.
+- The modal panel displays: product image, product name (linked to the product page), SKU, quantity, price, and any cluster child items with their names and prices.
+- Two action buttons: "Continue shopping" (closes modal) and "Proceed to checkout" (closes modal and fires `onProceedToCheckout`).
+
+### Stock validation (`enableStockValidation: true`)
+
+- Reads `product.inventory.totalQuantity` before adding.
+- Blocks the add and shows the `outOfStock` toast if the requested quantity exceeds available stock.
+- No additional API call is made; it relies on the `inventory` field already present on the `Product` object.
 
 ## GraphQL Mutation
 
@@ -319,130 +519,16 @@ Variables for a cluster product with child options:
 }
 ```
 
----
+## SDK Services
 
-## Behavior
+The component uses the following services from `propeller-sdk-v2`:
 
-### Quantity rules
+| Service | Methods used | Purpose |
+|---|---|---|
+| `CartService` | `addItemToCart` | Adds the product (with optional cluster, child items, notes, price) to the cart |
+| `CartService` | `getCarts` | Finds existing carts for the user when `createCart` is enabled |
+| `CartService` | `startCart` | Creates a new cart when no existing cart is found |
+| `CartService` | `getCart` | Fetches full cart data after finding an existing cart |
+| `CartService` | `updateCartAddress` | Assigns default invoice and delivery addresses from the user's address book to a newly created cart |
 
-The component reads two properties from the `product` object to control quantity behavior:
-
-- **`product.minimumQuantity`** -- The lowest allowed quantity. The quantity input initializes to this value on mount. If not set or zero, defaults to `1`.
-- **`product.unit`** -- The step increment for the `+`/`-` buttons. For example, a `unit` of `6` means quantity moves in steps of 6. If not set or zero, defaults to `1`.
-
-When the user types a value manually, the component snaps it to the nearest valid step: `Math.round((value - min) / step) * step + min`.
-
-### Cart ID resolution
-
-When `onAddToCart` is not provided, the component resolves the cart ID in this order:
-
-1. Uses `props.cartId` if present.
-2. Falls back to an internally cached `activeCartId` (set by a previous `initCart` call in the same session).
-3. If neither exists and `createCart` is `true`:
-   - Calls `CartService.getCarts()` to find existing carts for the user (by `contactId`/`companyId` for B2B or `customerId` for B2C).
-   - If found, adopts the most recent one and fires `onCartCreated`.
-   - If not found, calls `CartService.startCart()`, assigns default invoice and delivery addresses from the user's address book, then fires `onCartCreated`.
-4. If still no cart ID, shows the `noCartId` error toast.
-
-### New cart address assignment
-
-When a new cart is created, the component automatically finds the user's default invoice and delivery addresses (where `isDefault === 'Y'`) and assigns them via `CartService.updateCartAddress`. For B2B (Contact) users, addresses come from `user.company.addresses`; for B2C (Customer) users, from `user.addresses`.
-
-### Toast notifications
-
-- Position: fixed, top-right corner (`top-4 right-4`).
-- Auto-dismisses after 3 seconds; can be closed immediately with the dismiss button.
-- Green for success, red for errors.
-- Suppressed on success when `showModal` is `true` (the modal takes over). Error toasts still appear.
-
-### Modal confirmation (`showModal: true`)
-
-- A backdrop overlay covers the page; clicking it closes the modal.
-- The modal panel displays: product image, product name (linked to the product page), SKU, quantity, price, and any cluster child items with their names and prices.
-- Two action buttons: "Continue shopping" (closes modal) and "Proceed to checkout" (closes modal and fires `onProceedToCheckout`).
-
-### Stock validation (`enableStockValidation: true`)
-
-- Reads `product.inventory.totalQuantity` before adding.
-- Blocks the add and shows the `outOfStock` toast if the requested quantity exceeds available stock.
-- No additional API call is made; it relies on the `inventory` field already present on the `Product` object.
-
----
-
-## Building Your Own
-
-If you need full control over the add-to-cart flow without using this component, here is a standalone implementation using `CartService` directly:
-
-```tsx
-import { CartService, GraphQLClient, Product, Cart } from 'propeller-sdk-v2';
-
-async function addProductToCart(
-  graphqlClient: GraphQLClient,
-  cartId: string,
-  product: Product,
-  quantity: number,
-  options?: {
-    clusterId?: number;
-    childItems?: { productId: number; quantity: number }[];
-    notes?: string;
-    price?: number;
-    language?: string;
-  }
-): Promise<Cart> {
-  const cartService = new CartService(graphqlClient);
-
-  const cart = await cartService.addItemToCart({
-    id: cartId,
-    input: {
-      productId: product.productId,
-      quantity,
-      ...(options?.clusterId !== undefined && { clusterId: options.clusterId }),
-      ...(options?.childItems && { childItems: options.childItems }),
-      ...(options?.notes && { notes: options.notes }),
-      ...(options?.price !== undefined && { price: options.price }),
-    },
-    language: options?.language || 'NL',
-    // Include image filters so the returned cart has product images
-    imageSearchFilters: { type: ['default'] },
-    imageVariantFilters: {
-      transformations: [{ name: 'w', value: '200' }, { name: 'h', value: '200' }],
-    },
-  });
-
-  return cart;
-}
-
-// Usage:
-const updatedCart = await addProductToCart(graphqlClient, 'cart-abc-123', product, 2);
-```
-
-To also create a cart from scratch:
-
-```tsx
-import { CartService, CartStartInput, CartStartVariables } from 'propeller-sdk-v2';
-
-async function createCart(
-  graphqlClient: GraphQLClient,
-  userId: { contactId?: number; companyId?: number; customerId?: number }
-): Promise<Cart> {
-  const cartService = new CartService(graphqlClient);
-
-  const input: CartStartInput = {
-    language: 'NL',
-    ...(userId.contactId && { contactId: userId.contactId }),
-    ...(userId.companyId && { companyId: userId.companyId }),
-    ...(userId.customerId && { customerId: userId.customerId }),
-  };
-
-  const vars: CartStartVariables = {
-    input,
-    language: 'NL',
-    imageSearchFilters: { type: ['default'] },
-    imageVariantFilters: {
-      transformations: [{ name: 'w', value: '200' }, { name: 'h', value: '200' }],
-    },
-  };
-
-  return await cartService.startCart(vars);
-}
-```
+All SDK types used: `GraphQLClient`, `Product`, `Cart`, `Cluster`, `Contact`, `Customer`, `CartService`, `CartChildItemInput`, `CartSearchInput`, `CartStartInput`, `CartStartVariables`, `CartMainItem`, `CartBaseItem`, `Address`, `Enums`.

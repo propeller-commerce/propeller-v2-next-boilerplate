@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # UserDetails
 
-The UserDetails component displays key information about the currently logged-in user. It supports both **Contact** (B2B) and **Customer** (B2C) user types from the Propeller e-commerce platform, and can present personal details, company information, associated companies, and default addresses.
+Displays key information about the currently logged-in user. Supports both **Contact** (B2B) and **Customer** (B2C) user types from the Propeller e-commerce platform, and can present personal details, company information, associated companies, and default addresses.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### B2B Contact user with company info and addresses
 
@@ -82,7 +88,85 @@ Hide all address and company sections:
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+If you need a custom user details display, here are the data access patterns you need.
+
+### Accessing user data
+
+```ts
+import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
+
+// The user object comes from UserService.getViewer({}) or your auth state
+// pseudo-code: obtain `user` (Contact | Customer) and `activeCompany` (Company | null) from your app state
+
+// Determine user type
+const isContact = user !== null && 'company' in user;
+
+// Build display name
+const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
+// Email: user.email
+```
+
+### Resolving addresses
+
+```ts
+// Contact addresses come from the active company; Customer addresses are on the user directly
+const addresses: Address[] = isContact
+  ? (activeCompany?.addresses || [])
+  : ((user as Customer).addresses || []);
+
+// Find default addresses by type and isDefault flag
+const defaultInvoiceAddress = addresses.find(
+  (addr) => addr.type === 'invoice' && addr.isDefault === 'Y'
+) ?? null;
+
+const defaultDeliveryAddress = addresses.find(
+  (addr) => addr.type === 'delivery' && addr.isDefault === 'Y'
+) ?? null;
+```
+
+### Resolving company data (B2B Contact only)
+
+```ts
+// Active company fields: activeCompany.name, activeCompany.taxNumber, activeCompany.cocNumber
+
+// All associated companies:
+const contact = user as Contact;
+const companies = contact.companies?.items?.length > 0
+  ? contact.companies.items
+  : contact.company
+    ? [contact.company]
+    : [];
+// Mark the active company by comparing company.companyId === activeCompany?.companyId
+```
+
+### Field mapping summary
+
+| Display section | Data source |
+|---|---|
+| Personal info (name, email) | `user.firstName`, `user.lastName`, `user.email` |
+| Company info | `activeCompany.name`, `activeCompany.taxNumber`, `activeCompany.cocNumber` |
+| Companies list | `contact.companies.items[]` |
+| Invoice address | `addresses.find(a => a.type === 'invoice' && a.isDefault === 'Y')` |
+| Delivery address | `addresses.find(a => a.type === 'delivery' && a.isDefault === 'Y')` |
+
+Key points for a custom implementation:
+
+- **User type check**: Use `'company' in user` to distinguish Contact from Customer.
+- **Address source**: Contact addresses come from the active company; Customer addresses are on the user directly.
+- **Default address filter**: Match on `type === 'invoice'|'delivery'` and `isDefault === 'Y'`.
+- **Company switching**: Read the active company from `localStorage` (key: `selected_company`) and listen for the `companySwitched` custom event on `window` to react to changes.
+- **Hydration safety**: Wrap client-only content in a mounted guard to avoid server/client mismatches.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required
 
@@ -105,6 +189,42 @@ Hide all address and company sections:
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `countries` | `{ code: string; name: string }[]` | `[]` | Country code-to-name mapping for displaying full country names in addresses. If omitted, raw ISO codes are shown. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function renderUserDetails(options: {
+  user: Contact | Customer;
+  activeCompany: Company | null;
+}): void
+```
+
+Types from `propeller-sdk-v2`: `Contact`, `Customer`, `Company`, `Address`.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `user` | `Contact \| Customer` | *required* | `user` prop — the logged-in user object |
+| `activeCompany` | `Company \| null` | *required* | `activeCompany` prop — currently selected company |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `showCompanyInfo` — toggle company information card visibility
+- `listAllContactCompanies` — toggle all-companies list visibility
+- `showDefaultInvoiceAddress` — toggle invoice address display
+- `showDefaultDeliveryAddress` — toggle delivery address display
+- `countries` — country code-to-name mapping for address display
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -149,6 +269,8 @@ The company switching flow:
 
 The component uses a mounted guard (`isMounted` state set via `useEffect`) to prevent hydration mismatches. All content is rendered only after the component has mounted on the client, avoiding server/client divergence for data sourced from localStorage or context.
 
+---
+
 ## SDK Services
 
 This component is a **display-only** component. It does not call any SDK services internally -- it receives all data via props. The parent page is responsible for fetching the user and company data.
@@ -177,6 +299,8 @@ import { useCompany } from '@/context/CompanyContext';
 const { selectedCompany } = useCompany();
 // selectedCompany is Company | null
 ```
+
+---
 
 ## GraphQL Queries
 
@@ -261,74 +385,3 @@ query {
   }
 }
 ```
-
-## Building Your Own
-
-If you need a custom user details display, here are the data access patterns you need:
-
-### Accessing user data
-
-```ts
-import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
-
-// The user object comes from UserService.getViewer({}) or your auth state
-// pseudo-code: obtain `user` (Contact | Customer) and `activeCompany` (Company | null) from your app state
-
-// Determine user type
-const isContact = user !== null && 'company' in user;
-
-// Build display name
-const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
-// Email: user.email
-```
-
-### Resolving addresses
-
-```ts
-// Contact addresses come from the active company; Customer addresses are on the user directly
-const addresses: Address[] = isContact
-  ? (activeCompany?.addresses || [])
-  : ((user as Customer).addresses || []);
-
-// Find default addresses by type and isDefault flag
-const defaultInvoiceAddress = addresses.find(
-  (addr) => addr.type === 'invoice' && addr.isDefault === 'Y'
-) ?? null;
-
-const defaultDeliveryAddress = addresses.find(
-  (addr) => addr.type === 'delivery' && addr.isDefault === 'Y'
-) ?? null;
-```
-
-### Resolving company data (B2B Contact only)
-
-```ts
-// Active company fields: activeCompany.name, activeCompany.taxNumber, activeCompany.cocNumber
-
-// All associated companies:
-const contact = user as Contact;
-const companies = contact.companies?.items?.length > 0
-  ? contact.companies.items
-  : contact.company
-    ? [contact.company]
-    : [];
-// Mark the active company by comparing company.companyId === activeCompany?.companyId
-```
-
-### Field mapping summary
-
-| Display section | Data source |
-|---|---|
-| Personal info (name, email) | `user.firstName`, `user.lastName`, `user.email` |
-| Company info | `activeCompany.name`, `activeCompany.taxNumber`, `activeCompany.cocNumber` |
-| Companies list | `contact.companies.items[]` |
-| Invoice address | `addresses.find(a => a.type === 'invoice' && a.isDefault === 'Y')` |
-| Delivery address | `addresses.find(a => a.type === 'delivery' && a.isDefault === 'Y')` |
-
-Key points for a custom implementation:
-
-- **User type check**: Use `'company' in user` to distinguish Contact from Customer.
-- **Address source**: Contact addresses come from the active company; Customer addresses are on the user directly.
-- **Default address filter**: Match on `type === 'invoice'|'delivery'` and `isDefault === 'Y'`.
-- **Company switching**: Read the active company from `localStorage` (key: `selected_company`) and listen for the `companySwitched` custom event on `window` to react to changes.
-- **Hydration safety**: Wrap client-only content in a mounted guard to avoid server/client mismatches.

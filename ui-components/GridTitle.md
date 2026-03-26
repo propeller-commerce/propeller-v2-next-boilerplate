@@ -1,10 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # GridTitle
 
 Renders the main heading for product grid pages -- category listings, search results, brand pages, or any context where a prominent title is needed above a product grid.
 
----
-
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic category page
 
@@ -59,50 +63,8 @@ Use `headingLevel="h2"` when the grid is embedded inside a page that already own
 </div>
 ```
 
----
-
-## Props
-
-### Content
-
-| Prop       | Type     | Required | Default | Description                                                              |
-| ---------- | -------- | -------- | ------- | ------------------------------------------------------------------------ |
-| `title`    | `string` | Yes      | --      | The heading text. Typically a category name, search term, or brand name. |
-| `language` | `string` | Yes      | --      | Language code for the content (e.g. `'NL'`, `'EN'`).                    |
-
-### Appearance
-
-| Prop           | Type     | Required | Default | Description                                                                 |
-| -------------- | -------- | -------- | ------- | --------------------------------------------------------------------------- |
-| `headingLevel` | `string` | No       | `'h1'`  | HTML heading level. Set to `'h2'` when the page already has its own `h1`.   |
-| `className`    | `string` | No       | --      | Additional CSS class(es) applied to the root `<div>` wrapper.               |
-
----
-
-## SDK Services
-
-GridTitle is a **presentational component** -- it does not call any SDK service directly. The parent page is responsible for fetching category data and passing the title string.
-
-When used on a category page, the title typically comes from a `Category` object returned by `CategoryService.getCategory()`. The relevant field is:
-
-| Category field | Type                          | Usage                                         |
-| -------------- | ----------------------------- | --------------------------------------------- |
-| `name`         | `LocalizedString[]` (array)   | `category.name[0]?.value` provides the title. |
-
-For search pages, the title is constructed from the user's search query string rather than an SDK field.
-
----
-
-## Behavior
-
-- Renders an `<h1>` tag by default. When `headingLevel` is set to `'h2'`, it renders an `<h2>` instead. All other `headingLevel` values fall through to the `h1` default.
-- The heading uses responsive font sizing: `text-3xl` on small screens, `text-4xl` on `sm:` breakpoint and above, with `font-bold` and `tracking-tight`.
-- The root element applies `mb-8` bottom margin for spacing above the next grid section.
-- Fully stateless -- no internal state, no side effects, no API calls. It re-renders only when props change.
-
----
-
-## Building Your Own
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
 GridTitle is intentionally minimal. To extend or replace it:
 
@@ -122,3 +84,72 @@ GridTitle is intentionally minimal. To extend or replace it:
 4. **Integrate a subtitle or description** -- Add an optional `subtitle` prop and render it below the heading. For category descriptions, consider using the separate `CategoryDescription` component instead to keep concerns separated.
 
 Keep the component stateless and free of data-fetching logic. Let the parent page handle SDK calls and pass resolved strings as props.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+### Content
+
+| Prop       | Type     | Required | Default | Description                                                              |
+| ---------- | -------- | -------- | ------- | ------------------------------------------------------------------------ |
+| `title`    | `string` | Yes      | --      | The heading text. Typically a category name, search term, or brand name. |
+| `language` | `string` | Yes      | --      | Language code for the content (e.g. `'NL'`, `'EN'`).                    |
+
+### Appearance
+
+| Prop           | Type     | Required | Default | Description                                                                 |
+| -------------- | -------- | -------- | ------- | --------------------------------------------------------------------------- |
+| `headingLevel` | `string` | No       | `'h1'`  | HTML heading level. Set to `'h2'` when the page already has its own `h1`.   |
+| `className`    | `string` | No       | --      | Additional CSS class(es) applied to the root `<div>` wrapper.               |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function gridTitle(options: GridTitleOptions): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `title` | `string` | (required) | `title` prop |
+| `language` | `string` | (required) | `language` prop |
+| `headingLevel` | `string` | `'h1'` | `headingLevel` prop |
+
+### UI-only props
+
+The following props are UI-specific and do not apply when building your own:
+
+- `className` -- CSS class on root element
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+- Renders an `<h1>` tag by default. When `headingLevel` is set to `'h2'`, it renders an `<h2>` instead. All other `headingLevel` values fall through to the `h1` default.
+- The heading uses responsive font sizing: `text-3xl` on small screens, `text-4xl` on `sm:` breakpoint and above, with `font-bold` and `tracking-tight`.
+- The root element applies `mb-8` bottom margin for spacing above the next grid section.
+- Fully stateless -- no internal state, no side effects, no API calls. It re-renders only when props change.
+
+## SDK Services
+
+GridTitle is a **presentational component** -- it does not call any SDK service directly. The parent page is responsible for fetching category data and passing the title string.
+
+When used on a category page, the title typically comes from a `Category` object returned by `CategoryService.getCategory()`. The relevant field is:
+
+| Category field | Type                          | Usage                                         |
+| -------------- | ----------------------------- | --------------------------------------------- |
+| `name`         | `LocalizedString[]` (array)   | `category.name[0]?.value` provides the title. |
+
+For search pages, the title is constructed from the user's search query string rather than an SDK field.

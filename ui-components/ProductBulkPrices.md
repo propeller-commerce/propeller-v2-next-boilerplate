@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductBulkPrices
 
 Displays volume/tiered pricing for a product in a table format, showing quantity ranges alongside their corresponding unit prices.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Minimal
 
@@ -56,7 +62,28 @@ Displays volume/tiered pricing for a product in a table format, showing quantity
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To build a custom bulk-prices display:
+
+1. **Obtain bulk prices** -- they live on `product.bulkPrices` (an array of `ProductPrice` objects) returned by `ProductService.getProduct()`. Include `userBulkPriceProductInput` for user-specific tiers.
+
+2. **Choose the price field** -- use `tier.net` for VAT-inclusive prices and `tier.gross` for VAT-exclusive prices. To support the global PriceToggle, read `localStorage.getItem('price_include_tax')` and listen for `priceToggleChanged` events.
+
+3. **Compute quantity ranges** -- iterate over the sorted tiers. For each tier, read `tier.discount?.quantityFrom` (or fall back to `tier.quantity`). The upper bound of a range is one less than the next tier's threshold. The final tier has no upper bound.
+
+4. **Handle empty state** -- if the array is empty or absent, render nothing.
+
+5. **Handle semi-closed portal** -- if your store uses `portalMode: 'semi-closed'`, check for an authenticated `user` before rendering pricing.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required
 
@@ -82,10 +109,39 @@ Displays volume/tiered pricing for a product in a table format, showing quantity
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| labels | `Record<string, string>` | `{}` | Override any UI string (see table below) |
+| labels | `Record<string, string>` | `{}` | Override any UI string (see Labels section below) |
 | className | `string` | `''` | Extra CSS class applied to the root element |
 
-### Label keys
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function renderBulkPrices(bulkPrices: ProductPrice[], options?: BulkPriceOptions): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `bulkPrices` | `ProductPrice[]` | — | `bulkPrices` prop |
+| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `taxZone` | `string` | `'NL'` | `taxZone` prop |
+| `portalMode` | `string` | `'open'` | `portalMode` prop |
+| `user` | `Contact \| Customer \| null` | `null` | `user` prop |
+
+### UI-only props
+
+The following props are purely visual and have no SDK equivalent: `labels`, `className`.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Description |
 |-----|---------|-------------|
@@ -94,6 +150,56 @@ Displays volume/tiered pricing for a product in a table format, showing quantity
 | `price` | `Price` | Column header for the unit price |
 | `inclTax` | `incl. VAT` | Annotation shown when prices include tax |
 | `exclTax` | `excl. VAT` | Annotation shown when prices exclude tax |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  title: 'Volume pricing',
+  quantityFrom: 'Qty from',
+  price: 'Price',
+  inclTax: 'incl. VAT',
+  exclTax: 'excl. VAT',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+### Price toggle (VAT switch)
+
+The component integrates with the global PriceToggle mechanism:
+
+- On mount it reads `localStorage.getItem('price_include_tax')` to determine the initial VAT mode (default: `true`, meaning prices include VAT).
+- It listens for the `priceToggleChanged` custom event. When the user flips the toggle elsewhere on the page, this component re-renders with the updated mode.
+- The `includeTax` prop, when explicitly passed, takes precedence over the localStorage / event-driven value.
+- The price column header dynamically shows "(incl. VAT)" or "(excl. VAT)" to reflect the active mode.
+
+### Tier pricing display
+
+Quantity ranges are computed automatically from adjacent tiers using `discount.quantityFrom` (falling back to `tier.quantity`):
+
+| Tiers (quantityFrom) | Displayed ranges |
+|-----------------------|------------------|
+| 10, 100 | `10--99`, `100+` |
+| 1, 5, 25 | `1--4`, `5--24`, `25+` |
+| 50 (single tier) | `50+` |
+
+Each tier's upper bound is one less than the next tier's `quantityFrom`. The last tier always displays with a `+` suffix.
+
+Prices are formatted as EUR with two decimal places (e.g., `EUR 12.50`).
+
+### Visibility rules
+
+- **No bulk prices**: The component renders nothing.
+- **Semi-closed portal + no user**: The component is hidden. Pass a `user` object to make it visible.
 
 ## SDK Services
 
@@ -126,47 +232,3 @@ service.getProduct({
 ```
 
 Without `userBulkPriceProductInput`, the API returns default quantity values (typically `1` for every tier).
-
-## Behavior
-
-### Price toggle (VAT switch)
-
-The component integrates with the global PriceToggle mechanism:
-
-- On mount it reads `localStorage.getItem('price_include_tax')` to determine the initial VAT mode (default: `true`, meaning prices include VAT).
-- It listens for the `priceToggleChanged` custom event. When the user flips the toggle elsewhere on the page, this component re-renders with the updated mode.
-- The `includeTax` prop, when explicitly passed, takes precedence over the localStorage / event-driven value.
-- The price column header dynamically shows "(incl. VAT)" or "(excl. VAT)" to reflect the active mode.
-
-### Tier pricing display
-
-Quantity ranges are computed automatically from adjacent tiers using `discount.quantityFrom` (falling back to `tier.quantity`):
-
-| Tiers (quantityFrom) | Displayed ranges |
-|-----------------------|------------------|
-| 10, 100 | `10--99`, `100+` |
-| 1, 5, 25 | `1--4`, `5--24`, `25+` |
-| 50 (single tier) | `50+` |
-
-Each tier's upper bound is one less than the next tier's `quantityFrom`. The last tier always displays with a `+` suffix.
-
-Prices are formatted as EUR with two decimal places (e.g., `EUR 12.50`).
-
-### Visibility rules
-
-- **No bulk prices**: The component renders nothing.
-- **Semi-closed portal + no user**: The component is hidden. Pass a `user` object to make it visible.
-
-## Building Your Own
-
-To build a custom bulk-prices display:
-
-1. **Obtain bulk prices** -- they live on `product.bulkPrices` (an array of `ProductPrice` objects) returned by `ProductService.getProduct()`. Include `userBulkPriceProductInput` for user-specific tiers.
-
-2. **Choose the price field** -- use `tier.net` for VAT-inclusive prices and `tier.gross` for VAT-exclusive prices. To support the global PriceToggle, read `localStorage.getItem('price_include_tax')` and listen for `priceToggleChanged` events.
-
-3. **Compute quantity ranges** -- iterate over the sorted tiers. For each tier, read `tier.discount?.quantityFrom` (or fall back to `tier.quantity`). The upper bound of a range is one less than the next tier's threshold. The final tier has no upper bound.
-
-4. **Handle empty state** -- if the array is empty or absent, render nothing.
-
-5. **Handle semi-closed portal** -- if your store uses `portalMode: 'semi-closed'`, check for an authenticated `user` before rendering pricing.

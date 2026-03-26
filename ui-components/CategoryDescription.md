@@ -1,10 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # CategoryDescription
 
 Renders a category's full description with optional "Read more" / "Read less" truncation. Resolves the correct language entry from the Propeller `Category` object and renders it as HTML.
 
----
-
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic
 
@@ -57,9 +61,38 @@ The description is truncated at word boundaries after 200 characters and a **Rea
 <CategoryDescription category={category} language="NL" maxLength={300} />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+To create a custom category description component:
+
+1. Fetch the `Category` object with the `description` field included (see the GraphQL query below)
+2. Resolve the correct language entry from `category.description` by matching the `language` field
+3. Render the `value` as HTML (it may contain rich formatting from the Propeller backend)
+4. If you need truncation, strip HTML tags first to measure true text length, then truncate at a word boundary to avoid cutting words in half
+5. Use `dangerouslySetInnerHTML` (React) or `v-html` (Vue) to render the HTML content
+
+```tsx
+function SimpleDescription({ category, language }: { category: Category; language: string }) {
+  const match = category.description?.find((d) => d.language === language);
+  if (!match?.value) return null;
+
+  return (
+    <div
+      className="prose max-w-none"
+      dangerouslySetInnerHTML={{ __html: match.value }}
+    />
+  );
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data
 
@@ -81,41 +114,36 @@ The description is truncated at word boundaries after 200 characters and a **Rea
 | ----------- | -------- | -------- | ------- | --------------------------------------- |
 | `className` | `string` | No       | —       | Extra CSS class applied to the root div |
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## SDK Services
+### Function signature
 
-This component does not call any SDK service directly. It expects a `Category` object to be passed via props (typically fetched by `CategoryService.getCategory()` or a direct GraphQL query).
+```ts
+function categoryDescription(category: Category, language: string): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `category` | `Category` | `undefined` | `category` prop |
+| `language` | `string` | — | `language` prop |
+| `collapsed` | `boolean` | `true` | `collapsed` prop |
+| `maxLength` | `number` | `200` | `maxLength` prop |
 
 ### Category fields read
 
 | Field         | SDK Type                   | Description                                                  |
 | ------------- | -------------------------- | ------------------------------------------------------------ |
-| `description` | `LocalizedString[]`        | Array of `{ language: string; value: string }` entries. The component finds the entry matching the `language` prop and renders its `value` as HTML |
+| `description` | `LocalizedString[]`        | Array of `{ language: string; value: string }` entries. Find the entry matching the `language` parameter and render its `value` as HTML |
 
----
+### UI-only props
 
-## GraphQL Query Example
+The following props only affect visual presentation and have no BYO equivalent: `className`.
 
-When fetching a category, include the `description` field to supply this component with data:
-
-```graphql
-query GetCategory($categoryId: Int!, $language: String) {
-  category(id: $categoryId) {
-    categoryId
-    name(language: $language) {
-      language
-      value
-    }
-    description(language: $language) {
-      language
-      value
-    }
-  }
-}
-```
-
-The returned `description` array is passed directly as `category.description`.
+  </TabItem>
+</Tabs>
 
 ---
 
@@ -143,28 +171,34 @@ When the description is empty (no `category` prop, no matching language entry, o
 - Full description: `prose prose-slate max-w-none text-muted-foreground`
 - Toggle button: `text-sm font-medium text-primary hover:underline`
 
----
+## SDK Services
 
-## Building Your Own
+This component does not call any SDK service directly. It expects a `Category` object to be passed via props (typically fetched by `CategoryService.getCategory()` or a direct GraphQL query).
 
-To create a custom category description component:
+### Category fields read
 
-1. Fetch the `Category` object with the `description` field included (see the GraphQL query above)
-2. Resolve the correct language entry from `category.description` by matching the `language` field
-3. Render the `value` as HTML (it may contain rich formatting from the Propeller backend)
-4. If you need truncation, strip HTML tags first to measure true text length, then truncate at a word boundary to avoid cutting words in half
-5. Use `dangerouslySetInnerHTML` (React) or `v-html` (Vue) to render the HTML content
+| Field         | SDK Type                   | Description                                                  |
+| ------------- | -------------------------- | ------------------------------------------------------------ |
+| `description` | `LocalizedString[]`        | Array of `{ language: string; value: string }` entries. The component finds the entry matching the `language` prop and renders its `value` as HTML |
 
-```tsx
-function SimpleDescription({ category, language }: { category: Category; language: string }) {
-  const match = category.description?.find((d) => d.language === language);
-  if (!match?.value) return null;
+## GraphQL Queries and Mutations
 
-  return (
-    <div
-      className="prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: match.value }}
-    />
-  );
+When fetching a category, include the `description` field to supply this component with data:
+
+```graphql
+query GetCategory($categoryId: Int!, $language: String) {
+  category(id: $categoryId) {
+    categoryId
+    name(language: $language) {
+      language
+      value
+    }
+    description(language: $language) {
+      language
+      value
+    }
+  }
 }
 ```
+
+The returned `description` array is passed directly as `category.description`.

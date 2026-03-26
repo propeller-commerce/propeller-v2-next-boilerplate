@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductSpecifications
 
 Renders product attributes/specifications as a table or stacked list, with optional grouping by attribute group. The component can fetch attributes autonomously via the SDK or accept pre-fetched data.
@@ -5,6 +8,9 @@ Renders product attributes/specifications as a table or stacked list, with optio
 ---
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Self-contained: fetch by product ID
 
@@ -74,154 +80,8 @@ import ProductSpecifications from '@/components/propeller/ProductSpecifications'
 />
 ```
 
----
-
-## Props
-
-### Data
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `graphqlClient` | `GraphQLClient` | `undefined` | Initialized Propeller SDK client. Required when `productId` is set. |
-| `productId` | `number` | `undefined` | Product ID to fetch attributes for. When set, the component fetches its own data and ignores `attributes`. |
-| `attributes` | `AttributeResult[]` | `undefined` | Pre-fetched attribute results. Used as fallback when `productId` is not provided. |
-
-### Display
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `layout` | `'table' \| 'list'` | `'table'` | `'table'` renders a two-column table (name / value). `'list'` renders vertically stacked label + value rows. |
-| `grouping` | `boolean` | `false` | When `true`, groups attributes by their `attributeDescription.group` field and renders a heading per section. |
-
-### Localization
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `language` | `string` | `'NL'` | Language code used to resolve localized attribute labels and text-type values. |
-
-### Styling
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `className` | `string` | `undefined` | Extra CSS class applied to the root wrapper element. |
-
----
-
-## SDK Services
-
-The component uses `ProductService.getAttributeResultByProductId()` to fetch attributes when `productId` is provided.
-
-### Product fields read
-
-The component works with the `AttributeResult` type from the SDK. Each attribute result contains:
-
-| Field path | Usage |
-|---|---|
-| `attributeDescription.isPublic` | Filters to only public attributes |
-| `attributeDescription.name` | Fallback label when no localized description matches |
-| `attributeDescription.descriptions[]` | Array of `LocalizedString` objects; matched by `language` to resolve the display label |
-| `attributeDescription.group` | Used to section attributes when `grouping={true}` |
-| `value.type` | Determines how to extract the display value (`TEXT`, `ENUM`, `INT`, `DECIMAL`, `DATETIME`, `COLOR`) |
-| `value.textValues[]` | For `TEXT` type: array with `language` and `values` fields |
-| `value.enumValues[]` | For `ENUM` type: string array |
-| `value.intValue` | For `INT` type: numeric value |
-| `value.decimalValue` | For `DECIMAL` type: numeric value |
-| `value.dateTimeValue` | For `DATETIME` type: string value |
-| `value.colorValue` | For `COLOR` type: string value |
-| `value.value` | Generic fallback; booleans render as "Yes"/"No" |
-
-### Fetch parameters
-
-When fetching autonomously, the component calls:
-
-```ts
-service.getAttributeResultByProductId(productId, {
-  attributeDescription: { isPublic: true },
-  page: 1,
-  offset: 2000,
-});
-```
-
-This requests up to 2000 public attributes in a single call.
-
----
-
-## GraphQL Query
-
-If you need to fetch product specifications/attributes outside the component (e.g., in a server component or parent query), use the following query structure:
-
-```graphql
-query ProductAttributes($productId: Int!) {
-  product(id: $productId) {
-    attributeResults(
-      filter: { attributeDescription: { isPublic: true } }
-      page: 1
-      offset: 100
-    ) {
-      items {
-        attributeDescription {
-          name
-          isPublic
-          group
-          descriptions {
-            language
-            value
-          }
-        }
-        value {
-          type
-          ... on AttributeTextValue {
-            textValues {
-              language
-              values
-            }
-          }
-          ... on AttributeEnumValue {
-            enumValues
-          }
-          ... on AttributeIntValue {
-            intValue
-          }
-          ... on AttributeDecimalValue {
-            decimalValue
-          }
-          ... on AttributeDateTimeValue {
-            dateTimeValue
-          }
-          ... on AttributeColorValue {
-            colorValue
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-Pass the returned `items` array to the `attributes` prop:
-
-```tsx
-<ProductSpecifications attributes={data.product.attributeResults.items} />
-```
-
----
-
-## Behavior
-
-- **Auto-hide when empty**: The component renders nothing when there are no public attributes or while loading. There is no empty-state message.
-- **Filtering**: Only attributes where `attributeDescription.isPublic === true` are shown. Attributes with empty, null, or `'0'` values are excluded.
-- **Data priority**: When `productId` is provided, the component fetches its own data and ignores the `attributes` prop entirely. When `productId` is absent, it falls back to `attributes`.
-- **Re-fetch on product change**: Changing the `productId` prop triggers a new fetch automatically.
-- **Localization resolution**: For labels, the component searches `attributeDescription.descriptions` for a matching `language` entry. If none is found, it falls back to `attributeDescription.name`. For `TEXT`-type values, it filters `textValues` by language.
-- **Attribute type handling**: Each attribute type (`TEXT`, `ENUM`, `INT`, `DECIMAL`, `DATETIME`, `COLOR`) has dedicated extraction logic. Unknown types fall back to `value.value`, with booleans rendered as "Yes"/"No".
-- **Group ordering**: Groups appear in the order they are first encountered in the attribute list (insertion order, not alphabetical).
-- **Group headings**: In grouped mode, a heading is rendered for each group that has a non-empty group name. Attributes with no group are rendered without a heading.
-- **Loading state**: A loading flag is set during fetch but no spinner is shown; the component simply renders nothing until data arrives.
-- **Error handling**: Fetch errors are caught silently. The component remains hidden if no data is available.
-
----
-
-## Building Your Own
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
 To build a custom specifications component, you need:
 
@@ -301,3 +161,199 @@ function mapAttribute(attr: AttributeResult, language: string): { label: string;
 ```
 
 From there, render the mapped attributes however you like -- table rows, cards, accordion panels, definition lists, comparison tables, etc. For grouped display, partition attributes by `attributeDescription.group` in encounter order.
+
+### Pre-fetched attributes
+
+```ts
+// When attributes are already available from a parent query,
+// skip the fetch and pass them directly to your rendering logic:
+const specs = product.attributeResults
+  .filter((attr) => attr.attributeDescription?.isPublic)
+  .map((attr) => mapAttribute(attr, 'EN'))
+  .filter(Boolean);
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
+
+### Data
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | `undefined` | Initialized Propeller SDK client. Required when `productId` is set. |
+| `productId` | `number` | `undefined` | Product ID to fetch attributes for. When set, the component fetches its own data and ignores `attributes`. |
+| `attributes` | `AttributeResult[]` | `undefined` | Pre-fetched attribute results. Used as fallback when `productId` is not provided. |
+
+### Display
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `layout` | `'table' \| 'list'` | `'table'` | `'table'` renders a two-column table (name / value). `'list'` renders vertically stacked label + value rows. |
+| `grouping` | `boolean` | `false` | When `true`, groups attributes by their `attributeDescription.group` field and renders a heading per section. |
+
+### Localization
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `language` | `string` | `'NL'` | Language code used to resolve localized attribute labels and text-type values. |
+
+### Styling
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `className` | `string` | `undefined` | Extra CSS class applied to the root wrapper element. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+import { ProductService, AttributeResult } from 'propeller-sdk-v2';
+
+async function fetchSpecs(
+  graphqlClient: GraphQLClient,
+  productId: number
+): Promise<AttributeResult[]>
+```
+
+Returns an array of `AttributeResult` objects from `ProductService.getAttributeResultByProductId()`.
+
+### Options table
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | *(required for fetch mode)* | `graphqlClient` prop |
+| `productId` | `number` | -- | `productId` prop |
+| `attributes` | `AttributeResult[]` | -- | `attributes` prop (pre-fetched fallback) |
+| `language` | `string` | `'NL'` | `language` prop |
+
+### UI-only props
+
+The following props are purely presentational and are not part of the SDK layer. They are the developer's responsibility to implement:
+
+- `layout` — table or list display mode
+- `grouping` — whether to group attributes by `attributeDescription.group`
+- `className` — extra CSS class on the root element
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+- **Auto-hide when empty**: The component renders nothing when there are no public attributes or while loading. There is no empty-state message.
+- **Filtering**: Only attributes where `attributeDescription.isPublic === true` are shown. Attributes with empty, null, or `'0'` values are excluded.
+- **Data priority**: When `productId` is provided, the component fetches its own data and ignores the `attributes` prop entirely. When `productId` is absent, it falls back to `attributes`.
+- **Re-fetch on product change**: Changing the `productId` prop triggers a new fetch automatically.
+- **Localization resolution**: For labels, the component searches `attributeDescription.descriptions` for a matching `language` entry. If none is found, it falls back to `attributeDescription.name`. For `TEXT`-type values, it filters `textValues` by language.
+- **Attribute type handling**: Each attribute type (`TEXT`, `ENUM`, `INT`, `DECIMAL`, `DATETIME`, `COLOR`) has dedicated extraction logic. Unknown types fall back to `value.value`, with booleans rendered as "Yes"/"No".
+- **Group ordering**: Groups appear in the order they are first encountered in the attribute list (insertion order, not alphabetical).
+- **Group headings**: In grouped mode, a heading is rendered for each group that has a non-empty group name. Attributes with no group are rendered without a heading.
+- **Loading state**: A loading flag is set during fetch but no spinner is shown; the component simply renders nothing until data arrives.
+- **Error handling**: Fetch errors are caught silently. The component remains hidden if no data is available.
+
+---
+
+## GraphQL Query
+
+If you need to fetch product specifications/attributes outside the component (e.g., in a server component or parent query), use the following query structure:
+
+```graphql
+query ProductAttributes($productId: Int!) {
+  product(id: $productId) {
+    attributeResults(
+      filter: { attributeDescription: { isPublic: true } }
+      page: 1
+      offset: 100
+    ) {
+      items {
+        attributeDescription {
+          name
+          isPublic
+          group
+          descriptions {
+            language
+            value
+          }
+        }
+        value {
+          type
+          ... on AttributeTextValue {
+            textValues {
+              language
+              values
+            }
+          }
+          ... on AttributeEnumValue {
+            enumValues
+          }
+          ... on AttributeIntValue {
+            intValue
+          }
+          ... on AttributeDecimalValue {
+            decimalValue
+          }
+          ... on AttributeDateTimeValue {
+            dateTimeValue
+          }
+          ... on AttributeColorValue {
+            colorValue
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Pass the returned `items` array to the `attributes` prop:
+
+```tsx
+<ProductSpecifications attributes={data.product.attributeResults.items} />
+```
+
+---
+
+## SDK Services
+
+The component uses `ProductService.getAttributeResultByProductId()` to fetch attributes when `productId` is provided.
+
+### Product fields read
+
+The component works with the `AttributeResult` type from the SDK. Each attribute result contains:
+
+| Field path | Usage |
+|---|---|
+| `attributeDescription.isPublic` | Filters to only public attributes |
+| `attributeDescription.name` | Fallback label when no localized description matches |
+| `attributeDescription.descriptions[]` | Array of `LocalizedString` objects; matched by `language` to resolve the display label |
+| `attributeDescription.group` | Used to section attributes when `grouping={true}` |
+| `value.type` | Determines how to extract the display value (`TEXT`, `ENUM`, `INT`, `DECIMAL`, `DATETIME`, `COLOR`) |
+| `value.textValues[]` | For `TEXT` type: array with `language` and `values` fields |
+| `value.enumValues[]` | For `ENUM` type: string array |
+| `value.intValue` | For `INT` type: numeric value |
+| `value.decimalValue` | For `DECIMAL` type: numeric value |
+| `value.dateTimeValue` | For `DATETIME` type: string value |
+| `value.colorValue` | For `COLOR` type: string value |
+| `value.value` | Generic fallback; booleans render as "Yes"/"No" |
+
+### Fetch parameters
+
+When fetching autonomously, the component calls:
+
+```ts
+service.getAttributeResultByProductId(productId, {
+  attributeDescription: { isPublic: true },
+  page: 1,
+  offset: 2000,
+});
+```
+
+This requests up to 2000 public attributes in a single call.

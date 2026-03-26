@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductBundles
 
 Displays product bundles (combo deals) for a given product. Each bundle shows its constituent items with images and prices, a total bundle price with discount badge, and an "Add to cart" button. After a successful add-to-cart, the component can show either an inline toast notification or a confirmation modal with "Continue shopping" and "Proceed to checkout" options.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic usage with external cart handling
 
@@ -109,7 +115,95 @@ import ProductBundles from '@/components/propeller/ProductBundles';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To build a custom product bundles UI without using the component, set up the SDK services and use the following operations.
+
+### Service setup
+
+```ts
+import {
+  BundleService,
+  CartService,
+  Bundle,
+  BundleItem,
+  BundleQueryVariables,
+  CartAddBundleVariables,
+  Enums,
+} from 'propeller-sdk-v2';
+
+const bundleService = new BundleService(graphqlClient);
+const cartService = new CartService(graphqlClient);
+```
+
+### Fetch bundles
+
+```ts
+// pseudo-code: call on initialization and when productId changes
+async function fetchBundles(productId: number, language = 'NL', taxZone = 'NL'): Promise<Bundle[]> {
+  const variables: BundleQueryVariables = {
+    input: {
+      productIds: [productId],
+      taxZone,
+      page: 1,
+      offset: 20,
+    },
+    language,
+  };
+  const result = await bundleService.getBundles(variables);
+  return result?.items || [];
+}
+```
+
+### Price helper functions
+
+```ts
+// Prices follow the Propeller SDK convention: net = incl. VAT, gross = excl. VAT
+function getPrice(bundle: Bundle, includeTax: boolean): number {
+  return includeTax ? bundle.price?.net || 0 : bundle.price?.gross || 0;
+}
+
+function getOriginalPrice(bundle: Bundle, includeTax: boolean): number {
+  return includeTax ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
+}
+
+function getItemPrice(item: BundleItem, includeTax: boolean): number {
+  return includeTax ? item.price?.net || 0 : item.price?.gross || 0;
+}
+
+function formatPrice(value: number): string {
+  return `\u20AC${value.toFixed(2)}`;
+}
+```
+
+### Add bundle to cart
+
+```ts
+async function addBundleToCart(cartId: string, bundle: Bundle, language = 'NL') {
+  // pseudo-code: guard against double-submission with a loading flag
+  const variables: CartAddBundleVariables = {
+    id: cartId,
+    input: { bundleId: bundle.id, quantity: 1 },
+    language,
+  };
+  const updatedCart = await cartService.addBundleToCart(variables);
+  // pseudo-code: update cart state, show success notification
+  return updatedCart;
+}
+```
+
+### UI structure
+
+For each bundle, render a card showing: the bundle name (fall back to "Combo deal"), an optional description, the bundle condition text (`ALL` = "Discount on all items", `EP` = "Discount on extra items"), the individual bundle items with product names and prices, the total bundle price with a strikethrough original price when a discount applies, a savings badge showing the difference, and an "Add to cart" button with a loading/disabled state to prevent double-submission. If no bundles exist for the product, render nothing.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Core
 
@@ -156,13 +250,62 @@ import ProductBundles from '@/components/propeller/ProductBundles';
 | `showModal` | `boolean` | No | `false` | When true, shows a confirmation modal after add-to-cart instead of the inline toast |
 | `onProceedToCheckout` | `() => void` | No | -- | Called when the user clicks "Proceed to checkout" in the modal |
 
-### Labels
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `labels` | `Record<string, string>` | No | `{}` | Override any UI string by key |
+### Function signature
 
-Available label keys:
+```ts
+async function fetchAndRenderBundles(
+  graphqlClient: GraphQLClient,
+  productId: number,
+  options?: BundleOptions
+): Promise<void>
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `language` | `string` | `'NL'` | `language` prop |
+| `taxZone` | `string` | `'NL'` | `taxZone` prop |
+| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `layout` | `string` | `'horizontal'` | `layout` prop |
+| `showIndividualItems` | `boolean` | `true` | `showIndividualItems` prop |
+| `portalMode` | `string` | `'open'` | `portalMode` prop |
+| `stockValidation` | `boolean` | `false` | `stockValidation` prop |
+
+### Cart resolution
+
+When using self-contained cart mode, the component resolves a cart ID through this flow:
+
+1. Uses `props.cartId` if provided
+2. Otherwise searches for existing carts via `CartService.getCarts(searchInput)`
+3. If no cart found and `createCart` is true, creates one via `CartService.startCart()`
+4. After creation, calls `CartService.updateCartAddress()` for default addresses
+5. Fires `onCartCreated` so the parent can persist the cart
+
+### Callbacks
+
+| Callback | Signature | Description |
+|----------|-----------|-------------|
+| `onCartCreated` | `(cart: Cart) => void` | New cart was created internally |
+| `onAddBundleToCart` | `(bundleId: string, qty: number) => void` | External handler replacing built-in cart logic |
+| `beforeBundleAddToCart` | `(bundleId: string, qty: number) => boolean` | Return `false` to cancel |
+| `afterBundleAddToCart` | `(cart: Cart, bundle?: Bundle) => void` | Called after successful add |
+| `onProceedToCheckout` | `() => void` | User clicked checkout in modal |
+
+### UI-only props
+
+The following props are purely visual and have no SDK equivalent: `labels`, `className`, `showModal`.
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Where it appears |
 |-----|---------|------------------|
@@ -183,6 +326,38 @@ Available label keys:
 | `noCartId` | `'No cart ID provided'` | Error toast when no cart is available |
 | `quantity` | `'Quantity'` | Modal item detail |
 | `errorAdding` | `'Failed to add bundle to cart'` | Error toast on failure |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  title: 'Combo deal',
+  addToCart: 'In cart',
+  adding: 'Adding...',
+  addedToCart: 'added to cart',
+  youSave: 'Your savings:',
+  leaderItem: 'Main product',
+  condition_ALL: 'Discount on all items',
+  condition_EP: 'Discount on extra items',
+  inclTax: 'incl. VAT',
+  exclTax: 'excl. VAT',
+  loginToSeePrices: 'Log in to see prices and add to cart',
+  modalTitle: 'Added to cart',
+  continueShopping: 'Continue shopping',
+  proceedToCheckout: 'Proceed to checkout',
+  noCartId: 'No cart ID provided',
+  quantity: 'Quantity',
+  errorAdding: 'Failed to add bundle to cart',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -297,6 +472,12 @@ const variables: CartAddBundleVariables = {
 const updatedCart = await cartService.addBundleToCart(variables);
 ```
 
+### SDK Notes
+
+- **Bundle ID is a string**, not a number. This matches `CartAddBundleInput.bundleId`.
+- **BundlePrice fields**: `net` = incl. VAT, `gross` = excl. VAT, `originalNet` / `originalGross` = prices before discount.
+- **Cart integration**: `CartService.addBundleToCart()` works correctly with the standard SDK method.
+
 ## GraphQL Queries and Mutations
 
 ### Fetch bundles for a product
@@ -400,90 +581,3 @@ mutation CartAddBundle($id: String!, $input: CartAddBundleInput!, $language: Str
   "language": "NL"
 }
 ```
-
-## Building Your Own
-
-To build a custom product bundles UI without using the component, set up the SDK services and use the following operations.
-
-### Service setup
-
-```ts
-import {
-  BundleService,
-  CartService,
-  Bundle,
-  BundleItem,
-  BundleQueryVariables,
-  CartAddBundleVariables,
-  Enums,
-} from 'propeller-sdk-v2';
-
-const bundleService = new BundleService(graphqlClient);
-const cartService = new CartService(graphqlClient);
-```
-
-### Fetch bundles
-
-```ts
-// pseudo-code: call on initialization and when productId changes
-async function fetchBundles(productId: number, language = 'NL', taxZone = 'NL'): Promise<Bundle[]> {
-  const variables: BundleQueryVariables = {
-    input: {
-      productIds: [productId],
-      taxZone,
-      page: 1,
-      offset: 20,
-    },
-    language,
-  };
-  const result = await bundleService.getBundles(variables);
-  return result?.items || [];
-}
-```
-
-### Price helper functions
-
-```ts
-// Prices follow the Propeller SDK convention: net = incl. VAT, gross = excl. VAT
-function getPrice(bundle: Bundle, includeTax: boolean): number {
-  return includeTax ? bundle.price?.net || 0 : bundle.price?.gross || 0;
-}
-
-function getOriginalPrice(bundle: Bundle, includeTax: boolean): number {
-  return includeTax ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
-}
-
-function getItemPrice(item: BundleItem, includeTax: boolean): number {
-  return includeTax ? item.price?.net || 0 : item.price?.gross || 0;
-}
-
-function formatPrice(value: number): string {
-  return `\u20AC${value.toFixed(2)}`;
-}
-```
-
-### Add bundle to cart
-
-```ts
-async function addBundleToCart(cartId: string, bundle: Bundle, language = 'NL') {
-  // pseudo-code: guard against double-submission with a loading flag
-  const variables: CartAddBundleVariables = {
-    id: cartId,
-    input: { bundleId: bundle.id, quantity: 1 },
-    language,
-  };
-  const updatedCart = await cartService.addBundleToCart(variables);
-  // pseudo-code: update cart state, show success notification
-  return updatedCart;
-}
-```
-
-### UI structure
-
-For each bundle, render a card showing: the bundle name (fall back to "Combo deal"), an optional description, the bundle condition text (`ALL` = "Discount on all items", `EP` = "Discount on extra items"), the individual bundle items with product names and prices, the total bundle price with a strikethrough original price when a discount applies, a savings badge showing the difference, and an "Add to cart" button with a loading/disabled state to prevent double-submission. If no bundles exist for the product, render nothing.
-
-## SDK Notes
-
-- **Bundle ID is a string**, not a number. This matches `CartAddBundleInput.bundleId`.
-- **BundlePrice fields**: `net` = incl. VAT, `gross` = excl. VAT, `originalNet` / `originalGross` = prices before discount.
-- **Cart integration**: `CartService.addBundleToCart()` works correctly with the standard SDK method.

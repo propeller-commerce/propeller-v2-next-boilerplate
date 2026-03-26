@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductSlider
 
 A horizontally scrollable product carousel with built-in data fetching, navigation arrows, and responsive breakpoints. Renders ProductCard and ClusterCard components with full add-to-cart, stock, and favorites support.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### CMS-driven slider -- fetch products by ID
 
@@ -108,7 +114,51 @@ Set `portalMode="semi-closed"` to hide the add-to-cart button on each card.
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+To build a custom slider or replace the built-in fetching logic:
+
+1. **Fetch data externally** using `ProductService` or `CrossupsellService` as shown above.
+2. **Pass results via the `products` prop** to skip internal fetching entirely.
+3. **Wire up cart integration** by passing `cartId`, `createCart`, `onCartCreated`, and `afterAddToCart` to keep the app's CartContext in sync.
+4. **Handle routing** with `onProductClick` and `onClusterClick` callbacks rather than relying on anchor tags, so the slider works with any router.
+
+Example -- fetch externally with custom filtering, then pass results via the `products` prop:
+
+```ts
+import { ProductService, Enums, Product, Cluster } from 'propeller-sdk-v2';
+
+// pseudo-code: call this on initialization or when productIds change
+const productService = new ProductService(graphqlClient);
+const res = await productService.getProducts({
+  input: {
+    productIds: cmsBlock.productIds,
+    language: 'NL',
+    page: 1,
+    offset: 20,
+    statuses: [Enums.ProductStatus.A],
+  },
+  imageSearchFilters: config.imageSearchFiltersGrid,
+  imageVariantFilters: config.imageVariantFiltersMedium,
+  filterAvailableAttributeInput: { isSearchable: true },
+});
+
+// Custom filter: only items with images
+const items = (res.items || []).filter(
+  (item: Product | Cluster) => item.media?.images?.length > 0
+);
+
+// pseudo-code: pass `items` to the ProductSlider's `products` prop to skip internal fetching
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data Source
 
@@ -185,10 +235,82 @@ Set `portalMode="semi-closed"` to hide the add-to-cart button on each card.
 | Prop | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `configuration` | `any` | No | -- | App config object providing `imageSearchFiltersGrid`, `imageVariantFiltersMedium`, and `urls` for URL generation. |
-| `labels` | `Record<string, string>` | No | -- | UI string overrides (see table below). |
+| `labels` | `Record<string, string>` | No | -- | UI string overrides (see Labels section). |
 | `addToCartLabels` | `Record<string, string>` | No | -- | Label overrides forwarded to the AddToCart component inside each card. Keys: `add`, `adding`, `addedToCart`, `outOfStock`, `noCartId`, `errorAdding`, `modalTitle`, `quantity`, `continueShopping`, `proceedToCheckout`. |
 
-#### Label Keys
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function fetchSliderProducts(options: {
+  graphqlClient: GraphQLClient;
+  productIds?: number[];
+  clusterIds?: number[];
+  crossUpsellTypes?: string[];
+  productId?: number;
+  clusterId?: number;
+  language: string;
+  taxZone: string;
+  configuration?: any;
+  user?: Contact | Customer | null;
+}): Promise<(Product | Cluster)[]>
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `graphqlClient` | `GraphQLClient` | **required** | `graphqlClient` prop |
+| `productIds` | `number[]` | `undefined` | `productIds` prop |
+| `clusterIds` | `number[]` | `undefined` | `clusterIds` prop |
+| `crossUpsellTypes` | `string[]` | `undefined` | `crossUpsellTypes` prop |
+| `productId` | `number` | `undefined` | `productId` prop |
+| `clusterId` | `number` | `undefined` | `clusterId` prop |
+| `language` | `string` | **required** | `language` prop |
+| `taxZone` | `string` | **required** | `taxZone` prop |
+| `configuration` | `any` | `undefined` | `configuration` prop |
+| `user` | `Contact \| Customer \| null` | `null` | `user` prop |
+
+### Cart resolution
+
+When adding items to cart from within the slider, the component resolves the cart as follows:
+
+1. If `cartId` is provided, use the existing cart.
+2. If `createCart` is `true` and no `cartId` exists, auto-create a new cart and fire `onCartCreated`.
+3. After every successful add-to-cart, fire `afterAddToCart` with the updated cart.
+
+### Callbacks
+
+| Callback | Signature | Purpose |
+|----------|-----------|---------|
+| `onCartCreated` | `(cart: Cart) => void` | Persist newly created cart to app state |
+| `afterAddToCart` | `(cart: Cart, item?: CartMainItem) => void` | Sync updated cart to app state |
+| `onProductClick` | `(product: Product) => void` | Handle product card navigation |
+| `onClusterClick` | `(cluster: Cluster) => void` | Handle cluster card navigation |
+| `onToggleFavorite` | `(item: Product \| Cluster, isFavorite: boolean) => void` | Handle favorite toggle |
+| `onProceedToCheckout` | `() => void` | Handle checkout navigation from add-to-cart modal |
+
+### UI-only props (React component only)
+
+The following props control visual presentation and have no equivalent in a custom implementation:
+
+- `title` — Heading above the slider
+- `itemsPerView` — Responsive card counts
+- `containerClassName` — CSS class for the outermost wrapper
+- `showIncrDecr` — Show +/- stepper buttons
+- `showModal` — Show modal vs toast after add-to-cart
+- `stockLabels` — Label overrides for stock widget
+- `addToCartLabels` — Label overrides for AddToCart component
+
+  </TabItem>
+</Tabs>
+
+## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 | Key | Default | Description |
 |---|---|---|
@@ -200,6 +322,78 @@ Set `portalMode="semi-closed"` to hide the add-to-cart button on each card.
 | `RELATED` | `'Related products'` | Cross-upsell type display name. |
 | `OPTIONS` | `'Options'` | Cross-upsell type display name. |
 | `PARTS` | `'Parts'` | Cross-upsell type display name. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+```ts
+const defaultLabels = {
+  scrollLeft: 'Scroll left',
+  scrollRight: 'Scroll right',
+  noProducts: 'No products found',
+  ACCESSORIES: 'Accessories',
+  ALTERNATIVES: 'Alternatives',
+  RELATED: 'Related products',
+  OPTIONS: 'Options',
+  PARTS: 'Parts',
+};
+```
+
+These are suggested defaults. Override per-key to support localization.
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+### Responsive Card Widths
+
+Card widths are calculated with CSS `calc()` to fill the container minus gaps:
+
+- **Mobile** (default): `calc((100% - 1.5rem) / 1.5)` -- shows ~1.5 cards, hinting that more content is scrollable.
+- **Tablet** (`md`): `calc((100% - 3rem) / 2.5)` -- shows ~2.5 cards.
+- **Desktop** (`lg`): `calc((100% - 4.5rem) / 4)` -- shows 4 full cards.
+
+The partial-card pattern is intentional: it signals to the user that the row is scrollable.
+
+### Scroll Navigation
+
+- Left/right arrow buttons appear when the number of items exceeds the desktop count.
+- Each click scrolls the track by 80% of its visible width using `scrollBy({ behavior: 'smooth' })`.
+- Arrows disable automatically at scroll boundaries (left arrow at the start, right arrow at the end).
+- Scroll position is tracked via the native `onScroll` event.
+
+### Loading and Empty States
+
+- **Loading**: Displays four animated skeleton cards (gray pulsing rectangles) while fetching.
+- **Empty (CMS mode)**: Shows the `noProducts` label ("No products found" by default).
+- **Empty (cross-upsell mode)**: The entire component hides itself. This is intentional -- a product may have no cross-upsells, and showing an empty section would be confusing.
+
+### Re-fetching
+
+The component re-fetches automatically when any of these props change:
+- `productIds` or `clusterIds` (compared by value via `JSON.stringify`, not by reference — prevents stale-reference refetches when arrays are re-created with the same contents)
+- `crossUpsellTypes` (compared by value via `JSON.stringify`)
+- `productId` or `clusterId` (cross-upsell source)
+- `language`
+
+### Scroll initialization
+
+The slider generates a unique `sliderId` on mount (via `Math.random()`) and uses a `data-slider-id` DOM attribute to query scroll dimensions. Scroll dimensions are initialized with a 50ms `setTimeout` after the slider ID is set, to ensure the DOM has fully rendered.
+
+### CMS-Driven Content (Strapi)
+
+Add a `shared.product-slider` component in Strapi with fields for `title`, `productIds` (comma-separated text), and `clusterIds` (comma-separated text). A CMS block wrapper (`ProductSliderBlock`) parses these fields into number arrays and handles auth, cart, and configuration wiring automatically, so editors only need to enter IDs.
+
+### Mixed Content
+
+A single slider can contain both Product and Cluster items. The component detects the item type by checking for `clusterId` vs `productId` and renders the appropriate card (ClusterCard or ProductCard).
+
+### VAT Toggle
+
+Each card respects the global VAT toggle. The `includeTax` prop overrides the toggle when set explicitly. When omitted, cards read from `localStorage` (`price_include_tax`) and listen for the `priceToggleChanged` custom event.
 
 ## SDK Services
 
@@ -271,7 +465,7 @@ The response contains `{ items: Crossupsell[] }`. Each `Crossupsell` has either 
 
 **Known limitation**: `CrossupsellService.getCrossupsells()` has a known SDK bug where undeclared fragment variables cause an HTTP 400. Cross-upsell results may not display until the SDK is fixed. The error is caught silently.
 
-## GraphQL Query Examples
+## GraphQL Queries and Mutations
 
 ### Fetch products by ID (what ProductService.getProducts sends)
 
@@ -362,89 +556,3 @@ Variables:
   "language": "NL"
 }
 ```
-
-## Building Your Own
-
-To build a custom slider or replace the built-in fetching logic:
-
-1. **Fetch data externally** using `ProductService` or `CrossupsellService` as shown above.
-2. **Pass results via the `products` prop** to skip internal fetching entirely.
-3. **Wire up cart integration** by passing `cartId`, `createCart`, `onCartCreated`, and `afterAddToCart` to keep the app's CartContext in sync.
-4. **Handle routing** with `onProductClick` and `onClusterClick` callbacks rather than relying on anchor tags, so the slider works with any router.
-
-Example -- fetch externally with custom filtering, then pass results via the `products` prop:
-
-```ts
-import { ProductService, Enums, Product, Cluster } from 'propeller-sdk-v2';
-
-// pseudo-code: call this on initialization or when productIds change
-const productService = new ProductService(graphqlClient);
-const res = await productService.getProducts({
-  input: {
-    productIds: cmsBlock.productIds,
-    language: 'NL',
-    page: 1,
-    offset: 20,
-    statuses: [Enums.ProductStatus.A],
-  },
-  imageSearchFilters: config.imageSearchFiltersGrid,
-  imageVariantFilters: config.imageVariantFiltersMedium,
-  filterAvailableAttributeInput: { isSearchable: true },
-});
-
-// Custom filter: only items with images
-const items = (res.items || []).filter(
-  (item: Product | Cluster) => item.media?.images?.length > 0
-);
-
-// pseudo-code: pass `items` to the ProductSlider's `products` prop to skip internal fetching
-```
-
-## Behavior
-
-### Responsive Card Widths
-
-Card widths are calculated with CSS `calc()` to fill the container minus gaps:
-
-- **Mobile** (default): `calc((100% - 1.5rem) / 1.5)` -- shows ~1.5 cards, hinting that more content is scrollable.
-- **Tablet** (`md`): `calc((100% - 3rem) / 2.5)` -- shows ~2.5 cards.
-- **Desktop** (`lg`): `calc((100% - 4.5rem) / 4)` -- shows 4 full cards.
-
-The partial-card pattern is intentional: it signals to the user that the row is scrollable.
-
-### Scroll Navigation
-
-- Left/right arrow buttons appear when the number of items exceeds the desktop count.
-- Each click scrolls the track by 80% of its visible width using `scrollBy({ behavior: 'smooth' })`.
-- Arrows disable automatically at scroll boundaries (left arrow at the start, right arrow at the end).
-- Scroll position is tracked via the native `onScroll` event.
-
-### Loading and Empty States
-
-- **Loading**: Displays four animated skeleton cards (gray pulsing rectangles) while fetching.
-- **Empty (CMS mode)**: Shows the `noProducts` label ("No products found" by default).
-- **Empty (cross-upsell mode)**: The entire component hides itself. This is intentional -- a product may have no cross-upsells, and showing an empty section would be confusing.
-
-### Re-fetching
-
-The component re-fetches automatically when any of these props change:
-- `productIds` or `clusterIds` (compared by value via `JSON.stringify`, not by reference — prevents stale-reference refetches when arrays are re-created with the same contents)
-- `crossUpsellTypes` (compared by value via `JSON.stringify`)
-- `productId` or `clusterId` (cross-upsell source)
-- `language`
-
-### Scroll initialization
-
-The slider generates a unique `sliderId` on mount (via `Math.random()`) and uses a `data-slider-id` DOM attribute to query scroll dimensions. Scroll dimensions are initialized with a 50ms `setTimeout` after the slider ID is set, to ensure the DOM has fully rendered.
-
-### CMS-Driven Content (Strapi)
-
-Add a `shared.product-slider` component in Strapi with fields for `title`, `productIds` (comma-separated text), and `clusterIds` (comma-separated text). A CMS block wrapper (`ProductSliderBlock`) parses these fields into number arrays and handles auth, cart, and configuration wiring automatically, so editors only need to enter IDs.
-
-### Mixed Content
-
-A single slider can contain both Product and Cluster items. The component detects the item type by checking for `clusterId` vs `productId` and renders the appropriate card (ClusterCard or ProductCard).
-
-### VAT Toggle
-
-Each card respects the global VAT toggle. The `includeTax` prop overrides the toggle when set explicitly. When omitted, cards read from `localStorage` (`price_include_tax`) and listen for the `priceToggleChanged` custom event.

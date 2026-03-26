@@ -1,10 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ProductInfo
 
 Displays core product identification -- the product name and SKU. It can either render a pre-fetched `Product` object or fetch one internally via the Propeller SDK when given a `productId` and `graphqlClient`. The `onProductLoaded` callback lets sibling components (gallery, price, descriptions) hydrate from the same product data, making ProductInfo the ideal orchestrator for a product detail page.
 
----
-
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Self-contained fetch (recommended for product detail pages)
 
@@ -109,9 +113,93 @@ const [product, setProduct] = useState<Product | null>(null);
 <AddToCart product={product} />
 ```
 
----
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-## Props
+To create a custom product info component, you need the `Product` type from `propeller-sdk-v2` and a way to resolve localized strings.
+
+### Resolving product name from a pre-fetched product
+
+```ts
+import { Product, LocalizedString } from 'propeller-sdk-v2';
+
+function getProductName(product: Product, language = 'NL'): string {
+  return product.names?.find(
+    (n: LocalizedString) => n.language === language
+  )?.value || product.names?.[0]?.value || '';
+}
+
+// Access fields:
+// - product.sku        -- the SKU string
+// - getProductName(product, 'NL') -- the localized product name
+```
+
+Render the SKU as a label and the product name as a heading.
+
+### Fetching a product via the SDK
+
+```ts
+import { ProductService, Product } from 'propeller-sdk-v2';
+
+// pseudo-code: call on initialization and when productId or language changes
+async function fetchProduct(
+  graphqlClient: GraphQLClient,
+  productId: number,
+  language = 'NL'
+): Promise<Product> {
+  const service = new ProductService(graphqlClient);
+  return service.getProduct({
+    productId,
+    language,
+    imageSearchFilters: { page: 1, offset: 20 },
+    imageVariantFilters: { transformations: [] },
+  });
+}
+
+// pseudo-code: once the product is loaded, share it with sibling components
+// (e.g., price display, image gallery, specifications) to avoid duplicate API calls
+```
+
+### Adding attribute labels
+
+```tsx
+function getAttributeValue(product: Product, code: string): string | null {
+  const attr = product.attributes?.items?.find(
+    (a) => a.attributeDescription?.code === code
+      || a.attributeDescription?.name === code
+  );
+  return attr?.textValue || null;
+}
+
+// Usage
+const brand = getAttributeValue(product, 'brand');
+const isNew = getAttributeValue(product, 'new');
+```
+
+### Extending with additional product fields
+
+Since `onProductLoaded` passes the full `Product` object, you can build any sibling component without extra API calls:
+
+```ts
+// pseudo-code: fetch once, then pass fields to sibling renderers
+const product = await fetchProduct(graphqlClient, 42, 'NL');
+
+// Access any field from the full Product object:
+// product.price        → pass to price display
+// product.media        → pass to image carousel
+// product.attributes   → pass to spec table
+// product.bulkPrices   → pass to bulk price display
+// product.inventory    → pass to stock indicator
+// product.categoryPath → pass to breadcrumbs
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data Source
 
@@ -157,6 +245,81 @@ const [product, setProduct] = useState<Product | null>(null);
 | Prop | Type | Description |
 |------|------|-------------|
 | `onProductLoaded` | `(product: Product) => void` | Fired once product data is available -- immediately when `product` prop is supplied, or after the internal fetch completes. Use this to hydrate sibling components. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+async function fetchProduct(
+  graphqlClient: GraphQLClient,
+  productId: number,
+  options?: ProductInfoOptions
+): Promise<Product>
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|-------|------|---------|---------|
+| `productId` | `number` | **required** | `productId` prop |
+| `language` | `string` | `'NL'` | `language` prop |
+| `imageSearchFilters` | `any` | `{ page: 1, offset: 20 }` | `imageSearchFilters` prop |
+| `imageVariantFilters` | `any` | `configuration.imageVariantFiltersLarge` | `imageVariantFilters` prop |
+| `taxZone` | `string` | `'NL'` | `taxZone` prop |
+| `user` | `Contact \| Customer \| null` | **required** | `user` prop — used to build `priceCalculateProductInput` and `userBulkPriceProductInput` |
+
+### Callbacks
+
+| Callback | When it fires | What to implement |
+|----------|---------------|-------------------|
+| `onProductLoaded` | After the product is fetched or when a pre-fetched `product` is provided | Share the loaded `Product` with sibling components to avoid duplicate API calls |
+
+### UI-only props (React component only)
+
+The following props control visual presentation and have no equivalent in a custom implementation:
+
+- `showTitle` — Show/hide the product name heading
+- `showSku` — Show/hide the SKU label
+- `className` — Extra CSS class on the root element
+- `imageLabels` — Attribute codes rendered as badge overlays
+- `textLabels` — Attribute codes rendered as text rows
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Behavior
+
+### Two data modes
+
+1. **Pre-fetched** (`product` prop provided): No SDK call is made. The component renders immediately and fires `onProductLoaded` with the supplied product.
+2. **Self-contained** (`productId` + `graphqlClient` provided): The component fetches the product via `ProductService.getProduct()`, shows a skeleton loader during the request, then renders and fires `onProductLoaded`.
+
+### Loading skeleton
+
+While fetching (and no `product` prop is present), the component renders an animated pulse skeleton with two placeholder bars -- a narrow one for the SKU and a wider one for the title.
+
+### Language resolution
+
+The product name is resolved by matching `language` against the `product.names` array (each entry is a `LocalizedString` with `language` and `value`). If no match is found, the first entry in the array is used as a fallback.
+
+### Re-fetch triggers
+
+The internal fetch re-runs when any of these props change:
+- `productId`
+- `product`
+- `language`
+
+### User-aware pricing
+
+The fetch includes `priceCalculateProductInput` and `userBulkPriceProductInput` derived from the `user` prop. For B2B users (Contact), `companyId` and `contactId` are included. For B2C users (Customer), `customerId` is included. This ensures server-side price calculation respects customer-specific pricing tiers.
+
+### Error handling
+
+Fetch errors are caught silently -- the loading state is cleared but no error UI is shown. The component simply remains empty until valid data is available.
 
 ---
 
@@ -290,121 +453,4 @@ Variables for a B2B (Contact) user:
     "contactId": 200
   }
 }
-```
-
----
-
-## Behavior
-
-### Two data modes
-
-1. **Pre-fetched** (`product` prop provided): No SDK call is made. The component renders immediately and fires `onProductLoaded` with the supplied product.
-2. **Self-contained** (`productId` + `graphqlClient` provided): The component fetches the product via `ProductService.getProduct()`, shows a skeleton loader during the request, then renders and fires `onProductLoaded`.
-
-### Loading skeleton
-
-While fetching (and no `product` prop is present), the component renders an animated pulse skeleton with two placeholder bars -- a narrow one for the SKU and a wider one for the title.
-
-### Language resolution
-
-The product name is resolved by matching `language` against the `product.names` array (each entry is a `LocalizedString` with `language` and `value`). If no match is found, the first entry in the array is used as a fallback.
-
-### Re-fetch triggers
-
-The internal fetch re-runs when any of these props change:
-- `productId`
-- `product`
-- `language`
-
-### User-aware pricing
-
-The fetch includes `priceCalculateProductInput` and `userBulkPriceProductInput` derived from the `user` prop. For B2B users (Contact), `companyId` and `contactId` are included. For B2C users (Customer), `customerId` is included. This ensures server-side price calculation respects customer-specific pricing tiers.
-
-### Error handling
-
-Fetch errors are caught silently -- the loading state is cleared but no error UI is shown. The component simply remains empty until valid data is available.
-
----
-
-## Building Your Own
-
-To create a custom product info component, you need the `Product` type from `propeller-sdk-v2` and a way to resolve localized strings.
-
-### Resolving product name from a pre-fetched product
-
-```ts
-import { Product, LocalizedString } from 'propeller-sdk-v2';
-
-function getProductName(product: Product, language = 'NL'): string {
-  return product.names?.find(
-    (n: LocalizedString) => n.language === language
-  )?.value || product.names?.[0]?.value || '';
-}
-
-// Access fields:
-// - product.sku        -- the SKU string
-// - getProductName(product, 'NL') -- the localized product name
-```
-
-Render the SKU as a label and the product name as a heading.
-
-### Fetching a product via the SDK
-
-```ts
-import { ProductService, Product } from 'propeller-sdk-v2';
-
-// pseudo-code: call on initialization and when productId or language changes
-async function fetchProduct(
-  graphqlClient: GraphQLClient,
-  productId: number,
-  language = 'NL'
-): Promise<Product> {
-  const service = new ProductService(graphqlClient);
-  return service.getProduct({
-    productId,
-    language,
-    imageSearchFilters: { page: 1, offset: 20 },
-    imageVariantFilters: { transformations: [] },
-  });
-}
-
-// pseudo-code: once the product is loaded, share it with sibling components
-// (e.g., price display, image gallery, specifications) to avoid duplicate API calls
-```
-
-### Adding attribute labels
-
-```tsx
-function getAttributeValue(product: Product, code: string): string | null {
-  const attr = product.attributes?.items?.find(
-    (a) => a.attributeDescription?.code === code
-      || a.attributeDescription?.name === code
-  );
-  return attr?.textValue || null;
-}
-
-// Usage
-const brand = getAttributeValue(product, 'brand');
-const isNew = getAttributeValue(product, 'new');
-```
-
-### Extending with additional product fields
-
-Since `onProductLoaded` passes the full `Product` object, you can build any sibling component without extra API calls:
-
-```tsx
-const [product, setProduct] = useState<Product | null>(null);
-
-<ProductInfo
-  user={user}
-  productId={42}
-  graphqlClient={graphqlClient}
-  onProductLoaded={setProduct}
-  configuration={config}
-/>
-
-{/* Your custom components consuming the same product */}
-<CustomPriceDisplay price={product?.price} />
-<CustomImageCarousel media={product?.media} />
-<CustomSpecTable attributes={product?.attributes} />
 ```

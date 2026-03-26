@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # ItemStock
 
-The ItemStock component displays product stock status and availability as color-coded badges. It reads from a `ProductInventory` object and renders up to two inline badges: an availability indicator (available / not available) and a stock level indicator (in stock / low stock / out of stock) with the exact quantity.
+Displays product stock status and availability as color-coded badges. Reads from a `ProductInventory` object and renders up to two inline badges: an availability indicator (available / not available) and a stock level indicator (in stock / low stock / out of stock) with the exact quantity.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Default (both badges visible)
 
@@ -55,7 +61,49 @@ import ItemStock from '@/components/propeller/ItemStock';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+A standalone implementation that reads from the same `ProductInventory` shape:
+
+```tsx
+import { ProductInventory } from 'propeller-sdk-v2';
+
+function SimpleItemStock({ inventory }: { inventory: ProductInventory }) {
+  const qty = inventory?.totalQuantity;
+
+  if (qty === undefined || qty === null) return null;
+
+  const isAvailable = qty > 0;
+  const statusLabel =
+    qty === 0 ? 'Out of stock' : qty <= 5 ? 'Low stock' : 'In stock';
+  const statusColor =
+    qty === 0 ? 'red' : qty <= 5 ? 'orange' : 'green';
+
+  return (
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      {/* Availability */}
+      <span style={{ color: isAvailable ? 'green' : 'red' }}>
+        {isAvailable ? 'Available' : 'Not available'}
+      </span>
+
+      {/* Stock level */}
+      <span style={{ color: statusColor }}>
+        {statusLabel}
+        {qty > 0 && ` (${qty} pcs)`}
+      </span>
+    </div>
+  );
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Data
 
@@ -77,7 +125,34 @@ import ItemStock from '@/components/propeller/ItemStock';
 | `labels` | `Record<string, string>` | See labels table below | Override any display label |
 | `className` | `string` | `''` | Extra CSS class applied to the root wrapper element |
 
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function itemStock(inventory: ProductInventory): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `inventory` | `ProductInventory` | **required** | Product inventory object |
+| `showAvailability` | `boolean` | `true` | Show availability badge |
+| `showStock` | `boolean` | `true` | Show stock level badge |
+
+### UI-only props
+
+The following props control display only and have no SDK equivalent: `labels`, `className`.
+
+  </TabItem>
+</Tabs>
+
 ## Labels
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 All text labels can be overridden via the `labels` prop. Pass a `Record<string, string>` with any of these keys:
 
@@ -90,53 +165,26 @@ All text labels can be overridden via the `labels` prop. Pass a `Record<string, 
 | `notAvailable` | `Not available` | Availability badge when quantity is 0 |
 | `pieces` | `pcs` | Unit label shown in parentheses after the stock quantity |
 
-## SDK Services
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
 
-ItemStock is a display-only component -- it does not call any SDK services itself. It receives a `ProductInventory` object as a prop and reads the following field:
-
-### ProductInventory fields used
-
-| Field | Type | Purpose |
-|-------|------|---------|
-| `inventory.totalQuantity` | `number` | The total available stock quantity across all warehouses. Drives both the availability check and the stock level classification. |
-
-The `ProductInventory` type is imported from `propeller-sdk-v2`. When fetching product data, ensure the `inventory` field with `totalQuantity` is included in your query.
-
-### GraphQL query example
-
-To fetch inventory data alongside a product:
-
-```graphql
-query Product($productId: Int!) {
-  product(id: $productId) {
-    productId
-    name {
-      value
-    }
-    inventory {
-      totalQuantity
-    }
-  }
-}
+```ts
+const defaultLabels = {
+  inStock: 'In stock',
+  outOfStock: 'Out of stock',
+  lowStock: 'Low stock',
+  available: 'Available',
+  notAvailable: 'Not available',
+  pieces: 'pcs',
+};
 ```
 
-Or when fetching products within a category:
+These are suggested defaults. Override per-key to support localization.
 
-```graphql
-query Products($categoryId: Int!, $offset: Int, $limit: Int) {
-  products(categoryId: $categoryId, offset: $offset, limit: $limit) {
-    items {
-      productId
-      name {
-        value
-      }
-      inventory {
-        totalQuantity
-      }
-    }
-  }
-}
-```
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -175,37 +223,50 @@ The availability dot is a small circular indicator rendered inline before the la
 
 The component renders as a horizontal flex container with `flex-wrap` enabled. The two badges (availability and stock) sit side by side and wrap to the next line on narrow containers. Each badge is a rounded pill (`rounded-full`) with a small border, compact padding, and 11px font size.
 
-## Building Your Own
+## SDK Services
 
-A standalone implementation that reads from the same `ProductInventory` shape:
+ItemStock is a display-only component -- it does not call any SDK services itself. It receives a `ProductInventory` object as a prop and reads the following field:
 
-```tsx
-import { ProductInventory } from 'propeller-sdk-v2';
+### ProductInventory fields used
 
-function SimpleItemStock({ inventory }: { inventory: ProductInventory }) {
-  const qty = inventory?.totalQuantity;
+| Field | Type | Purpose |
+|-------|------|---------|
+| `inventory.totalQuantity` | `number` | The total available stock quantity across all warehouses. Drives both the availability check and the stock level classification. |
 
-  if (qty === undefined || qty === null) return null;
+The `ProductInventory` type is imported from `propeller-sdk-v2`. When fetching product data, ensure the `inventory` field with `totalQuantity` is included in your query.
 
-  const isAvailable = qty > 0;
-  const statusLabel =
-    qty === 0 ? 'Out of stock' : qty <= 5 ? 'Low stock' : 'In stock';
-  const statusColor =
-    qty === 0 ? 'red' : qty <= 5 ? 'orange' : 'green';
+## GraphQL Queries and Mutations
 
-  return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-      {/* Availability */}
-      <span style={{ color: isAvailable ? 'green' : 'red' }}>
-        {isAvailable ? 'Available' : 'Not available'}
-      </span>
+To fetch inventory data alongside a product:
 
-      {/* Stock level */}
-      <span style={{ color: statusColor }}>
-        {statusLabel}
-        {qty > 0 && ` (${qty} pcs)`}
-      </span>
-    </div>
-  );
+```graphql
+query Product($productId: Int!) {
+  product(id: $productId) {
+    productId
+    name {
+      value
+    }
+    inventory {
+      totalQuantity
+    }
+  }
+}
+```
+
+Or when fetching products within a category:
+
+```graphql
+query Products($categoryId: Int!, $offset: Int, $limit: Int) {
+  products(categoryId: $categoryId, offset: $offset, limit: $limit) {
+    items {
+      productId
+      name {
+        value
+      }
+      inventory {
+        totalQuantity
+      }
+    }
+  }
 }
 ```

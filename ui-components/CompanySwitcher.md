@@ -1,8 +1,14 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # CompanySwitcher
 
-The CompanySwitcher component provides a dropdown selector for B2B users (Contact type) who belong to multiple companies. It displays the currently active company name and lets the user switch between their assigned companies. This component is designed for use in the site header or navigation bar.
+Provides a dropdown selector for B2B users (Contact type) who belong to multiple companies. Displays the currently active company name and lets the user switch between their assigned companies. Designed for use in the site header or navigation bar.
 
 ## Usage
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Basic usage in Header
 
@@ -74,7 +80,71 @@ import { Contact } from 'propeller-sdk-v2';
 />
 ```
 
-## Props
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Extracting companies from the user object
+
+```ts
+import { Contact, Company } from 'propeller-sdk-v2';
+
+function getCompanies(user: Contact): Company[] {
+  // The SDK may serialize items under `items` or `_items`
+  const raw = user.companies as any;
+  const items = (raw?.items ?? raw?._items) as Company[] | undefined;
+  if (Array.isArray(items) && items.length > 0) return items;
+  return user.company ? [user.company] : [];
+}
+
+// Only show the switcher when the user has more than one company
+const companies = getCompanies(user);
+if (companies.length <= 1) {
+  // No switcher needed
+}
+```
+
+### Handling company selection
+
+```ts
+function handleSelect(company: Company) {
+  // pseudo-code: update your active company state
+
+  // Persist to localStorage so other components and page reloads can read it
+  localStorage.setItem('selected_company', JSON.stringify(company));
+
+  // Notify other components (e.g., OrderList, UserDetails) via custom event
+  window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
+}
+```
+
+### Active company resolution
+
+Determine the active company using this priority:
+
+1. The company the user just selected (from your local state)
+2. An externally controlled `selectedCompanyId` (e.g., from a shared state provider)
+3. `user.company` as the default fallback
+
+### Click-outside dismissal
+
+When the dropdown is open, add a `mousedown` listener on `document` that checks whether the click target is outside the switcher element. If so, close the dropdown. Remove the listener when the dropdown closes.
+
+### Cross-component sync pattern
+
+To persist the selected company across page navigations and sync with other components:
+
+- Store the selected company in `localStorage` (key: `selected_company`) and in your app-level state.
+- Dispatch a `companySwitched` custom event on `window` when the selection changes.
+- Listen for `userLoggedOut` events to clear the selection on logout.
+- Other components (OrderList, UserDetails, etc.) listen for the `companySwitched` event to refetch data for the new company.
+
+  </TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs groupId="implementation">
+  <TabItem value="react" label="React">
 
 ### Required Props
 
@@ -89,6 +159,34 @@ import { Contact } from 'propeller-sdk-v2';
 |---|---|---|---|
 | `icon` | `string` | `'default-company-switch-icon'` | CSS icon class identifier. Applied as `icon-{value}` on the trigger button icon span. |
 | `selectedCompanyId` | `number` | `undefined` | Externally controlled active company ID. Use this to sync the switcher with a context provider (e.g., `CompanyContext`). When not provided, the component defaults to `user.company`. |
+
+  </TabItem>
+  <TabItem value="byo" label="Build Your Own">
+
+### Function signature
+
+```ts
+function companySwitcher(options: CompanySwitcherOptions): void
+```
+
+### Options
+
+| Field | Type | Default | Maps to |
+|---|---|---|---|
+| `user` | `Contact` | (required) | `user` prop |
+| `onCompanyChange` | `(company: Company) => void` | (required) | `onCompanyChange` prop |
+| `selectedCompanyId` | `number` | `undefined` | `selectedCompanyId` prop |
+
+### UI-only props
+
+The following props are UI-specific and do not apply when building your own:
+
+- `icon` -- CSS icon class for the trigger button
+
+  </TabItem>
+</Tabs>
+
+---
 
 ## Behavior
 
@@ -167,7 +265,7 @@ interface Company {
 }
 ```
 
-## GraphQL Query
+## GraphQL Queries and Mutations
 
 The company data consumed by this component comes from the `viewer` query, which returns the authenticated user's profile including their company associations:
 
@@ -192,65 +290,6 @@ query Viewer {
   }
 }
 ```
-
-## Building Your Own
-
-If you need a company switcher with custom UI or additional logic, you can build your own using the same data from the Propeller SDK.
-
-### Extracting companies from the user object
-
-```ts
-import { Contact, Company } from 'propeller-sdk-v2';
-
-function getCompanies(user: Contact): Company[] {
-  // The SDK may serialize items under `items` or `_items`
-  const raw = user.companies as any;
-  const items = (raw?.items ?? raw?._items) as Company[] | undefined;
-  if (Array.isArray(items) && items.length > 0) return items;
-  return user.company ? [user.company] : [];
-}
-
-// Only show the switcher when the user has more than one company
-const companies = getCompanies(user);
-if (companies.length <= 1) {
-  // No switcher needed
-}
-```
-
-### Handling company selection
-
-```ts
-function handleSelect(company: Company) {
-  // pseudo-code: update your active company state
-
-  // Persist to localStorage so other components and page reloads can read it
-  localStorage.setItem('selected_company', JSON.stringify(company));
-
-  // Notify other components (e.g., OrderList, UserDetails) via custom event
-  window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
-}
-```
-
-### Active company resolution
-
-Determine the active company using this priority:
-
-1. The company the user just selected (from your local state)
-2. An externally controlled `selectedCompanyId` (e.g., from a shared state provider)
-3. `user.company` as the default fallback
-
-### Click-outside dismissal
-
-When the dropdown is open, add a `mousedown` listener on `document` that checks whether the click target is outside the switcher element. If so, close the dropdown. Remove the listener when the dropdown closes.
-
-### Cross-component sync pattern
-
-To persist the selected company across page navigations and sync with other components:
-
-- Store the selected company in `localStorage` (key: `selected_company`) and in your app-level state.
-- Dispatch a `companySwitched` custom event on `window` when the selection changes.
-- Listen for `userLoggedOut` events to clear the selection on logout.
-- Other components (OrderList, UserDetails, etc.) listen for the `companySwitched` event to refetch data for the new company.
 
 ## CSS Classes
 

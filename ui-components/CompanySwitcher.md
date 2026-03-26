@@ -195,110 +195,62 @@ query Viewer {
 
 ## Building Your Own
 
-If you need a company switcher with custom UI or additional logic, you can build your own using the same data from the Propeller SDK:
+If you need a company switcher with custom UI or additional logic, you can build your own using the same data from the Propeller SDK.
 
-```tsx
-'use client';
+### Extracting companies from the user object
 
-import { useState, useEffect, useRef } from 'react';
-import { Contact, Company, UserService } from 'propeller-sdk-v2';
+```ts
+import { Contact, Company } from 'propeller-sdk-v2';
 
-interface CustomCompanySwitcherProps {
-  user: Contact;
-  onCompanyChange: (company: Company) => void;
+function getCompanies(user: Contact): Company[] {
+  // The SDK may serialize items under `items` or `_items`
+  const raw = user.companies as any;
+  const items = (raw?.items ?? raw?._items) as Company[] | undefined;
+  if (Array.isArray(items) && items.length > 0) return items;
+  return user.company ? [user.company] : [];
 }
 
-export default function CustomCompanySwitcher({ user, onCompanyChange }: CustomCompanySwitcherProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeCompanyId, setActiveCompanyId] = useState<number | null>(
-    user.company?.companyId ?? null
-  );
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Extract companies from user object
-  const companies: Company[] = (() => {
-    const raw = user.companies as any;
-    const items = (raw?.items ?? raw?._items) as Company[] | undefined;
-    if (Array.isArray(items) && items.length > 0) return items;
-    return user.company ? [user.company] : [];
-  })();
-
-  const activeCompany = companies.find(c => c.companyId === activeCompanyId) ?? user.company ?? null;
-
-  // Close on click outside
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [isOpen]);
-
-  const handleSelect = (company: Company) => {
-    setActiveCompanyId(company.companyId);
-    setIsOpen(false);
-    onCompanyChange(company);
-
-    // Persist and notify other components
-    localStorage.setItem('selected_company', JSON.stringify(company));
-    window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
-  };
-
-  if (companies.length <= 1) return null; // No need to switch
-
-  return (
-    <div ref={ref} className="relative inline-block">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-3 py-1.5 text-sm">
-        {activeCompany?.name ?? 'Select company'}
-      </button>
-
-      {isOpen && (
-        <ul className="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded border bg-white shadow-lg">
-          {companies.map(company => (
-            <li
-              key={company.companyId}
-              onClick={() => handleSelect(company)}
-              className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${
-                company.companyId === activeCompanyId ? 'font-bold' : ''
-              }`}
-            >
-              {company.name}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+// Only show the switcher when the user has more than one company
+const companies = getCompanies(user);
+if (companies.length <= 1) {
+  // No switcher needed
 }
 ```
 
-### Integrating with CompanyContext
+### Handling company selection
 
-To persist the selected company across page navigations and sync with other components, wrap your app with `CompanyProvider` and use the `useCompany` hook:
+```ts
+function handleSelect(company: Company) {
+  // pseudo-code: update your active company state
 
-```tsx
-import { useCompany } from '@/context/CompanyContext';
+  // Persist to localStorage so other components and page reloads can read it
+  localStorage.setItem('selected_company', JSON.stringify(company));
 
-function MyHeader({ user }: { user: Contact }) {
-  const { selectedCompany, setSelectedCompany } = useCompany();
-
-  return (
-    <CustomCompanySwitcher
-      user={user}
-      onCompanyChange={setSelectedCompany}
-    />
-  );
+  // Notify other components (e.g., OrderList, UserDetails) via custom event
+  window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
 }
 ```
 
-The `CompanyContext` handles:
-- Storing the selected company in `localStorage` (key: `selected_company`)
-- Dispatching `companySwitched` custom events for cross-component sync
-- Clearing the selection on `userLoggedOut` events
-- Syncing across tabs via the `companySwitched` event listener
+### Active company resolution
+
+Determine the active company using this priority:
+
+1. The company the user just selected (from your local state)
+2. An externally controlled `selectedCompanyId` (e.g., from a shared state provider)
+3. `user.company` as the default fallback
+
+### Click-outside dismissal
+
+When the dropdown is open, add a `mousedown` listener on `document` that checks whether the click target is outside the switcher element. If so, close the dropdown. Remove the listener when the dropdown closes.
+
+### Cross-component sync pattern
+
+To persist the selected company across page navigations and sync with other components:
+
+- Store the selected company in `localStorage` (key: `selected_company`) and in your app-level state.
+- Dispatch a `companySwitched` custom event on `window` when the selection changes.
+- Listen for `userLoggedOut` events to clear the selection on logout.
+- Other components (OrderList, UserDetails, etc.) listen for the `companySwitched` event to refetch data for the new company.
 
 ## CSS Classes
 

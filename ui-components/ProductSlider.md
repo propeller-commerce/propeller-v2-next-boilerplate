@@ -372,47 +372,32 @@ To build a custom slider or replace the built-in fetching logic:
 3. **Wire up cart integration** by passing `cartId`, `createCart`, `onCartCreated`, and `afterAddToCart` to keep the app's CartContext in sync.
 4. **Handle routing** with `onProductClick` and `onClusterClick` callbacks rather than relying on anchor tags, so the slider works with any router.
 
-Example with external fetch and custom filtering:
+Example -- fetch externally with custom filtering, then pass results via the `products` prop:
 
-```tsx
-const [items, setItems] = useState<(Product | Cluster)[]>([]);
+```ts
+import { ProductService, Enums, Product, Cluster } from 'propeller-sdk-v2';
 
-useEffect(() => {
-  const productService = new ProductService(graphqlClient);
-  productService.getProducts({
-    input: {
-      productIds: cmsBlock.productIds,
-      language: 'NL',
-      page: 1,
-      offset: 20,
-      statuses: [Enums.ProductStatus.A],
-    },
-    imageSearchFilters: config.imageSearchFiltersGrid,
-    imageVariantFilters: config.imageVariantFiltersMedium,
-    filterAvailableAttributeInput: { isSearchable: true },
-  }).then(res => {
-    // Custom filter: only items with images
-    setItems((res.items || []).filter(item => item.media?.images?.length > 0));
-  });
-}, [cmsBlock.productIds]);
+// pseudo-code: call this on initialization or when productIds change
+const productService = new ProductService(graphqlClient);
+const res = await productService.getProducts({
+  input: {
+    productIds: cmsBlock.productIds,
+    language: 'NL',
+    page: 1,
+    offset: 20,
+    statuses: [Enums.ProductStatus.A],
+  },
+  imageSearchFilters: config.imageSearchFiltersGrid,
+  imageVariantFilters: config.imageVariantFiltersMedium,
+  filterAvailableAttributeInput: { isSearchable: true },
+});
 
-return (
-  <ProductSlider
-    graphqlClient={graphqlClient}
-    products={items}
-    language="NL"
-    taxZone="NL"
-    title={cmsBlock.title}
-    user={authState.user}
-    cartId={cart?.cartId}
-    createCart={true}
-    onCartCreated={saveCart}
-    afterAddToCart={saveCart}
-    configuration={config}
-    onProductClick={(p) => router.push(config.urls.getProductUrl(p))}
-    onClusterClick={(c) => router.push(config.urls.getClusterUrl(c))}
-  />
+// Custom filter: only items with images
+const items = (res.items || []).filter(
+  (item: Product | Cluster) => item.media?.images?.length > 0
 );
+
+// pseudo-code: pass `items` to the ProductSlider's `products` prop to skip internal fetching
 ```
 
 ## Behavior
@@ -443,10 +428,14 @@ The partial-card pattern is intentional: it signals to the user that the row is 
 ### Re-fetching
 
 The component re-fetches automatically when any of these props change:
-- `productIds` or `clusterIds` (compared by value, not reference)
-- `crossUpsellTypes` (compared by value)
+- `productIds` or `clusterIds` (compared by value via `JSON.stringify`, not by reference — prevents stale-reference refetches when arrays are re-created with the same contents)
+- `crossUpsellTypes` (compared by value via `JSON.stringify`)
 - `productId` or `clusterId` (cross-upsell source)
 - `language`
+
+### Scroll initialization
+
+The slider generates a unique `sliderId` on mount (via `Math.random()`) and uses a `data-slider-id` DOM attribute to query scroll dimensions. Scroll dimensions are initialized with a 50ms `setTimeout` after the slider ID is set, to ensure the DOM has fully rendered.
 
 ### CMS-Driven Content (Strapi)
 

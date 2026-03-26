@@ -163,29 +163,31 @@ To build a custom carrier selector without this component, you need:
 
 5. **Handle the empty state** -- when `cart.carriers` is empty or undefined, no shipping options are available (usually because no delivery address has been set yet, or the backend has no rules matching the cart).
 
-### Minimal custom example
+### Minimal custom implementation
 
-```tsx
-function CustomCarrierPicker({ cart, onSelect }: { cart: Cart; onSelect: (c: CartCarrier) => void }) {
-  const [selected, setSelected] = useState<string>('');
-  const carriers = cart?.carriers || [];
+```ts
+import { CartService } from 'propeller-sdk-v2';
+import type { Cart, CartCarrier } from 'propeller-sdk-v2';
 
-  if (carriers.length === 0) return <p>No shipping options available.</p>;
+// pseudo-code
 
-  return (
-    <ul>
-      {carriers.map((c) => (
-        <li
-          key={c.name}
-          onClick={() => { setSelected(c.name); onSelect(c); }}
-          style={{ fontWeight: selected === c.name ? 'bold' : 'normal', cursor: 'pointer' }}
-        >
-          {c.name} — {c.price.toFixed(2)}
-        </li>
-      ))}
-    </ul>
-  );
+const carriers = cart?.carriers || [];
+// If `carriers` is empty, show an empty-state message.
+
+// Track the selected carrier name in your framework's state mechanism.
+let selectedCarrierName: string = '';
+
+function selectCarrier(carrier: CartCarrier, cartId: string) {
+  selectedCarrierName = carrier.name;
+
+  // Persist the selection to the API
+  const cartService = new CartService(graphqlClient);
+  cartService.setCarrier(cartId, carrier.name);
 }
+
+// Render a list of carriers. For each carrier, display `carrier.name` and
+// `carrier.price.toFixed(2)`. Highlight the carrier whose name matches
+// `selectedCarrierName`. On click, call `selectCarrier(carrier, cart.cartId)`.
 ```
 
 ## Behavior

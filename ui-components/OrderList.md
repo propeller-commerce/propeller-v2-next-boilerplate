@@ -265,12 +265,9 @@ Variables for a basic paginated fetch:
 
 ## Building Your Own
 
-Standalone implementation without the component, using the SDK directly:
+Standalone implementation using the SDK directly:
 
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
+```ts
 import {
   OrderService,
   OrderSearchArguments,
@@ -279,90 +276,48 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 
-interface Props {
-  graphqlClient: GraphQLClient;
-  userId: number;
-  companyId?: number;
-  statuses?: string[];
-}
+// pseudo-code
 
-export default function CustomOrderList({ graphqlClient, userId, companyId, statuses }: Props) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const itemsPerPage = 10;
+// 1. Initialize the service
+const orderService = new OrderService(graphqlClient);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true);
-      const orderService = new OrderService(graphqlClient);
-      const args: OrderSearchArguments = {
-        status: statuses || ['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER'],
-        userId: [userId],
-        ...(companyId && { companyIds: [companyId] }),
-        page,
-        offset: itemsPerPage,
-        term: '',
-        termFields: [
-          Enums.OrderSearchFields.REFERENCE,
-          Enums.OrderSearchFields.ITEM_SKU,
-          Enums.OrderSearchFields.ID,
-        ],
-      };
+// 2. Build search arguments
+const itemsPerPage = 10;
+const args: OrderSearchArguments = {
+  status: ['NEW', 'CONFIRMED', 'VALIDATED', 'ORDER'],
+  userId: [userId],
+  ...(companyId && { companyIds: [companyId] }),
+  page: 1,
+  offset: itemsPerPage,
+  term: '',
+  termFields: [
+    Enums.OrderSearchFields.REFERENCE,
+    Enums.OrderSearchFields.ITEM_SKU,
+    Enums.OrderSearchFields.ID,
+  ],
+};
 
-      try {
-        const response = await orderService.getOrders(args);
-        setOrders(response.items || []);
-        setTotalPages(Math.ceil((response.itemsFound || 0) / itemsPerPage));
-      } catch (err) {
-        console.error('Failed to fetch orders:', err);
-        setOrders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [graphqlClient, userId, companyId, page, statuses]);
-
-  if (loading) return <p>Loading...</p>;
-  if (orders.length === 0) return <p>No orders found.</p>;
-
-  return (
-    <div>
-      <table>
-        <thead>
-          <tr>
-            <th>Order #</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id}>
-              <td>{order.id}</td>
-              <td>{new Date(order.date || order.createdAt || '').toLocaleDateString()}</td>
-              <td>{order.status}</td>
-              <td>{order.total?.net ? `EUR ${Number(order.total.net).toFixed(2)}` : '-'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {totalPages > 1 && (
-        <div>
-          <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
-          <span>Page {page} of {totalPages}</span>
-          <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
-        </div>
-      )}
-    </div>
-  );
-}
+// 3. Fetch orders
+const response = await orderService.getOrders(args);
+const orders: Order[] = response.items || [];
+const totalPages = Math.ceil((response.itemsFound || 0) / itemsPerPage);
 ```
+
+**Data mapping per order row:**
+
+| Field | Source |
+|---|---|
+| Order ID | `order.id` |
+| Date | `new Date(order.date \|\| order.createdAt \|\| '').toLocaleDateString()` |
+| Status | `order.status` |
+| Total | `order.total?.net` (format as currency, e.g., `EUR X.XX`) |
+
+**UI structure:**
+
+- Show a loading indicator while fetching. Show an empty-state message when `orders` is empty.
+- Render a table with columns for order ID, date, status, and total. Each row should be clickable to navigate to the order detail.
+- When `totalPages > 1`, render Previous/Next pagination controls. Track the current page number in your framework's state mechanism and re-fetch orders when it changes.
+- Re-fetch when `userId`, `companyId`, or the current page changes.
 
 ## Behavior
 

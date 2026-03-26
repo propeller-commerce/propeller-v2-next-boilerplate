@@ -180,7 +180,7 @@ These props only apply when `graphqlClient` is provided and `products` is not.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `categoryId` | `number` | `config.baseCategoryId` | Category to list products from. |
-| `term` | `string` | -- | Search term. Searches the full catalog using `baseCategoryId`. Auto-sets sort to `RELEVANCE`. |
+| `term` | `string` | -- | Search term. Searches the full catalog using `baseCategoryId`. Auto-sets sort to `RELEVANCE` when no sort is explicitly set. |
 | `brand` | `string` | -- | Manufacturer/brand name filter. Uses `baseCategoryId` for a catalog-wide search. |
 
 ### Locale and Pricing
@@ -195,7 +195,7 @@ These props only apply when `graphqlClient` is provided and `products` is not.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `columns` | `number` | `3` | Number of grid columns. Accepts 1, 2, 3, or 4. Responsive: 2-col on mobile, full on large screens. |
+| `columns` | `number` | `3` | Number of grid columns. Accepts 1, 2, 3, or 4. `1` = single-column flex layout; `2` = 2-column grid; `3` (default) = 2-col on mobile, 3 on `lg`; `4` = 2-col on mobile, 4 on `lg`. |
 | `className` | `string` | -- | Extra CSS class on the root element. |
 | `isLoading` | `boolean` | `false` | Force skeleton loader display. Useful in controlled mode. |
 
@@ -456,7 +456,7 @@ To create a custom product grid that replaces or extends this component:
 
 3. **Language filtering** -- The API returns products matching the category regardless of translation status. Filter items client-side by checking that `item.names` contains an entry with the desired `language` code. Adjust `itemsFound` accordingly.
 
-4. **Stale response handling** -- When filter/sort/page changes trigger rapid re-fetches, use an incrementing fetch ID to discard responses from superseded requests. Only apply results where the fetch ID matches the current value.
+4. **Stale response handling** -- When filter/sort/page changes trigger rapid re-fetches, the component uses an incrementing `fetchId` counter to discard responses from superseded requests. Only results where the fetch ID matches the current counter value are applied. Implement this pattern in custom implementations to prevent stale data from overwriting newer results.
 
 5. **Filter sidebar integration** -- The `products.filters` array from the API response contains `AttributeFilter` objects with searchable attribute metadata and value counts. Pass these to a filter UI component, collect selected values as `ProductTextFilterInput[]`, and feed them back into the next query.
 

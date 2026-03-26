@@ -267,99 +267,48 @@ The component uses an `isMounted` guard to prevent hydration mismatches. The int
 
 Standalone implementation using `CartService` directly, without the ActionCode component:
 
-```tsx
-'use client';
+```ts
+import { CartService, CartActionCodeVariables, GraphQLClient, Cart } from 'propeller-sdk-v2';
 
-import { useState } from 'react';
-import { GraphQLClient, CartService, Cart, CartActionCodeVariables } from 'propeller-sdk-v2';
+// pseudo-code: maintain state for code input, loading, and error in your framework
 
-interface ActionCodeFormProps {
-  graphqlClient: GraphQLClient;
-  cart: Cart;
-  language?: string;
-  onCartUpdate: (cart: Cart) => void;
+// Initialize the service
+const cartService = new CartService(graphqlClient);
+
+// Apply an action code
+async function applyCode(cart: Cart, code: string, language: string = 'NL'): Promise<Cart> {
+  const variables: CartActionCodeVariables = {
+    id: cart.cartId,
+    input: { actionCode: code.trim() },
+    language,
+  };
+
+  const updatedCart = await cartService.addActionCodeToCart(variables);
+  return updatedCart;
+  // On success: clear the code input and pass updatedCart to your cart state
+  // On failure: display an error message to the user
 }
 
-export function ActionCodeForm({ graphqlClient, cart, language = 'NL', onCartUpdate }: ActionCodeFormProps) {
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+// Remove the applied action code
+async function removeCode(cart: Cart, language: string = 'NL'): Promise<Cart> {
+  const variables: CartActionCodeVariables = {
+    id: cart.cartId,
+    input: { actionCode: cart.actionCode },
+    language,
+  };
 
-  const hasAppliedCode = !!cart?.actionCode;
-
-  async function applyCode() {
-    if (!code.trim() || loading) return;
-    setLoading(true);
-    setError('');
-
-    const cartService = new CartService(graphqlClient);
-    const variables: CartActionCodeVariables = {
-      id: cart.cartId,
-      input: { actionCode: code.trim() },
-      language,
-    };
-
-    try {
-      const updatedCart = await cartService.addActionCodeToCart(variables);
-      setCode('');
-      onCartUpdate(updatedCart);
-    } catch (err) {
-      setError('Failed to apply action code.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function removeCode() {
-    if (loading || !hasAppliedCode) return;
-    setLoading(true);
-    setError('');
-
-    const cartService = new CartService(graphqlClient);
-    const variables: CartActionCodeVariables = {
-      id: cart.cartId,
-      input: { actionCode: cart.actionCode },
-      language,
-    };
-
-    try {
-      const updatedCart = await cartService.removeActionCodeFromCart(variables);
-      onCartUpdate(updatedCart);
-    } catch (err) {
-      setError('Failed to remove action code.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (hasAppliedCode) {
-    return (
-      <div>
-        <span>Applied: {cart.actionCode}</span>
-        <button onClick={removeCode} disabled={loading}>
-          Remove
-        </button>
-        {error && <p>{error}</p>}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <input
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && applyCode()}
-        placeholder="Enter action code"
-        disabled={loading}
-      />
-      <button onClick={applyCode} disabled={loading || !code.trim()}>
-        {loading ? 'Applying...' : 'Apply'}
-      </button>
-      {error && <p>{error}</p>}
-    </div>
-  );
+  const updatedCart = await cartService.removeActionCodeFromCart(variables);
+  return updatedCart;
+  // On success: pass updatedCart to your cart state
+  // On failure: display an error message to the user
 }
+
+// Check whether a code is currently applied
+const hasAppliedCode = !!cart?.actionCode;
+```
+
+Your UI should render:
+- When no code is applied: a text input for the code and an "Apply" button. On submit, call `applyCode()`.
+- When a code is applied: display `cart.actionCode` as a badge with a "Remove" button. On click, call `removeCode()`.
+- Disable inputs and buttons while a request is in flight. Show error messages on failure.
 ```

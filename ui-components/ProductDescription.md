@@ -210,7 +210,7 @@ The component re-evaluates the description whenever the `product` or `language` 
 
 If you need custom rendering logic (e.g., sanitizing the HTML, rendering Markdown instead, or integrating a "show more" animation), you can extract the description from the product object directly:
 
-```tsx
+```ts
 import type { Product, LocalizedString } from 'propeller-sdk-v2';
 
 function getProductDescription(
@@ -226,34 +226,25 @@ function getProductDescription(
   return match?.value || product.descriptions[0]?.value || '';
 }
 
-// Usage:
+// pseudo-code
 const html = getProductDescription(product, 'EN');
 ```
 
-With HTML sanitization using DOMPurify:
+You can sanitize the HTML before rendering using a library like DOMPurify:
 
-```tsx
+```ts
 import DOMPurify from 'dompurify';
 
-function ProductDescriptionCustom({ product, language = 'NL' }: {
-  product: Product;
-  language?: string;
-}) {
-  const raw = getProductDescription(product, language);
-  const clean = DOMPurify.sanitize(raw);
-
-  return (
-    <div
-      className="prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: clean }}
-    />
-  );
-}
+const raw = getProductDescription(product, 'NL');
+const clean = DOMPurify.sanitize(raw);
+// Render `clean` as raw HTML in your template
 ```
 
-With truncation and a custom character limit:
+For truncation with expand/collapse, use a helper function and a boolean toggle:
 
-```tsx
+```ts
+// pseudo-code
+
 function truncateHtml(html: string, maxChars: number): string {
   const plain = html.replace(/<[^>]*>/g, '');
   if (plain.length <= maxChars) return html;
@@ -263,29 +254,12 @@ function truncateHtml(html: string, maxChars: number): string {
   return (lastSpace > 0 ? cut.substring(0, lastSpace) : cut) + '\u2026';
 }
 
-function ProductDescriptionTruncated({ product, maxLength = 200 }: {
-  product: Product;
-  maxLength?: number;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const html = getProductDescription(product);
+const html = getProductDescription(product);
+const plain = html.replace(/<[^>]*>/g, '');
+const needsTruncation = plain.length > maxLength;
 
-  const plain = html.replace(/<[^>]*>/g, '');
-  const needsTruncation = plain.length > maxLength;
-
-  return (
-    <div>
-      {expanded || !needsTruncation ? (
-        <div dangerouslySetInnerHTML={{ __html: html }} />
-      ) : (
-        <p>{truncateHtml(html, maxLength)}</p>
-      )}
-      {needsTruncation && (
-        <button onClick={() => setExpanded(!expanded)}>
-          {expanded ? 'Read less' : 'Read more'}
-        </button>
-      )}
-    </div>
-  );
-}
+// Track an `expanded` boolean in your framework's state mechanism.
+// When collapsed and truncation is needed, render `truncateHtml(html, maxLength)` as plain text.
+// When expanded or no truncation is needed, render the full `html` as raw HTML.
+// Show a "Read more" / "Read less" toggle button when `needsTruncation` is true.
 ```

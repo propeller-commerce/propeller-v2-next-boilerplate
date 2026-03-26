@@ -242,27 +242,62 @@ To build a custom specifications component, you need:
 
 5. **Group attributes** (optional) by reading `attributeDescription.group`. Collect unique groups in encounter order and partition attributes accordingly.
 
-Example of a minimal custom implementation:
+### Fetch attributes via the SDK
 
-```tsx
-import { ProductService, AttributeResult, GraphQLClient } from 'propeller-sdk-v2';
+```ts
+import { ProductService, AttributeResult } from 'propeller-sdk-v2';
 
-function useProductSpecs(client: GraphQLClient, productId: number) {
-  const [specs, setSpecs] = useState<AttributeResult[]>([]);
-
-  useEffect(() => {
-    const service = new ProductService(client);
-    service
-      .getAttributeResultByProductId(productId, {
-        attributeDescription: { isPublic: true },
-        page: 1,
-        offset: 500,
-      })
-      .then((res) => setSpecs(res?.items || []));
-  }, [productId]);
-
-  return specs;
+// pseudo-code: call on initialization and when productId changes
+async function fetchSpecs(graphqlClient: GraphQLClient, productId: number): Promise<AttributeResult[]> {
+  const service = new ProductService(graphqlClient);
+  const res = await service.getAttributeResultByProductId(productId, {
+    attributeDescription: { isPublic: true },
+    page: 1,
+    offset: 500,
+  });
+  return res?.items || [];
 }
 ```
 
-From there, map over the returned `AttributeResult[]` and render however you like -- cards, accordion panels, definition lists, comparison tables, etc.
+### Map attributes to display data
+
+```ts
+function mapAttribute(attr: AttributeResult, language: string): { label: string; value: string } | null {
+  // Resolve label
+  const label = attr.attributeDescription?.descriptions?.find(
+    (d) => d.language === language
+  )?.value || attr.attributeDescription?.name || '';
+
+  // Extract value by type
+  let value: string;
+  switch (attr.value?.type) {
+    case 'TEXT':
+      value = attr.value.textValues?.find((t) => t.language === language)?.values?.join(', ') || '';
+      break;
+    case 'ENUM':
+      value = attr.value.enumValues?.join(', ') || '';
+      break;
+    case 'INT':
+      value = String(attr.value.intValue ?? '');
+      break;
+    case 'DECIMAL':
+      value = String(attr.value.decimalValue ?? '');
+      break;
+    case 'DATETIME':
+      value = attr.value.dateTimeValue || '';
+      break;
+    case 'COLOR':
+      value = attr.value.colorValue || '';
+      break;
+    default:
+      value = typeof attr.value?.value === 'boolean'
+        ? (attr.value.value ? 'Yes' : 'No')
+        : String(attr.value?.value ?? '');
+  }
+
+  if (!value || value === '0') return null;
+  return { label, value };
+}
+```
+
+From there, render the mapped attributes however you like -- table rows, cards, accordion panels, definition lists, comparison tables, etc. For grouped display, partition attributes by `attributeDescription.group` in encounter order.

@@ -264,127 +264,71 @@ query {
 
 ## Building Your Own
 
-If you need a custom user details component, you can build one using the same SDK services and data patterns:
+If you need a custom user details display, here are the data access patterns you need:
 
-```tsx
-'use client';
+### Accessing user data
 
-import { useAuth } from '@/context/AuthContext';
-import { useCompany } from '@/context/CompanyContext';
+```ts
 import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
 
-export default function CustomUserDetails() {
-  const { state } = useAuth();
-  const { selectedCompany } = useCompany();
-  const user = state.user;
+// The user object comes from UserService.getViewer({}) or your auth state
+// pseudo-code: obtain `user` (Contact | Customer) and `activeCompany` (Company | null) from your app state
 
-  if (!state.isAuthenticated || !user) return null;
+// Determine user type
+const isContact = user !== null && 'company' in user;
 
-  const isContact = user !== null && 'company' in user;
-
-  // Get the active company for Contact users
-  const activeCompany: Company | null = isContact ? selectedCompany : null;
-
-  // Resolve addresses based on user type
-  const addresses: Address[] = isContact
-    ? activeCompany?.addresses || []
-    : (user as Customer).addresses || [];
-
-  const defaultInvoiceAddress = addresses.find(
-    (addr) => addr.type === 'invoice' && addr.isDefault === 'Y'
-  ) ?? null;
-
-  const defaultDeliveryAddress = addresses.find(
-    (addr) => addr.type === 'delivery' && addr.isDefault === 'Y'
-  ) ?? null;
-
-  // Build display name
-  const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
-
-  return (
-    <div className="space-y-6">
-      {/* Personal info */}
-      <section>
-        <h3>Personal Information</h3>
-        <p>Name: {name}</p>
-        <p>Email: {user.email}</p>
-      </section>
-
-      {/* Company info (B2B only) */}
-      {isContact && activeCompany && (
-        <section>
-          <h3>Company</h3>
-          <p>Name: {activeCompany.name}</p>
-          {activeCompany.taxNumber && <p>Tax: {activeCompany.taxNumber}</p>}
-          {activeCompany.cocNumber && <p>CoC: {activeCompany.cocNumber}</p>}
-        </section>
-      )}
-
-      {/* All companies list (B2B only) */}
-      {isContact && (
-        <section>
-          <h3>Companies</h3>
-          <ul>
-            {(() => {
-              const contact = user as Contact;
-              const companies =
-                contact.companies?.items?.length > 0
-                  ? contact.companies.items
-                  : contact.company
-                    ? [contact.company]
-                    : [];
-              return companies.map((company) => (
-                <li key={company.companyId}>
-                  {company.name}
-                  {activeCompany?.companyId === company.companyId && ' (Active)'}
-                </li>
-              ));
-            })()}
-          </ul>
-        </section>
-      )}
-
-      {/* Default addresses */}
-      <section>
-        <h3>Default Addresses</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div>
-            <h4>Invoice</h4>
-            {defaultInvoiceAddress ? (
-              <div>
-                {defaultInvoiceAddress.company && <p>{defaultInvoiceAddress.company}</p>}
-                <p>{[defaultInvoiceAddress.street, defaultInvoiceAddress.number].filter(Boolean).join(' ')}</p>
-                <p>{[defaultInvoiceAddress.postalCode, defaultInvoiceAddress.city].filter(Boolean).join(' ')}</p>
-                {defaultInvoiceAddress.country && <p>{defaultInvoiceAddress.country}</p>}
-              </div>
-            ) : (
-              <p>No invoice address found</p>
-            )}
-          </div>
-          <div>
-            <h4>Delivery</h4>
-            {defaultDeliveryAddress ? (
-              <div>
-                {defaultDeliveryAddress.company && <p>{defaultDeliveryAddress.company}</p>}
-                <p>{[defaultDeliveryAddress.street, defaultDeliveryAddress.number].filter(Boolean).join(' ')}</p>
-                <p>{[defaultDeliveryAddress.postalCode, defaultDeliveryAddress.city].filter(Boolean).join(' ')}</p>
-                {defaultDeliveryAddress.country && <p>{defaultDeliveryAddress.country}</p>}
-              </div>
-            ) : (
-              <p>No delivery address found</p>
-            )}
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
+// Build display name
+const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'User';
+// Email: user.email
 ```
+
+### Resolving addresses
+
+```ts
+// Contact addresses come from the active company; Customer addresses are on the user directly
+const addresses: Address[] = isContact
+  ? (activeCompany?.addresses || [])
+  : ((user as Customer).addresses || []);
+
+// Find default addresses by type and isDefault flag
+const defaultInvoiceAddress = addresses.find(
+  (addr) => addr.type === 'invoice' && addr.isDefault === 'Y'
+) ?? null;
+
+const defaultDeliveryAddress = addresses.find(
+  (addr) => addr.type === 'delivery' && addr.isDefault === 'Y'
+) ?? null;
+```
+
+### Resolving company data (B2B Contact only)
+
+```ts
+// Active company fields: activeCompany.name, activeCompany.taxNumber, activeCompany.cocNumber
+
+// All associated companies:
+const contact = user as Contact;
+const companies = contact.companies?.items?.length > 0
+  ? contact.companies.items
+  : contact.company
+    ? [contact.company]
+    : [];
+// Mark the active company by comparing company.companyId === activeCompany?.companyId
+```
+
+### Field mapping summary
+
+| Display section | Data source |
+|---|---|
+| Personal info (name, email) | `user.firstName`, `user.lastName`, `user.email` |
+| Company info | `activeCompany.name`, `activeCompany.taxNumber`, `activeCompany.cocNumber` |
+| Companies list | `contact.companies.items[]` |
+| Invoice address | `addresses.find(a => a.type === 'invoice' && a.isDefault === 'Y')` |
+| Delivery address | `addresses.find(a => a.type === 'delivery' && a.isDefault === 'Y')` |
 
 Key points for a custom implementation:
 
 - **User type check**: Use `'company' in user` to distinguish Contact from Customer.
 - **Address source**: Contact addresses come from the active company; Customer addresses are on the user directly.
 - **Default address filter**: Match on `type === 'invoice'|'delivery'` and `isDefault === 'Y'`.
-- **Company switching**: Use `useCompany()` from `CompanyContext` to get the active company and react to changes. The context dispatches a `companySwitched` custom event when the company changes.
+- **Company switching**: Read the active company from `localStorage` (key: `selected_company`) and listen for the `companySwitched` custom event on `window` to react to changes.
 - **Hydration safety**: Wrap client-only content in a mounted guard to avoid server/client mismatches.

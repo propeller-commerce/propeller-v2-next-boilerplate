@@ -131,7 +131,7 @@ ProductTabs reads the following fields from the `Product` object (from `propelle
 | `product.media.documents` | Downloads tab | `PaginatedMediaDocumentResponse` containing downloadable files associated with the product. |
 | `product.media.videos` | Videos tab | `PaginatedMediaVideoResponse` containing video entries associated with the product. |
 
-The Specifications tab can also fetch attributes independently via `graphqlClient` and `productId`, which is useful when `product.attributes` is not populated in the initial product query.
+The Specifications tab can also fetch attributes independently via `graphqlClient` and `productId`, which is useful when `product.attributes` is not populated in the initial product query. When fetching independently, the component calls `ProductService.getAttributeResultByProductId()` with `{ attributeDescription: { isPublic: true }, page: 1, offset: 2000 }`. This fetch is triggered only when the Specifications tab is first visited (lazy-loaded).
 
 ---
 
@@ -155,7 +155,7 @@ If the product or language changes after mount, the component re-evaluates and r
 
 ### Lazy Loading of Specifications
 
-The Specifications sub-component is not rendered until the user visits the Specifications tab at least once. After the first visit, it stays mounted (hidden via CSS on desktop) to preserve any fetched data and avoid redundant API calls. This is tracked internally via a `specsVisited` flag.
+The Specifications sub-component is not rendered until the user visits the Specifications tab at least once. On desktop, after the first visit it stays mounted (hidden via CSS `hidden` class) to preserve fetched data. On mobile (accordion), the specs section is only rendered when both visited AND currently active — it unmounts when collapsed. The attribute fetch via `ProductService.getAttributeResultByProductId()` fires when the tab is first visited and `graphqlClient` + `productId` are provided.
 
 ### Description Auto-Hide
 

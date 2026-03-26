@@ -369,10 +369,7 @@ When `accountHeaderLoginForm` is `true`:
 
 If you need a custom login form with different UI but the same authentication flow, you can use the SDK services directly:
 
-```tsx
-'use client';
-
-import { useState } from 'react';
+```ts
 import {
   GraphQLClient,
   LoginService,
@@ -380,90 +377,46 @@ import {
   LoginInput,
 } from 'propeller-sdk-v2';
 
-interface CustomLoginFormProps {
-  graphqlClient: GraphQLClient;
-  onSuccess?: (user: any) => void;
-}
+// pseudo-code: maintain state for email, password, loading, and error in your framework
 
-export function CustomLoginForm({ graphqlClient, onSuccess }: CustomLoginFormProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+async function handleLogin(graphqlClient: GraphQLClient, email: string, password: string) {
+  // Step 1: Authenticate with credentials
+  const loginService = new LoginService(graphqlClient);
+  const loginInput: LoginInput = { email, password };
+  const loginResponse = await loginService.login(loginInput);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loading) return;
+  const session = loginResponse.session;
+  if (!session?.accessToken || !session?.refreshToken) {
+    throw new Error('Missing authentication tokens');
+  }
 
-    setLoading(true);
-    setError('');
+  // Step 2: Update GraphQL client with auth header
+  const currentConfig = graphqlClient.getConfig();
+  graphqlClient.updateConfig({
+    headers: {
+      ...currentConfig.headers,
+      Authorization: `Bearer ${session.accessToken}`,
+    },
+  });
 
-    try {
-      // Step 1: Authenticate with credentials
-      const loginService = new LoginService(graphqlClient);
-      const loginInput: LoginInput = { email, password };
-      const loginResponse = await loginService.login(loginInput);
+  // Step 3: Fetch authenticated user profile
+  const userService = new UserService(graphqlClient);
+  const user = await userService.getViewer({});
 
-      const session = loginResponse.session;
-      if (!session?.accessToken || !session?.refreshToken) {
-        throw new Error('Missing authentication tokens');
-      }
+  // Step 4: Store tokens in localStorage for persistence
+  localStorage.setItem('accessToken', session.accessToken);
+  localStorage.setItem('refreshToken', session.refreshToken);
 
-      // Step 2: Update GraphQL client with auth header
-      const currentConfig = graphqlClient.getConfig();
-      graphqlClient.updateConfig({
-        headers: {
-          ...currentConfig.headers,
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-      });
+  // Step 5: Notify other components via custom event
+  window.dispatchEvent(new CustomEvent('userLoggedIn'));
 
-      // Step 3: Fetch authenticated user profile
-      const userService = new UserService(graphqlClient);
-      const user = await userService.getViewer({});
-
-      // Step 4: Store tokens in localStorage for persistence
-      localStorage.setItem('accessToken', session.accessToken);
-      localStorage.setItem('refreshToken', session.refreshToken);
-
-      // Step 5: Notify AuthContext via custom event
-      window.dispatchEvent(new CustomEvent('userLoggedIn'));
-
-      // Step 6: Callback
-      onSuccess?.(user);
-    } catch (err) {
-      setError('Invalid credentials. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-        required
-        disabled={loading}
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        required
-        disabled={loading}
-      />
-      {error && <div className="text-red-600">{error}</div>}
-      <button type="submit" disabled={loading}>
-        {loading ? 'Logging in...' : 'Log in'}
-      </button>
-    </form>
-  );
+  return { user, session };
+  // On success: clear the form fields and navigate or update your app state
+  // On failure: display an error message like "Invalid credentials"
 }
 ```
+
+Your UI should render an email input, a password input, an error message area, and a submit button. Disable inputs while `loading` is true. On form submission, call `handleLogin()` and handle the result.
 
 ### Key integration points
 

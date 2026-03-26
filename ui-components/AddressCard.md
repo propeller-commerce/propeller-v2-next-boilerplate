@@ -211,8 +211,8 @@ All visibility props default to `true`. Pass `false` to hide.
 | `beforeSave` | `() => void` | Called before any save processing begins |
 | `onEdit` | `(address: Address) => void \| Promise<void>` | Called when the user submits the edit form. Receives the full edited address object. Supports async -- the form waits for resolution before closing. |
 | `afterEdit` | `(address: Address) => void \| Promise<void>` | Called after `onEdit` completes. Use for notifications, loading state cleanup, etc. |
-| `onDelete` | `(address: Address) => void` | Called when the user confirms deletion. Receives the address object. |
-| `afterDelete` | `(address: Address) => void` | Called after `onDelete` completes. |
+| `onDelete` | `(address: Address) => void` | Called when the user confirms deletion. Receives the full address object (not just the ID). |
+| `afterDelete` | `(address: Address) => void` | Called after `onDelete` completes. Receives the same address object. |
 | `onSetDefault` | `(address: Address) => void` | Called when Set Default is clicked. |
 | `afterSetDefault` | `(address: Address) => void` | Called after `onSetDefault` completes. |
 | `onCancel` | `() => void` | Called when the form is cancelled in `isNew` mode. Use to hide the component or reset parent state. |
@@ -255,6 +255,7 @@ All text in the component is customizable via the `labels` prop.
 | `delete` | `'Delete'` | Delete button text |
 | `setDefault` | `'Set Default'` | Set default button text |
 | `save` | `'Save'` | Save button text |
+| `saving` | `'Saving...'` | Save button text while the form is submitting |
 | `cancel` | `'Cancel'` | Cancel button text |
 | `newTitle` | `'New Address'` | Form title in new mode |
 | `editTitle` | `'Edit Address'` | Form title in edit mode |
@@ -426,12 +427,20 @@ Clicking "Delete" opens a confirmation dialog. The address is only deleted (via 
 When `isNew` is `true`:
 - The address card body is hidden
 - The edit form auto-opens on mount
-- Clicking "Cancel" calls the `onCancel` callback (e.g., to unmount the component)
+- The "Cancel" button only appears when `onCancel` is provided; clicking it calls the callback (e.g., to unmount the component)
 - The `addressType` prop fills the `type` field on the resulting address object
 
 ### Optimistic Updates
 
 After the user saves the form, the component immediately updates its internal display using a local state copy of the address (`localAddress`). This provides instant visual feedback while the parent performs the actual API call in `onEdit`. If the API call fails, the parent should handle reverting.
+
+### Double-Submission Prevention
+
+A `saving` flag prevents the form from being submitted multiple times. While a save is in progress, the save and cancel buttons are disabled. The `beforeSave` callback fires after the guard is set but before the address object is constructed.
+
+### Notes Field
+
+The `notes` field is preserved when editing — the existing `notes` value is carried through to the saved address object — but there is **no input field** for it in the form UI. If your use case requires editable notes, build a custom form.
 
 ### Country Dropdown
 
@@ -443,200 +452,86 @@ The country dropdown is populated from the `countries` prop -- an array of `{ co
 
 ## Building Your Own
 
-If you need full control over address management without using the AddressCard component, here is a standalone implementation:
+If you need full control over address management without using the AddressCard component, here is how to set up the SDK services and perform the four key operations.
 
-```tsx
-'use client';
+### Service setup
 
-import { useState, useEffect } from 'react';
+```ts
 import { GraphQLClient, AddressService, UserService, Address } from 'propeller-sdk-v2';
-import countries from '@/data/countries';
-import toast from 'react-hot-toast';
 
-interface AddressManagerProps {
-  graphqlClient: GraphQLClient;
-}
+const addressService = new AddressService(graphqlClient);
+const userService = new UserService(graphqlClient);
+```
 
-export default function AddressManager({ graphqlClient }: AddressManagerProps) {
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    street: '',
-    number: '',
-    numberExtension: '',
-    postalCode: '',
-    city: '',
-    country: '',
-    email: '',
-    phone: '',
-    company: '',
-    gender: 'M' as 'M' | 'F' | 'U',
-  });
+### Fetch addresses
 
-  const addressService = new AddressService(graphqlClient);
-  const userService = new UserService(graphqlClient);
+Addresses are available on the user/contact object returned by `UserService.getViewer()`:
 
-  // Fetch addresses from the user profile
-  async function fetchAddresses() {
-    const viewer = await userService.getViewer({});
-    // Addresses are available on the user/contact object
-    const userAddresses = viewer?.addresses || [];
-    setAddresses(userAddresses);
-  }
-
-  useEffect(() => {
-    fetchAddresses();
-  }, []);
-
-  // Create a new address
-  async function handleCreate() {
-    try {
-      await addressService.createAddress({
-        input: {
-          type: 'DELIVERY',
-          ...formData,
-        },
-      });
-      toast.success('Address created');
-      await fetchAddresses();
-    } catch (err) {
-      toast.error('Failed to create address');
-    }
-  }
-
-  // Update an existing address
-  async function handleUpdate(id: number) {
-    try {
-      await addressService.updateAddress({
-        id,
-        input: formData,
-      });
-      toast.success('Address updated');
-      setEditingId(null);
-      await fetchAddresses();
-    } catch (err) {
-      toast.error('Failed to update address');
-    }
-  }
-
-  // Delete an address
-  async function handleDelete(id: number) {
-    if (!confirm('Are you sure?')) return;
-    try {
-      await addressService.deleteAddress({ id });
-      toast.success('Address deleted');
-      await fetchAddresses();
-    } catch (err) {
-      toast.error('Failed to delete address');
-    }
-  }
-
-  // Set as default address
-  async function handleSetDefault(addressId: number) {
-    try {
-      await userService.setDefaultAddress({ addressId });
-      toast.success('Default address updated');
-      await fetchAddresses();
-    } catch (err) {
-      toast.error('Failed to set default address');
-    }
-  }
-
-  // Populate form for editing
-  function startEdit(address: Address) {
-    setEditingId(address.id);
-    setFormData({
-      firstName: address.firstName || '',
-      lastName: address.lastName || '',
-      street: address.street || '',
-      number: address.number || '',
-      numberExtension: address.numberExtension || '',
-      postalCode: address.postalCode || '',
-      city: address.city || '',
-      country: address.country || '',
-      email: address.email || '',
-      phone: address.phone || '',
-      company: address.company || '',
-      gender: (address.gender as 'M' | 'F' | 'U') || 'M',
-    });
-  }
-
-  return (
-    <div>
-      <h2>My Addresses</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {addresses.map((addr) => (
-          <div key={addr.id} className="border rounded-lg p-4">
-            <p className="font-bold">{addr.company}</p>
-            <p>{addr.firstName} {addr.lastName}</p>
-            <p>{addr.street} {addr.number} {addr.numberExtension}</p>
-            <p>{addr.postalCode} {addr.city}</p>
-            <p>{countries.find((c) => c.code === addr.country)?.name || addr.country}</p>
-
-            {addr.isDefault === 'Y' && (
-              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                Default
-              </span>
-            )}
-
-            <div className="mt-3 flex gap-2">
-              <button onClick={() => startEdit(addr)}>Edit</button>
-              <button onClick={() => handleDelete(addr.id)}>Delete</button>
-              {addr.isDefault !== 'Y' && (
-                <button onClick={() => handleSetDefault(addr.id)}>Set Default</button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Simple form for create/edit */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          editingId ? handleUpdate(editingId) : handleCreate();
-        }}
-      >
-        <input
-          placeholder="First Name"
-          value={formData.firstName}
-          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Last Name"
-          value={formData.lastName}
-          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Street"
-          value={formData.street}
-          onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-          required
-        />
-        <select
-          value={formData.country}
-          onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-          required
-        >
-          <option value="">Select country</option>
-          {countries.map((c) => (
-            <option key={c.code} value={c.code}>{c.name}</option>
-          ))}
-        </select>
-        {/* ... remaining fields ... */}
-        <button type="submit">{editingId ? 'Update' : 'Create'}</button>
-        {editingId && (
-          <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
-        )}
-      </form>
-    </div>
-  );
+```ts
+async function fetchAddresses(): Promise<Address[]> {
+  const viewer = await userService.getViewer({});
+  return viewer?.addresses || [];
 }
 ```
+
+### Create a new address
+
+```ts
+async function createAddress(formData: Record<string, any>) {
+  await addressService.createAddress({
+    input: {
+      type: 'DELIVERY',
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      street: formData.street,
+      number: formData.number,
+      numberExtension: formData.numberExtension,
+      postalCode: formData.postalCode,
+      city: formData.city,
+      country: formData.country, // 2-letter ISO code, e.g. 'NL'
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      gender: formData.gender,
+    },
+  });
+  // pseudo-code: refetch addresses, show success notification
+}
+```
+
+### Update an existing address
+
+```ts
+async function updateAddress(id: number, formData: Record<string, any>) {
+  await addressService.updateAddress({
+    id,
+    input: formData,
+  });
+  // pseudo-code: refetch addresses, show success notification
+}
+```
+
+### Delete an address
+
+```ts
+async function deleteAddress(id: number) {
+  await addressService.deleteAddress({ id });
+  // pseudo-code: refetch addresses, show success notification
+}
+```
+
+### Set as default address
+
+```ts
+async function setDefaultAddress(addressId: number) {
+  await userService.setDefaultAddress({ addressId });
+  // pseudo-code: refetch addresses, show success notification
+}
+```
+
+### UI notes
+
+Render each address as a card showing: company name, full name with salutation, street + number + extension, postal code + city, and country (resolve the 2-letter code to a full name from a countries list). Show a "Default" badge when `isDefault === 'Y'`. Provide edit, delete, and set-default action buttons on each card. Use a form with fields for gender, company, first name, middle name, last name, street, number, extension, postal code, city, country (dropdown), email, and phone.
 
 ## Notes
 

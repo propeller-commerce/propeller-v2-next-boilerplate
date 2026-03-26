@@ -117,7 +117,7 @@ const { cart, saveCart } = useCart();
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `onItemDelete` | `(itemId: string, item?: { type: 'product' \| 'cluster' }) => void` | Called after an item is optimistically removed. The parent should perform the actual SDK deletion |
+| `onItemDelete` | `(itemId: string, itemType: string) => void` | Called after an item is optimistically removed. `itemType` is `'product'` or `'cluster'`. The parent should perform the actual SDK deletion |
 | `onListLoaded` | `(list: FavoriteList) => void` | Called after the favorite list is fetched, with the full list object. Useful for setting the page title |
 | `onItemClick` | `(item: Product \| Cluster) => void` | Called when an item title or image is clicked |
 
@@ -206,6 +206,8 @@ The component constructs query variables automatically based on props:
 ```
 
 Price calculation input adapts to the user type: `customerId` for B2C `Customer` users, `contactId` + `companyId` for B2B `Contact` users.
+
+**Note:** `taxZone` is hardcoded to `'NL'` — there is no prop to override it (unlike ProductGrid which accepts a `taxZone` prop). Image filters are also hardcoded to `page: 1, offset: 1` search filters and `cart_thumb` 200x200 WEBP variant.
 
 ### GraphQL query example
 
@@ -326,7 +328,7 @@ await service.removeClusterFromFavoriteList({
 
 ## Behavior
 
-- **Data fetching**: Fetches the favorite list on mount via `FavoriteListService.getFavoriteList()`. Re-fetches automatically whenever `favoriteListId` changes.
+- **Data fetching**: Fetches the favorite list on mount via `FavoriteListService.getFavoriteList()`. Re-fetches automatically whenever `favoriteListId` changes. Tracks the previous list ID internally to prevent duplicate fetches when the same ID is passed.
 - **User-aware pricing**: Price calculation variables adapt to the user type -- `customerId` for B2C customers, `contactId` and `companyId` for B2B contacts.
 - **Client-side pagination**: The SDK returns all items in a single response. The component slices the combined products + clusters array based on `itemsPerPage` and the current page.
 - **Optimistic delete**: When an item is deleted, it is immediately removed from the local array before calling the `onItemDelete` callback. The parent is responsible for the actual SDK deletion call.

@@ -136,6 +136,7 @@ Strip all metadata and actions for a compact list-name-only view.
 | `onCreate` | `(data: FavoriteListFormData) => void` | Override default create behavior. When provided, the component delegates to this callback instead of calling the SDK. |
 | `onEdit` | `(listId: string, data: FavoriteListFormData) => void` | Override default edit behavior. When provided, the component delegates to this callback instead of calling the SDK. |
 | `onDelete` | `(listId: string) => void` | Override default delete behavior. When provided, the component delegates to this callback instead of calling the SDK. |
+| `onListChanged` | `() => void` | Called after any list mutation (create, edit, delete) succeeds. Wire this to `refreshUser()` to keep the user object's `favoriteLists` in sync. |
 
 ### Formatting and labels
 
@@ -196,9 +197,13 @@ import { FavoriteListService, GraphQLClient } from 'propeller-sdk-v2';
 const service = new FavoriteListService(graphqlClient);
 ```
 
-### Fetching lists
+### Data source
 
-Lists are fetched using `getFavoriteLists()` with a search input scoped to either `contactId` (B2B Contact) or `customerId` (B2C Customer):
+The component reads lists directly from `props.user.favoriteLists.items` — it does **not** call `getFavoriteLists()` from the API. This means the user object (from AuthContext) must already contain populated favorite lists from the authentication response.
+
+Lists are re-read whenever `props.user` changes. After mutations (create/edit/delete), the component calls `onListChanged` so the parent page can call `refreshUser()` to update the user object, which in turn updates the lists.
+
+If you are building your own component, you can fetch lists from the API directly:
 
 ```ts
 import { FavoriteListsSearchInput } from 'propeller-sdk-v2';
@@ -360,86 +365,86 @@ To build a custom favorite lists UI while reusing the same data layer:
 6. **Handle default list switching**: before setting a new list as default, update the current default list to `isDefault: false` first, then set the new one. The API does not auto-unset the previous default.
 7. **Error recovery**: wrap mutations in try/catch. On failure, refetch the full list from the API to restore consistent state.
 
-Example skeleton:
+### Service setup
 
-```tsx
+```ts
 import { FavoriteListService, FavoriteList } from 'propeller-sdk-v2';
-import { useState, useEffect } from 'react';
 
-function useMyFavoriteLists(graphqlClient, user) {
-  const [lists, setLists] = useState<FavoriteList[]>([]);
+const service = new FavoriteListService(graphqlClient);
 
-  useEffect(() => {
-    if (!user) return;
-    const service = new FavoriteListService(graphqlClient);
-    const isContact = 'contactId' in user;
+// Determine user type
+const isContact = 'contactId' in user;
+const searchInput = isContact
+  ? { contactId: user.contactId }
+  : { customerId: user.customerId };
+```
 
-    service
-      .getFavoriteLists(
-        isContact ? { contactId: user.contactId } : { customerId: user.customerId }
-      )
-      .then((res) => setLists(res.items || []));
-  }, [user, graphqlClient]);
+### Fetch lists
 
-  const createList = async (name: string, isDefault: boolean) => {
-    const service = new FavoriteListService(graphqlClient);
-    const isContact = 'contactId' in user;
-
-    if (isDefault) {
-      const currentDefault = lists.find((l) => l.isDefault);
-      if (currentDefault) {
-        await service.updateFavoriteList(String(currentDefault.id), {
-          name: currentDefault.name,
-          isDefault: false,
-        });
-      }
-    }
-
-    await service.createFavoriteList({
-      name,
-      isDefault,
-      ...(isContact
-        ? { contactId: user.contactId }
-        : { customerId: user.customerId }),
-    });
-
-    // Refetch to get server-assigned ID and timestamps
-    const res = await service.getFavoriteLists(
-      isContact ? { contactId: user.contactId } : { customerId: user.customerId }
-    );
-    setLists(res.items || []);
-  };
-
-  const renameList = async (listId: string, name: string) => {
-    const service = new FavoriteListService(graphqlClient);
-    // Optimistic update
-    setLists((prev) =>
-      prev.map((l) => (String(l.id) === listId ? { ...l, name } : l))
-    );
-    try {
-      await service.updateFavoriteList(listId, { name });
-    } catch {
-      // Rollback on error
-      const res = await service.getFavoriteLists(/* ... */);
-      setLists(res.items || []);
-    }
-  };
-
-  const deleteList = async (listId: string) => {
-    const service = new FavoriteListService(graphqlClient);
-    // Optimistic update
-    setLists((prev) => prev.filter((l) => String(l.id) !== listId));
-    try {
-      await service.deleteFavoriteList(listId);
-    } catch {
-      const res = await service.getFavoriteLists(/* ... */);
-      setLists(res.items || []);
-    }
-  };
-
-  return { lists, createList, renameList, deleteList };
+```ts
+async function fetchLists(): Promise<FavoriteList[]> {
+  const res = await service.getFavoriteLists(searchInput);
+  return res.items || [];
 }
 ```
+
+### Create a list
+
+```ts
+async function createList(name: string, isDefault: boolean, currentLists: FavoriteList[]) {
+  // If setting as default, unset the current default first
+  if (isDefault) {
+    const currentDefault = currentLists.find((l) => l.isDefault);
+    if (currentDefault) {
+      await service.updateFavoriteList(String(currentDefault.id), {
+        name: currentDefault.name,
+        isDefault: false,
+      });
+    }
+  }
+
+  await service.createFavoriteList({
+    name,
+    isDefault,
+    ...(isContact
+      ? { contactId: user.contactId }
+      : { customerId: user.customerId }),
+  });
+
+  // Refetch to get server-assigned ID and timestamps
+  return fetchLists();
+}
+```
+
+### Rename a list
+
+```ts
+async function renameList(listId: string, name: string) {
+  // pseudo-code: optimistically update the list name in local state
+  try {
+    await service.updateFavoriteList(listId, { name });
+  } catch {
+    // pseudo-code: on error, refetch full list from API to restore consistent state
+  }
+}
+```
+
+### Delete a list
+
+```ts
+async function deleteList(listId: string) {
+  // pseudo-code: optimistically remove the list from local state
+  try {
+    await service.deleteFavoriteList(listId);
+  } catch {
+    // pseudo-code: on error, refetch full list from API to restore consistent state
+  }
+}
+```
+
+### Optimistic update pattern
+
+For rename and delete operations, update the in-memory list immediately to provide instant visual feedback. If the API call fails, refetch the full list from the server to roll back to a consistent state. For create operations, always refetch after the API call succeeds, since you need the server-assigned ID and timestamps.
 
 ## Behavior
 
@@ -464,6 +469,14 @@ Clicking the edit button on a list card replaces the list name and metadata with
 ### Sorting and limiting
 
 When the `limit` prop is set, the component sorts all fetched lists by `updatedAt` descending (most recently modified first) and displays only the first N. Without `limit`, lists are displayed in the order returned by the API.
+
+### Duplicate submission prevention
+
+A `saving` flag prevents double-submissions during async create/edit/delete operations. Buttons are implicitly disabled while a mutation is in flight.
+
+### Hydration safety
+
+The component uses an `isMounted` state guard to prevent server/client hydration mismatches. Content renders only after the component has mounted on the client; a skeleton loader is shown during SSR.
 
 ### Loading state
 

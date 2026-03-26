@@ -242,42 +242,47 @@ To create a custom cluster options component, you need to handle:
 
 6. **Pass child items to AddToCart** -- The parent should collect all selected product IDs (`Object.values(selectedOptionProducts).map(p => p.productId)`) and pass them as the `childItems` prop to `AddToCart`.
 
-Example skeleton:
+### Core logic
 
-```tsx
-function CustomClusterOptions({ options, onOptionSelect }) {
-  const [selections, setSelections] = useState<Record<number, Product>>({});
+```ts
+import { Product, ClusterOption } from 'propeller-sdk-v2';
 
-  const visibleOptions = options.filter(opt => opt.hidden !== 'Y');
+// Filter out hidden options
+function getVisibleOptions(options: ClusterOption[]): ClusterOption[] {
+  return options.filter(opt => opt.hidden !== 'Y');
+}
 
-  const handleSelect = (option, product) => {
-    setSelections(prev => ({ ...prev, [option.id]: product }));
-    onOptionSelect?.(product);
+// Track selections as a map of option ID to selected Product
+// pseudo-code: maintain a selections record, e.g. Record<number, Product>
+
+// Handle a selection change
+function handleSelect(
+  selections: Record<number, Product>,
+  option: ClusterOption,
+  productId: number
+): { updatedSelections: Record<number, Product>; selectedProduct: Product | undefined } {
+  const product = option.products?.find(p => p.productId === productId);
+  if (!product) return { updatedSelections: selections, selectedProduct: undefined };
+  return {
+    updatedSelections: { ...selections, [option.id]: product },
+    selectedProduct: product,
   };
+}
 
-  return (
-    <div>
-      {visibleOptions.map(option => (
-        <div key={option.id}>
-          <label>
-            {option.names?.[0]?.value}
-            {option.isRequired === 'Y' && <span> *</span>}
-          </label>
-          <select onChange={(e) => {
-            const product = option.products.find(p => p.productId === Number(e.target.value));
-            if (product) handleSelect(option, product);
-          }}>
-            <option value="">Select...</option>
-            {option.products.map(p => (
-              <option key={p.productId} value={p.productId}>
-                {p.names?.[0]?.value} — €{p.price?.gross?.toFixed(2)}
-              </option>
-            ))}
-          </select>
-          {/* Add preview card, validation, etc. */}
-        </div>
-      ))}
-    </div>
+// Validate required options before add-to-cart
+function validateRequired(
+  options: ClusterOption[],
+  selections: Record<number, Product>
+): boolean {
+  return !getVisibleOptions(options).some(
+    opt => opt.isRequired === 'Y' && !(opt.id in selections)
   );
 }
+
+// Collect selected product IDs for AddToCart's childItems prop
+function getChildItems(selections: Record<number, Product>): number[] {
+  return Object.values(selections).map(p => p.productId);
+}
 ```
+
+For each visible option, render a dropdown with `option.names[0].value` as the label and each `option.products` entry as a selectable choice (showing `product.names[0].value` and `product.price.gross` formatted as EUR). Mark required options with a badge. When `showErrors` is true and a required option has no selection, highlight it with an error state. After selection, show a preview card with the product thumbnail from `product.media.images.items[0].imageVariants[0].url`, the product name, and the price.

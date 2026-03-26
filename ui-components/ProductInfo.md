@@ -330,62 +330,46 @@ Fetch errors are caught silently -- the loading state is cleared but no error UI
 
 To create a custom product info component, you need the `Product` type from `propeller-sdk-v2` and a way to resolve localized strings.
 
-### Minimal implementation
+### Resolving product name from a pre-fetched product
 
-```tsx
+```ts
 import { Product, LocalizedString } from 'propeller-sdk-v2';
 
-interface CustomProductInfoProps {
-  product: Product;
-  language?: string;
-}
-
-function CustomProductInfo({ product, language = 'NL' }: CustomProductInfoProps) {
-  const name = product.names?.find(
+function getProductName(product: Product, language = 'NL'): string {
+  return product.names?.find(
     (n: LocalizedString) => n.language === language
   )?.value || product.names?.[0]?.value || '';
-
-  return (
-    <div>
-      <span className="text-sm text-gray-500">SKU: {product.sku}</span>
-      <h1 className="text-3xl font-bold">{name}</h1>
-    </div>
-  );
 }
+
+// Access fields:
+// - product.sku        -- the SKU string
+// - getProductName(product, 'NL') -- the localized product name
 ```
 
-### With internal fetching
+Render the SKU as a label and the product name as a heading.
 
-```tsx
-import { useState, useEffect } from 'react';
-import { GraphQLClient, Product, ProductService } from 'propeller-sdk-v2';
+### Fetching a product via the SDK
 
-function CustomProductInfo({ productId, graphqlClient, language = 'NL' }) {
-  const [product, setProduct] = useState<Product | null>(null);
+```ts
+import { ProductService, Product } from 'propeller-sdk-v2';
 
-  useEffect(() => {
-    if (!productId || !graphqlClient) return;
-    const service = new ProductService(graphqlClient);
-    service.getProduct({
-      productId,
-      language,
-      imageSearchFilters: { page: 1, offset: 20 },
-      imageVariantFilters: { transformations: [] },
-    }).then(setProduct);
-  }, [productId, language]);
-
-  if (!product) return <div>Loading...</div>;
-
-  const name = product.names?.find(n => n.language === language)?.value
-    || product.names?.[0]?.value || '';
-
-  return (
-    <div>
-      <p>{product.sku}</p>
-      <h1>{name}</h1>
-    </div>
-  );
+// pseudo-code: call on initialization and when productId or language changes
+async function fetchProduct(
+  graphqlClient: GraphQLClient,
+  productId: number,
+  language = 'NL'
+): Promise<Product> {
+  const service = new ProductService(graphqlClient);
+  return service.getProduct({
+    productId,
+    language,
+    imageSearchFilters: { page: 1, offset: 20 },
+    imageVariantFilters: { transformations: [] },
+  });
 }
+
+// pseudo-code: once the product is loaded, share it with sibling components
+// (e.g., price display, image gallery, specifications) to avoid duplicate API calls
 ```
 
 ### Adding attribute labels

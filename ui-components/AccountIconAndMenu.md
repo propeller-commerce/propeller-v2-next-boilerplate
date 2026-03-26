@@ -338,7 +338,7 @@ User submits form
 
 ### Building Your Own Component
 
-If you're building a custom account menu instead of using this component, you'll need:
+If you're building a custom account menu instead of using this component, here are the SDK calls and patterns you need:
 
 ```ts
 import {
@@ -356,38 +356,55 @@ const graphqlClient = new GraphQLClient({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// 2. Login
-const loginService = new LoginService(graphqlClient);
-const { session } = await loginService.login({
-  email: 'user@example.com',
-  password: 'password123',
-});
+// 2. Check auth state
+// Read `accessToken` from localStorage. If present, the user is authenticated.
+// If not, show a login form. If yes, show the account navigation menu.
 
-// 3. Store tokens
-localStorage.setItem('accessToken', session.accessToken);
-localStorage.setItem('refreshToken', session.refreshToken);
+// 3. Login flow
+async function login(email: string, password: string) {
+  const loginService = new LoginService(graphqlClient);
+  const { session } = await loginService.login({ email, password });
 
-// 4. Update client with auth header
-graphqlClient.updateConfig({
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session.accessToken}`,
-  },
-});
+  // Store tokens
+  localStorage.setItem('accessToken', session.accessToken);
+  localStorage.setItem('refreshToken', session.refreshToken);
 
-// 5. Fetch user profile
-const userService = new UserService(graphqlClient);
-const user = await userService.getViewer({});
+  // Update client with auth header
+  graphqlClient.updateConfig({
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.accessToken}`,
+    },
+  });
 
-// 6. Determine user type
-if ('company' in user) {
-  // B2B Contact — has company association
-  console.log(user.company.name);
-} else {
-  // B2C Customer
-  console.log(user.firstName);
+  // Fetch user profile
+  const userService = new UserService(graphqlClient);
+  const user = await userService.getViewer({});
+
+  // Notify other components
+  window.dispatchEvent(new CustomEvent('userLoggedIn'));
+
+  return user;
+}
+
+// 4. Determine user type
+function isB2BUser(user: Contact | Customer): user is Contact {
+  return 'company' in user;
+}
+
+// 5. Logout
+function logout() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  window.dispatchEvent(new CustomEvent('userLoggedOut'));
+  // pseudo-code: clear your user state and show the login form
 }
 ```
+
+Your UI should render:
+- **Unauthenticated**: A user icon that opens a dropdown with a login form (email, password, submit button, forgot password link, register link).
+- **Authenticated**: A greeting ("Hi, {firstName}") that opens a dropdown with account navigation links and a logout button.
+- For sidebar mode: always-visible navigation with active link highlighting based on the current route path.
 
 ## Behavior
 

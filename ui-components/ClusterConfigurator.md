@@ -280,95 +280,84 @@ To build a custom cluster configurator, you need three things from the Propeller
 2. **Cluster config settings** defining which attributes to use and their display order
 3. **A matching algorithm** to resolve selections to a product
 
-### Minimal implementation
+### Data flow and core logic
 
-```tsx
-function CustomConfigurator({ products, config, onChange }) {
-  const [selections, setSelections] = useState({});
+The configurator needs three inputs: `products` (all cluster products with attributes), `config` (the `ClusterConfig` with settings), and a `selections` map (attribute name to selected value).
 
-  // Sort settings by priority
-  const settings = [...config.settings].sort(
-    (a, b) => parseInt(a.priority) - parseInt(b.priority)
-  );
+```ts
+// Sort settings by priority (ascending)
+const settings = [...config.settings].sort(
+  (a, b) => parseInt(a.priority) - parseInt(b.priority)
+);
+```
 
-  // Get unique attribute values from products
-  function getValues(attrName, filterByPrior) {
-    const filtered = filterByPrior
-      ? products.filter((p) => matchesSelections(p, filterByPrior))
-      : products;
+### Get available attribute values (with drilldown filtering)
 
-    const values = new Set();
-    for (const product of filtered) {
-      for (const attr of product.attributes?.items || []) {
-        if (attr.attributeDescription?.name === attrName) {
-          // Extract value based on type — see Attribute Value Extraction above
-          values.add(extractValue(attr));
-        }
+```ts
+function getValues(
+  attrName: string,
+  products: Product[],
+  priorSelections: Record<string, string> | null
+): string[] {
+  // Filter products by all prior attribute selections
+  const filtered = priorSelections
+    ? products.filter((p) => matchesSelections(p, priorSelections))
+    : products;
+
+  const values = new Set<string>();
+  for (const product of filtered) {
+    for (const attr of product.attributes?.items || []) {
+      if (attr.attributeDescription?.name === attrName) {
+        // Extract value based on type -- see Attribute Value Extraction above
+        values.add(extractValue(attr));
       }
     }
-    return [...values];
   }
+  return [...values];
+}
+```
 
-  // Check if a product matches all current selections
-  function matchesSelections(product, sels) {
-    return Object.entries(sels).every(([name, value]) =>
-      product.attributes?.items?.some(
-        (attr) =>
-          attr.attributeDescription?.name === name &&
-          extractValue(attr) === value
-      )
-    );
-  }
+### Check if a product matches all selections
 
-  function handleSelect(name, value, index) {
-    const next = { ...selections, [name]: value };
-    // Clear subsequent selections
-    for (let i = index + 1; i < settings.length; i++) {
-      delete next[settings[i].name];
-    }
-    setSelections(next);
-
-    // Check if all selected
-    if (settings.every((s) => next[s.name])) {
-      const match = products.find((p) => matchesSelections(p, next));
-      if (match) onChange(match);
-    }
-  }
-
-  return (
-    <div>
-      {settings.map((setting, i) => {
-        const priorSelections = {};
-        for (let j = 0; j < i; j++) {
-          if (selections[settings[j].name]) {
-            priorSelections[settings[j].name] = selections[settings[j].name];
-          }
-        }
-        const values = getValues(
-          setting.name,
-          i > 0 ? priorSelections : null
-        );
-
-        return (
-          <div key={setting.id}>
-            <label>{setting.name}</label>
-            <select
-              value={selections[setting.name] || ''}
-              onChange={(e) => handleSelect(setting.name, e.target.value, i)}
-              disabled={i > 0 && !selections[settings[i - 1].name]}
-            >
-              <option value="">Select...</option>
-              {values.map((v) => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
-          </div>
-        );
-      })}
-    </div>
+```ts
+function matchesSelections(product: Product, sels: Record<string, string>): boolean {
+  return Object.entries(sels).every(([name, value]) =>
+    product.attributes?.items?.some(
+      (attr) =>
+        attr.attributeDescription?.name === name &&
+        extractValue(attr) === value
+    )
   );
 }
 ```
+
+### Handle a selection change
+
+```ts
+function handleSelect(
+  selections: Record<string, string>,
+  settings: ClusterConfigSetting[],
+  products: Product[],
+  name: string,
+  value: string,
+  index: number
+): { newSelections: Record<string, string>; matchedProduct: Product | undefined } {
+  const next = { ...selections, [name]: value };
+  // Clear subsequent selections
+  for (let i = index + 1; i < settings.length; i++) {
+    delete next[settings[i].name];
+  }
+
+  // Check if all attributes are selected and resolve the matching product
+  let matchedProduct: Product | undefined;
+  if (settings.every((s) => next[s.name])) {
+    matchedProduct = products.find((p) => matchesSelections(p, next));
+  }
+  return { newSelections: next, matchedProduct };
+}
+```
+
+For each setting, build `priorSelections` from all settings before the current index and call `getValues()` to determine the available options. Disable a selector when any preceding attribute has not been selected. Render selectors according to `setting.displayType` (DROPDOWN, RADIO, COLOR, IMAGE, or default pills).
 
 ### Key considerations for custom implementations
 

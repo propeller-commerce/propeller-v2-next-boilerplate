@@ -185,91 +185,35 @@ input PasswordRecoveryLinkInput {
 
 ## Building Your Own
 
-If you need full control over the password reset flow, you can build your own component using the same SDK service:
+If you need full control over the password reset flow, you can build your own using the same SDK service:
 
-```tsx
-'use client';
-
-import { useState } from 'react';
+```ts
 import { UserService, GraphQLClient } from 'propeller-sdk-v2';
 
-interface CustomForgotPasswordProps {
-  graphqlClient: GraphQLClient;
-  redirectUrl?: string;
-  language?: string;
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}
+// pseudo-code: maintain state for email, loading, submitted, and error in your framework
 
-export default function CustomForgotPassword({
-  graphqlClient,
-  redirectUrl,
-  language,
-  onSuccess,
-  onError,
-}: CustomForgotPasswordProps) {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loading) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const userService = new UserService(graphqlClient);
-      await userService.sendPasswordResetEmail({
-        email,
-        redirectUrl,
-        language,
-      });
-
-      setSubmitted(true);
-      onSuccess?.();
-    } catch (err) {
-      setError('Something went wrong. Please try again.');
-      onError?.(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (submitted) {
-    return (
-      <div className="text-center">
-        <p>If an account exists with this email, you will receive a reset link shortly.</p>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="reset-email">Email</label>
-      <input
-        id="reset-email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="name@example.com"
-        required
-        disabled={loading}
-      />
-
-      {error && <p className="text-red-600">{error}</p>}
-
-      <button type="submit" disabled={loading}>
-        {loading ? 'Sending...' : 'Reset Password'}
-      </button>
-    </form>
-  );
+async function handlePasswordReset(
+  graphqlClient: GraphQLClient,
+  email: string,
+  redirectUrl?: string,
+  language?: string,
+) {
+  const userService = new UserService(graphqlClient);
+  await userService.sendPasswordResetEmail({
+    email,
+    redirectUrl,
+    language,
+  });
+  // On success: transition to a "submitted" state showing a confirmation message
+  // On failure: display an error message to the user
 }
 ```
 
-This custom version demonstrates:
-- Passing `redirectUrl` and `language` to the SDK (the built-in component only sends `email`)
-- Separate `onSuccess` and `onError` callbacks instead of a single `afterForgotPassword`
-- Full control over markup, styling, and behavior
+The state flow for this feature is:
+
+1. **Form** -- Render an email input and a submit button. On submit, call `handlePasswordReset()`.
+2. **Loading** -- Disable the input and button while the API call is in flight.
+3. **Success** -- Replace the form with a confirmation message (e.g., "If an account exists with this email, you will receive a reset link shortly."). This state is final.
+4. **Error** -- Show an error message. Keep the form interactive so the user can retry.
+
+This custom approach allows you to pass `redirectUrl` and `language` to the SDK (the built-in component only sends `email`) and gives you full control over markup, styling, and behavior.

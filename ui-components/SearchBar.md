@@ -91,7 +91,7 @@ function Header() {
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `noImageUrl` | `string` | `''` | Fallback image URL when a result has no product image. |
+| `noImageUrl` | `string` | `''` | Fallback image URL when a result has no product image. When empty, broken image icons may appear for products without images. |
 | `formatPrice` | `(price: number) => string` | Formats as `€{price}` | Custom price formatting function. |
 | `labels` | `Record<string, string>` | See Labels table | Customizable UI text strings. |
 | `containerClassName` | `string` | `'relative flex-1 max-w-2xl mx-8'` | CSS class for the outermost container element. |

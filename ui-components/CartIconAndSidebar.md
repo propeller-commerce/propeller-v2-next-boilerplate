@@ -168,111 +168,35 @@ The component uses an `_isMounted` state flag that starts as `false` and flips t
 
 ## Building Your Own
 
-To build a standalone cart icon with sidebar without using this component:
+To build a standalone cart icon with sidebar, you need to read from the `Cart` object and manage two pieces of UI state.
 
-```tsx
-'use client';
+```ts
+import type { Cart, CartMainItem } from 'propeller-sdk-v2';
 
-import { useState } from 'react';
-import { Cart, CartMainItem } from 'propeller-sdk-v2';
-import { useSyncExternalStore } from 'react';
+// pseudo-code
 
-function MyCartIcon({ cart }: { cart: Cart | null }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+// --- Cart data access ---
+const itemCount = cart?.items?.length ?? 0;
+const totalPrice = cart?.total?.totalNet ?? 0;
 
-  // Hydration guard: only render client-dependent content after mount
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-
-  const itemCount = cart?.items?.length ?? 0;
-  const totalPrice = cart?.total?.totalNet ?? 0;
-
-  return (
-    <div className="relative">
-      {/* Icon button */}
-      <button onClick={() => setSidebarOpen(true)} className="relative p-2">
-        {/* Your cart icon here */}
-        <ShoppingBagIcon className="w-6 h-6" />
-
-        {/* Badge */}
-        {mounted && itemCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white text-xs font-bold">
-            {itemCount}
-          </span>
-        )}
-      </button>
-
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-xl transform transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {mounted && (
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold">Shopping Cart ({itemCount})</h2>
-              <button onClick={() => setSidebarOpen(false)}>Close</button>
-            </div>
-
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {(cart?.items ?? [])
-                .filter((item: CartMainItem) => item?.product)
-                .map((item: CartMainItem) => {
-                  const name = item.product?.names?.[0]?.value ?? 'Product';
-                  const imageUrl =
-                    item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-
-                  return (
-                    <div key={item.itemId} className="flex gap-3">
-                      <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
-                        {imageUrl ? (
-                          <img src={imageUrl} alt={name} className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="text-gray-300 text-xs">No image</span>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{name}</p>
-                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                        <p className="text-sm font-semibold">
-                          &euro;{item.totalSumNet.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-
-            {/* Footer */}
-            {itemCount > 0 && (
-              <div className="p-4 border-t space-y-3">
-                <div className="flex justify-between">
-                  <span>Total</span>
-                  <span className="font-bold">&euro;{totalPrice.toFixed(2)}</span>
-                </div>
-                <button className="w-full py-2 bg-primary text-white rounded">
-                  Checkout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// Per-item data mapping:
+// - Name:  item.product?.names?.[0]?.value
+// - Image: item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url
+//          (use an SVG placeholder when the URL is missing or does not start with "http")
+// - Qty:   item.quantity
+// - Price: item.totalSumNet
 ```
+
+**State to track:**
+
+- `sidebarOpen` (boolean) -- controls whether the sidebar panel is visible.
+- `mounted` (boolean) -- a hydration guard flag, initialized to `false`, set to `true` after the component mounts on the client. Wrap the badge and the sidebar content area behind this flag so that server-rendered HTML does not include cart data from `localStorage`.
+
+**Hydration note:** Because cart data typically comes from `localStorage`, it is not available during server-side rendering. Any element that displays cart-derived values (item count badge, item list, totals) must be guarded so it only renders after the component has mounted on the client. This prevents mismatches between server and client HTML.
+
+**UI structure:**
+
+- **Icon button** with a cart icon. When `sidebarOpen` is false and the item count is greater than zero (and the component has mounted), show a count badge.
+- **Overlay** behind the sidebar, clicking it closes the sidebar.
+- **Sidebar panel** that slides in from the right. Contains a header with title and close button, a scrollable list of cart items (filter out items without a `product`), and a footer with the total price and checkout/cart-page buttons.
+- **Empty state** when the cart has no items, show an empty cart message with a "Continue Shopping" action that closes the sidebar.

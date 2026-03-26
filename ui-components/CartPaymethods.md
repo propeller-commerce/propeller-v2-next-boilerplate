@@ -170,42 +170,39 @@ To build a custom payment method selector, you need:
 
 5. **Persist selection** — call `CartService.updateCart()` with `paymentData.method` set to the selected code so the backend records the choice before order placement.
 
-```tsx
-function CustomPaymethods({ cart, user }: { cart: Cart; user: Contact | Customer | null }) {
-  const [selected, setSelected] = useState<string>('');
-  const isGuest = !user;
+```ts
+import { CartService } from 'propeller-sdk-v2';
+import type { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
 
-  const methods = (cart?.payMethods || []).filter((m) => {
+// pseudo-code
+
+// Filter payment methods
+function getFilteredMethods(cart: Cart, user: Contact | Customer | null): CartPaymethod[] {
+  const isGuest = !user;
+  return (cart?.payMethods || []).filter((m) => {
     if (!m?.code) return false;
     const code = m.code.toLowerCase();
     if (isGuest && ['on_account', 'onaccount', 'on-account'].includes(code)) return false;
     return true;
   });
-
-  const handleSelect = async (method: CartPaymethod) => {
-    setSelected(method.code);
-    await cartService.updateCart({
-      cartId: cart.cartId,
-      paymentData: { method: method.code },
-    });
-  };
-
-  return (
-    <div>
-      {methods.map((m) => (
-        <button
-          key={m.code}
-          onClick={() => handleSelect(m)}
-          className={selected === m.code ? 'selected' : ''}
-        >
-          {m.name || m.code}
-          {m.price > 0 && <span>+€{m.price.toFixed(2)}</span>}
-        </button>
-      ))}
-      {methods.length === 0 && <p>No payment methods available.</p>}
-    </div>
-  );
 }
+
+// Persist the selection to the API
+async function selectPaymethod(cartId: string, method: CartPaymethod): Promise<void> {
+  const cartService = new CartService(graphqlClient);
+  await cartService.updateCart({
+    cartId,
+    paymentData: { method: method.code },
+  });
+}
+
+const methods = getFilteredMethods(cart, user);
+
+// Track the selected method code in your framework's state mechanism.
+// Render a list of `methods`. For each method, display `method.name || method.code`.
+// When `method.price > 0`, show a surcharge badge (e.g., "+EUR X.XX").
+// On click, store the selected code and call `selectPaymethod(cart.cartId, method)`.
+// If `methods` is empty, show a "No payment methods available." message.
 ```
 
 ## Behavior

@@ -389,135 +389,57 @@ Variables:
 
 ## Building Your Own
 
-A standalone implementation of a cart item row with quantity controls, delete, and notes:
+A standalone implementation of a cart item row requires three SDK operations: update quantity, update notes, and delete.
 
-```tsx
-'use client';
+```ts
+import { CartService, Cart, CartMainItem, GraphQLClient } from 'propeller-sdk-v2';
 
-import { useState, useRef } from 'react';
-import { GraphQLClient, CartService, Cart, CartMainItem } from 'propeller-sdk-v2';
+// pseudo-code
 
-interface SimpleCartItemProps {
-  graphqlClient: GraphQLClient;
-  cartId: string;
-  cartItem: CartMainItem;
-  language?: string;
-  onCartUpdated?: (cart: Cart) => void;
+const cartService = new CartService(graphqlClient);
+const language = 'NL';
+
+// --- Reading item data ---
+const productName = cartItem.product?.names?.[0]?.value || 'Product';
+const productSku = cartItem.product?.sku || '';
+const price = cartItem.totalSum || 0;
+const imageUrl = cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
+
+// --- Update quantity ---
+// Call immediately on +/- click. On failure, revert to the original quantity.
+async function updateQuantity(cartId: string, cartItem: CartMainItem, newQty: number): Promise<Cart> {
+  return await cartService.updateCartItem({
+    id: cartId,
+    itemId: cartItem.itemId.toString(),
+    input: { quantity: newQty },
+    language,
+  });
 }
 
-export function SimpleCartItem({
-  graphqlClient,
-  cartId,
-  cartItem,
-  language = 'NL',
-  onCartUpdated,
-}: SimpleCartItemProps) {
-  const [quantity, setQuantity] = useState(cartItem.quantity || 1);
-  const [notes, setNotes] = useState(cartItem.notes || '');
-  const [loading, setLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+// --- Update notes ---
+// Use a debounce pattern: reset a timer on each keystroke, then call the API
+// after 500ms of inactivity. Store the timer reference so it can be cleared
+// on subsequent keystrokes.
+async function updateNotes(cartId: string, cartItem: CartMainItem, notes: string): Promise<Cart> {
+  return await cartService.updateCartItem({
+    id: cartId,
+    itemId: cartItem.itemId.toString(),
+    input: { notes },
+    language,
+  });
+}
 
-  const cartService = new CartService(graphqlClient);
-
-  const productName = cartItem.product?.names?.[0]?.value || 'Product';
-  const productSku = cartItem.product?.sku || '';
-  const price = cartItem.totalSum || 0;
-  const imageUrl = cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
-
-  async function handleQuantityChange(newQty: number) {
-    if (newQty < 1 || loading) return;
-    setQuantity(newQty);
-    setLoading(true);
-
-    try {
-      const updatedCart = await cartService.updateCartItem({
-        id: cartId,
-        itemId: cartItem.itemId.toString(),
-        input: { quantity: newQty },
-        language,
-      });
-      onCartUpdated?.(updatedCart);
-    } catch (err) {
-      console.error('Failed to update quantity:', err);
-      setQuantity(cartItem.quantity);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleNotesChange(value: string) {
-    setNotes(value);
-    if (notesTimer.current) clearTimeout(notesTimer.current);
-
-    notesTimer.current = setTimeout(async () => {
-      try {
-        const updatedCart = await cartService.updateCartItem({
-          id: cartId,
-          itemId: cartItem.itemId.toString(),
-          input: { notes: value },
-          language,
-        });
-        onCartUpdated?.(updatedCart);
-      } catch (err) {
-        console.error('Failed to update notes:', err);
-      }
-    }, 500);
-  }
-
-  async function handleDelete() {
-    if (deleting) return;
-    setDeleting(true);
-
-    try {
-      const updatedCart = await cartService.deleteCartItem({
-        id: cartId,
-        itemId: cartItem.itemId,
-        input: { itemId: cartItem.itemId },
-        language,
-      });
-      onCartUpdated?.(updatedCart);
-    } catch (err) {
-      console.error('Failed to delete item:', err);
-      setDeleting(false);
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-4 p-4 border rounded-lg">
-      {imageUrl && (
-        <img src={imageUrl} alt={productName} className="w-20 h-20 object-contain" />
-      )}
-
-      <div className="flex-1">
-        <p className="font-semibold">{productName}</p>
-        {productSku && <p className="text-xs text-gray-400 font-mono">{productSku}</p>}
-
-        <textarea
-          value={notes}
-          onChange={(e) => handleNotesChange(e.target.value)}
-          placeholder="Add a note..."
-          rows={2}
-          className="mt-2 w-full text-sm border rounded px-2 py-1 resize-none"
-        />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span className="font-bold">{`\u20AC${price.toFixed(2)}`}</span>
-
-        <button onClick={() => handleQuantityChange(quantity - 1)} disabled={quantity <= 1 || loading}>
-          -
-        </button>
-        <span className="w-8 text-center">{quantity}</span>
-        <button onClick={() => handleQuantityChange(quantity + 1)} disabled={loading}>
-          +
-        </button>
-
-        <button onClick={handleDelete} disabled={deleting} className="text-red-500 ml-2">
-          {deleting ? '...' : 'Delete'}
-        </button>
-      </div>
-    </div>
-  );
+// --- Delete item ---
+// Disable the delete button while the request is in progress to prevent
+// duplicate calls.
+async function deleteItem(cartId: string, cartItem: CartMainItem): Promise<Cart> {
+  return await cartService.deleteCartItem({
+    id: cartId,
+    itemId: cartItem.itemId,
+    input: { itemId: cartItem.itemId },
+    language,
+  });
 }
 ```
+
+**UI structure:** Render each cart item as a row with a product image (or SVG placeholder if no image), product name, SKU, a quantity input with +/- buttons, the line total price, a notes textarea, and a delete button. Track `quantity`, `notes`, and loading/deleting flags in your framework's state mechanism. After each successful SDK call, forward the returned `Cart` object to your app's cart state so totals stay in sync.

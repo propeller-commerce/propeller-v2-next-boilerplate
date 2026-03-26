@@ -405,141 +405,114 @@ mutation createCompanyAddress($input: CompanyAddressCreateInput!) {
 
 ## Building Your Own
 
-If you need full control over the registration flow, you can build your own form using the same SDK services. Below is a standalone example covering the complete Contact (B2B) registration flow:
+If you need full control over the registration flow, you can build your own form using the same SDK services. Below is the complete Contact (B2B) registration flow:
 
-```tsx
-'use client';
+### Required form fields
 
-import { useState } from 'react';
+Your form needs to collect: `email`, `password`, `confirmPassword`, `firstName`, `lastName`, `companyName`, `vatNumber`, `cocNumber`, `phone`, `gender`, `street`, `number`, `numberExtension`, `postalCode`, `city`, `country`. Also track `loading`, `error`, and `userType` (Contact or Customer) state.
+
+### Registration flow (B2B Contact)
+
+```ts
 import {
   GraphQLClient,
   UserService,
   CompanyService,
   AddressService,
   Enums,
-  ContactRegisterInput,
-  CreateCompanyInput,
-  CustomerAddressCreateInput,
-  CompanyAddressCreateInput,
 } from 'propeller-sdk-v2';
 
-interface CustomRegisterFormProps {
-  graphqlClient: GraphQLClient;
-  onSuccess: () => void;
-}
+// pseudo-code: maintain form field state and loading/error state in your framework
 
-export default function CustomRegisterForm({ graphqlClient, onSuccess }: CustomRegisterFormProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [vatNumber, setVatNumber] = useState('');
-  const [street, setStreet] = useState('');
-  const [number, setNumber] = useState('');
-  const [city, setCity] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [country, setCountry] = useState('NL');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+async function registerContact(graphqlClient: GraphQLClient, formData: {
+  email: string; password: string; firstName: string; lastName: string;
+  companyName: string; vatNumber: string; phone: string;
+  street: string; number: string; postalCode: string; city: string; country: string;
+}) {
+  const userService = new UserService(graphqlClient);
+  const companyService = new CompanyService(graphqlClient);
+  const addressService = new AddressService(graphqlClient);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  // Step 1: Create the company
+  const company = await companyService.createCompany({
+    name: formData.companyName,
+    taxNumber: formData.vatNumber,
+    email: formData.email,
+  });
 
-    try {
-      const userService = new UserService(graphqlClient);
-      const companyService = new CompanyService(graphqlClient);
-      const addressService = new AddressService(graphqlClient);
+  // Step 2: Register the contact under the company
+  const response = await userService.registerContact({
+    contactRegisterInput: {
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      primaryLanguage: 'NL',
+      parentId: company.companyId,
+    },
+    companyAttributesInput: {},
+    contactAttributesInput: {},
+    contactPAConfigInput: { page: 1, offset: 10 },
+  });
 
-      // Step 1: Create the company
-      const company = await companyService.createCompany({
-        name: companyName,
-        taxNumber: vatNumber,
-        email,
-      });
+  // Step 3: Authenticate for subsequent address creation calls
+  const session = response.session;
+  if (session?.accessToken) {
+    const currentConfig = graphqlClient.getConfig();
+    graphqlClient.updateConfig({
+      headers: {
+        ...currentConfig.headers,
+        Authorization: `Bearer ${session.accessToken}`,
+      },
+    });
+  }
 
-      // Step 2: Register the contact under the company
-      const response = await userService.registerContact({
-        contactRegisterInput: {
-          email,
-          password,
-          firstName,
-          lastName,
-          primaryLanguage: 'NL',
-          parentId: company.companyId,
-        },
-        companyAttributesInput: {},
-        contactAttributesInput: {},
-        contactPAConfigInput: { page: 1, offset: 10 },
-      });
+  // Step 4: Create invoice address
+  await addressService.createCompanyAddress({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    company: formData.companyName,
+    street: formData.street,
+    number: formData.number,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    country: formData.country,
+    type: Enums.AddressType.invoice,
+    isDefault: Enums.YesNo.Y,
+    companyId: company.companyId,
+  });
 
-      // Step 3: Authenticate for subsequent calls
-      const session = response.session;
-      if (session?.accessToken) {
-        const currentConfig = graphqlClient.getConfig();
-        graphqlClient.updateConfig({
-          headers: {
-            ...currentConfig.headers,
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-      }
+  // Step 5: Create delivery address (copy of invoice)
+  await addressService.createCompanyAddress({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    company: formData.companyName,
+    street: formData.street,
+    number: formData.number,
+    postalCode: formData.postalCode,
+    city: formData.city,
+    country: formData.country,
+    type: Enums.AddressType.delivery,
+    isDefault: Enums.YesNo.Y,
+    companyId: company.companyId,
+  });
 
-      // Step 4: Create invoice address
-      await addressService.createCompanyAddress({
-        firstName,
-        lastName,
-        company: companyName,
-        street,
-        number,
-        postalCode,
-        city,
-        country,
-        type: Enums.AddressType.invoice,
-        isDefault: Enums.YesNo.Y,
-        companyId: company.companyId,
-      });
+  // Step 6: Trigger login event for other components
+  if (session?.accessToken && session?.refreshToken) {
+    window.dispatchEvent(new CustomEvent('userLoggedIn'));
+  }
 
-      // Step 5: Create delivery address (copy of invoice)
-      await addressService.createCompanyAddress({
-        firstName,
-        lastName,
-        company: companyName,
-        street,
-        number,
-        postalCode,
-        city,
-        country,
-        type: Enums.AddressType.delivery,
-        isDefault: Enums.YesNo.Y,
-        companyId: company.companyId,
-      });
-
-      // Step 6: Trigger login event for AuthContext
-      if (session?.accessToken && session?.refreshToken) {
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
-
-      onSuccess();
-    } catch (err: any) {
-      setError(err?.message || 'Registration failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {error && <p className="text-red-500">{error}</p>}
-      {/* Add your form fields here using the state variables above */}
-      <button type="submit" disabled={loading}>
-        {loading ? 'Registering...' : 'Register'}
-      </button>
-    </form>
-  );
+  return { user: response.contact, session };
+  // On success: navigate to the account page or show a success message
+  // On failure: display the error message to the user
 }
 ```
+
+### Post-registration flow
+
+1. Validate client-side that passwords match before making any API calls.
+2. Call the registration function above.
+3. If `automaticLogin` is desired and session tokens are present, dispatch `userLoggedIn` on `window` (picked up by AuthContext).
+4. Call your success callback with the created user and session tokens.
 
 For a B2C (Customer) registration, replace `registerContact` with `registerCustomer`, skip the `CompanyService.createCompany()` step, and use `AddressService.createCustomerAddress()` instead of `createCompanyAddress()`.

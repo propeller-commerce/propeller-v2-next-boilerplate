@@ -331,10 +331,11 @@ On each fetch, the cache is checked first. If a valid (non-expired) cached entry
 
 ## Building Your Own
 
-If you need full control over the menu rendering, you can fetch the category tree yourself and build a custom UI. Here is a standalone example:
+If you need full control over the menu rendering, you can fetch the category tree yourself and build a custom UI.
 
-```tsx
-import { useEffect, useState } from 'react';
+### Recursive query construction and data fetching
+
+```ts
 import { GraphQLClient, Category, LocalizedString } from 'propeller-sdk-v2';
 
 interface CategoryTree extends Category {
@@ -378,51 +379,40 @@ async function fetchCategoryTree(
   return response?.data?.category || null;
 }
 
+// Helper: resolve localised category name
 function getCategoryName(cat: Category, language: string): string {
   const match = cat.name?.find((n: LocalizedString) => n.language === language);
   return match?.value || cat.name?.[0]?.value || '';
 }
 
+// Helper: resolve localised category slug
 function getCategorySlug(cat: Category, language: string): string {
   const match = cat.slug?.find((s: LocalizedString) => s.language === language);
   return match?.value || cat.slug?.[0]?.value || '';
 }
 
-// Example: render a simple nested list
-function CustomMenu({ client, categoryId, language }: {
-  client: GraphQLClient;
-  categoryId: number;
-  language: string;
-}) {
-  const [root, setRoot] = useState<CategoryTree | null>(null);
-
-  useEffect(() => {
-    fetchCategoryTree(client, categoryId, language).then(setRoot);
-  }, [client, categoryId, language]);
-
-  if (!root) return <div>Loading...</div>;
-
-  const renderCategories = (categories: CategoryTree[]) => (
-    <ul>
-      {categories.map((cat) => (
-        <li key={cat.categoryId}>
-          <a href={`/category/${cat.categoryId}/${getCategorySlug(cat, language)}`}>
-            {getCategoryName(cat, language)}
-          </a>
-          {cat.categories && cat.categories.length > 0 && renderCategories(cat.categories)}
-        </li>
-      ))}
-    </ul>
-  );
-
-  return renderCategories(root.categories || []);
-}
+// Fetch the tree
+const root = await fetchCategoryTree(graphqlClient, 17, 'NL', 3);
+// root.categories -> L1 categories
+// root.categories[0].categories -> L2 categories, etc.
 ```
+
+### Caching pattern
+
+To avoid re-fetching on every page load, cache the result in `localStorage`:
+
+1. Build a cache key that includes the `categoryId`, `language`, and user identity (e.g., `propeller_menu_17_NL` for anonymous, `propeller_menu_17_NL_c123` for Contact with id 123).
+2. Before fetching, check `localStorage` for a cached entry. Parse the stored JSON and compare the timestamp against a 12-hour TTL.
+3. If the cache is valid, use it directly. Otherwise, fetch from the API and store the result with a `Date.now()` timestamp.
+4. Wrap `localStorage.setItem` in a try/catch for quota safety.
+
+### Rendering
+
+Your UI should render the fetched `CategoryTree` as a nested navigation. For each category, use `getCategoryName()` for the display label and build a URL from `categoryId` and `getCategorySlug()`. Recursively render `cat.categories` for subcategories.
 
 Key points when building your own:
 
 - **Do not use `CategoryService.getCategory()`** for menu data -- it returns a flat category without nested children.
 - Use `graphqlClient.execute()` with the recursive query pattern shown above.
-- Consider adding localStorage caching with an expiry timestamp to avoid hitting the API on every page load.
 - The `language` variable controls which translations are returned for `name` and `slug` fields.
 - Authenticated users may see different categories, so include user identity in your cache key if you implement caching.

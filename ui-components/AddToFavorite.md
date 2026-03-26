@@ -92,6 +92,12 @@ function ClusterDetailPage({ cluster, user, graphqlClient }) {
 | `productId` | `number` | Product ID to favorite. Takes precedence over `clusterId` |
 | `clusterId` | `number` | Cluster ID to favorite. Used when `productId` is not set |
 
+### Callbacks
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `onFavoriteChanged` | `() => void` | Called after a favorite list mutation (add/remove) succeeds. Wire this to `refreshUser()` on the parent page to sync the user object |
+
 ### Customization
 
 | Prop | Type | Default | Description |
@@ -113,16 +119,12 @@ function ClusterDetailPage({ cluster, user, graphqlClient }) {
 
 ## SDK Services
 
-The component uses two SDK services internally:
-
-### FavoriteListService
+The component uses **`FavoriteListService`** from `propeller-sdk-v2` internally:
 
 - **`addFavoriteListItems(listId, input)`** -- Adds a product or cluster to a favorite list. Input is `{ productIds: [id] }` or `{ clusterIds: [id] }`.
 - **`removeFavoriteListItems(listId, input)`** -- Removes a product or cluster from a favorite list. Same input shape.
 
-### UserService
-
-- **`getViewer({})`** -- Refreshes the full user object after add/remove operations. The refreshed data is written to `localStorage` and a `userLoggedIn` event is dispatched so other components (AuthContext, UserDetails, FavoriteLists) pick up the updated favorite lists.
+The component does **not** call `UserService.getViewer()` or refresh user data itself. Instead, after a successful mutation it calls the `onFavoriteChanged` callback, and the parent page is responsible for refreshing the user object (e.g., via `AuthContext.refreshUser()`).
 
 ## GraphQL Mutations
 
@@ -180,7 +182,7 @@ To build a custom favorite toggle, you need three things:
 
 2. **Add/remove via FavoriteListService** -- Instantiate the service with a `GraphQLClient` and call `addFavoriteListItems` or `removeFavoriteListItems` with the list ID and an input object containing `productIds` or `clusterIds`.
 
-3. **Refresh user data after mutation** -- After adding or removing, call `UserService.getViewer({})`, strip SDK underscore prefixes, write the result to `localStorage` under the `user` key, and dispatch a `userLoggedIn` custom event. This ensures AuthContext and all listening components reflect the change.
+3. **Refresh user data after mutation** -- After adding or removing, call `refreshUser()` from AuthContext on the parent page. The component itself only fires `onFavoriteChanged` -- it does not refresh the user object internally.
 
 ```ts
 const service = new FavoriteListService(graphqlClient);
@@ -191,10 +193,8 @@ await service.addFavoriteListItems(listId, { productIds: [productId] });
 // Remove
 await service.removeFavoriteListItems(listId, { productIds: [productId] });
 
-// Refresh user so favorite list membership is up to date
-const userService = new UserService(graphqlClient);
-const viewer = await userService.getViewer({});
-// ... strip underscores, persist to localStorage, dispatch event
+// Parent page wires onFavoriteChanged to refreshUser():
+// <AddToFavorite ... onFavoriteChanged={() => refreshUser()} />
 ```
 
 ## Behavior
@@ -222,7 +222,11 @@ The dropdown for adding to a list shows only lists where the item is **not** alr
 
 ### Optimistic updates
 
-After a successful add or remove, the component updates `memberListIds` immediately (optimistic) so the UI reflects the change without waiting for a user data refresh. The `refreshUserData` call runs in the background to sync the full user object.
+After a successful add or remove, the component updates `memberListIds` immediately so the UI reflects the change instantly. It then calls `onFavoriteChanged` so the parent can refresh the user object. Loading flags (`addLoading` / `removeLoading`) prevent duplicate API calls while a mutation is in flight.
+
+### List selection
+
+When the modal opens, the first non-member list is auto-selected in the dropdown. After each add or remove operation, `selectedListId` is reset to empty.
 
 ### Authentication guard
 

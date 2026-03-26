@@ -428,103 +428,57 @@ query Product($productId: Int!, $language: String) {
 
 ## Building Your Own
 
-If you need a custom product card without using this component, here is standalone rendering logic:
+If you need a custom product card without using this component, here are the data extraction helpers and patterns you need:
 
-```tsx
-import { Product } from 'propeller-sdk-v2';
+### Extracting product data
 
-interface SimpleProductCardProps {
-  product: Product;
-  language?: string;
-  includeTax?: boolean;
-  onClick?: (product: Product) => void;
-}
+```ts
+import { Product, AttributeResult } from 'propeller-sdk-v2';
 
-function SimpleProductCard({ product, language = 'NL', includeTax = true, onClick }: SimpleProductCardProps) {
-  // Resolve localised name
-  const name = product.names?.find(n => n.language === language)?.value
+// Resolve localised name
+function getProductName(product: Product, language: string = 'NL'): string {
+  return product.names?.find(n => n.language === language)?.value
     || product.names?.[0]?.value
     || 'Product';
+}
 
-  // Resolve image URL (first variant of first image)
-  const imageUrl = product.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+// Resolve image URL (first variant of first image)
+function getProductImageUrl(product: Product): string {
+  return product.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+}
 
-  // Resolve price: net = incl. VAT, gross = excl. VAT
+// Resolve price: net = incl. VAT, gross = excl. VAT
+function getProductPrice(product: Product, includeTax: boolean): string {
   const priceValue = includeTax ? product.price?.net : product.price?.gross;
-  const formattedPrice = priceValue != null ? `€${Number(priceValue).toFixed(2)}` : '';
+  return priceValue != null ? `€${Number(priceValue).toFixed(2)}` : '';
+}
 
-  // Resolve slug for URL
-  const slug = product.slugs?.find(s => s.language === language)?.value
+// Resolve slug for URL
+function getProductSlug(product: Product, language: string = 'NL'): string {
+  return product.slugs?.find(s => s.language === language)?.value
     || product.slugs?.[0]?.value
     || '';
+}
 
-  const productUrl = `/product/${product.productId}/${slug}`;
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (onClick) {
-      e.preventDefault();
-      onClick(product);
-    }
-  };
-
-  return (
-    <div className="flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-      {/* Image */}
-      <a href={productUrl} onClick={handleClick} className="aspect-square bg-gray-50 p-4">
-        {imageUrl ? (
-          <img src={imageUrl} alt={name} className="h-full w-full object-contain" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-300">
-            No image
-          </div>
-        )}
-      </a>
-
-      {/* Details */}
-      <div className="flex flex-1 flex-col gap-1 p-4">
-        <span className="font-mono text-xs text-gray-400">{product.sku}</span>
-        <a href={productUrl} onClick={handleClick} className="text-sm font-medium text-gray-900 hover:text-primary line-clamp-2">
-          {name}
-        </a>
-        {formattedPrice && (
-          <span className="mt-auto pt-2 text-lg font-bold text-gray-900">
-            {formattedPrice}
-          </span>
-        )}
-      </div>
-    </div>
-  );
+// Build product URL
+function getProductUrl(product: Product, language: string = 'NL'): string {
+  const slug = getProductSlug(product, language);
+  return `/product/${product.productId}/${slug}`;
 }
 ```
 
 ### Subscribing to the Price Toggle
 
-To make your custom card react to the global VAT toggle:
+To make your custom card react to the global VAT toggle, follow this pattern:
 
-```tsx
-import { useState, useEffect } from 'react';
-
-function useIncludeTax(): boolean {
-  const [includeTax, setIncludeTax] = useState(true);
-
-  useEffect(() => {
-    // Read initial value
-    const stored = localStorage.getItem('price_include_tax');
-    if (stored !== null) setIncludeTax(stored === 'true');
-
-    // Listen for toggle changes
-    const handler = (e: CustomEvent) => setIncludeTax(e.detail === true);
-    window.addEventListener('priceToggleChanged', handler as EventListener);
-    return () => window.removeEventListener('priceToggleChanged', handler as EventListener);
-  }, []);
-
-  return includeTax;
-}
-```
+1. On initialization, read `localStorage.getItem('price_include_tax')` to determine the current setting (defaults to `true` if not set).
+2. Add a listener for the `priceToggleChanged` custom event on `window`. The event's `detail` property is a boolean indicating whether tax is included.
+3. When the event fires, update your displayed price using the new `includeTax` value.
+4. Clean up the event listener when the component is destroyed.
 
 ### Resolving Attribute Labels
 
-```tsx
+```ts
 import { Product, AttributeResult } from 'propeller-sdk-v2';
 
 function getAttributeValue(product: Product, attributeName: string): string {
@@ -539,3 +493,9 @@ function getAttributeValue(product: Product, attributeName: string): string {
 const brand = getAttributeValue(product, 'brand');    // "Nike"
 const isNew = getAttributeValue(product, 'new');       // "New" or ""
 ```
+
+Your UI should render:
+- A product image (or an SVG placeholder when no image is available) linked to the product URL.
+- The product SKU, localised name (as a link), and formatted price.
+- Optionally: manufacturer, short description, attribute badges, and a favourite toggle button.
+- An AddToCart control in the card footer.

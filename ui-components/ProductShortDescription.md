@@ -168,39 +168,30 @@ query GetCluster($clusterId: Int!, $language: String) {
 
 ## Building Your Own
 
-To create a custom short description component, you need to:
+To create a custom short description display, you need to:
 
 1. **Accept a product or cluster** and a language code as input.
 2. **Resolve the localized value** from the `shortDescriptions` array by matching the language.
 3. **Render HTML safely** since descriptions may contain markup.
 
-```tsx
-interface CustomShortDescriptionProps {
-  product: Product | Cluster;
-  language?: string;
+```ts
+import type { Product, Cluster } from 'propeller-sdk-v2';
+
+function getShortDescription(product: Product | Cluster, language: string = 'NL'): string {
+  const descriptions = (product as Product).shortDescriptions;
+  if (!descriptions?.length) return '';
+  const match = descriptions.find((d) => d.language === language);
+  return match?.value || descriptions[0]?.value || '';
 }
 
-function CustomShortDescription({ product, language = 'NL' }: CustomShortDescriptionProps) {
-  const html = useMemo(() => {
-    const descriptions = (product as Product).shortDescriptions;
-    if (!descriptions?.length) return '';
-    const match = descriptions.find((d) => d.language === language);
-    return match?.value || descriptions[0]?.value || '';
-  }, [product, language]);
-
-  if (!html) return null;
-
-  return (
-    <div
-      className="prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  );
-}
+// pseudo-code
+const html = getShortDescription(product, 'EN');
+// If `html` is empty, hide the element entirely.
+// Otherwise, render `html` as raw HTML in your template.
 ```
 
 Key considerations:
 
-- **Sanitization**: If you do not trust the HTML content source, consider using a library like `dompurify` before rendering with `dangerouslySetInnerHTML`.
+- **Sanitization**: If you do not trust the HTML content source, consider using a library like `dompurify` before rendering.
 - **Fallback language**: Always fall back to the first available description when the requested language is not found, so the user sees content rather than nothing.
-- **Empty state**: Hide the component entirely when no description exists to avoid rendering empty containers that may affect layout spacing.
+- **Empty state**: Hide the element entirely when no description exists to avoid rendering empty containers that may affect layout spacing.

@@ -216,7 +216,13 @@ Available label keys:
 
 **External mode** (`onAddBundleToCart` provided): The component calls your callback with `(bundleId, quantity)` and you handle all cart logic yourself.
 
-**Self-contained mode** (`onAddBundleToCart` omitted): The component uses `CartService.addBundleToCart()` internally. It resolves a cart ID from `props.cartId` or its own `activeCartId`. If neither exists and `createCart={true}`, it creates a new cart via `CartService.startCart()`, searches for existing user carts first, and assigns default invoice/delivery addresses from the user profile.
+**Self-contained mode** (`onAddBundleToCart` omitted): The component uses `CartService.addBundleToCart()` internally. It resolves a cart ID from `props.cartId` or its own `activeCartId`. If neither exists and `createCart={true}`, it initializes a cart via this flow:
+
+1. Calls `CartService.getCarts(searchInput)` to search for existing carts for the authenticated user
+2. If an existing cart is found, uses that cart ID
+3. If no cart exists, calls `CartService.startCart()` to create a new one
+4. After creation, calls `CartService.updateCartAddress()` to assign default invoice and delivery addresses from the user profile
+5. Fires `onCartCreated` with the new cart so the parent can persist it to CartContext
 
 ### Add-to-cart feedback
 
@@ -397,14 +403,12 @@ mutation CartAddBundle($id: String!, $input: CartAddBundleInput!, $language: Str
 
 ## Building Your Own
 
-Standalone implementation that fetches and displays product bundles without the component:
+To build a custom product bundles UI without using the component, set up the SDK services and use the following operations.
 
-```tsx
-'use client';
+### Service setup
 
-import { useState, useEffect } from 'react';
+```ts
 import {
-  GraphQLClient,
   BundleService,
   CartService,
   Bundle,
@@ -414,145 +418,69 @@ import {
   Enums,
 } from 'propeller-sdk-v2';
 
-interface CustomBundlesProps {
-  graphqlClient: GraphQLClient;
-  productId: number;
-  cartId: string;
-  language?: string;
-  taxZone?: string;
-  includeTax?: boolean;
-}
+const bundleService = new BundleService(graphqlClient);
+const cartService = new CartService(graphqlClient);
+```
 
-export function CustomProductBundles({
-  graphqlClient,
-  productId,
-  cartId,
-  language = 'NL',
-  taxZone = 'NL',
-  includeTax = true,
-}: CustomBundlesProps) {
-  const [bundles, setBundles] = useState<Bundle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [addingId, setAddingId] = useState<string | null>(null);
+### Fetch bundles
 
-  useEffect(() => {
-    const fetchBundles = async () => {
-      setLoading(true);
-      try {
-        const bundleService = new BundleService(graphqlClient);
-        const variables: BundleQueryVariables = {
-          input: {
-            productIds: [productId],
-            taxZone,
-            page: 1,
-            offset: 20,
-          },
-          language,
-        };
-        const result = await bundleService.getBundles(variables);
-        setBundles(result?.items || []);
-      } catch {
-        setBundles([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBundles();
-  }, [productId, graphqlClient, language, taxZone]);
-
-  const getPrice = (bundle: Bundle) =>
-    includeTax ? bundle.price?.net || 0 : bundle.price?.gross || 0;
-
-  const getOriginalPrice = (bundle: Bundle) =>
-    includeTax ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
-
-  const getItemPrice = (item: BundleItem) =>
-    includeTax ? item.price?.net || 0 : item.price?.gross || 0;
-
-  const formatPrice = (value: number) => `\u20AC${value.toFixed(2)}`;
-
-  const handleAddToCart = async (bundle: Bundle) => {
-    if (addingId) return;
-    setAddingId(bundle.id);
-    try {
-      const cartService = new CartService(graphqlClient);
-      const variables: CartAddBundleVariables = {
-        id: cartId,
-        input: { bundleId: bundle.id, quantity: 1 },
-        language,
-      };
-      await cartService.addBundleToCart(variables);
-      // Handle success (update cart context, show notification, etc.)
-    } catch (error) {
-      console.error('Failed to add bundle to cart:', error);
-    } finally {
-      setAddingId(null);
-    }
+```ts
+// pseudo-code: call on initialization and when productId changes
+async function fetchBundles(productId: number, language = 'NL', taxZone = 'NL'): Promise<Bundle[]> {
+  const variables: BundleQueryVariables = {
+    input: {
+      productIds: [productId],
+      taxZone,
+      page: 1,
+      offset: 20,
+    },
+    language,
   };
-
-  if (loading || bundles.length === 0) return null;
-
-  return (
-    <div className="space-y-6">
-      {bundles.map((bundle) => {
-        const price = getPrice(bundle);
-        const original = getOriginalPrice(bundle);
-        const hasDiscount = original > 0 && price < original;
-
-        return (
-          <div key={bundle.id} className="border rounded-xl p-6 bg-white shadow-sm">
-            <h3 className="text-xl font-bold mb-2">{bundle.name || 'Combo deal'}</h3>
-
-            {bundle.description && (
-              <p className="text-sm text-gray-600 mb-3">{bundle.description}</p>
-            )}
-
-            {bundle.condition && (
-              <p className="text-xs text-gray-500 mb-3">
-                {bundle.condition === Enums.BundleCondition.ALL
-                  ? 'Discount on all items'
-                  : 'Discount on extra items'}
-              </p>
-            )}
-
-            {/* Bundle items */}
-            <div className="flex flex-wrap gap-4 mb-4">
-              {bundle.items?.map((item, idx) => (
-                <div key={`${item.productId}-${idx}`} className="text-center w-32">
-                  <p className="text-sm font-medium">
-                    {item.product?.names?.[0]?.value || `Product ${item.productId}`}
-                  </p>
-                  <p className="text-sm text-gray-600">{formatPrice(getItemPrice(item))}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Price and button */}
-            <div className="flex items-center gap-4">
-              {hasDiscount && (
-                <span className="line-through text-gray-400">{formatPrice(original)}</span>
-              )}
-              <span className="text-2xl font-bold">{formatPrice(price)}</span>
-              {hasDiscount && (
-                <span className="bg-green-100 text-green-700 text-sm px-2 py-1 rounded">
-                  Save {formatPrice(original - price)}
-                </span>
-              )}
-              <button
-                onClick={() => handleAddToCart(bundle)}
-                disabled={addingId === bundle.id}
-                className="ml-auto px-6 py-3 bg-primary text-white rounded-lg font-semibold disabled:opacity-50"
-              >
-                {addingId === bundle.id ? 'Adding...' : 'Add to cart'}
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  const result = await bundleService.getBundles(variables);
+  return result?.items || [];
 }
 ```
+
+### Price helper functions
+
+```ts
+// Prices follow the Propeller SDK convention: net = incl. VAT, gross = excl. VAT
+function getPrice(bundle: Bundle, includeTax: boolean): number {
+  return includeTax ? bundle.price?.net || 0 : bundle.price?.gross || 0;
+}
+
+function getOriginalPrice(bundle: Bundle, includeTax: boolean): number {
+  return includeTax ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
+}
+
+function getItemPrice(item: BundleItem, includeTax: boolean): number {
+  return includeTax ? item.price?.net || 0 : item.price?.gross || 0;
+}
+
+function formatPrice(value: number): string {
+  return `\u20AC${value.toFixed(2)}`;
+}
+```
+
+### Add bundle to cart
+
+```ts
+async function addBundleToCart(cartId: string, bundle: Bundle, language = 'NL') {
+  // pseudo-code: guard against double-submission with a loading flag
+  const variables: CartAddBundleVariables = {
+    id: cartId,
+    input: { bundleId: bundle.id, quantity: 1 },
+    language,
+  };
+  const updatedCart = await cartService.addBundleToCart(variables);
+  // pseudo-code: update cart state, show success notification
+  return updatedCart;
+}
+```
+
+### UI structure
+
+For each bundle, render a card showing: the bundle name (fall back to "Combo deal"), an optional description, the bundle condition text (`ALL` = "Discount on all items", `EP` = "Discount on extra items"), the individual bundle items with product names and prices, the total bundle price with a strikethrough original price when a discount applies, a savings badge showing the difference, and an "Add to cart" button with a loading/disabled state to prevent double-submission. If no bundles exist for the product, render nothing.
 
 ## SDK Notes
 

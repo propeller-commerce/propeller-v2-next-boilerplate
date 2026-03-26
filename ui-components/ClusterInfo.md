@@ -293,10 +293,12 @@ To build a custom cluster info component, you need:
 
 - **Language resolution**: The cluster name is resolved by matching `language` against the `names[]` array. If no match is found for the requested language, the first available name is used as a fallback. Defaults to `'NL'`.
 
-- **Re-fetch triggers**: The component re-fetches when any of `clusterId`, `cluster`, or `language` changes. Switching language or cluster ID triggers a fresh load automatically.
+- **Re-fetch triggers**: The component re-fetches only when `clusterId` changes. Language changes do **not** trigger a re-fetch — the existing cluster data is re-rendered using the new language for name resolution. When a `cluster` prop is provided, the component skips fetching entirely (early exit) and fires `onClusterLoaded` synchronously.
 
 - **User-specific pricing**: The `priceCalculateProductInput` is built from the `user` prop, differentiating between B2B Contact users (company + contact IDs) and B2C Customer users (customer ID). This ensures the fetched cluster data includes the correct pricing tier.
 
-- **Error handling**: If the fetch fails, the loading state is cleared silently. No error UI is rendered; the component simply stays empty.
+- **Error handling**: If the fetch fails, the loading state is cleared silently. No error UI is rendered; the component simply stays empty. The `onClusterLoaded` callback is **not** called on error — only on successful data retrieval.
+
+- **Configuration required for self-fetching**: When using self-fetching mode without explicit `imageSearchFilters` / `imageVariantFilters` props, the `configuration` prop is required (to provide `imageSearchFiltersGrid` and `imageVariantFiltersMedium` fallbacks). Omitting both will cause a runtime error. When a `cluster` prop is provided, image filters are not used.
 
 - **Visible output**: The component renders only the cluster name (as an `<h1>`) and the SKU. Both can be independently toggled off. All other fetched data (products, images, prices, attributes) is surfaced only through the `onClusterLoaded` callback for use by sibling components.

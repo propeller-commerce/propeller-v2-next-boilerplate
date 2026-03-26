@@ -137,61 +137,58 @@ If you need a toggle with different styling or behavior, replicate these two ess
 1. **Persist to localStorage** under the key `price_include_tax`
 2. **Dispatch the custom event** `priceToggleChanged` with the boolean value as `detail`
 
-```tsx
-function CustomVatToggle() {
-  const [inclVat, setInclVat] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem('price_include_tax') !== 'false';
-  });
+```ts
+// pseudo-code
 
-  function toggle() {
-    const next = !inclVat;
-    setInclVat(next);
-    localStorage.setItem('price_include_tax', String(next));
-    window.dispatchEvent(new CustomEvent('priceToggleChanged', { detail: next }));
-  }
-
-  return (
-    <button onClick={toggle}>
-      {inclVat ? 'Incl. VAT' : 'Excl. VAT'}
-    </button>
-  );
+// Read the current value from localStorage (default to true)
+function readIncludeTax(): boolean {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem('price_include_tax') !== 'false';
 }
+
+// Toggle the VAT preference
+function toggleVat(currentValue: boolean): void {
+  const next = !currentValue;
+  localStorage.setItem('price_include_tax', String(next));
+  window.dispatchEvent(new CustomEvent('priceToggleChanged', { detail: next }));
+}
+
+// Render a toggle button that displays "Incl. VAT" or "Excl. VAT"
+// based on the current value. On click, call `toggleVat(currentValue)`.
 ```
 
 ### Listening for the toggle in another component
 
 Any component that displays prices should listen for the `priceToggleChanged` event and read the initial value from localStorage on mount:
 
-```tsx
-function PriceDisplay({ price }: { price: { net: number; gross: number } }) {
-  const [includeTax, setIncludeTax] = useState(true);
+```ts
+// pseudo-code
 
-  useEffect(() => {
-    // Read persisted value on mount
-    const stored = localStorage.getItem('price_include_tax');
-    if (stored !== null) {
-      setIncludeTax(stored !== 'false');
-    }
-
-    // Listen for toggle changes
-    function onToggle(e: Event) {
-      setIncludeTax((e as CustomEvent).detail);
-    }
-    window.addEventListener('priceToggleChanged', onToggle);
-    return () => window.removeEventListener('priceToggleChanged', onToggle);
-  }, []);
-
-  // price.net = incl. VAT, price.gross = excl. VAT
-  const displayPrice = includeTax ? price.net : price.gross;
-  const label = includeTax ? 'incl. VAT' : 'excl. VAT';
-
-  return <span>{displayPrice} {label}</span>;
+// On component initialization:
+let includeTax = true; // default must be true to avoid SSR mismatches
+const stored = localStorage.getItem('price_include_tax');
+if (stored !== null) {
+  includeTax = (stored !== 'false');
 }
+
+// Register an event listener for live updates:
+function onToggle(e: Event) {
+  includeTax = (e as CustomEvent).detail;
+  // Re-render your component with the new value
+}
+window.addEventListener('priceToggleChanged', onToggle);
+
+// On component teardown, remove the listener:
+window.removeEventListener('priceToggleChanged', onToggle);
+
+// To display the correct price:
+// price.net = incl. VAT, price.gross = excl. VAT
+const displayPrice = includeTax ? price.net : price.gross;
+const label = includeTax ? 'incl. VAT' : 'excl. VAT';
 ```
 
 Key points for the listener pattern:
 
-- Initialize `_includeTax` to `true` (not `false`) to match the default and avoid hydration mismatches.
-- If a `props.includeTax` is passed explicitly, let it take precedence over the localStorage/event value.
-- Always clean up the event listener on unmount.
+- Initialize `includeTax` to `true` (not `false`) to match the default and avoid SSR/hydration mismatches.
+- If an explicit `includeTax` prop is passed, let it take precedence over the localStorage/event value.
+- Always clean up the event listener when the component is destroyed.

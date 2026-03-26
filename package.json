@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.560.0",
+    "marked": "^17.0.5",
     "next": "16.0.10",
     "propeller-sdk-v2": "github:propeller-commerce/propeller-sdk-v2#master",
     "qs": "^6.15.0",

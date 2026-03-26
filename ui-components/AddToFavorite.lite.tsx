@@ -109,7 +109,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         toggleModal() {
             if (!props.user) return;
             if (!state.showModal) {
-                const nonMember = state.getNonMemberLists;
+                const nonMember = state.getNonMemberLists();
                 if (nonMember.length > 0 && !state.selectedListId) {
                     state.selectedListId = String(nonMember[0].id);
                 }

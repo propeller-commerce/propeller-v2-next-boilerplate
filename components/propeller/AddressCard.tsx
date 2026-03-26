@@ -378,7 +378,7 @@ function AddressCard(props: AddressCardProps) {
             ) : null}
             {addr?.()?.isDefault === 'Y' ? (
               <div className="mt-2">
-                <span className="bg-violet-100 text-violet-800 text-xs px-2 py-1 rounded-full">
+                <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
                   Default {addr?.()?.type} Address
                 </span>
               </div>
@@ -388,7 +388,7 @@ function AddressCard(props: AddressCardProps) {
             <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
               {props.enableEdit !== false ? (
                 <button
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  className="text-primary hover:text-primary/80 text-sm font-medium"
                   onClick={(event) => openEditModal()}
                 >
                   {getLabel('edit', 'Edit')}
@@ -622,7 +622,7 @@ function AddressCard(props: AddressCardProps) {
                   <input
                     type="checkbox"
                     id="icp-inline"
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     checked={editIcp === Enums.YesNo.Y}
                     onChange={(e) => {
                       setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
@@ -655,7 +655,7 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
               >
                 {getLabel('save', 'Save')}
               </button>
@@ -879,7 +879,7 @@ function AddressCard(props: AddressCardProps) {
                     <input
                       type="checkbox"
                       id="icp-modal"
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                       checked={editIcp === Enums.YesNo.Y}
                       onChange={(e) => {
                         setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
@@ -901,7 +901,7 @@ function AddressCard(props: AddressCardProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
                 >
                   {getLabel('save', 'Save')}
                 </button>

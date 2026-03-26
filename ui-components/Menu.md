@@ -1,37 +1,36 @@
 # Menu
 
-A modular navigation component that renders a category hierarchy based on a given `categoryId`. It fetches category data using the Propeller SDK via the provided `graphqlClient` and displays a structured menu up to a configurable depth.
+A navigation component that renders a category hierarchy fetched from the Propeller GraphQL API. It supports two layout styles -- **dropdown-vertical** (nested flyout columns on hover) and **jumbotron** (full-width mega-menu panel) -- plus a mobile accordion view that shows automatically on smaller screens.
 
-The component supports two layout styles: **dropdown-vertical** (nested flyout panels on hover) and **jumbotron** (full-width mega-menu panel). It is language-aware and adapts category labels accordingly.
-
-User interactions are handled via the `onMenuItemClick` callback, allowing the parent application to control routing behaviour. The component is reusable across header navigation, sidebar menus, and mega-menu implementations.
-
-**Source:** `ui-components/Menu.lite.tsx`
-**Compiled React:** `output/react/ui-components/Menu`
-**Compiled Vue:** `output/vue/ui-components/Menu`
+The component handles its own data fetching, caching, and localization internally. User interactions are delegated to the parent via the `onMenuItemClick` callback for SPA-style routing.
 
 ---
 
 ## Usage
 
-### Minimal — dropdown in a header
+### Basic dropdown menu in a header
 
 ```tsx
 import Menu from '@/components/propeller/Menu';
 import { graphqlClient } from '@/lib/api';
-import { useRouter } from 'next/navigation';
 import { config } from '@/data/config';
+import { useRouter } from 'next/navigation';
 
-const router = useRouter();
+function Header() {
+  const router = useRouter();
 
-<Menu
-  graphqlClient={graphqlClient}
-  categoryId={17}
-  language="NL"
-  onMenuItemClick={(category) =>
-    router.push(config.urls.getCategoryUrl(category))
-  }
-/>
+  return (
+    <Menu
+      graphqlClient={graphqlClient}
+      categoryId={17}
+      language="NL"
+      configuration={config}
+      onMenuItemClick={(category) => {
+        router.push(config.urls.getCategoryUrl(category, 'NL'));
+      }}
+    />
+  );
+}
 ```
 
 ### Jumbotron / mega-menu style
@@ -42,74 +41,94 @@ const router = useRouter();
   categoryId={17}
   language="NL"
   menuStyle="jumbotron"
+  configuration={config}
   onMenuItemClick={(category) =>
-    router.push(config.urls.getCategoryUrl(category))
+    router.push(config.urls.getCategoryUrl(category, 'NL'))
   }
 />
 ```
 
-### Custom URL format
+### With authenticated user (enables user-specific cache buckets)
 
 ```tsx
 <Menu
   graphqlClient={graphqlClient}
   categoryId={17}
   language="NL"
-  menuLinkFormat="shop/{slug}-c{categoryId}"
-  onMenuItemClick={(category) =>
-    router.push(`/shop/${slug}-c${category.categoryId}`)
-  }
+  user={authState.user}
+  configuration={config}
+  onMenuItemClick={(category) => {
+    router.push(config.urls.getCategoryUrl(category, 'NL'));
+  }}
 />
 ```
 
-### Sidebar menu with custom class
+### Always-mounted pattern (prevents re-fetch on toggle)
+
+The recommended pattern keeps the menu always mounted in the DOM and toggles visibility with CSS. This avoids re-fetching the category tree every time the menu opens.
+
+```tsx
+const [showMenu, setShowMenu] = useState(false);
+
+<div
+  ref={menuRef}
+  onMouseLeave={() => setShowMenu(false)}
+>
+  <button onMouseEnter={() => setShowMenu(true)}>
+    Browse Categories
+  </button>
+
+  <div className={showMenu
+    ? "visible opacity-100"
+    : "invisible opacity-0 pointer-events-none h-0 overflow-hidden"
+  }>
+    <Menu
+      graphqlClient={graphqlClient}
+      categoryId={17}
+      language={language}
+      user={user}
+      configuration={config}
+      onMenuItemClick={(category) => {
+        setShowMenu(false);
+        router.push(config.urls.getCategoryUrl(category, language));
+      }}
+    />
+  </div>
+</div>
+```
+
+### Custom labels (Dutch localization)
 
 ```tsx
 <Menu
   graphqlClient={graphqlClient}
   categoryId={17}
   language="NL"
-  menuClass="border rounded-lg bg-white shadow-sm"
-  className="w-64"
-  onMenuItemClick={(category) =>
-    router.push(config.urls.getCategoryUrl(category))
-  }
-/>
-```
-
-### With caching for anonymous users only
-
-```tsx
-<Menu
-  graphqlClient={graphqlClient}
-  categoryId={17}
-  language="NL"
-  cacheEnabled={!authState.isAuthenticated}
-  onMenuItemClick={(category) =>
-    router.push(config.urls.getCategoryUrl(category))
-  }
-/>
-```
-
-> **Important:** Always disable caching for logged-in Propeller users.
-> Authenticated users may see different category visibility or pricing,
-> so they should always get fresh data. Pass `cacheEnabled={!isAuthenticated}`
-> to ensure the cache is only used for anonymous visitors.
-
-### Fully localised (Dutch)
-
-```tsx
-<Menu
-  graphqlClient={graphqlClient}
-  categoryId={17}
-  language="NL"
+  configuration={config}
   labels={{
     loading: 'Menu laden...',
     error: 'Menu kon niet geladen worden',
     empty: 'Geen categorieën gevonden',
   }}
   onMenuItemClick={(category) =>
-    router.push(config.urls.getCategoryUrl(category))
+    router.push(config.urls.getCategoryUrl(category, 'NL'))
+  }
+/>
+```
+
+### Deeper hierarchy with custom styling
+
+```tsx
+<Menu
+  graphqlClient={graphqlClient}
+  categoryId={17}
+  language="EN"
+  depth={4}
+  menuClass="border rounded-lg bg-white shadow-sm"
+  className="w-72"
+  configuration={config}
+  onMenuItemClick={(category) =>
+    router.push(config.urls.getCategoryUrl(category, 'EN'))
   }
 />
 ```
@@ -118,37 +137,40 @@ const router = useRouter();
 
 ## Props
 
-### Required
-
-| Prop | Type | Description |
-|---|---|---|
-| `graphqlClient` | `GraphQLClient` | Initialised Propeller SDK GraphQL client |
-| `categoryId` | `number` | Base category ID — root of the menu tree |
-| `language` | `string` | Language code for category names and slugs (e.g. `'NL'`, `'EN'`) |
-| `onMenuItemClick` | `(category: Category) => void` | Called when a menu item is clicked. Use for SPA routing |
-
-### Optional
+### Data & fetching
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
+| `graphqlClient` | `GraphQLClient` | **required** | Initialized Propeller SDK GraphQL client used to fetch category data |
+| `categoryId` | `number` | **required** | Root category ID -- the top of the menu tree |
+| `language` | `string` | **required** | Language code for localized category names and slugs (e.g. `'NL'`, `'EN'`) |
 | `depth` | `number` | `3` | Maximum nesting depth of the category hierarchy |
-| `menuClass` | `string` | — | CSS class for the inner menu container (`<nav>` element) |
+| `user` | `Contact \| Customer \| null` | `null` | Authenticated user. When the user changes (login/logout), the cache key changes and the menu re-fetches |
+| `configuration` | `any` | `undefined` | App configuration object (from `@/data/config`). Must include `urls.getCategoryUrl(category, language)` for URL generation |
+
+### Appearance
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
 | `menuStyle` | `string` | `'dropdown-vertical'` | Layout variant: `'dropdown-vertical'` or `'jumbotron'` |
-| `menuLinkFormat` | `string` | `'category/{categoryId}/{slug}'` | URL pattern with `{categoryId}` and `{slug}` placeholders |
-| `labels` | `Record<string, string>` | — | Override UI strings. See labels table below |
-| `cacheEnabled` | `boolean` | `false` | Enable localStorage caching for the menu tree. Useful for anonymous users to avoid re-fetching on every page load |
-| `cacheDuration` | `number` | `43200000` (12h) | Cache duration in milliseconds. Only used when `cacheEnabled` is `true` |
-| `className` | `string` | — | CSS class applied to the root `<div>` |
+| `menuClass` | `string` | -- | CSS class applied to the inner `<nav>` element |
+| `className` | `string` | -- | CSS class applied to the root `<div>` wrapper |
+| `menuLinkFormat` | `string` | -- | URL pattern with `{categoryId}` and `{slug}` placeholders (used as fallback if `configuration` is not provided) |
 
----
+### Callbacks & labels
 
-## Labels
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `onMenuItemClick` | `(category: Category) => void` | **required** | Called when a menu link is clicked. The default `<a>` navigation is prevented so the parent controls routing |
+| `labels` | `Record<string, string>` | -- | Override UI strings. Keys: `loading`, `error`, `empty` |
 
-| Key | Default value | Shown when |
+### Label defaults
+
+| Key | Default | Shown when |
 |---|---|---|
 | `loading` | `'Loading menu...'` | Categories are being fetched |
-| `error` | `'Failed to load menu'` | The API call failed |
-| `empty` | `'No categories found'` | The root category has no subcategories |
+| `error` | `'Failed to load menu'` | The GraphQL request failed |
+| `empty` | `'No categories found'` | The root category has no visible subcategories |
 
 ---
 
@@ -156,60 +178,251 @@ const router = useRouter();
 
 ### `dropdown-vertical` (default)
 
-Renders a vertical list of top-level categories. On hover, subcategories appear as flyout panels to the right, up to 3 levels deep. This is suitable for header navigation bars where the menu appears below a trigger button.
+A vertical list of top-level categories. On hover, subcategories appear as flyout columns to the right, up to 3 levels deep. Desktop only -- on mobile the component renders an accordion instead.
 
 ```
-┌─────────────────┐
-│ Computers       │ → ┌─────────────────┐
-│ Peripherals     │   │ Keyboards       │ → ┌─────────────────┐
-│ Networking      │   │ Mice            │   │ Wireless        │
-│ ...             │   │ Monitors        │   │ Wired           │
-└─────────────────┘   │ ...             │   │ Ergonomic       │
-                      └─────────────────┘   └─────────────────┘
++-----------------+
+| Computers       | -> +-----------------+
+| Peripherals     |    | Keyboards       | -> +-----------------+
+| Networking      |    | Mice            |    | Wireless        |
+| ...             |    | Monitors        |    | Wired           |
++-----------------+    | ...             |    | Ergonomic       |
+                       +-----------------+    +-----------------+
 ```
 
 ### `jumbotron`
 
-Renders top-level categories as horizontal tabs. The active tab reveals a full-width panel with subcategories arranged in a responsive grid (2–4 columns). Level 3 items are listed below each level 2 heading. Suitable for mega-menu implementations.
+Top-level categories render as horizontal tabs. The hovered tab reveals a full-width panel with subcategories in a responsive grid (2-4 columns). Level 3 items appear as lists beneath each level 2 heading.
 
 ```
 [ Computers ] [ Peripherals ] [ Networking ] ...
-┌──────────────────────────────────────────────────────┐
-│  Keyboards        Mice            Monitors           │
-│  ├ Wireless       ├ Gaming        ├ 4K              │
-│  ├ Mechanical     ├ Ergonomic     ├ Ultrawide        │
-│  └ Compact        └ Trackballs    └ Curved           │
-└──────────────────────────────────────────────────────┘
++------------------------------------------------------+
+|  Keyboards        Mice            Monitors            |
+|  - Wireless       - Gaming        - 4K                |
+|  - Mechanical     - Ergonomic     - Ultrawide         |
+|  - Compact        - Trackballs    - Curved            |
++------------------------------------------------------+
 ```
+
+### Mobile accordion (automatic)
+
+On screens narrower than the `md` breakpoint, both styles are hidden and a vertical accordion is shown instead. Tapping a category name navigates to it; tapping the chevron expands/collapses its children.
 
 ---
 
-## Internal behaviour
+## SDK Services
 
-### Data fetching
-- Uses `graphqlClient.execute()` with a recursive GraphQL query to fetch the full category tree up to the configured `depth`
-- Fetches on mount and re-fetches when `graphqlClient`, `categoryId`, or `language` props change
-- Filters out categories with missing names or slugs
+### Why `graphqlClient.execute()` instead of `CategoryService`
 
-### Caching (`cacheEnabled: true`)
-- Stores the fetched category tree in `localStorage` under key `propeller_menu_{categoryId}_{language}`
-- On fetch, checks cache first — if valid (not expired), uses cached data instantly without an API call
-- Cache expires after `cacheDuration` ms (default 12 hours)
-- Expired entries are removed automatically
-- Switching language fetches and caches separately per language
-- **Must be disabled for logged-in users** — pass `cacheEnabled={!isAuthenticated}` from the parent. Authenticated users may have different category visibility or pricing
+The Propeller SDK's `CategoryService.getCategory()` returns a flat category object -- it does **not** include nested subcategories. To fetch a full category tree (multiple levels deep), the Menu component builds a recursive GraphQL query and executes it directly via `graphqlClient.execute()`.
+
+### Internal query construction
+
+The component constructs its query using a recursive `buildCategoriesQuery(depth)` function:
+
+```typescript
+const buildCategoriesQuery = (currentDepth: number): string => {
+  if (currentDepth === 0) return '';
+  return `
+    categories {
+      categoryId
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      ${buildCategoriesQuery(currentDepth - 1)}
+    }
+  `;
+};
+```
+
+This produces a nested query where the `categories` field is repeated at each level. For `depth=3`, the generated query looks like:
+
+```graphql
+query Menu($categoryId: Float, $language: String) {
+  category(categoryId: $categoryId) {
+    categoryId
+    name(language: $language) { value language }
+    slug(language: $language) { value }
+    categories {
+      categoryId
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      categories {
+        categoryId
+        name(language: $language) { value language }
+        slug(language: $language) { value }
+        categories {
+          categoryId
+          name(language: $language) { value language }
+          slug(language: $language) { value }
+        }
+      }
+    }
+  }
+}
+```
+
+### Execution
+
+```typescript
+const response = await graphqlClient.execute({
+  query: gql,
+  variables: { categoryId: 17, language: 'NL' },
+});
+
+const rootCategory = response?.data?.category;
+// rootCategory.categories -> L1 categories
+// rootCategory.categories[0].categories -> L2 categories
+// etc.
+```
+
+When a `user` prop is provided, the component also passes `contactId` (for Contact users) or `customerId` (for Customer users) in the query variables so the API can apply user-specific category visibility rules.
+
+---
+
+## Behavior
+
+### Caching
+
+The component always caches the fetched category tree in `localStorage` to avoid unnecessary API calls on every render.
+
+- **Cache key format**: `propeller_menu_{categoryId}_{language}` for anonymous users, or `propeller_menu_{categoryId}_{language}_c{contactId}` / `propeller_menu_{categoryId}_{language}_u{customerId}` for authenticated users.
+- **TTL**: 12 hours (43,200,000 ms). Expired entries are removed on the next fetch attempt.
+- **Quota safety**: `localStorage.setItem` is wrapped in a try/catch so the component degrades gracefully if storage is full.
+
+### Auth-based cache invalidation
+
+Because the cache key includes the user identifier, logging in or out automatically produces a different cache key. This means:
+
+- Anonymous and authenticated users never share cached data.
+- Switching between user accounts also uses separate cache buckets.
+- No explicit cache-clearing logic is needed on auth transitions -- the `user` prop change triggers a re-fetch against the new cache key.
+
+### Language support
+
+- Category names and slugs are fetched using the `language` variable in the GraphQL query.
+- Changing the `language` prop triggers a re-fetch (and uses a different cache key).
+- The component tries to find a localized string matching the requested language; if not found, it falls back to the first available translation.
+
+### Re-fetch triggers
+
+The menu re-fetches when any of these props change:
+- `graphqlClient`
+- `categoryId`
+- `language`
+- `user`
+
+On each fetch, the cache is checked first. If a valid (non-expired) cached entry exists for the current cache key, the API call is skipped entirely.
 
 ### Hover state
-- `dropdown-vertical`: tracks hovered L1 and L2 category IDs to show/hide flyout panels
-- `jumbotron`: tracks hovered L1 to show the mega panel; L2/L3 are always visible in the panel
-- Hovering a new L1 resets the L2 hover state
 
-### URL generation
-- Builds URLs by replacing `{categoryId}` and `{slug}` in the `menuLinkFormat` template
-- Prepends a `/` to the result
-- When `onMenuItemClick` is provided, `e.preventDefault()` is called and the callback handles routing
+- **dropdown-vertical**: Tracks hovered L1 and L2 category IDs to show/hide flyout columns. Hovering a new L1 category resets the L2 hover state.
+- **jumbotron**: Tracks hovered L1 to display the mega panel. L2 and L3 categories are always visible within the panel.
 
-### CSS classes
-- Root: `propeller-menu` + optional `className`
-- Dropdown nav: `propeller-menu-dropdown` + optional `menuClass`
-- Jumbotron nav: `propeller-menu-jumbotron` + optional `menuClass`
+### CSS class hooks
+
+| Selector | Element |
+|---|---|
+| `.propeller-menu` | Root wrapper `<div>` |
+| `.propeller-menu-dropdown` | Desktop `<nav>` for `dropdown-vertical` style |
+| `.propeller-menu-jumbotron` | Desktop `<nav>` for `jumbotron` style |
+| `.propeller-menu-mobile` | Mobile accordion `<nav>` |
+
+---
+
+## Building Your Own
+
+If you need full control over the menu rendering, you can fetch the category tree yourself and build a custom UI. Here is a standalone example:
+
+```tsx
+import { useEffect, useState } from 'react';
+import { GraphQLClient, Category, LocalizedString } from 'propeller-sdk-v2';
+
+interface CategoryTree extends Category {
+  categories?: CategoryTree[];
+}
+
+function buildCategoriesQuery(depth: number): string {
+  if (depth === 0) return '';
+  return `
+    categories {
+      categoryId
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      ${buildCategoriesQuery(depth - 1)}
+    }
+  `;
+}
+
+async function fetchCategoryTree(
+  client: GraphQLClient,
+  categoryId: number,
+  language: string,
+  depth: number = 3
+): Promise<CategoryTree | null> {
+  const query = `
+    query Menu($categoryId: Float, $language: String) {
+      category(categoryId: $categoryId) {
+        categoryId
+        name(language: $language) { value language }
+        slug(language: $language) { value }
+        ${buildCategoriesQuery(depth)}
+      }
+    }
+  `;
+
+  const response = await client.execute({
+    query,
+    variables: { categoryId, language },
+  });
+
+  return response?.data?.category || null;
+}
+
+function getCategoryName(cat: Category, language: string): string {
+  const match = cat.name?.find((n: LocalizedString) => n.language === language);
+  return match?.value || cat.name?.[0]?.value || '';
+}
+
+function getCategorySlug(cat: Category, language: string): string {
+  const match = cat.slug?.find((s: LocalizedString) => s.language === language);
+  return match?.value || cat.slug?.[0]?.value || '';
+}
+
+// Example: render a simple nested list
+function CustomMenu({ client, categoryId, language }: {
+  client: GraphQLClient;
+  categoryId: number;
+  language: string;
+}) {
+  const [root, setRoot] = useState<CategoryTree | null>(null);
+
+  useEffect(() => {
+    fetchCategoryTree(client, categoryId, language).then(setRoot);
+  }, [client, categoryId, language]);
+
+  if (!root) return <div>Loading...</div>;
+
+  const renderCategories = (categories: CategoryTree[]) => (
+    <ul>
+      {categories.map((cat) => (
+        <li key={cat.categoryId}>
+          <a href={`/category/${cat.categoryId}/${getCategorySlug(cat, language)}`}>
+            {getCategoryName(cat, language)}
+          </a>
+          {cat.categories && cat.categories.length > 0 && renderCategories(cat.categories)}
+        </li>
+      ))}
+    </ul>
+  );
+
+  return renderCategories(root.categories || []);
+}
+```
+
+Key points when building your own:
+
+- **Do not use `CategoryService.getCategory()`** for menu data -- it returns a flat category without nested children.
+- Use `graphqlClient.execute()` with the recursive query pattern shown above.
+- Consider adding localStorage caching with an expiry timestamp to avoid hitting the API on every page load.
+- The `language` variable controls which translations are returned for `name` and `slug` fields.
+- Authenticated users may see different categories, so include user identity in your cache key if you implement caching.

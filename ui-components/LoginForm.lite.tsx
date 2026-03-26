@@ -411,7 +411,7 @@ export default function LoginForm(props: LoginFormProps) {
                     <button
                         type="button"
                         onClick={() => { if (props.onForgotPasswordClick) props.onForgotPasswordClick(); }}
-                        className="text-violet-600 hover:underline text-xs"
+                        className="text-secondary hover:underline text-xs"
                     >
                         {state.getLabel('forgotPassword', 'Forgot Password?')}
                     </button>
@@ -420,7 +420,7 @@ export default function LoginForm(props: LoginFormProps) {
                         <button
                             type="button"
                             onClick={() => { if (props.onRegisterClick) props.onRegisterClick(); }}
-                            className="text-violet-600 hover:underline font-medium"
+                            className="text-secondary hover:underline font-medium"
                         >
                             {state.getLabel('registerLink', 'Register')}
                         </button>

@@ -579,8 +579,8 @@ export default function CheckoutPage() {
     const isActive = currentStep === step;
     const isCompleted = currentStep > step;
     return (
-      <div className={`flex items-center gap-2 ${isActive ? 'text-primary font-bold' : isCompleted ? 'text-violet-500' : 'text-muted-foreground'}`}>
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-primary bg-primary text-primary-foreground' : isCompleted ? 'border-violet-500 bg-violet-100 text-violet-600' : 'border-muted-foreground/30'}`}>
+      <div className={`flex items-center gap-2 ${isActive ? 'text-primary font-bold' : isCompleted ? 'text-secondary' : 'text-muted-foreground'}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-primary bg-primary text-primary-foreground' : isCompleted ? 'border-secondary bg-secondary/10 text-secondary' : 'border-muted-foreground/30'}`}>
           {isCompleted ? <Check className="w-4 h-4" /> : step}
         </div>
         <span className="hidden md:inline">{title}</span>

@@ -9,6 +9,7 @@ import {
   GraphQLClient,
   Contact,
   Customer,
+  UserService,
 } from 'propeller-sdk-v2';
 
 export interface AddToFavoriteProps {
@@ -57,23 +58,32 @@ function AddToFavorite(props: AddToFavoriteProps) {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
 
-  function getListIds(list: FavoriteList): { productIds: number[]; clusterIds: number[] } {
-    const productIds: number[] = [];
-    const clusterIds: number[] = [];
-    const productsRef = list?.products as { items?: { productId?: number; clusterId?: number }[] } | undefined;
-    if (productsRef?.items) {
-      productsRef.items.forEach((item) => {
-        if (item.productId) productIds.push(item.productId);
-        if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId);
-      });
+  /** Refresh user data from API so props.user gets updated favorite lists */
+  async function refreshUserData() {
+    if (!props.graphqlClient) return;
+    try {
+      const userService = new UserService(props.graphqlClient);
+      const viewerData = await userService.getViewer({});
+      if (viewerData) {
+        function deepPlain(obj: unknown): unknown {
+          if (obj === null || obj === undefined) return obj;
+          if (Array.isArray(obj)) return obj.map(deepPlain);
+          if (typeof obj === 'object') {
+            const result: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+              const cleanKey = k.startsWith('_') ? k.slice(1) : k;
+              result[cleanKey] = deepPlain(v);
+            }
+            return result;
+          }
+          return obj;
+        }
+        localStorage.setItem('user', JSON.stringify(deepPlain(viewerData)));
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
     }
-    const clustersRef = list?.clusters as { items?: { clusterId?: number }[] } | undefined;
-    if (clustersRef?.items) {
-      clustersRef.items.forEach((item) => {
-        if (item.clusterId && !clusterIds.includes(item.clusterId)) clusterIds.push(item.clusterId);
-      });
-    }
-    return { productIds, clusterIds };
   }
 
   function toggleModal() {
@@ -96,21 +106,10 @@ function AddToFavorite(props: AddToFavoriteProps) {
     setAddLoading(true);
     try {
       const service = new FavoriteListService(props.graphqlClient);
-      const list = (userLists || []).find((l: FavoriteList) => String(l.id) === String(selectedListId));
-      const { productIds, clusterIds } = getListIds(list!);
-
-      if (isProduct && !productIds.includes(itemId)) {
-        productIds.push(itemId);
-      } else if (!isProduct && !clusterIds.includes(itemId)) {
-        clusterIds.push(itemId);
-      }
-
-      await service.updateFavoriteList(selectedListId, {
-        name: list?.name,
-        isDefault: list?.isDefault,
-        productIds,
-        clusterIds,
-      });
+      const input = isProduct
+        ? { productIds: [itemId] }
+        : { clusterIds: [itemId] };
+      await service.addFavoriteListItems(selectedListId, input);
 
       setMemberListIds((prev) => {
         const next = new Set(prev);
@@ -120,6 +119,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
       setSelectedListId('');
       setShowModal(false);
       toast.success(getLabel('addedToFavorites', 'Added to favorites'));
+      refreshUserData();
     } catch (error) {
       console.error('Error adding to favorite list:', error);
       toast.error(getLabel('addError', 'Failed to add to favorites'));
@@ -134,15 +134,10 @@ function AddToFavorite(props: AddToFavoriteProps) {
     setRemoveLoading(true);
     try {
       const service = new FavoriteListService(props.graphqlClient);
-      const list = (userLists || []).find((l: FavoriteList) => String(l.id) === String(listId));
-      const { productIds, clusterIds } = getListIds(list!);
-
-      await service.updateFavoriteList(listId, {
-        name: list?.name,
-        isDefault: list?.isDefault,
-        productIds: isProduct ? productIds.filter((id: number) => id !== itemId) : productIds,
-        clusterIds: !isProduct ? clusterIds.filter((id: number) => id !== itemId) : clusterIds,
-      });
+      const input = isProduct
+        ? { productIds: [itemId] }
+        : { clusterIds: [itemId] };
+      await service.removeFavoriteListItems(listId, input);
 
       setMemberListIds((prev) => {
         const next = new Set(prev);
@@ -151,6 +146,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
       });
       setShowModal(false);
       toast.success(getLabel('removedFromFavorites', 'Removed from favorites'));
+      refreshUserData();
     } catch (error) {
       console.error('Error removing from favorite list:', error);
       toast.error(getLabel('removeError', 'Failed to remove from favorites'));

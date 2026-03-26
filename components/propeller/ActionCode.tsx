@@ -168,13 +168,13 @@ function ActionCode(props: ActionCodeProps) {
       {isMounted ? (
         <>
           {hasAppliedCode() ? (
-            <div className="flex items-center justify-between bg-violet-50 border border-violet-200 rounded-md px-3 py-2">
+            <div className="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-md px-3 py-2">
               <div className="flex items-center gap-2">
                 <svg
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  className="w-4 h-4 text-violet-600"
+                  className="w-4 h-4 text-secondary"
                   strokeWidth={2}
                 >
                   <path
@@ -183,12 +183,12 @@ function ActionCode(props: ActionCodeProps) {
                     d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span className="text-sm font-medium text-violet-700">{appliedCode()}</span>
+                <span className="text-sm font-medium text-secondary">{appliedCode()}</span>
               </div>
               {showRemoveCode() ? (
                 <button
                   type="button"
-                  className="text-violet-600 hover:text-violet-800 text-sm font-medium transition-colors disabled:opacity-50"
+                  className="text-secondary hover:text-secondary text-sm font-medium transition-colors disabled:opacity-50"
                   onClick={(event) => handleRemove()}
                   disabled={loading}
                 >
@@ -201,7 +201,7 @@ function ActionCode(props: ActionCodeProps) {
             <div className="flex gap-2">
               <input
                 type="text"
-                className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:opacity-50"
+                className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent disabled:opacity-50"
                 value={code}
                 onChange={(e) => {
                   setCode(e.target.value);
@@ -212,7 +212,7 @@ function ActionCode(props: ActionCodeProps) {
               />
               <button
                 type="button"
-                className="bg-violet-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="bg-secondary text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 onClick={(event) => handleApply()}
                 disabled={loading || !code.trim()}
               >

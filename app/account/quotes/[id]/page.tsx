@@ -192,7 +192,7 @@ export default function QuoteDetailPage() {
                             />
                         </div>
                         <div className="flex flex-row items-end gap-3 flex-shrink-0">
-                            <Button onClick={handleAcceptQuote} className="bg-violet-600 hover:bg-violet-700">
+                            <Button onClick={handleAcceptQuote} className="bg-secondary hover:bg-secondary/90">
                                 Accept Quote
                             </Button>
                             <Button variant="outline" onClick={handleRequestChanges}>

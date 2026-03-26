@@ -82,7 +82,7 @@ function CartCarriers(props: CartCarriersProps) {
             <div
               key={`${carrier.name}-${index}`}
               onClick={(event) => handleSelect(carrier)}
-              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${selectedName === carrier.name ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${selectedName === carrier.name ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

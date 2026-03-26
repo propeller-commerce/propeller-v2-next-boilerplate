@@ -204,7 +204,7 @@ function CartSummary(props: CartSummaryProps) {
       {showCheckoutButton() ? (
         <button
           type="button"
-          className="block w-full bg-violet-600 text-white text-center py-3 rounded-lg hover:bg-violet-700 transition font-semibold mt-4"
+          className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
           onClick={(event) => handleCheckoutClick()}
         >
           {getLabel('checkoutButton', 'Continue to Checkout')}

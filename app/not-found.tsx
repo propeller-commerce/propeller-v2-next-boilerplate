@@ -16,7 +16,7 @@ export default function NotFound() {
           </p>
           <Link
             href={localizeHref('/')}
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+            className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition"
           >
             Go Home
           </Link>

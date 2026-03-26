@@ -214,7 +214,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
 
     return (
         <div
-            className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-violet-200 hover:shadow-sm cursor-pointer ${props.className || ''}`}
+            className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${props.className || ''}`}
             onClick={(e: any) => state.handleItemClick(e)}
         >
             {/* ── Image ──────────────────────────────────── */}
@@ -273,7 +273,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                     <a
                         href={state.getItemUrl()}
                         onClick={(e: any) => state.handleItemClick(e)}
-                        className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-violet-600 line-clamp-1"
+                        className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-secondary line-clamp-1"
                     >
                         {state.getName()}
                     </a>
@@ -354,7 +354,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
                     <a
                         href={state.getItemUrl()}
                         onClick={(e: any) => state.handleItemClick(e)}
-                        className="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 whitespace-nowrap"
+                        className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-secondary/90 whitespace-nowrap"
                     >
                         {state.getLabel('viewCluster', 'View cluster')}
                     </a>

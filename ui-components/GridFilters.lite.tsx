@@ -266,7 +266,7 @@ export default function GridFilters(props: GridFiltersProps) {
                     <button
                         type="button"
                         onClick={() => state.clearAll()}
-                        className="text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors"
+                        className="text-xs font-medium text-secondary hover:text-secondary transition-colors"
                     >
                         Clear all
                     </button>
@@ -290,7 +290,7 @@ export default function GridFilters(props: GridFiltersProps) {
                                 max={state.getMaxBound()}
                                 onChange={(e: any) => state.handleMinChange(parseFloat(e.target.value) || 0)}
                                 onBlur={() => state.applyPrice()}
-                                className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
                             />
                         </div>
                         <span className="text-gray-400 text-sm select-none">–</span>
@@ -303,7 +303,7 @@ export default function GridFilters(props: GridFiltersProps) {
                                 max={state.getMaxBound()}
                                 onChange={(e: any) => state.handleMaxChange(parseFloat(e.target.value) || 0)}
                                 onBlur={() => state.applyPrice()}
-                                className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
                             />
                         </div>
                     </div>
@@ -316,7 +316,7 @@ export default function GridFilters(props: GridFiltersProps) {
                             max={state.getMaxBound()}
                             value={state.currentMin}
                             onChange={(e: any) => { state.handleMinChange(parseFloat(e.target.value)); state.applyPrice(); }}
-                            className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-600 [&::-webkit-slider-thumb]:cursor-pointer z-20"
+                            className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
                         />
                         <input
                             type="range"
@@ -324,7 +324,7 @@ export default function GridFilters(props: GridFiltersProps) {
                             max={state.getMaxBound()}
                             value={state.currentMax}
                             onChange={(e: any) => { state.handleMaxChange(parseFloat(e.target.value)); state.applyPrice(); }}
-                            className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-600 [&::-webkit-slider-thumb]:cursor-pointer z-20"
+                            className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
                         />
                         <div className="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10" />
                     </div>
@@ -346,7 +346,7 @@ export default function GridFilters(props: GridFiltersProps) {
                         <button
                             type="button"
                             onClick={() => state.toggleAccordion(state.getFilterName(filter))}
-                            className="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-violet-600 transition-colors"
+                            className="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
                         >
                             <span className="text-sm font-semibold text-gray-700 truncate">
                                 {state.getFilterTitle(filter)}
@@ -371,7 +371,7 @@ export default function GridFilters(props: GridFiltersProps) {
                                                 type="checkbox"
                                                 checked={state.isSelected(state.getFilterName(filter), option.value)}
                                                 onChange={(e: any) => state.handleCheckbox(filter, option.value, e.target.checked)}
-                                                className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer flex-shrink-0"
+                                                className="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
                                             />
                                             <span className="flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900">
                                                 {option.value}

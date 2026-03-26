@@ -417,7 +417,7 @@ function LoginForm(props: LoginFormProps) {
         <div className="flex flex-col gap-2 text-sm pt-3 text-center">
           <button
             type="button"
-            className="text-violet-600 hover:underline text-xs"
+            className="text-secondary hover:underline text-xs"
             onClick={(event) => {
               if (props.onForgotPasswordClick) props.onForgotPasswordClick();
             }}
@@ -428,7 +428,7 @@ function LoginForm(props: LoginFormProps) {
             {getLabel('noAccount', "Don't have an account?")}
             <button
               type="button"
-              className="text-violet-600 hover:underline font-medium"
+              className="text-secondary hover:underline font-medium"
               onClick={(event) => {
                 if (props.onRegisterClick) props.onRegisterClick();
               }}

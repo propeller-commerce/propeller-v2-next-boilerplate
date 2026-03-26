@@ -175,7 +175,7 @@ export default function OrderTotals(props: OrderTotalsProps) {
             </Show>
 
             <Show when={state.showDiscount && state.hasDiscount}>
-                <div className="flex justify-between text-violet-600">
+                <div className="flex justify-between text-secondary">
                     <span>{state.getLabel('discount', 'Discount:')}</span>
                     <span>{state.discountDisplay}</span>
                 </div>

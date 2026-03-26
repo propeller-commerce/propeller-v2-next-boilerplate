@@ -31,6 +31,8 @@ tasks:
       - cd {{.BUILD_PATH}}/source
       - npm install
       - NODE_ENV=production npm run build
+      - echo "Cleaning old build artifacts..."
+      - sudo rm -rf {{.DEPLOY_PATH}}/.next
       - echo "Copying files to {{.DEPLOY_PATH}}"
       - sudo rsync -a --delete --exclude-from="rsync-exclude.txt" {{.BUILD_PATH}}/source/ {{.DEPLOY_PATH}}/
       - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}

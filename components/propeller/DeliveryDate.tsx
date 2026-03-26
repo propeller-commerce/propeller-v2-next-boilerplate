@@ -173,7 +173,7 @@ function DeliveryDate(props: DeliveryDateProps) {
           <div
             key={index}
             onClick={(event) => handleSelect(dateStr)}
-            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${selectedDate === dateStr ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
           >
             <div className="font-semibold">{formatDisplay(dateStr)}</div>
           </div>
@@ -181,7 +181,7 @@ function DeliveryDate(props: DeliveryDateProps) {
         {showDatePicker() ? (
           <div
             onClick={(event) => openModal()}
-            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${isCustomDateSelected() ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${isCustomDateSelected() ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
           >
             {isCustomDateSelected() ? (
               <div className="font-semibold">{formatDisplay(selectedDate)}</div>
@@ -220,7 +220,7 @@ function DeliveryDate(props: DeliveryDateProps) {
             </div>
             <input
               type="date"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
               min={minDate()}
               value={customDateValue}
               onChange={(event) => handleCustomDateChange(event.target.value)}

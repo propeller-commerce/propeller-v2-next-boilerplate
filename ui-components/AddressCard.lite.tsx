@@ -356,7 +356,7 @@ export default function AddressCard(props: AddressCardProps) {
 
                         <Show when={state.addr?.isDefault === 'Y'}>
                             <div className="mt-2">
-                                <span className="bg-violet-100 text-violet-800 text-xs px-2 py-1 rounded-full">
+                                <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
                                     Default {state.addr?.type} Address
                                 </span>
                             </div>
@@ -367,7 +367,7 @@ export default function AddressCard(props: AddressCardProps) {
                         <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
                             <Show when={props.enableEdit !== false}>
                                 <button
-                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    className="text-primary hover:text-primary/80 text-sm font-medium"
                                     onClick={() => state.openEditModal()}
                                 >
                                     {state.getLabel('edit', 'Edit')}
@@ -493,7 +493,7 @@ export default function AddressCard(props: AddressCardProps) {
                                         id="icp-inline"
                                         checked={state.editIcp === Enums.YesNo.Y}
                                         onChange={(e) => { state.editIcp = e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N; }}
-                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                     />
                                     <label htmlFor="icp-inline" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
                                 </div>
@@ -511,7 +511,7 @@ export default function AddressCard(props: AddressCardProps) {
                                     {state.getLabel('cancel', 'Cancel')}
                                 </button>
                             </Show>
-                            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">
                                 {state.getLabel('save', 'Save')}
                             </button>
                         </div>
@@ -622,7 +622,7 @@ export default function AddressCard(props: AddressCardProps) {
                                             id="icp-modal"
                                             checked={state.editIcp === Enums.YesNo.Y}
                                             onChange={(e) => { state.editIcp = e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N; }}
-                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                         />
                                         <label htmlFor="icp-modal" className="text-sm font-medium">{state.getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}</label>
                                     </div>
@@ -633,7 +633,7 @@ export default function AddressCard(props: AddressCardProps) {
                                 <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
                                     {state.getLabel('cancel', 'Cancel')}
                                 </button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">
                                     {state.getLabel('save', 'Save')}
                                 </button>
                             </div>

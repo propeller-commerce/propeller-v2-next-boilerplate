@@ -156,7 +156,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
                         <div
                             key={index}
                             onClick={() => state.handleSelect(dateStr)}
-                            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state.selectedDate === dateStr ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+                            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state.selectedDate === dateStr ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
                         >
                             <div className="font-semibold">{state.formatDisplay(dateStr)}</div>
                         </div>
@@ -166,7 +166,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
                 <Show when={state.showDatePicker}>
                     <div
                         onClick={() => state.openModal()}
-                        className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state.isCustomDateSelected ? 'border-violet-600 bg-violet-50 shadow-sm' : 'hover:border-violet-300'}`}
+                        className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${state.isCustomDateSelected ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
                     >
                         <Show when={state.isCustomDateSelected}>
                             <div className="font-semibold">{state.formatDisplay(state.selectedDate)}</div>
@@ -203,7 +203,7 @@ export default function DeliveryDate(props: DeliveryDateProps) {
                             min={state.minDate}
                             value={state.customDateValue}
                             onChange={(event) => state.handleCustomDateChange(event.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
                         />
 
                         <div className="flex justify-end gap-3 mt-4">

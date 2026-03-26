@@ -29,7 +29,7 @@ export interface FavoriteListDetailsProps {
   favoriteListId: string;
 
   /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
-  onItemDelete?: (itemId: string) => void;
+  onItemDelete?: (itemId: string, item?: { type: 'product' | 'cluster' }) => void;
 
   /** Called after the favorite list is fetched, with the full list object */
   onListLoaded?: (list: FavoriteList) => void;
@@ -276,6 +276,13 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
   function handleItemDelete(
     itemId: string
   ): ReturnType<FavoriteListDetailsState['handleItemDelete']> {
+    // Determine item type before removing from local state
+    const deletedItem = allItems.find((item: Product | Cluster) => {
+      if ('productId' in item) return String(item.productId) === itemId;
+      return String((item as Cluster).clusterId) === itemId;
+    });
+    const itemType: 'product' | 'cluster' = deletedItem && 'clusterId' in deletedItem ? 'cluster' : 'product';
+
     // Optimistic: remove from local state
     setAllItems(
       allItems.filter((item: Product | Cluster) => {
@@ -287,9 +294,9 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
     if (currentPage > getTotalPages()) {
       setCurrentPage(Math.max(1, getTotalPages()));
     }
-    // Notify parent
+    // Notify parent with type info
     if (props.onItemDelete) {
-      props.onItemDelete(itemId);
+      props.onItemDelete(itemId, { type: itemType });
     }
   }
 

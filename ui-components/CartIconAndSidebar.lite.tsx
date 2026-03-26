@@ -348,7 +348,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     />
                                 </svg>
                                 <h2 className="text-base font-semibold text-gray-900">{state.getSidebarTitle()}</h2>
-                                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-secondary/10 text-secondary text-xs font-bold">
                                     {state.getTotalItems()}
                                 </span>
                             </div>
@@ -385,7 +385,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     <button
                                         type="button"
                                         onClick={() => state.closeSidebar()}
-                                        className="text-sm text-violet-600 hover:underline"
+                                        className="text-sm text-secondary hover:underline"
                                     >
                                         {state.getLabel('continueShopping', 'Continue Shopping')}
                                     </button>
@@ -429,7 +429,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                                             </Show>
                                                         </div>
                                                         {/* Bundle items: leader first, then the rest */}
-                                                        <div className="mt-1.5 space-y-1 border-l-2 border-violet-100 pl-2">
+                                                        <div className="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                                                             <Show when={!!state.getBundleLeaderName(item)}>
                                                                 <div className="flex justify-between items-center text-xs">
                                                                     <span className="font-medium text-gray-800">
@@ -462,7 +462,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                                             <a
                                                                 href={state.getItemProductUrl(item)}
                                                                 onClick={() => state.closeSidebar()}
-                                                                className="text-sm font-medium leading-tight text-gray-900 hover:text-violet-600 transition-colors line-clamp-2"
+                                                                className="text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
                                                             >
                                                                 {state.getItemName(item)}
                                                             </a>
@@ -511,7 +511,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     <button
                                         type="button"
                                         onClick={() => state.handleCheckoutClick()}
-                                        className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                                        className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
                                     >
                                         {state.getLabel('checkoutButton', 'Checkout')}
                                     </button>

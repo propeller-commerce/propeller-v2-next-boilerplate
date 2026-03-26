@@ -227,7 +227,7 @@ export default function ClusterOptions(props: ClusterOptionsProps) {
                                             e.target.value,
                                         )
                                     }
-                                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${option.hasError ? 'border-red-400 focus:ring-red-500' : option.isRequired ? 'border-gray-300 focus:ring-violet-500' : 'border-gray-200 focus:ring-violet-500'}`}
+                                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${option.hasError ? 'border-red-400 focus:ring-red-500' : option.isRequired ? 'border-gray-300 focus:ring-secondary' : 'border-gray-200 focus:ring-secondary'}`}
                                 >
                                     <option value="">
                                         {option.isRequired
@@ -297,7 +297,7 @@ export default function ClusterOptions(props: ClusterOptionsProps) {
                                             <p className="truncate text-sm font-medium text-gray-900">
                                                 {option.previewName}
                                             </p>
-                                            <p className="text-sm font-semibold text-violet-600">
+                                            <p className="text-sm font-semibold text-secondary">
                                                 {option.previewPrice}
                                             </p>
                                         </div>

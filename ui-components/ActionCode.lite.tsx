@@ -166,19 +166,19 @@ export default function ActionCode(props: ActionCodeProps) {
             <Show when={state.isMounted}>
                 {/* Applied action code display */}
                 <Show when={state.hasAppliedCode}>
-                    <div className="flex items-center justify-between bg-violet-50 border border-violet-200 rounded-md px-3 py-2">
+                    <div className="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <svg className="w-4 h-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-sm font-medium text-violet-700">{state.appliedCode}</span>
+                            <span className="text-sm font-medium text-secondary">{state.appliedCode}</span>
                         </div>
                         <Show when={state.showRemoveCode}>
                             <button
                                 type="button"
                                 onClick={() => state.handleRemove()}
                                 disabled={state.loading}
-                                className="text-violet-600 hover:text-violet-800 text-sm font-medium transition-colors disabled:opacity-50"
+                                className="text-secondary hover:text-secondary text-sm font-medium transition-colors disabled:opacity-50"
                             >
                                 {state.getLabel('remove', 'Remove')}
                             </button>
@@ -196,13 +196,13 @@ export default function ActionCode(props: ActionCodeProps) {
                             onKeyDown={(e) => state.handleKeyDown(e)}
                             placeholder={state.getLabel('placeholder', 'Enter action code')}
                             disabled={state.loading}
-                            className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:opacity-50"
+                            className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent disabled:opacity-50"
                         />
                         <button
                             type="button"
                             onClick={() => state.handleApply()}
                             disabled={state.loading || !state.code.trim()}
-                            className="bg-violet-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            className="bg-secondary text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                             <Show when={state.loading}>
                                 {state.getLabel('applying', 'Applying...')}

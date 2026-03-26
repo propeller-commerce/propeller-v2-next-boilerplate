@@ -247,7 +247,7 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
                                                 </span>
                                             </Show>
                                         </div>
-                                        <div className="mt-1.5 space-y-1 border-l-2 border-violet-100 pl-2">
+                                        <div className="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                                             <Show when={!!state.getBundleLeaderName(item)}>
                                                 <div className="flex justify-between items-center text-xs">
                                                     <span className="font-medium text-gray-800">
@@ -280,7 +280,7 @@ export default function ItemsOverview(props: ItemsOverviewProps) {
                                             <Show when={state.itemNameClickable}>
                                                 <p
                                                     onClick={() => state.handleItemNameClick(item)}
-                                                    className="font-medium text-sm leading-tight cursor-pointer hover:text-violet-600 transition-colors line-clamp-2"
+                                                    className="font-medium text-sm leading-tight cursor-pointer hover:text-secondary transition-colors line-clamp-2"
                                                 >
                                                     {state.getItemName(item)}
                                                 </p>

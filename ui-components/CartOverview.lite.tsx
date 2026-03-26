@@ -267,7 +267,7 @@ export default function CartOverview(props: CartOverviewProps) {
                             value={state.reference}
                             onChange={(event) => state.handleReferenceChange(event.target.value)}
                             placeholder={state.getLabel('referencePlaceholder', 'Your reference number')}
-                            className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary"
                         />
                     </div>
                 </Show>
@@ -281,7 +281,7 @@ export default function CartOverview(props: CartOverviewProps) {
                             value={state.notes}
                             onChange={(event) => state.handleNotesChange(event.target.value)}
                             placeholder={state.getLabel('notesPlaceholder', 'Special instructions or comments')}
-                            className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[80px]"
+                            className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
                         />
                     </div>
                 </Show>

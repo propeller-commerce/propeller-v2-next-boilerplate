@@ -25,7 +25,6 @@ interface ProductShortDescriptionState {
   html: string;
   getShortDescription: () => string;
 }
-
 function ProductShortDescription(props: ProductShortDescriptionProps) {
   const [html, setHtml] = useState<ProductShortDescriptionState['html']>(() => '');
   function getShortDescription(): ReturnType<ProductShortDescriptionState['getShortDescription']> {
@@ -35,11 +34,9 @@ function ProductShortDescription(props: ProductShortDescriptionProps) {
     const match = product.shortDescriptions.find((d: LocalizedString) => d.language === lang);
     return match?.value || product.shortDescriptions?.[0]?.value || '';
   }
-
   useEffect(() => {
     setHtml(getShortDescription());
   }, [props.product, props.language]);
-
   return (
     <>
       {!!html ? (

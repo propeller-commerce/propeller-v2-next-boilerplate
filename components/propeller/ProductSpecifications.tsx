@@ -60,7 +60,6 @@ interface ProductSpecificationsState {
   getAttributeValue: (attr: AttributeResult) => string;
   hasPublicAttributes: () => boolean;
 }
-
 function ProductSpecifications(props: ProductSpecificationsProps) {
   const [internalAttributes, setInternalAttributes] = useState<
     ProductSpecificationsState['internalAttributes']
@@ -79,7 +78,6 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
         getAttributeValue(a) !== '0'
     );
   }
-
   function getGroups(): ReturnType<ProductSpecificationsState['getGroups']> {
     const attrs = getAttributes();
     const seen: string[] = [];
@@ -89,7 +87,6 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     });
     return seen;
   }
-
   function getAttributesByGroup(
     group: string
   ): ReturnType<ProductSpecificationsState['getAttributesByGroup']> {
@@ -97,7 +94,6 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
       (a: AttributeResult) => (a.attributeDescription?.group || '') === group
     );
   }
-
   function getAttributeLabel(
     attr: AttributeResult
   ): ReturnType<ProductSpecificationsState['getAttributeLabel']> {
@@ -106,7 +102,6 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     const match = descs.find((d: LocalizedString) => d.language === lang);
     return match?.value || attr.attributeDescription?.name || '';
   }
-
   function getAttributeValue(
     attr: AttributeResult
   ): ReturnType<ProductSpecificationsState['getAttributeValue']> {
@@ -141,11 +136,9 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     if (typeof fallback === 'boolean') return fallback ? 'Yes' : 'No';
     return String(fallback);
   }
-
   function hasPublicAttributes(): ReturnType<ProductSpecificationsState['hasPublicAttributes']> {
     return getAttributes().length > 0;
   }
-
   useEffect(() => {
     if (!props.productId || !props.graphqlClient) return;
     setLoading(true);
@@ -166,7 +159,6 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
         setLoading(false);
       });
   }, [props.productId]);
-
   return (
     <>
       {!loading && hasPublicAttributes() ? (

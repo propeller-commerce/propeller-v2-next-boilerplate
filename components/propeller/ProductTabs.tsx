@@ -122,7 +122,6 @@ interface ProductTabsState {
   selectTab: (tab: string) => void;
   getLabel: (key: string, fallback: string) => string;
 }
-
 function ProductTabs(props: ProductTabsProps) {
   const [activeTab, setActiveTab] = useState<ProductTabsState['activeTab']>(() => 'description');
   const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(() => false);
@@ -133,7 +132,6 @@ function ProductTabs(props: ProductTabsProps) {
     const match = descriptions.find((d) => d.language === lang);
     return !!(match?.value || descriptions[0]?.value);
   }
-
   function isTabVisible(tab: string): ReturnType<ProductTabsState['isTabVisible']> {
     if (tab === 'description') return props.showDescription !== false && hasDescription();
     if (tab === 'specifications') return props.showSpecifications !== false;
@@ -141,22 +139,18 @@ function ProductTabs(props: ProductTabsProps) {
     if (tab === 'videos') return props.showVideos !== false;
     return false;
   }
-
   function isActive(tab: string): ReturnType<ProductTabsState['isActive']> {
     return activeTab === tab;
   }
-
   function selectTab(tab: string): ReturnType<ProductTabsState['selectTab']> {
     if (tab === 'specifications') {
       setSpecsVisited(true);
     }
     setActiveTab(tab);
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductTabsState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   useEffect(() => {
     // Set the first visible tab as active
     if (props.showDescription !== false && hasDescription()) {
@@ -176,7 +170,6 @@ function ProductTabs(props: ProductTabsProps) {
       setActiveTab('description');
     }
   }, [props.product, props.language]);
-
   return (
     <div className={`product-tabs ${(props.className as string) || ''}`}>
       <div className="hidden md:block">

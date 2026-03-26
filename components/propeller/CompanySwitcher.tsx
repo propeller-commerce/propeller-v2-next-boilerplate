@@ -28,7 +28,6 @@ interface CompanySwitcherState {
   toggleDropdown: () => void;
   selectCompany: (company: Company) => void;
 }
-
 function CompanySwitcher(props: CompanySwitcherProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<CompanySwitcherState['isOpen']>(() => false);
@@ -49,7 +48,6 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     }
     return [];
   }
-
   function getActiveCompany(): ReturnType<CompanySwitcherState['getActiveCompany']> {
     const idToUse = activeCompanyId ?? (props.selectedCompanyId as number | undefined) ?? null;
     if (idToUse !== null) {
@@ -59,31 +57,25 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     }
     return (props.user.company as Company | undefined) ?? null;
   }
-
   function getActiveCompanyName(): ReturnType<CompanySwitcherState['getActiveCompanyName']> {
     const company = getActiveCompany();
     return company ? company.name : 'Select company';
   }
-
   function getIcon(): ReturnType<CompanySwitcherState['getIcon']> {
     return props.icon ?? 'default-company-switch-icon';
   }
-
   function isActive(company: Company): ReturnType<CompanySwitcherState['isActive']> {
     const active = getActiveCompany();
     return active !== null && active.companyId === company.companyId;
   }
-
   function toggleDropdown(): ReturnType<CompanySwitcherState['toggleDropdown']> {
     setIsOpen(!isOpen);
   }
-
   function selectCompany(company: Company): ReturnType<CompanySwitcherState['selectCompany']> {
     setActiveCompanyId(company.companyId);
     setIsOpen(false);
     props.onCompanyChange(company);
   }
-
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -94,7 +86,6 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
-
   return (
     <div className="company-switcher relative inline-block" ref={containerRef}>
       <button

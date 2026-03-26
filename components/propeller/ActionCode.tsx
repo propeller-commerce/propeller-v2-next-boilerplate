@@ -52,7 +52,6 @@ interface ActionCodeState {
   handleRemove: () => Promise<void>;
   handleKeyDown: (e: any) => void;
 }
-
 function ActionCode(props: ActionCodeProps) {
   const [code, setCode] = useState<ActionCodeState['code']>(() => '');
   const [loading, setLoading] = useState<ActionCodeState['loading']>(() => false);
@@ -61,23 +60,18 @@ function ActionCode(props: ActionCodeProps) {
   function getLabel(key: string, fallback: string): ReturnType<ActionCodeState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function title(): ReturnType<ActionCodeState['title']> {
     return props.title || 'Action code';
   }
-
   function showRemoveCode(): ReturnType<ActionCodeState['showRemoveCode']> {
     return props.showRemoveCode !== undefined ? props.showRemoveCode : true;
   }
-
   function appliedCode(): ReturnType<ActionCodeState['appliedCode']> {
     return props.cart?.actionCode || '';
   }
-
   function hasAppliedCode(): ReturnType<ActionCodeState['hasAppliedCode']> {
     return !!props.cart?.actionCode;
   }
-
   async function handleApply(): ReturnType<ActionCodeState['handleApply']> {
     if (!code.trim() || loading) return;
     setLoading(true);
@@ -112,7 +106,6 @@ function ActionCode(props: ActionCodeProps) {
         console.error('Failed to apply action code:', error);
       });
   }
-
   async function handleRemove(): ReturnType<ActionCodeState['handleRemove']> {
     if (loading || !hasAppliedCode()) return;
     setLoading(true);
@@ -147,17 +140,14 @@ function ActionCode(props: ActionCodeProps) {
         console.error('Failed to remove action code:', error);
       });
   }
-
   function handleKeyDown(e: any): ReturnType<ActionCodeState['handleKeyDown']> {
     if (e.key === 'Enter') {
       handleApply();
     }
   }
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
   return (
     <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
       <h2 className="text-lg font-bold">{title()}</h2>

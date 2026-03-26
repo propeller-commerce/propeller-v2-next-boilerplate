@@ -35,7 +35,6 @@ interface ProductGalleryState {
   prevImage: () => void;
   nextImage: () => void;
 }
-
 function ProductGallery(props: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<ProductGalleryState['selectedIndex']>(() => 0);
   const [lightboxOpen, setLightboxOpen] = useState<ProductGalleryState['lightboxOpen']>(
@@ -44,47 +43,39 @@ function ProductGallery(props: ProductGalleryProps) {
   function getImages(): ReturnType<ProductGalleryState['getImages']> {
     return (props.images as string[]) || [];
   }
-
   function getMainImage(): ReturnType<ProductGalleryState['getMainImage']> {
     const images = getImages();
     if (!images || images.length === 0) return '';
     const idx = selectedIndex;
     return images[idx] || images[0] || '';
   }
-
   function hasThumbnails(): ReturnType<ProductGalleryState['hasThumbnails']> {
     const images = getImages();
     return !!images && images.length > 1;
   }
-
   function selectImage(index: number): ReturnType<ProductGalleryState['selectImage']> {
     setSelectedIndex(index);
   }
-
   function openLightbox(): ReturnType<ProductGalleryState['openLightbox']> {
     if (props.enableLightbox !== false) {
       setLightboxOpen(true);
     }
   }
-
   function closeLightbox(): ReturnType<ProductGalleryState['closeLightbox']> {
     setLightboxOpen(false);
   }
-
   function prevImage(): ReturnType<ProductGalleryState['prevImage']> {
     const images = getImages();
     const len = images?.length || 0;
     if (len === 0) return;
     setSelectedIndex((selectedIndex - 1 + len) % len);
   }
-
   function nextImage(): ReturnType<ProductGalleryState['nextImage']> {
     const images = getImages();
     const len = images?.length || 0;
     if (len === 0) return;
     setSelectedIndex((selectedIndex + 1) % len);
   }
-
   return (
     <div className={`product-gallery ${(props.className as string) || ''}`}>
       <div className="relative aspect-square bg-white overflow-hidden">

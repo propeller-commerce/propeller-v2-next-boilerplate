@@ -60,7 +60,6 @@ interface BreadcrumbsState {
   showSeparatorBefore: (index: number) => boolean;
   getLabel: (key: string, fallback: string) => string;
 }
-
 function Breadcrumbs(props: BreadcrumbsProps) {
   function getItems(): ReturnType<BreadcrumbsState['getItems']> {
     const path = (props.categoryPath as Category[]) || [];
@@ -68,7 +67,6 @@ function Breadcrumbs(props: BreadcrumbsProps) {
     if (!baseId) return path;
     return path.filter((cat: Category) => cat.categoryId !== baseId);
   }
-
   function getDisplayItems(): ReturnType<BreadcrumbsState['getDisplayItems']> {
     const items = getItems();
     if (props.showCurrent === false && items.length > 0) {
@@ -76,19 +74,16 @@ function Breadcrumbs(props: BreadcrumbsProps) {
     }
     return items;
   }
-
   function getCategoryName(cat: Category): ReturnType<BreadcrumbsState['getCategoryName']> {
     const lang = (props.language as string) || 'NL';
     const match = cat.name?.find((n: LocalizedString) => n.language === lang);
     return match?.value || cat.name?.[0]?.value || '';
   }
-
   function getCategorySlug(cat: Category): ReturnType<BreadcrumbsState['getCategorySlug']> {
     const lang = (props.language as string) || 'NL';
     const match = cat.slug?.find((s: LocalizedString) => s.language === lang);
     return match?.value || cat.slug?.[0]?.value || '';
   }
-
   function getCategoryUrl(
     cat: Category,
     index: number
@@ -98,21 +93,17 @@ function Breadcrumbs(props: BreadcrumbsProps) {
     }
     return props.configuration.urls.getCategoryUrl(cat, props.language);
   }
-
   function isCurrentItem(index: number): ReturnType<BreadcrumbsState['isCurrentItem']> {
     if (props.showCurrent === false) return false;
     return index === getDisplayItems().length - 1;
   }
-
   function showSeparatorBefore(index: number): ReturnType<BreadcrumbsState['showSeparatorBefore']> {
     // Show separator when Home precedes this item, or when a previous category item exists.
     return props.showHome !== false || index > 0;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<BreadcrumbsState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   return (
     <nav aria-label="Breadcrumb" className={`breadcrumbs ${(props.className as string) || ''}`}>
       <ol className="flex flex-wrap items-center text-sm text-muted-foreground">

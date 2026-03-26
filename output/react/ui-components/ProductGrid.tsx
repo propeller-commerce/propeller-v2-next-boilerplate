@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -334,7 +334,6 @@ interface ProductGridState {
   itemsFound: number;
   currentSortField: string;
   currentSortOrder: string;
-  fetchId: number;
   fetchProducts: () => Promise<void>;
   isClusterItem: (item: Product | Cluster) => boolean;
   getGridColsClass: () => string;
@@ -344,7 +343,6 @@ interface ProductGridState {
   showAddToCart: () => boolean;
   getSkeletonItems: () => number[];
 }
-
 function ProductGrid(props: ProductGridProps) {
   const [internalProducts, setInternalProducts] = useState<ProductGridState['internalProducts']>(
     () => []
@@ -361,10 +359,10 @@ function ProductGrid(props: ProductGridProps) {
   const [currentSortOrder, setCurrentSortOrder] = useState<ProductGridState['currentSortOrder']>(
     () => 'ASC'
   );
-  const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);
+  const fetchIdRef = useRef(0);
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
-    const myFetchId = ++fetchId;
+    const myFetchId = ++fetchIdRef.current;
     // Always show loading on first load; skip skeleton only for language switch with existing products
     if (internalProducts.length === 0) {
       setIsInternalLoading(true);
@@ -471,7 +469,7 @@ function ProductGrid(props: ProductGridProps) {
       } as CategoryQueryVariables);
 
       // Discard result if a newer fetch was triggered while this one was in-flight
-      if (myFetchId !== fetchId) return;
+      if (myFetchId !== fetchIdRef.current) return;
       const lang = (props.language as string) || 'NL';
       const allItems = (result?.products?.items || []) as (Product | Cluster)[];
       const filteredItems = allItems.filter((item) => {
@@ -509,20 +507,18 @@ function ProductGrid(props: ProductGridProps) {
         props.onPageItemCountChange(filteredItems.length);
       }
     } catch {
-      if (myFetchId === fetchId) {
+      if (myFetchId === fetchIdRef.current) {
         setInternalProducts([]);
       }
     } finally {
-      if (myFetchId === fetchId) {
+      if (myFetchId === fetchIdRef.current) {
         setIsInternalLoading(false);
       }
     }
   }
-
   function isClusterItem(item: Product | Cluster): ReturnType<ProductGridState['isClusterItem']> {
     return !!(item as any)?.clusterId;
   }
-
   function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
     const cols = (props.columns as number) || 3;
     if (cols === 1) return 'flex flex-col gap-4';
@@ -530,13 +526,11 @@ function ProductGrid(props: ProductGridProps) {
     if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
     return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
-
   function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
     setCurrentPage(page);
     fetchProducts();
     if (props.onPageChange) props.onPageChange(page);
   }
-
   function getDisplayProducts(): ReturnType<ProductGridState['getDisplayProducts']> {
     // Use props.products when explicitly provided (even if empty array).
     // Fall through to internally fetched products only when prop is absent.
@@ -545,17 +539,14 @@ function ProductGrid(props: ProductGridProps) {
     }
     return internalProducts;
   }
-
   function getIsLoading(): ReturnType<ProductGridState['getIsLoading']> {
     return !!(props.isLoading as boolean) || isInternalLoading;
   }
-
   function showAddToCart(): ReturnType<ProductGridState['showAddToCart']> {
     const mode = (props.portalMode as string) || 'open';
     const allow = (props.allowAddToCart as boolean) !== false;
     return mode === 'open' && allow;
   }
-
   function getSkeletonItems(): ReturnType<ProductGridState['getSkeletonItems']> {
     const cols = (props.columns as number) || 3;
     const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
@@ -563,12 +554,31 @@ function ProductGrid(props: ProductGridProps) {
     for (let i = 0; i < count; i++) items.push(i);
     return items;
   }
+  // Tracks the serialised dep values of the last fetch that was actually started.
+  // Prevents duplicate API calls when React fires this effect more than once with
+  // identical prop values (e.g. after a parent re-render with an unchanged URL).
+  const lastFetchDepsRef = useRef<string>('');
 
   useEffect(() => {
     if (props.products === undefined) {
       if (props.page !== undefined) {
         setCurrentPage(props.page as number);
       }
+      const depsKey = JSON.stringify({
+        textFilters: props.textFilters,
+        priceFilterMin: props.priceFilterMin,
+        priceFilterMax: props.priceFilterMax,
+        categoryId: props.categoryId,
+        term: props.term,
+        brand: props.brand,
+        sortField: props.sortField,
+        sortOrder: props.sortOrder,
+        pageSize: props.pageSize,
+        language: props.language,
+        page: props.page,
+      });
+      if (lastFetchDepsRef.current === depsKey) return;
+      lastFetchDepsRef.current = depsKey;
       fetchProducts();
     }
   }, [

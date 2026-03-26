@@ -47,31 +47,25 @@ interface ProductBulkPricesState {
   getQuantityLabel: (tier: ProductPrice, index: number) => string;
   getLabel: (key: string, fallback: string) => string;
 }
-
 function ProductBulkPrices(props: ProductBulkPricesProps) {
   function isHidden(): ReturnType<ProductBulkPricesState['isHidden']> {
     return (props.portalMode as string) === 'semi-closed' && !props.user;
   }
-
   function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
     return props.includeTax !== undefined ? !!props.includeTax : true;
   }
-
   function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
     return (props.bulkPrices as ProductPrice[]) || [];
   }
-
   function hasItems(): ReturnType<ProductBulkPricesState['hasItems']> {
     return getBulkPrices().length > 0;
   }
-
   function getPrice(tier: ProductPrice): ReturnType<ProductBulkPricesState['getPrice']> {
     const useTax: boolean = getIncludeTax();
     const value: number | undefined = useTax ? tier.net : tier.gross;
     if (value === null || value === undefined) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
   }
-
   function getQuantityLabel(
     tier: ProductPrice,
     index: number
@@ -95,12 +89,10 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
     }
     return `${qty}+`;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductBulkPricesState['getLabel']> {
     const val = (props.labels as Record<string, string>)?.[key];
     return val !== undefined ? val : fallback;
   }
-
   return (
     <>
       {!isHidden() && hasItems() ? (

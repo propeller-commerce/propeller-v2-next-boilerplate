@@ -200,14 +200,12 @@ interface AccountIconAndMenuState {
     handler: ((e: MouseEvent) => void) | null;
   };
 }
-
 function AccountIconAndMenu(props: AccountIconAndMenuProps) {
   const [isMounted, setIsMounted] = useState<AccountIconAndMenuState['isMounted']>(() => false);
   const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState['menuOpen']>(() => false);
   function isSidebar(): ReturnType<AccountIconAndMenuState['isSidebar']> {
     return props.variant === 'sidebar';
   }
-
   function getUserName(): ReturnType<AccountIconAndMenuState['getUserName']> {
     const user = props.user as Contact | Customer;
     if (!user) return '';
@@ -217,14 +215,12 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     if (user.email) return user.email;
     return 'User';
   }
-
   function getLabel(
     key: string,
     fallback: string
   ): ReturnType<AccountIconAndMenuState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function getMenuTitle(): ReturnType<AccountIconAndMenuState['getMenuTitle']> {
     return (
       props.accountMenuTitle ||
@@ -232,13 +228,11 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
       'My account'
     );
   }
-
   function isActiveLink(href: string): ReturnType<AccountIconAndMenuState['isActiveLink']> {
     if (!props.currentPath) return false;
     if (href === '/account') return props.currentPath === '/account';
     return props.currentPath.startsWith(href);
   }
-
   function getMenuLinks(): ReturnType<AccountIconAndMenuState['getMenuLinks']> {
     if (props.menuLinks && (props.menuLinks as AccountMenuLink[]).length > 0) {
       return props.menuLinks as AccountMenuLink[];
@@ -270,7 +264,6 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
       },
     ] as AccountMenuLink[];
   }
-
   function handleIconClick(): ReturnType<AccountIconAndMenuState['handleIconClick']> {
     if (props.showAccountMenuOnClick !== false) {
       setMenuOpen(!menuOpen);
@@ -278,48 +271,40 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
       if (props.onAccountIconClick) props.onAccountIconClick();
     }
   }
-
   function handleMenuItemClick(
     href: string
   ): ReturnType<AccountIconAndMenuState['handleMenuItemClick']> {
     setMenuOpen(false);
     if (props.onMenuItemClick) props.onMenuItemClick(href);
   }
-
   function handleLogoutClick(): ReturnType<AccountIconAndMenuState['handleLogoutClick']> {
     setMenuOpen(false);
     if (props.onLogoutClick) props.onLogoutClick();
   }
-
   function handleForgotPasswordClick(): ReturnType<
     AccountIconAndMenuState['handleForgotPasswordClick']
   > {
     setMenuOpen(false);
     if (props.onForgotPasswordClick) props.onForgotPasswordClick();
   }
-
   function handleRegisterClick(): ReturnType<AccountIconAndMenuState['handleRegisterClick']> {
     setMenuOpen(false);
     if (props.onRegisterClick) props.onRegisterClick();
   }
-
   function handleGuestCheckoutClick(): ReturnType<
     AccountIconAndMenuState['handleGuestCheckoutClick']
   > {
     setMenuOpen(false);
     if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
   }
-
   function closeMenu(): ReturnType<AccountIconAndMenuState['closeMenu']> {
     setMenuOpen(false);
   }
-
   const [clickOutsideListener, setClickOutsideListener] = useState<
     AccountIconAndMenuState['clickOutsideListener']
   >(() => ({
     handler: null as ((e: MouseEvent) => void) | null,
   }));
-
   useEffect(() => {
     setIsMounted(true);
     const listener = (e: MouseEvent) => {
@@ -339,7 +324,6 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
       setMenuOpen(false);
     }
   }, [props.user]);
-
   return (
     <div className="relative" data-account-menu>
       {isSidebar() ? (

@@ -55,24 +55,20 @@ interface UserDetailsState {
   shouldShowInvoiceAddress: () => boolean;
   shouldShowDeliveryAddress: () => boolean;
 }
-
 function UserDetails(props: UserDetailsProps) {
   const [isMounted, setIsMounted] = useState<UserDetailsState['isMounted']>(() => false);
   function isContact(): ReturnType<UserDetailsState['isContact']> {
     return props.user !== null && 'company' in props.user;
   }
-
   function getName(): ReturnType<UserDetailsState['getName']> {
     if (props.user && props.user.firstName) {
       return [props.user.firstName, props.user.lastName].filter(Boolean).join(' ');
     }
     return 'User';
   }
-
   function getActiveCompany(): ReturnType<UserDetailsState['getActiveCompany']> {
     return isContact() ? props.activeCompany : null;
   }
-
   function getCompanies(): ReturnType<UserDetailsState['getCompanies']> {
     if (!isContact()) return [];
     const contact = props.user as Contact;
@@ -86,7 +82,6 @@ function UserDetails(props: UserDetailsProps) {
     }
     return [];
   }
-
   function getAllAddresses(): ReturnType<UserDetailsState['getAllAddresses']> {
     if (isContact()) {
       const company = getActiveCompany();
@@ -95,36 +90,30 @@ function UserDetails(props: UserDetailsProps) {
     const customer = props.user as Customer;
     return customer.addresses || [];
   }
-
   function getDefaultInvoiceAddress(): ReturnType<UserDetailsState['getDefaultInvoiceAddress']> {
     const addresses = getAllAddresses();
     return (
       addresses.find((addr: Address) => addr.type === 'invoice' && addr.isDefault === 'Y') ?? null
     );
   }
-
   function getDefaultDeliveryAddress(): ReturnType<UserDetailsState['getDefaultDeliveryAddress']> {
     const addresses = getAllAddresses();
     return (
       addresses.find((addr: Address) => addr.type === 'delivery' && addr.isDefault === 'Y') ?? null
     );
   }
-
   function getAddressName(addr: Address): ReturnType<UserDetailsState['getAddressName']> {
     const parts = [addr.firstName, addr.middleName, addr.lastName].filter(Boolean);
     return parts.join(' ');
   }
-
   function getAddressLine1(addr: Address): ReturnType<UserDetailsState['getAddressLine1']> {
     const parts = [addr.street, addr.number, addr.numberExtension].filter(Boolean);
     return parts.join(' ');
   }
-
   function getAddressLine2(addr: Address): ReturnType<UserDetailsState['getAddressLine2']> {
     const parts = [addr.postalCode, addr.city].filter(Boolean);
     return parts.join(' ');
   }
-
   function getCountryName(code: string): ReturnType<UserDetailsState['getCountryName']> {
     if (!code) return '';
     const list = props.countries || [];
@@ -133,27 +122,21 @@ function UserDetails(props: UserDetailsProps) {
     }
     return code;
   }
-
   function shouldShowCompanyInfo(): ReturnType<UserDetailsState['shouldShowCompanyInfo']> {
     return props.showCompanyInfo !== false && isContact();
   }
-
   function shouldListCompanies(): ReturnType<UserDetailsState['shouldListCompanies']> {
     return props.listAllContactCompanies === true && isContact();
   }
-
   function shouldShowInvoiceAddress(): ReturnType<UserDetailsState['shouldShowInvoiceAddress']> {
     return props.showDefaultInvoiceAddress !== false;
   }
-
   function shouldShowDeliveryAddress(): ReturnType<UserDetailsState['shouldShowDeliveryAddress']> {
     return props.showDefaultDeliveryAddress === true;
   }
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
   return (
     <div className="user-details space-y-6">
       {isMounted ? (

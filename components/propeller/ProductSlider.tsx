@@ -208,7 +208,6 @@ interface ProductSliderState {
   handleProductClick: (product: Product) => void;
   handleClusterClick: (cluster: Cluster) => void;
 }
-
 function ProductSlider(props: ProductSliderProps) {
   const [loadedItems, setLoadedItems] = useState<ProductSliderState['loadedItems']>(() => []);
   const [isLoading, setIsLoading] = useState<ProductSliderState['isLoading']>(() => false);
@@ -226,11 +225,9 @@ function ProductSlider(props: ProductSliderProps) {
     }
     return loadedItems;
   }
-
   function isCrossUpsellMode(): ReturnType<ProductSliderState['isCrossUpsellMode']> {
     return !!(props.crossUpsellTypes && props.crossUpsellTypes.length > 0);
   }
-
   function crossUpsellTitle(): ReturnType<ProductSliderState['crossUpsellTitle']> {
     if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return '';
     const typeLabels: Record<string, string> = {
@@ -244,50 +241,39 @@ function ProductSlider(props: ProductSliderProps) {
       .map((t: string) => props.labels?.[t.toLowerCase()] || typeLabels[t] || t)
       .join(' & ');
   }
-
   function sliderTitle(): ReturnType<ProductSliderState['sliderTitle']> {
     if (props.title !== undefined) return props.title;
     if (isCrossUpsellMode()) return crossUpsellTitle();
     return undefined;
   }
-
   function mobileCount(): ReturnType<ProductSliderState['mobileCount']> {
     return props.itemsPerView?.mobile || 1;
   }
-
   function tabletCount(): ReturnType<ProductSliderState['tabletCount']> {
     return props.itemsPerView?.tablet || 2;
   }
-
   function desktopCount(): ReturnType<ProductSliderState['desktopCount']> {
     return props.itemsPerView?.desktop || 4;
   }
-
   function canScrollLeft(): ReturnType<ProductSliderState['canScrollLeft']> {
     return scrollPosition > 0;
   }
-
   function canScrollRight(): ReturnType<ProductSliderState['canScrollRight']> {
     return scrollPosition < scrollWidth - containerWidth - 1;
   }
-
   function portalMode(): ReturnType<ProductSliderState['portalMode']> {
     return (props.portalMode as string) || 'open';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductSliderState['getLabel']> {
     const val = (props.labels as Record<string, string>)?.[key];
     return val !== undefined ? val : fallback;
   }
-
   function isCluster(item: any): ReturnType<ProductSliderState['isCluster']> {
     return 'clusterId' in item && !('productId' in item);
   }
-
   function getItemId(item: any): ReturnType<ProductSliderState['getItemId']> {
     return isCluster(item) ? item.clusterId : item.productId;
   }
-
   async function fetchCrossUpsells(): ReturnType<ProductSliderState['fetchCrossUpsells']> {
     if (!props.graphqlClient) return;
     if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
@@ -344,7 +330,6 @@ function ProductSlider(props: ProductSliderProps) {
       setIsLoading(false);
     }
   }
-
   async function fetchItems(): ReturnType<ProductSliderState['fetchItems']> {
     if (!props.graphqlClient) return;
     const hasProductIds = props.productIds && props.productIds.length > 0;
@@ -395,7 +380,6 @@ function ProductSlider(props: ProductSliderProps) {
       setIsLoading(false);
     }
   }
-
   function doFetch(): ReturnType<ProductSliderState['doFetch']> {
     if (props.products && props.products.length > 0) return;
     if (isCrossUpsellMode()) {
@@ -404,11 +388,9 @@ function ProductSlider(props: ProductSliderProps) {
       fetchItems();
     }
   }
-
   function getTrackEl(): ReturnType<ProductSliderState['getTrackEl']> {
     return document.querySelector(`[data-slider-id="${sliderId}"]`) as HTMLElement | null;
   }
-
   function scrollLeft(): ReturnType<ProductSliderState['scrollLeft']> {
     const el = getTrackEl();
     if (el) {
@@ -419,7 +401,6 @@ function ProductSlider(props: ProductSliderProps) {
       });
     }
   }
-
   function scrollRight(): ReturnType<ProductSliderState['scrollRight']> {
     const el = getTrackEl();
     if (el) {
@@ -430,14 +411,12 @@ function ProductSlider(props: ProductSliderProps) {
       });
     }
   }
-
   function handleScroll(e: any): ReturnType<ProductSliderState['handleScroll']> {
     const el = e.target as HTMLElement;
     setScrollPosition(el.scrollLeft);
     setContainerWidth(el.clientWidth);
     setScrollWidth(el.scrollWidth);
   }
-
   function handleProductClick(
     product: Product
   ): ReturnType<ProductSliderState['handleProductClick']> {
@@ -445,7 +424,6 @@ function ProductSlider(props: ProductSliderProps) {
       props.onProductClick(product);
     }
   }
-
   function handleClusterClick(
     cluster: Cluster
   ): ReturnType<ProductSliderState['handleClusterClick']> {
@@ -453,7 +431,6 @@ function ProductSlider(props: ProductSliderProps) {
       props.onClusterClick(cluster);
     }
   }
-
   useEffect(() => {
     setSliderId('slider-' + Math.random().toString(36).substring(2, 9));
     doFetch();
@@ -478,7 +455,6 @@ function ProductSlider(props: ProductSliderProps) {
       }, 50);
     }
   }, [sliderId, items().length]);
-
   return (
     <>
       {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (

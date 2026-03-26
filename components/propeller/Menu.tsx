@@ -96,7 +96,6 @@ interface MenuState {
   getMenuStyle: () => string;
   getLinkFormat: () => string;
 }
-
 function Menu(props: MenuProps) {
   const [rootCategory, setRootCategory] = useState<MenuState['rootCategory']>(() => null);
   const [isLoading, setIsLoading] = useState<MenuState['isLoading']>(() => true);
@@ -169,19 +168,16 @@ function Menu(props: MenuProps) {
       setIsLoading(false);
     }
   }
-
   function getUserKey(): ReturnType<MenuState['getUserKey']> {
     if (!props.user) return '';
     if ('contactId' in (props.user as any)) return `c${(props.user as Contact).contactId}`;
     return `u${(props.user as Customer).customerId}`;
   }
-
   function getCacheKey(): ReturnType<MenuState['getCacheKey']> {
     const lang = (props.language as string) || 'NL';
     const userKey = getUserKey();
     return `propeller_menu_${props.categoryId}_${lang}${userKey ? `_${userKey}` : ''}`;
   }
-
   function getCachedMenu(): ReturnType<MenuState['getCachedMenu']> {
     if (typeof window === 'undefined') return null;
     try {
@@ -197,7 +193,6 @@ function Menu(props: MenuProps) {
     }
     return null;
   }
-
   function cacheMenu(data: Category): ReturnType<MenuState['cacheMenu']> {
     if (typeof window === 'undefined') return;
     try {
@@ -212,28 +207,23 @@ function Menu(props: MenuProps) {
       // ignore — quota exceeded etc.
     }
   }
-
   function clearCache(): ReturnType<MenuState['clearCache']> {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(getCacheKey());
   }
-
   function getCategoryName(cat: Category): ReturnType<MenuState['getCategoryName']> {
     const lang = (props.language as string) || 'NL';
     const match = cat.name?.find((n: LocalizedString) => n.language === lang);
     return match?.value || cat.name?.[0]?.value || '';
   }
-
   function getCategorySlug(cat: Category): ReturnType<MenuState['getCategorySlug']> {
     const lang = (props.language as string) || 'NL';
     const match = cat.slug?.find((s: LocalizedString) => s.language === lang);
     return match?.value || cat.slug?.[0]?.value || '';
   }
-
   function getCategoryUrl(cat: Category): ReturnType<MenuState['getCategoryUrl']> {
     return props.configuration.urls.getCategoryUrl(cat, props.language);
   }
-
   function getSubCategories(cat: Category): ReturnType<MenuState['getSubCategories']> {
     const subs = (cat as any).categories || [];
     return subs.filter((sub: Category) => {
@@ -242,39 +232,31 @@ function Menu(props: MenuProps) {
       return name && slug;
     });
   }
-
   function handleItemClick(cat: Category, e: any): ReturnType<MenuState['handleItemClick']> {
     if (props.onMenuItemClick) {
       e.preventDefault();
       (props.onMenuItemClick as (cat: Category) => void)(cat);
     }
   }
-
   function setHoveredL1(id: number | null): ReturnType<MenuState['setHoveredL1']> {
     setHoveredL1Id(id);
     setHoveredL2Id(null);
   }
-
   function setHoveredL2(id: number | null): ReturnType<MenuState['setHoveredL2']> {
     setHoveredL2Id(id);
   }
-
   function getLabel(key: string, fallback: string): ReturnType<MenuState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function getMenuStyle(): ReturnType<MenuState['getMenuStyle']> {
     return (props.menuStyle as string) || 'dropdown-vertical';
   }
-
   function getLinkFormat(): ReturnType<MenuState['getLinkFormat']> {
     return props.configuration.urls.pattern;
   }
-
   useEffect(() => {
     fetchMenu();
   }, [props.graphqlClient, props.categoryId, props.language, props.user]);
-
   return (
     <div className={`propeller-menu ${(props.className as string) || ''}`}>
       {isLoading ? (

@@ -56,7 +56,6 @@ interface ForgotPasswordState {
   emailPlaceholder: () => string;
   handleSubmit: (e: any) => Promise<void>;
 }
-
 function ForgotPassword(props: ForgotPasswordProps) {
   const [email, setEmail] = useState<ForgotPasswordState['email']>(() => '');
   const [loading, setLoading] = useState<ForgotPasswordState['loading']>(() => false);
@@ -65,26 +64,21 @@ function ForgotPassword(props: ForgotPasswordProps) {
   function resolvedTitle(): ReturnType<ForgotPasswordState['resolvedTitle']> {
     return props.title !== undefined ? props.title : 'Forgot password?';
   }
-
   function resolvedButtonText(): ReturnType<ForgotPasswordState['resolvedButtonText']> {
     return props.buttonText || 'Reset';
   }
-
   function resolvedResponseMessage(): ReturnType<ForgotPasswordState['resolvedResponseMessage']> {
     return (
       props.responseMessage ||
       'If an account exists with this email, you will receive a password reset link shortly.'
     );
   }
-
   function emailLabel(): ReturnType<ForgotPasswordState['emailLabel']> {
     return props.labels?.email || 'Email';
   }
-
   function emailPlaceholder(): ReturnType<ForgotPasswordState['emailPlaceholder']> {
     return props.labels?.emailPlaceholder || 'name@example.com';
   }
-
   async function handleSubmit(e: any): ReturnType<ForgotPasswordState['handleSubmit']> {
     e.preventDefault();
     if (loading) return;
@@ -113,7 +107,6 @@ function ForgotPassword(props: ForgotPasswordProps) {
       setLoading(false);
     }
   }
-
   return (
     <div className="forgot-password-form">
       {resolvedTitle() ? (

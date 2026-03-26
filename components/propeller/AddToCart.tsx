@@ -183,7 +183,6 @@ interface AddToCartState {
   closeModal: () => void;
   getLabel: (key: string, fallback: string) => string;
 }
-
 function AddToCart(props: AddToCartProps) {
   const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => 1);
   const [loading, setLoading] = useState<AddToCartState['loading']>(() => false);
@@ -198,16 +197,13 @@ function AddToCart(props: AddToCartProps) {
     const min = (props.product as any)?.minimumQuantity;
     return min && min > 0 ? min : 1;
   }
-
   function getStep(): ReturnType<AddToCartState['getStep']> {
     const unit = (props.product as any)?.unit;
     return unit && unit > 0 ? unit : 1;
   }
-
   function increment(): ReturnType<AddToCartState['increment']> {
     setQuantity(quantity + getStep());
   }
-
   function decrement(): ReturnType<AddToCartState['decrement']> {
     const min = getMinQuantity();
     const step = getStep();
@@ -215,7 +211,6 @@ function AddToCart(props: AddToCartProps) {
       setQuantity(quantity - step);
     }
   }
-
   function showToast(message: string, type: string): ReturnType<AddToCartState['showToast']> {
     setToastMessage(message);
     setToastType(type);
@@ -224,33 +219,26 @@ function AddToCart(props: AddToCartProps) {
       setToastVisible(false);
     }, 3000);
   }
-
   function dismissToast(): ReturnType<AddToCartState['dismissToast']> {
     setToastVisible(false);
   }
-
   function getProductName(): ReturnType<AddToCartState['getProductName']> {
     return (props.product as any)?.names?.[0]?.value || 'Product';
   }
-
   function getProductUrl(): ReturnType<AddToCartState['getProductUrl']> {
     return props.configuration.urls.getProductUrl(props.product, props.language);
   }
-
   function getProductImageUrl(): ReturnType<AddToCartState['getProductImageUrl']> {
     return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function getProductSku(): ReturnType<AddToCartState['getProductSku']> {
     return (props.product as any)?.sku || '';
   }
-
   function getProductPrice(): ReturnType<AddToCartState['getProductPrice']> {
     const price = props.price !== undefined ? props.price : (props.product as any)?.price?.gross;
     if (!price && price !== 0) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   async function initCart(): ReturnType<AddToCartState['initCart']> {
     const cartService = new CartService(props.graphqlClient);
     // 1. Check for existing carts for this user first
@@ -388,7 +376,6 @@ function AddToCart(props: AddToCartProps) {
     }
     return newCart.cartId;
   }
-
   async function handleAddToCart(): ReturnType<AddToCartState['handleAddToCart']> {
     if (!props.graphqlClient) return;
     if (props.beforeAddToCart && !props.beforeAddToCart()) return;
@@ -478,7 +465,6 @@ function AddToCart(props: AddToCartProps) {
       setLoading(false);
     }
   }
-
   function getModalImageUrl(): ReturnType<AddToCartState['getModalImageUrl']> {
     if (addedCartItem) {
       const img = addedCartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
@@ -486,46 +472,38 @@ function AddToCart(props: AddToCartProps) {
     }
     return getProductImageUrl();
   }
-
   function getModalName(): ReturnType<AddToCartState['getModalName']> {
     if (addedCartItem) {
       return addedCartItem.product?.names?.[0]?.value || getProductName();
     }
     return getProductName();
   }
-
   function getModalPrice(): ReturnType<AddToCartState['getModalPrice']> {
     if (addedCartItem) {
       return '\u20AC' + Number(addedCartItem.totalSumNet).toFixed(2);
     }
     return getProductPrice();
   }
-
   function getModalSku(): ReturnType<AddToCartState['getModalSku']> {
     if (addedCartItem) return addedCartItem.product?.sku || '';
     return getProductSku();
   }
-
   function getChildItems(): ReturnType<AddToCartState['getChildItems']> {
     const children = addedCartItem?.childItems;
     if (!children || !Array.isArray(children)) return [];
     return children;
   }
-
   function closeModal(): ReturnType<AddToCartState['closeModal']> {
     setModalVisible(false);
     setSuccess(false);
     setAddedCartItem(null);
   }
-
   function getLabel(key: string, fallback: string): ReturnType<AddToCartState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
-
   useEffect(() => {
     setQuantity(getMinQuantity());
   }, []);
-
   return (
     <div className={props.className}>
       <div className="flex items-center gap-2 w-full">

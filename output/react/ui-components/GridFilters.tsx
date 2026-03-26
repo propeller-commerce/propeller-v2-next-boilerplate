@@ -86,7 +86,6 @@ interface GridFiltersState {
   getMinBound: () => number;
   getMaxBound: () => number;
 }
-
 function GridFilters(props: GridFiltersProps) {
   const [selectedFilters, setSelectedFilters] = useState<GridFiltersState['selectedFilters']>(
     () => ({})
@@ -101,11 +100,9 @@ function GridFilters(props: GridFiltersProps) {
     if (mode === 'open') return true;
     return !!props.user;
   }
-
   function getFilterName(filter: AttributeFilter): ReturnType<GridFiltersState['getFilterName']> {
     return (filter as AttributeFilter)?.attributeDescription?.name || '';
   }
-
   function getFilterTitle(filter: AttributeFilter): ReturnType<GridFiltersState['getFilterTitle']> {
     return (
       (filter as AttributeFilter)?.attributeDescription?.descriptions?.[0]?.value ||
@@ -113,7 +110,6 @@ function GridFilters(props: GridFiltersProps) {
       ''
     );
   }
-
   function getFilteredFilters(): ReturnType<GridFiltersState['getFilteredFilters']> {
     const list = (props.filters as AttributeFilter[]) || [];
     return list.filter((f: AttributeFilter) => {
@@ -121,7 +117,6 @@ function GridFilters(props: GridFiltersProps) {
       return opts.some((o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0);
     });
   }
-
   function getValidOptions(
     filter: AttributeFilter
   ): ReturnType<GridFiltersState['getValidOptions']> {
@@ -129,7 +124,6 @@ function GridFilters(props: GridFiltersProps) {
       (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0
     );
   }
-
   function getSelectedCount(): ReturnType<GridFiltersState['getSelectedCount']> {
     let n = 0;
     const sel = selectedFilters as Record<string, string[]>;
@@ -138,25 +132,21 @@ function GridFilters(props: GridFiltersProps) {
     });
     return n;
   }
-
   function hasActiveFilters(): ReturnType<GridFiltersState['hasActiveFilters']> {
     const sel = selectedFilters as Record<string, string[]>;
     return Object.keys(sel).some((k: string) => (sel[k] || []).length > 0);
   }
-
   function isSelected(
     filterName: string,
     value: string
   ): ReturnType<GridFiltersState['isSelected']> {
     return ((selectedFilters as Record<string, string[]>)[filterName] || []).includes(value);
   }
-
   function isExpanded(filterName: string): ReturnType<GridFiltersState['isExpanded']> {
     const stored = (expandedFilters as Record<string, boolean>)[filterName];
     if (stored === undefined) return props.collapsed === false;
     return !!stored;
   }
-
   function toggleAccordion(filterName: string): ReturnType<GridFiltersState['toggleAccordion']> {
     const cur = !!(expandedFilters as Record<string, boolean>)[filterName];
     setExpandedFilters({
@@ -164,7 +154,6 @@ function GridFilters(props: GridFiltersProps) {
       [filterName]: !cur,
     });
   }
-
   function handleCheckbox(
     filter: AttributeFilter,
     value: string,
@@ -186,22 +175,18 @@ function GridFilters(props: GridFiltersProps) {
     props.onFilterChange(filter, value);
     if (props.getSelectedFilters) props.getSelectedFilters();
   }
-
   function handleMinChange(value: number): ReturnType<GridFiltersState['handleMinChange']> {
     const n = value > currentMax ? currentMax : value;
     setCurrentMin(n);
   }
-
   function handleMaxChange(value: number): ReturnType<GridFiltersState['handleMaxChange']> {
     const n = value < currentMin ? currentMin : value;
     setCurrentMax(n);
   }
-
   function applyPrice(): ReturnType<GridFiltersState['applyPrice']> {
     if (props.onPriceChange) props.onPriceChange(currentMin, currentMax);
     if (props.getSelectedFilters) props.getSelectedFilters();
   }
-
   function clearAll(): ReturnType<GridFiltersState['clearAll']> {
     setSelectedFilters({});
     setCurrentMin((props.priceMin as number) || 0);
@@ -209,21 +194,17 @@ function GridFilters(props: GridFiltersProps) {
     if (props.onClearFilters) props.onClearFilters();
     if (props.getSelectedFilters) props.getSelectedFilters();
   }
-
   function getCount(option: any): ReturnType<GridFiltersState['getCount']> {
     const c = option?.count || 0;
     const ca = option?.countActive || 0;
     return c === 0 && ca > 0 ? ca : c;
   }
-
   function getMinBound(): ReturnType<GridFiltersState['getMinBound']> {
     return (props.priceMin as number) || 0;
   }
-
   function getMaxBound(): ReturnType<GridFiltersState['getMaxBound']> {
     return (props.priceMax as number) || 9999;
   }
-
   useEffect(() => {
     const currentExp = expandedFilters as Record<string, boolean>;
     const open = props.collapsed === false;

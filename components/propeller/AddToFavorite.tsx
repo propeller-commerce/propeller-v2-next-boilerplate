@@ -50,7 +50,6 @@ interface AddToFavoriteState {
   getMemberLists: () => FavoriteList[];
   getNonMemberLists: () => FavoriteList[];
 }
-
 function AddToFavorite(props: AddToFavoriteProps) {
   const [memberListIds, setMemberListIds] = useState<AddToFavoriteState['memberListIds']>(
     () => new Set<string>()
@@ -67,15 +66,12 @@ function AddToFavorite(props: AddToFavoriteProps) {
   function isFavorited(): ReturnType<AddToFavoriteState['isFavorited']> {
     return memberListIds.size > 0;
   }
-
   function isProduct(): ReturnType<AddToFavoriteState['isProduct']> {
     return !!props.productId;
   }
-
   function itemId(): ReturnType<AddToFavoriteState['itemId']> {
     return (props.productId || props.clusterId || 0) as number;
   }
-
   async function refreshUserData(): ReturnType<AddToFavoriteState['refreshUserData']> {
     if (!props.graphqlClient) return;
     try {
@@ -103,16 +99,13 @@ function AddToFavorite(props: AddToFavoriteProps) {
       console.error('Error refreshing user data:', error);
     }
   }
-
   function toggleModal(): ReturnType<AddToFavoriteState['toggleModal']> {
     if (!props.user) return;
     setShowModal(!showModal);
   }
-
   function closeModal(): ReturnType<AddToFavoriteState['closeModal']> {
     setShowModal(false);
   }
-
   async function handleAddToList(): ReturnType<AddToFavoriteState['handleAddToList']> {
     if (!selectedListId || !props.graphqlClient || addLoading) return;
     setAddLoading(true);
@@ -138,7 +131,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
       setAddLoading(false);
     }
   }
-
   async function handleRemoveFromList(
     listId: string
   ): ReturnType<AddToFavoriteState['handleRemoveFromList']> {
@@ -165,22 +157,18 @@ function AddToFavorite(props: AddToFavoriteProps) {
       setRemoveLoading(false);
     }
   }
-
   function getLabel(key: string, fallback: string): ReturnType<AddToFavoriteState['getLabel']> {
     const labels = props.labels as Record<string, string> | undefined;
     return labels?.[key] || fallback;
   }
-
   function getMemberLists(): ReturnType<AddToFavoriteState['getMemberLists']> {
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
     return (userLists || []).filter((list: FavoriteList) => memberListIds.has(String(list.id)));
   }
-
   function getNonMemberLists(): ReturnType<AddToFavoriteState['getNonMemberLists']> {
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
     return (userLists || []).filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
   }
-
   useEffect(() => {
     if (!props.user || !itemId()) return;
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
@@ -215,7 +203,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
     });
     setMemberListIds(memberIds);
   }, [props.user, props.productId, props.clusterId]);
-
   return (
     <>
       {props.user ? (

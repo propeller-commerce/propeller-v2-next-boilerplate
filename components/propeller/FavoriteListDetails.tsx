@@ -146,7 +146,6 @@ interface FavoriteListDetailsState {
   fetchList: () => Promise<void>;
   handleItemDelete: (itemId: string) => void;
 }
-
 function FavoriteListDetails(props: FavoriteListDetailsProps) {
   const [loading, setLoading] = useState<FavoriteListDetailsState['loading']>(() => true);
   const [favoriteList, setFavoriteList] = useState<FavoriteListDetailsState['favoriteList']>(

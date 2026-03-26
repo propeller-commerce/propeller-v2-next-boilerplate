@@ -132,7 +132,6 @@ interface LoginFormState {
   errorMessage: () => string;
   handleSubmit: (e: any) => Promise<void>;
 }
-
 function LoginForm(props: LoginFormProps) {
   const [email, setEmail] = useState<LoginFormState['email']>(() => '');
   const [password, setPassword] = useState<LoginFormState['password']>(() => '');
@@ -141,59 +140,45 @@ function LoginForm(props: LoginFormProps) {
   function getLabel(key: string, fallback: string): ReturnType<LoginFormState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
-
   function emailLabel(): ReturnType<LoginFormState['emailLabel']> {
     return props.labels?.email || 'Email';
   }
-
   function passwordLabel(): ReturnType<LoginFormState['passwordLabel']> {
     return props.labels?.password || 'Password';
   }
-
   function emailPlaceholder(): ReturnType<LoginFormState['emailPlaceholder']> {
     return props.labels?.emailPlaceholder || 'name@example.com';
   }
-
   function passwordPlaceholder(): ReturnType<LoginFormState['passwordPlaceholder']> {
     return props.labels?.passwordPlaceholder || '••••••••';
   }
-
   function forgotPasswordText(): ReturnType<LoginFormState['forgotPasswordText']> {
     return props.labels?.forgotPassword || 'Forgot password?';
   }
-
   function registerText(): ReturnType<LoginFormState['registerText']> {
     return props.labels?.registerText || "Don't have an account?";
   }
-
   function registerLinkText(): ReturnType<LoginFormState['registerLinkText']> {
     return props.labels?.registerLink || 'Create an Account';
   }
-
   function guestCheckoutLinkText(): ReturnType<LoginFormState['guestCheckoutLinkText']> {
     return props.labels?.guestCheckoutLink || 'Continue as Guest';
   }
-
   function resolvedTitle(): ReturnType<LoginFormState['resolvedTitle']> {
     return props.title !== undefined ? props.title : 'Log in';
   }
-
   function resolvedButtonText(): ReturnType<LoginFormState['resolvedButtonText']> {
     return props.buttonText || 'Login';
   }
-
   function showForgotPassword(): ReturnType<LoginFormState['showForgotPassword']> {
     return props.displayForgotPasswordLink !== false;
   }
-
   function showRegister(): ReturnType<LoginFormState['showRegister']> {
     return props.displayRegisterLink !== false;
   }
-
   function showGuestCheckout(): ReturnType<LoginFormState['showGuestCheckout']> {
     return props.displayGuestCheckoutLink !== false;
   }
-
   function isLoading(): ReturnType<LoginFormState['isLoading']> {
     // Self-contained mode uses internal state; delegation mode uses prop
     if (props.onLoginSubmit) {
@@ -201,7 +186,6 @@ function LoginForm(props: LoginFormProps) {
     }
     return loading;
   }
-
   function errorMessage(): ReturnType<LoginFormState['errorMessage']> {
     // Self-contained mode uses internal state; delegation mode uses prop
     if (props.onLoginSubmit) {
@@ -209,7 +193,6 @@ function LoginForm(props: LoginFormProps) {
     }
     return error;
   }
-
   async function handleSubmit(e: any): ReturnType<LoginFormState['handleSubmit']> {
     e.preventDefault();
     if (props.beforeLogin) {
@@ -286,7 +269,6 @@ function LoginForm(props: LoginFormProps) {
       setLoading(false);
     }
   }
-
   return (
     <div className="login-form">
       {resolvedTitle() ? (

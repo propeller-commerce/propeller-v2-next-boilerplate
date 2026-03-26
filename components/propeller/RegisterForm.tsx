@@ -184,7 +184,6 @@ interface RegisterFormState {
   isFieldRequired: (fieldName: string) => boolean;
   handleSubmit: (e: Event | any) => Promise<void>;
 }
-
 function RegisterForm(props: RegisterFormProps) {
   const [firstName, setFirstName] = useState<RegisterFormState['firstName']>(() => '');
   const [middleName, setMiddleName] = useState<RegisterFormState['middleName']>(() => '');
@@ -239,157 +238,119 @@ function RegisterForm(props: RegisterFormProps) {
   function resolvedTitle(): ReturnType<RegisterFormState['resolvedTitle']> {
     return props.title !== undefined ? props.title : 'Create account';
   }
-
   function resolvedButtonText(): ReturnType<RegisterFormState['resolvedButtonText']> {
     return props.buttonText || 'Register';
   }
-
   function showUserTypeSelector(): ReturnType<RegisterFormState['showUserTypeSelector']> {
     return props.showUserType === undefined || props.showUserType === null;
   }
-
   function effectiveUserType(): ReturnType<RegisterFormState['effectiveUserType']> {
     if (props.showUserType) return props.showUserType;
     return selectedUserType;
   }
-
   function isContact(): ReturnType<RegisterFormState['isContact']> {
     return effectiveUserType() === 'Contact';
   }
-
   function isCustomer(): ReturnType<RegisterFormState['isCustomer']> {
     return effectiveUserType() === 'Customer';
   }
-
   function showLoginLink(): ReturnType<RegisterFormState['showLoginLink']> {
     return props.displayLoginLink !== false;
   }
-
   function personalDetailsTitle(): ReturnType<RegisterFormState['personalDetailsTitle']> {
     return props.labels?.personalDetailsTitle || 'Your details';
   }
-
   function billingAddressTitle(): ReturnType<RegisterFormState['billingAddressTitle']> {
     return props.labels?.billingAddressTitle || 'Billing address';
   }
-
   function deliveryAddressTitle(): ReturnType<RegisterFormState['deliveryAddressTitle']> {
     return props.labels?.deliveryAddressTitle || 'Delivery address';
   }
-
   function passwordTitle(): ReturnType<RegisterFormState['passwordTitle']> {
     return props.labels?.passwordTitle || 'Password';
   }
-
   function sameAsDeliveryLabel(): ReturnType<RegisterFormState['sameAsDeliveryLabel']> {
     return props.labels?.sameAsDelivery || 'Delivery address is the same as billing address';
   }
-
   function firstNameLabel(): ReturnType<RegisterFormState['firstNameLabel']> {
     return props.labels?.firstName || 'First name';
   }
-
   function middleNameLabel(): ReturnType<RegisterFormState['middleNameLabel']> {
     return props.labels?.middleName || 'Insertion';
   }
-
   function lastNameLabel(): ReturnType<RegisterFormState['lastNameLabel']> {
     return props.labels?.lastName || 'Last name';
   }
-
   function emailLabel(): ReturnType<RegisterFormState['emailLabel']> {
     return props.labels?.email || 'Email address';
   }
-
   function passwordLabel(): ReturnType<RegisterFormState['passwordLabel']> {
     return props.labels?.password || 'Password';
   }
-
   function confirmPasswordLabel(): ReturnType<RegisterFormState['confirmPasswordLabel']> {
     return props.labels?.confirmPassword || 'Repeat password';
   }
-
   function phoneLabel(): ReturnType<RegisterFormState['phoneLabel']> {
     return props.labels?.phone || 'Phone number';
   }
-
   function genderLabel(): ReturnType<RegisterFormState['genderLabel']> {
     return props.labels?.gender || 'Title';
   }
-
   function companyNameLabel(): ReturnType<RegisterFormState['companyNameLabel']> {
     return props.labels?.companyName || 'Company name';
   }
-
   function vatNumberLabel(): ReturnType<RegisterFormState['vatNumberLabel']> {
     return props.labels?.vatNumber || 'VAT number';
   }
-
   function cocNumberLabel(): ReturnType<RegisterFormState['cocNumberLabel']> {
     return props.labels?.cocNumber || 'CoC number';
   }
-
   function streetLabel(): ReturnType<RegisterFormState['streetLabel']> {
     return props.labels?.street || 'Street';
   }
-
   function numberLabel(): ReturnType<RegisterFormState['numberLabel']> {
     return props.labels?.number || 'Number';
   }
-
   function numberExtensionLabel(): ReturnType<RegisterFormState['numberExtensionLabel']> {
     return props.labels?.numberExtension || 'Apt/Suite/Unit';
   }
-
   function postalCodeLabel(): ReturnType<RegisterFormState['postalCodeLabel']> {
     return props.labels?.postalCode || 'Postal code';
   }
-
   function cityLabel(): ReturnType<RegisterFormState['cityLabel']> {
     return props.labels?.city || 'City';
   }
-
   function countryLabel(): ReturnType<RegisterFormState['countryLabel']> {
     return props.labels?.country || 'Country';
   }
-
   function userTypeLabel(): ReturnType<RegisterFormState['userTypeLabel']> {
     return props.labels?.userTypeLabel || 'Account type';
   }
-
   function contactLabel(): ReturnType<RegisterFormState['contactLabel']> {
     return props.labels?.contactLabel || 'Company';
   }
-
   function customerLabel(): ReturnType<RegisterFormState['customerLabel']> {
     return props.labels?.customerLabel || 'Consumer';
   }
-
   function emailPlaceholder(): ReturnType<RegisterFormState['emailPlaceholder']> {
     return props.labels?.emailPlaceholder || 'name@example.com';
   }
-
   function passwordPlaceholder(): ReturnType<RegisterFormState['passwordPlaceholder']> {
     return props.labels?.passwordPlaceholder || '••••••••';
   }
-
   function passwordMismatchText(): ReturnType<RegisterFormState['passwordMismatchText']> {
     return props.labels?.passwordMismatch || 'Passwords do not match';
   }
-
   function loginText(): ReturnType<RegisterFormState['loginText']> {
     return props.labels?.loginText || 'Already have an account?';
   }
-
   function loginLinkText(): ReturnType<RegisterFormState['loginLinkText']> {
     return props.labels?.loginLink || 'Log in';
   }
-
   function isFieldRequired(fieldName: string): ReturnType<RegisterFormState['isFieldRequired']> {
     if (!props.requiredFields) return false;
     return props.requiredFields.indexOf(fieldName) !== -1;
   }
-
   async function handleSubmit(e: Event | any): ReturnType<RegisterFormState['handleSubmit']> {
     e.preventDefault();
     if (!effectiveUserType()) {
@@ -606,7 +567,6 @@ function RegisterForm(props: RegisterFormProps) {
       setLoading(false);
     }
   }
-
   return (
     <div className="register-form">
       {resolvedTitle() ? (

@@ -239,7 +239,6 @@ interface ProductCardState {
     value: string;
   }[];
 }
-
 function ProductCard(props: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState<ProductCardState['isFavorite']>(() => false);
   const [includeTax, setIncludeTax] = useState<ProductCardState['includeTax']>(() => true);
@@ -247,22 +246,18 @@ function ProductCard(props: ProductCardProps) {
   function isRow(): ReturnType<ProductCardState['isRow']> {
     return (props.columns as number) === 1;
   }
-
   function getProductName(): ReturnType<ProductCardState['getProductName']> {
     const lang = (props.language as string) || 'NL';
     const names = (props.product as Product)?.names;
     const match = names?.find((n: any) => n.language === lang);
     return match?.value || names?.[0]?.value || 'Product';
   }
-
   function getProductSku(): ReturnType<ProductCardState['getProductSku']> {
     return (props.product as Product)?.sku || '';
   }
-
   function getProductImageUrl(): ReturnType<ProductCardState['getProductImageUrl']> {
     return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
     const priceObj = (props.product as Product)?.price;
     const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
@@ -270,11 +265,9 @@ function ProductCard(props: ProductCardProps) {
     if (!value && value !== 0) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
   }
-
   function getProductUrl(): ReturnType<ProductCardState['getProductUrl']> {
     return props.configuration.urls.getProductUrl(props.product, props.language);
   }
-
   function getProductShortDescription(): ReturnType<
     ProductCardState['getProductShortDescription']
   > {
@@ -283,28 +276,23 @@ function ProductCard(props: ProductCardProps) {
     const match = descs?.find((d: any) => d.language === lang);
     return match?.value || descs?.[0]?.value || '';
   }
-
   function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {
     return (props.product as Product)?.manufacturer || '';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductCardState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function getAttributeValue(code: string): ReturnType<ProductCardState['getAttributeValue']> {
     const attrs = (props.product as Product)?.attributes?.items || [];
     const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
     return found?.value?.value || '';
   }
-
   function handleProductClick(e: any): ReturnType<ProductCardState['handleProductClick']> {
     if (props.onProductClick) {
       e.preventDefault();
       props.onProductClick(props.product);
     }
   }
-
   function handleToggleFavorite(e: any): ReturnType<ProductCardState['handleToggleFavorite']> {
     e.preventDefault();
     e.stopPropagation();
@@ -313,7 +301,6 @@ function ProductCard(props: ProductCardProps) {
       props.onToggleFavorite(props.product, isFavorite);
     }
   }
-
   function computedImageLabels(): ReturnType<ProductCardState['computedImageLabels']> {
     if (!props.imageLabels || (props.imageLabels as string[]).length === 0) return [];
     const attrs = (props.product as Product)?.attributes?.items || [];
@@ -324,7 +311,6 @@ function ProductCard(props: ProductCardProps) {
       })
       .filter((v: string) => v.length > 0);
   }
-
   function computedTextLabels(): ReturnType<ProductCardState['computedTextLabels']> {
     if (!props.textLabels || (props.textLabels as string[]).length === 0) return [];
     const attrs = (props.product as Product)?.attributes?.items || [];
@@ -338,7 +324,6 @@ function ProductCard(props: ProductCardProps) {
       })
       .filter((item: { name: string; value: string }) => item.value.length > 0);
   }
-
   return (
     <div
       className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}

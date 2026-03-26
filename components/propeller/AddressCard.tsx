@@ -142,7 +142,6 @@ interface AddressCardState {
   handleSetDefault: () => void;
   closeEditModal: () => void;
 }
-
 function AddressCard(props: AddressCardProps) {
   const [showEditModal, setShowEditModal] = useState<AddressCardState['showEditModal']>(
     () => false
@@ -177,7 +176,6 @@ function AddressCard(props: AddressCardProps) {
   function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
-
   function getCountryName(code: string): ReturnType<AddressCardState['getCountryName']> {
     if (!code) return '';
     const list = props.countries || [];
@@ -186,24 +184,20 @@ function AddressCard(props: AddressCardProps) {
     }
     return code;
   }
-
   function addr(): ReturnType<AddressCardState['addr']> {
     return localAddress || props.address;
   }
-
   function showCard(): ReturnType<AddressCardState['showCard']> {
     if (props.isNew) return false;
     if (props.inline && !props.address) return false;
     return true;
   }
-
   function salutation(): ReturnType<AddressCardState['salutation']> {
     const g = addr?.()?.gender;
     if (g === 'M') return 'Mr.';
     if (g === 'F') return 'Mrs.';
     return '';
   }
-
   function fullName(): ReturnType<AddressCardState['fullName']> {
     const parts: string[] = [];
     if (props.showSalutation !== false && salutation()) {
@@ -214,7 +208,6 @@ function AddressCard(props: AddressCardProps) {
     if (addr?.()?.lastName) parts.push(addr().lastName);
     return parts.join(' ');
   }
-
   function streetLine(): ReturnType<AddressCardState['streetLine']> {
     const parts: string[] = [];
     if (addr?.()?.street) parts.push(addr().street);
@@ -224,7 +217,6 @@ function AddressCard(props: AddressCardProps) {
     }
     return parts.join(' ');
   }
-
   function cityLine(): ReturnType<AddressCardState['cityLine']> {
     const parts: string[] = [];
     if (props.showPostalCode !== false && addr?.()?.postalCode) {
@@ -235,13 +227,11 @@ function AddressCard(props: AddressCardProps) {
     }
     return parts.join(' ');
   }
-
   function formTitle(): ReturnType<AddressCardState['formTitle']> {
     if (props.title) return props.title;
     if (props.isNew) return getLabel('newTitle', 'New Address');
     return getLabel('editTitle', 'Edit Address');
   }
-
   function openEditModal(): ReturnType<AddressCardState['openEditModal']> {
     const a = addr();
     setEditCompany(a?.company || '');
@@ -261,7 +251,6 @@ function AddressCard(props: AddressCardProps) {
     setEditIcp(a?.icp || Enums.YesNo.N);
     setShowEditModal(true);
   }
-
   async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEdit']> {
     e.preventDefault();
     if (props.beforeSave) {
@@ -296,7 +285,6 @@ function AddressCard(props: AddressCardProps) {
       await props.afterEdit(editedAddress);
     }
   }
-
   function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
     const id = addr?.()?.id;
     if (id != null) {
@@ -311,7 +299,6 @@ function AddressCard(props: AddressCardProps) {
       setShowDeleteConfirm(false);
     }
   }
-
   function handleSetDefault(): ReturnType<AddressCardState['handleSetDefault']> {
     if (props.onSetDefault) {
       props.onSetDefault(addr());
@@ -320,20 +307,17 @@ function AddressCard(props: AddressCardProps) {
       props.afterSetDefault(addr());
     }
   }
-
   function closeEditModal(): ReturnType<AddressCardState['closeEditModal']> {
     setShowEditModal(false);
     if (props.isNew && props.onCancel) {
       props.onCancel();
     }
   }
-
   useEffect(() => {
     if (props.isNew || (props.inline && !props.address)) {
       openEditModal();
     }
   }, []);
-
   return (
     <div>
       {showCard() ? (

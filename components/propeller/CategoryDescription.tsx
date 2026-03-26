@@ -48,7 +48,6 @@ interface CategoryDescriptionState {
   getTruncated(): string;
   toggle(): void;
 }
-
 function CategoryDescription(props: CategoryDescriptionProps) {
   const [expanded, setExpanded] = useState<CategoryDescriptionState['expanded']>(() => false);
   const [html, setHtml] = useState<CategoryDescriptionState['html']>(() => '');
@@ -59,31 +58,25 @@ function CategoryDescription(props: CategoryDescriptionProps) {
     );
     return match?.value || '';
   }
-
   function getMaxLen(): ReturnType<CategoryDescriptionState['getMaxLen']> {
     return props.maxLength || 200;
   }
-
   function shouldTruncate(): ReturnType<CategoryDescriptionState['shouldTruncate']> {
     if (props.collapsed === false) return false;
     return html.length > getMaxLen();
   }
-
   function getTruncated(): ReturnType<CategoryDescriptionState['getTruncated']> {
     const plain = html.replace(/<[^>]*>/g, '');
     if (plain.length <= getMaxLen()) return html;
     const truncated = plain.substring(0, getMaxLen());
     return truncated.substring(0, truncated.lastIndexOf(' ')) + '…';
   }
-
   function toggle(): ReturnType<CategoryDescriptionState['toggle']> {
     setExpanded(!expanded);
   }
-
   useEffect(() => {
     setHtml(getDescription());
   }, [props.category, props.language]);
-
   return (
     <>
       {!!html ? (

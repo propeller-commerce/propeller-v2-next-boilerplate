@@ -61,97 +61,76 @@ interface CartSummaryState {
   totalInclVat: () => number;
   handleCheckoutClick: () => void;
 }
-
 function CartSummary(props: CartSummaryProps) {
   function title(): ReturnType<CartSummaryState['title']> {
     return props.title || 'Order summary';
   }
-
   function showSubtotal(): ReturnType<CartSummaryState['showSubtotal']> {
     return props.showSubtotal !== undefined ? props.showSubtotal : true;
   }
-
   function showDiscount(): ReturnType<CartSummaryState['showDiscount']> {
     return props.showDiscount !== undefined ? props.showDiscount : true;
   }
-
   function showShippingCosts(): ReturnType<CartSummaryState['showShippingCosts']> {
     return props.showShippingCosts !== undefined ? props.showShippingCosts : true;
   }
-
   function showVATs(): ReturnType<CartSummaryState['showVATs']> {
     return props.showVATs !== undefined ? props.showVATs : true;
   }
-
   function showTotalExclVat(): ReturnType<CartSummaryState['showTotalExclVat']> {
     return props.showTotalExclVat !== undefined ? props.showTotalExclVat : true;
   }
-
   function showTotalVat(): ReturnType<CartSummaryState['showTotalVat']> {
     return props.showTotalVat !== undefined ? props.showTotalVat : true;
   }
-
   function showCheckoutButton(): ReturnType<CartSummaryState['showCheckoutButton']> {
     return props.showCheckoutButton !== undefined ? props.showCheckoutButton : true;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<CartSummaryState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function formatItemPrice(price: number): ReturnType<CartSummaryState['formatItemPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-
   function subtotal(): ReturnType<CartSummaryState['subtotal']> {
     return props.cart?.total?.subTotal || 0;
   }
-
   function hasDiscount(): ReturnType<CartSummaryState['hasDiscount']> {
     const total = props.cart?.total;
     return (total?.discount || 0) > 0;
   }
-
   function discountAmount(): ReturnType<CartSummaryState['discountAmount']> {
     return props.cart?.total?.discount || 0;
   }
-
   function hasShippingCosts(): ReturnType<CartSummaryState['hasShippingCosts']> {
     return (props.cart?.postageData?.price || 0) > 0;
   }
-
   function shippingCosts(): ReturnType<CartSummaryState['shippingCosts']> {
     return Number(props.cart?.postageData?.price || 0);
   }
-
   function totalExclVat(): ReturnType<CartSummaryState['totalExclVat']> {
     return props.cart?.total?.totalGross || 0;
   }
-
   function taxLevels(): ReturnType<CartSummaryState['taxLevels']> {
     const levels = props.cart?.taxLevels || [];
     return levels.filter((t) => t.taxPercentage > 0 && t.price > 0);
   }
-
   function totalVat(): ReturnType<CartSummaryState['totalVat']> {
     const net = props.cart?.total?.totalNet || 0;
     const gross = props.cart?.total?.totalGross || 0;
     return net - gross;
   }
-
   function totalInclVat(): ReturnType<CartSummaryState['totalInclVat']> {
     return props.cart?.total?.totalNet || 0;
   }
-
   function handleCheckoutClick(): ReturnType<CartSummaryState['handleCheckoutClick']> {
     if (props.onCheckoutButtonClick) {
       props.onCheckoutButtonClick(props.cart);
     }
   }
-
   return (
     <div className="w-full bg-white space-y-3">
       <h2 className="text-xl font-bold mb-4">{title()}</h2>

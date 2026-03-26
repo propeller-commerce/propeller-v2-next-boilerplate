@@ -30,7 +30,7 @@ import { useLanguage } from '@/context/LanguageContext';
 
 export default function ProductPage() {
   const params = useParams();
-  const { state } = useAuth();
+  const { state, refreshUser } = useAuth();
   const productId = parseInt(params.productId as string);
   const [product, setProduct] = useState<Product | null>(null);
   const { cart, saveCart } = useCart();
@@ -124,6 +124,7 @@ export default function ProductPage() {
                       graphqlClient={graphqlClient}
                       user={state.user}
                       productId={product.productId}
+                      onFavoriteChanged={refreshUser}
                     />
                   </div>
                 </Card>

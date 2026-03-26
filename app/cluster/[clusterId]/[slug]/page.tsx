@@ -36,7 +36,7 @@ export default function ClusterPage() {
   const [showClusterErrors, setShowClusterErrors] = useState(false);
 
   const { cart, saveCart } = useCart();
-  const { state } = useAuth();
+  const { state, refreshUser } = useAuth();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const router = useRouter();
@@ -236,6 +236,7 @@ export default function ClusterPage() {
                     graphqlClient={graphqlClient}
                     user={state.user}
                     clusterId={clusterId}
+                    onFavoriteChanged={refreshUser}
                   />
                 </div>
               </div>

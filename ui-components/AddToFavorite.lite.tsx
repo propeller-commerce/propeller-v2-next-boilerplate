@@ -2,7 +2,6 @@ import {
     useStore,
     Show,
     For,
-    onMount,
     onUpdate,
 } from '@builder.io/mitosis';
 import {
@@ -11,7 +10,6 @@ import {
     GraphQLClient,
     Contact,
     Customer,
-    UserService,
 } from 'propeller-sdk-v2';
 
 export interface AddToFavoriteProps {
@@ -32,6 +30,9 @@ export interface AddToFavoriteProps {
 
     /** UI string overrides */
     labels?: Record<string, string>;
+
+    /** Called after a favorite list mutation (add/remove) succeeds */
+    onFavoriteChanged?: () => void;
 }
 
 interface AddToFavoriteState {
@@ -47,7 +48,6 @@ interface AddToFavoriteState {
     isProduct: boolean;
     itemId: number;
 
-    refreshUserData: () => Promise<void>;
     toggleModal: () => void;
     closeModal: () => void;
     handleAddToList: () => Promise<void>;
@@ -76,34 +76,6 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
 
         get itemId(): number {
             return (props.productId || props.clusterId || 0) as number;
-        },
-
-        async refreshUserData() {
-            if (!props.graphqlClient) return;
-            try {
-                const userService = new UserService(props.graphqlClient);
-                const viewerData = await userService.getViewer({});
-                if (viewerData) {
-                    const plain = JSON.parse(JSON.stringify(viewerData, (_k, v) => v));
-                    // Strip underscore prefixes from SDK objects
-                    const strip = (obj: any): any => {
-                        if (obj === null || obj === undefined) return obj;
-                        if (Array.isArray(obj)) return obj.map(strip);
-                        if (typeof obj === 'object') {
-                            const r: any = {};
-                            for (const [k, val] of Object.entries(obj)) {
-                                r[k.startsWith('_') ? k.slice(1) : k] = strip(val);
-                            }
-                            return r;
-                        }
-                        return obj;
-                    };
-                    localStorage.setItem('user', JSON.stringify(strip(plain)));
-                    window.dispatchEvent(new CustomEvent('userLoggedIn'));
-                }
-            } catch (error) {
-                console.error('Error refreshing user data:', error);
-            }
         },
 
         toggleModal() {
@@ -137,7 +109,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 state.memberListIds = newMemberIds;
                 state.selectedListId = '';
                 state.showModal = false;
-                state.refreshUserData();
+                if (props.onFavoriteChanged) props.onFavoriteChanged();
             } catch (error) {
                 console.error('Error adding to favorite list:', error);
             } finally {
@@ -161,7 +133,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
                 state.memberListIds = newMemberIds;
                 state.selectedListId = '';
                 state.showModal = false;
-                state.refreshUserData();
+                if (props.onFavoriteChanged) props.onFavoriteChanged();
             } catch (error) {
                 console.error('Error removing from favorite list:', error);
             } finally {
@@ -211,44 +183,6 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         });
         state.memberListIds = memberIds;
     }, [props.user, props.productId, props.clusterId]);
-
-    // Listen for user data changes (e.g. after favorite list modifications on other pages)
-    onMount(() => {
-        const handler = () => {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                try {
-                    const freshUser = JSON.parse(storedUser);
-                    const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
-                    const memberIds = new Set<string>();
-                    const myItemId = (props.productId || props.clusterId || 0) as number;
-                    const myIsProduct = !!props.productId;
-                    (userLists || []).forEach((list: FavoriteList) => {
-                        const productsRef = list?.products as any;
-                        const clustersRef = list?.clusters as any;
-                        if (myIsProduct) {
-                            if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
-                                memberIds.add(String(list.id));
-                            }
-                        } else {
-                            const inProducts = productsRef?.items?.some((item: any) => item.clusterId === myItemId);
-                            const inClusters = clustersRef?.items?.some((item: any) => item.clusterId === myItemId);
-                            if (inProducts || inClusters) {
-                                memberIds.add(String(list.id));
-                            }
-                        }
-                    });
-                    state.memberListIds = memberIds;
-                } catch (e) {
-                    // ignore parse errors
-                }
-            }
-        };
-        window.addEventListener('userLoggedIn', handler);
-        return () => {
-            window.removeEventListener('userLoggedIn', handler);
-        };
-    });
 
     return (
         <Show when={props.user}>

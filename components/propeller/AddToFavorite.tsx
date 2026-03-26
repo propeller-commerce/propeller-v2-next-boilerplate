@@ -8,7 +8,6 @@ import {
   GraphQLClient,
   Contact,
   Customer,
-  UserService,
 } from 'propeller-sdk-v2';
 
 export interface AddToFavoriteProps {
@@ -29,6 +28,9 @@ export interface AddToFavoriteProps {
 
   /** UI string overrides */
   labels?: Record<string, string>;
+
+  /** Called after a favorite list mutation (add/remove) succeeds */
+  onFavoriteChanged?: () => void;
 }
 interface AddToFavoriteState {
   /** IDs of lists that contain this product/cluster (optimistic local tracking) */
@@ -41,7 +43,6 @@ interface AddToFavoriteState {
   isFavorited: () => boolean;
   isProduct: () => boolean;
   itemId: () => number;
-  refreshUserData: () => Promise<void>;
   toggleModal: () => void;
   closeModal: () => void;
   handleAddToList: () => Promise<void>;
@@ -71,33 +72,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
   }
   function itemId(): ReturnType<AddToFavoriteState['itemId']> {
     return (props.productId || props.clusterId || 0) as number;
-  }
-  async function refreshUserData(): ReturnType<AddToFavoriteState['refreshUserData']> {
-    if (!props.graphqlClient) return;
-    try {
-      const userService = new UserService(props.graphqlClient);
-      const viewerData = await userService.getViewer({});
-      if (viewerData) {
-        const plain = JSON.parse(JSON.stringify(viewerData, (_k, v) => v));
-        // Strip underscore prefixes from SDK objects
-        const strip = (obj: any): any => {
-          if (obj === null || obj === undefined) return obj;
-          if (Array.isArray(obj)) return obj.map(strip);
-          if (typeof obj === 'object') {
-            const r: any = {};
-            for (const [k, val] of Object.entries(obj)) {
-              r[k.startsWith('_') ? k.slice(1) : k] = strip(val);
-            }
-            return r;
-          }
-          return obj;
-        };
-        localStorage.setItem('user', JSON.stringify(strip(plain)));
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
-    }
   }
   function toggleModal(): ReturnType<AddToFavoriteState['toggleModal']> {
     if (!props.user) return;
@@ -130,7 +104,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
       setMemberListIds(newMemberIds);
       setSelectedListId('');
       setShowModal(false);
-      refreshUserData();
+      if (props.onFavoriteChanged) props.onFavoriteChanged();
     } catch (error) {
       console.error('Error adding to favorite list:', error);
     } finally {
@@ -157,7 +131,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
       setMemberListIds(newMemberIds);
       setSelectedListId('');
       setShowModal(false);
-      refreshUserData();
+      if (props.onFavoriteChanged) props.onFavoriteChanged();
     } catch (error) {
       console.error('Error removing from favorite list:', error);
     } finally {
@@ -176,46 +150,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
     return (userLists || []).filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
   }
-  useEffect(() => {
-    const handler = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const freshUser = JSON.parse(storedUser);
-          const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
-          const memberIds = new Set<string>();
-          const myItemId = (props.productId || props.clusterId || 0) as number;
-          const myIsProduct = !!props.productId;
-          (userLists || []).forEach((list: FavoriteList) => {
-            const productsRef = list?.products as any;
-            const clustersRef = list?.clusters as any;
-            if (myIsProduct) {
-              if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
-                memberIds.add(String(list.id));
-              }
-            } else {
-              const inProducts = productsRef?.items?.some(
-                (item: any) => item.clusterId === myItemId
-              );
-              const inClusters = clustersRef?.items?.some(
-                (item: any) => item.clusterId === myItemId
-              );
-              if (inProducts || inClusters) {
-                memberIds.add(String(list.id));
-              }
-            }
-          });
-          setMemberListIds(memberIds);
-        } catch (e) {
-          // ignore parse errors
-        }
-      }
-    };
-    window.addEventListener('userLoggedIn', handler);
-    return () => {
-      window.removeEventListener('userLoggedIn', handler);
-    };
-  }, []);
   function computeMemberListIds() {
     if (!props.user || !itemId()) return new Set<string>();
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
@@ -256,41 +190,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
   useEffect(() => {
     setMemberListIds(computeMemberListIds());
   }, [props.user, props.productId, props.clusterId]);
-  // Listen for user data changes (e.g. after favorite list modifications on other pages)
-  useEffect(() => {
-    const handler = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const freshUser = JSON.parse(storedUser);
-          const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
-          const memberIds = new Set<string>();
-          const myItemId = (props.productId || props.clusterId || 0) as number;
-          const myIsProduct = !!props.productId;
-          (userLists || []).forEach((list: FavoriteList) => {
-            const productsRef = list?.products as any;
-            const clustersRef = list?.clusters as any;
-            if (myIsProduct) {
-              if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
-                memberIds.add(String(list.id));
-              }
-            } else {
-              const inProducts = productsRef?.items?.some((item: any) => item.clusterId === myItemId);
-              const inClusters = clustersRef?.items?.some((item: any) => item.clusterId === myItemId);
-              if (inProducts || inClusters) {
-                memberIds.add(String(list.id));
-              }
-            }
-          });
-          setMemberListIds(memberIds);
-        } catch (e) {
-          // ignore parse errors
-        }
-      }
-    };
-    window.addEventListener('userLoggedIn', handler);
-    return () => window.removeEventListener('userLoggedIn', handler);
-  }, [props.productId, props.clusterId]);
   return (
     <>
       {props.user ? (

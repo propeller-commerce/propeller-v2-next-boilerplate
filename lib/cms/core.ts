@@ -1,4 +1,4 @@
-import type { CmsPage, CmsGlobal, CmsCategoryBanner } from './types';
+import type { CmsPage, CmsGlobal, CmsCategoryBanner, CmsArticle } from './types';
 
 /**
  * CMS provider interface.
@@ -9,5 +9,8 @@ export interface CmsProvider {
   getAllPageSlugs(): Promise<string[]>;
   getGlobal(): Promise<CmsGlobal | null>;
   getCategoryBanner(categoryId: string): Promise<CmsCategoryBanner | null>;
+  getArticles(): Promise<CmsArticle[]>;
+  getArticle(slug: string): Promise<CmsArticle | null>;
+  getAllArticleSlugs(): Promise<string[]>;
   resolveImageUrl(path: string): string;
 }

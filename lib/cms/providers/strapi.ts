@@ -1,3 +1,4 @@
+import { marked } from 'marked';
 import type { CmsProvider } from '../core';
 import type {
   CmsImage,
@@ -9,6 +10,8 @@ import type {
   CmsFooterColumn,
   CmsValuePropItem,
   CmsCategoryBanner,
+  CmsArticle,
+  CmsAuthor,
 } from '../types';
 import qs from 'qs';
 
@@ -93,7 +96,7 @@ function normalizeBlock(strapiUrl: string, raw: any): CmsBlock | null {
         secondaryCtaUrl: raw.secondaryCtaUrl || null,
       };
     case 'rich-text':
-      return { _type: 'rich-text', body: raw.body || '' };
+      return { _type: 'rich-text', body: raw.body ? marked.parse(raw.body, { async: false }) as string : '' };
     case 'media':
       return { _type: 'media', file: normalizeImage(strapiUrl, raw.file) };
     case 'quote':
@@ -203,6 +206,29 @@ function normalizeCategoryBanner(strapiUrl: string, raw: any): CmsCategoryBanner
   };
 }
 
+function normalizeAuthor(strapiUrl: string, raw: any): CmsAuthor | null {
+  if (!raw) return null;
+  return {
+    name: raw.name || '',
+    avatar: normalizeImage(strapiUrl, raw.avatar),
+    email: raw.email || null,
+  };
+}
+
+function normalizeArticle(strapiUrl: string, raw: any): CmsArticle {
+  return {
+    id: raw.id,
+    title: raw.title || '',
+    description: raw.description || null,
+    slug: raw.slug || '',
+    cover: normalizeImage(strapiUrl, raw.cover),
+    author: normalizeAuthor(strapiUrl, raw.author),
+    category: raw.category ? { name: raw.category.name || '', slug: raw.category.slug || '' } : null,
+    blocks: normalizeBlocks(strapiUrl, raw.blocks || []),
+    publishedAt: raw.publishedAt || null,
+  };
+}
+
 // ── Provider factory ──
 
 export function createStrapiProvider(): CmsProvider {
@@ -281,6 +307,48 @@ export function createStrapiProvider(): CmsProvider {
       } catch (error) {
         console.error('[CMS:Strapi] Failed to fetch global:', error);
         return null;
+      }
+    },
+
+    async getArticles() {
+      try {
+        const data = await strapiFetch('/api/articles', {
+          populate: { cover: true, author: { populate: 'avatar' }, category: true },
+          sort: 'publishedAt:desc',
+          pagination: { pageSize: 100 },
+        });
+        return (data?.data || []).map((entry: any) => normalizeArticle(strapiUrl, entry));
+      } catch (error) {
+        console.error('[CMS:Strapi] Failed to fetch articles:', error);
+        return [];
+      }
+    },
+
+    async getArticle(slug: string) {
+      try {
+        const data = await strapiFetch('/api/articles', {
+          filters: { slug: { $eq: slug } },
+          populate: { cover: true, author: { populate: 'avatar' }, category: true, blocks: { populate: '*' } },
+        });
+        const entry = data?.data?.[0];
+        if (!entry) return null;
+        return normalizeArticle(strapiUrl, entry);
+      } catch (error) {
+        console.error(`[CMS:Strapi] Failed to fetch article "${slug}":`, error);
+        return null;
+      }
+    },
+
+    async getAllArticleSlugs() {
+      try {
+        const data = await strapiFetch('/api/articles', {
+          fields: ['slug'],
+          pagination: { pageSize: 100 },
+        });
+        return (data?.data || []).map((entry: any) => entry.slug);
+      } catch (error) {
+        console.error('[CMS:Strapi] Failed to fetch article slugs:', error);
+        return [];
       }
     },
 

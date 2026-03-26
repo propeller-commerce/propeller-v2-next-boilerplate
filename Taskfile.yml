@@ -38,24 +38,23 @@ tasks:
       - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
 
   build-cms:
-    desc: "Builds the Strapi CMS."
+    desc: "Builds the Strapi CMS. Rebuilds only when cms/ directory has changed."
     dir: "{{.BUILD_PATH}}/source/cms"
     cmds:
       - set -e
       - |
-        if [ -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
-          echo "Strapi exists, skipping build..."
-        else
+        if [ ! -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
           echo "Strapi does not exist, building..."
           npm install
           NODE_ENV=production npm run build
-        fi
-      - |
-        if [ -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
-          echo "Strapi exists, skipping sync..."
-        else
-          echo "Strapi does not exist, syncing..."
           sudo rsync -a --delete --exclude-from="../rsync-exclude.txt" {{.BUILD_PATH}}/source/cms/ {{.DEPLOY_PATH}}/cms/
+        elif git -C {{.BUILD_PATH}}/source diff HEAD~1 --name-only | grep -q '^cms/'; then
+          echo "CMS changes detected, rebuilding..."
+          npm install
+          NODE_ENV=production npm run build
+          sudo rsync -a --delete --exclude-from="../rsync-exclude.txt" {{.BUILD_PATH}}/source/cms/ {{.DEPLOY_PATH}}/cms/
+        else
+          echo "No CMS changes, skipping build."
         fi
       - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
 

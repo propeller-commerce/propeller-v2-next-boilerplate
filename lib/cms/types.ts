@@ -102,6 +102,26 @@ export type CmsBlock =
   | CmsSlider
   | CmsProductSlider;
 
+// ── Article / Blog ──
+
+export interface CmsAuthor {
+  name: string;
+  avatar: CmsImage | null;
+  email: string | null;
+}
+
+export interface CmsArticle {
+  id: number;
+  title: string;
+  description: string | null;
+  slug: string;
+  cover: CmsImage | null;
+  author: CmsAuthor | null;
+  category: { name: string; slug: string } | null;
+  blocks: CmsBlock[];
+  publishedAt: string | null;
+}
+
 // ── Page ──
 
 export interface CmsPage {

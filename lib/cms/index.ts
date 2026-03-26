@@ -23,6 +23,9 @@ export const getPage = cms.getPage.bind(cms);
 export const getAllPageSlugs = cms.getAllPageSlugs.bind(cms);
 export const getGlobal = cms.getGlobal.bind(cms);
 export const getCategoryBanner = cms.getCategoryBanner.bind(cms);
+export const getArticles = cms.getArticles.bind(cms);
+export const getArticle = cms.getArticle.bind(cms);
+export const getAllArticleSlugs = cms.getAllArticleSlugs.bind(cms);
 export const resolveImageUrl = cms.resolveImageUrl.bind(cms);
 
 // Re-export the provider instance and types

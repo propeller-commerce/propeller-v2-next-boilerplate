@@ -31,17 +31,14 @@ interface PriceToggleState {
   getStatusText: () => string;
   handleToggle: () => void;
 }
-
 function PriceToggle(props: PriceToggleProps) {
   const [isOn, setIsOn] = useState<PriceToggleState['isOn']>(() => props.initialState ?? true);
   function getLabel(): ReturnType<PriceToggleState['getLabel']> {
     return (props.label as string) || 'Prices:';
   }
-
   function getStatusText(): ReturnType<PriceToggleState['getStatusText']> {
     return isOn ? 'Incl. VAT' : 'Excl. VAT';
   }
-
   function handleToggle(): ReturnType<PriceToggleState['handleToggle']> {
     const newValue = !isOn;
     setIsOn(newValue);
@@ -54,7 +51,6 @@ function PriceToggle(props: PriceToggleProps) {
       })
     );
   }
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsOn(props.initialState ?? true);

@@ -113,7 +113,6 @@ interface FavoriteListsState {
   getLabel: (key: string, fallback: string) => string;
   displayedLists: () => FavoriteList[];
 }
-
 function FavoriteLists(props: FavoriteListsProps) {
   const [lists, setLists] = useState<FavoriteListsState['lists']>(() => []);
   const [loading, setLoading] = useState<FavoriteListsState['loading']>(() => true);
@@ -158,19 +157,16 @@ function FavoriteLists(props: FavoriteListsProps) {
       setLoading(false);
     }
   }
-
   function handleEditList(list: FavoriteList): ReturnType<FavoriteListsState['handleEditList']> {
     setEditingListId(String(list.id));
     setEditListName(list.name);
     setEditSetAsDefault(list.isDefault || false);
   }
-
   function handleCancelEdit(): ReturnType<FavoriteListsState['handleCancelEdit']> {
     setEditingListId(null);
     setEditListName('');
     setEditSetAsDefault(false);
   }
-
   async function handleUpdateList(
     listId: string
   ): ReturnType<FavoriteListsState['handleUpdateList']> {
@@ -235,14 +231,12 @@ function FavoriteLists(props: FavoriteListsProps) {
       setSaving(false);
     }
   }
-
   function handleDeleteList(
     list: FavoriteList
   ): ReturnType<FavoriteListsState['handleDeleteList']> {
     setListToDelete(list);
     setShowDeleteModal(true);
   }
-
   async function handleConfirmDelete(): ReturnType<FavoriteListsState['handleConfirmDelete']> {
     if (!listToDelete) return;
     const deletedId = String(listToDelete.id);
@@ -268,16 +262,13 @@ function FavoriteLists(props: FavoriteListsProps) {
       fetchLists();
     }
   }
-
   function handleCancelDelete(): ReturnType<FavoriteListsState['handleCancelDelete']> {
     setShowDeleteModal(false);
     setListToDelete(null);
   }
-
   function closeCreateModal(): ReturnType<FavoriteListsState['closeCreateModal']> {
     setShowCreateModal(false);
   }
-
   async function handleCreateList(): ReturnType<FavoriteListsState['handleCreateList']> {
     if (!newListName.trim() || saving) return;
     setSaving(true);
@@ -329,7 +320,6 @@ function FavoriteLists(props: FavoriteListsProps) {
       setSaving(false);
     }
   }
-
   function formatDate(dateString: string): ReturnType<FavoriteListsState['formatDate']> {
     if (props.formatDate) return props.formatDate(dateString);
     if (!dateString) return '-';
@@ -339,7 +329,6 @@ function FavoriteLists(props: FavoriteListsProps) {
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   }
-
   function getProductCount(list: FavoriteList): ReturnType<FavoriteListsState['getProductCount']> {
     const products = list.products;
     if (!products) return 0;
@@ -347,7 +336,6 @@ function FavoriteLists(props: FavoriteListsProps) {
     if (products.items) return products.items.length;
     return 0;
   }
-
   function getClusterCount(list: FavoriteList): ReturnType<FavoriteListsState['getClusterCount']> {
     const clusters = list.clusters;
     if (!clusters) return 0;
@@ -355,16 +343,13 @@ function FavoriteLists(props: FavoriteListsProps) {
     if (clusters.items) return clusters.items.length;
     return 0;
   }
-
   function getTotalCount(list: FavoriteList): ReturnType<FavoriteListsState['getTotalCount']> {
     return getProductCount(list) + getClusterCount(list);
   }
-
   function getLabel(key: string, fallback: string): ReturnType<FavoriteListsState['getLabel']> {
     const labels = props.labels as Record<string, string> | undefined;
     return labels?.[key] || fallback;
   }
-
   function displayedLists(): ReturnType<FavoriteListsState['displayedLists']> {
     if (props.limit && props.limit > 0) {
       // Sort by updatedAt descending, then take the first N
@@ -377,7 +362,6 @@ function FavoriteLists(props: FavoriteListsProps) {
     }
     return lists;
   }
-
   useEffect(() => {
     setIsMounted(true);
   }, []);

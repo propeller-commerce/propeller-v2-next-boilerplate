@@ -110,7 +110,6 @@ interface OrderListState {
   getLabel: (key: string, fallback: string) => string;
   searchFields: () => string[];
 }
-
 function OrderList(props: OrderListProps) {
   const [orders, setOrders] = useState<OrderListState['orders']>(() => []);
   const [columns, setColumns] = useState<OrderListState['columns']>(
@@ -197,25 +196,21 @@ function OrderList(props: OrderListProps) {
       setFetching(false);
     }
   }
-
   function handlePageChange(newPage: number): ReturnType<OrderListState['handlePageChange']> {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
     }
   }
-
   function formatDate(dateString: string): ReturnType<OrderListState['formatDate']> {
     if (props.formatDate) return props.formatDate(dateString);
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString();
   }
-
   function formatPrice(price: number): ReturnType<OrderListState['formatPrice']> {
     if (props.formatPrice) return props.formatPrice(price);
     if (!price) return '-';
     return `€${Number(price).toFixed(2)}`;
   }
-
   function getStatusColor(status: string): ReturnType<OrderListState['getStatusColor']> {
     if (props.getStatusColor) return props.getStatusColor(status);
     switch (status) {
@@ -229,7 +224,6 @@ function OrderList(props: OrderListProps) {
         return 'bg-yellow-100 text-yellow-800';
     }
   }
-
   function getColumnLabel(col: string): ReturnType<OrderListState['getColumnLabel']> {
     if (props.columnConfig && props.columnConfig[col]) {
       return props.columnConfig[col];
@@ -237,11 +231,9 @@ function OrderList(props: OrderListProps) {
     // Fallback: Capitalize first letter
     return col.charAt(0).toUpperCase() + col.slice(1);
   }
-
   function getLabel(key: string, fallback: string): ReturnType<OrderListState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
-
   function searchFields(): ReturnType<OrderListState['searchFields']> {
     const fields = props.searchFields || [];
     if (props.enableSearch && !(fields as string[]).includes('term')) {
@@ -249,7 +241,6 @@ function OrderList(props: OrderListProps) {
     }
     return fields;
   }
-
   useEffect(() => {
     if (props.user) {
       fetchOrders(currentPage);

@@ -55,51 +55,40 @@ interface OrderTotalsState {
   totalInclVat: () => number;
   totalVat: () => number;
 }
-
 function OrderTotals(props: OrderTotalsProps) {
   function title(): ReturnType<OrderTotalsState['title']> {
     return props.title || 'Order summary';
   }
-
   function showSubtotal(): ReturnType<OrderTotalsState['showSubtotal']> {
     return props.showSubtotal !== undefined ? props.showSubtotal : true;
   }
-
   function showDiscount(): ReturnType<OrderTotalsState['showDiscount']> {
     return props.showDiscount !== undefined ? props.showDiscount : true;
   }
-
   function showShippingCosts(): ReturnType<OrderTotalsState['showShippingCosts']> {
     return props.showShippingCosts !== undefined ? props.showShippingCosts : true;
   }
-
   function showVATs(): ReturnType<OrderTotalsState['showVATs']> {
     return props.showVATs !== undefined ? props.showVATs : true;
   }
-
   function showTotalExclVat(): ReturnType<OrderTotalsState['showTotalExclVat']> {
     return props.showTotalExclVat !== undefined ? props.showTotalExclVat : true;
   }
-
   function showTotalVat(): ReturnType<OrderTotalsState['showTotalVat']> {
     return props.showTotalVat !== undefined ? props.showTotalVat : true;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<OrderTotalsState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function formatItemPrice(price: number): ReturnType<OrderTotalsState['formatItemPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '€' + Number(price || 0).toFixed(2);
   }
-
   function subtotal(): ReturnType<OrderTotalsState['subtotal']> {
     return (props.order as any)?.total?.gross || 0;
   }
-
   function hasDiscount(): ReturnType<OrderTotalsState['hasDiscount']> {
     const total = (props.order as any)?.total;
     return (
@@ -108,7 +97,6 @@ function OrderTotals(props: OrderTotalsProps) {
       total.discountValue > 0
     );
   }
-
   function discountDisplay(): ReturnType<OrderTotalsState['discountDisplay']> {
     const total = (props.order as any)?.total;
     if (!total) return '';
@@ -120,41 +108,32 @@ function OrderTotals(props: OrderTotalsProps) {
     }
     return '-' + formatItemPrice(total.discountValue);
   }
-
   function subtotalWithDiscount(): ReturnType<OrderTotalsState['subtotalWithDiscount']> {
     const total = (props.order as any)?.total;
     return (total?.gross || 0) - (total?.discountValue || 0);
   }
-
   function hasTransactionCosts(): ReturnType<OrderTotalsState['hasTransactionCosts']> {
     return (props.order as any)?.paymentData?.gross > 0;
   }
-
   function transactionCosts(): ReturnType<OrderTotalsState['transactionCosts']> {
     return Number((props.order as any)?.paymentData?.gross || 0);
   }
-
   function hasShippingCosts(): ReturnType<OrderTotalsState['hasShippingCosts']> {
     return (props.order as any)?.postageData?.gross > 0;
   }
-
   function shippingCosts(): ReturnType<OrderTotalsState['shippingCosts']> {
     return Number((props.order as any)?.postageData?.gross || 0);
   }
-
   function totalExclVat(): ReturnType<OrderTotalsState['totalExclVat']> {
     return (props.order as any)?.total?.gross || 0;
   }
-
   function taxPercentages(): ReturnType<OrderTotalsState['taxPercentages']> {
     const taxes = (props.order as any)?.total?.taxPercentages || [];
     return taxes.filter((tax: any) => tax.percentage > 0 && tax.total > 0);
   }
-
   function totalInclVat(): ReturnType<OrderTotalsState['totalInclVat']> {
     return (props.order as any)?.total?.net || 0;
   }
-
   function totalVat(): ReturnType<OrderTotalsState['totalVat']> {
     let sum = 0;
     const taxes = taxPercentages();
@@ -163,7 +142,6 @@ function OrderTotals(props: OrderTotalsProps) {
     }
     return sum;
   }
-
   return (
     <div className="w-full md:w-80 bg-white p-6 rounded-lg shadow space-y-3">
       {showSubtotal() ? (

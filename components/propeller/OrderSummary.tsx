@@ -75,63 +75,49 @@ interface OrderSummaryState {
   carrierName: () => string;
   requestDate: () => string;
 }
-
 function OrderSummary(props: OrderSummaryProps) {
   function containerClass(): ReturnType<OrderSummaryState['containerClass']> {
     return props.orderSummaryContainerClass || 'order-summary';
   }
-
   function showOrderNumber(): ReturnType<OrderSummaryState['showOrderNumber']> {
     return props.showOrderNumber !== undefined ? props.showOrderNumber : true;
   }
-
   function showOrderDate(): ReturnType<OrderSummaryState['showOrderDate']> {
     return props.showOrderDate !== undefined ? props.showOrderDate : true;
   }
-
   function showOrderStatus(): ReturnType<OrderSummaryState['showOrderStatus']> {
     return props.showOrderStatus !== undefined ? props.showOrderStatus : true;
   }
-
   function showInvoiceAddress(): ReturnType<OrderSummaryState['showInvoiceAddress']> {
     return props.showInvoiceAddress !== undefined ? props.showInvoiceAddress : true;
   }
-
   function showDeliveryAddress(): ReturnType<OrderSummaryState['showDeliveryAddress']> {
     return props.showDeliveryAddress !== undefined ? props.showDeliveryAddress : true;
   }
-
   function showOrderTotal(): ReturnType<OrderSummaryState['showOrderTotal']> {
     return props.showOrderTotal !== undefined ? props.showOrderTotal : true;
   }
-
   function formatItemPrice(price: number): ReturnType<OrderSummaryState['formatItemPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-
   function showDeliveryInfo(): ReturnType<OrderSummaryState['showDeliveryInfo']> {
     return props.showDeliveryInfo !== undefined ? props.showDeliveryInfo : true;
   }
-
   function showRemarks(): ReturnType<OrderSummaryState['showRemarks']> {
     return props.showRemarks !== undefined ? props.showRemarks : true;
   }
-
   function orderReference(): ReturnType<OrderSummaryState['orderReference']> {
     return props.order?.reference || '';
   }
-
   function orderRemarks(): ReturnType<OrderSummaryState['orderRemarks']> {
     return props.order?.remarks || '';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<OrderSummaryState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function getCountryName(code: string): ReturnType<OrderSummaryState['getCountryName']> {
     if (!code) return '';
     const list = props.countries || [];
@@ -140,7 +126,6 @@ function OrderSummary(props: OrderSummaryProps) {
     }
     return code;
   }
-
   function formatOrderDate(dateString: string): ReturnType<OrderSummaryState['formatOrderDate']> {
     if (props.formatDate) {
       return props.formatDate(dateString);
@@ -155,47 +140,37 @@ function OrderSummary(props: OrderSummaryProps) {
       return dateString;
     }
   }
-
   function orderNumber(): ReturnType<OrderSummaryState['orderNumber']> {
     return props.order?.id || '';
   }
-
   function orderDate(): ReturnType<OrderSummaryState['orderDate']> {
     return props.order?.createdAt || '';
   }
-
   function orderStatus(): ReturnType<OrderSummaryState['orderStatus']> {
     return props.order?.status || '';
   }
-
   function orderTotal(): ReturnType<OrderSummaryState['orderTotal']> {
     return Number(props.order?.total?.net || 0);
   }
-
   function invoiceAddress(): ReturnType<OrderSummaryState['invoiceAddress']> {
     const addresses = props.order?.addresses || [];
     return addresses.find((a: any) => a.type === 'invoice') || null;
   }
-
   function deliveryAddress(): ReturnType<OrderSummaryState['deliveryAddress']> {
     const addresses = props.order?.addresses || [];
     return addresses.find((a: any) => a.type === 'delivery') || null;
   }
-
   function paymentMethod(): ReturnType<OrderSummaryState['paymentMethod']> {
     return props.order?.paymentData?.method || '';
   }
-
   function carrierName(): ReturnType<OrderSummaryState['carrierName']> {
     return props.order?.postageData?.carrier || '';
   }
-
   function requestDate(): ReturnType<OrderSummaryState['requestDate']> {
     const date = props.order?.postageData?.requestDate;
     if (!date) return '';
     return formatOrderDate(date);
   }
-
   return (
     <div className={containerClass()}>
       {props.title ? <h2 className="text-xl font-bold mb-4">{props.title}</h2> : null}

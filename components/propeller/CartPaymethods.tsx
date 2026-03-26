@@ -37,21 +37,17 @@ interface CartPaymethodsState {
   formatMethodPrice: (price: number) => string;
   handleSelect: (method: CartPaymethod) => void;
 }
-
 function CartPaymethods(props: CartPaymethodsProps) {
   const [selectedCode, setSelectedCode] = useState<CartPaymethodsState['selectedCode']>(() => '');
   function containerClass(): ReturnType<CartPaymethodsState['containerClass']> {
     return props.paymentsContainerClass || 'cart-paymethods';
   }
-
   function showOnAccountForGuests(): ReturnType<CartPaymethodsState['showOnAccountForGuests']> {
     return props.showOnAccountForGuests !== undefined ? props.showOnAccountForGuests : false;
   }
-
   function isGuest(): ReturnType<CartPaymethodsState['isGuest']> {
     return !props.user;
   }
-
   function payMethods(): ReturnType<CartPaymethodsState['payMethods']> {
     const methods: CartPaymethod[] = props.cart?.payMethods || [];
     return methods.filter((m: CartPaymethod) => {
@@ -62,32 +58,27 @@ function CartPaymethods(props: CartPaymethodsProps) {
       return true;
     });
   }
-
   function isOnAccountMethod(
     method: CartPaymethod
   ): ReturnType<CartPaymethodsState['isOnAccountMethod']> {
     const code = (method.code || '').toLowerCase();
     return code === 'on_account' || code === 'onaccount' || code === 'on-account';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<CartPaymethodsState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function formatMethodPrice(price: number): ReturnType<CartPaymethodsState['formatMethodPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-
   function handleSelect(method: CartPaymethod): ReturnType<CartPaymethodsState['handleSelect']> {
     setSelectedCode(method.code);
     if (props.onPaymethodSelect) {
       props.onPaymethodSelect(method);
     }
   }
-
   return (
     <div className={containerClass()}>
       {payMethods().length > 0 ? (

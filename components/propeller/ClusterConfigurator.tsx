@@ -144,7 +144,6 @@ interface ClusterConfiguratorState {
    */
   handleAttributeSelect: (settingName: string, value: string) => void;
 }
-
 function ClusterConfigurator(props: ClusterConfiguratorProps) {
   const [selectedAttributes, setSelectedAttributes] = useState<
     ClusterConfiguratorState['selectedAttributes']
@@ -155,7 +154,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
   ): ReturnType<ClusterConfiguratorState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function getSortedSettings(): ReturnType<ClusterConfiguratorState['getSortedSettings']> {
     const settings = (props.config as ClusterConfig)?.settings;
     if (!settings || settings.length === 0) return [];
@@ -166,7 +164,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
           parseInt(a.priority) - parseInt(b.priority)
       );
   }
-
   function attributeNameMatches(
     attr: AttributeResult,
     targetName: string
@@ -180,7 +177,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
         false)
     );
   }
-
   function extractAttributeValues(
     attr: AttributeResult
   ): ReturnType<ClusterConfiguratorState['extractAttributeValues']> {
@@ -223,7 +219,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
     }
     return extractedValues.filter((val: string) => !!val);
   }
-
   function getAttributeDisplayName(
     attributeName: string
   ): ReturnType<ClusterConfiguratorState['getAttributeDisplayName']> {
@@ -241,7 +236,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
     }
     return attributeName;
   }
-
   function getAttributeValues(
     attributeName: string
   ): ReturnType<ClusterConfiguratorState['getAttributeValues']> {
@@ -260,7 +254,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
     });
     return Array.from(valSet);
   }
-
   function getAvailableValuesForIndex(
     attributeName: string,
     settingIndex: number
@@ -271,7 +264,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
       selectedAttributes as Record<string, string>
     );
   }
-
   function getAvailableValuesForIndexWithSelections(
     attributeName: string,
     settingIndex: number,
@@ -313,7 +305,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
     });
     return Array.from(availableSet);
   }
-
   function getSettingsWithValues(): ReturnType<ClusterConfiguratorState['getSettingsWithValues']> {
     const sortedSettings = getSortedSettings();
     const sel = selectedAttributes as Record<string, string>;
@@ -337,7 +328,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
       };
     });
   }
-
   function findMatchingProduct(
     selections: Record<string, string>
   ): ReturnType<ClusterConfiguratorState['findMatchingProduct']> {
@@ -357,7 +347,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
     });
     return found || null;
   }
-
   function handleAttributeSelect(
     settingName: string,
     value: string
@@ -401,7 +390,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
       }
     }
   }
-
   useEffect(() => {
     const defaultProduct = props.defaultProduct as Product;
     if (!defaultProduct) return;

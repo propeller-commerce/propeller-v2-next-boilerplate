@@ -35,25 +35,21 @@ interface ProductDownloadsState {
   getDocumentMime: (doc: MediaDocument) => string;
   getLabel: (key: string, fallback: string) => string;
 }
-
 function ProductDownloads(props: ProductDownloadsProps) {
   function hasItems(): ReturnType<ProductDownloadsState['hasItems']> {
     const d = props.downloads as PaginatedMediaDocumentResponse;
     return !!d?.items && d.items.length > 0;
   }
-
   function getDownloadItems(): ReturnType<ProductDownloadsState['getDownloadItems']> {
     const d = props.downloads as PaginatedMediaDocumentResponse;
     return d?.items || [];
   }
-
   function getDocumentUrl(doc: MediaDocument): ReturnType<ProductDownloadsState['getDocumentUrl']> {
     const lang = (props.language as string) || 'NL';
     const docs = doc.documents || [];
     const match = docs.find((d: LocalizedDocument) => d.language === lang);
     return match?.originalUrl || docs?.[0]?.originalUrl || '';
   }
-
   function getDocumentName(
     doc: MediaDocument
   ): ReturnType<ProductDownloadsState['getDocumentName']> {
@@ -62,7 +58,6 @@ function ProductDownloads(props: ProductDownloadsProps) {
     const match = alts.find((a: LocalizedString) => a.language === lang);
     return match?.value || alts?.[0]?.value || 'Download';
   }
-
   function getDocumentMime(
     doc: MediaDocument
   ): ReturnType<ProductDownloadsState['getDocumentMime']> {
@@ -71,11 +66,9 @@ function ProductDownloads(props: ProductDownloadsProps) {
     const match = docs.find((d: LocalizedDocument) => d.language === lang);
     return match?.mimeType || docs?.[0]?.mimeType || '';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductDownloadsState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   return (
     <div className={`product-downloads ${(props.className as string) || ''}`}>
       {hasItems() ? (

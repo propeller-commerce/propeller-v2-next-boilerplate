@@ -126,7 +126,6 @@ interface CartItemState {
   getCrossupsellUrl: (item: Crossupsell) => string;
   getVisibleCrossupsells: () => Crossupsell[];
 }
-
 function CartItem(props: CartItemProps) {
   const [quantity, setQuantity] = useState<CartItemState['quantity']>(() => 1);
   const [notes, setNotes] = useState<CartItemState['notes']>(() => '');
@@ -142,51 +141,41 @@ function CartItem(props: CartItemProps) {
   function getLabel(key: string, fallback: string): ReturnType<CartItemState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function getProductName(): ReturnType<CartItemState['getProductName']> {
     return props.cartItem.product?.names?.[0]?.value || 'Product';
   }
-
   function getProductUrl(): ReturnType<CartItemState['getProductUrl']> {
     if (props.configuration && props.configuration.urls) {
       return props.configuration.urls.getProductUrl(props.cartItem.product, props.language);
     }
     return '#';
   }
-
   function getProductImageUrl(): ReturnType<CartItemState['getProductImageUrl']> {
     return props.cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function getProductSku(): ReturnType<CartItemState['getProductSku']> {
     return props.cartItem.product?.sku || '';
   }
-
   function getInventory(): ReturnType<CartItemState['getInventory']> {
     const inv = props.cartItem.product?.inventory;
     return inv || null;
   }
-
   function getFormattedPrice(): ReturnType<CartItemState['getFormattedPrice']> {
     const item = props.cartItem;
     const price = props.includeTax ? item?.totalSumNet || 0 : item?.totalSum || 0;
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function isBundleItem(): ReturnType<CartItemState['isBundleItem']> {
     return !!props.cartItem.bundle;
   }
-
   function getBundleName(): ReturnType<CartItemState['getBundleName']> {
     return props.cartItem.bundle?.name || 'Bundle';
   }
-
   function getBundlePrice(): ReturnType<CartItemState['getBundlePrice']> {
     const price = props.cartItem.bundle?.price?.net;
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function getBundleLeaderName(): ReturnType<CartItemState['getBundleLeaderName']> {
     const items = props.cartItem.bundle?.items;
     if (!items) return '';
@@ -194,7 +183,6 @@ function CartItem(props: CartItemProps) {
     if (!leader) return '';
     return leader.product.names?.[0]?.value || 'Product';
   }
-
   function getBundleLeaderPrice(): ReturnType<CartItemState['getBundleLeaderPrice']> {
     const items = props.cartItem.bundle?.items;
     if (!items) return '';
@@ -204,19 +192,16 @@ function CartItem(props: CartItemProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function getBundleNonLeaders(): ReturnType<CartItemState['getBundleNonLeaders']> {
     const items = props.cartItem.bundle?.items;
     if (!items) return [];
     return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
   }
-
   function getBundleItemName(
     bundleItem: BundleItem
   ): ReturnType<CartItemState['getBundleItemName']> {
     return bundleItem.product.names?.[0]?.value || 'Product';
   }
-
   function getBundleItemPrice(
     bundleItem: BundleItem
   ): ReturnType<CartItemState['getBundleItemPrice']> {
@@ -224,7 +209,6 @@ function CartItem(props: CartItemProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function handleQuantityChange(
     newQuantity: number
   ): ReturnType<CartItemState['handleQuantityChange']> {
@@ -260,7 +244,6 @@ function CartItem(props: CartItemProps) {
         setLoading(false);
       });
   }
-
   function handleNoteChange(note: string): ReturnType<CartItemState['handleNoteChange']> {
     setNotes(note);
     if (props.onNoteChange) {
@@ -295,7 +278,6 @@ function CartItem(props: CartItemProps) {
       }, 500)
     );
   }
-
   function handleDelete(): ReturnType<CartItemState['handleDelete']> {
     if (deleting) return;
     setDeleting(true);
@@ -327,7 +309,6 @@ function CartItem(props: CartItemProps) {
         setDeleting(false);
       });
   }
-
   function fetchCrossupsells(): ReturnType<CartItemState['fetchCrossupsells']> {
     if (!props.showCrossupsells) return;
     const productId = props.cartItem?.productId;
@@ -380,25 +361,21 @@ function CartItem(props: CartItemProps) {
         setCrossupsellsLoading(false);
       });
   }
-
   function getVisibleCrossupsells(): ReturnType<CartItemState['getVisibleCrossupsells']> {
     const items = crossupsells || [];
     const limit = props.crossupsellLimit || 3;
     return items.slice(0, limit);
   }
-
   function getCrossupsellName(item: Crossupsell): ReturnType<CartItemState['getCrossupsellName']> {
     const product = item?.productTo || item?.clusterTo;
     return product?.names?.[0]?.value || 'Product';
   }
-
   function getCrossupsellImageUrl(
     item: Crossupsell
   ): ReturnType<CartItemState['getCrossupsellImageUrl']> {
     const product = (item?.productTo || item?.clusterTo) as Product | undefined;
     return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function getCrossupsellUrl(item: Crossupsell): ReturnType<CartItemState['getCrossupsellUrl']> {
     const product = item?.productTo || item?.clusterTo;
     if (props.configuration && props.configuration.urls && product) {
@@ -406,7 +383,6 @@ function CartItem(props: CartItemProps) {
     }
     return '#';
   }
-
   useEffect(() => {
     setQuantity(props.cartItem.quantity || 1);
     setNotes(props.cartItem.notes || '');

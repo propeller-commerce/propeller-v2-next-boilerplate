@@ -97,7 +97,6 @@ interface ClusterOptionsState {
   getOptionsForRender: () => RenderedOption[];
   handleOptionChange: (optionIdStr: string, productIdStr: string) => void;
 }
-
 function ClusterOptions(props: ClusterOptionsProps) {
   const [selectedProductIds, setSelectedProductIds] = useState<
     ClusterOptionsState['selectedProductIds']
@@ -105,15 +104,12 @@ function ClusterOptions(props: ClusterOptionsProps) {
   function getLabel(key: string, fallback: string): ReturnType<ClusterOptionsState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function formatPrice(price: number): ReturnType<ClusterOptionsState['formatPrice']> {
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function getProductName(product: Product): ReturnType<ClusterOptionsState['getProductName']> {
     return (product as Product).names?.[0]?.value || `Product ${(product as Product).productId}`;
   }
-
   function getProductImageUrl(
     product: Product
   ): ReturnType<ClusterOptionsState['getProductImageUrl']> {
@@ -133,7 +129,6 @@ function ClusterOptions(props: ClusterOptionsProps) {
     }
     return '';
   }
-
   function getOptionsForRender(): ReturnType<ClusterOptionsState['getOptionsForRender']> {
     const options = (props.options as ClusterOption[]) || [];
     const sel = selectedProductIds as Record<string, string>;
@@ -176,7 +171,6 @@ function ClusterOptions(props: ClusterOptionsProps) {
         };
       });
   }
-
   function handleOptionChange(
     optionIdStr: string,
     productIdStr: string
@@ -201,7 +195,6 @@ function ClusterOptions(props: ClusterOptionsProps) {
       }
     }
   }
-
   return (
     <div className={`cluster-options ${props.className || ''}`}>
       {getOptionsForRender().length > 0 ? (

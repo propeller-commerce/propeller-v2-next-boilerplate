@@ -27,7 +27,6 @@ export interface GridTitleProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-
 function GridTitle(props: GridTitleProps) {
   return (
     <div className={`mb-8 ${(props.className as string) || ''}`}>

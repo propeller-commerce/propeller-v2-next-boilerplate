@@ -29,12 +29,12 @@ export default function FavoriteListPage() {
     setListName(list?.name || '');
   }
 
-  async function handleItemDelete(itemId: string, item?: { type: 'product' | 'cluster' }) {
+  async function handleItemDelete(itemId: string, itemType?: string) {
     try {
       const service = new FavoriteListService(graphqlClient);
       const numericId = Number(itemId);
       // Use removeFavoriteListItems for direct removal (works even for last item)
-      const input = item?.type === 'cluster'
+      const input = itemType === 'cluster'
         ? { clusterIds: [numericId] }
         : { productIds: [numericId] };
       await service.removeFavoriteListItems(listId, input);

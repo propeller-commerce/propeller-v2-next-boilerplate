@@ -45,7 +45,6 @@ interface DeliveryDateState {
   closeModal: () => void;
   handleBackdropClick: (event: Event) => void;
 }
-
 function DeliveryDate(props: DeliveryDateProps) {
   const [selectedDate, setSelectedDate] = useState<DeliveryDateState['selectedDate']>(() => '');
   const [modalOpen, setModalOpen] = useState<DeliveryDateState['modalOpen']>(() => false);
@@ -55,27 +54,21 @@ function DeliveryDate(props: DeliveryDateProps) {
   function upcomingDays(): ReturnType<DeliveryDateState['upcomingDays']> {
     return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
   }
-
   function skipWeekends(): ReturnType<DeliveryDateState['skipWeekends']> {
     return props.skipWeekends !== undefined ? props.skipWeekends : true;
   }
-
   function showDatePicker(): ReturnType<DeliveryDateState['showDatePicker']> {
     return props.showDatePicker !== undefined ? props.showDatePicker : true;
   }
-
   function isCustomDateSelected(): ReturnType<DeliveryDateState['isCustomDateSelected']> {
     return selectedDate !== '' && upcomingDates().indexOf(selectedDate) === -1;
   }
-
   function containerClass(): ReturnType<DeliveryDateState['containerClass']> {
     return props.containerClass || 'delivery-date';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<DeliveryDateState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function upcomingDates(): ReturnType<DeliveryDateState['upcomingDates']> {
     const days: string[] = [];
     const today = new Date();
@@ -90,14 +83,12 @@ function DeliveryDate(props: DeliveryDateProps) {
     }
     return days;
   }
-
   function toApiDate(date: Date): ReturnType<DeliveryDateState['toApiDate']> {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return y + '-' + m + '-' + d + 'T00:00:00Z';
   }
-
   function formatDisplay(isoDate: string): ReturnType<DeliveryDateState['formatDisplay']> {
     if (props.formatDateDisplay) {
       return props.formatDateDisplay(isoDate);
@@ -120,7 +111,6 @@ function DeliveryDate(props: DeliveryDateProps) {
     ];
     return weekday + ', ' + months[date.getMonth()] + ' ' + date.getDate();
   }
-
   function minDate(): ReturnType<DeliveryDateState['minDate']> {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -129,7 +119,6 @@ function DeliveryDate(props: DeliveryDateProps) {
     const d = String(tomorrow.getDate()).padStart(2, '0');
     return y + '-' + m + '-' + d;
   }
-
   function handleSelect(isoDate: string): ReturnType<DeliveryDateState['handleSelect']> {
     setSelectedDate(isoDate);
     setModalOpen(false);
@@ -137,7 +126,6 @@ function DeliveryDate(props: DeliveryDateProps) {
       props.onDateSelect(isoDate);
     }
   }
-
   function handleCustomDateChange(
     value: string
   ): ReturnType<DeliveryDateState['handleCustomDateChange']> {
@@ -148,21 +136,17 @@ function DeliveryDate(props: DeliveryDateProps) {
       handleSelect(isoDate);
     }
   }
-
   function openModal(): ReturnType<DeliveryDateState['openModal']> {
     setModalOpen(true);
   }
-
   function closeModal(): ReturnType<DeliveryDateState['closeModal']> {
     setModalOpen(false);
   }
-
   function handleBackdropClick(event: Event): ReturnType<DeliveryDateState['handleBackdropClick']> {
     if (event.target === event.currentTarget) {
       setModalOpen(false);
     }
   }
-
   return (
     <div className={containerClass()}>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">

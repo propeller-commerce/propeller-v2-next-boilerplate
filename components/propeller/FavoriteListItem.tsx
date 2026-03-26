@@ -122,20 +122,16 @@ interface FavoriteListItemState {
   handleItemClick: (e: any) => void;
   handleDelete: () => void;
 }
-
 function FavoriteListItem(props: FavoriteListItemProps) {
   function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
     return 'productId' in props.item;
   }
-
   function getProduct(): ReturnType<FavoriteListItemState['getProduct']> {
     return props.item as Product;
   }
-
   function getCluster(): ReturnType<FavoriteListItemState['getCluster']> {
     return props.item as Cluster;
   }
-
   function getName(): ReturnType<FavoriteListItemState['getName']> {
     if (isProduct()) {
       return getProduct()?.names?.[0]?.value || 'Product';
@@ -146,35 +142,30 @@ function FavoriteListItem(props: FavoriteListItemProps) {
       'Cluster'
     );
   }
-
   function getSku(): ReturnType<FavoriteListItemState['getSku']> {
     if (isProduct()) {
       return getProduct()?.sku || '';
     }
     return getCluster()?.sku || getCluster()?.defaultProduct?.sku || '';
   }
-
   function getImageUrl(): ReturnType<FavoriteListItemState['getImageUrl']> {
     if (isProduct()) {
       return getProduct()?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
     }
     return getCluster()?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function getItemUrl(): ReturnType<FavoriteListItemState['getItemUrl']> {
     if (isProduct()) {
       return props.configuration?.urls?.getProductUrl?.(props.item) || '';
     }
     return props.configuration?.urls?.getClusterUrl?.(props.item) || '';
   }
-
   function getItemId(): ReturnType<FavoriteListItemState['getItemId']> {
     if (isProduct()) {
       return String(getProduct()?.productId || '');
     }
     return String(getCluster()?.clusterId || '');
   }
-
   function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
     const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : true;
     let priceObj: any = null;
@@ -188,11 +179,9 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     if (!value && value !== 0) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<FavoriteListItemState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemClick']> {
     if (props.onItemClick) {
       e.preventDefault();
@@ -202,13 +191,11 @@ function FavoriteListItem(props: FavoriteListItemProps) {
       window.location.href = getItemUrl();
     }
   }
-
   function handleDelete(): ReturnType<FavoriteListItemState['handleDelete']> {
     if (props.onDelete) {
       props.onDelete(getItemId());
     }
   }
-
   return (
     <div
       onClick={(e) => handleItemClick(e)}

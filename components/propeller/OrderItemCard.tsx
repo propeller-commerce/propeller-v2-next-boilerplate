@@ -64,109 +64,85 @@ interface OrderItemCardState {
   formatItemPrice: (price: number) => string;
   formatDiscountDisplay: () => string;
 }
-
 function OrderItemCard(props: OrderItemCardProps) {
   function titleLinkable(): ReturnType<OrderItemCardState['titleLinkable']> {
     return props.titleLinkable !== undefined ? props.titleLinkable : true;
   }
-
   function showImage(): ReturnType<OrderItemCardState['showImage']> {
     if (props.isChildItem) return false;
     return props.showImage !== undefined ? props.showImage : true;
   }
-
   function showSku(): ReturnType<OrderItemCardState['showSku']> {
     if (props.isChildItem) return false;
     return props.showSku !== undefined ? props.showSku : true;
   }
-
   function showQuantity(): ReturnType<OrderItemCardState['showQuantity']> {
     return props.showQuantity !== undefined ? props.showQuantity : true;
   }
-
   function showPrice(): ReturnType<OrderItemCardState['showPrice']> {
     return props.showPrice !== undefined ? props.showPrice : true;
   }
-
   function showDiscount(): ReturnType<OrderItemCardState['showDiscount']> {
     return props.showDiscount !== undefined ? props.showDiscount : false;
   }
-
   function showStockComponent(): ReturnType<OrderItemCardState['showStockComponent']> {
     return props.showStockComponent !== undefined ? props.showStockComponent : false;
   }
-
   function showItemNotes(): ReturnType<OrderItemCardState['showItemNotes']> {
     return props.showItemNotes !== undefined ? props.showItemNotes : false;
   }
-
   function isChildItem(): ReturnType<OrderItemCardState['isChildItem']> {
     return props.isChildItem || false;
   }
-
   function productName(): ReturnType<OrderItemCardState['productName']> {
     const item = props.orderItem;
     return item?.product?.names?.[0]?.value || item?.name || 'Unknown Product';
   }
-
   function productSku(): ReturnType<OrderItemCardState['productSku']> {
     return props.orderItem?.product?.sku || props.orderItem?.sku || '';
   }
-
   function productImage(): ReturnType<OrderItemCardState['productImage']> {
     return props.orderItem?.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function productId(): ReturnType<OrderItemCardState['productId']> {
     return props.orderItem?.product?.productId;
   }
-
   function productSlug(): ReturnType<OrderItemCardState['productSlug']> {
     return props.orderItem?.product?.slugs?.[0]?.value || '';
   }
-
   function productUrl(): ReturnType<OrderItemCardState['productUrl']> {
     if (productId() && productSlug()) {
       return '/product/' + productId() + '/' + productSlug();
     }
     return '';
   }
-
   function quantity(): ReturnType<OrderItemCardState['quantity']> {
     return props.orderItem?.quantity || 0;
   }
-
   function price(): ReturnType<OrderItemCardState['price']> {
     return props.orderItem?.price || 0;
   }
-
   function priceTotal(): ReturnType<OrderItemCardState['priceTotal']> {
     return props.orderItem?.priceTotal || 0;
   }
-
   function discount(): ReturnType<OrderItemCardState['discount']> {
     return props.orderItem?.discount || 0;
   }
-
   function originalPrice(): ReturnType<OrderItemCardState['originalPrice']> {
     return props.orderItem?.originalPrice || 0;
   }
-
   function discountPercentage(): ReturnType<OrderItemCardState['discountPercentage']> {
     if (originalPrice() > 0 && discount() > 0) {
       return (discount() / originalPrice()) * 100;
     }
     return 0;
   }
-
   function notes(): ReturnType<OrderItemCardState['notes']> {
     return props.orderItem?.notes || '';
   }
-
   function hasChildren(): ReturnType<OrderItemCardState['hasChildren']> {
     return (props.childItems || []).length > 0;
   }
-
   function formatItemPrice(price: number): ReturnType<OrderItemCardState['formatItemPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
@@ -174,7 +150,6 @@ function OrderItemCard(props: OrderItemCardProps) {
     if (!price && price !== 0) return '-';
     return '€' + Number(price).toFixed(2);
   }
-
   function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
     const discountStr = formatItemPrice(discount());
     if (discountPercentage() > 0) {
@@ -182,7 +157,6 @@ function OrderItemCard(props: OrderItemCardProps) {
     }
     return discountStr;
   }
-
   return (
     <tbody>
       <tr className={isChildItem() ? 'border-0' : 'hover:bg-gray-50 transition'}>

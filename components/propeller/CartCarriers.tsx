@@ -36,43 +36,35 @@ interface CartCarriersState {
   getLogoUrl: (carrier: CartCarrier) => string;
   handleSelect: (carrier: CartCarrier) => void;
 }
-
 function CartCarriers(props: CartCarriersProps) {
   const [selectedName, setSelectedName] = useState<CartCarriersState['selectedName']>(() => '');
   function containerClass(): ReturnType<CartCarriersState['containerClass']> {
     return props.carriersContainerClass || 'cart-carriers';
   }
-
   function showLogo(): ReturnType<CartCarriersState['showLogo']> {
     return props.showCarrierLogo !== undefined ? props.showCarrierLogo : true;
   }
-
   function carriers(): ReturnType<CartCarriersState['carriers']> {
     return props.cart?.carriers || [];
   }
-
   function getLabel(key: string, fallback: string): ReturnType<CartCarriersState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function formatCarrierPrice(price: number): ReturnType<CartCarriersState['formatCarrierPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-
   function getLogoUrl(carrier: CartCarrier): ReturnType<CartCarriersState['getLogoUrl']> {
     return carrier.logo || '';
   }
-
   function handleSelect(carrier: CartCarrier): ReturnType<CartCarriersState['handleSelect']> {
     setSelectedName(carrier.name);
     if (props.onCarrierSelect) {
       props.onCarrierSelect(carrier);
     }
   }
-
   return (
     <div className={containerClass()}>
       {carriers().length > 0 ? (

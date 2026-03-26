@@ -105,7 +105,6 @@ interface ClusterInfoState {
   getClusterName: () => string;
   getClusterSku: () => string;
 }
-
 function ClusterInfo(props: ClusterInfoProps) {
   const [internalCluster, setInternalCluster] = useState<ClusterInfoState['internalCluster']>(
     () => null
@@ -114,7 +113,6 @@ function ClusterInfo(props: ClusterInfoProps) {
   function getCluster(): ReturnType<ClusterInfoState['getCluster']> {
     return (props.cluster as Cluster) || internalCluster;
   }
-
   function getClusterName(): ReturnType<ClusterInfoState['getClusterName']> {
     const cluster = getCluster();
     if (!cluster) return '';
@@ -122,11 +120,9 @@ function ClusterInfo(props: ClusterInfoProps) {
     const match = cluster.names?.find((n: LocalizedString) => n.language === lang);
     return match?.value || cluster.names?.[0]?.value || '';
   }
-
   function getClusterSku(): ReturnType<ClusterInfoState['getClusterSku']> {
     return getCluster()?.sku || '';
   }
-
   useEffect(() => {
     if (props.cluster) {
       if (props.onClusterLoaded) {

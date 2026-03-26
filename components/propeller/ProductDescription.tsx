@@ -44,7 +44,6 @@ interface ProductDescriptionState {
   getTruncated: () => string;
   toggle: () => void;
 }
-
 function ProductDescription(props: ProductDescriptionProps) {
   const [expanded, setExpanded] = useState<ProductDescriptionState['expanded']>(() => false);
   const [html, setHtml] = useState<ProductDescriptionState['html']>(() => '');
@@ -55,13 +54,11 @@ function ProductDescription(props: ProductDescriptionProps) {
     const match = product.descriptions.find((d: LocalizedString) => d.language === lang);
     return match?.value || product.descriptions?.[0]?.value || '';
   }
-
   function getMaxLen(): ReturnType<ProductDescriptionState['getMaxLen']> {
     const max = props.maxLength;
     if (!max || (max as number) <= 0) return 0;
     return max as number;
   }
-
   function shouldTruncate(): ReturnType<ProductDescriptionState['shouldTruncate']> {
     if (props.collapsed === false) return false;
     if (!props.collapsed) return false;
@@ -70,7 +67,6 @@ function ProductDescription(props: ProductDescriptionProps) {
     const plain = html.replace(/<[^>]*>/g, '');
     return plain.length > maxLen;
   }
-
   function getTruncated(): ReturnType<ProductDescriptionState['getTruncated']> {
     const plain = html.replace(/<[^>]*>/g, '');
     const maxLen = getMaxLen();
@@ -78,11 +74,9 @@ function ProductDescription(props: ProductDescriptionProps) {
     const truncated = plain.substring(0, maxLen);
     return truncated.substring(0, truncated.lastIndexOf(' ')) + '\u2026';
   }
-
   function toggle(): ReturnType<ProductDescriptionState['toggle']> {
     setExpanded(!expanded);
   }
-
   useEffect(() => {
     setHtml(getDescription());
   }, [props.product, props.language]);

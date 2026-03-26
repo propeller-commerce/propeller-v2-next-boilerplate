@@ -82,7 +82,6 @@ interface SearchBarState {
   handleResultClick: (result: SearchBarResult) => void;
   handleViewAllClick: () => void;
 }
-
 function SearchBar(props: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState<SearchBarState['searchTerm']>(() => '');
   const [results, setResults] = useState<SearchBarState['results']>(() => []);
@@ -93,34 +92,27 @@ function SearchBar(props: SearchBarProps) {
   function placeholder(): ReturnType<SearchBarState['placeholder']> {
     return props.placeholder || 'Search products...';
   }
-
   function minLength(): ReturnType<SearchBarState['minLength']> {
     return props.minSearchLength !== undefined ? props.minSearchLength : 3;
   }
-
   function debounceMs(): ReturnType<SearchBarState['debounceMs']> {
     return props.debounceMs !== undefined ? props.debounceMs : 300;
   }
-
   function maxResults(): ReturnType<SearchBarState['maxResults']> {
     return props.maxResults !== undefined ? props.maxResults : 8;
   }
-
   function noImageUrl(): ReturnType<SearchBarState['noImageUrl']> {
     return props.noImageUrl || '';
   }
-
   function getLabel(key: string, fallback: string): ReturnType<SearchBarState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function formatItemPrice(price: number): ReturnType<SearchBarState['formatItemPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-
   function mapProductToResult(
     item: Product | Cluster
   ): ReturnType<SearchBarState['mapProductToResult']> {
@@ -139,7 +131,6 @@ function SearchBar(props: SearchBarProps) {
       isCluster: isCluster,
     } as SearchBarResult;
   }
-
   function handleInputChange(value: string): ReturnType<SearchBarState['handleInputChange']> {
     setSearchTerm(value);
     if (debounceTimer) {
@@ -156,7 +147,6 @@ function SearchBar(props: SearchBarProps) {
       }, debounceMs())
     );
   }
-
   async function fetchResults(term: string): ReturnType<SearchBarState['fetchResults']> {
     if (!props.graphqlClient) return;
     setIsLoading(true);
@@ -218,7 +208,6 @@ function SearchBar(props: SearchBarProps) {
       setIsLoading(false);
     }
   }
-
   function handleSubmit(e: any): ReturnType<SearchBarState['handleSubmit']> {
     e.preventDefault();
     const term = searchTerm.trim();
@@ -227,7 +216,6 @@ function SearchBar(props: SearchBarProps) {
       setShowDropdown(false);
     }
   }
-
   function handleResultClick(
     result: SearchBarResult
   ): ReturnType<SearchBarState['handleResultClick']> {
@@ -237,14 +225,12 @@ function SearchBar(props: SearchBarProps) {
     setShowDropdown(false);
     setSearchTerm('');
   }
-
   function handleViewAllClick(): ReturnType<SearchBarState['handleViewAllClick']> {
     if (props.onViewAllClick) {
       props.onViewAllClick(searchTerm);
     }
     setShowDropdown(false);
   }
-
   useEffect(() => {
     const listener = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -252,14 +238,9 @@ function SearchBar(props: SearchBarProps) {
         setShowDropdown(false);
       }
     };
-    setClickOutsideListener(listener);
     document.addEventListener('mousedown', listener);
-  }, []);
-  useEffect(() => {
     return () => {
-      if (clickOutsideListener) {
-        document.removeEventListener('mousedown', clickOutsideListener);
-      }
+      document.removeEventListener('mousedown', listener);
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }

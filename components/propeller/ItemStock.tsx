@@ -29,21 +29,17 @@ export interface ItemStockProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-
 function ItemStock(props: ItemStockProps) {
   function getLabel(key: string, fallback: string): string {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function getTotalQuantity(): number {
     const qty = (props.inventory as ProductInventory)?.totalQuantity;
     return qty !== undefined && qty !== null ? qty : -1;
   }
-
   function isAvailable(): boolean {
     return getTotalQuantity() > 0;
   }
-
   function getStockStatusLabel(): string {
     const qty = getTotalQuantity();
     if (qty < 0) return '';
@@ -51,34 +47,28 @@ function ItemStock(props: ItemStockProps) {
     if (qty <= 5) return getLabel('lowStock', 'Low stock');
     return getLabel('inStock', 'In stock');
   }
-
   function getStockStatusClass(): string {
     const qty = getTotalQuantity();
     if (qty <= 0) return 'text-red-600 bg-red-50 border-red-100';
     if (qty <= 5) return 'text-amber-600 bg-amber-50 border-amber-100';
     return 'text-green-600 bg-green-50 border-green-100';
   }
-
   function getAvailabilityLabel(): string {
     return isAvailable()
       ? getLabel('available', 'Available')
       : getLabel('notAvailable', 'Not available');
   }
-
   function getAvailabilityClass(): string {
     return isAvailable()
       ? 'text-green-600 bg-green-50 border-green-100'
       : 'text-red-600 bg-red-50 border-red-100';
   }
-
   function getAvailabilityDotClass(): string {
     return isAvailable() ? 'bg-green-500' : 'bg-red-500';
   }
-
   function hasInventory(): boolean {
     return !!(props.inventory as ProductInventory) && getTotalQuantity() >= 0;
   }
-
   return (
     <>
       {hasInventory() ? (

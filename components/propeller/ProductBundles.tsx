@@ -165,7 +165,6 @@ interface ProductBundlesState {
   handleAddToCart: (bundle: Bundle) => Promise<void>;
   initCart: () => Promise<void>;
 }
-
 function ProductBundles(props: ProductBundlesProps) {
   const [bundles, setBundles] = useState<ProductBundlesState['bundles']>(() => []);
   const [isLoading, setIsLoading] = useState<ProductBundlesState['isLoading']>(() => false);
@@ -189,50 +188,39 @@ function ProductBundles(props: ProductBundlesProps) {
   function getIncludeTax(): ReturnType<ProductBundlesState['getIncludeTax']> {
     return props.includeTax !== undefined ? !!props.includeTax : includeTax;
   }
-
   function getShowItems(): ReturnType<ProductBundlesState['getShowItems']> {
     return props.showIndividualItems !== undefined ? !!props.showIndividualItems : true;
   }
-
   function getLayout(): ReturnType<ProductBundlesState['getLayout']> {
     return (props.layout as string) || 'horizontal';
   }
-
   function getIsAnonymous(): ReturnType<ProductBundlesState['getIsAnonymous']> {
     return !props.user;
   }
-
   function getHidePrices(): ReturnType<ProductBundlesState['getHidePrices']> {
     return (props.portalMode as string) === 'semi-closed' && getIsAnonymous();
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductBundlesState['getLabel']> {
     const val = (props.labels as Record<string, string>)?.[key];
     return val !== undefined ? val : fallback;
   }
-
   function formatPrice(value: number): ReturnType<ProductBundlesState['formatPrice']> {
     return '\u20AC' + Number(value).toFixed(2);
   }
-
   function getBundlePrice(bundle: Bundle): ReturnType<ProductBundlesState['getBundlePrice']> {
     return getIncludeTax() ? bundle.price?.net || 0 : bundle.price?.gross || 0;
   }
-
   function getOriginalPrice(bundle: Bundle): ReturnType<ProductBundlesState['getOriginalPrice']> {
     return getIncludeTax() ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
   }
-
   function getItemPrice(item: BundleItem): ReturnType<ProductBundlesState['getItemPrice']> {
     return getIncludeTax() ? item.price?.net || 0 : item.price?.gross || 0;
   }
-
   function hasDiscount(bundle: Bundle): ReturnType<ProductBundlesState['hasDiscount']> {
     const current: number = getBundlePrice(bundle);
     const original: number = getOriginalPrice(bundle);
     return original > 0 && current < original;
   }
-
   function getDiscountPercentage(
     bundle: Bundle
   ): ReturnType<ProductBundlesState['getDiscountPercentage']> {
@@ -240,15 +228,12 @@ function ProductBundles(props: ProductBundlesProps) {
     if (original <= 0) return 0;
     return Math.round(((original - getBundlePrice(bundle)) / original) * 100);
   }
-
   function getProductImage(product: Product): ReturnType<ProductBundlesState['getProductImage']> {
     return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-
   function getProductName(product: Product): ReturnType<ProductBundlesState['getProductName']> {
     return product?.names?.[0]?.value || '';
   }
-
   function showToast(message: string, type: string): ReturnType<ProductBundlesState['showToast']> {
     setToastMessage(message);
     setToastType(type);
@@ -257,16 +242,13 @@ function ProductBundles(props: ProductBundlesProps) {
       setToastVisible(false);
     }, 3000);
   }
-
   function dismissToast(): ReturnType<ProductBundlesState['dismissToast']> {
     setToastVisible(false);
   }
-
   function closeModal(): ReturnType<ProductBundlesState['closeModal']> {
     setModalVisible(false);
     setLastAddedBundle(null);
   }
-
   async function initCart(): ReturnType<ProductBundlesState['initCart']> {
     const cartService = new CartService(props.graphqlClient);
     // 1. Check for existing carts for this user first
@@ -402,7 +384,6 @@ function ProductBundles(props: ProductBundlesProps) {
       props.onCartCreated(newCart);
     }
   }
-
   async function fetchBundles(): ReturnType<ProductBundlesState['fetchBundles']> {
     if (!props.graphqlClient || !props.productId) return;
     setIsLoading(true);
@@ -427,7 +408,6 @@ function ProductBundles(props: ProductBundlesProps) {
       setIsLoading(false);
     }
   }
-
   async function handleAddToCart(
     bundle: Bundle
   ): ReturnType<ProductBundlesState['handleAddToCart']> {
@@ -484,7 +464,6 @@ function ProductBundles(props: ProductBundlesProps) {
       setAddingBundleId(null);
     }
   }
-
   useEffect(() => {
     setIsMounted(true);
     fetchBundles();

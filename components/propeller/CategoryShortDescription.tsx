@@ -25,7 +25,6 @@ export interface CategoryShortDescriptionProps {
 interface CategoryShortDescriptionState {
   html: () => string;
 }
-
 function CategoryShortDescription(props: CategoryShortDescriptionProps) {
   function html(): ReturnType<CategoryShortDescriptionState['html']> {
     if (!props.category?.shortDescription) return '';
@@ -34,7 +33,6 @@ function CategoryShortDescription(props: CategoryShortDescriptionProps) {
     );
     return match?.value || '';
   }
-
   return (
     <>
       {!!html() ? (

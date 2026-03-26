@@ -113,7 +113,6 @@ interface CartIconAndSidebarState {
   getBundleItemName: (bundleItem: BundleItem) => string;
   getBundleItemPrice: (bundleItem: BundleItem) => string;
 }
-
 function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   const [isMounted, setIsMounted] = useState<CartIconAndSidebarState['isMounted']>(() => false);
   const [sidebarOpen, setSidebarOpen] = useState<CartIconAndSidebarState['sidebarOpen']>(
@@ -125,30 +124,25 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (!items) return 0;
     return items.length;
   }
-
   function getTotalPrice(): ReturnType<CartIconAndSidebarState['getTotalPrice']> {
     const total = props.cart?.total?.totalNet;
     if (total === undefined || total === null) return '\u20AC0.00';
     return `\u20AC${Number(total).toFixed(2)}`;
   }
-
   function getItems(): ReturnType<CartIconAndSidebarState['getItems']> {
     const items = props.cart?.items;
     if (!items) return [];
     return items.filter((item: CartMainItem) => item && item.product);
   }
-
   function getItemName(item: CartMainItem): ReturnType<CartIconAndSidebarState['getItemName']> {
     return item.product?.names?.[0]?.value || 'Unnamed Product';
   }
-
   function getItemImageUrl(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getItemImageUrl']> {
     const url = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
     return url && url.startsWith('http') ? url : '';
   }
-
   function getItemProductUrl(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getItemProductUrl']> {
@@ -163,7 +157,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     }
     return '#';
   }
-
   function handleIconClick(): ReturnType<CartIconAndSidebarState['handleIconClick']> {
     if (props.showCartSidebarOnClick !== false) {
       setSidebarOpen(true);
@@ -171,36 +164,29 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
       if (props.onCartIconClick) props.onCartIconClick(props.cart);
     }
   }
-
   function openSidebar(): ReturnType<CartIconAndSidebarState['openSidebar']> {
     setSidebarOpen(true);
   }
-
   function closeSidebar(): ReturnType<CartIconAndSidebarState['closeSidebar']> {
     setSidebarOpen(false);
   }
-
   function handleCheckoutClick(): ReturnType<CartIconAndSidebarState['handleCheckoutClick']> {
     setSidebarOpen(false);
     if (props.onCheckoutButtonClick) props.onCheckoutButtonClick(props.cart);
   }
-
   function handleCartPageClick(): ReturnType<CartIconAndSidebarState['handleCartPageClick']> {
     setSidebarOpen(false);
     if (props.onCartPageButtonClick) props.onCartPageButtonClick(props.cart);
   }
-
   function getLabel(
     key: string,
     fallback: string
   ): ReturnType<CartIconAndSidebarState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function getSidebarTitle(): ReturnType<CartIconAndSidebarState['getSidebarTitle']> {
     return props.cartSidebarTitle || props.labels?.['cartSidebarTitle'] || 'Shopping cart';
   }
-
   function getItemChildItems(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getItemChildItems']> {
@@ -208,15 +194,12 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (!children || !Array.isArray(children)) return [];
     return children;
   }
-
   function isBundleItem(item: CartMainItem): ReturnType<CartIconAndSidebarState['isBundleItem']> {
     return !!item.bundle;
   }
-
   function getBundleName(item: CartMainItem): ReturnType<CartIconAndSidebarState['getBundleName']> {
     return item.bundle?.name || 'Bundle';
   }
-
   function getBundlePrice(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getBundlePrice']> {
@@ -224,7 +207,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function getBundleLeaderName(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getBundleLeaderName']> {
@@ -234,7 +216,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (!leader) return '';
     return leader.product.names?.[0]?.value || 'Product';
   }
-
   function getBundleLeaderPrice(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getBundleLeaderPrice']> {
@@ -246,7 +227,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   function getBundleNonLeaders(
     item: CartMainItem
   ): ReturnType<CartIconAndSidebarState['getBundleNonLeaders']> {
@@ -254,13 +234,11 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (!items) return [];
     return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
   }
-
   function getBundleItemName(
     bundleItem: BundleItem
   ): ReturnType<CartIconAndSidebarState['getBundleItemName']> {
     return bundleItem.product.names?.[0]?.value || 'Product';
   }
-
   function getBundleItemPrice(
     bundleItem: BundleItem
   ): ReturnType<CartIconAndSidebarState['getBundleItemPrice']> {
@@ -268,7 +246,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-
   useEffect(() => {
     setIsMounted(true);
   }, []);

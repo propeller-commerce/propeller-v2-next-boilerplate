@@ -137,8 +137,9 @@ const TARGETS = [
         // `const x = expr   function foo` on a single line (reports
         // "',' expected"), which prevents Prettier from reformatting the file.
         // Fix: insert `;` + newline before any statement-starting keyword that
-        // follows a closing `)` or `'` with 2+ spaces (the squisher pattern).
-        pattern: /([)'])\s{2,}((?:const\s+\[|function\s+\w|async\s+function\s+\w|useEffect\s*\(|return\s*\())/g,
+        // follows a closing `)`, `'`, or `}` with 1+ spaces (the squisher pattern).
+        // Mitosis sometimes uses a single space (e.g. `], []) useEffect(`).
+        pattern: /([)'}])\s+((?:const\s+\[|function\s+\w|async\s+function\s+\w|useEffect\s*\(|return\s*\())/g,
         replace: '$1;\n  $2',
         label: 'React squished-statement semicolons fix',
     },
@@ -566,6 +567,36 @@ const FILE_PATCHES = [
             '  }, []);',
         ].join('\n'),
     },
+    {
+        // Mitosis compiles `++state.fetchId` to `++fetchId`, but fetchId is a
+        // `const` from useState — cannot be reassigned.  The fetchId counter is
+        // used for stale-fetch detection and never triggers re-renders, so a
+        // useRef is the correct React primitive.
+        //
+        // Fix: replace useState with useRef and update all references.
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: replace fetchId useState with useRef (const reassign fix)',
+        from: "  const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);",
+        to: '  const fetchIdRef = useRef(0);',
+    },
+    {
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: fix ++fetchId to ++fetchIdRef.current',
+        from: 'const myFetchId = ++fetchId;',
+        to: 'const myFetchId = ++fetchIdRef.current;',
+    },
+    {
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: fix all fetchId references to fetchIdRef.current',
+        from: 'myFetchId !== fetchId)',
+        to: 'myFetchId !== fetchIdRef.current)',
+    },
+    {
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: fix fetchId === references to fetchIdRef.current',
+        from: 'myFetchId === fetchId)',
+        to: 'myFetchId === fetchIdRef.current)',
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────
@@ -585,6 +616,11 @@ const UNUSED_STATE_REMOVALS = [
         file: resolve('../output/react/ui-components/FavoriteListItem.tsx'),
         pattern: /\s*const \[_priceListener, set_priceListener\] = useState<[^>]+>\(\s*\(\) => null\s*\);\n/g,
         label: 'React → FavoriteListItem: remove unused _priceListener useState',
+    },
+    {
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        pattern: /\s*fetchId: number;\n/g,
+        label: 'React → ProductGrid: remove unused fetchId from state interface',
     },
 ];
 

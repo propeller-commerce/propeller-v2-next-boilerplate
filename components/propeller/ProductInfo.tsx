@@ -103,7 +103,6 @@ interface ProductInfoState {
   getProductName: () => string;
   getProductSku: () => string;
 }
-
 function ProductInfo(props: ProductInfoProps) {
   const [internalProduct, setInternalProduct] = useState<ProductInfoState['internalProduct']>(
     () => null
@@ -112,7 +111,6 @@ function ProductInfo(props: ProductInfoProps) {
   function getProduct(): ReturnType<ProductInfoState['getProduct']> {
     return (props.product as Product) || internalProduct;
   }
-
   function getProductName(): ReturnType<ProductInfoState['getProductName']> {
     const product = getProduct();
     if (!product) return '';
@@ -120,11 +118,9 @@ function ProductInfo(props: ProductInfoProps) {
     const match = product.names?.find((n: LocalizedString) => n.language === lang);
     return match?.value || product.names?.[0]?.value || '';
   }
-
   function getProductSku(): ReturnType<ProductInfoState['getProductSku']> {
     return getProduct()?.sku || '';
   }
-
   useEffect(() => {
     if (props.product) {
       if (props.onProductLoaded) {

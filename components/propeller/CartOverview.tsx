@@ -62,7 +62,6 @@ interface CartOverviewState {
   isPurchaseDisabled: () => boolean;
   handlePurchaseClick: () => void;
 }
-
 function CartOverview(props: CartOverviewProps) {
   const [reference, setReference] = useState<CartOverviewState['reference']>(() => '');
   const [notes, setNotes] = useState<CartOverviewState['notes']>(() => '');
@@ -73,35 +72,27 @@ function CartOverview(props: CartOverviewProps) {
   function containerClass(): ReturnType<CartOverviewState['containerClass']> {
     return props.overviewContainerClass || 'cart-overview';
   }
-
   function showNotes(): ReturnType<CartOverviewState['showNotes']> {
     return props.showNotes !== undefined ? props.showNotes : true;
   }
-
   function showReference(): ReturnType<CartOverviewState['showReference']> {
     return props.showReference !== undefined ? props.showReference : true;
   }
-
   function showTermsAndConditions(): ReturnType<CartOverviewState['showTermsAndConditions']> {
     return props.showTermsAndConditions !== undefined ? props.showTermsAndConditions : true;
   }
-
   function showPurchaseButton(): ReturnType<CartOverviewState['showPurchaseButton']> {
     return props.showPurchaseButton !== undefined ? props.showPurchaseButton : true;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<CartOverviewState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
-
   function invoiceAddress(): ReturnType<CartOverviewState['invoiceAddress']> {
     return props.cart?.invoiceAddress;
   }
-
   function deliveryAddress(): ReturnType<CartOverviewState['deliveryAddress']> {
     return props.cart?.deliveryAddress;
   }
-
   function formatAddress(addr: CartAddress): ReturnType<CartOverviewState['formatAddress']> {
     if (!addr || !addr.street) return '';
     const parts: string[] = [];
@@ -118,15 +109,12 @@ function CartOverview(props: CartOverviewProps) {
     if (addr.country) parts.push(addr.country);
     return parts.join(', ');
   }
-
   function paymentMethod(): ReturnType<CartOverviewState['paymentMethod']> {
     return props.cart?.paymentData?.method || '';
   }
-
   function carrierName(): ReturnType<CartOverviewState['carrierName']> {
     return props.cart?.postageData?.carrier || '';
   }
-
   function requestDate(): ReturnType<CartOverviewState['requestDate']> {
     const date = props.cart?.postageData?.requestDate;
     if (!date) return '';
@@ -136,21 +124,17 @@ function CartOverview(props: CartOverviewProps) {
       return date;
     }
   }
-
   function handleReferenceChange(
     value: string
   ): ReturnType<CartOverviewState['handleReferenceChange']> {
     setReference(value);
   }
-
   function handleNotesChange(value: string): ReturnType<CartOverviewState['handleNotesChange']> {
     setNotes(value);
   }
-
   function handleTermsChange(checked: boolean): ReturnType<CartOverviewState['handleTermsChange']> {
     setTermsAccepted(checked);
   }
-
   function handleTermsLinkClick(
     event: Event
   ): ReturnType<CartOverviewState['handleTermsLinkClick']> {
@@ -159,13 +143,11 @@ function CartOverview(props: CartOverviewProps) {
       props.onTermsAndConditionsClick();
     }
   }
-
   function isPurchaseDisabled(): ReturnType<CartOverviewState['isPurchaseDisabled']> {
     if (showTermsAndConditions() && !termsAccepted) return true;
     if (loading) return true;
     return false;
   }
-
   function handlePurchaseClick(): ReturnType<CartOverviewState['handlePurchaseClick']> {
     if (isPurchaseDisabled()) return;
     setLoading(true);
@@ -173,7 +155,6 @@ function CartOverview(props: CartOverviewProps) {
       props.onPurchaseButtonClick(props.cart, reference, notes);
     }
   }
-
   return (
     <div className={containerClass()}>
       {props.title ? <h2 className="text-xl font-bold mb-4">{props.title}</h2> : null}

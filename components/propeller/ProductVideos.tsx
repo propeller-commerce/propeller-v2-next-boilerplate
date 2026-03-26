@@ -36,36 +36,30 @@ interface ProductVideosState {
   getEmbedUrl: (uri: string) => string;
   getLabel: (key: string, fallback: string) => string;
 }
-
 function ProductVideos(props: ProductVideosProps) {
   function hasItems(): ReturnType<ProductVideosState['hasItems']> {
     const v = props.videos as PaginatedMediaVideoResponse;
     return !!v?.items && v.items.length > 0;
   }
-
   function getVideoItems(): ReturnType<ProductVideosState['getVideoItems']> {
     const v = props.videos as PaginatedMediaVideoResponse;
     return v?.items || [];
   }
-
   function getVideoUri(video: MediaVideo): ReturnType<ProductVideosState['getVideoUri']> {
     const lang = (props.language as string) || 'NL';
     const vids = video.videos || [];
     const match = vids.find((v: LocalizedVideo) => v.language === lang);
     return match?.uri || vids?.[0]?.uri || '';
   }
-
   function getVideoTitle(video: MediaVideo): ReturnType<ProductVideosState['getVideoTitle']> {
     const lang = (props.language as string) || 'NL';
     const alts = video.alt || [];
     const match = alts.find((a: LocalizedString) => a.language === lang);
     return match?.value || alts?.[0]?.value || 'Video';
   }
-
   function isEmbeddable(uri: string): ReturnType<ProductVideosState['isEmbeddable']> {
     return uri.includes('youtube.com') || uri.includes('youtu.be') || uri.includes('vimeo.com');
   }
-
   function getEmbedUrl(uri: string): ReturnType<ProductVideosState['getEmbedUrl']> {
     // YouTube watch URL → embed URL
     if (uri.includes('youtube.com/watch')) {
@@ -85,11 +79,9 @@ function ProductVideos(props: ProductVideosProps) {
     }
     return uri;
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductVideosState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   return (
     <div className={`product-videos ${(props.className as string) || ''}`}>
       {hasItems() ? (

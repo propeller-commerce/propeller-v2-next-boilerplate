@@ -60,12 +60,10 @@ interface ProductPriceState {
   getLabel: (key: string, fallback: string) => string;
   formatPrice: (value: number | null | undefined) => string;
 }
-
 function ProductPriceDisplay(props: ProductPriceProps) {
   function isHidden(): ReturnType<ProductPriceState['isHidden']> {
     return (props.portalMode as string) === 'semi-closed' && !props.user;
   }
-
   function formatPrice(
     value: number | null | undefined
   ): ReturnType<ProductPriceState['formatPrice']> {
@@ -73,7 +71,6 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     const currency = (props.currency as string) || '\u20AC';
     return `${currency}${Number(value).toFixed(2)}`;
   }
-
   function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState['getOptionsTotal']> {
     const options = (props.options as ClusterOption[]) || [];
     const selected = (props.selectedOptionProducts as Product[]) || [];
@@ -101,7 +98,6 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     });
     return total;
   }
-
   function getLeadingPrice(): ReturnType<ProductPriceState['getLeadingPrice']> {
     const price = props.price as ProductPrice;
     if (!price) return '';
@@ -110,7 +106,6 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     if (base === null || base === undefined) return '';
     return formatPrice(base + getOptionsTotal(useNet));
   }
-
   function getSecondaryPrice(): ReturnType<ProductPriceState['getSecondaryPrice']> {
     const price = props.price as ProductPrice;
     if (!price) return '';
@@ -119,19 +114,15 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     if (base === null || base === undefined) return '';
     return formatPrice(base + getOptionsTotal(useNet));
   }
-
   function getTaxLabel(): ReturnType<ProductPriceState['getTaxLabel']> {
     return props.includeTax ? getLabel('inclTax', 'incl. VAT') : getLabel('exclTax', 'excl. VAT');
   }
-
   function getSecondaryTaxLabel(): ReturnType<ProductPriceState['getSecondaryTaxLabel']> {
     return props.includeTax ? getLabel('exclTax', 'excl. VAT') : getLabel('inclTax', 'incl. VAT');
   }
-
   function getLabel(key: string, fallback: string): ReturnType<ProductPriceState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   return (
     <div className={`product-price ${(props.className as string) || ''}`}>
       {isHidden() ? (

@@ -272,7 +272,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
   return (
     <div className="relative">
       <div

@@ -274,7 +274,6 @@ function Menu(props: MenuProps) {
   useEffect(() => {
     fetchMenu();
   }, [props.graphqlClient, props.categoryId, props.language, props.user]);
-
   return (
     <div className={`propeller-menu ${(props.className as string) || ''}`}>
       {isLoading ? (

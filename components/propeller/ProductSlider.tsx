@@ -478,7 +478,6 @@ function ProductSlider(props: ProductSliderProps) {
       }, 50);
     }
   }, [sliderId, items().length]);
-
   return (
     <>
       {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (

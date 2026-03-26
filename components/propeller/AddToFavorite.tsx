@@ -215,7 +215,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
     });
     setMemberListIds(memberIds);
   }, [props.user, props.productId, props.clusterId]);
-
   return (
     <>
       {props.user ? (

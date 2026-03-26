@@ -431,7 +431,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
       }
     }
   }, []);
-
   return (
     <div className={`cluster-configurator ${props.className || ''}`}>
       {!!(props.config as ClusterConfig)?.settings?.length ? (

@@ -319,7 +319,6 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
   >(() => ({
     handler: null as ((e: MouseEvent) => void) | null,
   }));
-
   useEffect(() => {
     setIsMounted(true);
     const listener = (e: MouseEvent) => {
@@ -339,7 +338,6 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
       setMenuOpen(false);
     }
   }, [props.user]);
-
   return (
     <div className="relative" data-account-menu>
       {isSidebar() ? (

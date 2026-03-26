@@ -439,6 +439,47 @@ const FILE_PATCHES = [
         ].join('\n'),
     },
     {
+        // Mitosis compiles `const myFetchId = state.fetchId + 1; state.fetchId = myFetchId`
+        // to `const myFetchId = fetchId + 1; setFetchId(myFetchId)`.
+        // But `fetchId` is a React state value — after the `await`, reading it from the
+        // closure gives the stale value from the render that spawned this call, not the
+        // latest value updated by a concurrent fetch.  This breaks the race-guard checks
+        // (`if (myFetchId !== fetchId)`).
+        //
+        // Fix: replace the useState with a useRef so `fetchIdRef.current` is always the
+        // live, synchronously-updated value, and `++fetchIdRef.current` is valid.
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: convert fetchId useState → useRef for correct async race detection',
+        from: "  const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);\n  async function fetchProducts()",
+        to: "  const fetchIdRef = useRef<number>(0);\n  async function fetchProducts()",
+    },
+    {
+        // Handles output generated BEFORE the source fix (Mitosis emitted `++state.fetchId`).
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: replace ++fetchId with ++fetchIdRef.current (pre-source-fix)',
+        from: "    const myFetchId = ++fetchId;",
+        to: "    const myFetchId = ++fetchIdRef.current;",
+    },
+    {
+        // Handles output generated AFTER the source fix (Mitosis emits `fetchId + 1; setFetchId(myFetchId)`).
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: replace fetchId+1/setFetchId with ++fetchIdRef.current (post-source-fix)',
+        from: "    const myFetchId = fetchId + 1;\n    setFetchId(myFetchId);",
+        to: "    const myFetchId = ++fetchIdRef.current;",
+    },
+    {
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: use fetchIdRef.current in !== stale-fetch guard',
+        from: "      if (myFetchId !== fetchId) return;",
+        to: "      if (myFetchId !== fetchIdRef.current) return;",
+    },
+    {
+        file: resolve('../output/react/ui-components/ProductGrid.tsx'),
+        label: 'React → ProductGrid: use fetchIdRef.current in catch/finally fetch-ID checks',
+        from: "      if (myFetchId === fetchId) {",
+        to: "      if (myFetchId === fetchIdRef.current) {",
+    },
+    {
         // Mitosis compiles `state.clickOutsideListener = listener` to
         // `setClickOutsideListener(listener)`. React treats the function argument
         // as an updater and calls it with null (the previous state), crashing with

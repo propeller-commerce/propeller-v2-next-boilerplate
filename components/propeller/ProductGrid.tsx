@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -361,10 +361,10 @@ function ProductGrid(props: ProductGridProps) {
   const [currentSortOrder, setCurrentSortOrder] = useState<ProductGridState['currentSortOrder']>(
     () => 'ASC'
   );
-  const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);
+  const fetchIdRef = useRef<number>(0);
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
-    const myFetchId = ++fetchId;
+    const myFetchId = ++fetchIdRef.current;
     // Always show loading on first load; skip skeleton only for language switch with existing products
     if (internalProducts.length === 0) {
       setIsInternalLoading(true);
@@ -471,7 +471,7 @@ function ProductGrid(props: ProductGridProps) {
       } as CategoryQueryVariables);
 
       // Discard result if a newer fetch was triggered while this one was in-flight
-      if (myFetchId !== fetchId) return;
+      if (myFetchId !== fetchIdRef.current) return;
       const lang = (props.language as string) || 'NL';
       const allItems = (result?.products?.items || []) as (Product | Cluster)[];
       const filteredItems = allItems.filter((item) => {
@@ -509,11 +509,11 @@ function ProductGrid(props: ProductGridProps) {
         props.onPageItemCountChange(filteredItems.length);
       }
     } catch {
-      if (myFetchId === fetchId) {
+      if (myFetchId === fetchIdRef.current) {
         setInternalProducts([]);
       }
     } finally {
-      if (myFetchId === fetchId) {
+      if (myFetchId === fetchIdRef.current) {
         setIsInternalLoading(false);
       }
     }
@@ -564,11 +564,31 @@ function ProductGrid(props: ProductGridProps) {
     return items;
   }
 
+  // Tracks the serialised dep values of the last fetch that was actually started.
+  // Prevents duplicate API calls when React fires this effect more than once with
+  // identical prop values (e.g. after a parent re-render with an unchanged URL).
+  const lastFetchDepsRef = useRef<string>('');
+
   useEffect(() => {
     if (props.products === undefined) {
       if (props.page !== undefined) {
         setCurrentPage(props.page as number);
       }
+      const depsKey = JSON.stringify({
+        textFilters: props.textFilters,
+        priceFilterMin: props.priceFilterMin,
+        priceFilterMax: props.priceFilterMax,
+        categoryId: props.categoryId,
+        term: props.term,
+        brand: props.brand,
+        sortField: props.sortField,
+        sortOrder: props.sortOrder,
+        pageSize: props.pageSize,
+        language: props.language,
+        page: props.page,
+      });
+      if (lastFetchDepsRef.current === depsKey) return;
+      lastFetchDepsRef.current = depsKey;
       fetchProducts();
     }
   }, [
@@ -584,7 +604,6 @@ function ProductGrid(props: ProductGridProps) {
     props.language,
     props.page,
   ]);
-
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>
       {getIsLoading() ? (

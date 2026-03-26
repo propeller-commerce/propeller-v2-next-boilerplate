@@ -416,7 +416,6 @@ function CartItem(props: CartItemProps) {
     setQuantity(props.cartItem.quantity || 1);
     setNotes(props.cartItem.notes || '');
   }, [props.cartItem]);
-
   return (
     <div
       className={`flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${props.className || ''}`}

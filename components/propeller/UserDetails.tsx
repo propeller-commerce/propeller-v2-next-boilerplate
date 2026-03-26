@@ -153,7 +153,6 @@ function UserDetails(props: UserDetailsProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
   return (
     <div className="user-details space-y-6">
       {isMounted ? (

@@ -258,7 +258,6 @@ function GridFilters(props: GridFiltersProps) {
     setCurrentMax((props.priceMax as number) || 9999);
     setExpandedFilters({});
   }, [props.clearSignal]);
-
   return (
     <div
       className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}

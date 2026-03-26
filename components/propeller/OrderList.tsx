@@ -260,7 +260,6 @@ function OrderList(props: OrderListProps) {
       fetchOrders(currentPage);
     }
   }, [props.user, currentPage, props.companyId]);
-
   return (
     <div className={props.className}>
       {props.enableSearch && searchFields().length > 0 ? (

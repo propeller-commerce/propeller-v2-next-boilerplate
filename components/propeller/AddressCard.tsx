@@ -333,7 +333,6 @@ function AddressCard(props: AddressCardProps) {
       openEditModal();
     }
   }, []);
-
   return (
     <div>
       {showCard() ? (

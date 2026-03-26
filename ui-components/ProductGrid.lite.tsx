@@ -361,7 +361,8 @@ export default function ProductGrid(props: ProductGridProps) {
 
         async fetchProducts() {
             if (!props.graphqlClient) return;
-            const myFetchId = ++state.fetchId;
+            const myFetchId = state.fetchId + 1;
+            state.fetchId = myFetchId;
             // Always show loading on first load; skip skeleton only for language switch with existing products
             if (state.internalProducts.length === 0) {
                 state.isInternalLoading = true;

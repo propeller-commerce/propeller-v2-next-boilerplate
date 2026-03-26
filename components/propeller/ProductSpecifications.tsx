@@ -166,7 +166,6 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
         setLoading(false);
       });
   }, [props.productId]);
-
   return (
     <>
       {!loading && hasPublicAttributes() ? (

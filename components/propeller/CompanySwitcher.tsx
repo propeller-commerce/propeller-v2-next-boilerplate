@@ -94,7 +94,6 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
-
   return (
     <div className="company-switcher relative inline-block" ref={containerRef}>
       <button

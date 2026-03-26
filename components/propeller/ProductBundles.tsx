@@ -492,7 +492,6 @@ function ProductBundles(props: ProductBundlesProps) {
   useEffect(() => {
     fetchBundles();
   }, [props.productId]);
-
   return (
     <>
       {isMounted && !isLoading && bundles.length > 0 ? (

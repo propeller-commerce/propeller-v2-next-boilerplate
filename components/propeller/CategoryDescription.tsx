@@ -83,7 +83,6 @@ function CategoryDescription(props: CategoryDescriptionProps) {
   useEffect(() => {
     setHtml(getDescription());
   }, [props.category, props.language]);
-
   return (
     <>
       {!!html ? (

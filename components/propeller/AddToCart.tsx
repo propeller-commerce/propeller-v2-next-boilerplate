@@ -525,7 +525,6 @@ function AddToCart(props: AddToCartProps) {
   useEffect(() => {
     setQuantity(getMinQuantity());
   }, []);
-
   return (
     <div className={props.className}>
       <div className="flex items-center gap-2 w-full">

@@ -157,7 +157,6 @@ function ActionCode(props: ActionCodeProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
   return (
     <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
       <h2 className="text-lg font-bold">{title()}</h2>

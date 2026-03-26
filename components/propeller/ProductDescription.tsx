@@ -86,7 +86,6 @@ function ProductDescription(props: ProductDescriptionProps) {
   useEffect(() => {
     setHtml(getDescription());
   }, [props.product, props.language]);
-
   return (
     <>
       {!!html ? (

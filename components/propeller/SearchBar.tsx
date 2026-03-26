@@ -90,9 +90,6 @@ function SearchBar(props: SearchBarProps) {
   const [showDropdown, setShowDropdown] = useState<SearchBarState['showDropdown']>(() => false);
   const [itemsFound, setItemsFound] = useState<SearchBarState['itemsFound']>(() => 0);
   const [debounceTimer, setDebounceTimer] = useState<SearchBarState['debounceTimer']>(() => null);
-  const [clickOutsideListener, setClickOutsideListener] = useState<
-    SearchBarState['clickOutsideListener']
-  >(() => null);
   function placeholder(): ReturnType<SearchBarState['placeholder']> {
     return props.placeholder || 'Search products...';
   }
@@ -258,7 +255,6 @@ function SearchBar(props: SearchBarProps) {
     setClickOutsideListener(listener);
     document.addEventListener('mousedown', listener);
   }, []);
-
   useEffect(() => {
     return () => {
       if (clickOutsideListener) {
@@ -269,7 +265,6 @@ function SearchBar(props: SearchBarProps) {
       }
     };
   }, []);
-
   return (
     <div data-search-bar className={props.containerClassName || 'relative flex-1 max-w-2xl mx-8'}>
       <form onSubmit={(e) => handleSubmit(e)}>

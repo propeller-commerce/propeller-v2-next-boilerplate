@@ -386,7 +386,6 @@ function FavoriteLists(props: FavoriteListsProps) {
       fetchLists();
     }
   }, [props.user]);
-
   return (
     <div className={props.className}>
       {props.allowFavoriteListCreate !== false &&

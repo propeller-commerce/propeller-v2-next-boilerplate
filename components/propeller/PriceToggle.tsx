@@ -60,7 +60,6 @@ function PriceToggle(props: PriceToggleProps) {
       setIsOn(props.initialState ?? true);
     }
   }, []);
-
   return (
     <div className={`price-toggle flex items-center gap-2 ${(props.className as string) || ''}`}>
       <span className="hidden sm:inline text-xs">{getLabel()}</span>

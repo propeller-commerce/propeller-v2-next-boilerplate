@@ -188,7 +188,6 @@ function ClusterInfo(props: ClusterInfoProps) {
         setLoading(false);
       });
   }, [props.clusterId, props.cluster, props.language]);
-
   return (
     <div className={`cluster-info ${(props.className as string) || ''}`}>
       {loading && !props.cluster ? (

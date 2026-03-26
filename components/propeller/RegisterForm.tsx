@@ -187,83 +187,55 @@ interface RegisterFormState {
 
 function RegisterForm(props: RegisterFormProps) {
   const [firstName, setFirstName] = useState<RegisterFormState['firstName']>(() => '');
-
   const [middleName, setMiddleName] = useState<RegisterFormState['middleName']>(() => '');
-
   const [lastName, setLastName] = useState<RegisterFormState['lastName']>(() => '');
-
   const [email, setEmail] = useState<RegisterFormState['email']>(() => '');
-
   const [password, setPassword] = useState<RegisterFormState['password']>(() => '');
-
   const [confirmPassword, setConfirmPassword] = useState<RegisterFormState['confirmPassword']>(
     () => ''
   );
-
   const [phone, setPhone] = useState<RegisterFormState['phone']>(() => '');
-
   const [gender, setGender] = useState<RegisterFormState['gender']>(() => Enums.Gender.U);
-
   const [companyName, setCompanyName] = useState<RegisterFormState['companyName']>(() => '');
-
   const [vatNumber, setVatNumber] = useState<RegisterFormState['vatNumber']>(() => '');
-
   const [cocNumber, setCocNumber] = useState<RegisterFormState['cocNumber']>(() => '');
-
   const [billingStreet, setBillingStreet] = useState<RegisterFormState['billingStreet']>(() => '');
-
   const [billingNumber, setBillingNumber] = useState<RegisterFormState['billingNumber']>(() => '');
-
   const [billingNumberExtension, setBillingNumberExtension] = useState<
     RegisterFormState['billingNumberExtension']
   >(() => '');
-
   const [billingPostalCode, setBillingPostalCode] = useState<
     RegisterFormState['billingPostalCode']
   >(() => '');
-
   const [billingCity, setBillingCity] = useState<RegisterFormState['billingCity']>(() => '');
-
   const [billingCountry, setBillingCountry] = useState<RegisterFormState['billingCountry']>(
     () => ''
   );
-
   const [sameAsDelivery, setSameAsDelivery] = useState<RegisterFormState['sameAsDelivery']>(
     () => true
   );
-
   const [deliveryStreet, setDeliveryStreet] = useState<RegisterFormState['deliveryStreet']>(
     () => ''
   );
-
   const [deliveryNumber, setDeliveryNumber] = useState<RegisterFormState['deliveryNumber']>(
     () => ''
   );
-
   const [deliveryNumberExtension, setDeliveryNumberExtension] = useState<
     RegisterFormState['deliveryNumberExtension']
   >(() => '');
-
   const [deliveryPostalCode, setDeliveryPostalCode] = useState<
     RegisterFormState['deliveryPostalCode']
   >(() => '');
-
   const [deliveryCity, setDeliveryCity] = useState<RegisterFormState['deliveryCity']>(() => '');
-
   const [deliveryCountry, setDeliveryCountry] = useState<RegisterFormState['deliveryCountry']>(
     () => ''
   );
-
   const [selectedUserType, setSelectedUserType] = useState<RegisterFormState['selectedUserType']>(
     () => ''
   );
-
   const [loading, setLoading] = useState<RegisterFormState['loading']>(() => false);
-
   const [error, setError] = useState<RegisterFormState['error']>(() => '');
-
   const [submitted, setSubmitted] = useState<RegisterFormState['submitted']>(() => false);
-
   function resolvedTitle(): ReturnType<RegisterFormState['resolvedTitle']> {
     return props.title !== undefined ? props.title : 'Create account';
   }

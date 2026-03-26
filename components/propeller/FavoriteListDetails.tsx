@@ -29,7 +29,7 @@ export interface FavoriteListDetailsProps {
   favoriteListId: string;
 
   /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
-  onItemDelete?: (itemId: string, item?: { type: 'product' | 'cluster' }) => void;
+  onItemDelete?: (itemId: string, itemType?: string) => void;
 
   /** Called after the favorite list is fetched, with the full list object */
   onListLoaded?: (list: FavoriteList) => void;
@@ -127,8 +127,7 @@ export interface FavoriteListDetailsProps {
   /** Label overrides for FavoriteListItem UI strings */
   itemLabels?: Record<string, string>;
 
-  /** Include tax in prices. Pass from PriceContext's usePrice() */
-  includeTax?: boolean;
+  /** Include tax in prices. Pass from PriceContext's usePrice() */ includeTax?: boolean;
 }
 interface FavoriteListDetailsState {
   loading: boolean;
@@ -150,40 +149,30 @@ interface FavoriteListDetailsState {
 
 function FavoriteListDetails(props: FavoriteListDetailsProps) {
   const [loading, setLoading] = useState<FavoriteListDetailsState['loading']>(() => true);
-
   const [favoriteList, setFavoriteList] = useState<FavoriteListDetailsState['favoriteList']>(
     () => null
   );
-
   const [allItems, setAllItems] = useState<FavoriteListDetailsState['allItems']>(() => []);
-
   const [currentPage, setCurrentPage] = useState<FavoriteListDetailsState['currentPage']>(() => 1);
-
   const [isMounted, setIsMounted] = useState<FavoriteListDetailsState['isMounted']>(() => false);
-
   const [prevListId, setPrevListId] = useState<FavoriteListDetailsState['prevListId']>(() => '');
-
   function getLabel(
     key: string,
     fallback: string
   ): ReturnType<FavoriteListDetailsState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-
   function getItemsPerPage(): ReturnType<FavoriteListDetailsState['getItemsPerPage']> {
     return props.itemsPerPage || 12;
   }
-
   function getTotalPages(): ReturnType<FavoriteListDetailsState['getTotalPages']> {
     return Math.max(1, Math.ceil(allItems.length / getItemsPerPage()));
   }
-
   function getPagedItems(): ReturnType<FavoriteListDetailsState['getPagedItems']> {
     const perPage = getItemsPerPage();
     const start = (currentPage - 1) * perPage;
     return allItems.slice(start, start + perPage);
   }
-
   function getPaginationData(): ReturnType<FavoriteListDetailsState['getPaginationData']> {
     return {
       page: currentPage,
@@ -192,17 +181,13 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       offset: getItemsPerPage(),
     };
   }
-
   function handlePageChange(
     page: number
   ): ReturnType<FavoriteListDetailsState['handlePageChange']> {
     setCurrentPage(page);
   }
-
   function buildFetchVariables(): ReturnType<FavoriteListDetailsState['buildFetchVariables']> {
-    const priceInput: Record<string, unknown> = {
-      taxZone: 'NL',
-    };
+    const priceInput: Record<string, unknown> = { taxZone: 'NL' };
     if (props.user) {
       if ('customerId' in props.user) {
         const customer = props.user as Customer;
@@ -223,26 +208,17 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       id: props.favoriteListId,
       language: props.language || 'NL',
       priceCalculateProductInput: priceInput,
-      imageSearchFilters: {
-        page: 1,
-        offset: 1,
-      },
+      imageSearchFilters: { page: 1, offset: 1 },
       imageVariantFilters: {
         transformations: [
           {
             name: 'cart_thumb',
-            transformation: {
-              format: 'WEBP',
-              height: 200,
-              width: 200,
-              fit: 'BOUNDS',
-            },
+            transformation: { format: 'WEBP', height: 200, width: 200, fit: 'BOUNDS' },
           },
         ],
       },
     };
   }
-
   async function fetchList(): ReturnType<FavoriteListDetailsState['fetchList']> {
     if (!props.graphqlClient || !props.favoriteListId) return;
     setLoading(true);
@@ -272,34 +248,29 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       setLoading(false);
     }
   }
-
   function handleItemDelete(
     itemId: string
   ): ReturnType<FavoriteListDetailsState['handleItemDelete']> {
-    // Determine item type before removing from local state
-    const deletedItem = allItems.find((item: Product | Cluster) => {
-      if ('productId' in item) return String(item.productId) === itemId;
-      return String((item as Cluster).clusterId) === itemId;
-    });
-    const itemType: 'product' | 'cluster' = deletedItem && 'clusterId' in deletedItem ? 'cluster' : 'product';
-
-    // Optimistic: remove from local state
-    setAllItems(
+    /* Determine item type before removing from local state */ const deletedItem = allItems.find(
+      (item: Product | Cluster) => {
+        if ('productId' in item) return String(item.productId) === itemId;
+        return String((item as Cluster).clusterId) === itemId;
+      }
+    );
+    const itemType: string = deletedItem && 'clusterId' in deletedItem ? 'cluster' : 'product';
+    /* Optimistic: remove from local state */ setAllItems(
       allItems.filter((item: Product | Cluster) => {
         if ('productId' in item) return String(item.productId) !== itemId;
         return String((item as Cluster).clusterId) !== itemId;
       })
     );
-    // Adjust current page if needed
-    if (currentPage > getTotalPages()) {
+    /* Adjust current page if needed */ if (currentPage > getTotalPages()) {
       setCurrentPage(Math.max(1, getTotalPages()));
     }
-    // Notify parent with type info
-    if (props.onItemDelete) {
-      props.onItemDelete(itemId, { type: itemType });
+    /* Notify parent with type info */ if (props.onItemDelete) {
+      props.onItemDelete(itemId, itemType);
     }
   }
-
   useEffect(() => {
     setIsMounted(true);
     setPrevListId(props.favoriteListId || '');
@@ -311,7 +282,6 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       fetchList();
     }
   }, [props.favoriteListId]);
-
   return (
     <div className={props.className || ''}>
       {loading ? (
@@ -385,7 +355,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                 </div>
               ) : null}
             </div>
-          ) : null}
+          ) : null}{' '}
           {allItems.length === 0 ? (
             <div className="border border-gray-200 rounded-lg p-12 text-center space-y-4">
               <div className="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
@@ -420,5 +390,4 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
     </div>
   );
 }
-
 export default FavoriteListDetails;

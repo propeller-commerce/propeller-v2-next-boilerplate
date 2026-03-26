@@ -211,21 +211,15 @@ interface ProductSliderState {
 
 function ProductSlider(props: ProductSliderProps) {
   const [loadedItems, setLoadedItems] = useState<ProductSliderState['loadedItems']>(() => []);
-
   const [isLoading, setIsLoading] = useState<ProductSliderState['isLoading']>(() => false);
-
   const [scrollPosition, setScrollPosition] = useState<ProductSliderState['scrollPosition']>(
     () => 0
   );
-
   const [containerWidth, setContainerWidth] = useState<ProductSliderState['containerWidth']>(
     () => 0
   );
-
   const [scrollWidth, setScrollWidth] = useState<ProductSliderState['scrollWidth']>(() => 0);
-
   const [sliderId, setSliderId] = useState<ProductSliderState['sliderId']>(() => '');
-
   function items(): ReturnType<ProductSliderState['items']> {
     if (props.products && props.products.length > 0) {
       return props.products;

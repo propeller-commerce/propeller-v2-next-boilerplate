@@ -26,7 +26,7 @@ export interface FavoriteListDetailsProps {
   favoriteListId: string;
 
   /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
-  onItemDelete?: (itemId: string, item?: { type: 'product' | 'cluster' }) => void;
+  onItemDelete?: (itemId: string, itemType?: string) => void;
 
   /** Called after the favorite list is fetched, with the full list object */
   onListLoaded?: (list: FavoriteList) => void;
@@ -252,25 +252,24 @@ export default function FavoriteListDetails(props: FavoriteListDetailsProps) {
     },
 
     handleItemDelete(itemId: string): void {
-      // Determine item type before removing from local state
+      /* Determine item type before removing from local state */
       const deletedItem = state.allItems.find((item: Product | Cluster) => {
         if ('productId' in item) return String(item.productId) === itemId;
         return String((item as Cluster).clusterId) === itemId;
       });
       const itemType: string = deletedItem && 'clusterId' in deletedItem ? 'cluster' : 'product';
-
-      // Optimistic: remove from local state
+      /* Optimistic: remove from local state */
       state.allItems = state.allItems.filter((item: Product | Cluster) => {
         if ('productId' in item) return String(item.productId) !== itemId;
         return String((item as Cluster).clusterId) !== itemId;
       });
-      // Adjust current page if needed
+      /* Adjust current page if needed */
       if (state.currentPage > state.getTotalPages()) {
         state.currentPage = Math.max(1, state.getTotalPages());
       }
-      // Notify parent with type info
+      /* Notify parent with type info */
       if (props.onItemDelete) {
-        props.onItemDelete(itemId, { type: itemType as 'product' | 'cluster' });
+        props.onItemDelete(itemId, itemType);
       }
     },
   });

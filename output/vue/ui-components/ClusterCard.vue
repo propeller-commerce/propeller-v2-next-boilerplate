@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${
+    :class="`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${
       isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'
     } ${className || ''}`"
   >
@@ -42,7 +42,7 @@
           <div class="pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
             <template :key="index" v-for="(label, index) in computedImageLabels()">
               <span
-                class="inline-block rounded bg-violet-600 px-2 py-0.5 text-xs font-medium text-white shadow-sm"
+                class="inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-white shadow-sm"
                 >{{ label }}</span
               >
             </template>

@@ -28,7 +28,6 @@ interface ProductShortDescriptionState {
 
 function ProductShortDescription(props: ProductShortDescriptionProps) {
   const [html, setHtml] = useState<ProductShortDescriptionState['html']>(() => '');
-
   function getShortDescription(): ReturnType<ProductShortDescriptionState['getShortDescription']> {
     const product = props.product as Product;
     if (!product?.shortDescriptions) return '';

@@ -55,13 +55,9 @@ interface ActionCodeState {
 
 function ActionCode(props: ActionCodeProps) {
   const [code, setCode] = useState<ActionCodeState['code']>(() => '');
-
   const [loading, setLoading] = useState<ActionCodeState['loading']>(() => false);
-
   const [error, setError] = useState<ActionCodeState['error']>(() => '');
-
   const [isMounted, setIsMounted] = useState<ActionCodeState['isMounted']>(() => false);
-
   function getLabel(key: string, fallback: string): ReturnType<ActionCodeState['getLabel']> {
     return props.labels?.[key] || fallback;
   }

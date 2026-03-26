@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -349,30 +349,22 @@ function ProductGrid(props: ProductGridProps) {
   const [internalProducts, setInternalProducts] = useState<ProductGridState['internalProducts']>(
     () => []
   );
-
   const [isInternalLoading, setIsInternalLoading] = useState<ProductGridState['isInternalLoading']>(
     () => false
   );
-
   const [currentPage, setCurrentPage] = useState<ProductGridState['currentPage']>(() => 1);
-
   const [totalPages, setTotalPages] = useState<ProductGridState['totalPages']>(() => 1);
-
   const [itemsFound, setItemsFound] = useState<ProductGridState['itemsFound']>(() => 0);
-
   const [currentSortField, setCurrentSortField] = useState<ProductGridState['currentSortField']>(
     () => ''
   );
-
   const [currentSortOrder, setCurrentSortOrder] = useState<ProductGridState['currentSortOrder']>(
     () => 'ASC'
   );
-
-  const fetchIdRef = useRef(0);
-
+  const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
-    const myFetchId = ++fetchIdRef.current;
+    const myFetchId = ++fetchId;
     // Always show loading on first load; skip skeleton only for language switch with existing products
     if (internalProducts.length === 0) {
       setIsInternalLoading(true);
@@ -479,7 +471,7 @@ function ProductGrid(props: ProductGridProps) {
       } as CategoryQueryVariables);
 
       // Discard result if a newer fetch was triggered while this one was in-flight
-      if (myFetchId !== fetchIdRef.current) return;
+      if (myFetchId !== fetchId) return;
       const lang = (props.language as string) || 'NL';
       const allItems = (result?.products?.items || []) as (Product | Cluster)[];
       const filteredItems = allItems.filter((item) => {
@@ -517,11 +509,11 @@ function ProductGrid(props: ProductGridProps) {
         props.onPageItemCountChange(filteredItems.length);
       }
     } catch {
-      if (myFetchId === fetchIdRef.current) {
+      if (myFetchId === fetchId) {
         setInternalProducts([]);
       }
     } finally {
-      if (myFetchId === fetchIdRef.current) {
+      if (myFetchId === fetchId) {
         setIsInternalLoading(false);
       }
     }
@@ -572,34 +564,11 @@ function ProductGrid(props: ProductGridProps) {
     return items;
   }
 
-  // Tracks the serialised dep values of the last fetch that was actually started.
-  // Prevents duplicate API calls when React fires this effect more than once with
-  // identical prop values (e.g. after a parent re-render that doesn't change anything
-  // meaningful, or a searchParams object reference change with the same URL content).
-  const lastFetchDepsRef = useRef<string>('');
-
   useEffect(() => {
     if (props.products === undefined) {
       if (props.page !== undefined) {
         setCurrentPage(props.page as number);
       }
-      // Serialise the deps that actually affect the query.  Skip the fetch when
-      // nothing has changed so rapid re-renders don't cause duplicate requests.
-      const depsKey = JSON.stringify({
-        textFilters: props.textFilters,
-        priceFilterMin: props.priceFilterMin,
-        priceFilterMax: props.priceFilterMax,
-        categoryId: props.categoryId,
-        term: props.term,
-        brand: props.brand,
-        sortField: props.sortField,
-        sortOrder: props.sortOrder,
-        pageSize: props.pageSize,
-        language: props.language,
-        page: props.page,
-      });
-      if (lastFetchDepsRef.current === depsKey) return;
-      lastFetchDepsRef.current = depsKey;
       fetchProducts();
     }
   }, [

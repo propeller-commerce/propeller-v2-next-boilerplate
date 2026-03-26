@@ -91,15 +91,11 @@ function GridFilters(props: GridFiltersProps) {
   const [selectedFilters, setSelectedFilters] = useState<GridFiltersState['selectedFilters']>(
     () => ({})
   );
-
   const [currentMin, setCurrentMin] = useState<GridFiltersState['currentMin']>(() => 0);
-
   const [currentMax, setCurrentMax] = useState<GridFiltersState['currentMax']>(() => 9999);
-
   const [expandedFilters, setExpandedFilters] = useState<GridFiltersState['expandedFilters']>(
     () => ({})
   );
-
   function showPriceFilter(): ReturnType<GridFiltersState['showPriceFilter']> {
     const mode = (props.portalMode as string) || 'open';
     if (mode === 'open') return true;
@@ -262,7 +258,6 @@ function GridFilters(props: GridFiltersProps) {
     setCurrentMax((props.priceMax as number) || 9999);
     setExpandedFilters({});
   }, [props.clearSignal]);
-
   return (
     <div
       className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}
@@ -280,7 +275,7 @@ function GridFilters(props: GridFiltersProps) {
                 </span>
                 <input
                   type="number"
-                  className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
                   value={currentMin}
                   min={getMinBound()}
                   max={getMaxBound()}
@@ -295,7 +290,7 @@ function GridFilters(props: GridFiltersProps) {
                 </span>
                 <input
                   type="number"
-                  className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
                   value={currentMax}
                   min={getMinBound()}
                   max={getMaxBound()}
@@ -307,7 +302,7 @@ function GridFilters(props: GridFiltersProps) {
             <div className="relative h-4 pt-1">
               <input
                 type="range"
-                className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-600 [&::-webkit-slider-thumb]:cursor-pointer z-20"
+                className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
                 min={getMinBound()}
                 max={getMaxBound()}
                 value={currentMin}
@@ -318,7 +313,7 @@ function GridFilters(props: GridFiltersProps) {
               />
               <input
                 type="range"
-                className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-600 [&::-webkit-slider-thumb]:cursor-pointer z-20"
+                className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
                 min={getMinBound()}
                 max={getMaxBound()}
                 value={currentMax}
@@ -340,7 +335,7 @@ function GridFilters(props: GridFiltersProps) {
         <div className="border-b border-gray-100 pb-3 last:border-b-0" key={getFilterName(filter)}>
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-violet-600 transition-colors"
+            className="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
             onClick={(event) => toggleAccordion(getFilterName(filter))}
           >
             <span className="text-sm font-semibold text-gray-700 truncate">
@@ -366,7 +361,7 @@ function GridFilters(props: GridFiltersProps) {
                 <label className="flex items-center gap-2 cursor-pointer group" key={option.value}>
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer flex-shrink-0"
+                    className="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
                     checked={isSelected(getFilterName(filter), option.value)}
                     onChange={(e) => handleCheckbox(filter, option.value, e.target.checked)}
                   />

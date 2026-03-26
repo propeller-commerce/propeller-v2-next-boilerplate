@@ -349,27 +349,19 @@ function ProductGrid(props: ProductGridProps) {
   const [internalProducts, setInternalProducts] = useState<ProductGridState['internalProducts']>(
     () => []
   );
-
   const [isInternalLoading, setIsInternalLoading] = useState<ProductGridState['isInternalLoading']>(
     () => false
   );
-
   const [currentPage, setCurrentPage] = useState<ProductGridState['currentPage']>(() => 1);
-
   const [totalPages, setTotalPages] = useState<ProductGridState['totalPages']>(() => 1);
-
   const [itemsFound, setItemsFound] = useState<ProductGridState['itemsFound']>(() => 0);
-
   const [currentSortField, setCurrentSortField] = useState<ProductGridState['currentSortField']>(
     () => ''
   );
-
   const [currentSortOrder, setCurrentSortOrder] = useState<ProductGridState['currentSortOrder']>(
     () => 'ASC'
   );
-
   const [fetchId, setFetchId] = useState<ProductGridState['fetchId']>(() => 0);
-
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
     const myFetchId = ++fetchId;
@@ -592,7 +584,6 @@ function ProductGrid(props: ProductGridProps) {
     props.language,
     props.page,
   ]);
-
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>
       {getIsLoading() ? (

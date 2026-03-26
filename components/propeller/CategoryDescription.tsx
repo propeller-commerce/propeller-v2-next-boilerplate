@@ -51,9 +51,7 @@ interface CategoryDescriptionState {
 
 function CategoryDescription(props: CategoryDescriptionProps) {
   const [expanded, setExpanded] = useState<CategoryDescriptionState['expanded']>(() => false);
-
   const [html, setHtml] = useState<CategoryDescriptionState['html']>(() => '');
-
   function getDescription(): ReturnType<CategoryDescriptionState['getDescription']> {
     if (!props.category?.description) return '';
     const match = props.category.description.find(

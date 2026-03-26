@@ -102,7 +102,6 @@ function ClusterOptions(props: ClusterOptionsProps) {
   const [selectedProductIds, setSelectedProductIds] = useState<
     ClusterOptionsState['selectedProductIds']
   >(() => ({}));
-
   function getLabel(key: string, fallback: string): ReturnType<ClusterOptionsState['getLabel']> {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }

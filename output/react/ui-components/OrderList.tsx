@@ -113,31 +113,21 @@ interface OrderListState {
 
 function OrderList(props: OrderListProps) {
   const [orders, setOrders] = useState<OrderListState['orders']>(() => []);
-
   const [columns, setColumns] = useState<OrderListState['columns']>(
     () => props.columns || ['id', 'date', 'status', 'total']
   );
-
   const [loading, setLoading] = useState<OrderListState['loading']>(() => true);
-
   const [totalItems, setTotalItems] = useState<OrderListState['totalItems']>(() => 0);
-
   const [currentPage, setCurrentPage] = useState<OrderListState['currentPage']>(() => 1);
-
   const [itemsPerPage, setItemsPerPage] = useState<OrderListState['itemsPerPage']>(
     () => props.initialItemsPerPage || 10
   );
-
   const [totalPages, setTotalPages] = useState<OrderListState['totalPages']>(() => 0);
-
   const [rowsClickable, setRowsClickable] = useState<OrderListState['rowsClickable']>(
     () => props.rowsClickable || false
   );
-
   const [fetching, setFetching] = useState<OrderListState['fetching']>(() => false);
-
   const [searchForm, setSearchForm] = useState<OrderListState['searchForm']>(() => ({}));
-
   async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
     if (!props.user || !props.graphqlClient || fetching) return;
     setFetching(true);
@@ -231,7 +221,7 @@ function OrderList(props: OrderListProps) {
     switch (status) {
       case 'COMPLETE':
       case 'QUOTE_ACCEPTED':
-        return 'bg-violet-100 text-violet-800';
+        return 'bg-secondary/10 text-secondary';
       case 'CANCELLED':
       case 'QUOTE_REJECTED':
         return 'bg-red-100 text-red-800';
@@ -270,7 +260,6 @@ function OrderList(props: OrderListProps) {
       fetchOrders(currentPage);
     }
   }, [props.user, currentPage, props.companyId]);
-
   return (
     <div className={props.className}>
       {props.enableSearch && searchFields().length > 0 ? (

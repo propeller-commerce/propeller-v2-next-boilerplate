@@ -113,34 +113,23 @@ interface OrderListState {
 
 function OrderList(props: OrderListProps) {
   const [orders, setOrders] = useState<OrderListState['orders']>(() => []);
-
   const [columns, setColumns] = useState<OrderListState['columns']>(
     () => props.columns || ['id', 'date', 'status', 'total']
   );
-
   const [loading, setLoading] = useState<OrderListState['loading']>(() => true);
-
   const [totalItems, setTotalItems] = useState<OrderListState['totalItems']>(() => 0);
-
   const [currentPage, setCurrentPage] = useState<OrderListState['currentPage']>(() => 1);
-
   const [itemsPerPage, setItemsPerPage] = useState<OrderListState['itemsPerPage']>(
     () => props.initialItemsPerPage || 10
   );
-
   const [totalPages, setTotalPages] = useState<OrderListState['totalPages']>(() => 0);
-
   const [rowsClickable, setRowsClickable] = useState<OrderListState['rowsClickable']>(
     () => props.rowsClickable || false
   );
-
   const [fetching, setFetching] = useState<OrderListState['fetching']>(() => false);
-
   const [searchForm, setSearchForm] = useState<OrderListState['searchForm']>(() => ({}));
-
-  async function fetchOrders(page: number = 1, searchFormOverride?: OrderListState['searchForm']): ReturnType<OrderListState['fetchOrders']> {
+  async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
     if (!props.user || !props.graphqlClient || fetching) return;
-    const activeSearchForm = searchFormOverride !== undefined ? searchFormOverride : searchForm;
     setFetching(true);
     setLoading(true);
     try {
@@ -169,29 +158,28 @@ function OrderList(props: OrderListProps) {
         }),
         page: page,
         offset: itemsPerPage,
-        term: activeSearchForm.term || '',
+        term: searchForm.term || '',
         termFields: props.termFields || [
           Enums.OrderSearchFields.REFERENCE,
           Enums.OrderSearchFields.ITEM_SKU,
           Enums.OrderSearchFields.ID,
           Enums.OrderSearchFields.ITEM_NAME,
-          Enums.OrderSearchFields.REMARKS
-
+          Enums.OrderSearchFields.REMARKS,
         ],
-        ...(activeSearchForm.createdAt && {
-          createdAt: activeSearchForm.createdAt,
+        ...(searchForm.createdAt && {
+          createdAt: searchForm.createdAt,
         }),
-        ...(activeSearchForm.lastModifiedAt && {
-          lastModifiedAt: activeSearchForm.lastModifiedAt,
+        ...(searchForm.lastModifiedAt && {
+          lastModifiedAt: searchForm.lastModifiedAt,
         }),
-        ...(activeSearchForm.price && {
-          price: activeSearchForm.price,
+        ...(searchForm.price && {
+          price: searchForm.price,
         }),
-        ...(activeSearchForm.sortInput && {
-          sortInput: activeSearchForm.sortInput,
+        ...(searchForm.sortInput && {
+          sortInput: searchForm.sortInput,
         }),
-        ...(activeSearchForm.type && {
-          type: activeSearchForm.type,
+        ...(searchForm.type && {
+          type: searchForm.type,
         }),
       };
       const response: OrderResponse = await orderService.getOrders(searchArgs);
@@ -512,7 +500,7 @@ function OrderList(props: OrderListProps) {
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               onClick={(event) => {
                 setSearchForm({});
-                fetchOrders(1, {});
+                fetchOrders(1);
               }}
             >
               Clear

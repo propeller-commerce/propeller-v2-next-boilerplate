@@ -149,7 +149,6 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
   const [selectedAttributes, setSelectedAttributes] = useState<
     ClusterConfiguratorState['selectedAttributes']
   >(() => ({}));
-
   function getLabel(
     key: string,
     fallback: string

@@ -96,6 +96,7 @@ interface FavoriteListsState {
   newListName: string;
   newSetAsDefault: boolean;
   isMounted: boolean;
+  saving: boolean;
   fetchLists: () => Promise<void>;
   handleEditList: (list: FavoriteList) => void;
   handleCancelEdit: () => void;
@@ -115,43 +116,32 @@ interface FavoriteListsState {
 
 function FavoriteLists(props: FavoriteListsProps) {
   const [lists, setLists] = useState<FavoriteListsState['lists']>(() => []);
-
   const [loading, setLoading] = useState<FavoriteListsState['loading']>(() => true);
-
   const [editingListId, setEditingListId] = useState<FavoriteListsState['editingListId']>(
     () => null
   );
-
   const [editListName, setEditListName] = useState<FavoriteListsState['editListName']>(() => '');
-
   const [editSetAsDefault, setEditSetAsDefault] = useState<FavoriteListsState['editSetAsDefault']>(
     () => false
   );
-
   const [showDeleteModal, setShowDeleteModal] = useState<FavoriteListsState['showDeleteModal']>(
     () => false
   );
-
   const [listToDelete, setListToDelete] = useState<FavoriteListsState['listToDelete']>(() => null);
-
   const [showCreateModal, setShowCreateModal] = useState<FavoriteListsState['showCreateModal']>(
     () => false
   );
-
   const [newListName, setNewListName] = useState<FavoriteListsState['newListName']>(() => '');
-
   const [newSetAsDefault, setNewSetAsDefault] = useState<FavoriteListsState['newSetAsDefault']>(
     () => false
   );
-
   const [isMounted, setIsMounted] = useState<FavoriteListsState['isMounted']>(() => false);
-
-  const [saving, setSaving] = useState(false);
-
+  const [saving, setSaving] = useState<FavoriteListsState['saving']>(() => false);
   async function fetchLists(): ReturnType<FavoriteListsState['fetchLists']> {
     if (!props.user || !props.graphqlClient) return;
     setLoading(true);
     try {
+      const service = new FavoriteListService(props.graphqlClient);
       const isContact = 'contactId' in props.user;
       const searchInput: FavoriteListsSearchInput = {};
       if (isContact) {
@@ -159,8 +149,6 @@ function FavoriteLists(props: FavoriteListsProps) {
       } else {
         searchInput.customerId = (props.user as Customer).customerId;
       }
-
-      const service = new FavoriteListService(props.graphqlClient);
       const response = await service.getFavoriteLists(searchInput);
       setLists(response.items || []);
     } catch (error) {
@@ -186,7 +174,7 @@ function FavoriteLists(props: FavoriteListsProps) {
   async function handleUpdateList(
     listId: string
   ): ReturnType<FavoriteListsState['handleUpdateList']> {
-    if (!editListName.trim()) return;
+    if (!editListName.trim() || saving) return;
     const formData = {
       name: editListName,
       isDefault: editSetAsDefault,
@@ -205,7 +193,9 @@ function FavoriteLists(props: FavoriteListsProps) {
 
       // If setting as default, first unset the current default
       if (formData.isDefault) {
-        const currentDefault = lists.find((l: FavoriteList) => l.isDefault && String(l.id) !== listId);
+        const currentDefault = lists.find(
+          (l: FavoriteList) => l.isDefault && String(l.id) !== listId
+        );
         if (currentDefault) {
           await service.updateFavoriteList(String(currentDefault.id), {
             name: currentDefault.name,
@@ -213,7 +203,6 @@ function FavoriteLists(props: FavoriteListsProps) {
           });
         }
       }
-
       await service.updateFavoriteList(listId, {
         name: formData.name,
         isDefault: formData.isDefault,
@@ -319,7 +308,6 @@ function FavoriteLists(props: FavoriteListsProps) {
           });
         }
       }
-
       const isContact = 'contactId' in props.user;
       const contactId = isContact ? (props.user as Contact).contactId : undefined;
       const customerId = !isContact ? (props.user as Customer).customerId : undefined;
@@ -459,13 +447,18 @@ function FavoriteLists(props: FavoriteListsProps) {
             <div className="space-y-4">
               {displayedLists()?.map((list) => (
                 <div
-                  className={`border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors${editingListId !== String(list.id) && props.onListClick ? ' cursor-pointer' : ''}`}
                   key={list.id}
-                  onClick={() => {
+                  onClick={(event) => {
                     if (editingListId !== String(list.id) && props.onListClick) {
                       props.onListClick(list.id);
                     }
                   }}
+                  className={
+                    'border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors' +
+                    (editingListId !== String(list.id) && props.onListClick
+                      ? ' cursor-pointer'
+                      : '')
+                  }
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -519,9 +512,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                       {editingListId !== String(list.id) ? (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl font-semibold">
-                              {list.name}
-                            </span>
+                            <span className="text-xl font-semibold">{list.name}</span>
                             {props.showDefaultIndicator !== false && list.isDefault ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                 {getLabel('defaultBadge', 'Default')}
@@ -582,7 +573,10 @@ function FavoriteLists(props: FavoriteListsProps) {
                         <button
                           title="Edit"
                           className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                          onClick={(event) => { event.stopPropagation(); handleEditList(list); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditList(list);
+                          }}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -602,7 +596,10 @@ function FavoriteLists(props: FavoriteListsProps) {
                         <button
                           title="Delete"
                           className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={(event) => { event.stopPropagation(); handleDeleteList(list); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteList(list);
+                          }}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"

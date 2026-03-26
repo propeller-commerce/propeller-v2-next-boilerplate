@@ -65,15 +65,11 @@ interface CartOverviewState {
 
 function CartOverview(props: CartOverviewProps) {
   const [reference, setReference] = useState<CartOverviewState['reference']>(() => '');
-
   const [notes, setNotes] = useState<CartOverviewState['notes']>(() => '');
-
   const [termsAccepted, setTermsAccepted] = useState<CartOverviewState['termsAccepted']>(
     () => false
   );
-
   const [loading, setLoading] = useState<CartOverviewState['loading']>(() => false);
-
   function containerClass(): ReturnType<CartOverviewState['containerClass']> {
     return props.overviewContainerClass || 'cart-overview';
   }
@@ -285,7 +281,7 @@ function CartOverview(props: CartOverviewProps) {
             </label>
             <input
               type="text"
-              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary"
               value={reference}
               onChange={(event) => handleReferenceChange(event.target.value)}
               placeholder={getLabel('referencePlaceholder', 'Your reference number')}
@@ -298,7 +294,7 @@ function CartOverview(props: CartOverviewProps) {
               {getLabel('notesLabel', 'Order Notes (Optional)')}
             </label>
             <textarea
-              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary min-h-[80px]"
+              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
               value={notes}
               onChange={(event) => handleNotesChange(event.target.value)}
               placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}
@@ -336,7 +332,8 @@ function CartOverview(props: CartOverviewProps) {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : null}
-            {loading ? getLabel('processing', 'Processing...') : getLabel('purchaseButton', 'Place Order')}
+            {loading ? <>{getLabel('processing', 'Processing...')}</> : null}
+            {!loading ? <>{getLabel('purchaseButton', 'Place Order')}</> : null}
           </button>
         ) : null}
       </div>

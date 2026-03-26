@@ -77,11 +77,14 @@ interface MenuState {
   hasError: boolean;
   hoveredL1Id: number | null;
   hoveredL2Id: number | null;
+  expandedL1: number | null;
+  expandedL2: number | null;
   fetchMenu: () => Promise<void>;
   getUserKey: () => string;
   getCacheKey: () => string;
   getCachedMenu: () => Category | null;
   cacheMenu: (data: Category) => void;
+  clearCache: () => void;
   getCategoryName: (cat: Category) => string;
   getCategorySlug: (cat: Category) => string;
   getCategoryUrl: (cat: Category) => string;
@@ -96,19 +99,12 @@ interface MenuState {
 
 function Menu(props: MenuProps) {
   const [rootCategory, setRootCategory] = useState<MenuState['rootCategory']>(() => null);
-
   const [isLoading, setIsLoading] = useState<MenuState['isLoading']>(() => true);
-
   const [hasError, setHasError] = useState<MenuState['hasError']>(() => false);
-
   const [hoveredL1Id, setHoveredL1Id] = useState<MenuState['hoveredL1Id']>(() => null);
-
   const [hoveredL2Id, setHoveredL2Id] = useState<MenuState['hoveredL2Id']>(() => null);
-
-  // Mobile accordion state
-  const [expandedL1, setExpandedL1] = useState<number | null>(null);
-  const [expandedL2, setExpandedL2] = useState<number | null>(null);
-
+  const [expandedL1, setExpandedL1] = useState<MenuState['expandedL1']>(() => null);
+  const [expandedL2, setExpandedL2] = useState<MenuState['expandedL2']>(() => null);
   async function fetchMenu(): ReturnType<MenuState['fetchMenu']> {
     if (!props.graphqlClient) return;
 
@@ -145,10 +141,17 @@ function Menu(props: MenuProps) {
                         }
                     }
                 `;
-      const variables = {
+      const variables: Record<string, any> = {
         categoryId: props.categoryId as number,
         language,
       };
+      if (props.user) {
+        if ('contactId' in (props.user as any)) {
+          variables.contactId = (props.user as Contact).contactId;
+        } else {
+          variables.customerId = (props.user as Customer).customerId;
+        }
+      }
       const response = await (props.graphqlClient as GraphQLClient).execute({
         query: gql,
         variables,
@@ -168,15 +171,15 @@ function Menu(props: MenuProps) {
   }
 
   function getUserKey(): ReturnType<MenuState['getUserKey']> {
-    const user = props.user as any;
-    if (user?.contactId) return `c${user.contactId}`;
-    if (user?.customerId) return `u${user.customerId}`;
-    return '';
+    if (!props.user) return '';
+    if ('contactId' in (props.user as any)) return `c${(props.user as Contact).contactId}`;
+    return `u${(props.user as Customer).customerId}`;
   }
 
   function getCacheKey(): ReturnType<MenuState['getCacheKey']> {
     const lang = (props.language as string) || 'NL';
-    return `propeller_menu_${props.categoryId}_${lang}_${getUserKey()}`;
+    const userKey = getUserKey();
+    return `propeller_menu_${props.categoryId}_${lang}${userKey ? `_${userKey}` : ''}`;
   }
 
   function getCachedMenu(): ReturnType<MenuState['getCachedMenu']> {
@@ -208,6 +211,11 @@ function Menu(props: MenuProps) {
     } catch {
       // ignore — quota exceeded etc.
     }
+  }
+
+  function clearCache(): ReturnType<MenuState['clearCache']> {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(getCacheKey());
   }
 
   function getCategoryName(cat: Category): ReturnType<MenuState['getCategoryName']> {
@@ -267,20 +275,6 @@ function Menu(props: MenuProps) {
     fetchMenu();
   }, [props.graphqlClient, props.categoryId, props.language, props.user]);
 
-  const chevron = (open: boolean, direction: 'right' | 'down' = 'right') => (
-    <svg
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      className={`w-4 h-4 text-muted-foreground transition-transform ${open ? 'rotate-90' : ''} ${direction === 'down' && !open ? 'rotate-0' : ''}`}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" strokeWidth={2} />
-    </svg>
-  );
-
-  const l1Categories = rootCategory ? getSubCategories(rootCategory as Category) : [];
-  const hasCategories = !isLoading && !hasError && l1Categories.length > 0;
-
   return (
     <div className={`propeller-menu ${(props.className as string) || ''}`}>
       {isLoading ? (
@@ -294,73 +288,96 @@ function Menu(props: MenuProps) {
           {getLabel('error', 'Failed to load menu')}
         </div>
       ) : null}
-      {!isLoading && !hasError && l1Categories.length === 0 ? (
+      {!isLoading &&
+      !hasError &&
+      rootCategory !== null &&
+      getSubCategories(rootCategory as Category).length === 0 ? (
         <div className="px-4 py-3 text-sm text-muted-foreground">
           {getLabel('empty', 'No categories found')}
         </div>
       ) : null}
-
-      {/* ── Desktop: dropdown-vertical ── */}
-      {hasCategories && getMenuStyle() === 'dropdown-vertical' ? (
-        <nav className={`propeller-menu-dropdown hidden md:block ${(props.menuClass as string) || ''}`}>
+      {!isLoading &&
+      !hasError &&
+      rootCategory !== null &&
+      getSubCategories(rootCategory as Category).length > 0 &&
+      getMenuStyle() === 'dropdown-vertical' ? (
+        <nav
+          className={`propeller-menu-dropdown hidden md:block ${(props.menuClass as string) || ''}`}
+        >
           <div className="flex bg-popover border border-border shadow-lg">
-            {/* L1 column */}
             <ul className="w-64 py-1 border-r border-border flex-shrink-0">
-              {l1Categories.map((l1, idx) => (
+              {getSubCategories(rootCategory as Category)?.map((l1, idx) => (
                 <li
                   key={l1.categoryId || idx}
-                  onMouseEnter={() => setHoveredL1(l1.categoryId)}
+                  onMouseEnter={(event) => setHoveredL1(l1.categoryId)}
                 >
                   <a
-                    className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                      hoveredL1Id === l1.categoryId
-                        ? 'bg-accent text-accent-foreground'
-                        : 'text-foreground hover:bg-accent/50'
-                    }`}
                     href={getCategoryUrl(l1)}
                     onClick={(e) => handleItemClick(l1, e)}
+                    className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${hoveredL1Id === l1.categoryId ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'}`}
                   >
                     <span className="font-medium truncate">{getCategoryName(l1)}</span>
-                    {getSubCategories(l1).length > 0 ? chevron(false) : null}
+                    {getSubCategories(l1).length > 0 ? (
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        className="w-4 h-4 text-muted-foreground"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5l7 7-7 7"
+                          strokeWidth={2}
+                        />
+                      </svg>
+                    ) : null}
                   </a>
                 </li>
               ))}
             </ul>
-
-            {/* L2 column — visible when L1 is hovered */}
-            {l1Categories.map((l1) =>
+            {getSubCategories(rootCategory as Category)?.map((l1, idx) =>
               hoveredL1Id === l1.categoryId && getSubCategories(l1).length > 0 ? (
-                <ul key={`l2-${l1.categoryId}`} className="w-64 py-1 border-r border-border flex-shrink-0">
-                  {getSubCategories(l1).map((l2, idx2) => (
+                <ul className="w-64 py-1 border-r border-border flex-shrink-0">
+                  {getSubCategories(l1)?.map((l2, idx2) => (
                     <li
                       key={l2.categoryId || idx2}
-                      onMouseEnter={() => setHoveredL2(l2.categoryId)}
+                      onMouseEnter={(event) => setHoveredL2(l2.categoryId)}
                     >
                       <a
-                        className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                          hoveredL2Id === l2.categoryId
-                            ? 'bg-accent text-accent-foreground'
-                            : 'text-foreground hover:bg-accent/50'
-                        }`}
                         href={getCategoryUrl(l2)}
                         onClick={(e) => handleItemClick(l2, e)}
+                        className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${hoveredL2Id === l2.categoryId ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50'}`}
                       >
                         <span className="truncate">{getCategoryName(l2)}</span>
-                        {getSubCategories(l2).length > 0 ? chevron(false) : null}
+                        {getSubCategories(l2).length > 0 ? (
+                          <svg
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            className="w-4 h-4 text-muted-foreground"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 5l7 7-7 7"
+                              strokeWidth={2}
+                            />
+                          </svg>
+                        ) : null}
                       </a>
                     </li>
                   ))}
                 </ul>
               ) : null
             )}
-
-            {/* L3 column — visible when L2 is hovered */}
-            {l1Categories.map((l1) =>
-              hoveredL1Id === l1.categoryId
-                ? getSubCategories(l1).map((l2) =>
+            {getSubCategories(rootCategory as Category)?.map((l1) =>
+              hoveredL1Id === l1.categoryId ? (
+                <>
+                  {getSubCategories(l1)?.map((l2) =>
                     hoveredL2Id === l2.categoryId && getSubCategories(l2).length > 0 ? (
-                      <ul key={`l3-${l2.categoryId}`} className="w-64 py-1 flex-shrink-0">
-                        {getSubCategories(l2).map((l3, idx3) => (
+                      <ul className="w-64 py-1 flex-shrink-0">
+                        {getSubCategories(l2)?.map((l3, idx3) => (
                           <li key={l3.categoryId || idx3}>
                             <a
                               className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent/50 transition-colors"
@@ -373,21 +390,26 @@ function Menu(props: MenuProps) {
                         ))}
                       </ul>
                     ) : null
-                  )
-                : null
+                  )}
+                </>
+              ) : null
             )}
           </div>
         </nav>
       ) : null}
-
-      {/* ── Desktop: jumbotron ── */}
-      {hasCategories && getMenuStyle() === 'jumbotron' ? (
-        <nav className={`propeller-menu-jumbotron hidden md:block ${(props.menuClass as string) || ''}`}>
+      {!isLoading &&
+      !hasError &&
+      rootCategory !== null &&
+      getSubCategories(rootCategory as Category).length > 0 &&
+      getMenuStyle() === 'jumbotron' ? (
+        <nav
+          className={`propeller-menu-jumbotron hidden md:block ${(props.menuClass as string) || ''}`}
+        >
           <div className="flex items-center border-b border-border">
-            {l1Categories.map((l1, idx) => (
+            {getSubCategories(rootCategory as Category)?.map((l1, idx) => (
               <button
                 key={l1.categoryId || idx}
-                onMouseEnter={() => setHoveredL1(l1.categoryId)}
+                onMouseEnter={(event) => setHoveredL1(l1.categoryId)}
                 onClick={(e) => handleItemClick(l1, e)}
                 className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${hoveredL1Id === l1.categoryId ? 'border-primary text-primary' : 'border-transparent text-foreground hover:text-primary hover:border-primary/50'}`}
               >
@@ -395,16 +417,15 @@ function Menu(props: MenuProps) {
               </button>
             ))}
           </div>
-          {l1Categories.map((l1, idx) =>
+          {getSubCategories(rootCategory as Category)?.map((l1, idx) =>
             hoveredL1Id === l1.categoryId && getSubCategories(l1).length > 0 ? (
               <div
-                key={`jumbo-${l1.categoryId}`}
                 className="bg-popover border border-border border-t-0 shadow-lg p-6"
-                onMouseEnter={() => setHoveredL1(l1.categoryId)}
-                onMouseLeave={() => setHoveredL1(null)}
+                onMouseEnter={(event) => setHoveredL1(l1.categoryId)}
+                onMouseLeave={(event) => setHoveredL1(null)}
               >
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {getSubCategories(l1).map((l2, idx2) => (
+                  {getSubCategories(l1)?.map((l2, idx2) => (
                     <div key={l2.categoryId || idx2}>
                       <a
                         className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
@@ -415,7 +436,7 @@ function Menu(props: MenuProps) {
                       </a>
                       {getSubCategories(l2).length > 0 ? (
                         <ul className="mt-2 space-y-1">
-                          {getSubCategories(l2).map((l3, idx3) => (
+                          {getSubCategories(l2)?.map((l3, idx3) => (
                             <li key={l3.categoryId || idx3}>
                               <a
                                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -436,96 +457,103 @@ function Menu(props: MenuProps) {
           )}
         </nav>
       ) : null}
-
-      {/* ── Mobile: accordion ── */}
-      {hasCategories ? (
+      {!isLoading &&
+      !hasError &&
+      rootCategory !== null &&
+      getSubCategories(rootCategory as Category).length > 0 ? (
         <nav className={`propeller-menu-mobile md:hidden ${(props.menuClass as string) || ''}`}>
           <ul className="divide-y divide-border">
-            {l1Categories.map((l1, idx) => {
-              const l1Subs = getSubCategories(l1);
-              const isL1Open = expandedL1 === l1.categoryId;
-              return (
-                <li key={l1.categoryId || idx}>
-                  <div className="flex items-center">
-                    <a
-                      className="flex-1 px-4 py-3 text-sm font-medium text-foreground"
-                      href={getCategoryUrl(l1)}
-                      onClick={(e) => handleItemClick(l1, e)}
+            {getSubCategories(rootCategory as Category)?.map((l1, idx) => (
+              <li key={l1.categoryId || idx}>
+                <div className="flex items-center">
+                  <a
+                    className="flex-1 px-4 py-3 text-sm font-medium text-foreground"
+                    href={getCategoryUrl(l1)}
+                    onClick={(e) => handleItemClick(l1, e)}
+                  >
+                    {getCategoryName(l1)}
+                  </a>
+                  {getSubCategories(l1).length > 0 ? (
+                    <button
+                      type="button"
+                      className="px-4 py-3 text-muted-foreground"
+                      onClick={(event) => {
+                        setExpandedL1(expandedL1 === l1.categoryId ? null : l1.categoryId);
+                      }}
                     >
-                      {getCategoryName(l1)}
-                    </a>
-                    {l1Subs.length > 0 ? (
-                      <button
-                        type="button"
-                        className="px-4 py-3 text-muted-foreground"
-                        onClick={() => setExpandedL1(isL1Open ? null : l1.categoryId)}
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        className={`w-4 h-4 transition-transform ${expandedL1 === l1.categoryId ? 'rotate-180' : ''}`}
                       >
-                        <svg
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          className={`w-4 h-4 transition-transform ${isL1Open ? 'rotate-180' : ''}`}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" strokeWidth={2} />
-                        </svg>
-                      </button>
-                    ) : null}
-                  </div>
-                  {isL1Open && l1Subs.length > 0 ? (
-                    <ul className="bg-accent/30">
-                      {l1Subs.map((l2, idx2) => {
-                        const l2Subs = getSubCategories(l2);
-                        const isL2Open = expandedL2 === l2.categoryId;
-                        return (
-                          <li key={l2.categoryId || idx2}>
-                            <div className="flex items-center">
-                              <a
-                                className="flex-1 pl-8 pr-4 py-2.5 text-sm text-foreground"
-                                href={getCategoryUrl(l2)}
-                                onClick={(e) => handleItemClick(l2, e)}
-                              >
-                                {getCategoryName(l2)}
-                              </a>
-                              {l2Subs.length > 0 ? (
-                                <button
-                                  type="button"
-                                  className="px-4 py-2.5 text-muted-foreground"
-                                  onClick={() => setExpandedL2(isL2Open ? null : l2.categoryId)}
-                                >
-                                  <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    className={`w-3.5 h-3.5 transition-transform ${isL2Open ? 'rotate-180' : ''}`}
-                                  >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" strokeWidth={2} />
-                                  </svg>
-                                </button>
-                              ) : null}
-                            </div>
-                            {isL2Open && l2Subs.length > 0 ? (
-                              <ul className="bg-accent/20">
-                                {l2Subs.map((l3, idx3) => (
-                                  <li key={l3.categoryId || idx3}>
-                                    <a
-                                      className="block pl-12 pr-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                                      href={getCategoryUrl(l3)}
-                                      onClick={(e) => handleItemClick(l3, e)}
-                                    >
-                                      {getCategoryName(l3)}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : null}
-                          </li>
-                        );
-                      })}
-                    </ul>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m6 9 6 6 6-6"
+                          strokeWidth={2}
+                        />
+                      </svg>
+                    </button>
                   ) : null}
-                </li>
-              );
-            })}
+                </div>
+                {expandedL1 === l1.categoryId && getSubCategories(l1).length > 0 ? (
+                  <ul className="bg-accent/30">
+                    {getSubCategories(l1)?.map((l2, idx2) => (
+                      <li key={l2.categoryId || idx2}>
+                        <div className="flex items-center">
+                          <a
+                            className="flex-1 pl-8 pr-4 py-2.5 text-sm text-foreground"
+                            href={getCategoryUrl(l2)}
+                            onClick={(e) => handleItemClick(l2, e)}
+                          >
+                            {getCategoryName(l2)}
+                          </a>
+                          {getSubCategories(l2).length > 0 ? (
+                            <button
+                              type="button"
+                              className="px-4 py-2.5 text-muted-foreground"
+                              onClick={(event) => {
+                                setExpandedL2(expandedL2 === l2.categoryId ? null : l2.categoryId);
+                              }}
+                            >
+                              <svg
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                className={`w-3.5 h-3.5 transition-transform ${expandedL2 === l2.categoryId ? 'rotate-180' : ''}`}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="m6 9 6 6 6-6"
+                                  strokeWidth={2}
+                                />
+                              </svg>
+                            </button>
+                          ) : null}
+                        </div>
+                        {expandedL2 === l2.categoryId && getSubCategories(l2).length > 0 ? (
+                          <ul className="bg-accent/20">
+                            {getSubCategories(l2)?.map((l3, idx3) => (
+                              <li key={l3.categoryId || idx3}>
+                                <a
+                                  className="block pl-12 pr-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                  href={getCategoryUrl(l3)}
+                                  onClick={(e) => handleItemClick(l3, e)}
+                                >
+                                  {getCategoryName(l3)}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            ))}
           </ul>
         </nav>
       ) : null}

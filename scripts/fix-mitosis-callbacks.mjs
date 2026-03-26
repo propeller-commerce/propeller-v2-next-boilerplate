@@ -132,6 +132,19 @@ const TARGETS = [
     {
         dir: resolve('../output/react/ui-components'),
         ext: '.tsx',
+        // Mitosis squishes all statements onto one line without semicolons.
+        // TypeScript rejects `const x = expr   const y` or
+        // `const x = expr   function foo` on a single line (reports
+        // "',' expected"), which prevents Prettier from reformatting the file.
+        // Fix: insert `;` + newline before any statement-starting keyword that
+        // follows a closing `)` or `'` with 2+ spaces (the squisher pattern).
+        pattern: /([)'])\s{2,}((?:const\s+\[|function\s+\w|async\s+function\s+\w|useEffect\s*\(|return\s*\())/g,
+        replace: '$1;\n  $2',
+        label: 'React squished-statement semicolons fix',
+    },
+    {
+        dir: resolve('../output/react/ui-components'),
+        ext: '.tsx',
         // onFoo={(event) => props.onFoo()}  →  onFoo={props.onFoo}
         // Also handles multiline formatted output (event on one line, call on next)
         pattern: /\b(on[A-Z]\w+)=\{\s*\(event\)\s*=>\s*props\.\1\(\)\s*\}/g,

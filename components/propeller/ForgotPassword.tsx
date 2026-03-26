@@ -59,13 +59,9 @@ interface ForgotPasswordState {
 
 function ForgotPassword(props: ForgotPasswordProps) {
   const [email, setEmail] = useState<ForgotPasswordState['email']>(() => '');
-
   const [loading, setLoading] = useState<ForgotPasswordState['loading']>(() => false);
-
   const [submitted, setSubmitted] = useState<ForgotPasswordState['submitted']>(() => false);
-
   const [error, setError] = useState<ForgotPasswordState['error']>(() => '');
-
   function resolvedTitle(): ReturnType<ForgotPasswordState['resolvedTitle']> {
     return props.title !== undefined ? props.title : 'Forgot password?';
   }
@@ -107,7 +103,9 @@ function ForgotPassword(props: ForgotPasswordProps) {
         props.afterForgotPassword(result);
       }
     } catch (err: any) {
-      setError('We couldn\'t find an account with that email address. Please double-check and try again. If you don\'t receive an email within a few minutes, please check that you entered the correct email address and try again.');
+      setError(
+        "We couldn't find an account with that email address. Please double-check and try again. If you don't receive an email within a few minutes, please check that you entered the correct email address and try again."
+      );
       if (props.afterForgotPassword) {
         props.afterForgotPassword(false);
       }

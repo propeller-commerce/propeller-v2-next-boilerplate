@@ -108,9 +108,7 @@ function ProductInfo(props: ProductInfoProps) {
   const [internalProduct, setInternalProduct] = useState<ProductInfoState['internalProduct']>(
     () => null
   );
-
   const [loading, setLoading] = useState<ProductInfoState['loading']>(() => false);
-
   function getProduct(): ReturnType<ProductInfoState['getProduct']> {
     return (props.product as Product) || internalProduct;
   }

@@ -110,9 +110,7 @@ function ClusterInfo(props: ClusterInfoProps) {
   const [internalCluster, setInternalCluster] = useState<ClusterInfoState['internalCluster']>(
     () => null
   );
-
   const [loading, setLoading] = useState<ClusterInfoState['loading']>(() => false);
-
   function getCluster(): ReturnType<ClusterInfoState['getCluster']> {
     return (props.cluster as Cluster) || internalCluster;
   }

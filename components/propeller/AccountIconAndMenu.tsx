@@ -203,9 +203,7 @@ interface AccountIconAndMenuState {
 
 function AccountIconAndMenu(props: AccountIconAndMenuProps) {
   const [isMounted, setIsMounted] = useState<AccountIconAndMenuState['isMounted']>(() => false);
-
   const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState['menuOpen']>(() => false);
-
   function isSidebar(): ReturnType<AccountIconAndMenuState['isSidebar']> {
     return props.variant === 'sidebar';
   }

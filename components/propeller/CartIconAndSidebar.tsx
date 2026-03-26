@@ -116,13 +116,10 @@ interface CartIconAndSidebarState {
 
 function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   const [isMounted, setIsMounted] = useState<CartIconAndSidebarState['isMounted']>(() => false);
-
   const [sidebarOpen, setSidebarOpen] = useState<CartIconAndSidebarState['sidebarOpen']>(
     () => false
   );
-
   const [isHovered, setIsHovered] = useState<CartIconAndSidebarState['isHovered']>(() => false);
-
   function getTotalItems(): ReturnType<CartIconAndSidebarState['getTotalItems']> {
     const items = props.cart?.items;
     if (!items) return 0;

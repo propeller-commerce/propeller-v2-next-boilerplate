@@ -212,17 +212,13 @@ function GridToolbar(props: GridToolbarProps) {
   const [currentSortField, setCurrentSortField] = useState<GridToolbarState['currentSortField']>(
     () => Enums.ProductSortField.CATEGORY_ORDER
   );
-
   const [currentSortOrder, setCurrentSortOrder] = useState<GridToolbarState['currentSortOrder']>(
     () => Enums.SortOrder.ASC
   );
-
   const [currentOffset, setCurrentOffset] = useState<GridToolbarState['currentOffset']>(() => 12);
-
   const [currentViewMode, setCurrentViewMode] = useState<GridToolbarState['currentViewMode']>(
     () => 'grid'
   );
-
   function getLabel(key: string): ReturnType<GridToolbarState['getLabel']> {
     const labels = (props.labels as Record<string, string>) || {};
     return labels[key] !== undefined ? labels[key] : DEFAULT_LABELS[key] || key;
@@ -313,7 +309,6 @@ function GridToolbar(props: GridToolbarProps) {
       setCurrentViewMode(props.viewMode as string);
     }
   }, [props.viewMode]);
-
   return (
     <div className={`${(props.className as string) || ''}`}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">

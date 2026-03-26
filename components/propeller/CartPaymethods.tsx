@@ -40,7 +40,6 @@ interface CartPaymethodsState {
 
 function CartPaymethods(props: CartPaymethodsProps) {
   const [selectedCode, setSelectedCode] = useState<CartPaymethodsState['selectedCode']>(() => '');
-
   function containerClass(): ReturnType<CartPaymethodsState['containerClass']> {
     return props.paymentsContainerClass || 'cart-paymethods';
   }

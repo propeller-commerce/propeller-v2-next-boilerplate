@@ -107,15 +107,18 @@ function ItemsOverview(props: ItemsOverviewProps) {
   function getItemAvailability(item: any): ReturnType<ItemsOverviewState['getItemAvailability']> {
     const stock = item.product?.inventory?.totalQuantity;
     if (stock === undefined || stock === null) return '';
-    if (stock > 0) return getLabel('inStock', 'In stock');
-    return getLabel('outOfStock', 'Out of stock');
+    if (stock > 0) return props.labels?.['inStock'] || 'In stock';
+    return props.labels?.['outOfStock'] || 'Out of stock';
   }
   function isInStock(item: any): ReturnType<ItemsOverviewState['isInStock']> {
     const stock = item.product?.inventory?.totalQuantity;
     return stock !== undefined && stock !== null && stock > 0;
   }
   function handleItemNameClick(item: any): ReturnType<ItemsOverviewState['handleItemNameClick']> {
-    if (itemNameClickable() && props.onCartItemNameClick) {
+    if (
+      (props.itemNameClickable !== undefined ? props.itemNameClickable : true) &&
+      props.onCartItemNameClick
+    ) {
       props.onCartItemNameClick(item as CartMainItem);
     }
   }

@@ -129,23 +129,16 @@ interface CartItemState {
 
 function CartItem(props: CartItemProps) {
   const [quantity, setQuantity] = useState<CartItemState['quantity']>(() => 1);
-
   const [notes, setNotes] = useState<CartItemState['notes']>(() => '');
-
   const [loading, setLoading] = useState<CartItemState['loading']>(() => false);
-
   const [deleting, setDeleting] = useState<CartItemState['deleting']>(() => false);
-
   const [notesTimeout, setNotesTimeout] = useState<CartItemState['notesTimeout']>(
     () => null as unknown
   );
-
   const [crossupsells, setCrossupsells] = useState<CartItemState['crossupsells']>(() => []);
-
   const [crossupsellsLoading, setCrossupsellsLoading] = useState<
     CartItemState['crossupsellsLoading']
   >(() => false);
-
   function getLabel(key: string, fallback: string): ReturnType<CartItemState['getLabel']> {
     return props.labels?.[key] || fallback;
   }
@@ -483,7 +476,6 @@ function CartItem(props: CartItemProps) {
             <div data-cart-item-stock="true" data-inventory={JSON.stringify(getInventory())} />
           </div>
         ) : null}
-        {/* Price moved to right column */}
         {isBundleItem() ? (
           <div className="mt-3 space-y-1.5 border-l-2 border-border pl-3">
             {!!getBundleLeaderName() ? (
@@ -580,17 +572,17 @@ function CartItem(props: CartItemProps) {
           </div>
         ) : null}
       </div>
-      {/* Price + Quantity + Delete — single row, wraps to new line on mobile */}
       <div className="w-full md:w-auto flex items-center gap-3 md:gap-4 border-t md:border-t-0 border-gray-100 pt-2 md:pt-0 flex-shrink-0">
-        {/* Price */}
         {isBundleItem() && !!getBundlePrice() ? (
-          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">{getBundlePrice()}</p>
+          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">
+            {getBundlePrice()}
+          </p>
         ) : null}
         {!isBundleItem() ? (
-          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">{getFormattedPrice()}</p>
+          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">
+            {getFormattedPrice()}
+          </p>
         ) : null}
-
-        {/* Quantity controls */}
         {props.enableIncrementDecrement !== false ? (
           <div className="flex items-center border border-gray-300 rounded-md bg-white h-9">
             <button
@@ -636,24 +628,32 @@ function CartItem(props: CartItemProps) {
         {loading ? (
           <span className="text-xs text-gray-400">{getLabel('updating', 'Updating...')}</span>
         ) : null}
-
-        {/* Delete — bin icon (same as FavoriteListItem) */}
         <button
           type="button"
           className="h-8 w-8 p-0 ml-auto inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
           onClick={(event) => handleDelete()}
           disabled={deleting}
-          title={getLabel('remove', 'Remove')}
         >
           {deleting ? (
             <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          ) : null}
+          {!deleting ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M3 6h18" />
               <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
               <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
             </svg>
-          )}
+          ) : null}
         </button>
       </div>
     </div>

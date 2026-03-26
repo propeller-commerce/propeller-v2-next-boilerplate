@@ -125,9 +125,7 @@ interface ProductTabsState {
 
 function ProductTabs(props: ProductTabsProps) {
   const [activeTab, setActiveTab] = useState<ProductTabsState['activeTab']>(() => 'description');
-
   const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(() => false);
-
   function hasDescription(): ReturnType<ProductTabsState['hasDescription']> {
     const lang = props.language || 'NL';
     const descriptions = props.product?.descriptions;
@@ -179,70 +177,14 @@ function ProductTabs(props: ProductTabsProps) {
     }
   }, [props.product, props.language]);
 
-  const descriptionContent = isTabVisible('description') ? (
-    <ProductDescription
-      product={props.product}
-      language={props.language}
-      collapsed={props.descriptionCollapsed}
-      maxLength={props.descriptionMaxLength}
-    />
-  ) : null;
-
-  const specificationsContent = isTabVisible('specifications') && props.product ? (
-    <ProductSpecifications
-      attributes={props.product.attributes?.items as AttributeResult[]}
-      productId={props.productId}
-      graphqlClient={props.graphqlClient}
-      language={props.language}
-      layout={props.specificationsLayout}
-      grouping={props.specificationsGrouping}
-    />
-  ) : null;
-
-  const downloadsContent = isTabVisible('downloads') && props.product ? (
-    <ProductDownloads
-      downloads={
-        (props.product as Product).media?.documents as PaginatedMediaDocumentResponse
-      }
-      language={(props.language as string) || 'NL'}
-      labels={props.downloadsLabels}
-    />
-  ) : null;
-
-  const videosContent = isTabVisible('videos') && props.product ? (
-    <ProductVideos
-      videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
-      language={(props.language as string) || 'NL'}
-      labels={props.videosLabels}
-    />
-  ) : null;
-
-  const chevronIcon = (open: boolean) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`transition-transform ${open ? 'rotate-180' : ''}`}
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-
   return (
     <div className={`product-tabs ${(props.className as string) || ''}`}>
-      {/* ── Desktop: horizontal tabs ── */}
       <div className="hidden md:block">
         <div className="flex border-b border-border">
           {isTabVisible('description') ? (
             <button
               type="button"
-              onClick={() => selectTab('description')}
+              onClick={(event) => selectTab('description')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
             >
               {getLabel('description', 'Description')}
@@ -251,7 +193,7 @@ function ProductTabs(props: ProductTabsProps) {
           {isTabVisible('specifications') ? (
             <button
               type="button"
-              onClick={() => selectTab('specifications')}
+              onClick={(event) => selectTab('specifications')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
             >
               {getLabel('specifications', 'Specifications')}
@@ -260,7 +202,7 @@ function ProductTabs(props: ProductTabsProps) {
           {isTabVisible('downloads') ? (
             <button
               type="button"
-              onClick={() => selectTab('downloads')}
+              onClick={(event) => selectTab('downloads')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
             >
               {getLabel('downloads', 'Downloads')}
@@ -269,7 +211,7 @@ function ProductTabs(props: ProductTabsProps) {
           {isTabVisible('videos') ? (
             <button
               type="button"
-              onClick={() => selectTab('videos')}
+              onClick={(event) => selectTab('videos')}
               className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
             >
               {getLabel('videos', 'Videos')}
@@ -277,31 +219,79 @@ function ProductTabs(props: ProductTabsProps) {
           ) : null}
         </div>
         <div className="pt-6">
-          {isActive('description') && isTabVisible('description') ? descriptionContent : null}
+          {isActive('description') && isTabVisible('description') ? (
+            <ProductDescription
+              product={props.product}
+              language={props.language}
+              collapsed={props.descriptionCollapsed}
+              maxLength={props.descriptionMaxLength}
+            />
+          ) : null}
           {specsVisited && isTabVisible('specifications') ? (
             <div className={isActive('specifications') ? '' : 'hidden'}>
-              {specificationsContent}
+              <ProductSpecifications
+                attributes={props.product.attributes?.items as AttributeResult[]}
+                productId={props.productId}
+                graphqlClient={props.graphqlClient}
+                language={props.language}
+                layout={props.specificationsLayout}
+                grouping={props.specificationsGrouping}
+              />
             </div>
           ) : null}
-          {isActive('downloads') && isTabVisible('downloads') ? downloadsContent : null}
-          {isActive('videos') && isTabVisible('videos') ? videosContent : null}
+          {isActive('downloads') && isTabVisible('downloads') ? (
+            <ProductDownloads
+              downloads={
+                (props.product as Product).media?.documents as PaginatedMediaDocumentResponse
+              }
+              language={(props.language as string) || 'NL'}
+              labels={props.downloadsLabels}
+            />
+          ) : null}
+          {isActive('videos') && isTabVisible('videos') ? (
+            <ProductVideos
+              videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
+              language={(props.language as string) || 'NL'}
+              labels={props.videosLabels}
+            />
+          ) : null}
         </div>
       </div>
-
-      {/* ── Mobile: accordion ── */}
       <div className="md:hidden divide-y divide-border border border-border rounded-lg">
         {isTabVisible('description') ? (
           <div>
             <button
               type="button"
-              onClick={() => setActiveTab(activeTab === 'description' ? '' : 'description')}
               className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              onClick={(event) => {
+                setActiveTab(activeTab === 'description' ? '' : 'description');
+              }}
             >
               {getLabel('description', 'Description')}
-              {chevronIcon(isActive('description'))}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform ${isActive('description') ? 'rotate-180' : ''}`}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
             {isActive('description') ? (
-              <div className="px-4 pb-4">{descriptionContent}</div>
+              <div className="px-4 pb-4">
+                <ProductDescription
+                  product={props.product}
+                  language={props.language}
+                  collapsed={props.descriptionCollapsed}
+                  maxLength={props.descriptionMaxLength}
+                />
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -309,7 +299,8 @@ function ProductTabs(props: ProductTabsProps) {
           <div>
             <button
               type="button"
-              onClick={() => {
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              onClick={(event) => {
                 if (activeTab !== 'specifications') {
                   setSpecsVisited(true);
                   setActiveTab('specifications');
@@ -317,13 +308,34 @@ function ProductTabs(props: ProductTabsProps) {
                   setActiveTab('');
                 }
               }}
-              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
             >
               {getLabel('specifications', 'Specifications')}
-              {chevronIcon(isActive('specifications'))}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform ${isActive('specifications') ? 'rotate-180' : ''}`}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
             {specsVisited && isActive('specifications') ? (
-              <div className="px-4 pb-4">{specificationsContent}</div>
+              <div className="px-4 pb-4">
+                <ProductSpecifications
+                  attributes={props.product.attributes?.items as AttributeResult[]}
+                  productId={props.productId}
+                  graphqlClient={props.graphqlClient}
+                  language={props.language}
+                  layout={props.specificationsLayout}
+                  grouping={props.specificationsGrouping}
+                />
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -331,14 +343,37 @@ function ProductTabs(props: ProductTabsProps) {
           <div>
             <button
               type="button"
-              onClick={() => setActiveTab(activeTab === 'downloads' ? '' : 'downloads')}
               className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              onClick={(event) => {
+                setActiveTab(activeTab === 'downloads' ? '' : 'downloads');
+              }}
             >
               {getLabel('downloads', 'Downloads')}
-              {chevronIcon(isActive('downloads'))}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform ${isActive('downloads') ? 'rotate-180' : ''}`}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
             {isActive('downloads') ? (
-              <div className="px-4 pb-4">{downloadsContent}</div>
+              <div className="px-4 pb-4">
+                <ProductDownloads
+                  downloads={
+                    (props.product as Product).media?.documents as PaginatedMediaDocumentResponse
+                  }
+                  language={(props.language as string) || 'NL'}
+                  labels={props.downloadsLabels}
+                />
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -346,14 +381,35 @@ function ProductTabs(props: ProductTabsProps) {
           <div>
             <button
               type="button"
-              onClick={() => setActiveTab(activeTab === 'videos' ? '' : 'videos')}
               className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+              onClick={(event) => {
+                setActiveTab(activeTab === 'videos' ? '' : 'videos');
+              }}
             >
               {getLabel('videos', 'Videos')}
-              {chevronIcon(isActive('videos'))}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform ${isActive('videos') ? 'rotate-180' : ''}`}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
             {isActive('videos') ? (
-              <div className="px-4 pb-4">{videosContent}</div>
+              <div className="px-4 pb-4">
+                <ProductVideos
+                  videos={(props.product as Product).media?.videos as PaginatedMediaVideoResponse}
+                  language={(props.language as string) || 'NL'}
+                  labels={props.videosLabels}
+                />
+              </div>
             ) : null}
           </div>
         ) : null}

@@ -48,13 +48,10 @@ interface DeliveryDateState {
 
 function DeliveryDate(props: DeliveryDateProps) {
   const [selectedDate, setSelectedDate] = useState<DeliveryDateState['selectedDate']>(() => '');
-
   const [modalOpen, setModalOpen] = useState<DeliveryDateState['modalOpen']>(() => false);
-
   const [customDateValue, setCustomDateValue] = useState<DeliveryDateState['customDateValue']>(
     () => ''
   );
-
   function upcomingDays(): ReturnType<DeliveryDateState['upcomingDays']> {
     return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
   }

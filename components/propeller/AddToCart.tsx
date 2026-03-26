@@ -186,23 +186,14 @@ interface AddToCartState {
 
 function AddToCart(props: AddToCartProps) {
   const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => 1);
-
   const [loading, setLoading] = useState<AddToCartState['loading']>(() => false);
-
   const [success, setSuccess] = useState<AddToCartState['success']>(() => false);
-
   const [modalVisible, setModalVisible] = useState<AddToCartState['modalVisible']>(() => false);
-
   const [activeCartId, setActiveCartId] = useState<AddToCartState['activeCartId']>(() => '');
-
   const [toastMessage, setToastMessage] = useState<AddToCartState['toastMessage']>(() => '');
-
   const [toastType, setToastType] = useState<AddToCartState['toastType']>(() => '');
-
   const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
-
   const [addedCartItem, setAddedCartItem] = useState<AddToCartState['addedCartItem']>(() => null);
-
   function getMinQuantity(): ReturnType<AddToCartState['getMinQuantity']> {
     const min = (props.product as any)?.minimumQuantity;
     return min && min > 0 ? min : 1;

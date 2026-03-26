@@ -242,11 +242,8 @@ interface ProductCardState {
 
 function ProductCard(props: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState<ProductCardState['isFavorite']>(() => false);
-
   const [includeTax, setIncludeTax] = useState<ProductCardState['includeTax']>(() => true);
-
   const [priceListener, setPriceListener] = useState<ProductCardState['priceListener']>(() => null);
-
   function isRow(): ReturnType<ProductCardState['isRow']> {
     return (props.columns as number) === 1;
   }
@@ -344,7 +341,7 @@ function ProductCard(props: ProductCardProps) {
 
   return (
     <div
-      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-violet-200 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
     >
       {props.showImage !== false ? (
         <div
@@ -380,7 +377,7 @@ function ProductCard(props: ProductCardProps) {
           computedImageLabels().length > 0 ? (
             <div className="pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
               {computedImageLabels()?.map((label) => (
-                <span className="inline-block rounded bg-violet-600 px-2 py-0.5 text-xs font-medium text-white shadow-sm">
+                <span className="inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-white shadow-sm">
                   {label}
                 </span>
               ))}

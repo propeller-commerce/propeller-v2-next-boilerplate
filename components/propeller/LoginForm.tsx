@@ -135,13 +135,9 @@ interface LoginFormState {
 
 function LoginForm(props: LoginFormProps) {
   const [email, setEmail] = useState<LoginFormState['email']>(() => '');
-
   const [password, setPassword] = useState<LoginFormState['password']>(() => '');
-
   const [loading, setLoading] = useState<LoginFormState['loading']>(() => false);
-
   const [error, setError] = useState<LoginFormState['error']>(() => '');
-
   function getLabel(key: string, fallback: string): ReturnType<LoginFormState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
@@ -285,7 +281,7 @@ function LoginForm(props: LoginFormProps) {
         );
       }
     } catch (err: any) {
-      setError('The credentials you entered don\'t match our records. Please try again.');
+      setError("The credentials you entered don't match our records. Please try again.");
     } finally {
       setLoading(false);
     }

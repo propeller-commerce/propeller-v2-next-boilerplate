@@ -1,6 +1,5 @@
 'use client';
 import * as React from 'react';
-
 import {
   Product,
   Cluster,
@@ -125,7 +124,6 @@ interface FavoriteListItemState {
 }
 
 function FavoriteListItem(props: FavoriteListItemProps) {
-
   function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
     return 'productId' in props.item;
   }
@@ -211,11 +209,10 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     }
   }
 
-
   return (
     <div
-      className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${props.className || ''}`}
       onClick={(e) => handleItemClick(e)}
+      className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${props.className || ''}`}
     >
       <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
         {props.titleLinkable !== false ? (

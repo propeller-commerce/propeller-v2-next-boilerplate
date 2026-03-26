@@ -47,9 +47,7 @@ interface ProductDescriptionState {
 
 function ProductDescription(props: ProductDescriptionProps) {
   const [expanded, setExpanded] = useState<ProductDescriptionState['expanded']>(() => false);
-
   const [html, setHtml] = useState<ProductDescriptionState['html']>(() => '');
-
   function getDescription(): ReturnType<ProductDescriptionState['getDescription']> {
     const product = props.product as Product;
     if (!product?.descriptions) return '';

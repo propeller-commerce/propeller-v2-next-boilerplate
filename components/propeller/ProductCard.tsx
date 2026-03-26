@@ -242,11 +242,8 @@ interface ProductCardState {
 
 function ProductCard(props: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState<ProductCardState['isFavorite']>(() => false);
-
   const [includeTax, setIncludeTax] = useState<ProductCardState['includeTax']>(() => true);
-
   const [priceListener, setPriceListener] = useState<ProductCardState['priceListener']>(() => null);
-
   function isRow(): ReturnType<ProductCardState['isRow']> {
     return (props.columns as number) === 1;
   }
@@ -416,7 +413,6 @@ function ProductCard(props: ProductCardProps) {
       ) : null}
       {isRow() ? (
         <>
-          {/* Row view: top section = SKU + name */}
           <div className="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               {props.showSku !== false && !!getProductSku() ? (
@@ -424,14 +420,16 @@ function ProductCard(props: ProductCardProps) {
               ) : null}
               {props.showName !== false ? (
                 <a
+                  className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
                   href={getProductUrl()}
                   onClick={(e) => handleProductClick(e)}
-                  className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
                 >
                   {getProductName()}
                 </a>
               ) : null}
-              {!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
+              {!!props.textLabels &&
+              props.textLabels.length > 0 &&
+              computedTextLabels().length > 0 ? (
                 <div className="flex flex-col gap-0.5">
                   {computedTextLabels()?.map((item) => (
                     <div className="text-xs text-gray-500">{item.value}</div>
@@ -446,7 +444,6 @@ function ProductCard(props: ProductCardProps) {
               ) : null}
             </div>
           </div>
-          {/* Row view: bottom section on mobile, inline on desktop = stock + price + add-to-cart */}
           <div className="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100">
             {props.showStock && !!props.product.inventory ? (
               <ItemStock
@@ -486,7 +483,8 @@ function ProductCard(props: ProductCardProps) {
             </div>
           </div>
         </>
-      ) : (
+      ) : null}
+      {!isRow() ? (
         <>
           <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
             {props.showSku !== false && !!getProductSku() ? (
@@ -494,14 +492,16 @@ function ProductCard(props: ProductCardProps) {
             ) : null}
             {props.showName !== false ? (
               <a
+                className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
                 href={getProductUrl()}
                 onClick={(e) => handleProductClick(e)}
-                className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
               >
                 {getProductName()}
               </a>
             ) : null}
-            {!!props.textLabels && props.textLabels.length > 0 && computedTextLabels().length > 0 ? (
+            {!!props.textLabels &&
+            props.textLabels.length > 0 &&
+            computedTextLabels().length > 0 ? (
               <div className="flex flex-col gap-0.5">
                 {computedTextLabels()?.map((item) => (
                   <div className="text-xs text-gray-500">{item.value}</div>
@@ -554,7 +554,7 @@ function ProductCard(props: ProductCardProps) {
             />
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

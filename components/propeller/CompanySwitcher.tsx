@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Contact, Company } from 'propeller-sdk-v2';
 
 export interface CompanySwitcherProps {
@@ -30,12 +30,11 @@ interface CompanySwitcherState {
 }
 
 function CompanySwitcher(props: CompanySwitcherProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<CompanySwitcherState['isOpen']>(() => false);
-
   const [activeCompanyId, setActiveCompanyId] = useState<CompanySwitcherState['activeCompanyId']>(
     () => null
   );
-
   function getCompanies(): ReturnType<CompanySwitcherState['getCompanies']> {
     // sanitizeUser in AuthContext is not recursive, so CompaniesResponse fields
     // may still have their raw _items key instead of the getter-based items.
@@ -85,12 +84,10 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     props.onCompanyChange(company);
   }
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !(containerRef.current as any).contains(e.target)) {
         setIsOpen(false);
       }
     };
@@ -99,7 +96,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
   }, [isOpen]);
 
   return (
-    <div ref={containerRef} className="company-switcher relative inline-block">
+    <div className="company-switcher relative inline-block" ref={containerRef}>
       <button
         type="button"
         aria-haspopup="listbox"

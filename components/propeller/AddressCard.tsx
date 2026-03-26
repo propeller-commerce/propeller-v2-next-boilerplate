@@ -147,51 +147,33 @@ function AddressCard(props: AddressCardProps) {
   const [showEditModal, setShowEditModal] = useState<AddressCardState['showEditModal']>(
     () => false
   );
-
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<AddressCardState['showDeleteConfirm']>(
     () => false
   );
-
   const [localAddress, setLocalAddress] = useState<AddressCardState['localAddress']>(() => null);
-
   const [editCompany, setEditCompany] = useState<AddressCardState['editCompany']>(() => '');
-
   const [editGender, setEditGender] = useState<AddressCardState['editGender']>(
     () => Enums.Gender.U
   );
-
   const [editFirstName, setEditFirstName] = useState<AddressCardState['editFirstName']>(() => '');
-
   const [editMiddleName, setEditMiddleName] = useState<AddressCardState['editMiddleName']>(
     () => ''
   );
-
   const [editLastName, setEditLastName] = useState<AddressCardState['editLastName']>(() => '');
-
   const [editStreet, setEditStreet] = useState<AddressCardState['editStreet']>(() => '');
-
   const [editNumber, setEditNumber] = useState<AddressCardState['editNumber']>(() => '');
-
   const [editNumberExtension, setEditNumberExtension] = useState<
     AddressCardState['editNumberExtension']
   >(() => '');
-
   const [editPostalCode, setEditPostalCode] = useState<AddressCardState['editPostalCode']>(
     () => ''
   );
-
   const [editCity, setEditCity] = useState<AddressCardState['editCity']>(() => '');
-
   const [editCountry, setEditCountry] = useState<AddressCardState['editCountry']>(() => '');
-
   const [editEmail, setEditEmail] = useState<AddressCardState['editEmail']>(() => '');
-
   const [editPhone, setEditPhone] = useState<AddressCardState['editPhone']>(() => '');
-
   const [editNotes, setEditNotes] = useState<AddressCardState['editNotes']>(() => '');
-
   const [editIcp, setEditIcp] = useState<AddressCardState['editIcp']>(() => Enums.YesNo.N);
-
   function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }

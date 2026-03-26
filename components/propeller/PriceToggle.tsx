@@ -34,7 +34,6 @@ interface PriceToggleState {
 
 function PriceToggle(props: PriceToggleProps) {
   const [isOn, setIsOn] = useState<PriceToggleState['isOn']>(() => props.initialState ?? true);
-
   function getLabel(): ReturnType<PriceToggleState['getLabel']> {
     return (props.label as string) || 'Prices:';
   }

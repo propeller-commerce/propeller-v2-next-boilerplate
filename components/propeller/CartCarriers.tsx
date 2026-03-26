@@ -39,7 +39,6 @@ interface CartCarriersState {
 
 function CartCarriers(props: CartCarriersProps) {
   const [selectedName, setSelectedName] = useState<CartCarriersState['selectedName']>(() => '');
-
   function containerClass(): ReturnType<CartCarriersState['containerClass']> {
     return props.carriersContainerClass || 'cart-carriers';
   }

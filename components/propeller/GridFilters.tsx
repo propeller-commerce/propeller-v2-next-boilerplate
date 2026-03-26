@@ -91,15 +91,11 @@ function GridFilters(props: GridFiltersProps) {
   const [selectedFilters, setSelectedFilters] = useState<GridFiltersState['selectedFilters']>(
     () => ({})
   );
-
   const [currentMin, setCurrentMin] = useState<GridFiltersState['currentMin']>(() => 0);
-
   const [currentMax, setCurrentMax] = useState<GridFiltersState['currentMax']>(() => 9999);
-
   const [expandedFilters, setExpandedFilters] = useState<GridFiltersState['expandedFilters']>(
     () => ({})
   );
-
   function showPriceFilter(): ReturnType<GridFiltersState['showPriceFilter']> {
     const mode = (props.portalMode as string) || 'open';
     if (mode === 'open') return true;

@@ -168,35 +168,24 @@ interface ProductBundlesState {
 
 function ProductBundles(props: ProductBundlesProps) {
   const [bundles, setBundles] = useState<ProductBundlesState['bundles']>(() => []);
-
   const [isLoading, setIsLoading] = useState<ProductBundlesState['isLoading']>(() => false);
-
   const [includeTax, setIncludeTax] = useState<ProductBundlesState['includeTax']>(() => true);
-
   const [isMounted, setIsMounted] = useState<ProductBundlesState['isMounted']>(() => false);
-
   const [addingBundleId, setAddingBundleId] = useState<ProductBundlesState['addingBundleId']>(
     () => null
   );
-
   const [lastAddedBundle, setLastAddedBundle] = useState<ProductBundlesState['lastAddedBundle']>(
     () => null
   );
-
   const [activeCartId, setActiveCartId] = useState<ProductBundlesState['activeCartId']>(() => '');
-
   const [toastMessage, setToastMessage] = useState<ProductBundlesState['toastMessage']>(() => '');
-
   const [toastType, setToastType] = useState<ProductBundlesState['toastType']>(() => '');
-
   const [toastVisible, setToastVisible] = useState<ProductBundlesState['toastVisible']>(
     () => false
   );
-
   const [modalVisible, setModalVisible] = useState<ProductBundlesState['modalVisible']>(
     () => false
   );
-
   function getIncludeTax(): ReturnType<ProductBundlesState['getIncludeTax']> {
     return props.includeTax !== undefined ? !!props.includeTax : includeTax;
   }

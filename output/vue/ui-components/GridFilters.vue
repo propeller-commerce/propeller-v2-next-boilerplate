@@ -10,7 +10,7 @@
               >€</span
             ><input
               type="number"
-              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
               :value="currentMin"
               :min="getMinBound()"
               :max="getMaxBound()"
@@ -25,7 +25,7 @@
               >€</span
             ><input
               type="number"
-              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
+              class="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
               :value="currentMax"
               :min="getMinBound()"
               :max="getMaxBound()"
@@ -37,7 +37,7 @@
         <div class="relative h-4 pt-1">
           <input
             type="range"
-            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-600 [&::-webkit-slider-thumb]:cursor-pointer z-20"
+            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMin"
@@ -49,7 +49,7 @@
             "
           /><input
             type="range"
-            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-600 [&::-webkit-slider-thumb]:cursor-pointer z-20"
+            class="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
             :min="getMinBound()"
             :max="getMaxBound()"
             :value="currentMax"
@@ -74,7 +74,7 @@
       <div class="border-b border-gray-100 pb-3 last:border-b-0">
         <button
           type="button"
-          class="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-violet-600 transition-colors"
+          class="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
           @click="async (event) => toggleAccordion(getFilterName(filter))"
         >
           <span class="text-sm font-semibold text-gray-700 truncate">{{
@@ -102,7 +102,7 @@
               <label class="flex items-center gap-2 cursor-pointer group"
                 ><input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer flex-shrink-0"
+                  class="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
                   :checked="isSelected(getFilterName(filter), option.value)"
                   @change="async (e) => handleCheckbox(filter, option.value, e.target.checked)"
                 /><span

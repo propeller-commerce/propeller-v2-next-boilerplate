@@ -58,7 +58,6 @@ interface UserDetailsState {
 
 function UserDetails(props: UserDetailsProps) {
   const [isMounted, setIsMounted] = useState<UserDetailsState['isMounted']>(() => false);
-
   function isContact(): ReturnType<UserDetailsState['isContact']> {
     return props.user !== null && 'company' in props.user;
   }

@@ -83,12 +83,16 @@ function ItemStock(props: ItemStockProps) {
     <>
       {hasInventory() ? (
         <>
-          <div className={`flex flex-wrap items-center gap-1.5 ${(props.className as string) || ''}`}>
+          <div
+            className={`flex flex-wrap items-center gap-1.5 ${(props.className as string) || ''}`}
+          >
             {props.showAvailability !== false ? (
               <span
                 className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityClass()}`}
               >
-                <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${getAvailabilityDotClass()}`} />
+                <span
+                  className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${getAvailabilityDotClass()}`}
+                />
                 {getAvailabilityLabel()}
               </span>
             ) : null}

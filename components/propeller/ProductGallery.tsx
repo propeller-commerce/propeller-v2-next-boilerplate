@@ -38,11 +38,9 @@ interface ProductGalleryState {
 
 function ProductGallery(props: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<ProductGalleryState['selectedIndex']>(() => 0);
-
   const [lightboxOpen, setLightboxOpen] = useState<ProductGalleryState['lightboxOpen']>(
     () => false
   );
-
   function getImages(): ReturnType<ProductGalleryState['getImages']> {
     return (props.images as string[]) || [];
   }

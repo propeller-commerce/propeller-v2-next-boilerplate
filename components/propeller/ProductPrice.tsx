@@ -142,7 +142,9 @@ function ProductPriceDisplay(props: ProductPriceProps) {
       {!isHidden() && !!getLeadingPrice() ? (
         <div className="flex flex-col gap-0.5">
           <div className="flex items-baseline gap-2">
-            <span className={`${(props.priceSize as string) || 'text-3xl'} font-bold text-foreground`}>
+            <span
+              className={`${(props.priceSize as string) || 'text-3xl'} font-bold text-foreground`}
+            >
               {getLeadingPrice()}
             </span>
             <span className="text-sm text-muted-foreground">{getTaxLabel()}</span>

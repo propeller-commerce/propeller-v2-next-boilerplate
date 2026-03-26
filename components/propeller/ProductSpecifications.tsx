@@ -65,9 +65,7 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
   const [internalAttributes, setInternalAttributes] = useState<
     ProductSpecificationsState['internalAttributes']
   >(() => []);
-
   const [loading, setLoading] = useState<ProductSpecificationsState['loading']>(() => false);
-
   function getAttributes(): ReturnType<ProductSpecificationsState['getAttributes']> {
     // Prefer fetched internalAttributes; fall back to props.attributes
     const attrs = internalAttributes.length

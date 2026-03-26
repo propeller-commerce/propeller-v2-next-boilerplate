@@ -185,6 +185,7 @@ export default function ProductTabs(props: ProductTabsProps) {
     }, [props.product, props.language]);
 
     return (
+        <Show when={props.product}>
         <div className={`product-tabs ${(props.className as string) || ''}`}>
             {/* ── Desktop: horizontal tabs ── */}
             <div className="hidden md:block">
@@ -425,5 +426,6 @@ export default function ProductTabs(props: ProductTabsProps) {
                 </Show>
             </div>
         </div>
+        </Show>
     );
 }

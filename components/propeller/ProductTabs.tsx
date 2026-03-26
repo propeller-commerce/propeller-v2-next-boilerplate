@@ -170,6 +170,7 @@ function ProductTabs(props: ProductTabsProps) {
       setActiveTab('description');
     }
   }, [props.product, props.language]);
+  if (!props.product) return null;
   return (
     <div className={`product-tabs ${(props.className as string) || ''}`}>
       <div className="hidden md:block">

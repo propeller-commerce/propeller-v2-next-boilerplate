@@ -5,28 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
 import AddressCard from '@/components/propeller/AddressCard';
-import { Address, AddressService, UserService, Contact, Customer, Company, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
+import { Address, AddressService, Contact, Customer, Company, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
 import { Enums } from 'propeller-sdk-v2';
 import { CompanyAddressUpdateInput } from 'propeller-sdk-v2';
 import { CustomerAddressUpdateInput } from 'propeller-sdk-v2';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ShieldCheck, Truck, Plus } from 'lucide-react';
-
-/** Recursively converts SDK class instances to plain objects, stripping underscore prefixes */
-function deepPlain(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (Array.isArray(value)) return value.map(deepPlain);
-  if (typeof value === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(value as object)) {
-      const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-      result[cleanKey] = deepPlain((value as Record<string, unknown>)[key]);
-    }
-    return result;
-  }
-  return value;
-}
 
 const COUNTRIES = [
   { code: 'NL', name: 'Netherlands' },
@@ -38,7 +23,7 @@ const COUNTRIES = [
 ];
 
 export default function AddressesPage() {
-  const { state: authState } = useAuth();
+  const { state: authState, refreshUser } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<Enums.AddressType>(Enums.AddressType.invoice);
   const { selectedCompany } = useCompany();
@@ -111,31 +96,6 @@ export default function AddressesPage() {
     setShowAddModal(true);
   };
 
-  const refreshUserData = async () => {
-    try {
-      const userService = new UserService(graphqlClient);
-      const viewerData = await userService.getViewer({});
-      if (viewerData) {
-        const plainUser = deepPlain(viewerData);
-        localStorage.setItem('user', JSON.stringify(plainUser));
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
-    } catch (error: unknown) {
-      console.error('Error refreshing user data:', error);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const err = error as Record<string, any>;
-      const potentialData = err?.response?.data?.viewer || err?.data?.viewer;
-
-      if (potentialData) {
-        console.log('Recovering user data from partial error response', potentialData);
-        const plainUser = deepPlain(potentialData);
-        localStorage.setItem('user', JSON.stringify(plainUser));
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
-    }
-  };
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditAddress = async (address: Address) => {
     if (!user) return;
@@ -185,7 +145,7 @@ export default function AddressesPage() {
         await addressService.updateCustomerAddress(updateInput);
       }
 
-      await refreshUserData();
+      await refreshUser();
       toast.success('Address updated successfully');
     } catch (error) {
       console.error('Error updating address:', error);
@@ -212,7 +172,7 @@ export default function AddressesPage() {
         });
       }
 
-      await refreshUserData();
+      await refreshUser();
       toast.success('Address deleted successfully');
     } catch (error) {
       console.error('Error deleting address:', error);
@@ -238,7 +198,7 @@ export default function AddressesPage() {
           isDefault: Enums.YesNo.Y
         });
       }
-      await refreshUserData();
+      await refreshUser();
       toast.success('Address set as default');
     } catch (error) {
       console.error('Error setting default address:', error);
@@ -285,7 +245,7 @@ export default function AddressesPage() {
         await addressService.createCustomerAddress(input);
       }
 
-      await refreshUserData();
+      await refreshUser();
       toast.success('Address created successfully');
       setShowAddModal(false);
     } catch (error) {

@@ -127,6 +127,7 @@ interface AddressCardState {
     editPhone: string;
     editNotes: string;
     editIcp: Enums.YesNo;
+    saving: boolean;
     getLabel: (key: string, fallback: string) => string;
     getCountryName: (code: string) => string;
     addr: any;
@@ -147,6 +148,7 @@ export default function AddressCard(props: AddressCardProps) {
     const state = useStore<AddressCardState>({
         showEditModal: false,
         showDeleteConfirm: false,
+        saving: false,
         localAddress: null as any,
         editCompany: '',
         editGender: Enums.Gender.U,
@@ -255,6 +257,8 @@ export default function AddressCard(props: AddressCardProps) {
 
         async handleSaveEdit(e: any) {
             e.preventDefault();
+            if (state.saving) return;
+            state.saving = true;
             if (props.beforeSave) {
                 props.beforeSave();
             }
@@ -279,12 +283,16 @@ export default function AddressCard(props: AddressCardProps) {
                 icp: state.editIcp as Enums.YesNo,
             } as unknown as Address;
             state.localAddress = editedAddress;
-            if (props.onEdit) {
-                await props.onEdit(editedAddress);
-            }
-            state.showEditModal = false;
-            if (props.afterEdit) {
-                await props.afterEdit(editedAddress);
+            try {
+                if (props.onEdit) {
+                    await props.onEdit(editedAddress);
+                }
+                state.showEditModal = false;
+                if (props.afterEdit) {
+                    await props.afterEdit(editedAddress);
+                }
+            } finally {
+                state.saving = false;
             }
         },
 
@@ -502,17 +510,17 @@ export default function AddressCard(props: AddressCardProps) {
 
                         <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
                             <Show when={!props.isNew}>
-                                <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
+                                <button type="button" onClick={() => state.closeEditModal()} disabled={state.saving} className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50">
                                     {state.getLabel('cancel', 'Cancel')}
                                 </button>
                             </Show>
                             <Show when={props.isNew && !!props.onCancel}>
-                                <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
+                                <button type="button" onClick={() => state.closeEditModal()} disabled={state.saving} className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50">
                                     {state.getLabel('cancel', 'Cancel')}
                                 </button>
                             </Show>
-                            <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">
-                                {state.getLabel('save', 'Save')}
+                            <button type="submit" disabled={state.saving} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50">
+                                {state.saving ? state.getLabel('saving', 'Saving...') : state.getLabel('save', 'Save')}
                             </button>
                         </div>
                     </form>
@@ -630,11 +638,11 @@ export default function AddressCard(props: AddressCardProps) {
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
-                                <button type="button" onClick={() => state.closeEditModal()} className="px-4 py-2 border rounded hover:bg-gray-100">
+                                <button type="button" onClick={() => state.closeEditModal()} disabled={state.saving} className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50">
                                     {state.getLabel('cancel', 'Cancel')}
                                 </button>
-                                <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">
-                                    {state.getLabel('save', 'Save')}
+                                <button type="submit" disabled={state.saving} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50">
+                                    {state.saving ? state.getLabel('saving', 'Saving...') : state.getLabel('save', 'Save')}
                                 </button>
                             </div>
                         </form>

@@ -127,6 +127,7 @@ interface AddressCardState {
   editPhone: string;
   editNotes: string;
   editIcp: Enums.YesNo;
+  saving: boolean;
   getLabel: (key: string, fallback: string) => string;
   getCountryName: (code: string) => string;
   addr: () => any;
@@ -173,6 +174,7 @@ function AddressCard(props: AddressCardProps) {
   const [editPhone, setEditPhone] = useState<AddressCardState['editPhone']>(() => '');
   const [editNotes, setEditNotes] = useState<AddressCardState['editNotes']>(() => '');
   const [editIcp, setEditIcp] = useState<AddressCardState['editIcp']>(() => Enums.YesNo.N);
+  const [saving, setSaving] = useState<AddressCardState['saving']>(() => false);
   function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
@@ -253,6 +255,8 @@ function AddressCard(props: AddressCardProps) {
   }
   async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEdit']> {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     if (props.beforeSave) {
       props.beforeSave();
     }
@@ -277,12 +281,16 @@ function AddressCard(props: AddressCardProps) {
       icp: editIcp as Enums.YesNo,
     } as unknown as Address;
     setLocalAddress(editedAddress);
-    if (props.onEdit) {
-      await props.onEdit(editedAddress);
-    }
-    setShowEditModal(false);
-    if (props.afterEdit) {
-      await props.afterEdit(editedAddress);
+    try {
+      if (props.onEdit) {
+        await props.onEdit(editedAddress);
+      }
+      setShowEditModal(false);
+      if (props.afterEdit) {
+        await props.afterEdit(editedAddress);
+      }
+    } finally {
+      setSaving(false);
     }
   }
   function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
@@ -604,7 +612,8 @@ function AddressCard(props: AddressCardProps) {
               {!props.isNew ? (
                 <button
                   type="button"
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
+                  disabled={saving}
+                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
                 >
                   {getLabel('cancel', 'Cancel')}
@@ -613,7 +622,8 @@ function AddressCard(props: AddressCardProps) {
               {props.isNew && !!props.onCancel ? (
                 <button
                   type="button"
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
+                  disabled={saving}
+                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
                 >
                   {getLabel('cancel', 'Cancel')}
@@ -621,9 +631,10 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+                disabled={saving}
+                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
               >
-                {getLabel('save', 'Save')}
+                {saving ? getLabel('saving', 'Saving...') : getLabel('save', 'Save')}
               </button>
             </div>
           </form>
@@ -860,16 +871,18 @@ function AddressCard(props: AddressCardProps) {
               <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
                 <button
                   type="button"
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
+                  disabled={saving}
+                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+                  disabled={saving}
+                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {getLabel('save', 'Save')}
+                  {saving ? getLabel('saving', 'Saving...') : getLabel('save', 'Save')}
                 </button>
               </div>
             </form>

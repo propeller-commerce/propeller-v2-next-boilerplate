@@ -12,7 +12,7 @@ import AddressCard from '@/components/propeller/AddressCard';
 
 import { cartService, orderService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, UserService, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
 import CartCarriers from '@/components/propeller/CartCarriers';
@@ -43,21 +43,6 @@ interface CheckoutState {
   step3Submitted: boolean;
 }
 
-/** Recursively strips underscore-prefixed keys from SDK class instances */
-function deepPlain(obj: unknown): unknown {
-  if (obj === null || obj === undefined) return obj;
-  if (Array.isArray(obj)) return obj.map(deepPlain);
-  if (typeof obj === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-      result[cleanKey] = deepPlain(value);
-    }
-    return result;
-  }
-  return obj;
-}
-
 const COUNTRIES = [
   { code: 'NL', name: 'Netherlands' },
   { code: 'BE', name: 'Belgium' },
@@ -71,7 +56,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const { cart: contextCart, getCart } = useCart();
-  const { state: authState } = useAuth();
+  const { state: authState, refreshUser } = useAuth();
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
     cart: null,
@@ -310,14 +295,7 @@ export default function CheckoutPage() {
         });
       }
 
-      // Refresh user data from API (same pattern as addresses page)
-      const userService = new UserService(graphqlClient);
-      const viewerData = await userService.getViewer({});
-      if (viewerData) {
-        const plainUser = deepPlain(viewerData);
-        localStorage.setItem('user', JSON.stringify(plainUser));
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
+      await refreshUser();
     } catch (error) {
       console.error('Error updating user address:', error);
     }

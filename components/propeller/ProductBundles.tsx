@@ -466,7 +466,6 @@ function ProductBundles(props: ProductBundlesProps) {
   }
   useEffect(() => {
     setIsMounted(true);
-    fetchBundles();
   }, []);
   useEffect(() => {
     fetchBundles();

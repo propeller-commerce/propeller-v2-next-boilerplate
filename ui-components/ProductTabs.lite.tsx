@@ -7,6 +7,7 @@ import {
 import {
     Product,
     GraphQLClient,
+    ProductService,
     PaginatedMediaDocumentResponse,
     PaginatedMediaVideoResponse,
     AttributeResult,
@@ -119,17 +120,26 @@ export interface ProductTabsProps {
 interface ProductTabsState {
     activeTab: string;
     specsVisited: boolean;
+    fetchedAttributes: AttributeResult[];
     hasDescription: boolean;
     isTabVisible: (tab: string) => boolean;
     isActive: (tab: string) => boolean;
     selectTab: (tab: string) => void;
     getLabel: (key: string, fallback: string) => string;
+    getSpecsAttributes: () => AttributeResult[];
 }
 
 export default function ProductTabs(props: ProductTabsProps) {
     const state = useStore<ProductTabsState>({
         activeTab: 'description',
         specsVisited: false,
+        fetchedAttributes: [] as AttributeResult[],
+
+        getSpecsAttributes(): AttributeResult[] {
+            return state.fetchedAttributes.length
+                ? state.fetchedAttributes
+                : (props.product?.attributes?.items as AttributeResult[] || []);
+        },
 
         get hasDescription(): boolean {
             const lang = props.language || 'NL';
@@ -183,6 +193,21 @@ export default function ProductTabs(props: ProductTabsProps) {
             state.activeTab = 'description';
         }
     }, [props.product, props.language]);
+
+    onUpdate(() => {
+        if (!props.productId || !props.graphqlClient) return;
+        const service = new ProductService(props.graphqlClient as GraphQLClient);
+        service
+            .getAttributeResultByProductId(props.productId as number, {
+                attributeDescription: { isPublic: true },
+                page: 1,
+                offset: 2000,
+            })
+            .then((result: { items?: AttributeResult[] }) => {
+                state.fetchedAttributes = result?.items || [];
+            })
+            .catch(() => {});
+    }, [props.productId]);
 
     return (
         <Show when={props.product}>
@@ -244,9 +269,7 @@ export default function ProductTabs(props: ProductTabsProps) {
                     <Show when={state.specsVisited && state.isTabVisible('specifications')}>
                         <div className={state.isActive('specifications') ? '' : 'hidden'}>
                             <ProductSpecifications
-                                attributes={props.product.attributes?.items as AttributeResult[]}
-                                productId={props.productId}
-                                graphqlClient={props.graphqlClient}
+                                attributes={state.getSpecsAttributes()}
                                 language={props.language}
                                 layout={props.specificationsLayout}
                                 grouping={props.specificationsGrouping}
@@ -343,9 +366,7 @@ export default function ProductTabs(props: ProductTabsProps) {
                         <Show when={state.specsVisited && state.isActive('specifications')}>
                             <div className="px-4 pb-4">
                                 <ProductSpecifications
-                                    attributes={props.product.attributes?.items as AttributeResult[]}
-                                    productId={props.productId}
-                                    graphqlClient={props.graphqlClient}
+                                    attributes={state.getSpecsAttributes()}
                                     language={props.language}
                                     layout={props.specificationsLayout}
                                     grouping={props.specificationsGrouping}

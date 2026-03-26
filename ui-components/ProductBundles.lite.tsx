@@ -491,7 +491,6 @@ export default function ProductBundles(props: ProductBundlesProps) {
 
     onMount(() => {
         state.isMounted = true;
-        state.fetchBundles();
     });
 
     onUpdate(() => {

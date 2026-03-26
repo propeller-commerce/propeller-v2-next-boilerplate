@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
     onUpdate,
 } from '@builder.io/mitosis';
 import {
@@ -244,9 +245,9 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             }
         };
         window.addEventListener('userLoggedIn', handler);
-        onUnMount(() => {
+        return () => {
             window.removeEventListener('userLoggedIn', handler);
-        });
+        };
     });
 
     return (

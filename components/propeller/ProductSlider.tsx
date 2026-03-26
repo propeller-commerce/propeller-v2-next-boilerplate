@@ -433,16 +433,18 @@ function ProductSlider(props: ProductSliderProps) {
   }
   useEffect(() => {
     setSliderId('slider-' + Math.random().toString(36).substring(2, 9));
-    doFetch();
   }, []);
   useEffect(() => {
     doFetch();
-    // NOTE: productIds/clusterIds are arrays — compare by value to avoid stale-reference refetches
-  }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds), props.language]);
-  useEffect(() => {
-    doFetch();
-    // NOTE: crossUpsellTypes is an array — compare by value to avoid stale-reference refetches
-  }, [JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId, props.language]);
+    // NOTE: arrays compared by value to avoid stale-reference refetches
+  }, [
+    JSON.stringify(props.productIds),
+    JSON.stringify(props.clusterIds),
+    JSON.stringify(props.crossUpsellTypes),
+    props.productId,
+    props.clusterId,
+    props.language,
+  ]);
   useEffect(() => {
     // Initialize scroll dimensions once sliderId is set and items are rendered
     if (sliderId && items().length > 0) {

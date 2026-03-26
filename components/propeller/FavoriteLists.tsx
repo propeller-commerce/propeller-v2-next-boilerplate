@@ -227,7 +227,7 @@ function FavoriteLists(props: FavoriteListsProps) {
         })
       );
       handleCancelEdit();
-      props.onListChanged?.();
+      if (props.onListChanged) props.onListChanged();
     } catch (error) {
       console.error('Error updating favorite list:', error);
       fetchLists();
@@ -261,7 +261,7 @@ function FavoriteLists(props: FavoriteListsProps) {
       setLists(lists.filter((l: FavoriteList) => String(l.id) !== deletedId));
       setShowDeleteModal(false);
       setListToDelete(null);
-      props.onListChanged?.();
+      if (props.onListChanged) props.onListChanged();
     } catch (error) {
       console.error('Error deleting favorite list:', error);
       fetchLists();
@@ -319,7 +319,7 @@ function FavoriteLists(props: FavoriteListsProps) {
 
       // Refetch to get the complete list
       fetchLists();
-      props.onListChanged?.();
+      if (props.onListChanged) props.onListChanged();
     } catch (error) {
       console.error('Error creating favorite list:', error);
     } finally {

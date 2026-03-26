@@ -531,7 +531,8 @@ fetchProducts();
 } }, {immediate: true})
    async function fetchProducts(): ReturnType<ProductGridState["fetchProducts"]>{
 if (!props.graphqlClient) return;
-const myFetchId = ++fetchId.value;
+const myFetchId = fetchId.value + 1;
+fetchId.value = myFetchId;
 // Always show loading on first load; skip skeleton only for language switch with existing products
 if (internalProducts.value.length === 0) {
   isInternalLoading.value = true;

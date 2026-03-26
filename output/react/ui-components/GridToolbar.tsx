@@ -222,21 +222,21 @@ function GridToolbar(props: GridToolbarProps) {
   function getLabel(key: string): ReturnType<GridToolbarState['getLabel']> {
     const labels = (props.labels as Record<string, string>) || {};
     return labels[key] !== undefined ? labels[key] : DEFAULT_LABELS[key] || key;
-  };
+  }
   function getSortOptions(): ReturnType<GridToolbarState['getSortOptions']> {
     const opts = (props.sortOptions as string[]) || [];
     return opts.length > 0 ? opts : ALL_SORT_FIELDS;
-  };
+  }
   function getOffsetOptions(): ReturnType<GridToolbarState['getOffsetOptions']> {
     const opts = (props.offset as number[]) || [];
     return opts.length > 0 ? opts : [12, 24, 48];
-  };
+  }
   function hasActiveFilters(): ReturnType<GridToolbarState['hasActiveFilters']> {
     const text = (props.activeTextFilters as Record<string, string[]>) || {};
     const hasText = Object.keys(text).some((k) => (text[k] || []).length > 0);
     const hasPrice = props.priceFilterMin !== undefined || props.priceFilterMax !== undefined;
     return hasText || hasPrice;
-  };
+  }
   function getActiveFilterBadges(): ReturnType<GridToolbarState['getActiveFilterBadges']> {
     const text = (props.activeTextFilters as Record<string, string[]>) || {};
     const badges: FilterBadge[] = [];
@@ -251,31 +251,31 @@ function GridToolbar(props: GridToolbarProps) {
         });
       });
     return badges;
-  };
+  }
   function isPriceSortDisabled(): ReturnType<GridToolbarState['isPriceSortDisabled']> {
     return (props.portalMode as string) === 'semi-closed' && !props.user;
-  };
+  }
   function handleSortFieldChange(
     field: string
   ): ReturnType<GridToolbarState['handleSortFieldChange']> {
     setCurrentSortField(field);
     if (props.onSortChange) props.onSortChange(field, currentSortOrder);
-  };
+  }
   function handleSortOrderChange(
     order: string
   ): ReturnType<GridToolbarState['handleSortOrderChange']> {
     setCurrentSortOrder(order);
     if (props.onSortChange) props.onSortChange(currentSortField, order);
-  };
+  }
   function handleOffsetChange(offset: number): ReturnType<GridToolbarState['handleOffsetChange']> {
     setCurrentOffset(offset);
     if (props.onOffsetChange) props.onOffsetChange(offset);
-  };
+  }
   function handleViewChange(): ReturnType<GridToolbarState['handleViewChange']> {
     const next = currentViewMode === 'grid' ? 'list' : 'grid';
     setCurrentViewMode(next);
     if (props.onViewChange) props.onViewChange(next);
-  };
+  }
   useEffect(() => {
     const sort =
       (props.defaultSort as {

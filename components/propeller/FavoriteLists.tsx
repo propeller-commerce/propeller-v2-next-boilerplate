@@ -8,7 +8,6 @@ import {
   GraphQLClient,
   Contact,
   Customer,
-  FavoriteListsSearchInput,
 } from 'propeller-sdk-v2';
 
 export interface FavoriteListFormData {
@@ -100,7 +99,7 @@ interface FavoriteListsState {
   newSetAsDefault: boolean;
   isMounted: boolean;
   saving: boolean;
-  fetchLists: () => Promise<void>;
+  fetchLists: () => void;
   handleEditList: (list: FavoriteList) => void;
   handleCancelEdit: () => void;
   handleUpdateList: (listId: string) => Promise<void>;
@@ -118,7 +117,7 @@ interface FavoriteListsState {
 }
 function FavoriteLists(props: FavoriteListsProps) {
   const [lists, setLists] = useState<FavoriteListsState['lists']>(() => []);
-  const [loading, setLoading] = useState<FavoriteListsState['loading']>(() => true);
+  const [loading, setLoading] = useState<FavoriteListsState['loading']>(() => false);
   const [editingListId, setEditingListId] = useState<FavoriteListsState['editingListId']>(
     () => null
   );
@@ -139,26 +138,8 @@ function FavoriteLists(props: FavoriteListsProps) {
   );
   const [isMounted, setIsMounted] = useState<FavoriteListsState['isMounted']>(() => false);
   const [saving, setSaving] = useState<FavoriteListsState['saving']>(() => false);
-  async function fetchLists(): ReturnType<FavoriteListsState['fetchLists']> {
-    if (!props.user || !props.graphqlClient) return;
-    setLoading(true);
-    try {
-      const service = new FavoriteListService(props.graphqlClient);
-      const isContact = 'contactId' in props.user;
-      const searchInput: FavoriteListsSearchInput = {};
-      if (isContact) {
-        searchInput.contactId = (props.user as Contact).contactId;
-      } else {
-        searchInput.customerId = (props.user as Customer).customerId;
-      }
-      const response = await service.getFavoriteLists(searchInput);
-      setLists(response.items || []);
-    } catch (error) {
-      console.error('Error fetching favorite lists:', error);
-      setLists([]);
-    } finally {
-      setLoading(false);
-    }
+  function fetchLists(): ReturnType<FavoriteListsState['fetchLists']> {
+    setLists((props.user as any)?.favoriteLists?.items || []);
   }
   function handleEditList(list: FavoriteList): ReturnType<FavoriteListsState['handleEditList']> {
     setEditingListId(String(list.id));
@@ -549,8 +530,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                                   <polyline points="3.29 7 12 12 20.71 7" />
                                   <line x1="12" x2="12" y1="22" y2="12" />
                                 </svg>
-                                {getTotalCount(list)}
-                                {getLabel('items', 'items')}
+                                {getTotalCount(list)}&nbsp;{getLabel('items', 'items')}
                               </div>
                             ) : null}
                           </div>

@@ -11,7 +11,6 @@ import {
     GraphQLClient,
     Contact,
     Customer,
-    FavoriteListsSearchInput,
 } from 'propeller-sdk-v2';
 
 export interface FavoriteListFormData {
@@ -105,7 +104,7 @@ interface FavoriteListsState {
     newSetAsDefault: boolean;
     isMounted: boolean;
     saving: boolean;
-    fetchLists: () => Promise<void>;
+    fetchLists: () => void;
     handleEditList: (list: FavoriteList) => void;
     handleCancelEdit: () => void;
     handleUpdateList: (listId: string) => Promise<void>;
@@ -125,7 +124,7 @@ interface FavoriteListsState {
 export default function FavoriteLists(props: FavoriteListsProps) {
     const state = useStore<FavoriteListsState>({
         lists: [] as FavoriteList[],
-        loading: true,
+        loading: false,
         editingListId: null,
         editListName: '',
         editSetAsDefault: false,
@@ -137,29 +136,8 @@ export default function FavoriteLists(props: FavoriteListsProps) {
         isMounted: false,
         saving: false,
 
-        async fetchLists() {
-            if (!props.user || !props.graphqlClient) return;
-
-            state.loading = true;
-            try {
-                const service = new FavoriteListService(props.graphqlClient);
-                const isContact = 'contactId' in props.user;
-                const searchInput: FavoriteListsSearchInput = {};
-
-                if (isContact) {
-                    searchInput.contactId = (props.user as Contact).contactId;
-                } else {
-                    searchInput.customerId = (props.user as Customer).customerId;
-                }
-
-                const response = await service.getFavoriteLists(searchInput);
-                state.lists = response.items || [];
-            } catch (error) {
-                console.error('Error fetching favorite lists:', error);
-                state.lists = [];
-            } finally {
-                state.loading = false;
-            }
+        fetchLists() {
+            state.lists = (props.user as any)?.favoriteLists?.items || [];
         },
 
         handleEditList(list: FavoriteList) {
@@ -508,7 +486,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                                                         <Show when={props.showItemsCount !== false}>
                                                             <div className="flex items-center gap-1">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>
-                                                                {state.getTotalCount(list)} {state.getLabel('items', 'items')}
+                                                                {state.getTotalCount(list)}&nbsp;{state.getLabel('items', 'items')}
                                                             </div>
                                                         </Show>
                                                     </div>

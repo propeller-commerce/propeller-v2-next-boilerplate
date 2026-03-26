@@ -334,7 +334,6 @@ interface ProductGridState {
   itemsFound: number;
   currentSortField: string;
   currentSortOrder: string;
-  fetchId: number;
   fetchProducts: () => Promise<void>;
   isClusterItem: (item: Product | Cluster) => boolean;
   getGridColsClass: () => string;
@@ -344,7 +343,6 @@ interface ProductGridState {
   showAddToCart: () => boolean;
   getSkeletonItems: () => number[];
 }
-
 function ProductGrid(props: ProductGridProps) {
   const [internalProducts, setInternalProducts] = useState<ProductGridState['internalProducts']>(
     () => []
@@ -518,11 +516,9 @@ function ProductGrid(props: ProductGridProps) {
       }
     }
   }
-
   function isClusterItem(item: Product | Cluster): ReturnType<ProductGridState['isClusterItem']> {
     return !!(item as any)?.clusterId;
   }
-
   function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
     const cols = (props.columns as number) || 3;
     if (cols === 1) return 'flex flex-col gap-4';
@@ -530,13 +526,11 @@ function ProductGrid(props: ProductGridProps) {
     if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
     return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
-
   function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
     setCurrentPage(page);
     fetchProducts();
     if (props.onPageChange) props.onPageChange(page);
   }
-
   function getDisplayProducts(): ReturnType<ProductGridState['getDisplayProducts']> {
     // Use props.products when explicitly provided (even if empty array).
     // Fall through to internally fetched products only when prop is absent.
@@ -545,17 +539,14 @@ function ProductGrid(props: ProductGridProps) {
     }
     return internalProducts;
   }
-
   function getIsLoading(): ReturnType<ProductGridState['getIsLoading']> {
     return !!(props.isLoading as boolean) || isInternalLoading;
   }
-
   function showAddToCart(): ReturnType<ProductGridState['showAddToCart']> {
     const mode = (props.portalMode as string) || 'open';
     const allow = (props.allowAddToCart as boolean) !== false;
     return mode === 'open' && allow;
   }
-
   function getSkeletonItems(): ReturnType<ProductGridState['getSkeletonItems']> {
     const cols = (props.columns as number) || 3;
     const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
@@ -563,7 +554,6 @@ function ProductGrid(props: ProductGridProps) {
     for (let i = 0; i < count; i++) items.push(i);
     return items;
   }
-
   // Tracks the serialised dep values of the last fetch that was actually started.
   // Prevents duplicate API calls when React fires this effect more than once with
   // identical prop values (e.g. after a parent re-render with an unchanged URL).

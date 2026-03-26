@@ -2,6 +2,7 @@ import {
     useStore,
     Show,
     For,
+    onMount,
     onUpdate,
 } from '@builder.io/mitosis';
 import {
@@ -108,7 +109,7 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
         toggleModal() {
             if (!props.user) return;
             if (!state.showModal) {
-                const nonMember = state.getNonMemberLists;
+                const nonMember = state.getNonMemberLists();
                 if (nonMember.length > 0 && !state.selectedListId) {
                     state.selectedListId = String(nonMember[0].id);
                 }
@@ -244,9 +245,9 @@ export default function AddToFavorite(props: AddToFavoriteProps) {
             }
         };
         window.addEventListener('userLoggedIn', handler);
-        onUnMount(() => {
+        return () => {
             window.removeEventListener('userLoggedIn', handler);
-        });
+        };
     });
 
     return (

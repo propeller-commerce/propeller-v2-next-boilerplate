@@ -177,10 +177,47 @@ function AddToFavorite(props: AddToFavoriteProps) {
     return (userLists || []).filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
   }
   useEffect(() => {
-    set_isMounted(true);
+    const handler = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const freshUser = JSON.parse(storedUser);
+          const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
+          const memberIds = new Set<string>();
+          const myItemId = (props.productId || props.clusterId || 0) as number;
+          const myIsProduct = !!props.productId;
+          (userLists || []).forEach((list: FavoriteList) => {
+            const productsRef = list?.products as any;
+            const clustersRef = list?.clusters as any;
+            if (myIsProduct) {
+              if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
+                memberIds.add(String(list.id));
+              }
+            } else {
+              const inProducts = productsRef?.items?.some(
+                (item: any) => item.clusterId === myItemId
+              );
+              const inClusters = clustersRef?.items?.some(
+                (item: any) => item.clusterId === myItemId
+              );
+              if (inProducts || inClusters) {
+                memberIds.add(String(list.id));
+              }
+            }
+          });
+          setMemberListIds(memberIds);
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+    };
+    window.addEventListener('userLoggedIn', handler);
+    return () => {
+      window.removeEventListener('userLoggedIn', handler);
+    };
   }, []);
-  useEffect(() => {
-    if (!props.user || !itemId()) return;
+  function computeMemberListIds() {
+    if (!props.user || !itemId()) return new Set<string>();
     const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
     const memberIds = new Set<string>();
     (userLists || []).forEach((list: FavoriteList) => {
@@ -211,8 +248,49 @@ function AddToFavorite(props: AddToFavoriteProps) {
         }
       }
     });
-    setMemberListIds(memberIds);
+    return memberIds;
+  }
+  useEffect(() => {
+    set_isMounted(true);
+  }, []);
+  useEffect(() => {
+    setMemberListIds(computeMemberListIds());
   }, [props.user, props.productId, props.clusterId]);
+  // Listen for user data changes (e.g. after favorite list modifications on other pages)
+  useEffect(() => {
+    const handler = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const freshUser = JSON.parse(storedUser);
+          const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
+          const memberIds = new Set<string>();
+          const myItemId = (props.productId || props.clusterId || 0) as number;
+          const myIsProduct = !!props.productId;
+          (userLists || []).forEach((list: FavoriteList) => {
+            const productsRef = list?.products as any;
+            const clustersRef = list?.clusters as any;
+            if (myIsProduct) {
+              if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
+                memberIds.add(String(list.id));
+              }
+            } else {
+              const inProducts = productsRef?.items?.some((item: any) => item.clusterId === myItemId);
+              const inClusters = clustersRef?.items?.some((item: any) => item.clusterId === myItemId);
+              if (inProducts || inClusters) {
+                memberIds.add(String(list.id));
+              }
+            }
+          });
+          setMemberListIds(memberIds);
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+    };
+    window.addEventListener('userLoggedIn', handler);
+    return () => window.removeEventListener('userLoggedIn', handler);
+  }, [props.productId, props.clusterId]);
   return (
     <>
       {props.user ? (

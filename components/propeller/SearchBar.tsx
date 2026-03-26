@@ -67,7 +67,9 @@ interface SearchBarState {
   showDropdown: boolean;
   itemsFound: number;
   debounceTimer: any;
-  clickOutsideListener: any;
+  clickOutsideListener: {
+    fn: ((e: MouseEvent) => void) | null;
+  };
   placeholder: () => string;
   minLength: () => number;
   debounceMs: () => number;
@@ -89,6 +91,11 @@ function SearchBar(props: SearchBarProps) {
   const [showDropdown, setShowDropdown] = useState<SearchBarState['showDropdown']>(() => false);
   const [itemsFound, setItemsFound] = useState<SearchBarState['itemsFound']>(() => 0);
   const [debounceTimer, setDebounceTimer] = useState<SearchBarState['debounceTimer']>(() => null);
+  const [clickOutsideListener, setClickOutsideListener] = useState<
+    SearchBarState['clickOutsideListener']
+  >(() => ({
+    fn: null as any,
+  }));
   function placeholder(): ReturnType<SearchBarState['placeholder']> {
     return props.placeholder || 'Search products...';
   }
@@ -238,9 +245,16 @@ function SearchBar(props: SearchBarProps) {
         setShowDropdown(false);
       }
     };
+    setClickOutsideListener({
+      fn: listener,
+    });
     document.addEventListener('mousedown', listener);
+  }, []);
+  useEffect(() => {
     return () => {
-      document.removeEventListener('mousedown', listener);
+      if (clickOutsideListener.fn) {
+        document.removeEventListener('mousedown', clickOutsideListener.fn);
+      }
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }

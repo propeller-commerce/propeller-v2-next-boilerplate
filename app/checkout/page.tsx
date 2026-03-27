@@ -69,6 +69,7 @@ export default function CheckoutPage() {
     step3Submitted: false
   });
   const sameAsInvoiceRef = useRef(false);
+  const orderPlacedRef = useRef(false);
 
   useEffect(() => {
     // Wait for auth to finish hydrating before initializing checkout
@@ -106,7 +107,9 @@ export default function CheckoutPage() {
       }
 
       if (!cartToUse || !cartToUse.items || cartToUse.items.length === 0) {
-        router.replace(localizeHref('/cart', language));
+        if (!orderPlacedRef.current) {
+          router.replace(localizeHref('/cart', language));
+        }
         return;
       }
 
@@ -425,6 +428,7 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async (reference?: string, notes?: string) => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
+      orderPlacedRef.current = true;
       if (reference || notes) {
         await cartService.updateCart({
           id: state.cart!.cartId,
@@ -463,6 +467,7 @@ export default function CheckoutPage() {
 
     } catch (error) {
       console.error(error);
+      orderPlacedRef.current = false;
       setState(prev => ({ ...prev, error: 'Failed to place order', loading: false }));
     }
   };

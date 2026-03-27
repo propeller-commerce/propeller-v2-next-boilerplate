@@ -106,7 +106,7 @@ export default function CheckoutPage() {
       }
 
       if (!cartToUse || !cartToUse.items || cartToUse.items.length === 0) {
-        if (state.loading) return;
+        router.replace(localizeHref('/cart', language));
         return;
       }
 

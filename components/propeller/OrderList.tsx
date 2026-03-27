@@ -297,7 +297,7 @@ function OrderList(props: OrderListProps) {
                             ...searchForm,
                             createdAt: {
                               ...current,
-                              greaterThan: val,
+                              greaterThan: val ?? undefined,
                             },
                           });
                         }}
@@ -318,7 +318,7 @@ function OrderList(props: OrderListProps) {
                             ...searchForm,
                             createdAt: {
                               ...current,
-                              lessThan: val,
+                              lessThan: val ?? undefined,
                             },
                           });
                         }}
@@ -343,7 +343,7 @@ function OrderList(props: OrderListProps) {
                             ...searchForm,
                             lastModifiedAt: {
                               ...current,
-                              greaterThan: val,
+                              greaterThan: val ?? undefined,
                             },
                           });
                         }}
@@ -364,7 +364,7 @@ function OrderList(props: OrderListProps) {
                             ...searchForm,
                             lastModifiedAt: {
                               ...current,
-                              lessThan: val,
+                              lessThan: val ?? undefined,
                             },
                           });
                         }}

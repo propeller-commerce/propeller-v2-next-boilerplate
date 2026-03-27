@@ -714,6 +714,21 @@ const FILE_PATCHES = [
         from: "      setFetching(false);",
         to: "      fetchingRef.current = false;",
     },
+    // Mitosis drops `undefined` as a ternary falsy branch, so we use `null`
+    // in the source. Post-compile, coerce null → undefined to satisfy
+    // DateSearchInput which types greaterThan/lessThan as string | undefined.
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: coerce null → undefined for greaterThan date val',
+        from: "greaterThan: val,",
+        to: "greaterThan: val ?? undefined,",
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: coerce null → undefined for lessThan date val',
+        from: "lessThan: val,",
+        to: "lessThan: val ?? undefined,",
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────

@@ -20,12 +20,13 @@ import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { Cart, CartService, CartSearchInput, Company, Contact, Customer } from 'propeller-sdk-v2';
+import type { CartQueryVariables } from 'propeller-sdk-v2/dist/service/CartService';
 import { stripLeadingUnderscores } from '@/data/defaults';
 
 export default function Header() {
   const router = useRouter();
-  const { cart } = useCart();
+  const { cart, saveCart, clearCart } = useCart();
   const { state, logout, updateUser } = useAuth();
   const { selectedCompany, setSelectedCompany } = useCompany();
   const { includeTax, setIncludeTax } = usePrice();
@@ -35,6 +36,41 @@ export default function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+
+  // Fetch the user's active cart from the server for a given user/company
+  const fetchActiveCart = async (user: Contact | Customer, companyId?: number) => {
+    const cartService = new CartService(graphqlClient);
+    try {
+      const searchInput: CartSearchInput = { offset: 100 };
+      if ('contactId' in user && user.contactId) {
+        searchInput.contactIds = [user.contactId];
+        if (companyId) {
+          searchInput.companyIds = [companyId];
+        }
+      } else if ('customerId' in user && user.customerId) {
+        searchInput.customerIds = [user.customerId];
+      }
+      const carts = await cartService.getCarts(searchInput);
+      if (carts?.items?.length) {
+        const existingCartId = carts.items[carts.items.length - 1].cartId;
+        const cartVars: CartQueryVariables = {
+          cartId: existingCartId,
+          imageSearchFilters: config.imageSearchFiltersGrid,
+          imageVariantFilters: config.imageVariantFiltersSmall,
+          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+        };
+        const activeCart = await cartService.getCart(cartVars);
+        if (activeCart) {
+          saveCart(activeCart);
+          return;
+        }
+      }
+      // No active cart found — clear any stale cart from previous session/company
+      clearCart();
+    } catch (e) {
+      console.error('Failed to fetch active cart:', e);
+    }
+  };
 
   // CMS settings with defaults
   const topBarEnabled = globalData?.topBarEnabled ?? true;
@@ -105,7 +141,12 @@ export default function Header() {
                     <CompanySwitcher
                       user={state.user as Contact}
                       selectedCompanyId={selectedCompany?.companyId}
-                      onCompanyChange={setSelectedCompany}
+                      onCompanyChange={(company) => {
+                        setSelectedCompany(company);
+                        if (state.user) {
+                          fetchActiveCart(state.user as Contact | Customer, company?.companyId);
+                        }
+                      }}
                     />
                   )}
                   {showVatToggle && (
@@ -213,6 +254,10 @@ export default function Header() {
                       if (typeof window !== 'undefined') {
                         window.dispatchEvent(new CustomEvent('userLoggedIn'));
                       }
+
+                      // Fetch the user's active cart from the server
+                      const company = (loggedInUser as Contact).company;
+                      fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
 
                       router.push(localizeHref('/account', language))
                     }}

@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   OrderService,
   OrderSearchArguments,
@@ -90,7 +90,6 @@ interface OrderListState {
   currentPage: number;
   itemsPerPage: number;
   totalPages: number;
-  fetching: boolean;
   rowsClickable: boolean;
   searchForm: {
     term?: string;
@@ -125,11 +124,11 @@ function OrderList(props: OrderListProps) {
   const [rowsClickable, setRowsClickable] = useState<OrderListState['rowsClickable']>(
     () => props.rowsClickable || false
   );
-  const [fetching, setFetching] = useState<OrderListState['fetching']>(() => false);
+  const fetchingRef = useRef(false);
   const [searchForm, setSearchForm] = useState<OrderListState['searchForm']>(() => ({}));
   async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
-    if (!props.user || !props.graphqlClient || fetching) return;
-    setFetching(true);
+    if (!props.user || !props.graphqlClient || fetchingRef.current) return;
+    fetchingRef.current = true;
     setLoading(true);
     try {
       const orderService = new OrderService(props.graphqlClient);
@@ -144,11 +143,9 @@ function OrderList(props: OrderListProps) {
       // Explicit cast to any for user ID access as SDK types might be strict interfaces
       // We handle both Contact (contactId) and Customer (customerId)
       const userId = isContactUser ? (props.user as any).contactId : (props.user as any).customerId;
-      const companyId =
-        props.companyId ||
-        (isContactUser && (props.user as any).company
-          ? (props.user as any).company.companyId
-          : undefined);
+      const companyIdFallback =
+        isContactUser && (props.user as any).company ? (props.user as any).company.companyId : null;
+      const companyId = props.companyId || companyIdFallback || null;
       const searchArgs: OrderSearchArguments = {
         status: statuses,
         userId: [userId],
@@ -193,7 +190,7 @@ function OrderList(props: OrderListProps) {
       setOrders([]);
     } finally {
       setLoading(false);
-      setFetching(false);
+      fetchingRef.current = false;
     }
   }
   function handlePageChange(newPage: number): ReturnType<OrderListState['handlePageChange']> {
@@ -241,11 +238,6 @@ function OrderList(props: OrderListProps) {
     }
     return fields;
   }
-  useEffect(() => {
-    if (props.user) {
-      fetchOrders(currentPage);
-    }
-  }, []);
   useEffect(() => {
     if (props.user) {
       fetchOrders(currentPage);
@@ -300,12 +292,12 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.createdAt || {};
-                          const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                          const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
                           setSearchForm({
                             ...searchForm,
                             createdAt: {
                               ...current,
-                              greaterThan: val,
+                              greaterThan: val ?? undefined,
                             },
                           });
                         }}
@@ -321,12 +313,12 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.createdAt || {};
-                          const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                          const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
                           setSearchForm({
                             ...searchForm,
                             createdAt: {
                               ...current,
-                              lessThan: val,
+                              lessThan: val ?? undefined,
                             },
                           });
                         }}
@@ -346,12 +338,12 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.lastModifiedAt || {};
-                          const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                          const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
                           setSearchForm({
                             ...searchForm,
                             lastModifiedAt: {
                               ...current,
-                              greaterThan: val,
+                              greaterThan: val ?? undefined,
                             },
                           });
                         }}
@@ -367,12 +359,12 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.lastModifiedAt || {};
-                          const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                          const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
                           setSearchForm({
                             ...searchForm,
                             lastModifiedAt: {
                               ...current,
-                              lessThan: val,
+                              lessThan: val ?? undefined,
                             },
                           });
                         }}

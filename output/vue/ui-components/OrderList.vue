@@ -51,7 +51,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
                         searchForm = {
                           ...searchForm,
                           createdAt: {
@@ -73,7 +73,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
                         searchForm = {
                           ...searchForm,
                           createdAt: {
@@ -101,7 +101,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
@@ -123,7 +123,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
@@ -428,7 +428,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import {
   OrderService,
@@ -553,12 +553,6 @@ const rowsClickable = ref<OrderListState['rowsClickable']>(props.rowsClickable.v
 const fetching = ref<OrderListState['fetching']>(false);
 const searchForm = ref<OrderListState['searchForm']>({});
 
-onMounted(() => {
-  if (props.user) {
-    fetchOrders(currentPage.value);
-  }
-});
-
 const searchFields = computed(() => {
   const fields = props.searchFields || [];
   if (props.enableSearch && !(fields as string[]).includes('term')) {
@@ -593,11 +587,9 @@ async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOr
     // Explicit cast to any for user ID access as SDK types might be strict interfaces
     // We handle both Contact (contactId) and Customer (customerId)
     const userId = isContactUser ? (props.user as any).contactId : (props.user as any).customerId;
-    const companyId =
-      props.companyId ||
-      (isContactUser && (props.user as any).company
-        ? (props.user as any).company.companyId
-        : undefined);
+    const companyIdFallback =
+      isContactUser && (props.user as any).company ? (props.user as any).company.companyId : null;
+    const companyId = props.companyId || companyIdFallback || null;
     const searchArgs: OrderSearchArguments = {
       status: statuses,
       userId: [userId],

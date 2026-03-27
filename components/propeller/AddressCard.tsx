@@ -150,6 +150,7 @@ function AddressCard(props: AddressCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<AddressCardState['showDeleteConfirm']>(
     () => false
   );
+  const [saving, setSaving] = useState<AddressCardState['saving']>(() => false);
   const [localAddress, setLocalAddress] = useState<AddressCardState['localAddress']>(() => null);
   const [editCompany, setEditCompany] = useState<AddressCardState['editCompany']>(() => '');
   const [editGender, setEditGender] = useState<AddressCardState['editGender']>(
@@ -174,7 +175,6 @@ function AddressCard(props: AddressCardProps) {
   const [editPhone, setEditPhone] = useState<AddressCardState['editPhone']>(() => '');
   const [editNotes, setEditNotes] = useState<AddressCardState['editNotes']>(() => '');
   const [editIcp, setEditIcp] = useState<AddressCardState['editIcp']>(() => Enums.YesNo.N);
-  const [saving, setSaving] = useState<AddressCardState['saving']>(() => false);
   function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
@@ -612,9 +612,9 @@ function AddressCard(props: AddressCardProps) {
               {!props.isNew ? (
                 <button
                   type="button"
-                  disabled={saving}
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
+                  disabled={saving}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
@@ -622,19 +622,19 @@ function AddressCard(props: AddressCardProps) {
               {props.isNew && !!props.onCancel ? (
                 <button
                   type="button"
-                  disabled={saving}
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
+                  disabled={saving}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
               ) : null}
               <button
                 type="submit"
-                disabled={saving}
                 className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+                disabled={saving}
               >
-                {saving ? getLabel('saving', 'Saving...') : getLabel('save', 'Save')}
+                {saving ? <>{getLabel('saving', 'Saving...')}</> : <>{getLabel('save', 'Save')}</>}
               </button>
             </div>
           </form>
@@ -871,18 +871,22 @@ function AddressCard(props: AddressCardProps) {
               <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
                 <button
                   type="button"
-                  disabled={saving}
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
+                  disabled={saving}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
                   className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+                  disabled={saving}
                 >
-                  {saving ? getLabel('saving', 'Saving...') : getLabel('save', 'Save')}
+                  {saving ? (
+                    <>{getLabel('saving', 'Saving...')}</>
+                  ) : (
+                    <>{getLabel('save', 'Save')}</>
+                  )}
                 </button>
               </div>
             </form>

@@ -808,6 +808,58 @@ const FILE_PATCHES = [
   }, [props.productId, props.clusterId]);
   return (`,
     },
+    // ── OrderList: convert `fetching` useState → useRef ──────────────────────
+    // The `fetching` guard in fetchOrders uses useState, but setFetching(true)
+    // is async — by the time a second effect invocation runs (from React
+    // StrictMode or rapid dep changes), `fetching` still reads `false` from the
+    // stale closure, so the guard is bypassed and a duplicate API call is made.
+    // Fix: use a ref, which is updated synchronously and always returns the live
+    // value regardless of closure capture timing.
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: add useRef import for fetchingRef dedup guard',
+        from: "import { useState, useEffect } from 'react';",
+        to: "import { useState, useEffect, useRef } from 'react';",
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: convert fetching useState → useRef',
+        from: "  const [fetching, setFetching] = useState<OrderListState['fetching']>(() => false);",
+        to: "  const fetchingRef = useRef(false);",
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: use fetchingRef.current in guard check',
+        from: "    if (!props.user || !props.graphqlClient || fetching) return;",
+        to: "    if (!props.user || !props.graphqlClient || fetchingRef.current) return;",
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: use fetchingRef.current = true',
+        from: "    setFetching(true);",
+        to: "    fetchingRef.current = true;",
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: use fetchingRef.current = false',
+        from: "      setFetching(false);",
+        to: "      fetchingRef.current = false;",
+    },
+    // Mitosis drops `undefined` as a ternary falsy branch, so we use `null`
+    // in the source. Post-compile, coerce null → undefined to satisfy
+    // DateSearchInput which types greaterThan/lessThan as string | undefined.
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: coerce null → undefined for greaterThan date val',
+        from: "greaterThan: val,",
+        to: "greaterThan: val ?? undefined,",
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        label: 'React → OrderList: coerce null → undefined for lessThan date val',
+        from: "lessThan: val,",
+        to: "lessThan: val ?? undefined,",
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────
@@ -832,6 +884,11 @@ const UNUSED_STATE_REMOVALS = [
         file: resolve('../output/react/ui-components/ProductGrid.tsx'),
         pattern: /\s*fetchId: number;\n/g,
         label: 'React → ProductGrid: remove unused fetchId from state interface',
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderList.tsx'),
+        pattern: /\s*fetching: boolean;\n/g,
+        label: 'React → OrderList: remove unused fetching from state interface',
     },
 ];
 

@@ -188,7 +188,7 @@ function ProductInfo(props: ProductInfoProps) {
       .catch(() => {
         setLoading(false);
       });
-  }, [props.productId, props.product, props.language]);
+  }, [props.productId, props.product, props.language, props.user]);
   return (
     <div className={`product-info ${(props.className as string) || ''}`}>
       {loading && !props.product ? (

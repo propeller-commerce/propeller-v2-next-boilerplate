@@ -312,10 +312,11 @@ The internal fetch re-runs when any of these props change:
 - `productId`
 - `product`
 - `language`
+- `user` -- ensures pricing updates on login, logout, or company switch
 
 ### User-aware pricing
 
-The fetch includes `priceCalculateProductInput` and `userBulkPriceProductInput` derived from the `user` prop. For B2B users (Contact), `companyId` and `contactId` are included. For B2C users (Customer), `customerId` is included. This ensures server-side price calculation respects customer-specific pricing tiers.
+The fetch includes `priceCalculateProductInput` and `userBulkPriceProductInput` derived from the `user` prop. For B2B users (Contact), `companyId` and `contactId` are included. For B2C users (Customer), `customerId` is included. This ensures server-side price calculation respects customer-specific pricing tiers. Because `user` is in the dependency array, pricing automatically re-fetches when the user logs in, logs out, or switches companies.
 
 ### Error handling
 

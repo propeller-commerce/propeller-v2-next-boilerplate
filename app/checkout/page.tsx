@@ -117,6 +117,8 @@ export default function CheckoutPage() {
         // If user is logged in and cart is missing addresses, pre-populate from user's defaults
         if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
           try {
+            // Ensure CartService mutations are loaded before calling updateCartAddress
+            await cartService.initializeService();
             let updatedCart = cartToUse;
 
             if (!hasInvoiceAddress) {
@@ -250,10 +252,10 @@ export default function CheckoutPage() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let addresses: any[] = [];
+    const company = isContact(user) ? getActiveCompany() : null;
     if (isContact(user)) {
-      const company = getActiveCompany();
       if (!company) return;
-      addresses = company?.addresses || [];
+      addresses = company.addresses || [];
     } else if (isCustomer(user)) {
       addresses = user.addresses || [];
     }
@@ -283,10 +285,10 @@ export default function CheckoutPage() {
         isDefault: matchedAddr.isDefault,
       };
 
-      if (isContact(user) && getActiveCompany()) {
+      if (isContact(user) && company) {
         await addressService.updateCompanyAddress({
           ...commonFields,
-          companyId: getActiveCompany()!.companyId,
+          companyId: company.companyId,
         });
       } else if (isCustomer(user)) {
         await addressService.updateCustomerAddress({

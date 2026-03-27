@@ -205,7 +205,7 @@ async function deleteList(listId: string) {
 
 ### Optimistic update pattern
 
-For rename and delete operations, update the in-memory list immediately to provide instant visual feedback. If the API call fails, refetch the full list from the server to roll back to a consistent state. For create operations, always refetch after the API call succeeds, since you need the server-assigned ID and timestamps.
+For rename and delete operations, update the in-memory list immediately to provide instant visual feedback. If the API call fails, refetch the full list from the server to roll back to a consistent state. For create operations, call `onListChanged` which triggers `refreshUser()` on the parent page -- the updated user object flows back as `props.user`, and the component re-reads lists automatically.
 
   </TabItem>
 </Tabs>
@@ -382,7 +382,7 @@ The component updates local state immediately after user actions to provide inst
 
 - **Rename**: The list name and default status update in-place instantly. On API error, the full list is refetched from the server.
 - **Delete**: The list is removed from the displayed array instantly. On API error, the full list is refetched.
-- **Create**: After the API call succeeds, the full list is refetched to obtain the server-assigned ID and timestamps (no optimistic insert).
+- **Create**: After the API call succeeds, the component calls `onListChanged` (which triggers `refreshUser` on the parent page). The updated `props.user` flows back down, and the component re-reads lists from `user.favoriteLists.items` via the `useEffect` on `props.user`.
 - **Set as default**: When a list is marked as default, the component clears the `isDefault` flag on the previously default list both in local state and via a separate API call before applying the new default.
 
 ### Modals
@@ -434,7 +434,7 @@ const service = new FavoriteListService(graphqlClient);
 
 The component reads lists directly from `props.user.favoriteLists.items` — it does **not** call `getFavoriteLists()` from the API. This means the user object (from AuthContext) must already contain populated favorite lists from the authentication response.
 
-Lists are re-read whenever `props.user` changes. After mutations (create/edit/delete), the component calls `onListChanged` so the parent page can call `refreshUser()` to update the user object, which in turn updates the lists.
+Lists are re-read whenever `props.user` changes. After mutations (create/edit/delete), the component calls `onListChanged` so the parent page can call `refreshUser()` to update the user object, which in turn updates the lists. The component does **not** refetch lists via a separate API call after mutations -- it relies entirely on the `props.user` update cycle.
 
 If you are building your own component, you can fetch lists from the API directly:
 

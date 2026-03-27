@@ -499,9 +499,14 @@ When `isNew` is `true`:
 
 After the user saves the form, the component immediately updates its internal display using a local state copy of the address (`localAddress`). This provides instant visual feedback while the parent performs the actual API call in `onEdit`. If the API call fails, the parent should handle reverting.
 
-### Double-Submission Prevention
+### Save Loading State
 
-A `saving` flag prevents the form from being submitted multiple times. While a save is in progress, the save and cancel buttons are disabled. The `beforeSave` callback fires after the guard is set but before the address object is constructed.
+A `saving` flag prevents the form from being submitted multiple times. While a save is in progress:
+- The **Save** button is disabled and its text changes to "Saving..." (customizable via the `saving` label key)
+- The **Cancel** button is disabled to prevent closing the form mid-save
+- The `beforeSave` callback fires after the guard is set but before the address object is constructed
+
+The `saving` state supports async `onEdit` callbacks -- it remains active until the `onEdit` promise resolves (or rejects), at which point both buttons re-enable automatically via a `finally` block.
 
 ### Notes Field
 

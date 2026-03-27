@@ -299,8 +299,7 @@ export default function FavoriteLists(props: FavoriteListsProps) {
                 state.newSetAsDefault = false;
                 state.closeCreateModal();
 
-                // Refetch to get the complete list
-                state.fetchLists();
+                // onListChanged triggers refreshUser → props.user updates → fetchLists runs via onUpdate
                 if (props.onListChanged) props.onListChanged();
             } catch (error) {
                 console.error('Error creating favorite list:', error);

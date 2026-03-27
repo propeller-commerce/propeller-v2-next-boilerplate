@@ -284,18 +284,20 @@ export default function Header() {
                     "absolute left-0 top-full z-50",
                     showMainMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none h-0 overflow-hidden"
                   )}>
-                    <PropellerMenu
-                      graphqlClient={graphqlClient}
-                      categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
-                      language={language}
-                      menuStyle="dropdown-vertical"
-                      user={state.user}
-                      configuration={config}
-                      onMenuItemClick={(category) => {
-                        setShowMainMenu(false);
-                        router.push(config.urls.getCategoryUrl(category, language));
-                      }}
-                    />
+                    {!state.isLoading && (
+                      <PropellerMenu
+                        graphqlClient={graphqlClient}
+                        categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
+                        language={language}
+                        menuStyle="dropdown-vertical"
+                        user={state.user}
+                        configuration={config}
+                        onMenuItemClick={(category) => {
+                          setShowMainMenu(false);
+                          router.push(config.urls.getCategoryUrl(category, language));
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -355,7 +357,7 @@ export default function Header() {
             )}
 
             {/* Mobile categories */}
-            {showCategoriesMenu && (
+            {showCategoriesMenu && !state.isLoading && (
               <PropellerMenu
                 graphqlClient={graphqlClient}
                 categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}

@@ -71,9 +71,10 @@ function Header() {
 
 ### Always-mounted pattern (prevents re-fetch on toggle)
 
-The recommended pattern keeps the menu always mounted in the DOM and toggles visibility with CSS. This avoids re-fetching the category tree every time the menu opens.
+The recommended pattern keeps the menu always mounted in the DOM and toggles visibility with CSS. This avoids re-fetching the category tree every time the menu opens. **Important:** Gate the Menu on `!authState.isLoading` so it only mounts after auth resolves — this prevents a premature anonymous fetch followed by a second user-specific fetch.
 
 ```tsx
+const { state: authState } = useAuth();
 const [showMenu, setShowMenu] = useState(false);
 
 <div
@@ -88,17 +89,19 @@ const [showMenu, setShowMenu] = useState(false);
     ? "visible opacity-100"
     : "invisible opacity-0 pointer-events-none h-0 overflow-hidden"
   }>
-    <Menu
-      graphqlClient={graphqlClient}
-      categoryId={17}
-      language={language}
-      user={user}
-      configuration={config}
-      onMenuItemClick={(category) => {
-        setShowMenu(false);
-        router.push(config.urls.getCategoryUrl(category, language));
-      }}
-    />
+    {!authState.isLoading && (
+      <Menu
+        graphqlClient={graphqlClient}
+        categoryId={17}
+        language={language}
+        user={authState.user}
+        configuration={config}
+        onMenuItemClick={(category) => {
+          setShowMenu(false);
+          router.push(config.urls.getCategoryUrl(category, language));
+        }}
+      />
+    )}
   </div>
 </div>
 ```
@@ -393,6 +396,16 @@ Because the cache key includes the user identifier, logging in or out automatica
 - Switching between user accounts also uses separate cache buckets.
 - No explicit cache-clearing logic is needed on auth transitions -- the `user` prop change triggers a re-fetch against the new cache key.
 
+### Fetch deduplication (React compiled version)
+
+The compiled React component uses a module-level `inflightFetches` Map to deduplicate concurrent requests. When multiple Menu instances (desktop + mobile) or React Strict Mode double-invocations try to fetch with the same cache key simultaneously, only one HTTP request is made. All callers share the same in-flight promise.
+
+Additionally, the `useEffect` uses a `cancelled` flag with cleanup to prevent stale state updates when the effect is re-invoked before a previous fetch completes.
+
+### Preventing double fetch on page load
+
+The parent component (e.g., Header) should gate Menu rendering on `!authState.isLoading`. Without this guard, Menu mounts immediately with `user=null` (anonymous fetch), then auth resolves from localStorage and `user` changes (user-specific fetch) — resulting in two API calls. Gating on `isLoading` ensures Menu only mounts once with the correct user.
+
 ### Language support
 
 - Category names and slugs are fetched using the `language` variable in the GraphQL query.
@@ -407,7 +420,7 @@ The menu re-fetches when any of these props change:
 - `language`
 - `user`
 
-On each fetch, the cache is checked first. If a valid (non-expired) cached entry exists for the current cache key, the API call is skipped entirely.
+On each fetch, the cache is checked first. If a valid (non-expired) cached entry exists for the current cache key, the API call is skipped entirely. In the React compiled version, concurrent fetches for the same cache key are deduplicated at the module level — only one HTTP request goes out.
 
 ### Hover state
 

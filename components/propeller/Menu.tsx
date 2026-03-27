@@ -4,6 +4,10 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
 
+// Module-level deduplication: concurrent fetches for the same cache key share one API call.
+// Prevents duplicate requests from React Strict Mode and multiple Menu instances.
+const inflightFetches = new Map<string, Promise<Category | null>>();
+
 export interface MenuProps {
   /**
    * Initialised Propeller SDK GraphQL client.
@@ -79,7 +83,6 @@ interface MenuState {
   hoveredL2Id: number | null;
   expandedL1: number | null;
   expandedL2: number | null;
-  fetchMenu: () => Promise<void>;
   getUserKey: () => string;
   getCacheKey: () => string;
   getCachedMenu: () => Category | null;
@@ -104,70 +107,6 @@ function Menu(props: MenuProps) {
   const [hoveredL2Id, setHoveredL2Id] = useState<MenuState['hoveredL2Id']>(() => null);
   const [expandedL1, setExpandedL1] = useState<MenuState['expandedL1']>(() => null);
   const [expandedL2, setExpandedL2] = useState<MenuState['expandedL2']>(() => null);
-  async function fetchMenu(): ReturnType<MenuState['fetchMenu']> {
-    if (!props.graphqlClient) return;
-
-    // Try cache first
-    const cached = getCachedMenu();
-    if (cached) {
-      setRootCategory(cached);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    setHasError(false);
-    try {
-      const depth = (props.depth as number) || 3;
-      const language = (props.language as string) || 'NL';
-      const buildCategoriesQuery = (currentDepth: number): string => {
-        if (currentDepth === 0) return '';
-        return `
-                        categories {
-                            categoryId
-                            name(language: $language) { value language }
-                            slug(language: $language) { value }
-                            ${buildCategoriesQuery(currentDepth - 1)}
-                        }
-                    `;
-      };
-      const gql = `
-                    query Menu($categoryId: Float, $language: String) {
-                        category(categoryId: $categoryId) {
-                            categoryId
-                            name(language: $language) { value language }
-                            slug(language: $language) { value }
-                            ${buildCategoriesQuery(depth)}
-                        }
-                    }
-                `;
-      const variables: Record<string, any> = {
-        categoryId: props.categoryId as number,
-        language,
-      };
-      if (props.user) {
-        if ('contactId' in (props.user as any)) {
-          variables.contactId = (props.user as Contact).contactId;
-        } else {
-          variables.customerId = (props.user as Customer).customerId;
-        }
-      }
-      const response = await (props.graphqlClient as GraphQLClient).execute({
-        query: gql,
-        variables,
-      });
-      const menuData = (response as any)?.data || response;
-      const root = (menuData as any)?.category || null;
-      setRootCategory(root as Category);
-      if (root) {
-        cacheMenu(root as Category);
-      }
-    } catch {
-      setHasError(true);
-      setRootCategory(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }
   function getUserKey(): ReturnType<MenuState['getUserKey']> {
     if (!props.user) return '';
     if ('contactId' in (props.user as any)) return `c${(props.user as Contact).contactId}`;
@@ -255,7 +194,92 @@ function Menu(props: MenuProps) {
     return props.configuration.urls.pattern;
   }
   useEffect(() => {
-    fetchMenu();
+    let cancelled = false;
+    if (!props.graphqlClient) return;
+
+    // Try cache first
+    const cached = getCachedMenu();
+    if (cached) {
+      setRootCategory(cached);
+      setIsLoading(false);
+      return;
+    }
+
+    const key = getCacheKey();
+
+    setIsLoading(true);
+    setHasError(false);
+
+    // Deduplicate: if an identical fetch is already in flight, reuse it
+    if (!inflightFetches.has(key)) {
+      const depth = (props.depth as number) || 3;
+      const language = (props.language as string) || 'NL';
+      const buildCategoriesQuery = (currentDepth: number): string => {
+        if (currentDepth === 0) return '';
+        return `
+                        categories {
+                            categoryId
+                            name(language: $language) { value language }
+                            slug(language: $language) { value }
+                            ${buildCategoriesQuery(currentDepth - 1)}
+                        }
+                    `;
+      };
+      const gql = `
+                    query Menu($categoryId: Float, $language: String) {
+                        category(categoryId: $categoryId) {
+                            categoryId
+                            name(language: $language) { value language }
+                            slug(language: $language) { value }
+                            ${buildCategoriesQuery(depth)}
+                        }
+                    }
+                `;
+      const variables: Record<string, any> = {
+        categoryId: props.categoryId as number,
+        language,
+      };
+      if (props.user) {
+        if ('contactId' in (props.user as any)) {
+          variables.contactId = (props.user as Contact).contactId;
+        } else {
+          variables.customerId = (props.user as Customer).customerId;
+        }
+      }
+
+      const fetchPromise = (props.graphqlClient as GraphQLClient)
+        .execute({ query: gql, variables })
+        .then((response) => {
+          const menuData = (response as any)?.data || response;
+          return ((menuData as any)?.category || null) as Category | null;
+        })
+        .finally(() => {
+          inflightFetches.delete(key);
+        });
+
+      inflightFetches.set(key, fetchPromise);
+    }
+
+    inflightFetches.get(key)!
+      .then((root) => {
+        if (cancelled) return;
+        setRootCategory(root as Category);
+        if (root) {
+          cacheMenu(root as Category);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHasError(true);
+        setRootCategory(null);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
   }, [props.graphqlClient, props.categoryId, props.language, props.user]);
   return (
     <div className={`propeller-menu ${(props.className as string) || ''}`}>

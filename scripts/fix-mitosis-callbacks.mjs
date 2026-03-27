@@ -480,6 +480,137 @@ const FILE_PATCHES = [
         from: "      if (myFetchId === fetchId) {",
         to: "      if (myFetchId === fetchIdRef.current) {",
     },
+    // ── Menu: fetch deduplication ──────────────────────────────────────────────
+    //
+    // The Menu component needs three React-specific fixes that Mitosis cannot
+    // express:
+    //
+    // 1. A module-level `inflightFetches` Map so concurrent fetches for the same
+    //    cache key (React Strict Mode, multiple Menu instances) share one HTTP
+    //    request.
+    // 2. The `useEffect` must inline the fetch logic with deduplication and a
+    //    `cancelled` flag (cleanup return) instead of calling `fetchMenu()`.
+    // 3. The standalone `fetchMenu` function becomes dead code and is removed,
+    //    along with its entry in the MenuState interface.
+    {
+        file: resolve('../output/react/ui-components/Menu.tsx'),
+        label: 'React → Menu: add inflightFetches import for fetch dedup',
+        from: "import { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';\n\nexport interface MenuProps {",
+        to: [
+            "import { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';",
+            '',
+            '// Module-level deduplication: concurrent fetches for the same cache key share one API call.',
+            '// Prevents duplicate requests from React Strict Mode and multiple Menu instances.',
+            'const inflightFetches = new Map<string, Promise<Category | null>>();',
+            '',
+            'export interface MenuProps {',
+        ].join('\n'),
+    },
+    {
+        file: resolve('../output/react/ui-components/Menu.tsx'),
+        label: 'React → Menu: remove fetchMenu from MenuState interface',
+        from: '  fetchMenu: () => Promise<void>;\n  getUserKey: () => string;',
+        to: '  getUserKey: () => string;',
+    },
+    {
+        file: resolve('../output/react/ui-components/Menu.tsx'),
+        label: 'React → Menu: replace useEffect with deduplicated fetch',
+        from: [
+            '  useEffect(() => {',
+            '    fetchMenu();',
+            '  }, [props.graphqlClient, props.categoryId, props.language, props.user]);',
+        ].join('\n'),
+        to: [
+            '  useEffect(() => {',
+            '    let cancelled = false;',
+            '    if (!props.graphqlClient) return;',
+            '',
+            '    // Try cache first',
+            '    const cached = getCachedMenu();',
+            '    if (cached) {',
+            '      setRootCategory(cached);',
+            '      setIsLoading(false);',
+            '      return;',
+            '    }',
+            '',
+            '    const key = getCacheKey();',
+            '',
+            '    setIsLoading(true);',
+            '    setHasError(false);',
+            '',
+            '    // Deduplicate: if an identical fetch is already in flight, reuse it',
+            '    if (!inflightFetches.has(key)) {',
+            '      const depth = (props.depth as number) || 3;',
+            "      const language = (props.language as string) || 'NL';",
+            '      const buildCategoriesQuery = (currentDepth: number): string => {',
+            "        if (currentDepth === 0) return '';",
+            '        return `',
+            '                        categories {',
+            '                            categoryId',
+            '                            name(language: $language) { value language }',
+            '                            slug(language: $language) { value }',
+            '                            ${buildCategoriesQuery(currentDepth - 1)}',
+            '                        }',
+            '                    `;',
+            '      };',
+            '      const gql = `',
+            '                    query Menu($categoryId: Float, $language: String) {',
+            '                        category(categoryId: $categoryId) {',
+            '                            categoryId',
+            '                            name(language: $language) { value language }',
+            '                            slug(language: $language) { value }',
+            '                            ${buildCategoriesQuery(depth)}',
+            '                        }',
+            '                    }',
+            '                `;',
+            '      const variables: Record<string, any> = {',
+            '        categoryId: props.categoryId as number,',
+            '        language,',
+            '      };',
+            '      if (props.user) {',
+            "        if ('contactId' in (props.user as any)) {",
+            '          variables.contactId = (props.user as Contact).contactId;',
+            '        } else {',
+            '          variables.customerId = (props.user as Customer).customerId;',
+            '        }',
+            '      }',
+            '',
+            '      const fetchPromise = (props.graphqlClient as GraphQLClient)',
+            '        .execute({ query: gql, variables })',
+            '        .then((response) => {',
+            '          const menuData = (response as any)?.data || response;',
+            '          return ((menuData as any)?.category || null) as Category | null;',
+            '        })',
+            '        .finally(() => {',
+            '          inflightFetches.delete(key);',
+            '        });',
+            '',
+            '      inflightFetches.set(key, fetchPromise);',
+            '    }',
+            '',
+            '    inflightFetches.get(key)!',
+            '      .then((root) => {',
+            '        if (cancelled) return;',
+            '        setRootCategory(root as Category);',
+            '        if (root) {',
+            '          cacheMenu(root as Category);',
+            '        }',
+            '      })',
+            '      .catch(() => {',
+            '        if (cancelled) return;',
+            '        setHasError(true);',
+            '        setRootCategory(null);',
+            '      })',
+            '      .finally(() => {',
+            '        if (!cancelled) {',
+            '          setIsLoading(false);',
+            '        }',
+            '      });',
+            '',
+            '    return () => { cancelled = true; };',
+            '  }, [props.graphqlClient, props.categoryId, props.language, props.user]);',
+        ].join('\n'),
+    },
     {
         // Mitosis compiles `state.clickOutsideListener = listener` to
         // `setClickOutsideListener(listener)`. React treats the function argument
@@ -830,6 +961,65 @@ if (patchFixes === 0) {
 }
 
 totalFixes += patchFixes;
+
+// ── Menu: remove dead fetchMenu function ─────────────────────────────────────
+//
+// After the useEffect patch inlines the fetch logic with deduplication, the
+// standalone `fetchMenu` function is dead code. Remove it by finding the
+// function start and scanning for its matching closing brace (brace counting).
+{
+    const menuFile = resolve('../output/react/ui-components/Menu.tsx');
+    try {
+        let content = readFileSync(menuFile, 'utf8');
+        const marker = "async function fetchMenu(): ReturnType<MenuState['fetchMenu']>";
+        const startIdx = content.indexOf(marker);
+        if (startIdx !== -1) {
+            // Find the opening brace
+            const braceStart = content.indexOf('{', startIdx + marker.length);
+            if (braceStart !== -1) {
+                // Count braces to find the matching close, skipping template literals
+                let depth = 0;
+                let i = braceStart;
+                let inTemplate = false;
+                while (i < content.length) {
+                    const ch = content[i];
+                    if (ch === '`') {
+                        inTemplate = !inTemplate;
+                    } else if (inTemplate && ch === '$' && content[i + 1] === '{') {
+                        // Skip ${...} inside template literal — these are expression braces
+                        i += 2;
+                        let exprDepth = 1;
+                        while (i < content.length && exprDepth > 0) {
+                            if (content[i] === '{') exprDepth++;
+                            else if (content[i] === '}') exprDepth--;
+                            if (exprDepth > 0) i++;
+                        }
+                    } else if (!inTemplate && ch === '{') {
+                        depth++;
+                    } else if (!inTemplate && ch === '}') {
+                        depth--;
+                        if (depth === 0) break;
+                    }
+                    i++;
+                }
+                // i now points to the closing brace of fetchMenu
+                // Also consume the trailing semicolon and newline if present
+                let endIdx = i + 1;
+                if (content[endIdx] === ';') endIdx++;
+                if (content[endIdx] === '\n') endIdx++;
+                // Find the start of the line (skip leading whitespace)
+                let lineStart = startIdx;
+                while (lineStart > 0 && content[lineStart - 1] !== '\n') lineStart--;
+                content = content.slice(0, lineStart) + content.slice(endIdx);
+                writeFileSync(menuFile, content, 'utf8');
+                console.log('  [Cleanup] ✓ React → Menu: remove dead fetchMenu function');
+                totalFixes++;
+            }
+        }
+    } catch {
+        // File doesn't exist — skip
+    }
+}
 
 // Remove unused useState declarations left behind by file patches
 for (const { file, pattern, label } of UNUSED_STATE_REMOVALS) {

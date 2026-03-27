@@ -298,7 +298,7 @@ function FavoriteLists(props: FavoriteListsProps) {
       setNewSetAsDefault(false);
       closeCreateModal();
 
-      // onListChanged triggers refreshUser → props.user updates → fetchLists runs via useEffect
+      // onListChanged triggers refreshUser → props.user updates → fetchLists runs via onUpdate
       if (props.onListChanged) props.onListChanged();
     } catch (error) {
       console.error('Error creating favorite list:', error);

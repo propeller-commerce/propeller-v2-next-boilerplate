@@ -1,6 +1,5 @@
 import {
     useStore,
-    onMount,
     onUpdate,
     Show,
     For,
@@ -147,10 +146,10 @@ export default function OrderList(props: OrderListProps) {
                     ? (props.user as any).contactId
                     : (props.user as any).customerId;
 
-                const companyId = props.companyId
-                    || (isContactUser && (props.user as any).company
-                        ? (props.user as any).company.companyId
-                        : undefined);
+                const companyIdFallback = isContactUser && (props.user as any).company
+                    ? (props.user as any).company.companyId
+                    : null;
+                const companyId = props.companyId || companyIdFallback || null;
 
                 const searchArgs: OrderSearchArguments = {
                     status: statuses,
@@ -246,12 +245,6 @@ export default function OrderList(props: OrderListProps) {
         }
     });
 
-    onMount(() => {
-        if (props.user) {
-            state.fetchOrders(state.currentPage);
-        }
-    });
-
     onUpdate(() => {
         if (props.user) {
             state.fetchOrders(state.currentPage);
@@ -303,7 +296,7 @@ export default function OrderList(props: OrderListProps) {
                                                 value={state.searchForm.createdAt?.greaterThan ? (state.searchForm.createdAt.greaterThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
                                                     const current = state.searchForm.createdAt || {};
-                                                    const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                                                    const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
                                                     state.searchForm = {
                                                         ...state.searchForm,
                                                         createdAt: { ...current, greaterThan: val }
@@ -317,7 +310,7 @@ export default function OrderList(props: OrderListProps) {
                                                 value={state.searchForm.createdAt?.lessThan ? (state.searchForm.createdAt.lessThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
                                                     const current = state.searchForm.createdAt || {};
-                                                    const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                                                    const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
                                                     state.searchForm = {
                                                         ...state.searchForm,
                                                         createdAt: { ...current, lessThan: val }
@@ -336,7 +329,7 @@ export default function OrderList(props: OrderListProps) {
                                                 value={state.searchForm.lastModifiedAt?.greaterThan ? (state.searchForm.lastModifiedAt.greaterThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
                                                     const current = state.searchForm.lastModifiedAt || {};
-                                                    const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                                                    const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
                                                     state.searchForm = {
                                                         ...state.searchForm,
                                                         lastModifiedAt: { ...current, greaterThan: val }
@@ -350,7 +343,7 @@ export default function OrderList(props: OrderListProps) {
                                                 value={state.searchForm.lastModifiedAt?.lessThan ? (state.searchForm.lastModifiedAt.lessThan as string).split('T')[0] : ''}
                                                 onChange={(e) => {
                                                     const current = state.searchForm.lastModifiedAt || {};
-                                                    const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                                                    const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
                                                     state.searchForm = {
                                                         ...state.searchForm,
                                                         lastModifiedAt: { ...current, lessThan: val }

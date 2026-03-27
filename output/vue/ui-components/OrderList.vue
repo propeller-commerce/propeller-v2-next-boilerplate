@@ -51,7 +51,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
+                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           createdAt: {
@@ -73,7 +73,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.createdAt || {};
-                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
+                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           createdAt: {
@@ -101,7 +101,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : null;
+                        const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {
@@ -123,7 +123,7 @@
                     @change="
                       async (e) => {
                         const current = searchForm.lastModifiedAt || {};
-                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : null;
+                        const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
                         searchForm = {
                           ...searchForm,
                           lastModifiedAt: {

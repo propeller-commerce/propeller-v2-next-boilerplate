@@ -320,8 +320,8 @@ These are suggested defaults. Override per-key to support localization.
 | Field | Input type | Sent as |
 |---|---|---|
 | `term` | Text (full width) | `term: string` |
-| `createdAt` | Two date pickers (from/to) | `createdAt: { greaterThan, lessThan }` |
-| `lastModifiedAt` | Two date pickers (from/to) | `lastModifiedAt: { greaterThan, lessThan }` |
+| `createdAt` | Two date pickers (from/to) | `createdAt: { greaterThan?: string, lessThan?: string }` — each value is an ISO 8601 string or `undefined` when cleared |
+| `lastModifiedAt` | Two date pickers (from/to) | `lastModifiedAt: { greaterThan?: string, lessThan?: string }` — each value is an ISO 8601 string or `undefined` when cleared |
 | `price` | Two number inputs (min/max) | `price: { greaterThan, lessThan }` |
 | `sortInput` | Two dropdowns (field + order) | `sortInput: { field, order }` |
 | `type` | Dropdown (order type) | `type: OrderType` |
@@ -499,7 +499,7 @@ const searchArgs: OrderSearchArguments = {
     Enums.OrderSearchFields.ITEM_NAME,
     Enums.OrderSearchFields.REMARKS,
   ],
-  createdAt: {                   // optional date range
+  createdAt: {                   // optional date range; omit or use undefined to clear
     greaterThan: '2025-01-01T00:00:00Z',
     lessThan: '2025-12-31T23:59:59Z',
   },

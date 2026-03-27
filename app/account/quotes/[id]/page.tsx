@@ -3,11 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import { Base64File, Order, OrderItem, OrderService } from 'propeller-sdk-v2';
 import OrderSummary from '@/components/propeller/OrderSummary';
+import QuoteActions from '@/output/react/ui-components/QuoteActions';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { OrderQueryVariables } from 'propeller-sdk-v2/dist/service/OrderService';
 import Link from 'next/link';
@@ -17,17 +19,18 @@ import OrderItemCard from '@/components/propeller/OrderItemCard';
 import OrderTotals from '@/components/propeller/OrderTotals';
 
 const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
+    { code: 'NL', name: 'Netherlands' },
+    { code: 'BE', name: 'Belgium' },
+    { code: 'DE', name: 'Germany' },
+    { code: 'FR', name: 'France' },
+    { code: 'UK', name: 'United Kingdom' },
+    { code: 'US', name: 'United States' },
 ];
 
 export default function QuoteDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
+    const { cart: contextCart, getCart } = useCart();
     const { language } = useLanguage();
     const params = useParams();
     const quoteId = params.id as string;
@@ -70,14 +73,8 @@ export default function QuoteDetailPage() {
         }
     }, [quoteId]);
 
-    const handleAcceptQuote = () => {
-        // TODO: Implement accept quote functionality
-        console.log('Accept quote clicked');
-    };
-
-    const handleRequestChanges = () => {
-        // TODO: Implement request changes functionality
-        console.log('Request changes clicked');
+    const handleAfterAccept = async (acceptedQuote: Order) => {
+        router.push(localizeHref(`/checkout/thank-you/${acceptedQuote.id}`, language));
     };
 
     const handleDownloadPDF = async () => {
@@ -191,13 +188,14 @@ export default function QuoteDetailPage() {
                                 countries={COUNTRIES}
                             />
                         </div>
-                        <div className="flex flex-row items-end gap-3 flex-shrink-0">
-                            <Button onClick={handleAcceptQuote} className="bg-secondary hover:bg-secondary/90">
-                                Accept Quote
-                            </Button>
-                            <Button variant="outline" onClick={handleRequestChanges}>
-                                Request Changes
-                            </Button>
+                        <div className="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
+                            <QuoteActions
+                                graphqlClient={graphqlClient}
+                                quote={quote}
+                                afterAccept={handleAfterAccept}
+                                showTermsAndConditions={true}
+                                onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
+                            />
                             <Button variant="link" size="sm" onClick={handleDownloadPDF}>
                                 Download Quote (PDF)
                             </Button>

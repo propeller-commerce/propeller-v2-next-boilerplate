@@ -308,8 +308,10 @@ export default function CategoryPage() {
                 showStock={true}
                 onFiltersChange={setGridFilters}
                 onPriceBoundsChange={(min, max) => {
-                  setPriceBoundsMin(min);
-                  setPriceBoundsMax(max);
+                  if (!priceBoundsMin && !priceBoundsMax) {
+                    setPriceBoundsMin(min);
+                    setPriceBoundsMax(max);
+                  }
                 }}
                 onItemsFoundChange={setItemsFound}
                 onPageItemCountChange={setPageItemCount}

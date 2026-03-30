@@ -222,8 +222,10 @@ export default function SearchPage() {
                 sortOrder={sortOrder as string}
                 onFiltersChange={setGridFilters}
                 onPriceBoundsChange={(min, max) => {
-                  setPriceBoundsMin(min);
-                  setPriceBoundsMax(max);
+                  if (!priceBoundsMin && !priceBoundsMax) {
+                    setPriceBoundsMin(min);
+                    setPriceBoundsMax(max);
+                  }
                 }}
                 onItemsFoundChange={setItemsFound}
                 onPageItemCountChange={setPageItemCount}

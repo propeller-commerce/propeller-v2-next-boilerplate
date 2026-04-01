@@ -17,6 +17,7 @@ import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
@@ -62,6 +63,7 @@ export default function CategoryPage() {
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { state } = useAuth();
+  const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
   const { includeTax } = usePrice();
@@ -288,6 +290,7 @@ export default function CategoryPage() {
                 categoryId={categoryId}
                 configuration={config}
                 user={state.user}
+                companyId={selectedCompany?.companyId}
                 onProductClick={productClick}
                 language={language}
                 showModal={true}

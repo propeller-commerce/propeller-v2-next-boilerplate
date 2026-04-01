@@ -59,6 +59,13 @@ export interface SearchBarProps {
 
   /** Additional class name for the container */
   containerClassName?: string;
+
+  /**
+   * Active company ID from the company switcher.
+   * When provided, can be forwarded to price calculation in search results
+   * if the underlying SDK call supports priceCalculateProductInput.
+   */
+  companyId?: number;
 }
 interface SearchBarState {
   searchTerm: string;

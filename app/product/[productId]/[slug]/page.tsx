@@ -26,11 +26,13 @@ import ProductSlider from '@/components/propeller/ProductSlider';
 import ProductBundles from '@/components/propeller/ProductBundles';
 import AddToFavorite from '@/components/propeller/AddToFavorite';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
 
 
 export default function ProductPage() {
   const params = useParams();
   const { state, refreshUser } = useAuth();
+  const { selectedCompany } = useCompany();
   const productId = parseInt(params.productId as string);
   const [product, setProduct] = useState<Product | null>(null);
   const { cart, saveCart } = useCart();
@@ -96,7 +98,7 @@ export default function ProductPage() {
 
                 {product?.inventory && (
                   <div className="mt-4">
-                    <ItemStock inventory={product.inventory} showAvailability={false}/>
+                    <ItemStock inventory={product.inventory} showAvailability={false} />
                   </div>
                 )}
               </div>
@@ -106,6 +108,7 @@ export default function ProductPage() {
                   <div className="flex items-center gap-2">
                     <AddToCart
                       user={state.user}
+                      companyId={selectedCompany?.companyId}
                       product={product}
                       cartId={cart?.cartId}
                       graphqlClient={graphqlClient}
@@ -160,6 +163,7 @@ export default function ProductPage() {
             showStock={true}
             includeTax={includeTax}
             user={state.user}
+            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -180,6 +184,7 @@ export default function ProductPage() {
             showStock={true}
             includeTax={includeTax}
             user={state.user}
+            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}

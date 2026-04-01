@@ -71,7 +71,15 @@ export interface ProductSliderProps {
     /** Authenticated user for cart operations */
     user?: Contact | Customer | null;
 
-    // === Layout ===
+    /**
+     * Active company ID from the company switcher.
+     * Overrides the user's default company for price calculation in cross-upsell fetches
+     * and is forwarded to each embedded ProductCard / AddToCart.
+     * Triggers a re-fetch when changed.
+     */
+    companyId?: number;
+
+    /* === Layout === */
 
     /** Items visible per breakpoint */
     itemsPerView?: {
@@ -86,7 +94,7 @@ export interface ProductSliderProps {
     /** Additional CSS class for the outer container */
     containerClassName?: string;
 
-    // === Card stock display ===
+    /* === Card stock display === */
 
     /**
      * Show the stock / availability widget on each product card.
@@ -108,7 +116,7 @@ export interface ProductSliderProps {
      */
     stockLabels?: Record<string, string>;
 
-    // === Card favourites ===
+    /* === Card favourites === */
 
     /** Show a heart-icon favourite toggle on each card. Defaults to false. */
     enableAddFavorite?: boolean;
@@ -119,7 +127,7 @@ export interface ProductSliderProps {
      */
     onToggleFavorite?: (item: Product | Cluster, isFavorite: boolean) => void;
 
-    // === Card navigation ===
+    /* === Card navigation === */
 
     /** Called when a product card is clicked — use for SPA-style routing. */
     onProductClick?: (product: Product) => void;
@@ -127,7 +135,7 @@ export interface ProductSliderProps {
     /** Called when a cluster card is clicked — use for SPA-style routing. */
     onClusterClick?: (cluster: Cluster) => void;
 
-    // === AddToCart pass-through ===
+    /* === AddToCart pass-through === */
 
     /** Validate stock before adding to cart. Defaults to false. */
     stockValidation?: boolean;
@@ -163,7 +171,7 @@ export interface ProductSliderProps {
      */
     addToCartLabels?: Record<string, string>;
 
-    // === Misc ===
+    /* === Misc === */
 
     /** Configuration object providing imageSearchFiltersGrid, imageVariantFiltersMedium, urls */
     configuration?: any;
@@ -305,7 +313,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                     imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
                     priceCalculateProductInput: {
                         taxZone: props.taxZone || 'NL',
-                        ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
+                        ...(props.companyId && { companyId: props.companyId }),
                         ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
                         ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
                     },
@@ -431,11 +439,11 @@ export default function ProductSlider(props: ProductSliderProps) {
 
     onUpdate(() => {
         state.doFetch();
-        // NOTE: arrays compared by value to avoid stale-reference refetches
-    }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds), JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId, props.language]);
+        /* NOTE: arrays compared by value to avoid stale-reference refetches */
+    }, [JSON.stringify(props.productIds), JSON.stringify(props.clusterIds), JSON.stringify(props.crossUpsellTypes), props.productId, props.clusterId, props.language, props.companyId]);
 
     onUpdate(() => {
-        // Initialize scroll dimensions once sliderId is set and items are rendered
+        /* Initialize scroll dimensions once sliderId is set and items are rendered */
         if (state.sliderId && state.items().length > 0) {
             setTimeout(() => {
                 const el = state.getTrackEl();
@@ -539,6 +547,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                                             product={item as Product}
                                             graphqlClient={props.graphqlClient}
                                             user={(props.user as Contact | Customer | null) || null}
+                                            companyId={props.companyId as number}
                                             cartId={props.cartId}
                                             configuration={props.configuration}
                                             includeTax={props.includeTax}
@@ -572,6 +581,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                                             product={item as Product}
                                             graphqlClient={props.graphqlClient}
                                             user={(props.user as Contact | Customer | null) || null}
+                                            companyId={props.companyId as number}
                                             configuration={props.configuration}
                                             includeTax={props.includeTax}
                                             language={props.language}

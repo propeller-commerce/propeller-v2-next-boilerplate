@@ -198,24 +198,14 @@ export interface ProductCardProps {
   /** Language code forwarded to CartService operations. Defaults to 'NL'. */
   language?: string;
 
-  /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
-  onProceedToCheckout?: () => void;
-
-  /** Label overrides for UI strings
-   *
-   * available labels:
-   * - outOfStock
-   * - noCartId
-   * - errorAdding
-   * - addedToCart
-   * - modalTitle
-   * - quantity
-   * - continueShopping
-   * - proceedToCheckout
-   * - add
-   * - adding
-   */
-  addToCartLabels?: Record<string, string>;
+  /**
+   * Active company ID from the company switcher.
+   * When provided, overrides the user's default company for cart creation and lookup.  */ companyId?: number;
+  /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */ onProceedToCheckout?: () => void;
+  /** Label overrides for UI strings  *  * available labels:  * - outOfStock  * - noCartId  * - errorAdding  * - addedToCart  * - modalTitle  * - quantity  * - continueShopping  * - proceedToCheckout  * - add  * - adding */ addToCartLabels?: Record<
+    string,
+    string
+  >;
 }
 interface ProductCardState {
   isFavorite: boolean;
@@ -234,10 +224,7 @@ interface ProductCardState {
   handleToggleFavorite: (e: any) => void;
   isRow: () => boolean;
   computedImageLabels: () => string[];
-  computedTextLabels: () => {
-    name: string;
-    value: string;
-  }[];
+  computedTextLabels: () => { name: string; value: string }[];
 }
 function ProductCard(props: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState<ProductCardState['isFavorite']>(() => false);
@@ -317,10 +304,7 @@ function ProductCard(props: ProductCardProps) {
     return (props.textLabels as string[])
       .map((code: string) => {
         const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-        return {
-          name: code,
-          value: found?.value?.value || '',
-        };
+        return { name: code, value: found?.value?.value || '' };
       })
       .filter((item: { name: string; value: string }) => item.value.length > 0);
   }
@@ -428,7 +412,7 @@ function ProductCard(props: ProductCardProps) {
                 <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
               ) : null}
             </div>
-          </div>
+          </div>{' '}
           <div className="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100">
             {props.showStock && !!props.product.inventory ? (
               <ItemStock
@@ -464,6 +448,7 @@ function ProductCard(props: ProductCardProps) {
                 language={props.language}
                 onProceedToCheckout={props.onProceedToCheckout}
                 labels={props.addToCartLabels}
+                companyId={props.companyId}
               />
             </div>
           </div>
@@ -514,7 +499,7 @@ function ProductCard(props: ProductCardProps) {
                 </span>
               </div>
             ) : null}
-          </div>
+          </div>{' '}
           <div className="px-3 pb-3 sm:px-4 sm:pb-4">
             <AddToCart
               className="flex w-full items-center gap-2"
@@ -536,6 +521,7 @@ function ProductCard(props: ProductCardProps) {
               language={props.language}
               onProceedToCheckout={props.onProceedToCheckout}
               labels={props.addToCartLabels}
+              companyId={props.companyId}
             />
           </div>
         </>
@@ -543,5 +529,4 @@ function ProductCard(props: ProductCardProps) {
     </div>
   );
 }
-
 export default ProductCard;

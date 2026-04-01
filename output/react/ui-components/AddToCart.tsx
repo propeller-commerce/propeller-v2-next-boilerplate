@@ -127,32 +127,16 @@ export interface AddToCartProps {
 
   /** Configuration object passed to the component */
   configuration?: any;
-}
 
-/**
-* Cart query variables interface
-Variables for the cart query
-*/
-/**
-* Cart query variables interface
-Variables for the cart query
-*/
-export interface CartQueryVariables {
-  /** Cart ID to fetch */
-  cartId: string;
-  /** Language for localized content */
-  language: string;
-  /** Image search filters */
-  imageSearchFilters: MediaImageProductSearchInput;
-  /** Image transformation filters */
-  imageVariantFilters: TransformationsInput;
+  /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */ companyId?: number;
 }
-/**
-* Cart query variables interface
-Variables for the cart query
-*/
-
-interface AddToCartState {
+/** * Cart query variables interface Variables for the cart query */ /** * Cart query variables interface Variables for the cart query */ export interface CartQueryVariables {
+  /** Cart ID to fetch */ cartId: string;
+  /** Language for localized content */ language: string;
+  /** Image search filters */ imageSearchFilters: MediaImageProductSearchInput;
+  /** Image transformation filters */ imageVariantFilters: TransformationsInput;
+}
+/** * Cart query variables interface Variables for the cart query */ interface AddToCartState {
   quantity: number;
   loading: boolean;
   success: boolean;
@@ -241,20 +225,15 @@ function AddToCart(props: AddToCartProps) {
   }
   async function initCart(): ReturnType<AddToCartState['initCart']> {
     const cartService = new CartService(props.graphqlClient);
-    // 1. Check for existing carts for this user first
-    if (props.user) {
+    /* 1. Check for existing carts for this user first */ if (props.user) {
       try {
-        const searchInput: CartSearchInput = {
-          offset: 100,
-        };
+        const searchInput: CartSearchInput = { offset: 100 };
         if ('contactId' in props.user && props.user.contactId) {
           searchInput.contactIds = [props.user.contactId];
-          if (
-            props.user.company &&
-            'companyId' in props.user.company &&
-            props.user.company.companyId
-          ) {
-            searchInput.companyIds = [props.user.company.companyId];
+          const resolvedCompanyId =
+            (props.companyId as number) || (props.user.company && props.user.company.companyId);
+          if (resolvedCompanyId) {
+            searchInput.companyIds = [resolvedCompanyId];
           }
         } else if ('customerId' in props.user && props.user.customerId) {
           searchInput.customerIds = [props.user.customerId];
@@ -279,17 +258,14 @@ function AddToCart(props: AddToCartProps) {
         console.error('Failed to check existing carts', e);
       }
     }
-
-    // 2. Start a new cart
-    const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-    const startCartInput: CartStartInput = {
-      language,
-    };
+    /* 2. Start a new cart */ const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+    const startCartInput: CartStartInput = { language };
     if (props.user) {
       if ('contactId' in props.user && props.user.contactId) {
         startCartInput.contactId = props.user.contactId;
-        if ('companyId' in props.user && props.user.companyId) {
-          startCartInput.companyId = props.user.companyId as number;
+        const resolvedCompanyId = (props.companyId as number) || (props.user as any).companyId;
+        if (resolvedCompanyId) {
+          startCartInput.companyId = resolvedCompanyId as number;
         }
       } else if ('customerId' in props.user && props.user.customerId) {
         startCartInput.customerId = props.user.customerId;
@@ -302,9 +278,7 @@ function AddToCart(props: AddToCartProps) {
       language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
     };
     let newCart = await cartService.startCart(cartStartVars);
-
-    // 3. Assign Default Addresses
-    if (newCart && props.user) {
+    /* 3. Assign Default Addresses */ if (newCart && props.user) {
       const addresses =
         'company' in props.user
           ? props.user.company?.addresses
@@ -382,8 +356,7 @@ function AddToCart(props: AddToCartProps) {
     setLoading(true);
     setSuccess(false);
     try {
-      // Optional stock validation
-      if (props.enableStockValidation) {
+      /* Optional stock validation */ if (props.enableStockValidation) {
         const inventory = props.product.inventory;
         const available = inventory?.totalQuantity || 0;
         if (available < quantity) {
@@ -391,17 +364,13 @@ function AddToCart(props: AddToCartProps) {
           return;
         }
       }
-
-      // Map raw child-item IDs → CartChildItemInput[]
-      const childItems: CartChildItemInput[] | undefined = props.childItems
-        ? props.childItems.map((id: number) => ({
-            productId: id,
-            quantity: quantity,
-          }))
+      /* Map raw child-item IDs to CartChildItemInput[] */ const childItems:
+        | CartChildItemInput[]
+        | undefined = props.childItems
+        ? props.childItems.map((id: number) => ({ productId: id, quantity: quantity }))
         : undefined;
       if (props.onAddToCart) {
-        // Consumer-provided handler
-        const cart = props.onAddToCart(
+        /* Consumer-provided handler */ const cart = props.onAddToCart(
           props.product,
           props.cluster?.clusterId,
           quantity,
@@ -414,8 +383,8 @@ function AddToCart(props: AddToCartProps) {
         setAddedCartItem(addedItem || null);
         props.afterAddToCart?.(cart, addedItem);
       } else {
-        // Internal CartService fallback — resolve cart ID
-        let cartId = props.cartId || activeCartId;
+        /* Internal CartService fallback - resolve cart ID */ let cartId =
+          props.cartId || activeCartId;
         if (!cartId) {
           if (props.createCart) {
             cartId = await initCart();
@@ -431,18 +400,10 @@ function AddToCart(props: AddToCartProps) {
           input: {
             productId: props.product.productId,
             quantity: quantity,
-            ...(props.cluster?.clusterId !== undefined && {
-              clusterId: props.cluster?.clusterId,
-            }),
-            ...(childItems && {
-              childItems,
-            }),
-            ...(props.notes && {
-              notes: props.notes,
-            }),
-            ...(props.price !== undefined && {
-              price: props.price,
-            }),
+            ...(props.cluster?.clusterId !== undefined && { clusterId: props.cluster?.clusterId }),
+            ...(childItems && { childItems }),
+            ...(props.notes && { notes: props.notes }),
+            ...(props.price !== undefined && { price: props.price }),
           },
           language: props.language || 'NL',
           imageSearchFilters: props.configuration.imageSearchFiltersGrid,
@@ -515,7 +476,8 @@ function AddToCart(props: AddToCartProps) {
               onClick={(event) => decrement()}
               disabled={quantity <= getMinQuantity() || loading}
             >
-              -
+              {' '}
+              -{' '}
             </button>
             <input
               type="number"
@@ -538,7 +500,8 @@ function AddToCart(props: AddToCartProps) {
               onClick={(event) => increment()}
               disabled={loading}
             >
-              +
+              {' '}
+              +{' '}
             </button>
           </div>
         ) : null}
@@ -735,5 +698,4 @@ function AddToCart(props: AddToCartProps) {
     </div>
   );
 }
-
 export default AddToCart;

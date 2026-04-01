@@ -109,222 +109,75 @@ export interface ProductGridProps {
   /** Authenticated user passed through to ProductCard / AddToCart. */
   user?: Contact | Customer | null;
 
-  /**
-   * When true, tax-inclusive (gross) price is the leading price.
-   * Defaults to false.
-   */
-  includeTax?: boolean;
-
-  /**
-   * Enables stock validation inside AddToCart.
-   * Blocks add when requested quantity exceeds available stock.
-   * Defaults to false.
-   */
-  stockValidation?: boolean;
-
-  /**
-   * When false, hides the AddToCart control in product cards.
-   * ClusterCards always show their "View cluster" navigation button.
-   * Defaults to true.
-   */
-  allowAddToCart?: boolean;
-
-  // ── External hooks ────────────────────────────────────────────────────────
-
-  /**
-   * Called after each internal data fetch with the filterable attributes
-   * returned by the API (for driving a sibling FiltersSidebar).
-   */
-  onFiltersChange?: (filters: AttributeFilter[]) => void;
-
-  /**
-   * Active text filters to apply — built by the parent from FiltersSidebar
-   * `onFilterChange` callbacks.  Each entry maps to a `textFilters` input
-   * row in the CategoryService query.
-   * When this prop changes the grid automatically re-fetches (page resets to 1).
-   */
-  textFilters?: ProductTextFilterInput[];
-
-  /**
-   * Active price range lower bound from the FiltersSidebar `onPriceChange`.
-   * Triggers a re-fetch when changed.
-   */
-  priceFilterMin?: number;
-
-  /**
-   * Active price range upper bound from the FiltersSidebar `onPriceChange`.
-   * Triggers a re-fetch when changed.
-   */
-  priceFilterMax?: number;
-
-  /**
-   * Called when sort state changes internally (for syncing a sibling toolbar).
-   */
-  onSortChange?: (sort: any) => void;
-
-  /**
-   * Called after each internal data fetch with the min/max price of the
-   * current product set — use to populate a price range slider in the parent.
-   */
-  onPriceBoundsChange?: (min: number, max: number) => void;
-
-  /**
-   * Called after each fetch with the total number of products found —
-   * use to display a result count in the parent toolbar.
-   */
-  onItemsFoundChange?: (count: number) => void;
-
-  /**
-   * Called after each fetch with the number of items visible on the current page
-   * (after client-side language filtering).
-   */
-  onPageItemCountChange?: (count: number) => void;
-
-  /**
-   * Called when the user clicks Previous / Next in the built-in pagination —
-   * use to keep the parent URL / page state in sync.
-   */
-  onPageChange?: (page: number) => void;
-
-  /**
-   * Called after each successful internal data fetch with the full
-   * ProductsResponse object — use to drive an external GridPagination
-   * component by passing the result as its `products` prop.
-   */
-  onProductsResponse?: (products: ProductsResponse) => void;
-
-  /**
-   * Called after each successful internal data fetch with the full
-   * Category object — use to populate sibling components like GridTitle,
-   * CategoryDescription, and CategoryShortDescription.
-   */
-  onCategoryChange?: (category: Category) => void;
-
-  /**
-   * Externally controlled current page.
-   * When provided, the grid uses this value instead of its internal page
-   * counter. Wire this to the `onPageChange` callback from a sibling
-   * GridPagination so the two components stay in sync.
-   * When changed the grid automatically re-fetches.
-   */
-  page?: number;
-
-  /**
-   * Number of products per page. Defaults to 12.
-   * When changed the grid automatically re-fetches (page resets to 1).
-   */
-  pageSize?: number;
-
-  /**
-   * Sort field to use (e.g. 'NAME', 'PRICE').
-   * When provided overrides internal sort state.
-   * When changed the grid automatically re-fetches (page resets to 1).
-   */
-  sortField?: string;
-
-  /**
-   * Sort direction: 'ASC' or 'DESC'.
-   * Only used when sortField is also provided.
-   * When changed the grid automatically re-fetches (page resets to 1).
-   */
-  sortOrder?: string;
-
-  // ── Configuration ─────────────────────────────────────────────────────────
-
-  /**
-   * Configuration object providing:
-   *   imageSearchFiltersGrid, imageVariantFiltersMedium — passed to CategoryService
-   *   baseCategoryId — used when querying by term or brand
-   *   urls.getProductUrl / urls.getClusterUrl — for card URL generation
-   */
-  configuration?: any;
-
-  // ── ProductCard / AddToCart pass-through props ────────────────────────────
-
-  /** ID of an existing cart to add items into. */
-  cartId?: string;
-
-  /**
-   * Auto-create a cart when none is available.
-   * Always pair with `onCartCreated` to persist the new cart ID.
-   */
-  createCart?: boolean;
-
-  /** Called after AddToCart creates a new cart internally. */
-  onCartCreated?: (cart: Cart) => void;
-
-  /** Called after every successful add-to-cart operation. */
-  afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
-
-  /**
-   * When true, AddToCart shows a success modal instead of a toast.
-   * Defaults to false.
-   */
-  showModal?: boolean;
-
-  /**
-   * Render − / + stepper buttons in AddToCart.
-   * Defaults to true.
-   */
-  allowIncrDecr?: boolean;
-
-  /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
-  onProceedToCheckout?: () => void;
-
-  /**
-   * Label overrides forwarded directly to the embedded AddToCart component.
-   * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,
-   *       modalTitle, quantity, continueShopping, proceedToCheckout
-   */
-  addToCartLabels?: Record<string, string>;
-
-  // ── Stock display ─────────────────────────────────────────────────────────
-
-  /**
-   * Show the stock / availability widget on each product card.
-   * Forwarded directly to `ProductCard.showStock`.
-   * Defaults to false.
-   */
-  showStock?: boolean;
-
-  /**
-   * Show only the availability indicator inside the stock widget.
-   * Forwarded to `ProductCard.showAvailability`.
-   * Defaults to true.
-   */
-  showAvailability?: boolean;
-
-  /**
-   * Label overrides forwarded to the embedded ItemStock component inside each card.
-   * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
-   */
-  stockLabels?: Record<string, string>;
-
-  // ── Card interaction ──────────────────────────────────────────────────────
-
-  /** Show a heart-icon favourite toggle on each card. */
-  enableAddFavorite?: boolean;
-
-  /**
-   * Called when a favourite is toggled on any card.
-   * Receives the full Product or Cluster object and the new favourite state.
-   */
-  onToggleFavorite?: (item: Product | Cluster, isFavorite: boolean) => void;
-
-  /**
-   * Called when a cluster card name, image, or "View cluster" button is
-   * clicked — use for SPA-style routing instead of full-page navigation.
-   */
-  onClusterClick?: (cluster: Cluster) => void;
-
-  /**
-   * Called when a product card name or image is clicked — use for SPA
-   * routing instead of full-page navigation.
-   */
-  onProductClick?: (product: Product) => void;
-
-  /** Extra CSS class applied to the root element. */
-  className?: string;
+  /** Active company ID from the company switcher. Overrides user's default company for price calculation. Triggers a re-fetch when changed. */ companyId?: number;
+  /**  * When true, tax-inclusive (gross) price is the leading price.  * Defaults to false.  */ includeTax?: boolean;
+  /**  * Enables stock validation inside AddToCart.  * Blocks add when requested quantity exceeds available stock.  * Defaults to false.  */ stockValidation?: boolean;
+  /**  * When false, hides the AddToCart control in product cards.  * ClusterCards always show their "View cluster" navigation button.  * Defaults to true.  */ allowAddToCart?: boolean;
+  /* ── External hooks ───────────────────────────────────────────────────────── */ /**  * Called after each internal data fetch with the filterable attributes  * returned by the API (for driving a sibling FiltersSidebar).  */ onFiltersChange?: (
+    filters: AttributeFilter[]
+  ) => void;
+  /**  * Active text filters to apply — built by the parent from FiltersSidebar  * `onFilterChange` callbacks.  Each entry maps to a `textFilters` input  * row in the CategoryService query.  * When this prop changes the grid automatically re-fetches (page resets to 1).  */ textFilters?: ProductTextFilterInput[];
+  /**  * Active price range lower bound from the FiltersSidebar `onPriceChange`.  * Triggers a re-fetch when changed.  */ priceFilterMin?: number;
+  /**  * Active price range upper bound from the FiltersSidebar `onPriceChange`.  * Triggers a re-fetch when changed.  */ priceFilterMax?: number;
+  /**  * Called when sort state changes internally (for syncing a sibling toolbar).  */ onSortChange?: (
+    sort: any
+  ) => void;
+  /**  * Called after each internal data fetch with the min/max price of the  * current product set — use to populate a price range slider in the parent.  */ onPriceBoundsChange?: (
+    min: number,
+    max: number
+  ) => void;
+  /**  * Called after each fetch with the total number of products found —  * use to display a result count in the parent toolbar.  */ onItemsFoundChange?: (
+    count: number
+  ) => void;
+  /**  * Called after each fetch with the number of items visible on the current page  * (after client-side language filtering).  */ onPageItemCountChange?: (
+    count: number
+  ) => void;
+  /**  * Called when the user clicks Previous / Next in the built-in pagination —  * use to keep the parent URL / page state in sync.  */ onPageChange?: (
+    page: number
+  ) => void;
+  /**  * Called after each successful internal data fetch with the full  * ProductsResponse object — use to drive an external GridPagination  * component by passing the result as its `products` prop.  */ onProductsResponse?: (
+    products: ProductsResponse
+  ) => void;
+  /**  * Called after each successful internal data fetch with the full  * Category object — use to populate sibling components like GridTitle,  * CategoryDescription, and CategoryShortDescription.  */ onCategoryChange?: (
+    category: Category
+  ) => void;
+  /**  * Externally controlled current page.  * When provided, the grid uses this value instead of its internal page  * counter. Wire this to the `onPageChange` callback from a sibling  * GridPagination so the two components stay in sync.  * When changed the grid automatically re-fetches.  */ page?: number;
+  /**  * Number of products per page. Defaults to 12.  * When changed the grid automatically re-fetches (page resets to 1).  */ pageSize?: number;
+  /**  * Sort field to use (e.g. 'NAME', 'PRICE').  * When provided overrides internal sort state.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortField?: string;
+  /**  * Sort direction: 'ASC' or 'DESC'.  * Only used when sortField is also provided.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortOrder?: string;
+  /* ── Configuration ──────────────────────────────────────────────────────── */ /**  * Configuration object providing:  *   imageSearchFiltersGrid, imageVariantFiltersMedium — passed to CategoryService  *   baseCategoryId — used when querying by term or brand  *   urls.getProductUrl / urls.getClusterUrl — for card URL generation  */ configuration?: any;
+  /* ── ProductCard / AddToCart pass-through props ─────────────────────────── */ /** ID of an existing cart to add items into. */ cartId?: string;
+  /**  * Auto-create a cart when none is available.  * Always pair with `onCartCreated` to persist the new cart ID.  */ createCart?: boolean;
+  /** Called after AddToCart creates a new cart internally. */ onCartCreated?: (cart: Cart) => void;
+  /** Called after every successful add-to-cart operation. */ afterAddToCart?: (
+    cart: Cart,
+    item?: CartMainItem
+  ) => void;
+  /**  * When true, AddToCart shows a success modal instead of a toast.  * Defaults to false.  */ showModal?: boolean;
+  /**  * Render − / + stepper buttons in AddToCart.  * Defaults to true.  */ allowIncrDecr?: boolean;
+  /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */ onProceedToCheckout?: () => void;
+  /**  * Label overrides forwarded directly to the embedded AddToCart component.  * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,  *       modalTitle, quantity, continueShopping, proceedToCheckout  */ addToCartLabels?: Record<
+    string,
+    string
+  >;
+  /* ── Stock display ───────────────────────────────────────────────────────── */ /**  * Show the stock / availability widget on each product card.  * Forwarded directly to `ProductCard.showStock`.  * Defaults to false.  */ showStock?: boolean;
+  /**  * Show only the availability indicator inside the stock widget.  * Forwarded to `ProductCard.showAvailability`.  * Defaults to true.  */ showAvailability?: boolean;
+  /**  * Label overrides forwarded to the embedded ItemStock component inside each card.  * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces  */ stockLabels?: Record<
+    string,
+    string
+  >;
+  /* ── Card interaction ────────────────────────────────────────────────────── */ /** Show a heart-icon favourite toggle on each card. */ enableAddFavorite?: boolean;
+  /**  * Called when a favourite is toggled on any card.  * Receives the full Product or Cluster object and the new favourite state.  */ onToggleFavorite?: (
+    item: Product | Cluster,
+    isFavorite: boolean
+  ) => void;
+  /**  * Called when a cluster card name, image, or "View cluster" button is  * clicked — use for SPA-style routing instead of full-page navigation.  */ onClusterClick?: (
+    cluster: Cluster
+  ) => void;
+  /**  * Called when a product card name or image is clicked — use for SPA  * routing instead of full-page navigation.  */ onProductClick?: (
+    product: Product
+  ) => void;
+  /** Extra CSS class applied to the root element. */ className?: string;
 }
 interface ProductGridState {
   internalProducts: (Product | Cluster)[];
@@ -363,16 +216,16 @@ function ProductGrid(props: ProductGridProps) {
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
     if (!props.graphqlClient) return;
     const myFetchId = ++fetchIdRef.current;
-    // Always show loading on first load; skip skeleton only for language switch with existing products
-    if (internalProducts.length === 0) {
+    /* Always show loading on first load; skip skeleton only for language switch with existing products */ if (
+      internalProducts.length === 0
+    ) {
       setIsInternalLoading(true);
     }
     try {
       const service = new CategoryService(props.graphqlClient as GraphQLClient);
       const taxZone = props.taxZone || 'NL';
-      // Category mode: use the category prop.
-      // Search / brand mode: use baseCategoryId to search the full catalog.
-      const isWideSearch = !!(props.term as string) || !!(props.brand as string);
+      /* Category mode: use the category prop.    Search / brand mode: use baseCategoryId to search the full catalog. */ const isWideSearch =
+        !!(props.term as string) || !!(props.brand as string);
       const catId = isWideSearch
         ? (props.configuration?.baseCategoryId as number) || 0
         : props.categoryId
@@ -384,35 +237,27 @@ function ProductGrid(props: ProductGridProps) {
         language: (props.language as string) || 'NL',
         imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
         imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
-        filterAvailableAttributeInput: {
-          isSearchable: true,
-        },
+        filterAvailableAttributeInput: { isSearchable: true },
         priceCalculateProductInput: {
           taxZone: taxZone,
+          ...(props.companyId && { companyId: props.companyId as number }),
           ...(props.user &&
-            'company' in props.user && {
-              companyId: (props.user as Contact)?.company?.companyId,
-            }),
+            'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
           ...(props.user &&
-            'contactId' in props.user && {
-              contactId: (props.user as Contact)?.contactId,
-            }),
-          ...(props.user &&
-            'customerId' in props.user && {
-              customerId: (props.user as Customer)?.customerId,
-            }),
+            'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
         },
         categoryProductSearchInput: {
           language: (props.language as string) || 'NL',
           page: (props.page as number) || currentPage,
           offset: (props.pageSize as number) || 12,
           hidden: false,
-          statuses: [
-            Enums.ProductStatus.A,
-            Enums.ProductStatus.P,
-            Enums.ProductStatus.T,
-            Enums.ProductStatus.S,
-          ],
+          /* ...(props.companyId && { */ /* companyId: (props.companyId as number), */ /* }), */ /* ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId }), */ statuses:
+            [
+              Enums.ProductStatus.A,
+              Enums.ProductStatus.P,
+              Enums.ProductStatus.T,
+              Enums.ProductStatus.S,
+            ],
           ...((props.term as string) && {
             term: props.term as string,
             searchFields: [
@@ -443,9 +288,7 @@ function ProductGrid(props: ProductGridProps) {
               },
             ],
           }),
-          ...((props.brand as string) && {
-            manufacturers: [props.brand as string],
-          }),
+          ...((props.brand as string) && { manufacturers: [props.brand as string] }),
           ...((props.textFilters as any[])?.length > 0 && {
             textFilters: props.textFilters as any[],
           }),
@@ -467,9 +310,10 @@ function ProductGrid(props: ProductGridProps) {
           }),
         } as CategoryProductSearchInput,
       } as CategoryQueryVariables);
-
-      // Discard result if a newer fetch was triggered while this one was in-flight
-      if (myFetchId !== fetchIdRef.current) return;
+      /* Discard result if a newer fetch was triggered while this one was in-flight */ if (
+        myFetchId !== fetchIdRef.current
+      )
+        return;
       const lang = (props.language as string) || 'NL';
       const allItems = (result?.products?.items || []) as (Product | Cluster)[];
       const filteredItems = allItems.filter((item) => {
@@ -478,8 +322,8 @@ function ProductGrid(props: ProductGridProps) {
       });
       setInternalProducts(filteredItems);
       const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
-      // Decrement itemsFound for untranslated products on this page (WordPress pattern)
-      const untranslatedCount = allItems.length - filteredItems.length;
+      /* Decrement itemsFound for untranslated products on this page (WordPress pattern) */ const untranslatedCount =
+        allItems.length - filteredItems.length;
       const adjustedTotal = apiTotal - untranslatedCount;
       const totalPages = result?.products?.pages || 1;
       setTotalPages(totalPages);
@@ -532,9 +376,9 @@ function ProductGrid(props: ProductGridProps) {
     if (props.onPageChange) props.onPageChange(page);
   }
   function getDisplayProducts(): ReturnType<ProductGridState['getDisplayProducts']> {
-    // Use props.products when explicitly provided (even if empty array).
-    // Fall through to internally fetched products only when prop is absent.
-    if (props.products !== undefined) {
+    /* Use props.products when explicitly provided (even if empty array).  Fall through to internally fetched products only when prop is absent. */ if (
+      props.products !== undefined
+    ) {
       return (props.products as (Product | Cluster)[]) || [];
     }
     return internalProducts;
@@ -554,31 +398,11 @@ function ProductGrid(props: ProductGridProps) {
     for (let i = 0; i < count; i++) items.push(i);
     return items;
   }
-  // Tracks the serialised dep values of the last fetch that was actually started.
-  // Prevents duplicate API calls when React fires this effect more than once with
-  // identical prop values (e.g. after a parent re-render with an unchanged URL).
-  const lastFetchDepsRef = useRef<string>('');
-
   useEffect(() => {
     if (props.products === undefined) {
       if (props.page !== undefined) {
         setCurrentPage(props.page as number);
       }
-      const depsKey = JSON.stringify({
-        textFilters: props.textFilters,
-        priceFilterMin: props.priceFilterMin,
-        priceFilterMax: props.priceFilterMax,
-        categoryId: props.categoryId,
-        term: props.term,
-        brand: props.brand,
-        sortField: props.sortField,
-        sortOrder: props.sortOrder,
-        pageSize: props.pageSize,
-        language: props.language,
-        page: props.page,
-      });
-      if (lastFetchDepsRef.current === depsKey) return;
-      lastFetchDepsRef.current = depsKey;
       fetchProducts();
     }
   }, [
@@ -593,6 +417,7 @@ function ProductGrid(props: ProductGridProps) {
     props.pageSize,
     props.language,
     props.page,
+    props.companyId,
   ]);
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>
@@ -641,12 +466,13 @@ function ProductGrid(props: ProductGridProps) {
                   strokeWidth={1}
                 />
               </svg>
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">No products found</h3>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900"> No products found </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your filters or search term.
+                {' '}
+                Try adjusting your filters or search term.{' '}
               </p>
             </div>
-          ) : null}
+          ) : null}{' '}
           {getDisplayProducts().length > 0 ? (
             <div className={getGridColsClass()}>
               {getDisplayProducts()?.map((item, idx) => (
@@ -704,6 +530,7 @@ function ProductGrid(props: ProductGridProps) {
                               showStock={props.showStock as boolean}
                               showAvailability={props.showAvailability as boolean}
                               stockLabels={props.stockLabels}
+                              companyId={props.companyId as number}
                               onToggleFavorite={(product, isFav) => {
                                 if (props.onToggleFavorite) {
                                   props.onToggleFavorite(product, isFav);
@@ -715,7 +542,7 @@ function ProductGrid(props: ProductGridProps) {
                                 }
                               }}
                             />
-                          ) : null}
+                          ) : null}{' '}
                           {!showAddToCart() ? (
                             <ProductCard
                               columns={(props.columns as number) || 3}
@@ -729,6 +556,7 @@ function ProductGrid(props: ProductGridProps) {
                               showStock={props.showStock as boolean}
                               showAvailability={props.showAvailability as boolean}
                               stockLabels={props.stockLabels}
+                              companyId={props.companyId as number}
                               onToggleFavorite={(product, isFav) => {
                                 if (props.onToggleFavorite) {
                                   props.onToggleFavorite(product, isFav);
@@ -754,5 +582,4 @@ function ProductGrid(props: ProductGridProps) {
     </div>
   );
 }
-
 export default ProductGrid;

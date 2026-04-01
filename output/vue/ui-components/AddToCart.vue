@@ -361,15 +361,16 @@
 
  /** Configuration object passed to the component */
  configuration?: any;
+
+ /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */
+ companyId?: number;
 }
 
 /**
-* Cart query variables interface
-Variables for the cart query
+* Cart query variables interface Variables for the cart query
 */
 /**
-* Cart query variables interface
-Variables for the cart query
+* Cart query variables interface Variables for the cart query
 */
 export interface CartQueryVariables {
  /** Cart ID to fetch */
@@ -382,8 +383,7 @@ export interface CartQueryVariables {
  imageVariantFilters: TransformationsInput;
 }
 /**
-* Cart query variables interface
-Variables for the cart query
+* Cart query variables interface Variables for the cart query
 */
 
 interface AddToCartState {
@@ -491,7 +491,7 @@ return `\u20AC${Number(price).toFixed(2)}`;
 }
 async function initCart(): ReturnType<AddToCartState["initCart"]>{
 const cartService = new CartService(props.graphqlClient);
-// 1. Check for existing carts for this user first
+/* 1. Check for existing carts for this user first */
 if (props.user) {
   try {
     const searchInput: CartSearchInput = {
@@ -499,8 +499,9 @@ if (props.user) {
     };
     if ('contactId' in props.user && props.user.contactId) {
       searchInput.contactIds = [props.user.contactId];
-      if (props.user.company && 'companyId' in props.user.company && props.user.company.companyId) {
-        searchInput.companyIds = [props.user.company.companyId];
+      const resolvedCompanyId = props.companyId as number || props.user.company && props.user.company.companyId;
+      if (resolvedCompanyId) {
+        searchInput.companyIds = [resolvedCompanyId];
       }
     } else if ('customerId' in props.user && props.user.customerId) {
       searchInput.customerIds = [props.user.customerId];
@@ -526,7 +527,7 @@ if (props.user) {
   }
 }
 
-// 2. Start a new cart
+/* 2. Start a new cart */
 const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
 const startCartInput: CartStartInput = {
   language
@@ -534,8 +535,9 @@ const startCartInput: CartStartInput = {
 if (props.user) {
   if ('contactId' in props.user && props.user.contactId) {
     startCartInput.contactId = props.user.contactId;
-    if ('companyId' in props.user && props.user.companyId) {
-      startCartInput.companyId = props.user.companyId as number;
+    const resolvedCompanyId = props.companyId as number || (props.user as any).companyId;
+    if (resolvedCompanyId) {
+      startCartInput.companyId = resolvedCompanyId as number;
     }
   } else if ('customerId' in props.user && props.user.customerId) {
     startCartInput.customerId = props.user.customerId;
@@ -549,7 +551,7 @@ const cartStartVars: CartStartVariables = {
 };
 let newCart = await cartService.startCart(cartStartVars);
 
-// 3. Assign Default Addresses
+/* 3. Assign Default Addresses */
 if (newCart && props.user) {
   const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
   if (addresses && Array.isArray(addresses)) {
@@ -621,7 +623,7 @@ if (props.beforeAddToCart && !props.beforeAddToCart()) return;
 loading.value = true;
 success.value = false;
 try {
-  // Optional stock validation
+  /* Optional stock validation */
   if (props.enableStockValidation) {
     const inventory = props.product.inventory;
     const available = inventory?.totalQuantity || 0;
@@ -631,19 +633,19 @@ try {
     }
   }
 
-  // Map raw child-item IDs → CartChildItemInput[]
+  /* Map raw child-item IDs to CartChildItemInput[] */
   const childItems: CartChildItemInput[] | undefined = props.childItems ? props.childItems.map((id: number) => ({
     productId: id,
     quantity.value: quantity.value
   })) : undefined;
   if (props.onAddToCart) {
-    // Consumer-provided handler
+    /* Consumer-provided handler */
     const cart = props.onAddToCart(props.product, props.cluster?.clusterId, quantity.value, childItems, props.notes, props.price, props.showModal);
     const addedItem = cart.items?.find(item => item.productId === props.product.productId);
     addedCartItem.value = addedItem || null;
     props.afterAddToCart?.(cart, addedItem);
   } else {
-    // Internal CartService fallback — resolve cart ID
+    /* Internal CartService fallback - resolve cart ID */
     let cartId = props.cartId || activeCartId.value;
     if (!cartId) {
       if (props.createCart) {

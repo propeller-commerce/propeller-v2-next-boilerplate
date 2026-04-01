@@ -110,6 +110,7 @@
                       :showStock="showStock"
                       :showAvailability="showAvailability"
                       :stockLabels="stockLabels"
+                      :companyId="companyId"
                       :onToggleFavorite="
                         (product, isFav) => {
                           if (onToggleFavorite) {
@@ -140,6 +141,7 @@
                       :showStock="showStock"
                       :showAvailability="showAvailability"
                       :stockLabels="stockLabels"
+                      :companyId="companyId"
                       :onToggleFavorite="
                         (product, isFav) => {
                           if (onToggleFavorite) {
@@ -264,6 +266,9 @@ import  ClusterCard from './ClusterCard.vue';
  /** Authenticated user passed through to ProductCard / AddToCart. */
  user?: Contact | Customer | null;
 
+ /** Active company ID from the company switcher. Overrides user's default company for price calculation. Triggers a re-fetch when changed. */
+ companyId?: number;
+
  /**
   * When true, tax-inclusive (gross) price is the leading price.
   * Defaults to false.
@@ -284,7 +289,7 @@ import  ClusterCard from './ClusterCard.vue';
   */
  allowAddToCart?: boolean;
 
- // ── External hooks ────────────────────────────────────────────────────────
+ /* ── External hooks ───────────────────────────────────────────────────────── */
 
  /**
   * Called after each internal data fetch with the filterable attributes
@@ -384,7 +389,7 @@ import  ClusterCard from './ClusterCard.vue';
   */
  sortOrder?: string;
 
- // ── Configuration ─────────────────────────────────────────────────────────
+ /* ── Configuration ──────────────────────────────────────────────────────── */
 
  /**
   * Configuration object providing:
@@ -394,7 +399,7 @@ import  ClusterCard from './ClusterCard.vue';
   */
  configuration?: any;
 
- // ── ProductCard / AddToCart pass-through props ────────────────────────────
+ /* ── ProductCard / AddToCart pass-through props ─────────────────────────── */
 
  /** ID of an existing cart to add items into. */
  cartId?: string;
@@ -433,7 +438,7 @@ import  ClusterCard from './ClusterCard.vue';
   */
  addToCartLabels?: Record<string, string>;
 
- // ── Stock display ─────────────────────────────────────────────────────────
+ /* ── Stock display ───────────────────────────────────────────────────────── */
 
  /**
   * Show the stock / availability widget on each product card.
@@ -455,7 +460,7 @@ import  ClusterCard from './ClusterCard.vue';
   */
  stockLabels?: Record<string, string>;
 
- // ── Card interaction ──────────────────────────────────────────────────────
+ /* ── Card interaction ────────────────────────────────────────────────────── */
 
  /** Show a heart-icon favourite toggle on each card. */
  enableAddFavorite?: boolean;
@@ -523,7 +528,7 @@ const fetchId= ref<ProductGridState["fetchId"]>(0)
 
 
 
-  watch(() => [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page], () => { if (props.products === undefined) {
+  watch(() => [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId], () => { if (props.products === undefined) {
 if (props.page !== undefined) {
   currentPage.value = props.page as number;
 }
@@ -533,15 +538,15 @@ fetchProducts();
 if (!props.graphqlClient) return;
 const myFetchId = fetchId.value + 1;
 fetchId.value = myFetchId;
-// Always show loading on first load; skip skeleton only for language switch with existing products
+/* Always show loading on first load; skip skeleton only for language switch with existing products */
 if (internalProducts.value.length === 0) {
   isInternalLoading.value = true;
 }
 try {
   const service = new CategoryService(props.graphqlClient as GraphQLClient);
   const taxZone = props.taxZone || 'NL';
-  // Category mode: use the category prop.
-  // Search / brand mode: use baseCategoryId to search the full catalog.
+  /* Category mode: use the category prop.
+     Search / brand mode: use baseCategoryId to search the full catalog. */
   const isWideSearch = !!(props.term as string) || !!(props.brand as string);
   const catId = isWideSearch ? props.configuration?.baseCategoryId as number || 0 : props.categoryId ? props.categoryId : props.configuration?.baseCategoryId as number || 0;
   if (props.term && !currentSortField.value) currentSortField.value = Enums.ProductSortField.RELEVANCE;
@@ -555,8 +560,8 @@ try {
     },
     priceCalculateProductInput: {
       taxZone: taxZone,
-      ...(props.user && 'company' in props.user && {
-        companyId: (props.user as Contact)?.company?.companyId
+      ...(props.companyId && {
+        companyId: props.companyId as number
       }),
       ...(props.user && 'contactId' in props.user && {
         contactId: (props.user as Contact)?.contactId
@@ -570,6 +575,10 @@ try {
       page: props.page as number || currentPage.value,
       offset: props.pageSize as number || 12,
       hidden: false,
+      /* ...(props.companyId && { */
+      /* companyId: (props.companyId as number), */
+      /* }), */
+      /* ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId }), */
       statuses: [Enums.ProductStatus.A, Enums.ProductStatus.P, Enums.ProductStatus.T, Enums.ProductStatus.S],
       ...(props.term as string && {
         term: props.term as string,
@@ -602,7 +611,7 @@ try {
     } as CategoryProductSearchInput
   } as CategoryQueryVariables);
 
-  // Discard result if a newer fetch was triggered while this one was in-flight
+  /* Discard result if a newer fetch was triggered while this one was in-flight */
   if (myFetchId !== fetchId.value) return;
   const lang = props.language as string || 'NL';
   const allItems = (result?.products?.items || []) as (Product | Cluster)[];
@@ -614,7 +623,7 @@ try {
   });
   internalProducts.value = filteredItems;
   const apiTotal = (result?.products as any)?.itemsFound.value ?? allItems.length;
-  // Decrement itemsFound for untranslated products on this page (WordPress pattern)
+  /* Decrement itemsFound for untranslated products on this page (WordPress pattern) */
   const untranslatedCount = allItems.length - filteredItems.length;
   const adjustedTotal = apiTotal - untranslatedCount;
   const totalPages.value = result?.products?.pages || 1;
@@ -668,8 +677,8 @@ fetchProducts();
 if (props.onPageChange) props.onPageChange(page);
 }
 function getDisplayProducts(): ReturnType<ProductGridState["getDisplayProducts"]>{
-// Use props.products when explicitly provided (even if empty array).
-// Fall through to internally fetched products only when prop is absent.
+/* Use props.products when explicitly provided (even if empty array).
+   Fall through to internally fetched products only when prop is absent. */
 if (props.products !== undefined) {
   return props.products as (Product | Cluster)[] || [];
 }

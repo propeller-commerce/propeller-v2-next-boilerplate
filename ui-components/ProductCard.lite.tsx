@@ -200,6 +200,12 @@ export interface ProductCardProps {
     /** Language code forwarded to CartService operations. Defaults to 'NL'. */
     language?: string;
 
+    /**
+     * Active company ID from the company switcher.
+     * When provided, overrides the user's default company for cart creation and lookup.
+     */
+    companyId?: number;
+
     /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
     onProceedToCheckout?: () => void;
 
@@ -519,6 +525,7 @@ export default function ProductCard(props: ProductCardProps) {
                             language={props.language}
                             onProceedToCheckout={props.onProceedToCheckout}
                             labels={props.addToCartLabels}
+                            companyId={props.companyId}
                             className="flex w-full items-center gap-2"
                         />
                     </div>
@@ -591,6 +598,7 @@ export default function ProductCard(props: ProductCardProps) {
                         language={props.language}
                         onProceedToCheckout={props.onProceedToCheckout}
                         labels={props.addToCartLabels}
+                        companyId={props.companyId}
                         className="flex w-full items-center gap-2"
                     />
                 </div>

@@ -111,6 +111,9 @@ export interface ProductGridProps {
     /** Authenticated user passed through to ProductCard / AddToCart. */
     user?: Contact | Customer | null;
 
+    /** Active company ID from the company switcher. Overrides user's default company for price calculation. Triggers a re-fetch when changed. */
+    companyId?: number;
+
     /**
      * When true, tax-inclusive (gross) price is the leading price.
      * Defaults to false.
@@ -131,7 +134,7 @@ export interface ProductGridProps {
      */
     allowAddToCart?: boolean;
 
-    // ── External hooks ────────────────────────────────────────────────────────
+    /* ── External hooks ───────────────────────────────────────────────────────── */
 
     /**
      * Called after each internal data fetch with the filterable attributes
@@ -231,7 +234,7 @@ export interface ProductGridProps {
      */
     sortOrder?: string;
 
-    // ── Configuration ─────────────────────────────────────────────────────────
+    /* ── Configuration ──────────────────────────────────────────────────────── */
 
     /**
      * Configuration object providing:
@@ -241,7 +244,7 @@ export interface ProductGridProps {
      */
     configuration?: any;
 
-    // ── ProductCard / AddToCart pass-through props ────────────────────────────
+    /* ── ProductCard / AddToCart pass-through props ─────────────────────────── */
 
     /** ID of an existing cart to add items into. */
     cartId?: string;
@@ -280,7 +283,7 @@ export interface ProductGridProps {
      */
     addToCartLabels?: Record<string, string>;
 
-    // ── Stock display ─────────────────────────────────────────────────────────
+    /* ── Stock display ───────────────────────────────────────────────────────── */
 
     /**
      * Show the stock / availability widget on each product card.
@@ -302,7 +305,7 @@ export interface ProductGridProps {
      */
     stockLabels?: Record<string, string>;
 
-    // ── Card interaction ──────────────────────────────────────────────────────
+    /* ── Card interaction ────────────────────────────────────────────────────── */
 
     /** Show a heart-icon favourite toggle on each card. */
     enableAddFavorite?: boolean;
@@ -363,15 +366,15 @@ export default function ProductGrid(props: ProductGridProps) {
             if (!props.graphqlClient) return;
             const myFetchId = state.fetchId + 1;
             state.fetchId = myFetchId;
-            // Always show loading on first load; skip skeleton only for language switch with existing products
+            /* Always show loading on first load; skip skeleton only for language switch with existing products */
             if (state.internalProducts.length === 0) {
                 state.isInternalLoading = true;
             }
             try {
                 const service = new CategoryService(props.graphqlClient as GraphQLClient);
                 const taxZone = props.taxZone || 'NL';
-                // Category mode: use the category prop.
-                // Search / brand mode: use baseCategoryId to search the full catalog.
+                /* Category mode: use the category prop.
+                   Search / brand mode: use baseCategoryId to search the full catalog. */
                 const isWideSearch = !!(props.term as string) || !!(props.brand as string);
                 const catId = isWideSearch
                     ? ((props.configuration?.baseCategoryId as number) || 0)
@@ -390,7 +393,9 @@ export default function ProductGrid(props: ProductGridProps) {
                     filterAvailableAttributeInput: { isSearchable: true },
                     priceCalculateProductInput: {
                         taxZone: taxZone,
-                        ...(props.user && 'company' in props.user && { companyId: (props.user as Contact)?.company?.companyId }),
+                        ...(props.companyId && {
+                            companyId: (props.companyId as number),
+                        }),
                         ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
                         ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer)?.customerId })
                     },
@@ -399,6 +404,10 @@ export default function ProductGrid(props: ProductGridProps) {
                         page: (props.page as number) || state.currentPage,
                         offset: (props.pageSize as number) || 12,
                         hidden: false,
+                        /* ...(props.companyId && { */
+                        /* companyId: (props.companyId as number), */
+                        /* }), */
+                        /* ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId }), */
                         statuses: [
                             Enums.ProductStatus.A,
                             Enums.ProductStatus.P,
@@ -454,18 +463,18 @@ export default function ProductGrid(props: ProductGridProps) {
                     } as CategoryProductSearchInput,
                 } as CategoryQueryVariables);
 
-                // Discard result if a newer fetch was triggered while this one was in-flight
+                /* Discard result if a newer fetch was triggered while this one was in-flight */
                 if (myFetchId !== state.fetchId) return;
                 const lang = (props.language as string) || 'NL';
                 const allItems = (result?.products?.items || []) as (Product | Cluster)[];
                 const filteredItems = allItems.filter((item) => {
-                  const names = (item as Product).names || (item as Cluster).names || [];
-                  return names.some((n: { language?: string }) => n.language === lang);
+                    const names = (item as Product).names || (item as Cluster).names || [];
+                    return names.some((n: { language?: string }) => n.language === lang);
                 });
 
                 state.internalProducts = filteredItems;
                 const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
-                // Decrement itemsFound for untranslated products on this page (WordPress pattern)
+                /* Decrement itemsFound for untranslated products on this page (WordPress pattern) */
                 const untranslatedCount = allItems.length - filteredItems.length;
                 const adjustedTotal = apiTotal - untranslatedCount;
                 const totalPages = result?.products?.pages || 1;
@@ -524,8 +533,8 @@ export default function ProductGrid(props: ProductGridProps) {
         },
 
         getDisplayProducts(): (Product | Cluster)[] {
-            // Use props.products when explicitly provided (even if empty array).
-            // Fall through to internally fetched products only when prop is absent.
+            /* Use props.products when explicitly provided (even if empty array).
+               Fall through to internally fetched products only when prop is absent. */
             if (props.products !== undefined) {
                 return (props.products as (Product | Cluster)[]) || [];
             }
@@ -563,7 +572,7 @@ export default function ProductGrid(props: ProductGridProps) {
             }
             state.fetchProducts();
         }
-    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page]);
+    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId]);
 
     return (
         <div className={`w-full ${(props.className as string) || ''}`}>
@@ -683,6 +692,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                                     showStock={props.showStock as boolean}
                                                     showAvailability={props.showAvailability as boolean}
                                                     stockLabels={props.stockLabels}
+                                                    companyId={props.companyId as number}
                                                     onToggleFavorite={(product: Product, isFav: boolean) => {
                                                         if (props.onToggleFavorite) {
                                                             props.onToggleFavorite(product, isFav);
@@ -708,6 +718,7 @@ export default function ProductGrid(props: ProductGridProps) {
                                                     showStock={props.showStock as boolean}
                                                     showAvailability={props.showAvailability as boolean}
                                                     stockLabels={props.stockLabels}
+                                                    companyId={props.companyId as number}
                                                     onToggleFavorite={(product: Product, isFav: boolean) => {
                                                         if (props.onToggleFavorite) {
                                                             props.onToggleFavorite(product, isFav);

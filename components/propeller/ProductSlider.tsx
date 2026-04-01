@@ -74,109 +74,53 @@ export interface ProductSliderProps {
   /** Authenticated user for cart operations */
   user?: Contact | Customer | null;
 
-  // === Layout ===
-
-  /** Items visible per breakpoint */
-  itemsPerView?: {
+  /**
+   * Active company ID from the company switcher.
+   * Overrides the user's default company for price calculation in cross-upsell fetches  * and is forwarded to each embedded ProductCard / AddToCart.  * Triggers a re-fetch when changed.  */ companyId?: number;
+  /* === Layout === */ /** Items visible per breakpoint */ itemsPerView?: {
     mobile?: number;
     tablet?: number;
     desktop?: number;
   };
-
-  /** Slider title displayed above the track */
-  title?: string;
-
-  /** Additional CSS class for the outer container */
-  containerClassName?: string;
-
-  // === Card stock display ===
-
-  /**
-   * Show the stock / availability widget on each product card.
-   * Forwarded to `ProductCard.showStock`.
-   * Defaults to false.
-   */
-  showStock?: boolean;
-
-  /**
-   * Show only the availability indicator (Available / Not available) inside the stock widget.
-   * Forwarded to `ProductCard.showAvailability`.
-   * Defaults to true.
-   */
-  showAvailability?: boolean;
-
-  /**
-   * Label overrides forwarded to the embedded ItemStock component inside each card.
-   * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
-   */
-  stockLabels?: Record<string, string>;
-
-  // === Card favourites ===
-
-  /** Show a heart-icon favourite toggle on each card. Defaults to false. */
-  enableAddFavorite?: boolean;
-
-  /**
-   * Called when a favourite is toggled on any card.
-   * Receives the full Product or Cluster object and the new favourite state.
-   */
-  onToggleFavorite?: (item: Product | Cluster, isFavorite: boolean) => void;
-
-  // === Card navigation ===
-
-  /** Called when a product card is clicked — use for SPA-style routing. */
-  onProductClick?: (product: Product) => void;
-
-  /** Called when a cluster card is clicked — use for SPA-style routing. */
-  onClusterClick?: (cluster: Cluster) => void;
-
-  // === AddToCart pass-through ===
-
-  /** Validate stock before adding to cart. Defaults to false. */
-  stockValidation?: boolean;
-
-  /** Show increment/decrement stepper buttons in AddToCart. Defaults to true. */
-  showIncrDecr?: boolean;
-
-  /** ID of an existing cart to add items to. */
-  cartId?: string;
-
-  /** Auto-create a cart when none is available. Pair with onCartCreated. */
-  createCart?: boolean;
-
-  /** Called after AddToCart creates a new cart internally. */
-  onCartCreated?: (cart: Cart) => void;
-
-  /** Called after every successful add-to-cart. Receives the updated cart and the added item. */
-  afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
-
-  /**
-   * When true, AddToCart shows a success modal instead of a toast.
-   * Defaults to false.
-   */
-  showModal?: boolean;
-
-  /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
-  onProceedToCheckout?: () => void;
-
-  /**
-   * Label overrides forwarded to the embedded AddToCart component.
-   * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,
-   *       modalTitle, quantity, continueShopping, proceedToCheckout
-   */
-  addToCartLabels?: Record<string, string>;
-
-  // === Misc ===
-
-  /** Configuration object providing imageSearchFiltersGrid, imageVariantFiltersMedium, urls */
-  configuration?: any;
-
-  /**
-   * Label overrides for the slider UI.
-   * Available keys: scrollLeft, scrollRight, noProducts, viewCluster,
-   *                 ACCESSORIES, ALTERNATIVES, RELATED, OPTIONS, PARTS
-   */
-  labels?: Record<string, string>;
+  /** Slider title displayed above the track */ title?: string;
+  /** Additional CSS class for the outer container */ containerClassName?: string;
+  /* === Card stock display === */ /**  * Show the stock / availability widget on each product card.  * Forwarded to `ProductCard.showStock`.  * Defaults to false.  */ showStock?: boolean;
+  /**  * Show only the availability indicator (Available / Not available) inside the stock widget.  * Forwarded to `ProductCard.showAvailability`.  * Defaults to true.  */ showAvailability?: boolean;
+  /**  * Label overrides forwarded to the embedded ItemStock component inside each card.  * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces  */ stockLabels?: Record<
+    string,
+    string
+  >;
+  /* === Card favourites === */ /** Show a heart-icon favourite toggle on each card. Defaults to false. */ enableAddFavorite?: boolean;
+  /**  * Called when a favourite is toggled on any card.  * Receives the full Product or Cluster object and the new favourite state.  */ onToggleFavorite?: (
+    item: Product | Cluster,
+    isFavorite: boolean
+  ) => void;
+  /* === Card navigation === */ /** Called when a product card is clicked — use for SPA-style routing. */ onProductClick?: (
+    product: Product
+  ) => void;
+  /** Called when a cluster card is clicked — use for SPA-style routing. */ onClusterClick?: (
+    cluster: Cluster
+  ) => void;
+  /* === AddToCart pass-through === */ /** Validate stock before adding to cart. Defaults to false. */ stockValidation?: boolean;
+  /** Show increment/decrement stepper buttons in AddToCart. Defaults to true. */ showIncrDecr?: boolean;
+  /** ID of an existing cart to add items to. */ cartId?: string;
+  /** Auto-create a cart when none is available. Pair with onCartCreated. */ createCart?: boolean;
+  /** Called after AddToCart creates a new cart internally. */ onCartCreated?: (cart: Cart) => void;
+  /** Called after every successful add-to-cart. Receives the updated cart and the added item. */ afterAddToCart?: (
+    cart: Cart,
+    item?: CartMainItem
+  ) => void;
+  /**  * When true, AddToCart shows a success modal instead of a toast.  * Defaults to false.  */ showModal?: boolean;
+  /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */ onProceedToCheckout?: () => void;
+  /**  * Label overrides forwarded to the embedded AddToCart component.  * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,  *       modalTitle, quantity, continueShopping, proceedToCheckout  */ addToCartLabels?: Record<
+    string,
+    string
+  >;
+  /* === Misc === */ /** Configuration object providing imageSearchFiltersGrid, imageVariantFiltersMedium, urls */ configuration?: any;
+  /**  * Label overrides for the slider UI.  * Available keys: scrollLeft, scrollRight, noProducts, viewCluster,  *                 ACCESSORIES, ALTERNATIVES, RELATED, OPTIONS, PARTS  */ labels?: Record<
+    string,
+    string
+  >;
 }
 interface ProductSliderState {
   loadedItems: any[];
@@ -286,30 +230,19 @@ function ProductSlider(props: ProductSliderProps) {
           types: props.crossUpsellTypes,
           page: 1,
           offset: 50,
-          ...(props.productId && {
-            productIdsFrom: [props.productId],
-          }),
-          ...(props.clusterId && {
-            clusterIdsFrom: [props.clusterId],
-          }),
+          ...(props.productId && { productIdsFrom: [props.productId] }),
+          ...(props.clusterId && { clusterIdsFrom: [props.clusterId] }),
         },
         language: props.language || 'NL',
         imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
         imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
         priceCalculateProductInput: {
           taxZone: props.taxZone || 'NL',
+          ...(props.companyId && { companyId: props.companyId }),
           ...(props.user &&
-            'company' in props.user && {
-              companyId: (props.user as Contact)?.company?.companyId,
-            }),
+            'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
           ...(props.user &&
-            'contactId' in props.user && {
-              contactId: (props.user as Contact)?.contactId,
-            }),
-          ...(props.user &&
-            'customerId' in props.user && {
-              customerId: (props.user as Customer)?.customerId,
-            }),
+            'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
         },
       };
       const result = await crossupsellService.getCrossupsells(searchInput);
@@ -352,10 +285,7 @@ function ProductSlider(props: ProductSliderProps) {
             Enums.ProductStatus.S,
           ],
         },
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid || {
-          page: 1,
-          offset: 1,
-        },
+        imageSearchFilters: props.configuration?.imageSearchFiltersGrid || { page: 1, offset: 1 },
         imageVariantFilters: props.configuration?.imageVariantFiltersMedium || {
           transformations: [
             {
@@ -369,9 +299,7 @@ function ProductSlider(props: ProductSliderProps) {
             },
           ],
         },
-        filterAvailableAttributeInput: {
-          isSearchable: true,
-        },
+        filterAvailableAttributeInput: { isSearchable: true },
       });
       setLoadedItems(response.items || []);
     } catch (e) {
@@ -395,20 +323,14 @@ function ProductSlider(props: ProductSliderProps) {
     const el = getTrackEl();
     if (el) {
       const scrollAmount = el.clientWidth * 0.8;
-      el.scrollBy({
-        left: -scrollAmount,
-        behavior: 'smooth',
-      });
+      el.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     }
   }
   function scrollRight(): ReturnType<ProductSliderState['scrollRight']> {
     const el = getTrackEl();
     if (el) {
       const scrollAmount = el.clientWidth * 0.8;
-      el.scrollBy({
-        left: scrollAmount,
-        behavior: 'smooth',
-      });
+      el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   }
   function handleScroll(e: any): ReturnType<ProductSliderState['handleScroll']> {
@@ -435,8 +357,7 @@ function ProductSlider(props: ProductSliderProps) {
     setSliderId('slider-' + Math.random().toString(36).substring(2, 9));
   }, []);
   useEffect(() => {
-    doFetch();
-    // NOTE: arrays compared by value to avoid stale-reference refetches
+    doFetch(); /* NOTE: arrays compared by value to avoid stale-reference refetches */
   }, [
     JSON.stringify(props.productIds),
     JSON.stringify(props.clusterIds),
@@ -444,10 +365,13 @@ function ProductSlider(props: ProductSliderProps) {
     props.productId,
     props.clusterId,
     props.language,
+    props.companyId,
   ]);
   useEffect(() => {
-    // Initialize scroll dimensions once sliderId is set and items are rendered
-    if (sliderId && items().length > 0) {
+    /* Initialize scroll dimensions once sliderId is set and items are rendered */ if (
+      sliderId &&
+      items().length > 0
+    ) {
       setTimeout(() => {
         const el = getTrackEl();
         if (el) {
@@ -459,6 +383,7 @@ function ProductSlider(props: ProductSliderProps) {
   }, [sliderId, items().length]);
   return (
     <>
+      {' '}
       {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (
         <>
           <div className={props.containerClassName || 'mb-12'}>
@@ -520,10 +445,7 @@ function ProductSlider(props: ProductSliderProps) {
                 className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
                 data-slider-id={sliderId}
                 onScroll={(e) => handleScroll(e)}
-                style={{
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
-                }}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {items()?.map((item, index) => (
                   <div
@@ -555,6 +477,7 @@ function ProductSlider(props: ProductSliderProps) {
                         product={item as Product}
                         graphqlClient={props.graphqlClient}
                         user={(props.user as Contact | Customer | null) || null}
+                        companyId={props.companyId as number}
                         cartId={props.cartId}
                         configuration={props.configuration}
                         includeTax={props.includeTax}
@@ -586,6 +509,7 @@ function ProductSlider(props: ProductSliderProps) {
                         product={item as Product}
                         graphqlClient={props.graphqlClient}
                         user={(props.user as Contact | Customer | null) || null}
+                        companyId={props.companyId as number}
                         configuration={props.configuration}
                         includeTax={props.includeTax}
                         language={props.language}
@@ -614,9 +538,8 @@ function ProductSlider(props: ProductSliderProps) {
             ) : null}
           </div>
         </>
-      ) : null}
+      ) : null}{' '}
     </>
   );
 }
-
 export default ProductSlider;

@@ -16,6 +16,7 @@ import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
+import { useCompany } from '@/context/CompanyContext';
 
 export default function SearchPage() {
   const params = useParams();
@@ -67,6 +68,7 @@ export default function SearchPage() {
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
 
   const { state } = useAuth();
+  const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const { includeTax } = usePrice();
@@ -203,6 +205,7 @@ export default function SearchPage() {
                 categoryId={isAllProducts ? config.baseCategoryId : undefined}
                 configuration={config}
                 user={state.user}
+                companyId={selectedCompany?.companyId}
                 language={language}
                 showModal={true}
                 createCart={true}

@@ -24,6 +24,7 @@ import AddToFavorite from '@/components/propeller/AddToFavorite';
 import ProductTabs from '@/components/propeller/ProductTabs';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
 
@@ -37,6 +38,7 @@ export default function ClusterPage() {
 
   const { cart, saveCart } = useCart();
   const { state, refreshUser } = useAuth();
+  const { selectedCompany } = useCompany();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const router = useRouter();
@@ -215,6 +217,7 @@ export default function ClusterPage() {
                 <div className="flex items-center gap-2">
                   <AddToCart
                     user={state.user}
+                    companyId={selectedCompany?.companyId}
                     product={selectedProduct as Product}
                     cluster={cluster as Cluster}
                     beforeAddToCart={validateClusterOptions}

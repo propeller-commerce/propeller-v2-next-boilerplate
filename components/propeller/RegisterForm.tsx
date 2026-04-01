@@ -348,6 +348,7 @@ function RegisterForm(props: RegisterFormProps) {
     return props.labels?.loginLink || 'Log in';
   }
   function isFieldRequired(fieldName: string): ReturnType<RegisterFormState['isFieldRequired']> {
+    if (fieldName === 'companyName' && isContact()) return true;
     if (!props.requiredFields) return false;
     return props.requiredFields.indexOf(fieldName) !== -1;
   }
@@ -1224,7 +1225,7 @@ function RegisterForm(props: RegisterFormProps) {
           <p className="text-sm text-gray-600">Your account has been created successfully.</p>
         </div>
       ) : null}
-      {showLoginLink() ? (
+      {showLoginLink() && !submitted ? (
         <div className="mt-6 border-t pt-6">
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-2">{loginText()}</p>

@@ -281,6 +281,7 @@ export default function RegisterForm(props: RegisterFormProps) {
         get loginLinkText(): string { return props.labels?.loginLink || 'Log in'; },
 
         isFieldRequired(fieldName: string): boolean {
+            if (fieldName === 'companyName' && state.isContact) return true;
             if (!props.requiredFields) return false;
             return props.requiredFields.indexOf(fieldName) !== -1;
         },
@@ -1117,7 +1118,7 @@ export default function RegisterForm(props: RegisterFormProps) {
                 </div>
             </Show>
 
-            <Show when={state.showLoginLink}>
+            <Show when={state.showLoginLink && !state.submitted}>
                 <div className="mt-6 border-t pt-6">
                     <div className="text-center">
                         <p className="text-sm text-gray-500 mb-2">{state.loginText}</p>

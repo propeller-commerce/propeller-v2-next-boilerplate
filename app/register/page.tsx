@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import RegisterForm from '@/components/propeller/RegisterForm';
 import { graphqlClient } from '@/lib/api';
 import { Company, Contact } from 'propeller-sdk-v2';
+import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref } from '@/data/config';
 
 export default function RegisterPage() {
@@ -66,18 +67,23 @@ export default function RegisterPage() {
                     'US': 'United States'
                   }}
                   afterRegistration={(user, accessToken, refreshToken, expiresAt) => {
-                    if ((user as Contact).company) {
-                      setSelectedCompany((user as Contact).company as Company);
+                    const registeredUser = stripLeadingUnderscores(user);
+
+                    localStorage.setItem('user', JSON.stringify(registeredUser));
+                    updateUser(registeredUser);
+
+                    if ((registeredUser as Contact).company) {
+                      setSelectedCompany((registeredUser as Contact).company as Company);
                     }
-
-                    localStorage.setItem('user', JSON.stringify(user));
-
-                    updateUser(user);
 
                     if (accessToken && refreshToken && expiresAt) {
                       localStorage.setItem('accessToken', accessToken);
                       localStorage.setItem('refreshToken', refreshToken);
                       localStorage.setItem('expiresAt', expiresAt);
+                    }
+
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('userLoggedIn'));
                     }
 
                     router.push(localizeHref('/account', language))

@@ -575,10 +575,12 @@ try {
       page: props.page as number || currentPage.value,
       offset: props.pageSize as number || 12,
       hidden: false,
-      /* ...(props.companyId && { */
-      /* companyId: (props.companyId as number), */
-      /* }), */
-      /* ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId }), */
+      ...(props.companyId && {
+        companyId: props.companyId as number
+      }),
+      ...(props.user && {
+        userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId
+      }),
       statuses: [Enums.ProductStatus.A, Enums.ProductStatus.P, Enums.ProductStatus.T, Enums.ProductStatus.S],
       ...(props.term as string && {
         term: props.term as string,

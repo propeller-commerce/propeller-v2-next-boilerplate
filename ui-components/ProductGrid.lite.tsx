@@ -404,10 +404,8 @@ export default function ProductGrid(props: ProductGridProps) {
                         page: (props.page as number) || state.currentPage,
                         offset: (props.pageSize as number) || 12,
                         hidden: false,
-                        /* ...(props.companyId && { */
-                        /* companyId: (props.companyId as number), */
-                        /* }), */
-                        /* ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId }), */
+                        ...(props.companyId && { companyId: (props.companyId as number) }),
+                        ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact)?.contactId : (props.user as Customer)?.customerId }),
                         statuses: [
                             Enums.ProductStatus.A,
                             Enums.ProductStatus.P,

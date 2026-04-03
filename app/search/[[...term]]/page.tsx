@@ -214,6 +214,7 @@ export default function SearchPage() {
                 showAvailability={false}
                 showStock={true}
                 onCartCreated={(newCart) => {
+                  console.log('newCart', newCart);
                   saveCart(newCart);
                 }}
                 columns={viewMode === 'list' ? 1 : 3}
@@ -234,6 +235,7 @@ export default function SearchPage() {
                 onPageItemCountChange={setPageItemCount}
                 page={currentPage}
                 afterAddToCart={(updatedCart) => {
+                  console.log('updatedCart', updatedCart);
                   saveCart(updatedCart);
                 }}
                 onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}

@@ -79,6 +79,7 @@ export default function ProductPage() {
               <div className="mb-6">
                 <ProductInfo
                   user={state.user}
+                  companyId={selectedCompany?.companyId}
                   productId={productId}
                   graphqlClient={graphqlClient}
                   language={language}

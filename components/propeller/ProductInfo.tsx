@@ -9,12 +9,20 @@ import {
   LocalizedString,
   Contact,
   Customer,
+  OrderlistService,
+  Orderlist,
 } from 'propeller-sdk-v2';
 
 export interface ProductInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
   /** The authenticated user (Contact or Customer) */
   user: Contact | Customer | null;
+
+  /** Active company ID from the company switcher.
+   * Overrides default company for price calculation.
+   * Triggers a re-fetch when changed. */
+  companyId?: number;
+
   /**
    * Pre-fetched product object to display.
    * When provided the component skips internal fetching.
@@ -132,63 +140,76 @@ function ProductInfo(props: ProductInfoProps) {
     setLoading(true);
     const service = new ProductService(props.graphqlClient as GraphQLClient);
     const taxZone = props.taxZone || 'NL';
-    service
-      .getProduct({
-        productId: props.productId as number,
-        language: (props.language as string) || 'NL',
-        imageSearchFilters: props.imageSearchFilters || props.configuration.imageSearchFilters,
-        imageVariantFilters:
-          props.imageVariantFilters || props.configuration.imageVariantFiltersLarge,
-        priceCalculateProductInput: {
-          taxZone: taxZone,
-          ...(props.user &&
-            'company' in props.user && {
-              companyId: (props.user as Contact)?.company?.companyId,
+    let orderListsPromise: Promise<number[]> = Promise.resolve([]);
+    if (props.user && props.companyId) {
+      const orderlistService = new OrderlistService(props.graphqlClient as GraphQLClient);
+      orderListsPromise = orderlistService
+        .getOrderlists({
+          companyIds: [props.companyId],
+        })
+        .then((orderlists: any) => {
+          return orderlists.items?.map((orderList: Orderlist) => orderList.id) || [];
+        });
+    }
+    orderListsPromise.then((orderLists: number[]) => {
+      service
+        .getProduct({
+          productId: props.productId as number,
+          language: (props.language as string) || 'NL',
+          applyOrderlists: true,
+          orderlistIds: orderLists,
+          imageSearchFilters: props.imageSearchFilters || props.configuration.imageSearchFilters,
+          imageVariantFilters:
+            props.imageVariantFilters || props.configuration.imageVariantFiltersLarge,
+          priceCalculateProductInput: {
+            taxZone: taxZone,
+            ...(props.companyId && {
+              companyId: props.companyId as number,
             }),
-          ...(props.user &&
-            'contactId' in props.user && {
-              contactId: (props.user as Contact)?.contactId,
+            ...(props.user &&
+              'contactId' in props.user && {
+                contactId: (props.user as Contact)?.contactId,
+              }),
+            ...(props.user &&
+              'customerId' in props.user && {
+                customerId: (props.user as Customer)?.customerId,
+              }),
+          },
+          userBulkPriceProductInput: {
+            taxZone: taxZone,
+            ...(props.companyId && {
+              companyId: props.companyId as number,
             }),
-          ...(props.user &&
-            'customerId' in props.user && {
-              customerId: (props.user as Customer)?.customerId,
-            }),
-        },
-        userBulkPriceProductInput: {
-          taxZone: taxZone,
-          ...(props.user &&
-            'company' in props.user && {
-              companyId: (props.user as Contact)?.company?.companyId,
-            }),
-          ...(props.user &&
-            'contactId' in props.user && {
-              contactId: (props.user as Contact)?.contactId,
-            }),
-          ...(props.user &&
-            'customerId' in props.user && {
-              customerId: (props.user as Customer)?.customerId,
-            }),
-        },
-        ...(props.configuration.productTrackAttributes &&
-          props.configuration.productTrackAttributes.length > 0 && {
-            attributeResultSearchInput: {
-              attributeDescription: {
-                names: props.configuration.productTrackAttributes,
+            ...(props.user &&
+              'contactId' in props.user && {
+                contactId: (props.user as Contact)?.contactId,
+              }),
+            ...(props.user &&
+              'customerId' in props.user && {
+                customerId: (props.user as Customer)?.customerId,
+              }),
+          },
+          ...(props.configuration.productTrackAttributes &&
+            props.configuration.productTrackAttributes.length > 0 && {
+              attributeResultSearchInput: {
+                attributeDescription: {
+                  names: props.configuration.productTrackAttributes,
+                },
               },
-            },
-          }),
-      })
-      .then((product: Product) => {
-        setInternalProduct(product);
-        setLoading(false);
-        if (props.onProductLoaded) {
-          props.onProductLoaded(product);
-        }
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, [props.productId, props.product, props.language, props.user]);
+            }),
+        })
+        .then((product: Product) => {
+          setInternalProduct(product);
+          setLoading(false);
+          if (props.onProductLoaded) {
+            props.onProductLoaded(product);
+          }
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    });
+  }, [props.productId, props.product, props.language, props.user, props.companyId]);
   return (
     <div className={`product-info ${(props.className as string) || ''}`}>
       {loading && !props.product ? (

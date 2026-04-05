@@ -13,6 +13,8 @@ import {
   UserService,
   RegisterContactInput,
   Enums,
+  AttributeResultSearchInput,
+  PurchaseAuthorizationConfigCreateInput,
 } from 'propeller-sdk-v2';
 
 export interface PurchaseAuthorizationConfiguratorProps {
@@ -40,8 +42,8 @@ export interface PurchaseAuthorizationConfiguratorProps {
   /** Fires after a contact is registered. If not provided, refreshes contacts list. */
   afterContactCreate?: (contact: Contact) => void;
 
-  /** Override: fires instead of the default createPurchaseAuthorizationConfig() call */
-  onPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfig) => void;
+  /** Override: fires instead of the default PurchaseAuthorizationConfigCreateInput() call */
+  onPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfigCreateInput) => void;
 
   /** Fires after a PAC is created. If not provided, refreshes contacts list. */
   afterPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfig) => void;
@@ -157,27 +159,23 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
   >(() => '');
   function isAuthManager(): ReturnType<PurchaseAuthorizationConfiguratorState['isAuthManager']> {
     if (!props.user || !('contactId' in props.user)) return false;
-    const pacData = (props.user as any).purchaseAuthorizationConfigs;
-    const items: any[] = pacData?.items ?? pacData?._items ?? [];
-    return items.some((pac: any) => {
-      const role = pac.purchaseRole ?? pac._purchaseRole;
-      const companyId =
-        pac.company?.companyId ??
-        pac.company?._companyId ??
-        pac._company?.companyId ??
-        pac._company?._companyId;
+    const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+    return items.some((pac: PurchaseAuthorizationConfig) => {
+      const role = pac.purchaseRole;
+      const companyId = pac.company?.companyId;
       return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && companyId === props.companyId;
     });
   }
   function getContacts(): ReturnType<PurchaseAuthorizationConfiguratorState['getContacts']> {
     if (!company) return [];
-    const contactsData = (company as any).contacts ?? (company as any)._contacts;
-    return contactsData?.items ?? contactsData?._items ?? [];
+    const contactsData = (company as Company).contacts;
+    return contactsData?.items ?? [];
   }
   function getTotalPages(): ReturnType<PurchaseAuthorizationConfiguratorState['getTotalPages']> {
     if (!company) return 0;
-    const contactsData = (company as any).contacts ?? (company as any)._contacts;
-    return contactsData?.pages ?? contactsData?._pages ?? 0;
+    const contactsData = (company as Company).contacts;
+    return contactsData?.pages ?? 0;
   }
   function getLabel(
     key: string,
@@ -190,19 +188,17 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
   ): ReturnType<PurchaseAuthorizationConfiguratorState['buildMaps']> {
     const newPacMap: Record<number, PurchaseAuthorizationConfig> = {};
     const newRowEdits: Record<number, RowEdit> = {};
-    contacts.forEach((contact: any) => {
-      const cId: number = contact.contactId ?? contact._contactId;
-      const pacData = contact.purchaseAuthorizationConfigs ?? contact._purchaseAuthorizationConfigs;
-      const pacItems: PurchaseAuthorizationConfig[] = pacData?.items ?? pacData?._items ?? [];
+    contacts.forEach((contact: Contact) => {
+      const cId: number = contact.contactId;
+      const pacData = contact.purchaseAuthorizationConfigs;
+      const pacItems: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
       if (pacItems.length > 0) {
         newPacMap[cId] = pacItems[0];
       }
       const pac = newPacMap[cId];
       newRowEdits[cId] = {
-        role: pac ? ((pac as any).purchaseRole ?? (pac as any)._purchaseRole ?? '') : '',
-        limit: pac
-          ? ((pac as any).authorizationLimit ?? (pac as any)._authorizationLimit)
-          : undefined,
+        role: pac ? pac.purchaseRole : '',
+        limit: pac ? pac.authorizationLimit : undefined,
         dirty: false,
       };
     });
@@ -227,14 +223,13 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
           page: 1,
           offset: 100,
         },
-        $contactAttributesInput: {} as any,
-        $companyAttributesInput: {} as any,
+        $companyAttributesInput: {} as AttributeResultSearchInput,
       });
       setCompany(company);
       // Extract contacts directly from the fetched result (not via state.getContacts())
       // to avoid reading stale state before React flushes the company assignment.
-      const freshContactsData = (company as any).contacts ?? (company as any)._contacts;
-      const freshContacts: Contact[] = freshContactsData?.items ?? freshContactsData?._items ?? [];
+      const freshContactsData = company.contacts;
+      const freshContacts: Contact[] = freshContactsData?.items ?? [];
       buildMaps(freshContacts);
     } finally {
       setLoading(false);
@@ -290,14 +285,14 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
         limit: undefined,
         dirty: false,
       };
-      const input = {
+      const input: PurchaseAuthorizationConfigCreateInput = {
         contactId,
         companyId: props.companyId,
         purchaseRole: (edit.role || Enums.PurchaseRole.PURCHASER) as Enums.PurchaseRole,
         authorizationLimit: edit.limit,
       };
       if (props.onPurchaseAuthorizationCreate) {
-        props.onPurchaseAuthorizationCreate(input as any);
+        props.onPurchaseAuthorizationCreate(input);
       } else {
         const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
         const pac = await pacService.createPurchaseAuthorizationConfig(input);
@@ -325,13 +320,13 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
     });
     try {
       const edit = rowEdits[contactId];
-      const pacId: string = (pac as any).id ?? (pac as any)._id;
+      const pacId: string = pac.id;
       if (props.onPurchaseAuthorizationUpdate) {
         props.onPurchaseAuthorizationUpdate(pac);
       } else {
         const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
         const updated = await pacService.updatePurchaseAuthorizationConfig(pacId, {
-          purchaseRole: (edit.role || (pac as any).purchaseRole) as Enums.PurchaseRole,
+          purchaseRole: (edit.role || pac.purchaseRole) as Enums.PurchaseRole,
           authorizationLimit: edit.limit,
         });
         if (props.afterPurchaseAuthorizationUpdate) {
@@ -357,7 +352,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
       [contactId]: true,
     });
     try {
-      const pacId: string = (pac as any).id ?? (pac as any)._id;
+      const pacId: string = pac.id;
       if (props.onPurchaseAuthorizationDelete) {
         props.onPurchaseAuthorizationDelete(pac);
       } else {
@@ -425,10 +420,10 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
         const userService = new UserService(props.graphqlClient);
         const result = await userService.registerContact({
           contactRegisterInput: input,
-        } as any);
-        const contact = (result as any).contact ?? (result as any)._contact ?? result;
+        });
+        const contact = result.contact;
         if (props.afterContactCreate) {
-          props.afterContactCreate(contact as Contact);
+          props.afterContactCreate(contact as any);
         } else {
           await loadCompany(currentPage);
         }
@@ -446,7 +441,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
   function isCurrentUser(
     contactId: number
   ): ReturnType<PurchaseAuthorizationConfiguratorState['isCurrentUser']> {
-    const userId = (props.user as any).contactId ?? (props.user as any)._contactId;
+    const userId = (props.user as Contact).contactId;
     return userId === contactId;
   }
   function isRowDirty(
@@ -523,34 +518,22 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     </thead>
                     <tbody className="divide-y divide-border">
                       {getContacts()?.map((contact) => (
-                        <tr
-                          className="hover:bg-muted/30 transition-colors"
-                          key={contact.contactId ?? contact._contactId}
-                        >
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {contact.contactId ?? contact._contactId}
-                          </td>
+                        <tr className="hover:bg-muted/30 transition-colors" key={contact.contactId}>
+                          <td className="px-4 py-3 text-muted-foreground">{contact.contactId}</td>
                           <td className="px-4 py-3">
                             <div className="font-medium">
                               {[contact.firstName, contact.middleName, contact.lastName]
                                 .filter(Boolean)
                                 .join(' ')}
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              {contact.email ?? contact._email}
-                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">{contact.email}</div>
                           </td>
                           <td className="px-4 py-3">
                             <select
                               className="border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                              value={getRowRole(contact.contactId ?? contact._contactId)}
-                              disabled={isCurrentUser(contact.contactId ?? contact._contactId)}
-                              onChange={(e) =>
-                                handleRoleChange(
-                                  contact.contactId ?? contact._contactId,
-                                  e.target.value
-                                )
-                              }
+                              value={getRowRole(contact.contactId)}
+                              disabled={isCurrentUser(contact.contactId)}
+                              onChange={(e) => handleRoleChange(contact.contactId, e.target.value)}
                             >
                               <option value="">{getLabel('selectRole', '— Select role —')}</option>
                               <option value={Enums.PurchaseRole.PURCHASER}>
@@ -562,20 +545,16 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                             </select>
                           </td>
                           <td className="px-4 py-3">
-                            {getRowRole(contact.contactId ?? contact._contactId) ===
-                            Enums.PurchaseRole.PURCHASER ? (
+                            {getRowRole(contact.contactId) === Enums.PurchaseRole.PURCHASER ? (
                               <input
                                 type="number"
                                 min="0"
                                 step="0.01"
                                 className="w-28 border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                                value={getRowLimit(contact.contactId ?? contact._contactId) ?? ''}
-                                disabled={isCurrentUser(contact.contactId ?? contact._contactId)}
+                                value={getRowLimit(contact.contactId) ?? ''}
+                                disabled={isCurrentUser(contact.contactId)}
                                 onChange={(e) =>
-                                  handleLimitChange(
-                                    contact.contactId ?? contact._contactId,
-                                    e.target.value
-                                  )
+                                  handleLimitChange(contact.contactId, e.target.value)
                                 }
                                 placeholder={getLabel('limitPlaceholder', '0.00')}
                               />
@@ -583,53 +562,46 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              {hasPac(contact.contactId ?? contact._contactId) &&
-                              isRowDirty(contact.contactId ?? contact._contactId) ? (
+                              {hasPac(contact.contactId) && isRowDirty(contact.contactId) ? (
                                 <button
                                   type="button"
                                   className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                  disabled={isRowLoading(contact.contactId ?? contact._contactId)}
-                                  onClick={(event) =>
-                                    handleSave(contact.contactId ?? contact._contactId)
-                                  }
+                                  disabled={isRowLoading(contact.contactId)}
+                                  onClick={(event) => handleSave(contact.contactId)}
                                 >
-                                  {isRowLoading(contact.contactId ?? contact._contactId) ? (
+                                  {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel('save', 'Save')}
                                 </button>
                               ) : null}
-                              {!hasPac(contact.contactId ?? contact._contactId) ? (
+                              {!hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
                                   className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={
-                                    isRowLoading(contact.contactId ?? contact._contactId) ||
-                                    !getRowRole(contact.contactId ?? contact._contactId)
+                                    isRowLoading(contact.contactId) ||
+                                    !getRowRole(contact.contactId)
                                   }
-                                  onClick={(event) =>
-                                    handleCreate(contact.contactId ?? contact._contactId)
-                                  }
+                                  onClick={(event) => handleCreate(contact.contactId)}
                                 >
-                                  {isRowLoading(contact.contactId ?? contact._contactId) ? (
+                                  {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel('create', 'Create')}
                                 </button>
                               ) : null}
-                              {hasPac(contact.contactId ?? contact._contactId) ? (
+                              {hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
                                   className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={
-                                    isRowLoading(contact.contactId ?? contact._contactId) ||
-                                    isCurrentUser(contact.contactId ?? contact._contactId)
+                                    isRowLoading(contact.contactId) ||
+                                    isCurrentUser(contact.contactId)
                                   }
-                                  onClick={(event) =>
-                                    handleDelete(contact.contactId ?? contact._contactId)
-                                  }
+                                  onClick={(event) => handleDelete(contact.contactId)}
                                 >
-                                  {isRowLoading(contact.contactId ?? contact._contactId) ? (
+                                  {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel('delete', 'Delete')}
@@ -700,7 +672,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     type="text"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-muted cursor-not-allowed"
                     readOnly
-                    value={(company as any)?.name ?? (company as any)?._name ?? ''}
+                    value={(company as Company)?.name ?? ''}
                   />
                 </div>
                 <div>

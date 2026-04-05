@@ -15,6 +15,8 @@ import {
     UserService,
     RegisterContactInput,
     Enums,
+    AttributeResultSearchInput,
+    PurchaseAuthorizationConfigCreateInput,
 } from 'propeller-sdk-v2';
 
 export interface PurchaseAuthorizationConfiguratorProps {
@@ -42,8 +44,8 @@ export interface PurchaseAuthorizationConfiguratorProps {
     /** Fires after a contact is registered. If not provided, refreshes contacts list. */
     afterContactCreate?: (contact: Contact) => void;
 
-    /** Override: fires instead of the default createPurchaseAuthorizationConfig() call */
-    onPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfig) => void;
+    /** Override: fires instead of the default PurchaseAuthorizationConfigCreateInput() call */
+    onPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfigCreateInput) => void;
 
     /** Fires after a PAC is created. If not provided, refreshes contacts list. */
     afterPurchaseAuthorizationCreate?: (pac: PurchaseAuthorizationConfig) => void;
@@ -143,25 +145,25 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
 
         get isAuthManager(): boolean {
             if (!props.user || !('contactId' in props.user)) return false;
-            const pacData = (props.user as any).purchaseAuthorizationConfigs;
-            const items: any[] = pacData?.items ?? pacData?._items ?? [];
-            return items.some((pac: any) => {
-                const role = pac.purchaseRole ?? pac._purchaseRole;
-                const companyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
+            const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+            const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+            return items.some((pac: PurchaseAuthorizationConfig) => {
+                const role = pac.purchaseRole;
+                const companyId = pac.company?.companyId;
                 return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && companyId === props.companyId;
             });
         },
 
-        getContacts(): any[] {
+        getContacts(): Contact[] {
             if (!state.company) return [];
-            const contactsData = (state.company as any).contacts ?? (state.company as any)._contacts;
-            return contactsData?.items ?? contactsData?._items ?? [];
+            const contactsData = (state.company as Company).contacts;
+            return contactsData?.items ?? [];
         },
 
         getTotalPages(): number {
             if (!state.company) return 0;
-            const contactsData = (state.company as any).contacts ?? (state.company as any)._contacts;
-            return contactsData?.pages ?? contactsData?._pages ?? 0;
+            const contactsData = (state.company as Company).contacts;
+            return contactsData?.pages ?? 0;
         },
 
         getLabel(key: string, fallback: string): string {
@@ -171,17 +173,17 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
         buildMaps(contacts: Contact[]): void {
             const newPacMap: Record<number, PurchaseAuthorizationConfig> = {};
             const newRowEdits: Record<number, RowEdit> = {};
-            contacts.forEach((contact: any) => {
-                const cId: number = contact.contactId ?? contact._contactId;
-                const pacData = contact.purchaseAuthorizationConfigs ?? contact._purchaseAuthorizationConfigs;
-                const pacItems: PurchaseAuthorizationConfig[] = pacData?.items ?? pacData?._items ?? [];
+            contacts.forEach((contact: Contact) => {
+                const cId: number = contact.contactId;
+                const pacData = contact.purchaseAuthorizationConfigs;
+                const pacItems: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
                 if (pacItems.length > 0) {
                     newPacMap[cId] = pacItems[0];
                 }
                 const pac = newPacMap[cId];
                 newRowEdits[cId] = {
-                    role: pac ? ((pac as any).purchaseRole ?? (pac as any)._purchaseRole ?? '') : '',
-                    limit: pac ? ((pac as any).authorizationLimit ?? (pac as any)._authorizationLimit) : undefined,
+                    role: pac ? pac.purchaseRole : '',
+                    limit: pac ? pac.authorizationLimit : undefined,
                     dirty: false,
                 };
             });
@@ -198,14 +200,13 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                     id: props.companyId,
                     $contactSearchArguments: { page: page, offset: state.pageOffset },
                     $contactPAConfigInput: { companyIds: [props.companyId], page: 1, offset: 100 },
-                    $contactAttributesInput: {} as any,
-                    $companyAttributesInput: {} as any,
+                    $companyAttributesInput: {} as AttributeResultSearchInput,
                 });
                 state.company = company;
                 // Extract contacts directly from the fetched result (not via state.getContacts())
                 // to avoid reading stale state before React flushes the company assignment.
-                const freshContactsData = (company as any).contacts ?? (company as any)._contacts;
-                const freshContacts: Contact[] = freshContactsData?.items ?? freshContactsData?._items ?? [];
+                const freshContactsData = company.contacts;
+                const freshContacts: Contact[] = freshContactsData?.items ?? [];
                 state.buildMaps(freshContacts);
             } finally {
                 state.loading = false;
@@ -233,14 +234,14 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
             state.actionLoading = { ...state.actionLoading, [contactId]: true };
             try {
                 const edit = state.rowEdits[contactId] || { role: Enums.PurchaseRole.PURCHASER, limit: undefined, dirty: false };
-                const input = {
+                const input: PurchaseAuthorizationConfigCreateInput = {
                     contactId,
                     companyId: props.companyId,
                     purchaseRole: (edit.role || Enums.PurchaseRole.PURCHASER) as Enums.PurchaseRole,
                     authorizationLimit: edit.limit,
                 };
                 if (props.onPurchaseAuthorizationCreate) {
-                    props.onPurchaseAuthorizationCreate(input as any);
+                    props.onPurchaseAuthorizationCreate(input);
                 } else {
                     const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
                     const pac = await pacService.createPurchaseAuthorizationConfig(input);
@@ -261,13 +262,13 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
             state.actionLoading = { ...state.actionLoading, [contactId]: true };
             try {
                 const edit = state.rowEdits[contactId];
-                const pacId: string = (pac as any).id ?? (pac as any)._id;
+                const pacId: string = pac.id;
                 if (props.onPurchaseAuthorizationUpdate) {
                     props.onPurchaseAuthorizationUpdate(pac);
                 } else {
                     const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
                     const updated = await pacService.updatePurchaseAuthorizationConfig(pacId, {
-                        purchaseRole: (edit.role || (pac as any).purchaseRole) as Enums.PurchaseRole,
+                        purchaseRole: (edit.role || pac.purchaseRole) as Enums.PurchaseRole,
                         authorizationLimit: edit.limit,
                     });
                     if (props.afterPurchaseAuthorizationUpdate) {
@@ -286,7 +287,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
             if (!pac) return;
             state.actionLoading = { ...state.actionLoading, [contactId]: true };
             try {
-                const pacId: string = (pac as any).id ?? (pac as any)._id;
+                const pacId: string = pac.id;
                 if (props.onPurchaseAuthorizationDelete) {
                     props.onPurchaseAuthorizationDelete(pac);
                 } else {
@@ -345,10 +346,10 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                     props.onContactCreate(input);
                 } else {
                     const userService = new UserService(props.graphqlClient);
-                    const result = await userService.registerContact({ contactRegisterInput: input } as any);
-                    const contact = (result as any).contact ?? (result as any)._contact ?? result;
+                    const result = await userService.registerContact({ contactRegisterInput: input });
+                    const contact = result.contact;
                     if (props.afterContactCreate) {
-                        props.afterContactCreate(contact as Contact);
+                        props.afterContactCreate(contact as any);
                     } else {
                         await state.loadCompany(state.currentPage);
                     }
@@ -366,7 +367,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
         },
 
         isCurrentUser(contactId: number): boolean {
-            const userId = (props.user as any).contactId ?? (props.user as any)._contactId;
+            const userId = (props.user as Contact).contactId;
             return userId === contactId;
         },
 
@@ -445,11 +446,11 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                 </thead>
                                 <tbody className="divide-y divide-border">
                                     <For each={state.getContacts()}>
-                                        {(contact: any) => (
-                                            <tr key={contact.contactId ?? contact._contactId} className="hover:bg-muted/30 transition-colors">
+                                        {(contact: Contact) => (
+                                            <tr key={contact.contactId} className="hover:bg-muted/30 transition-colors">
                                                 {/* ID */}
                                                 <td className="px-4 py-3 text-muted-foreground">
-                                                    {contact.contactId ?? contact._contactId}
+                                                    {contact.contactId}
                                                 </td>
 
                                                 {/* Name + Email */}
@@ -458,16 +459,16 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                         {[contact.firstName, contact.middleName, contact.lastName].filter(Boolean).join(' ')}
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-0.5">
-                                                        {contact.email ?? contact._email}
+                                                        {contact.email}
                                                     </div>
                                                 </td>
 
                                                 {/* Role */}
                                                 <td className="px-4 py-3">
                                                     <select
-                                                        value={state.getRowRole(contact.contactId ?? contact._contactId)}
-                                                        disabled={state.isCurrentUser(contact.contactId ?? contact._contactId)}
-                                                        onChange={(e: any) => state.handleRoleChange(contact.contactId ?? contact._contactId, e.target.value)}
+                                                        value={state.getRowRole(contact.contactId)}
+                                                        disabled={state.isCurrentUser(contact.contactId)}
+                                                        onChange={(e: any) => state.handleRoleChange(contact.contactId, e.target.value)}
                                                         className="border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         <option value="">{state.getLabel('selectRole', '— Select role —')}</option>
@@ -478,14 +479,14 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
 
                                                 {/* Limit */}
                                                 <td className="px-4 py-3">
-                                                    <Show when={state.getRowRole(contact.contactId ?? contact._contactId) === Enums.PurchaseRole.PURCHASER}>
+                                                    <Show when={state.getRowRole(contact.contactId) === Enums.PurchaseRole.PURCHASER}>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             step="0.01"
-                                                            value={state.getRowLimit(contact.contactId ?? contact._contactId) ?? ''}
-                                                            disabled={state.isCurrentUser(contact.contactId ?? contact._contactId)}
-                                                            onChange={(e: any) => state.handleLimitChange(contact.contactId ?? contact._contactId, e.target.value)}
+                                                            value={state.getRowLimit(contact.contactId) ?? ''}
+                                                            disabled={state.isCurrentUser(contact.contactId)}
+                                                            onChange={(e: any) => state.handleLimitChange(contact.contactId, e.target.value)}
                                                             placeholder={state.getLabel('limitPlaceholder', '0.00')}
                                                             className="w-28 border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                                                         />
@@ -496,14 +497,14 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2">
                                                         {/* Save — only when PAC exists and row is dirty */}
-                                                        <Show when={state.hasPac(contact.contactId ?? contact._contactId) && state.isRowDirty(contact.contactId ?? contact._contactId)}>
+                                                        <Show when={state.hasPac(contact.contactId) && state.isRowDirty(contact.contactId)}>
                                                             <button
                                                                 type="button"
-                                                                disabled={state.isRowLoading(contact.contactId ?? contact._contactId)}
-                                                                onClick={() => state.handleSave(contact.contactId ?? contact._contactId)}
+                                                                disabled={state.isRowLoading(contact.contactId)}
+                                                                onClick={() => state.handleSave(contact.contactId)}
                                                                 className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
-                                                                <Show when={state.isRowLoading(contact.contactId ?? contact._contactId)}>
+                                                                <Show when={state.isRowLoading(contact.contactId)}>
                                                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                                                                 </Show>
                                                                 {state.getLabel('save', 'Save')}
@@ -511,14 +512,14 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                         </Show>
 
                                                         {/* Create — only when no PAC exists */}
-                                                        <Show when={!state.hasPac(contact.contactId ?? contact._contactId)}>
+                                                        <Show when={!state.hasPac(contact.contactId)}>
                                                             <button
                                                                 type="button"
-                                                                disabled={state.isRowLoading(contact.contactId ?? contact._contactId) || !state.getRowRole(contact.contactId ?? contact._contactId)}
-                                                                onClick={() => state.handleCreate(contact.contactId ?? contact._contactId)}
+                                                                disabled={state.isRowLoading(contact.contactId) || !state.getRowRole(contact.contactId)}
+                                                                onClick={() => state.handleCreate(contact.contactId)}
                                                                 className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
-                                                                <Show when={state.isRowLoading(contact.contactId ?? contact._contactId)}>
+                                                                <Show when={state.isRowLoading(contact.contactId)}>
                                                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                                                                 </Show>
                                                                 {state.getLabel('create', 'Create')}
@@ -526,14 +527,14 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                         </Show>
 
                                                         {/* Delete — only when PAC exists, disabled for current user */}
-                                                        <Show when={state.hasPac(contact.contactId ?? contact._contactId)}>
+                                                        <Show when={state.hasPac(contact.contactId)}>
                                                             <button
                                                                 type="button"
-                                                                disabled={state.isRowLoading(contact.contactId ?? contact._contactId) || state.isCurrentUser(contact.contactId ?? contact._contactId)}
-                                                                onClick={() => state.handleDelete(contact.contactId ?? contact._contactId)}
+                                                                disabled={state.isRowLoading(contact.contactId) || state.isCurrentUser(contact.contactId)}
+                                                                onClick={() => state.handleDelete(contact.contactId)}
                                                                 className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
-                                                                <Show when={state.isRowLoading(contact.contactId ?? contact._contactId)}>
+                                                                <Show when={state.isRowLoading(contact.contactId)}>
                                                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                                                                 </Show>
                                                                 {state.getLabel('delete', 'Delete')}
@@ -606,7 +607,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                 <input
                                     type="text"
                                     readOnly
-                                    value={(state.company as any)?.name ?? (state.company as any)?._name ?? ''}
+                                    value={(state.company as Company)?.name ?? ''}
                                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-muted cursor-not-allowed"
                                 />
                             </div>

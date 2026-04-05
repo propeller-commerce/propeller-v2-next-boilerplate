@@ -98,7 +98,7 @@ interface PurchaseAuthorizationConfiguratorState {
     addContactLoading: boolean;
     addContactError: string;
     isAuthManager: boolean;
-    getContacts: () => Contact[];
+    getContacts: () => any[];
     getTotalPages: () => number;
     getLabel: (key: string, fallback: string) => string;
     loadCompany: (page: number) => Promise<void>;
@@ -152,7 +152,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
             });
         },
 
-        getContacts(): Contact[] {
+        getContacts(): any[] {
             if (!state.company) return [];
             const contactsData = (state.company as any).contacts ?? (state.company as any)._contacts;
             return contactsData?.items ?? contactsData?._items ?? [];
@@ -455,9 +455,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                 {/* Name + Email */}
                                                 <td className="px-4 py-3">
                                                     <div className="font-medium">
-                                                        {contact.firstName ?? contact._firstName}{' '}
-                                                        {contact.middleName ?? contact._middleName ? `${contact.middleName ?? contact._middleName} ` : ''}
-                                                        {contact.lastName ?? contact._lastName}
+                                                        {[contact.firstName, contact.middleName, contact.lastName].filter(Boolean).join(' ')}
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-0.5">
                                                         {contact.email ?? contact._email}

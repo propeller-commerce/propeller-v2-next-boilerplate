@@ -47,11 +47,17 @@ export interface CartSummaryProps {
     /** Active company ID — used to look up the user's PAC for this company */
     companyId?: number;
 
-    /** Override the default CartService.requestPurchaseAuthorization() call */
+    /**
+     * Override the default CartService.requestPurchaseAuthorization() call.
+     * Note: when this override is used, afterRequestAuthorization receives the original cart.
+     */
     onRequestAuthorization?: (cart: Cart) => void;
 
     /** Fires after authorization request is sent; receives the updated cart */
     afterRequestAuthorization?: (cart: Cart) => void;
+
+    /** Called when requestPurchaseAuthorization fails; receives the error */
+    onError?: (err: Error) => void;
 }
 
 interface CartSummaryState {
@@ -206,6 +212,10 @@ export default function CartSummary(props: CartSummaryProps) {
                 }
                 if (props.afterRequestAuthorization) {
                     props.afterRequestAuthorization(updatedCart);
+                }
+            } catch (err: any) {
+                if (props.onError) {
+                    props.onError(err instanceof Error ? err : new Error(String(err)));
                 }
             } finally {
                 state.requestLoading = false;

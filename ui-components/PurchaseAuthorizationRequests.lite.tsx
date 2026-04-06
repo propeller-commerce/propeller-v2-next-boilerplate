@@ -47,6 +47,9 @@ export interface PurchaseAuthorizationRequestsProps {
      * Used for imageSearchFiltersGrid, imageVariantFiltersSmall when fetching cart detail.
      */
     configuration?: Record<string, any>;
+
+    /** Called when an SDK operation fails; receives the normalized error */
+    onError?: (err: Error) => void;
 }
 
 interface PurchaseAuthorizationRequestsState {
@@ -134,6 +137,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                 };
                 const response = await cartService.getCarts(searchInput);
                 state.carts = response?.items || [];
+            } catch (err: any) {
+                if (props.onError) {
+                    props.onError(err instanceof Error ? err : new Error(String(err)));
+                }
             } finally {
                 state.loading = false;
             }
@@ -151,6 +158,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                     imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
                 });
                 state.selectedCart = fullCart;
+            } catch (err: any) {
+                if (props.onError) {
+                    props.onError(err instanceof Error ? err : new Error(String(err)));
+                }
             } finally {
                 state.modalLoading = false;
             }
@@ -173,6 +184,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                 }
                 state.selectedCart = null;
                 await state.loadCarts();
+            } catch (err: any) {
+                if (props.onError) {
+                    props.onError(err instanceof Error ? err : new Error(String(err)));
+                }
             } finally {
                 state.acceptLoading = false;
             }

@@ -245,7 +245,7 @@ async function loginWithDelegation(email: string, password: string) {
 // Sidebar mode is purely presentational — no SDK calls needed.
 // Render an always-visible navigation with menu links.
 // Highlight the active link by comparing each link's href against the current route path:
-//   - Exact match for '/account'
+//   - Exact match for any href ending in '/account' (supports locale prefixes like '/en/account')
 //   - Prefix match for sub-routes like '/account/orders'
 ```
 
@@ -470,7 +470,7 @@ These are suggested defaults. Override per-key to support localization.
 ### Sidebar Mode
 
 - Always-visible vertical navigation with "Signed in as" header, menu links, and logout button.
-- Active link highlighting based on `currentPath`: exact match for `/account`, prefix match for sub-routes like `/account/orders`.
+- Active link highlighting based on `currentPath`: exact match for any href ending in `/account` (works with locale prefixes like `/en/account`), prefix match for sub-routes like `/account/orders`.
 - No dropdown toggle, click-outside listener, or login form.
 
 ### Hydration

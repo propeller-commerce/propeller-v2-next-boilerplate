@@ -169,7 +169,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
     const state = useStore<ProductBundlesState>({
         bundles: [] as Bundle[],
         isLoading: false,
-        includeTax: true,
+        includeTax: false,
         isMounted: false,
         addingBundleId: null as string | null,
         lastAddedBundle: null as Bundle | null,

@@ -230,7 +230,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
   }
   function isActiveLink(href: string): ReturnType<AccountIconAndMenuState['isActiveLink']> {
     if (!props.currentPath) return false;
-    if (href === '/account') return props.currentPath === '/account';
+    if (href.endsWith('/account')) return props.currentPath === href;
     return props.currentPath.startsWith(href);
   }
   function getMenuLinks(): ReturnType<AccountIconAndMenuState['getMenuLinks']> {

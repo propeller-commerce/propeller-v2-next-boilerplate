@@ -179,7 +179,7 @@ function CustomFavoriteItem({ item, onDelete, graphqlClient, cartId }) {
 | `showStockComponent` | `boolean` | No | `false` | Display stock availability badge |
 | `showAvailability` | `boolean` | No | `true` | Show availability status text inside ItemStock (products only) |
 | `showStock` | `boolean` | No | `true` | Show numeric stock quantity inside ItemStock (products only) |
-| `includeTax` | `boolean` | No | `true` | Include tax in the displayed price. When provided, overrides the internal PriceToggle localStorage state |
+| `includeTax` | `boolean` | No | `false` | Include tax in the displayed price. When provided, overrides the internal PriceToggle localStorage state |
 
 ### Action Props
 
@@ -235,7 +235,7 @@ function favoriteListItem(options: FavoriteListItemOptions): void
 | `user` | `Contact \| Customer \| null` | -- | `user` prop |
 | `cartId` | `string` | -- | `cartId` prop |
 | `createCart` | `boolean` | -- | `createCart` prop |
-| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `includeTax` | `boolean` | `false` | `includeTax` prop |
 | `language` | `string` | `'NL'` | `language` prop |
 
 ### Cart resolution
@@ -325,7 +325,7 @@ These are suggested defaults. Override per-key to support localization.
 The component respects the global price toggle (VAT incl/excl):
 
 - When `includeTax` prop is provided, it takes precedence over any internal state.
-- When `includeTax` is omitted, the default is `true` (prices shown including VAT).
+- When `includeTax` is omitted, the default is `false` (prices shown excluding VAT).
 - Price mapping from the SDK: `price.net` = including VAT, `price.gross` = excluding VAT.
 - Prices are formatted as euros with two decimal places (e.g., `EUR 12.50`).
 

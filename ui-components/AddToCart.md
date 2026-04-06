@@ -288,6 +288,12 @@ async function createCart(
 | `afterAddToCart` | `(cart: Cart, item?: CartMainItem) => void` | Called after every successful add. Receives the updated cart and the matching `CartMainItem` (found by `productId`) |
 | `onProceedToCheckout` | `() => void` | Called when the user clicks "Proceed to checkout" in the modal |
 
+### Pricing
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `includeTax` | `boolean` | `false` | When `true`, tax-inclusive prices (`totalSumNet`) are shown in the modal. When `false`, tax-exclusive prices (`totalSum`) are shown. Same pattern as `ProductCard.includeTax` |
+
 ### Appearance
 
 | Prop | Type | Default | Description |
@@ -349,7 +355,7 @@ When no cart ID is available:
 
 ### UI-only props (no SDK equivalent)
 
-The following props control visual presentation only and have no SDK counterpart: `allowIncrDecr`, `showModal`, `className`, `labels`.
+The following props control visual presentation only and have no SDK counterpart: `allowIncrDecr`, `showModal`, `className`, `labels`, `includeTax`.
 
   </TabItem>
 </Tabs>
@@ -435,6 +441,7 @@ When a new cart is created, the component automatically finds the user's default
 
 - A backdrop overlay covers the page; clicking it closes the modal.
 - The modal panel displays: product image, product name (linked to the product page), SKU, quantity, price, and any cluster child items with their names and prices.
+- Prices respect the VAT toggle (`price_include_tax` in localStorage): shows `totalSumNet` (incl. VAT) or `totalSum` (excl. VAT) for both the main item and child items.
 - Two action buttons: "Continue shopping" (closes modal) and "Proceed to checkout" (closes modal and fires `onProceedToCheckout`).
 
 ### Stock validation (`enableStockValidation: true`)

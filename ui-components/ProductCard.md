@@ -217,7 +217,7 @@ function getProductUrl(product: Product, language: string = 'NL'): string {
 
 To make your custom card react to the global VAT toggle, follow this pattern:
 
-1. On initialization, read `localStorage.getItem('price_include_tax')` to determine the current setting (defaults to `true` if not set).
+1. On initialization, read `localStorage.getItem('price_include_tax')` to determine the current setting (defaults to `false` / excl. VAT if not set).
 2. Add a listener for the `priceToggleChanged` custom event on `window`. The event's `detail` property is a boolean indicating whether tax is included.
 3. When the event fires, update your displayed price using the new `includeTax` value.
 4. Clean up the event listener when the component is destroyed.

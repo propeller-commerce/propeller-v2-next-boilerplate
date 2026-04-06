@@ -129,6 +129,13 @@ export interface AddToCartProps {
   configuration?: any;
 
   /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */ companyId?: number;
+
+  /**
+   * When true, tax-inclusive price (net) is shown.
+   * When false, tax-exclusive price (gross) is shown.
+   * Defaults to false.
+   */
+  includeTax?: boolean;
 }
 /** * Cart query variables interface Variables for the cart query */ /** * Cart query variables interface Variables for the cart query */ export interface CartQueryVariables {
   /** Cart ID to fetch */ cartId: string;
@@ -145,6 +152,8 @@ export interface AddToCartProps {
   toastMessage: string;
   toastType: string;
   toastVisible: boolean;
+  includeTax: boolean;
+  priceListener: any;
   getMinQuantity: () => number;
   getStep: () => number;
   increment: () => void;
@@ -177,6 +186,8 @@ function AddToCart(props: AddToCartProps) {
   const [toastType, setToastType] = useState<AddToCartState['toastType']>(() => '');
   const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
   const [addedCartItem, setAddedCartItem] = useState<AddToCartState['addedCartItem']>(() => null);
+  const [includeTax, setIncludeTax] = useState<AddToCartState['includeTax']>(() => false);
+  const [priceListener, setPriceListener] = useState<AddToCartState['priceListener']>(() => null);
   function getMinQuantity(): ReturnType<AddToCartState['getMinQuantity']> {
     const min = (props.product as any)?.minimumQuantity;
     return min && min > 0 ? min : 1;
@@ -441,7 +452,9 @@ function AddToCart(props: AddToCartProps) {
   }
   function getModalPrice(): ReturnType<AddToCartState['getModalPrice']> {
     if (addedCartItem) {
-      return '\u20AC' + Number(addedCartItem.totalSumNet).toFixed(2);
+      const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
+      const price = useTax ? addedCartItem.totalSumNet : addedCartItem.totalSum;
+      return '\u20AC' + Number(price).toFixed(2);
     }
     return getProductPrice();
   }
@@ -666,7 +679,7 @@ function AddToCart(props: AddToCartProps) {
                         {child.product?.names?.[0]?.value || 'Option'}
                       </span>
                       <span className="text-gray-400 whitespace-nowrap ml-2">
-                        {'\u20AC' + (child.totalSum?.toFixed(2) || '0.00')}
+                        {'\u20AC' + (((props.includeTax !== undefined ? !!props.includeTax : includeTax) ? child.totalSumNet : child.totalSum)?.toFixed(2) || '0.00')}
                       </span>
                     </div>
                   ))}

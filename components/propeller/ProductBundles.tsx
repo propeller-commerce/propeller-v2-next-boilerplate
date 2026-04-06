@@ -168,7 +168,7 @@ interface ProductBundlesState {
 function ProductBundles(props: ProductBundlesProps) {
   const [bundles, setBundles] = useState<ProductBundlesState['bundles']>(() => []);
   const [isLoading, setIsLoading] = useState<ProductBundlesState['isLoading']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ProductBundlesState['includeTax']>(() => true);
+  const [includeTax, setIncludeTax] = useState<ProductBundlesState['includeTax']>(() => false);
   const [isMounted, setIsMounted] = useState<ProductBundlesState['isMounted']>(() => false);
   const [addingBundleId, setAddingBundleId] = useState<ProductBundlesState['addingBundleId']>(
     () => null

@@ -232,7 +232,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
 
         isActiveLink(href: string): boolean {
             if (!props.currentPath) return false;
-            if (href === '/account') return props.currentPath === '/account';
+            if (href.endsWith('/account')) return props.currentPath === href;
             return props.currentPath.startsWith(href);
         },
 

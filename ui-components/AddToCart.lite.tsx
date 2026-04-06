@@ -133,6 +133,13 @@ export interface AddToCartProps {
 
     /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */
     companyId?: number;
+
+    /**
+     * When true, tax-inclusive price (net) is shown.
+     * When false, tax-exclusive price (gross) is shown.
+     * Defaults to false.
+     */
+    includeTax?: boolean;
 }
 
 /**
@@ -158,6 +165,8 @@ interface AddToCartState {
     toastMessage: string;
     toastType: string;
     toastVisible: boolean;
+    includeTax: boolean;
+    priceListener: any;
     getMinQuantity: () => number;
     getStep: () => number;
     increment: () => void;
@@ -192,6 +201,8 @@ export default function AddToCart(props: AddToCartProps) {
         toastType: '',
         toastVisible: false,
         addedCartItem: null as CartMainItem | null,
+        includeTax: false,
+        priceListener: null as any,
 
         getMinQuantity() {
             const min = (props.product as any)?.minimumQuantity;
@@ -501,7 +512,9 @@ export default function AddToCart(props: AddToCartProps) {
 
         getModalPrice() {
             if (state.addedCartItem) {
-                return '\u20AC' + Number(state.addedCartItem.totalSumNet).toFixed(2);
+                const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
+                const price = useTax ? state.addedCartItem.totalSumNet : state.addedCartItem.totalSum;
+                return '\u20AC' + Number(price).toFixed(2);
             }
             return state.getProductPrice();
         },
@@ -716,7 +729,7 @@ export default function AddToCart(props: AddToCartProps) {
                                                     {child.product?.names?.[0]?.value || 'Option'}
                                                 </span>
                                                 <span className="text-gray-400 whitespace-nowrap ml-2">
-                                                    {'\u20AC' + (child.totalSum?.toFixed(2) || '0.00')}
+                                                    {'\u20AC' + (((props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax) ? child.totalSumNet : child.totalSum)?.toFixed(2) || '0.00')}
                                                 </span>
                                             </div>
                                         )}

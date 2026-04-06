@@ -10,6 +10,10 @@ import {
   CartService,
   CartSearchInput,
   Enums,
+  CartAddress,
+  CartMainItem,
+  CartQueryVariables,
+  CartAcceptPurchaseAuthorizationVariables,
 } from 'propeller-sdk-v2';
 
 export interface PurchaseAuthorizationRequestsProps {
@@ -34,6 +38,12 @@ export interface PurchaseAuthorizationRequestsProps {
    */
   afterAcceptRequest?: (cart: Cart) => void;
 
+  /** Format date */
+  formatDate?: (dateString: string) => string;
+
+  /** Format price */
+  formatPrice?: (price: number) => string;
+
   /** Labels for the component */
   labels?: Record<string, string>;
 
@@ -50,20 +60,20 @@ export interface PurchaseAuthorizationRequestsProps {
   onError?: (err: Error) => void;
 }
 interface PurchaseAuthorizationRequestsState {
-  carts: any[];
+  carts: Cart[];
   loading: boolean;
-  selectedCart: any | null;
+  selectedCart: Cart | null;
   modalLoading: boolean;
   acceptLoading: boolean;
   isAuthManager: () => boolean;
   getLabel: (key: string, fallback: string) => string;
   formatDate: (dateStr: string) => string;
   formatPrice: (price: number) => string;
-  getTotalQuantity: (cart: any) => number;
-  getContactName: (contact: any) => string;
+  getTotalQuantity: (cart: Cart) => number;
+  getContactName: (deliveryAddress: CartAddress) => string;
   getModalItems: () => any[];
   loadCarts: () => Promise<void>;
-  handleViewCart: (cart: any) => Promise<void>;
+  handleViewCart: (cart: Cart) => Promise<void>;
   handleAcceptRequest: () => Promise<void>;
   closeModal: () => void;
 }
@@ -102,33 +112,39 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
   function formatDate(
     dateStr: string
   ): ReturnType<PurchaseAuthorizationRequestsState['formatDate']> {
-    if (!dateStr) return '';
+    if (props.formatDate) return props.formatDate(dateStr);
+    if (!dateStr) return '-';
     const d = new Date(dateStr);
     return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
   }
   function formatPrice(
     price: number
   ): ReturnType<PurchaseAuthorizationRequestsState['formatPrice']> {
-    return '\u20AC' + Number(price || 0).toFixed(2);
+    if (props.formatPrice) return props.formatPrice(price);
+    if (!price) return '-';
+    return `€${Number(price).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
   function getTotalQuantity(
-    cart: any
+    cart: Cart
   ): ReturnType<PurchaseAuthorizationRequestsState['getTotalQuantity']> {
     const items = cart?.items || [];
-    return items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+    return items.reduce((sum: number, item: CartMainItem) => sum + (item.quantity || 0), 0);
   }
   function getContactName(
-    contact: any
+    deliveryAddress: CartAddress
   ): ReturnType<PurchaseAuthorizationRequestsState['getContactName']> {
-    if (!contact) return '';
-    const firstName = contact.firstName ?? contact._firstName ?? '';
-    const middleName = contact.middleName ?? contact._middleName ?? '';
-    const lastName = contact.lastName ?? contact._lastName ?? '';
+    if (!deliveryAddress) return '';
+    const firstName = deliveryAddress.firstName ?? '';
+    const middleName = deliveryAddress.middleName ?? '';
+    const lastName = deliveryAddress.lastName ?? '';
     return [firstName, middleName, lastName].filter(Boolean).join(' ');
   }
   function getModalItems(): ReturnType<PurchaseAuthorizationRequestsState['getModalItems']> {
     if (!selectedCart) return [];
-    return (selectedCart as any).items || [];
+    return (selectedCart as Cart).items || [];
   }
   async function loadCarts(): ReturnType<PurchaseAuthorizationRequestsState['loadCarts']> {
     if (!props.graphqlClient || !props.companyId) return;
@@ -150,14 +166,14 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     }
   }
   async function handleViewCart(
-    cart: any
+    cart: Cart
   ): ReturnType<PurchaseAuthorizationRequestsState['handleViewCart']> {
     setSelectedCart(cart);
     setModalLoading(true);
     try {
       const cartService = new CartService(props.graphqlClient);
       const fullCart = await cartService.getCart({
-        cartId: cart.cartId ?? cart._cartId,
+        cartId: cart.cartId,
         language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
         imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
         imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
@@ -176,16 +192,23 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
   > {
     if (!selectedCart) return;
     setAcceptLoading(true);
-    const cartId = (selectedCart as any).cartId ?? (selectedCart as any)._cartId;
+    const cartId = selectedCart.cartId;
     try {
       let cartForCallback: any = selectedCart;
       if (props.onAcceptRequest) {
         props.onAcceptRequest(cartId);
       } else {
         const cartService = new CartService(props.graphqlClient);
-        cartForCallback = await cartService.acceptPurchaseAuthorizationRequest({
-          id: cartId,
-        });
+        const cartVars: CartAcceptPurchaseAuthorizationVariables = {
+          id: selectedCart.cartId,
+          input: {
+            contactId: (props.user as Contact).contactId,
+          },
+          imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+          imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
+          language: props.configuration?.language || 'NL',
+        };
+        cartForCallback = await cartService.acceptPurchaseAuthorizationRequest(cartVars);
       }
       if (props.afterAcceptRequest) {
         props.afterAcceptRequest(cartForCallback as Cart);
@@ -259,23 +282,14 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                           </td>
                           <td className="px-4 py-3">{getTotalQuantity(cart)}</td>
                           <td className="px-4 py-3 font-medium">
-                            {formatPrice(
-                              cart.total?.totalNet ??
-                                cart._total?.totalNet ??
-                                cart._total?._totalNet ??
-                                0
-                            )}
+                            {formatPrice(cart.total?.totalNet ?? 0)}
                           </td>
                           <td className="px-4 py-3">
                             <div className="font-medium">
-                              {getContactName(cart.contact ?? cart._contact)}
+                              {getContactName(cart.deliveryAddress)}
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              {cart.contact?.email ??
-                                cart.contact?._email ??
-                                cart._contact?.email ??
-                                cart._contact?._email ??
-                                ''}
+                              {cart.deliveryAddress?.email}
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -332,16 +346,10 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                           {getLabel('requesterInfo', 'Requester')}
                         </h4>
                         <p className="text-sm font-medium">
-                          {getContactName(
-                            (selectedCart as any)?.deliveryAddress ??
-                              (selectedCart as any)?._deliveryAddress
-                          )}
+                          {getContactName(selectedCart?.deliveryAddress as CartAddress)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {(selectedCart as any)?.deliveryAddress?.email ??
-                            (selectedCart as any)?._deliveryAddress?.email ??
-                            (selectedCart as any)?._deliveryAddress?._email ??
-                            ''}
+                          {selectedCart?.deliveryAddress?.email}
                         </p>
                       </div>
                       <div>

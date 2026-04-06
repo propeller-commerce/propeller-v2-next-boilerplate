@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
+import { useRouter } from 'next/navigation';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
 import PurchaseAuthorizationRequests from '@/components/propeller/PurchaseAuthorizationRequests';
@@ -13,6 +14,7 @@ export default function AuthorizationRequestsPage() {
     const { state } = useAuth();
     const { selectedCompany } = useCompany();
     const { cart, saveCart } = useCart();
+    const router = useRouter();
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
         u !== null && 'contactId' in u;
@@ -35,12 +37,11 @@ export default function AuthorizationRequestsPage() {
                 companyId={companyId}
                 configuration={config}
                 afterAcceptRequest={(acceptedCart: Cart) => {
-                    // Save manager's current cart so it can be restored later
                     if (cart) {
                         localStorage.setItem('manager_cart', serializeCart(cart));
                     }
-                    // Replace active cart with the accepted authorization request cart
                     saveCart(acceptedCart);
+                    router.push('/cart');
                 }}
                 labels={{
                     title: 'Authorization Requests',

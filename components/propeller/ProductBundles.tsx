@@ -256,6 +256,7 @@ function ProductBundles(props: ProductBundlesProps) {
       try {
         const searchInput: CartSearchInput = {
           offset: 100,
+          statuses: [Enums.CartStatus.OPEN],
         };
         if ('contactId' in props.user && props.user.contactId) {
           searchInput.contactIds = [props.user.contactId];

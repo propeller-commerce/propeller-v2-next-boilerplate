@@ -155,7 +155,10 @@ export default function OrderActions(props: OrderActionsProps) {
             /* 1. Check for existing carts for this user */
             if (props.user) {
                 try {
-                    const searchInput: CartSearchInput = { offset: 100 };
+                    const searchInput: CartSearchInput = {
+                        offset: 100,
+                        statuses: [Enums.CartStatus.OPEN]
+                    };
 
                     if ('contactId' in props.user && props.user.contactId) {
                         searchInput.contactIds = [props.user.contactId];

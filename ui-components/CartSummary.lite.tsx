@@ -178,7 +178,6 @@ export default function CartSummary(props: CartSummaryProps) {
         },
 
         get showRequestAuthorizationButton(): boolean {
-            if (!(props.cart as any)?.purchaseAuthorizationRequired) return false;
             if (!props.user || !('contactId' in props.user)) return false;
             if (!props.companyId) return false;
             const pacData = (props.user as any).purchaseAuthorizationConfigs;

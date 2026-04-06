@@ -113,6 +113,7 @@ export const config = {
   enableReviews: false,
   enableChat: false,
   enableNotifications: true,
+  language: DEFAULT_LANG,
   urls: {
     /**
      * Controls which segments are included in entity URLs.

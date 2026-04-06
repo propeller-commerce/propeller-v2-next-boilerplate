@@ -264,7 +264,8 @@ export default function ProductBundles(props: ProductBundlesProps) {
             if (props.user) {
                 try {
                     const searchInput: CartSearchInput = {
-                        offset: 100
+                        offset: 100,
+                        statuses: [Enums.CartStatus.OPEN]
                     };
 
                     if ('contactId' in props.user && props.user.contactId) {

@@ -81,7 +81,10 @@ export default function CartPage() {
                       user={state.user as Contact | Customer}
                       companyId={selectedCompany?.companyId}
                       onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
-                      afterRequestAuthorization={saveCart}
+                      afterRequestAuthorization={(updatedCart: Cart) => {
+                        saveCart(updatedCart);
+                        router.push(`/authorization-request-sent/${updatedCart.cartId}`);
+                      }}
                     />
                     <ActionCode
                       graphqlClient={graphqlClient}

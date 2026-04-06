@@ -20,7 +20,7 @@ import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, CartService, CartSearchInput, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { Cart, CartService, CartSearchInput, Company, Contact, Customer, Enums } from 'propeller-sdk-v2';
 import type { CartQueryVariables } from 'propeller-sdk-v2/dist/service/CartService';
 import { stripLeadingUnderscores } from '@/data/defaults';
 
@@ -41,7 +41,10 @@ export default function Header() {
   const fetchActiveCart = async (user: Contact | Customer, companyId?: number) => {
     const cartService = new CartService(graphqlClient);
     try {
-      const searchInput: CartSearchInput = { offset: 100 };
+      const searchInput: CartSearchInput = {
+        offset: 100,
+        statuses: [Enums.CartStatus.OPEN]
+      };
       if ('contactId' in user && user.contactId) {
         searchInput.contactIds = [user.contactId];
         if (companyId) {
@@ -286,6 +289,8 @@ export default function Header() {
                 {showCart && (
                   <CartIconAndSidebar
                     cart={cart as Cart}
+                    user={state.isAuthenticated ? (state.user as Contact | Customer) : undefined}
+                    companyId={selectedCompany?.companyId}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}

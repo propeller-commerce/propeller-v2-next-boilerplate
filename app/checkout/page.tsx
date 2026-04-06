@@ -458,6 +458,11 @@ export default function CheckoutPage() {
 
         if (orderServiceResponse?.id === orderId) {
           localStorage.removeItem('cart');
+          const managerCart = localStorage.getItem('manager_cart');
+          if (managerCart) {
+            localStorage.setItem('cart', managerCart);
+            localStorage.removeItem('manager_cart');
+          }
           if (getCart) await getCart();
         }
         router.push(localizeHref(`/checkout/thank-you/${orderId}`, language));

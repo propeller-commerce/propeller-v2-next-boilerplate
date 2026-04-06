@@ -12,6 +12,10 @@ import {
     CartService,
     CartSearchInput,
     Enums,
+    CartAddress,
+    CartMainItem,
+    CartQueryVariables,
+    CartAcceptPurchaseAuthorizationVariables,
 } from 'propeller-sdk-v2';
 
 export interface PurchaseAuthorizationRequestsProps {
@@ -36,6 +40,12 @@ export interface PurchaseAuthorizationRequestsProps {
      */
     afterAcceptRequest?: (cart: Cart) => void;
 
+    /** Format date */
+    formatDate?: (dateString: string) => string;
+
+    /** Format price */
+    formatPrice?: (price: number) => string;
+
     /** Labels for the component */
     labels?: Record<string, string>;
 
@@ -53,20 +63,20 @@ export interface PurchaseAuthorizationRequestsProps {
 }
 
 interface PurchaseAuthorizationRequestsState {
-    carts: any[];
+    carts: Cart[];
     loading: boolean;
-    selectedCart: any | null;
+    selectedCart: Cart | null;
     modalLoading: boolean;
     acceptLoading: boolean;
     isAuthManager: boolean;
     getLabel: (key: string, fallback: string) => string;
     formatDate: (dateStr: string) => string;
     formatPrice: (price: number) => string;
-    getTotalQuantity: (cart: any) => number;
-    getContactName: (contact: any) => string;
+    getTotalQuantity: (cart: Cart) => number;
+    getContactName: (deliveryAddress: CartAddress) => string;
     getModalItems: () => any[];
     loadCarts: () => Promise<void>;
-    handleViewCart: (cart: any) => Promise<void>;
+    handleViewCart: (cart: Cart) => Promise<void>;
     handleAcceptRequest: () => Promise<void>;
     closeModal: () => void;
 }
@@ -99,31 +109,34 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
         },
 
         formatDate(dateStr: string): string {
-            if (!dateStr) return '';
+            if (props.formatDate) return props.formatDate(dateStr);
+            if (!dateStr) return '-';
             const d = new Date(dateStr);
             return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
         },
 
-        formatPrice(price: number): string {
-            return '\u20AC' + Number(price || 0).toFixed(2);
+        formatPrice(price: number) {
+            if (props.formatPrice) return props.formatPrice(price);
+            if (!price) return '-';
+            return `€${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         },
 
-        getTotalQuantity(cart: any): number {
+        getTotalQuantity(cart: Cart): number {
             const items = cart?.items || [];
-            return items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+            return items.reduce((sum: number, item: CartMainItem) => sum + (item.quantity || 0), 0);
         },
 
-        getContactName(contact: any): string {
-            if (!contact) return '';
-            const firstName = contact.firstName ?? contact._firstName ?? '';
-            const middleName = contact.middleName ?? contact._middleName ?? '';
-            const lastName = contact.lastName ?? contact._lastName ?? '';
+        getContactName(deliveryAddress: CartAddress): string {
+            if (!deliveryAddress) return '';
+            const firstName = deliveryAddress.firstName ?? '';
+            const middleName = deliveryAddress.middleName ?? '';
+            const lastName = deliveryAddress.lastName ?? '';
             return [firstName, middleName, lastName].filter(Boolean).join(' ');
         },
 
         getModalItems(): any[] {
             if (!state.selectedCart) return [];
-            return (state.selectedCart as any).items || [];
+            return (state.selectedCart as Cart).items || [];
         },
 
         async loadCarts(): Promise<void> {
@@ -146,13 +159,13 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
             }
         },
 
-        async handleViewCart(cart: any): Promise<void> {
+        async handleViewCart(cart: Cart): Promise<void> {
             state.selectedCart = cart;
             state.modalLoading = true;
             try {
                 const cartService = new CartService(props.graphqlClient);
                 const fullCart = await cartService.getCart({
-                    cartId: cart.cartId ?? cart._cartId,
+                    cartId: cart.cartId,
                     language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
                     imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
                     imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
@@ -170,14 +183,23 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
         async handleAcceptRequest(): Promise<void> {
             if (!state.selectedCart) return;
             state.acceptLoading = true;
-            const cartId = (state.selectedCart as any).cartId ?? (state.selectedCart as any)._cartId;
+            const cartId = state.selectedCart.cartId;
             try {
                 let cartForCallback: any = state.selectedCart;
                 if (props.onAcceptRequest) {
                     props.onAcceptRequest(cartId);
                 } else {
                     const cartService = new CartService(props.graphqlClient);
-                    cartForCallback = await cartService.acceptPurchaseAuthorizationRequest({ id: cartId });
+                    const cartVars: CartAcceptPurchaseAuthorizationVariables = {
+                        id: state.selectedCart.cartId,
+                        input: {
+                            contactId: (props.user as Contact).contactId
+                        },
+                        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+                        imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
+                        language: props.configuration?.language || 'NL',
+                    };
+                    cartForCallback = await cartService.acceptPurchaseAuthorizationRequest(cartVars);
                 }
                 if (props.afterAcceptRequest) {
                     props.afterAcceptRequest(cartForCallback as Cart);
@@ -274,25 +296,16 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
 
                                                     {/* Total — cart.total.totalNet */}
                                                     <td className="px-4 py-3 font-medium">
-                                                        {state.formatPrice(
-                                                            cart.total?.totalNet ??
-                                                            cart._total?.totalNet ??
-                                                            cart._total?._totalNet ??
-                                                            0
-                                                        )}
+                                                        {state.formatPrice(cart.total?.totalNet ?? 0)}
                                                     </td>
 
                                                     {/* Requested by — contact name + email */}
                                                     <td className="px-4 py-3">
                                                         <div className="font-medium">
-                                                            {state.getContactName(cart.contact ?? cart._contact)}
+                                                            {state.getContactName(cart.deliveryAddress)}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                                            {cart.contact?.email ??
-                                                                cart.contact?._email ??
-                                                                cart._contact?.email ??
-                                                                cart._contact?._email ??
-                                                                ''}
+                                                            {cart.deliveryAddress?.email}
                                                         </div>
                                                     </td>
 
@@ -357,16 +370,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                                 {state.getLabel('requesterInfo', 'Requester')}
                                             </h4>
                                             <p className="text-sm font-medium">
-                                                {state.getContactName(
-                                                    (state.selectedCart as any)?.deliveryAddress ??
-                                                    (state.selectedCart as any)?._deliveryAddress
-                                                )}
+                                                {state.getContactName(state.selectedCart?.deliveryAddress as CartAddress)}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                {(state.selectedCart as any)?.deliveryAddress?.email ??
-                                                    (state.selectedCart as any)?._deliveryAddress?.email ??
-                                                    (state.selectedCart as any)?._deliveryAddress?._email ??
-                                                    ''}
+                                                {state.selectedCart?.deliveryAddress?.email}
                                             </p>
                                         </div>
 

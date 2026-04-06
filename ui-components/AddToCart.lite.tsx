@@ -170,6 +170,8 @@ interface AddToCartState {
     getProductSku: () => string;
     getProductPrice: () => string;
     addedCartItem: CartMainItem | null;
+    activeFullCart: Cart | null;
+    checkoutAllowed: () => boolean;
     getModalImageUrl: () => string;
     getModalName: () => string;
     getModalPrice: () => string;
@@ -192,6 +194,28 @@ export default function AddToCart(props: AddToCartProps) {
         toastType: '',
         toastVisible: false,
         addedCartItem: null as CartMainItem | null,
+        activeFullCart: null as Cart | null,
+
+        checkoutAllowed() {
+            if (!props.user || !('contactId' in props.user)) return true;
+            if (!props.companyId) return true;
+            if (!state.activeFullCart) return true;
+            const pacData = (props.user as any).purchaseAuthorizationConfigs;
+            const items: any[] = pacData?.items ?? pacData?._items ?? [];
+            const purchaserPAC = items.find((pac: any) => {
+                const role = pac.purchaseRole ?? pac._purchaseRole;
+                const pacCompanyId =
+                    pac.company?.companyId ??
+                    pac.company?._companyId ??
+                    pac._company?.companyId ??
+                    pac._company?._companyId;
+                return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+            });
+            if (!purchaserPAC) return true;
+            const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+            const totalNet = state.activeFullCart?.total?.totalNet ?? 0;
+            return totalNet <= limit;
+        },
 
         getMinQuantity() {
             const min = (props.product as any)?.minimumQuantity;
@@ -256,7 +280,8 @@ export default function AddToCart(props: AddToCartProps) {
             if (props.user) {
                 try {
                     const searchInput: CartSearchInput = {
-                        offset: 100
+                        offset: 100,
+                        statuses: [Enums.CartStatus.OPEN]
                     };
 
                     if ('contactId' in props.user && props.user.contactId) {
@@ -430,6 +455,7 @@ export default function AddToCart(props: AddToCartProps) {
                         props.price,
                         props.showModal,
                     );
+                    state.activeFullCart = cart;
                     const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
                     state.addedCartItem = addedItem || null;
                     props.afterAddToCart?.(cart, addedItem);
@@ -464,6 +490,7 @@ export default function AddToCart(props: AddToCartProps) {
                         imageVariantFilters: props.configuration.imageVariantFiltersSmall,
                     });
 
+                    state.activeFullCart = cart;
                     const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
                     state.addedCartItem = addedItem || null;
                     props.afterAddToCart?.(cart, addedItem);
@@ -734,16 +761,18 @@ export default function AddToCart(props: AddToCartProps) {
                             >
                                 {state.getLabel('continueShopping', 'Continue shopping')}
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    state.closeModal();
-                                    if (props.onProceedToCheckout) props.onProceedToCheckout();
-                                }}
-                                className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
-                            >
-                                {state.getLabel('proceedToCheckout', 'Proceed to checkout')}
-                            </button>
+                            <Show when={state.checkoutAllowed()}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        state.closeModal();
+                                        if (props.onProceedToCheckout) props.onProceedToCheckout();
+                                    }}
+                                    className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                                >
+                                    {state.getLabel('proceedToCheckout', 'Proceed to checkout')}
+                                </button>
+                            </Show>
                         </div>
                     </div>
                 </div>

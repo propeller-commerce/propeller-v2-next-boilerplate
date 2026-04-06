@@ -172,6 +172,7 @@ export default function SearchPage() {
                 user={state.user}
                 collapsed={true}
                 clearSignal={clearSignal}
+                activeTextFilters={filters}
                 className=""
               />
             </aside>
@@ -191,6 +192,7 @@ export default function SearchPage() {
                   user={state.user}
                   onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                   onOffsetChange={handleOffsetChange}
+                  viewMode={viewMode}
                   onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
                   onFilterRemove={handleFilterRemove}
                   onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}

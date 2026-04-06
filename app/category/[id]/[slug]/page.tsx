@@ -258,6 +258,7 @@ export default function CategoryPage() {
                 user={state.user}
                 collapsed={true}
                 clearSignal={clearSignal}
+                activeTextFilters={filters}
                 className=""
               />
             </aside>

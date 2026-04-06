@@ -17,22 +17,11 @@ export default function AccountLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { state, logout } = useAuth();
+    const { state, logout, isAuthManagerForCompany } = useAuth();
     const { selectedCompany } = useCompany();
     const router = useRouter();
     const pathname = usePathname();
     const { language } = useLanguage();
-
-    const isAuthManagerForCompany = (user: Contact | Customer | null, companyId: number | undefined): boolean => {
-        if (!user || !companyId || !('contactId' in user)) return false;
-        const pacData = (user as any).purchaseAuthorizationConfigs;
-        const items: any[] = pacData?.items ?? pacData?._items ?? [];
-        return items.some((pac: any) => {
-            const role = pac.purchaseRole ?? pac._purchaseRole;
-            const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-            return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId;
-        });
-    };
 
     // Protect account routes — wait for auth to finish loading before checking
     useEffect(() => {

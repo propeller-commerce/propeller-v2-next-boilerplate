@@ -27,7 +27,7 @@ import { stripLeadingUnderscores } from '@/data/defaults';
 export default function Header() {
   const router = useRouter();
   const { cart, saveCart, clearCart } = useCart();
-  const { state, logout, updateUser } = useAuth();
+  const { state, logout, updateUser, isAuthManagerForCompany } = useAuth();
   const { selectedCompany, setSelectedCompany } = useCompany();
   const { includeTax, setIncludeTax } = usePrice();
   const { language, setLanguage } = useLanguage();
@@ -115,69 +115,69 @@ export default function Header() {
           className="relative h-10"
           style={{ background: '#242526' }}
         >
-            <div className="container-width h-full">
-              <div className="flex items-center justify-between h-full text-xs font-medium text-white">
-                {/* Left: Phone + Announcement */}
-                <div className="flex items-center gap-4">
-                  {globalData?.topBarPhone && (
-                    <div className="flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      <span>{globalData.topBarPhone}</span>
-                    </div>
-                  )}
-                  {topBarAnnouncementEnabled && globalData?.topBarAnnouncement && (
-                    <span className="hidden sm:inline text-white/80">
-                      {globalData.topBarAnnouncement}
-                    </span>
-                  )}
-                </div>
+          <div className="container-width h-full">
+            <div className="flex items-center justify-between h-full text-xs font-medium text-white">
+              {/* Left: Phone + Announcement */}
+              <div className="flex items-center gap-4">
+                {globalData?.topBarPhone && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span>{globalData.topBarPhone}</span>
+                  </div>
+                )}
+                {topBarAnnouncementEnabled && globalData?.topBarAnnouncement && (
+                  <span className="hidden sm:inline text-white/80">
+                    {globalData.topBarAnnouncement}
+                  </span>
+                )}
+              </div>
 
-                {/* Right: Company Switcher, VAT Switcher & Language Switcher */}
-                <div className="flex items-center gap-4">
-                  {/* Company Switcher — Contact users only */}
-                  {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && ((state.user as Contact).companies!.items?.length || 0) > 1 && (
-                    <CompanySwitcher
-                      user={state.user as Contact}
-                      selectedCompanyId={selectedCompany?.companyId}
-                      onCompanyChange={(company) => {
-                        setSelectedCompany(company);
-                        if (state.user) {
-                          fetchActiveCart(state.user as Contact | Customer, company?.companyId);
-                        }
+              {/* Right: Company Switcher, VAT Switcher & Language Switcher */}
+              <div className="flex items-center gap-4">
+                {/* Company Switcher — Contact users only */}
+                {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && ((state.user as Contact).companies!.items?.length || 0) > 1 && (
+                  <CompanySwitcher
+                    user={state.user as Contact}
+                    selectedCompanyId={selectedCompany?.companyId}
+                    onCompanyChange={(company) => {
+                      setSelectedCompany(company);
+                      if (state.user) {
+                        fetchActiveCart(state.user as Contact | Customer, company?.companyId);
+                      }
+                    }}
+                  />
+                )}
+                {showVatToggle && (
+                  <PriceToggle
+                    inclExclVatSwitched={setIncludeTax}
+                    initialState={includeTax}
+                  />
+                )}
+
+                {showLanguageSwitcher && availableLanguages.length > 1 && (
+                  <div className="flex items-center gap-1.5 hover:text-white/80 transition-colors cursor-pointer">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                    <select
+                      value={language}
+                      onChange={(e) => {
+                        setLanguage(e.target.value);
                       }}
-                    />
-                  )}
-                  {showVatToggle && (
-                    <PriceToggle
-                      inclExclVatSwitched={setIncludeTax}
-                      initialState={includeTax}
-                    />
-                  )}
-
-                  {showLanguageSwitcher && availableLanguages.length > 1 && (
-                    <div className="flex items-center gap-1.5 hover:text-white/80 transition-colors cursor-pointer">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                      </svg>
-                      <select
-                        value={language}
-                        onChange={(e) => {
-                          setLanguage(e.target.value);
-                        }}
-                        className="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
-                      >
-                        {availableLanguages.map((lang) => (
-                          <option key={lang} value={lang}>{lang}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
+                      className="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
+                    >
+                      {availableLanguages.map((lang) => (
+                        <option key={lang} value={lang}>{lang}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </div>
       )}
 
       <header
@@ -195,7 +195,7 @@ export default function Header() {
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
               >
                 {showMobileMenu ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                 ) : (
                   <MenuIcon className="w-6 h-6" />
                 )}
@@ -269,11 +269,15 @@ export default function Header() {
                     onRegisterClick={() => router.push(localizeHref('/register', language))}
                     accountHeaderLoginForm={true}
                     menuLinks={[
-                        { label: 'Dashboard', href: localizeHref('/account', language) },
-                        { label: 'Addresses', href: localizeHref('/account/addresses', language) },
-                        { label: 'Orders', href: localizeHref('/account/orders', language) },
-                        { label: 'Quotes', href: localizeHref('/account/quotes', language) },
-                        { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                      { label: 'Dashboard', href: localizeHref('/account', language) },
+                      { label: 'Addresses', href: localizeHref('/account/addresses', language) },
+                      { label: 'Orders', href: localizeHref('/account/orders', language) },
+                      { label: 'Quotes', href: localizeHref('/account/quotes', language) },
+                      { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                      ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
+                        { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
+                        { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', language) },
+                      ] : []),
                     ]}
                   />
                 )}

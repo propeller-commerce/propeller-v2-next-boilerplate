@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import ProductSlider from '@/components/common/ProductSlider';
 import { categoryService } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
 import type { CmsProductCarousel } from '@/lib/cms/types';
@@ -50,12 +49,4 @@ export default function ProductCarousel({ block }: { block: CmsProductCarousel }
   }
 
   if (products.length === 0) return null;
-
-  return (
-    <section className="py-16">
-      <div className="container-width">
-        <ProductSlider title={block.title} products={products} />
-      </div>
-    </section>
-  );
 }

@@ -230,7 +230,7 @@ For each bundle, render a card showing: the bundle name (fall back to "Combo dea
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `includeTax` | `boolean` | No | `true` (from localStorage PriceToggle) | When true, shows net prices (incl. VAT). When false, shows gross prices (excl. VAT). Overrides the PriceToggle localStorage value when explicitly set |
+| `includeTax` | `boolean` | No | `false` (excl. VAT) | When true, shows net prices (incl. VAT). When false, shows gross prices (excl. VAT). Overrides the PriceToggle localStorage value when explicitly set |
 | `portalMode` | `string` | No | `'open'` | Set to `'semi-closed'` to hide all prices and the add-to-cart button for anonymous (logged-out) users |
 | `user` | `Contact \| Customer \| null` | No | `null` | Authenticated user object. Used for semi-closed visibility checks and for setting contact/customer on new carts |
 | `stockValidation` | `boolean` | No | `false` | When true, validates stock availability before adding to cart |
@@ -269,7 +269,7 @@ async function fetchAndRenderBundles(
 |-------|------|---------|---------|
 | `language` | `string` | `'NL'` | `language` prop |
 | `taxZone` | `string` | `'NL'` | `taxZone` prop |
-| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `includeTax` | `boolean` | `false` | `includeTax` prop |
 | `layout` | `string` | `'horizontal'` | `layout` prop |
 | `showIndividualItems` | `boolean` | `true` | `showIndividualItems` prop |
 | `portalMode` | `string` | `'open'` | `portalMode` prop |

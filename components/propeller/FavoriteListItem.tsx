@@ -167,7 +167,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     return String(getCluster()?.clusterId || '');
   }
   function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
-    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : true;
+    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : false;
     let priceObj: any = null;
     if (isProduct()) {
       priceObj = getProduct()?.price;

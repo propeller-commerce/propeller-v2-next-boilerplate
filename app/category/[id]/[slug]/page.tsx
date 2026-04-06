@@ -59,7 +59,7 @@ export default function CategoryPage() {
     (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.CATEGORY_ORDER
   );
   const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(() =>
-    (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.ASC
+    (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { state } = useAuth();
@@ -97,7 +97,7 @@ export default function CategoryPage() {
     setMaxPrice(searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined);
     setOffset(parseInt(searchParams.get('offset') || '12'));
     setSortField(searchParams.get('sortField') as Enums.ProductSortField || Enums.ProductSortField.CATEGORY_ORDER);
-    setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder | Enums.SortOrder.DESC) || Enums.SortOrder.ASC);
+    setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC);
   }, [searchParams]);
 
   // Fetch CMS banner
@@ -141,7 +141,7 @@ export default function CategoryPage() {
     if (newMaxPrice !== undefined) searchParams.set('maxPrice', newMaxPrice.toString());
     if (newOffset !== undefined && newOffset !== 12) searchParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER') searchParams.set('sortField', newSortField);
-    if (newSortOrder !== undefined && newSortOrder !== 'ASC') searchParams.set('sortOrder', newSortOrder);
+    if (newSortOrder !== undefined && newSortOrder !== 'DESC') searchParams.set('sortOrder', newSortOrder);
 
     const newSearch = searchParams.toString();
     router.push(`${localizeHref(`/category/${categoryId}/${params.slug}`, language)}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });

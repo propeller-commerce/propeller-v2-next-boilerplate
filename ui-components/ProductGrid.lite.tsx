@@ -359,7 +359,7 @@ export default function ProductGrid(props: ProductGridProps) {
         totalPages: 1,
         itemsFound: 0,
         currentSortField: '',
-        currentSortOrder: 'ASC',
+        currentSortOrder: 'DESC',
         fetchId: 0,
 
         async fetchProducts() {

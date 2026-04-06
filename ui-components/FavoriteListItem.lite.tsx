@@ -178,7 +178,7 @@ export default function FavoriteListItem(props: FavoriteListItemProps) {
         },
 
         getItemPrice(): string {
-            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : true;
+            const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : false;
             let priceObj: any = null;
             if (state.isProduct()) {
                 priceObj = state.getProduct()?.price;

@@ -16,7 +16,7 @@ export interface GridToolbarProps {
 
   /**
    * Active sort — first element is used.
-   * Defaults to [{ field: 'CATEGORY_ORDER', order: 'ASC' }].
+   * Defaults to [{ field: 'CATEGORY_ORDER', order: 'DESC' }].
    */
   defaultSort?: {
     field: string;
@@ -213,7 +213,7 @@ function GridToolbar(props: GridToolbarProps) {
     () => Enums.ProductSortField.CATEGORY_ORDER
   );
   const [currentSortOrder, setCurrentSortOrder] = useState<GridToolbarState['currentSortOrder']>(
-    () => Enums.SortOrder.ASC
+    () => Enums.SortOrder.DESC
   );
   const [currentOffset, setCurrentOffset] = useState<GridToolbarState['currentOffset']>(() => 12);
   const [currentViewMode, setCurrentViewMode] = useState<GridToolbarState['currentViewMode']>(
@@ -288,7 +288,7 @@ function GridToolbar(props: GridToolbarProps) {
         : Enums.ProductSortField.CATEGORY_ORDER
     );
     setCurrentSortOrder(
-      sort.length > 0 ? sort[0].order || Enums.SortOrder.ASC : Enums.SortOrder.ASC
+      sort.length > 0 ? sort[0].order || Enums.SortOrder.DESC : Enums.SortOrder.DESC
     );
   }, [props.defaultSort]);
   useEffect(() => {

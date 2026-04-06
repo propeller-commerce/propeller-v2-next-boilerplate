@@ -258,11 +258,17 @@ export default function Header() {
                         window.dispatchEvent(new CustomEvent('userLoggedIn'));
                       }
 
+                      // Switch to user's preferred language if available
+                      const userLang = (loggedInUser as Contact | Customer).primaryLanguage;
+                      if (userLang && userLang !== language) {
+                        setLanguage(userLang);
+                      }
+
                       // Fetch the user's active cart from the server
                       const company = (loggedInUser as Contact).company;
                       fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
 
-                      router.push(localizeHref('/account', language))
+                      router.push(localizeHref('/account', userLang || language))
                     }}
                     onMenuItemClick={(href) => router.push(href)}
                     onLogoutClick={async () => {

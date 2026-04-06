@@ -383,7 +383,7 @@ export default function AddressCard(props: AddressCardProps) {
                             </Show>
                             <Show when={props.enableDelete !== false}>
                                 <button
-                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
                                     onClick={() => { state.showDeleteConfirm = true; }}
                                 >
                                     {state.getLabel('delete', 'Delete')}
@@ -391,7 +391,7 @@ export default function AddressCard(props: AddressCardProps) {
                             </Show>
                             <Show when={props.enableSetDefault !== false && state.addr?.isDefault !== 'Y'}>
                                 <button
-                                    className="text-yellow-600 hover:text-yellow-800 text-sm font-medium ml-auto"
+                                    className="text-primary hover:text-primary/80 text-sm font-medium ml-auto"
                                     onClick={() => state.handleSetDefault()}
                                 >
                                     {state.getLabel('setDefault', 'Set Default')}
@@ -660,7 +660,7 @@ export default function AddressCard(props: AddressCardProps) {
                             <button onClick={() => { state.showDeleteConfirm = false; }} className="px-4 py-2 border rounded hover:bg-gray-100">
                                 {state.getLabel('cancel', 'Cancel')}
                             </button>
-                            <button onClick={() => state.confirmDelete()} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            <button onClick={() => state.confirmDelete()} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80">
                                 {state.getLabel('delete', 'Delete')}
                             </button>
                         </div>

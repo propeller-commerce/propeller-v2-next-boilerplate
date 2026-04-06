@@ -210,7 +210,7 @@ function ProductGrid(props: ProductGridProps) {
     () => ''
   );
   const [currentSortOrder, setCurrentSortOrder] = useState<ProductGridState['currentSortOrder']>(
-    () => 'ASC'
+    () => 'DESC'
   );
   const fetchIdRef = useRef<number>(0);
   async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {

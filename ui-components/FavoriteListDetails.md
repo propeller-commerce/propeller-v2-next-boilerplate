@@ -246,7 +246,7 @@ async function fetchFavoriteListDetails(options: FavoriteListDetailsOptions): Pr
 | `user` | `Contact \| Customer` | (required) | `user` prop |
 | `favoriteListId` | `string` | (required) | `favoriteListId` prop |
 | `language` | `string` | `'NL'` | `language` prop |
-| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `includeTax` | `boolean` | `false` | `includeTax` prop |
 | `itemsPerPage` | `number` | `12` | `itemsPerPage` prop |
 
 ### Cart resolution

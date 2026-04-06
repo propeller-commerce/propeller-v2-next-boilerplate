@@ -64,7 +64,7 @@ export default function ProductBulkPrices(props: ProductBulkPricesProps) {
         },
 
         getIncludeTax(): boolean {
-            return props.includeTax !== undefined ? !!(props.includeTax) : true;
+            return props.includeTax !== undefined ? !!(props.includeTax) : false;
         },
 
         getBulkPrices(): ProductPrice[] {

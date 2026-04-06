@@ -24,14 +24,14 @@ function subscribeToPriceToggle(callback: () => void) {
 function getIncludeTaxSnapshot(): boolean {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored !== null ? stored === 'true' : true;
+    return stored !== null ? stored === 'true' : false;
   } catch {
-    return true;
+    return false;
   }
 }
 
 function getIncludeTaxServerSnapshot(): boolean {
-  return true;
+  return false;
 }
 
 export const PriceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

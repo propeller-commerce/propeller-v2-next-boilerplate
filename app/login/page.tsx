@@ -10,14 +10,14 @@ import LoginForm from '@/components/propeller/LoginForm';
 import { graphqlClient } from '@/lib/api';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { Company, Contact } from 'propeller-sdk-v2';
+import { Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref } from '@/data/config';
 
 export default function LoginPage() {
   const { state, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const router = useRouter();
 
   return (
@@ -79,7 +79,13 @@ export default function LoginPage() {
                       window.dispatchEvent(new CustomEvent('userLoggedIn'));
                     }
 
-                    router.push(localizeHref('/account', language))
+                    // Switch to user's preferred language if available
+                    const userLang = (loggedInUser as Contact | Customer).primaryLanguage;
+                    if (userLang && userLang !== language) {
+                      setLanguage(userLang);
+                    }
+
+                    router.push(localizeHref('/account', userLang || language))
                   }}
                 />
               </CardContent>

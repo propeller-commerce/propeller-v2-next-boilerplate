@@ -370,7 +370,7 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               {props.enableDelete !== false ? (
                 <button
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                  className="text-gray-600 hover:text-gray-800 text-sm font-medium"
                   onClick={(event) => {
                     setShowDeleteConfirm(true);
                   }}
@@ -380,7 +380,7 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               {props.enableSetDefault !== false && addr?.()?.isDefault !== 'Y' ? (
                 <button
-                  className="text-yellow-600 hover:text-yellow-800 text-sm font-medium ml-auto"
+                  className="text-primary hover:text-primary/80 text-sm font-medium ml-auto"
                   onClick={(event) => handleSetDefault()}
                 >
                   {getLabel('setDefault', 'Set Default')}
@@ -912,7 +912,7 @@ function AddressCard(props: AddressCardProps) {
                 {getLabel('cancel', 'Cancel')}
               </button>
               <button
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
                 onClick={(event) => confirmDelete()}
               >
                 {getLabel('delete', 'Delete')}

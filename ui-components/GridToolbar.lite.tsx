@@ -56,7 +56,7 @@ export interface GridToolbarProps {
 
     /**
      * Active sort — first element is used.
-     * Defaults to [{ field: 'CATEGORY_ORDER', order: 'ASC' }].
+     * Defaults to [{ field: 'CATEGORY_ORDER', order: 'DESC' }].
      */
     defaultSort?: { field: string; order: string }[];
 
@@ -205,7 +205,7 @@ interface GridToolbarState {
 export default function GridToolbar(props: GridToolbarProps) {
     const state = useStore<GridToolbarState>({
         currentSortField: Enums.ProductSortField.CATEGORY_ORDER,
-        currentSortOrder: Enums.SortOrder.ASC,
+        currentSortOrder: Enums.SortOrder.DESC,
         currentOffset: 12,
         currentViewMode: 'grid',
 
@@ -282,7 +282,7 @@ export default function GridToolbar(props: GridToolbarProps) {
     onUpdate(() => {
         const sort = (props.defaultSort as { field: string; order: string }[]) || [];
         state.currentSortField = sort.length > 0 ? (sort[0].field || Enums.ProductSortField.CATEGORY_ORDER) : Enums.ProductSortField.CATEGORY_ORDER;
-        state.currentSortOrder = sort.length > 0 ? (sort[0].order || Enums.SortOrder.ASC) : Enums.SortOrder.ASC;
+        state.currentSortOrder = sort.length > 0 ? (sort[0].order || Enums.SortOrder.DESC) : Enums.SortOrder.DESC;
     }, [props.defaultSort]);
 
     // Sync per-page offset from defaultOffset prop.

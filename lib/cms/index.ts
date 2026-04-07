@@ -1,5 +1,6 @@
 import type { CmsProvider } from './core';
 import { createStrapiProvider } from './providers/strapi';
+import { createPreprProvider } from './providers/prepr';
 
 /**
  * Resolve the active CMS provider based on the CMS_PROVIDER env var.
@@ -11,8 +12,10 @@ function createProvider(): CmsProvider {
   switch (provider) {
     case 'strapi':
       return createStrapiProvider();
+    case 'prepr':
+      return createPreprProvider();
     default:
-      throw new Error(`Unknown CMS provider: "${provider}". Supported: strapi`);
+      throw new Error(`Unknown CMS provider: "${provider}". Supported: strapi, prepr`);
   }
 }
 

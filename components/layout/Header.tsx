@@ -100,6 +100,8 @@ export default function Header() {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
+    setIncludeTax(config.includeVAT);
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -155,7 +157,7 @@ export default function Header() {
                 {showVatToggle && (
                   <PriceToggle
                     inclExclVatSwitched={setIncludeTax}
-                    initialState={includeTax}
+                    initialState={config.includeVAT}
                   />
                 )}
 

@@ -179,6 +179,9 @@ export interface GridFiltersProps {
   /** Increment this counter to reset all selected filters and price inputs externally. */
   clearSignal?: number;
 
+  /** Currently active text filters (URL-driven). Syncs internal checkbox state when filters are removed externally. */
+  activeTextFilters?: Record<string, string[]>;
+
   /** Extra CSS class on the root element. */
   className?: string;
 }
@@ -256,6 +259,14 @@ watch(
     currentMin.value = (props.priceMin as number) || 0;
     currentMax.value = (props.priceMax as number) || 9999;
     expandedFilters.value = {};
+  },
+  { immediate: true }
+);
+watch(
+  () => [props.activeTextFilters],
+  () => {
+    if (!props.activeTextFilters) return;
+    selectedFilters.value = props.activeTextFilters as Record<string, string[]>;
   },
   { immediate: true }
 );

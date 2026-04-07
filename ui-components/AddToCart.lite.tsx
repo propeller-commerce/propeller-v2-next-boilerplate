@@ -21,7 +21,8 @@ import {
     Enums,
     CartMainItem,
     CartBaseItem,
-    Cluster
+    Cluster,
+    PurchaseAuthorizationConfig
 } from 'propeller-sdk-v2';
 
 export interface AddToCartProps {
@@ -211,30 +212,26 @@ export default function AddToCart(props: AddToCartProps) {
             if (!props.user || !('contactId' in props.user)) return true;
             if (!props.companyId) return true;
             if (!state.activeFullCart) return true;
-            const pacData = (props.user as any).purchaseAuthorizationConfigs;
-            const items: any[] = pacData?.items ?? pacData?._items ?? [];
-            const purchaserPAC = items.find((pac: any) => {
-                const role = pac.purchaseRole ?? pac._purchaseRole;
-                const pacCompanyId =
-                    pac.company?.companyId ??
-                    pac.company?._companyId ??
-                    pac._company?.companyId ??
-                    pac._company?._companyId;
+            const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+            const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+            const purchaserPAC = items.find((pac: PurchaseAuthorizationConfig) => {
+                const role = pac.purchaseRole;
+                const pacCompanyId = pac.company?.companyId;
                 return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
             });
             if (!purchaserPAC) return true;
-            const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+            const limit = purchaserPAC.authorizationLimit ?? 0;
             const totalNet = state.activeFullCart?.total?.totalNet ?? 0;
             return totalNet <= limit;
         },
 
         getMinQuantity() {
-            const min = (props.product as any)?.minimumQuantity;
+            const min = (props.product as Product)?.minimumQuantity;
             return min && min > 0 ? min : 1;
         },
 
         getStep() {
-            const unit = (props.product as any)?.unit;
+            const unit = (props.product as Product)?.unit;
             return unit && unit > 0 ? unit : 1;
         },
 
@@ -264,7 +261,7 @@ export default function AddToCart(props: AddToCartProps) {
         },
 
         getProductName() {
-            return (props.product as any)?.names?.[0]?.value || 'Product';
+            return (props.product as Product)?.names?.[0]?.value || 'Product';
         },
 
         getProductUrl() {
@@ -272,15 +269,15 @@ export default function AddToCart(props: AddToCartProps) {
         },
 
         getProductImageUrl() {
-            return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+            return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
         },
 
         getProductSku() {
-            return (props.product as any)?.sku || '';
+            return (props.product as Product)?.sku || '';
         },
 
         getProductPrice() {
-            const price = props.price !== undefined ? props.price : (props.product as any)?.price?.gross;
+            const price = props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
             if (!price && price !== 0) return '';
             return `\u20AC${Number(price).toFixed(2)}`;
         },
@@ -314,7 +311,7 @@ export default function AddToCart(props: AddToCartProps) {
                             cartId: existingCartId,
                             imageSearchFilters: props.configuration.imageSearchFiltersGrid,
                             imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-                            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+                            language: props.configuration.language || 'NL'
                         };
 
                         const cart = await cartService.getCart(cartVariables);
@@ -333,13 +330,13 @@ export default function AddToCart(props: AddToCartProps) {
             }
 
             /* 2. Start a new cart */
-            const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+            const language = props.configuration.language || 'NL';
             const startCartInput: CartStartInput = { language };
 
             if (props.user) {
                 if ('contactId' in props.user && props.user.contactId) {
                     startCartInput.contactId = props.user.contactId;
-                    const resolvedCompanyId = (props.companyId as number) || (props.user as any).companyId;
+                    const resolvedCompanyId = (props.companyId as number) || (props.user as Contact).company?.companyId;
                     if (resolvedCompanyId) {
                         startCartInput.companyId = resolvedCompanyId as number;
                     }
@@ -352,7 +349,7 @@ export default function AddToCart(props: AddToCartProps) {
                 input: startCartInput,
                 imageSearchFilters: props.configuration.imageSearchFiltersGrid,
                 imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-                language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+                language: props.configuration.language || 'NL'
             };
 
             let newCart = await cartService.startCart(cartStartVars);
@@ -467,7 +464,7 @@ export default function AddToCart(props: AddToCartProps) {
                         props.showModal,
                     );
                     state.activeFullCart = cart;
-                    const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+                    const addedItem = cart.items?.find((item: CartMainItem) => item.productId === props.product.productId);
                     state.addedCartItem = addedItem || null;
                     props.afterAddToCart?.(cart, addedItem);
                 } else {

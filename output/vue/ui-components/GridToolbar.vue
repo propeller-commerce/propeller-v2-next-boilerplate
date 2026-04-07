@@ -99,7 +99,7 @@
         </button>
         <template v-if="priceFilterMin !== undefined || priceFilterMax !== undefined">
           <span
-            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-secondary-foreground hover:bg-primary hover:text-destructive-foreground transition-colors"
             @click="
               async (event) => {
                 if (onPriceFilterRemove) onPriceFilterRemove();
@@ -115,7 +115,7 @@
           v-for="(badge, index) in getActiveFilterBadges()"
         >
           <span
-            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
+            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
             @click="
               async (event) => {
                 if (onFilterRemove) onFilterRemove(badge.key, badge.value);
@@ -182,7 +182,7 @@ export interface GridToolbarProps {
 
   /**
    * Active sort — first element is used.
-   * Defaults to [{ field: 'CATEGORY_ORDER', order: 'ASC' }].
+   * Defaults to [{ field: 'CATEGORY_ORDER', order: 'DESC' }].
    */
   defaultSort?: {
     field: string;
@@ -341,7 +341,7 @@ const props = defineProps<GridToolbarProps>();
 const currentSortField = ref<GridToolbarState['currentSortField']>(
   Enums.ProductSortField.CATEGORY_ORDER
 );
-const currentSortOrder = ref<GridToolbarState['currentSortOrder']>(Enums.SortOrder.ASC);
+const currentSortOrder = ref<GridToolbarState['currentSortOrder']>(Enums.SortOrder.DESC);
 const currentOffset = ref<GridToolbarState['currentOffset']>(12);
 const currentViewMode = ref<GridToolbarState['currentViewMode']>('grid');
 
@@ -358,7 +358,7 @@ watch(
         ? sort[0].field || Enums.ProductSortField.CATEGORY_ORDER
         : Enums.ProductSortField.CATEGORY_ORDER;
     currentSortOrder.value =
-      sort.length > 0 ? sort[0].order || Enums.SortOrder.ASC : Enums.SortOrder.ASC;
+      sort.length > 0 ? sort[0].order || Enums.SortOrder.DESC : Enums.SortOrder.DESC;
   },
   { immediate: true }
 );

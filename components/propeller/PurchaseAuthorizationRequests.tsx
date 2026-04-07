@@ -14,6 +14,7 @@ import {
   CartMainItem,
   CartQueryVariables,
   CartAcceptPurchaseAuthorizationVariables,
+  PurchaseAuthorizationConfig,
 } from 'propeller-sdk-v2';
 
 export interface PurchaseAuthorizationRequestsProps {
@@ -71,7 +72,7 @@ interface PurchaseAuthorizationRequestsState {
   formatPrice: (price: number) => string;
   getTotalQuantity: (cart: Cart) => number;
   getContactName: (deliveryAddress: CartAddress) => string;
-  getModalItems: () => any[];
+  getModalItems: () => CartMainItem[];
   loadCarts: () => Promise<void>;
   handleViewCart: (cart: Cart) => Promise<void>;
   handleAcceptRequest: () => Promise<void>;
@@ -92,14 +93,10 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
   function isAuthManager(): ReturnType<PurchaseAuthorizationRequestsState['isAuthManager']> {
     if (!props.user || !('contactId' in props.user)) return false;
     const pacData = (props.user as any).purchaseAuthorizationConfigs;
-    const items: any[] = pacData?.items ?? pacData?._items ?? [];
-    return items.some((pac: any) => {
-      const role = pac.purchaseRole ?? pac._purchaseRole;
-      const pacCompanyId =
-        pac.company?.companyId ??
-        pac.company?._companyId ??
-        pac._company?.companyId ??
-        pac._company?._companyId;
+    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? pacData?._items ?? [];
+    return items.some((pac: PurchaseAuthorizationConfig) => {
+      const role = pac.purchaseRole;
+      const pacCompanyId = pac.company?.companyId;
       return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === props.companyId;
     });
   }
@@ -152,7 +149,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     try {
       const cartService = new CartService(props.graphqlClient);
       const searchInput: CartSearchInput = {
-        statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION as any],
+        statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION],
         companyIds: [props.companyId],
       };
       const response = await cartService.getCarts(searchInput);
@@ -254,9 +251,6 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colId', '#')}
-                        </th>
-                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                           {getLabel('colDate', 'Date')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
@@ -276,9 +270,8 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                     <tbody className="divide-y divide-border">
                       {carts?.map((cart, index) => (
                         <tr className="hover:bg-muted/30 transition-colors" key={index}>
-                          <td className="px-4 py-3 text-muted-foreground" />
                           <td className="px-4 py-3 text-muted-foreground">
-                            {formatDate(cart.lastModifiedAt ?? cart._lastModifiedAt ?? '')}
+                            {formatDate(cart.lastModifiedAt ?? '')}
                           </td>
                           <td className="px-4 py-3">{getTotalQuantity(cart)}</td>
                           <td className="px-4 py-3 font-medium">
@@ -378,23 +371,18 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                               {getModalItems()?.map((item, idx) => (
                                 <tr key={idx}>
                                   <td className="px-3 py-2">
-                                    {item.product?.names?.[0]?.value ??
-                                      item._product?.names?.[0]?.value ??
-                                      ''}
+                                    {item.product?.names?.[0]?.value ?? ''}
                                   </td>
-                                  <td className="px-3 py-2 text-right">
-                                    {item.quantity ?? item._quantity ?? 0}
-                                  </td>
+                                  <td className="px-3 py-2 text-right">{item.quantity ?? 0}</td>
                                   <td className="px-3 py-2 text-right">
                                     {formatPrice(
-                                      (item.quantity ?? item._quantity ?? 0) > 0
-                                        ? (item.totalSum ?? item._totalSum ?? 0) /
-                                            (item.quantity ?? item._quantity ?? 1)
+                                      (item.quantity ?? 0) > 0
+                                        ? (item.totalSum ?? 0) / (item.quantity ?? 1)
                                         : 0
                                     )}
                                   </td>
                                   <td className="px-3 py-2 text-right font-medium">
-                                    {formatPrice(item.totalSumNet ?? item._totalSumNet ?? 0)}
+                                    {formatPrice(item.totalSumNet ?? 0)}
                                   </td>
                                 </tr>
                               ))}
@@ -405,40 +393,20 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       <div className="border-t border-border pt-4 space-y-2 text-sm">
                         <div className="flex justify-between text-muted-foreground">
                           <span>{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
-                          <span>
-                            {formatPrice(
-                              (selectedCart as any)?.total?.totalGross ??
-                                (selectedCart as any)?._total?.totalGross ??
-                                (selectedCart as any)?._total?._totalGross ??
-                                0
-                            )}
-                          </span>
+                          <span>{formatPrice((selectedCart as Cart)?.total?.totalGross ?? 0)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
                           <span>{getLabel('totalVat', 'VAT:')}</span>
                           <span>
                             {formatPrice(
-                              ((selectedCart as any)?.total?.totalNet ??
-                                (selectedCart as any)?._total?.totalNet ??
-                                (selectedCart as any)?._total?._totalNet ??
-                                0) -
-                                ((selectedCart as any)?.total?.totalGross ??
-                                  (selectedCart as any)?._total?.totalGross ??
-                                  (selectedCart as any)?._total?._totalGross ??
-                                  0)
+                              ((selectedCart as Cart)?.total?.totalNet ?? 0) -
+                                ((selectedCart as Cart)?.total?.totalGross ?? 0)
                             )}
                           </span>
                         </div>
                         <div className="flex justify-between font-bold text-base border-t border-border pt-2">
                           <span>{getLabel('total', 'Total:')}</span>
-                          <span>
-                            {formatPrice(
-                              (selectedCart as any)?.total?.totalNet ??
-                                (selectedCart as any)?._total?.totalNet ??
-                                (selectedCart as any)?._total?._totalNet ??
-                                0
-                            )}
-                          </span>
+                          <span>{formatPrice((selectedCart as Cart)?.total?.totalNet ?? 0)}</span>
                         </div>
                       </div>
                     </div>

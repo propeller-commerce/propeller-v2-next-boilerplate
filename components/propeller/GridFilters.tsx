@@ -244,9 +244,8 @@ function GridFilters(props: GridFiltersProps) {
   }, [props.clearSignal]);
   useEffect(() => {
     if (!props.activeTextFilters) return;
-    const active = props.activeTextFilters as Record<string, string[]>;
-    setSelectedFilters(active);
-  }, [JSON.stringify(props.activeTextFilters)]);
+    setSelectedFilters(props.activeTextFilters as Record<string, string[]>);
+  }, [props.activeTextFilters]);
   return (
     <div
       className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}

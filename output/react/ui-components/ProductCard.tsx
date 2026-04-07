@@ -228,7 +228,7 @@ interface ProductCardState {
 }
 function ProductCard(props: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState<ProductCardState['isFavorite']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ProductCardState['includeTax']>(() => true);
+  const [includeTax, setIncludeTax] = useState<ProductCardState['includeTax']>(() => false);
   const [priceListener, setPriceListener] = useState<ProductCardState['priceListener']>(() => null);
   function isRow(): ReturnType<ProductCardState['isRow']> {
     return (props.columns as number) === 1;

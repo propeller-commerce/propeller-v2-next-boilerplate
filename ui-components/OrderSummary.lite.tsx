@@ -192,7 +192,18 @@ export default function OrderSummary(props: OrderSummaryProps) {
         get requestDate() {
             const date = props.order?.postageData?.requestDate;
             if (!date) return '';
-            return state.formatOrderDate(date);
+            if (props.formatDate) {
+                return props.formatDate(date);
+            }
+            try {
+                return new Date(date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
+            } catch {
+                return date;
+            }
         },
     });
 

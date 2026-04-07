@@ -356,7 +356,7 @@ interface ClusterCardState {
 
 const props = defineProps<ClusterCardProps>();
 const isFavorite = ref<ClusterCardState['isFavorite']>(false);
-const includeTax = ref<ClusterCardState['includeTax']>(true);
+const includeTax = ref<ClusterCardState['includeTax']>(false);
 const priceListener = ref<ClusterCardState['priceListener']>(null);
 
 function isRow(): ReturnType<ClusterCardState['isRow']> {

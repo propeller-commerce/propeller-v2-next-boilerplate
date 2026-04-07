@@ -222,7 +222,11 @@
                       child.product?.names?.[0]?.value || 'Option'
                     }}</span
                     ><span class="text-gray-400 whitespace-nowrap ml-2">{{
-                      '\u20AC' + (child.totalSum?.toFixed(2) || '0.00')
+                      '\u20AC' +
+                      (((includeTax !== undefined ? !!includeTax : includeTax)
+                        ? child.totalSumNet
+                        : child.totalSum
+                      )?.toFixed(2) || '0.00')
                     }}</span>
                   </div>
                 </template>
@@ -262,7 +266,7 @@
      import { onMounted, ref } from "vue"
 
 
-   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, CartBaseItem, Cluster } from 'propeller-sdk-v2';
+   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, CartBaseItem, Cluster, PurchaseAuthorizationConfig } from 'propeller-sdk-v2';
 
 
 
@@ -367,6 +371,13 @@
 
  /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */
  companyId?: number;
+
+ /**
+  * When true, tax-inclusive price (net) is shown.
+  * When false, tax-exclusive price (gross) is shown.
+  * Defaults to false.
+  */
+ includeTax?: boolean;
 }
 
 /**
@@ -398,6 +409,8 @@ interface AddToCartState {
  toastMessage: string;
  toastType: string;
  toastVisible: boolean;
+ includeTax: boolean;
+ priceListener: any;
  getMinQuantity: () => number;
  getStep: () => number;
  increment: () => void;
@@ -433,6 +446,8 @@ const toastMessage= ref<AddToCartState["toastMessage"]>('')
 const toastType= ref<AddToCartState["toastType"]>('')
 const toastVisible= ref<AddToCartState["toastVisible"]>(false)
 const addedCartItem= ref<AddToCartState["addedCartItem"]>(null)
+const includeTax= ref<AddToCartState["includeTax"]>(false)
+const priceListener= ref<AddToCartState["priceListener"]>(null)
 const activeFullCart= ref<AddToCartState["activeFullCart"]>(null)
 
 
@@ -453,24 +468,24 @@ const activeFullCart= ref<AddToCartState["activeFullCart"]>(null)
 if (!props.user || !('contactId' in props.user)) return true;
 if (!props.companyId) return true;
 if (!activeFullCart.value) return true;
-const pacData = (props.user as any).purchaseAuthorizationConfigs;
-const items: any[] = pacData?.items ?? pacData?._items ?? [];
-const purchaserPAC = items.find((pac: any) => {
-  const role = pac.purchaseRole ?? pac._purchaseRole;
-  const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
+const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+const purchaserPAC = items.find((pac: PurchaseAuthorizationConfig) => {
+  const role = pac.purchaseRole;
+  const pacCompanyId = pac.company?.companyId;
   return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
 });
 if (!purchaserPAC) return true;
-const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+const limit = purchaserPAC.authorizationLimit ?? 0;
 const totalNet = activeFullCart.value?.total?.totalNet ?? 0;
 return totalNet <= limit;
 }
 function getMinQuantity(): ReturnType<AddToCartState["getMinQuantity"]>{
-const min = (props.product as any)?.minimumQuantity;
+const min = (props.product as Product)?.minimumQuantity;
 return min && min > 0 ? min : 1;
 }
 function getStep(): ReturnType<AddToCartState["getStep"]>{
-const unit = (props.product as any)?.unit;
+const unit = (props.product as Product)?.unit;
 return unit && unit > 0 ? unit : 1;
 }
 function increment(): ReturnType<AddToCartState["increment"]>{
@@ -495,19 +510,19 @@ function dismissToast(): ReturnType<AddToCartState["dismissToast"]>{
 toastVisible.value = false;
 }
 function getProductName(): ReturnType<AddToCartState["getProductName"]>{
-return (props.product as any)?.names?.[0]?.value || 'Product';
+return (props.product as Product)?.names?.[0]?.value || 'Product';
 }
 function getProductUrl(): ReturnType<AddToCartState["getProductUrl"]>{
 return props.configuration.urls.getProductUrl(props.product, props.language);
 }
 function getProductImageUrl(): ReturnType<AddToCartState["getProductImageUrl"]>{
-return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
 }
 function getProductSku(): ReturnType<AddToCartState["getProductSku"]>{
-return (props.product as any)?.sku || '';
+return (props.product as Product)?.sku || '';
 }
 function getProductPrice(): ReturnType<AddToCartState["getProductPrice"]>{
-const price = props.price !== undefined ? props.price : (props.product as any)?.price?.gross;
+const price = props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
 if (!price && price !== 0) return '';
 return `\u20AC${Number(price).toFixed(2)}`;
 }
@@ -536,7 +551,7 @@ if (props.user) {
         cartId: existingCartId,
         imageSearchFilters: props.configuration.imageSearchFiltersGrid,
         imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+        language: props.configuration.language || 'NL'
       };
       const cart = await cartService.getCart(cartVariables);
       activeCartId.value = cart.cartId;
@@ -551,14 +566,14 @@ if (props.user) {
 }
 
 /* 2. Start a new cart */
-const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+const language = props.configuration.language || 'NL';
 const startCartInput: CartStartInput = {
   language
 };
 if (props.user) {
   if ('contactId' in props.user && props.user.contactId) {
     startCartInput.contactId = props.user.contactId;
-    const resolvedCompanyId = props.companyId as number || (props.user as any).companyId;
+    const resolvedCompanyId = props.companyId as number || (props.user as Contact).company?.companyId;
     if (resolvedCompanyId) {
       startCartInput.companyId = resolvedCompanyId as number;
     }
@@ -570,7 +585,7 @@ const cartStartVars: CartStartVariables = {
   input: startCartInput,
   imageSearchFilters: props.configuration.imageSearchFiltersGrid,
   imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+  language: props.configuration.language || 'NL'
 };
 let newCart = await cartService.startCart(cartStartVars);
 
@@ -665,7 +680,7 @@ try {
     /* Consumer-provided handler */
     const cart = props.onAddToCart(props.product, props.cluster?.clusterId, quantity.value, childItems, props.notes, props.price, props.showModal);
     activeFullCart.value = cart;
-    const addedItem = cart.items?.find(item => item.productId === props.product.productId);
+    const addedItem = cart.items?.find((item: CartMainItem) => item.productId === props.product.productId);
     addedCartItem.value = addedItem || null;
     props.afterAddToCart?.(cart, addedItem);
   } else {
@@ -736,7 +751,9 @@ return getProductName();
 }
 function getModalPrice(): ReturnType<AddToCartState["getModalPrice"]>{
 if (addedCartItem.value) {
-  return '\u20AC' + Number(addedCartItem.value.totalSumNet).toFixed(2);
+  const useTax: boolean = props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;
+  const price = useTax ? addedCartItem.value.totalSumNet : addedCartItem.value.totalSum;
+  return '\u20AC' + Number(price).toFixed(2);
 }
 return getProductPrice();
 }

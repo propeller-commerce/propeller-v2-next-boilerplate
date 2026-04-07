@@ -16,6 +16,7 @@ import {
     CartMainItem,
     CartQueryVariables,
     CartAcceptPurchaseAuthorizationVariables,
+    PurchaseAuthorizationConfig,
 } from 'propeller-sdk-v2';
 
 export interface PurchaseAuthorizationRequestsProps {
@@ -74,7 +75,7 @@ interface PurchaseAuthorizationRequestsState {
     formatPrice: (price: number) => string;
     getTotalQuantity: (cart: Cart) => number;
     getContactName: (deliveryAddress: CartAddress) => string;
-    getModalItems: () => any[];
+    getModalItems: () => CartMainItem[];
     loadCarts: () => Promise<void>;
     handleViewCart: (cart: Cart) => Promise<void>;
     handleAcceptRequest: () => Promise<void>;
@@ -92,14 +93,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
         get isAuthManager(): boolean {
             if (!props.user || !('contactId' in props.user)) return false;
             const pacData = (props.user as any).purchaseAuthorizationConfigs;
-            const items: any[] = pacData?.items ?? pacData?._items ?? [];
-            return items.some((pac: any) => {
-                const role = pac.purchaseRole ?? pac._purchaseRole;
-                const pacCompanyId =
-                    pac.company?.companyId ??
-                    pac.company?._companyId ??
-                    pac._company?.companyId ??
-                    pac._company?._companyId;
+            const items: PurchaseAuthorizationConfig[] = pacData?.items ?? pacData?._items ?? [];
+            return items.some((pac: PurchaseAuthorizationConfig) => {
+                const role = pac.purchaseRole;
+                const pacCompanyId = pac.company?.companyId;
                 return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === props.companyId;
             });
         },
@@ -134,7 +131,7 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
             return [firstName, middleName, lastName].filter(Boolean).join(' ');
         },
 
-        getModalItems(): any[] {
+        getModalItems(): CartMainItem[] {
             if (!state.selectedCart) return [];
             return (state.selectedCart as Cart).items || [];
         },
@@ -145,7 +142,7 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
             try {
                 const cartService = new CartService(props.graphqlClient);
                 const searchInput: CartSearchInput = {
-                    statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION as any],
+                    statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION],
                     companyIds: [props.companyId],
                 };
                 const response = await cartService.getCarts(searchInput);
@@ -258,9 +255,6 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                     <thead className="bg-muted/50 border-b border-border">
                                         <tr>
                                             <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                                                {state.getLabel('colId', '#')}
-                                            </th>
-                                            <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                                                 {state.getLabel('colDate', 'Date')}
                                             </th>
                                             <th className="text-left px-4 py-3 font-medium text-muted-foreground">
@@ -279,14 +273,11 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                     </thead>
                                     <tbody className="divide-y divide-border">
                                         <For each={state.carts}>
-                                            {(cart: any, index: number) => (
+                                            {(cart: Cart, index: number) => (
                                                 <tr key={index} className="hover:bg-muted/30 transition-colors">
-                                                    {/* # column — empty cells */}
-                                                    <td className="px-4 py-3 text-muted-foreground" />
-
                                                     {/* Date */}
                                                     <td className="px-4 py-3 text-muted-foreground">
-                                                        {state.formatDate(cart.lastModifiedAt ?? cart._lastModifiedAt ?? '')}
+                                                        {state.formatDate(cart.lastModifiedAt ?? '')}
                                                     </td>
 
                                                     {/* Quantity — sum of all item quantities */}
@@ -402,25 +393,23 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                                     </thead>
                                                     <tbody className="divide-y divide-border">
                                                         <For each={state.getModalItems()}>
-                                                            {(item: any, idx: number) => (
+                                                            {(item: CartMainItem, idx: number) => (
                                                                 <tr key={idx}>
                                                                     <td className="px-3 py-2">
-                                                                        {item.product?.names?.[0]?.value ??
-                                                                            item._product?.names?.[0]?.value ??
-                                                                            ''}
+                                                                        {item.product?.names?.[0]?.value ?? ''}
                                                                     </td>
                                                                     <td className="px-3 py-2 text-right">
-                                                                        {item.quantity ?? item._quantity ?? 0}
+                                                                        {item.quantity ?? 0}
                                                                     </td>
                                                                     <td className="px-3 py-2 text-right">
                                                                         {state.formatPrice(
-                                                                            (item.quantity ?? item._quantity ?? 0) > 0
-                                                                                ? (item.totalSum ?? item._totalSum ?? 0) / (item.quantity ?? item._quantity ?? 1)
+                                                                            (item.quantity ?? 0) > 0
+                                                                                ? (item.totalSum ?? 0) / (item.quantity ?? 1)
                                                                                 : 0
                                                                         )}
                                                                     </td>
                                                                     <td className="px-3 py-2 text-right font-medium">
-                                                                        {state.formatPrice(item.totalSumNet ?? item._totalSumNet ?? 0)}
+                                                                        {state.formatPrice(item.totalSumNet ?? 0)}
                                                                     </td>
                                                                 </tr>
                                                             )}
@@ -434,34 +423,18 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                         <div className="border-t border-border pt-4 space-y-2 text-sm">
                                             <div className="flex justify-between text-muted-foreground">
                                                 <span>{state.getLabel('totalExclVat', 'Total excl. VAT:')}</span>
-                                                <span>{state.formatPrice(
-                                                    (state.selectedCart as any)?.total?.totalGross ??
-                                                    (state.selectedCart as any)?._total?.totalGross ??
-                                                    (state.selectedCart as any)?._total?._totalGross ??
-                                                    0
-                                                )}</span>
+                                                <span>{state.formatPrice((state.selectedCart as Cart)?.total?.totalGross ?? 0)}</span>
                                             </div>
                                             <div className="flex justify-between text-muted-foreground">
                                                 <span>{state.getLabel('totalVat', 'VAT:')}</span>
                                                 <span>{state.formatPrice(
-                                                    ((state.selectedCart as any)?.total?.totalNet ??
-                                                        (state.selectedCart as any)?._total?.totalNet ??
-                                                        (state.selectedCart as any)?._total?._totalNet ??
-                                                        0) -
-                                                    ((state.selectedCart as any)?.total?.totalGross ??
-                                                        (state.selectedCart as any)?._total?.totalGross ??
-                                                        (state.selectedCart as any)?._total?._totalGross ??
-                                                        0)
+                                                    ((state.selectedCart as Cart)?.total?.totalNet ?? 0) -
+                                                    ((state.selectedCart as Cart)?.total?.totalGross ?? 0)
                                                 )}</span>
                                             </div>
                                             <div className="flex justify-between font-bold text-base border-t border-border pt-2">
                                                 <span>{state.getLabel('total', 'Total:')}</span>
-                                                <span>{state.formatPrice(
-                                                    (state.selectedCart as any)?.total?.totalNet ??
-                                                    (state.selectedCart as any)?._total?.totalNet ??
-                                                    (state.selectedCart as any)?._total?._totalNet ??
-                                                    0
-                                                )}</span>
+                                                <span>{state.formatPrice((state.selectedCart as Cart)?.total?.totalNet ?? 0)}</span>
                                             </div>
                                         </div>
                                     </div>

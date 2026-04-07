@@ -512,7 +512,7 @@ const currentPage= ref<ProductGridState["currentPage"]>(1)
 const totalPages= ref<ProductGridState["totalPages"]>(1)
 const itemsFound= ref<ProductGridState["itemsFound"]>(0)
 const currentSortField= ref<ProductGridState["currentSortField"]>('')
-const currentSortOrder= ref<ProductGridState["currentSortOrder"]>('ASC')
+const currentSortOrder= ref<ProductGridState["currentSortOrder"]>('DESC')
 const fetchId= ref<ProductGridState["fetchId"]>(0)
 
 

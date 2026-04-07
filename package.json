@@ -2,7 +2,9 @@
   "name": "propeller-next",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -45,6 +47,7 @@
     "eslint-config-next": "16.0.1",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vue": "^3.5.32"
   }
 }

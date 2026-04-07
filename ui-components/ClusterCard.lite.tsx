@@ -143,7 +143,7 @@ interface ClusterCardState {
 export default function ClusterCard(props: ClusterCardProps) {
     const state = useStore<ClusterCardState>({
         isFavorite: false,
-        includeTax: true,
+        includeTax: false,
         priceListener: null as any,
 
         isRow() {

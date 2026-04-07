@@ -106,7 +106,7 @@ export default function CompanySwitcher(props: CompanySwitcherProps) {
     }, [state.isOpen]);
 
     return (
-        <div ref={containerRef} className="company-switcher relative inline-block">
+        <div ref={containerRef as any} className="company-switcher relative inline-block">
             <button
                 type="button"
                 onClick={() => state.toggleDropdown()}

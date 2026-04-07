@@ -138,7 +138,7 @@ interface ClusterCardState {
 }
 function ClusterCard(props: ClusterCardProps) {
   const [isFavorite, setIsFavorite] = useState<ClusterCardState['isFavorite']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ClusterCardState['includeTax']>(() => true);
+  const [includeTax, setIncludeTax] = useState<ClusterCardState['includeTax']>(() => false);
   const [priceListener, setPriceListener] = useState<ClusterCardState['priceListener']>(() => null);
   function isRow(): ReturnType<ClusterCardState['isRow']> {
     return (props.columns as number) === 1;

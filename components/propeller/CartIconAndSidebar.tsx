@@ -2,7 +2,15 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
+import {
+  Cart,
+  CartMainItem,
+  CartBaseItem,
+  BundleItem,
+  Contact,
+  Customer,
+  Enums,
+} from 'propeller-sdk-v2';
 
 export interface CartIconAndSidebarProps {
   /**
@@ -76,15 +84,12 @@ export interface CartIconAndSidebarProps {
    */
   labels?: Record<string, string>;
 
-  /**
-   * Additional class name for the shopping cart icon.
-   */
-  iconClassName?: string;
+  /** Logged-in user — used to determine purchaser role and authorization limit */
+  user?: Contact | Customer;
 
-  /**
-   * Additional class name for the shopping cart sidebar.
-   */
-  sidebarClassName?: string;
+  /** Active company ID — used to look up the user's PAC for this company */ companyId?: number;
+  /**  * Additional class name for the shopping cart icon.  */ iconClassName?: string;
+  /**  * Additional class name for the shopping cart sidebar.  */ sidebarClassName?: string;
 }
 interface CartIconAndSidebarState {
   isMounted: boolean;
@@ -112,6 +117,7 @@ interface CartIconAndSidebarState {
   getBundleNonLeaders: (item: CartMainItem) => BundleItem[];
   getBundleItemName: (bundleItem: BundleItem) => string;
   getBundleItemPrice: (bundleItem: BundleItem) => string;
+  showCheckoutButton: () => boolean;
 }
 function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   const [isMounted, setIsMounted] = useState<CartIconAndSidebarState['isMounted']>(() => false);
@@ -246,6 +252,26 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
+  function showCheckoutButton(): ReturnType<CartIconAndSidebarState['showCheckoutButton']> {
+    if (props.cartCheckoutButton === false) return false;
+    if (!props.user || !('contactId' in props.user)) return true;
+    if (!props.companyId) return true;
+    const pacData = (props.user as any).purchaseAuthorizationConfigs;
+    const items: any[] = pacData?.items ?? pacData?._items ?? [];
+    const purchaserPAC = items.find((pac: any) => {
+      const role = pac.purchaseRole ?? pac._purchaseRole;
+      const pacCompanyId =
+        pac.company?.companyId ??
+        pac.company?._companyId ??
+        pac._company?.companyId ??
+        pac._company?._companyId;
+      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    });
+    if (!purchaserPAC) return true;
+    const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+    const totalNet = props.cart?.total?.totalNet ?? 0;
+    return totalNet <= limit;
+  }
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -350,7 +376,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              </div>
+              </div>{' '}
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                 {getItems().length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16">
@@ -450,7 +476,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     </div>
                                   ))}
                                 </div>
-                              </div>
+                              </div>{' '}
                               <div className="flex items-center text-xs text-gray-400 mt-1">
                                 <span>
                                   {getLabel('qty', 'Qty')}: {item.quantity}
@@ -470,10 +496,12 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     {getItemName(item)}
                                   </a>
                                   <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                    {' '}
                                     &euro;{item.totalSumNet.toFixed(2)}
                                   </span>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-0.5">
+                                  {' '}
                                   SKU: {item.product?.sku || 'N/A'}
                                 </p>
                                 {getItemChildItems(item).length > 0 ? (
@@ -493,7 +521,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                     ))}
                                   </div>
                                 ) : null}
-                              </div>
+                              </div>{' '}
                               <div className="flex items-center text-xs text-gray-400">
                                 <span>
                                   {getLabel('qty', 'Qty')}: {item.quantity}
@@ -506,7 +534,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     ))}
                   </>
                 ) : null}
-              </div>
+              </div>{' '}
               {getItems().length > 0 ? (
                 <div className="px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
                   <div className="flex justify-between items-center">
@@ -515,7 +543,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     </span>
                     <span className="text-base font-bold text-gray-900">{getTotalPrice()}</span>
                   </div>
-                  {props.cartCheckoutButton !== false ? (
+                  {showCheckoutButton() ? (
                     <button
                       type="button"
                       className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
@@ -542,5 +570,4 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     </div>
   );
 }
-
 export default CartIconAndSidebar;

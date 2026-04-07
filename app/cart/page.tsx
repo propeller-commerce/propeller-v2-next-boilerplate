@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
 import { type CartMainItem, type Cart, type Contact, type Customer, Enums } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
@@ -26,6 +27,7 @@ export default function CartPage() {
   const { state } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
+  const { selectedCompany } = useCompany();
 
   const items = mounted ? (cart?.items || []) : [];
 
@@ -75,7 +77,14 @@ export default function CartPage() {
                   <>
                     <CartSummary
                       cart={cart}
+                      graphqlClient={graphqlClient}
+                      user={state.user as Contact | Customer}
+                      companyId={selectedCompany?.companyId}
                       onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
+                      afterRequestAuthorization={(updatedCart: Cart) => {
+                        saveCart(updatedCart);
+                        router.push(`/authorization-request-sent/${updatedCart.cartId}`);
+                      }}
                     />
                     <ActionCode
                       graphqlClient={graphqlClient}

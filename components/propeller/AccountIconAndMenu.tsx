@@ -230,7 +230,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
   }
   function isActiveLink(href: string): ReturnType<AccountIconAndMenuState['isActiveLink']> {
     if (!props.currentPath) return false;
-    if (href === '/account') return props.currentPath === '/account';
+    if (href.endsWith('/account')) return props.currentPath === href;
     return props.currentPath.startsWith(href);
   }
   function getMenuLinks(): ReturnType<AccountIconAndMenuState['getMenuLinks']> {
@@ -354,7 +354,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
               <div className="px-4 py-3 border-t border-gray-200">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
                   onClick={(event) => handleLogoutClick()}
                 >
                   {getLabel('logoutLabel', 'Log Out')}
@@ -430,7 +430,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <button
                           type="button"
-                          className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
                           onClick={(event) => handleLogoutClick()}
                         >
                           {getLabel('logoutLabel', 'Log Out')}

@@ -279,7 +279,7 @@ Attribute lookup is performed against `defaultProduct.attributes.items[n].attrib
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `includeTax` | `boolean` | `true` | When `true`, shows `price.net` (incl. VAT). When `false`, shows `price.gross` (excl. VAT). If omitted, follows the global price toggle from `localStorage` |
+| `includeTax` | `boolean` | `false` | When `true`, shows `price.net` (incl. VAT). When `false`, shows `price.gross` (excl. VAT). If omitted, follows the global price toggle from `localStorage` |
 
   </TabItem>
   <TabItem value="byo" label="Build Your Own">
@@ -304,7 +304,7 @@ function renderClusterCard(
 |---|---|---|---|
 | `cluster` | `Cluster` | — | `cluster` prop |
 | `language` | `string` | `'NL'` | `language` prop |
-| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `includeTax` | `boolean` | `false` | `includeTax` prop |
 | `imageLabels` | `string[]` | `undefined` | `imageLabels` prop |
 | `textLabels` | `string[]` | `undefined` | `textLabels` prop |
 

@@ -37,6 +37,7 @@ import GridFilters from "@/components/propeller/GridFilters";
 
 ```tsx
 const [clearSignal, setClearSignal] = useState(0);
+const [filters, setFilters] = useState<Record<string, string[]>>({});
 
 <GridFilters
   filters={attributeFilters}
@@ -45,6 +46,7 @@ const [clearSignal, setClearSignal] = useState(0);
   language="NL"
   collapsed={true}
   clearSignal={clearSignal}
+  activeTextFilters={filters}
   onFilterChange={handleFilterChange}
   onPriceChange={handlePriceChange}
   onClearFilters={handleClearAll}
@@ -126,7 +128,8 @@ To build a custom filter panel:
 4. **Price range** -- Render min/max number inputs bounded by `priceMin`/`priceMax`. Optionally add a dual-thumb range slider. Apply price on blur or slider release, not on every keystroke.
 5. **Accordion pattern** -- Wrap each filter section in a collapsible panel. Track expanded state per filter name. Auto-collapse filters with no active selections when the filter list refreshes.
 6. **External clear** -- Watch a `clearSignal` counter prop. When it increments, reset all selections and price inputs to defaults.
-7. **Portal-mode gating** -- In `semi-closed` mode, hide the price filter when no authenticated user is provided.
+7. **External filter sync** -- Watch an `activeTextFilters` prop. When it changes, replace internal checkbox state with the provided values so that filters removed via toolbar chips are reflected in the sidebar.
+8. **Portal-mode gating** -- In `semi-closed` mode, hide the price filter when no authenticated user is provided.
 
 ```ts
 import { AttributeFilter } from 'propeller-sdk-v2';
@@ -209,6 +212,7 @@ function clearAll() {
 | Prop                | Type         | Default | Description                                                                              |
 | ------------------- | ------------ | ------- | ---------------------------------------------------------------------------------------- |
 | `clearSignal`       | `number`     | --      | Increment this counter to reset all selected filters and price inputs externally          |
+| `activeTextFilters` | `Record<string, string[]>` | --      | Currently active text filters (URL-driven). Syncs internal checkbox state when filters are removed externally (e.g. via toolbar filter chips) |
 | `onClearFilters`    | `() => void` | --      | Called when the internal "Clear all" action fires                                         |
 | `getSelectedFilters`| `() => void` | --      | Notification callback fired after every filter or price change                            |
 
@@ -236,6 +240,7 @@ function gridFilters(
 | `portalMode` | `string` | `'open'` | Price filter visibility mode |
 | `user` | `Contact \| Customer \| null` | `null` | Authenticated user for portal-mode gating |
 | `clearSignal` | `number` | `undefined` | External clear trigger counter |
+| `activeTextFilters` | `Record<string, string[]>` | `undefined` | URL-driven active filters — syncs internal checkbox state on external changes |
 
 ### Callbacks
 
@@ -262,6 +267,7 @@ The following props are purely presentational and are not part of the SDK layer:
 - **Dual input + slider**: The price filter provides both numeric inputs and a dual-thumb range slider. The slider applies the price immediately on change. The inputs apply on blur.
 - **Min/max clamping**: The min input cannot exceed the current max, and the max input cannot go below the current min.
 - **External clear signal**: Incrementing `clearSignal` resets all checkbox selections, price inputs, and accordion states. This is the mechanism for GridToolbar's "Clear All" button to reach GridFilters without direct coupling.
+- **External filter sync**: The `activeTextFilters` prop keeps internal checkbox state in sync with URL-driven filter state. When a filter is removed externally (e.g. clicking "×" on a filter chip in GridToolbar), the parent updates `activeTextFilters` and the checkboxes uncheck automatically.
 - **Filter option counts**: Each checkbox option displays the product count in parentheses. When `count` is 0 but `countActive` is greater than 0, `countActive` is displayed instead (handles the case where a selected filter shows its active match count).
 - **Empty state**: When the `filters` array is empty, a "No filters available" message is displayed.
 - **Sticky positioning**: By default the filter panel uses `sticky top-24` to stay visible while scrolling. This is disabled when `isMobile={true}`.

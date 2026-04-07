@@ -32,7 +32,7 @@ export default function SearchPage() {
   const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
   const offset = parseInt(searchParams.get('offset') || '12');
   const sortField = (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.RELEVANCE;
-  const sortOrder = (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.ASC;
+  const sortOrder = (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC;
 
   const filters = useMemo(() => {
     const newFilters: Record<string, string[]> = {};
@@ -96,7 +96,7 @@ export default function SearchPage() {
     if (newMaxPrice !== undefined) urlParams.set('maxPrice', newMaxPrice.toString());
     if (newOffset !== undefined && newOffset !== 12) urlParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'RELEVANCE') urlParams.set('sortField', newSortField);
-    if (newSortOrder !== undefined && newSortOrder !== 'ASC') urlParams.set('sortOrder', newSortOrder);
+    if (newSortOrder !== undefined && newSortOrder !== 'DESC') urlParams.set('sortOrder', newSortOrder);
 
     const newSearch = urlParams.toString();
     const basePath = localizeHref('/search/' + encodeURIComponent(term), language);
@@ -172,6 +172,7 @@ export default function SearchPage() {
                 user={state.user}
                 collapsed={true}
                 clearSignal={clearSignal}
+                activeTextFilters={filters}
                 className=""
               />
             </aside>
@@ -191,6 +192,7 @@ export default function SearchPage() {
                   user={state.user}
                   onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                   onOffsetChange={handleOffsetChange}
+                  viewMode={viewMode}
                   onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
                   onFilterRemove={handleFilterRemove}
                   onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
@@ -214,6 +216,7 @@ export default function SearchPage() {
                 showAvailability={false}
                 showStock={true}
                 onCartCreated={(newCart) => {
+                  console.log('newCart', newCart);
                   saveCart(newCart);
                 }}
                 columns={viewMode === 'list' ? 1 : 3}
@@ -234,6 +237,7 @@ export default function SearchPage() {
                 onPageItemCountChange={setPageItemCount}
                 page={currentPage}
                 afterAddToCart={(updatedCart) => {
+                  console.log('updatedCart', updatedCart);
                   saveCart(updatedCart);
                 }}
                 onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}

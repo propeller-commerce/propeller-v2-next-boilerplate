@@ -99,20 +99,34 @@ function buildEntityUrl(
   return localizeHref(base, language);
 }
 
+export const PORTAL_MODE = {
+  CLOSED: 'closed',
+  SEMI_CLOSED: 'semiClosed',
+  OPEN: 'open'
+} as const;
+
 export const config = {
   baseCategoryId: 17,
+  channelId: 1,
+  anonymousId: 14551,
+  language: DEFAULT_LANG,
   imageSearchFilters: imageSearchFilters,
   imageSearchFiltersGrid: imageSearchFiltersGrid,
   imageVariantFiltersSmall: imageVariantFiltersSmall,
   imageVariantFiltersMedium: imageVariantFiltersMedium,
   imageVariantFiltersLarge: imageVariantFiltersLarge,
+  portal: {
+    mode: PORTAL_MODE.OPEN,
+  },
   productTrackAttributes: [],
+  categoryTrackAttributes: [],
+  clusterTrackAttributes: [],
+  companyTrackAttributes: [],
+  contactTrackAttributes: [],
+  customerTrackAttributes: [],
+  includeVAT: false,
   enableRegistration: true,
   enableGuestCheckout: false,
-  enableWishlist: true,
-  enableReviews: false,
-  enableChat: false,
-  enableNotifications: true,
   urls: {
     /**
      * Controls which segments are included in entity URLs.

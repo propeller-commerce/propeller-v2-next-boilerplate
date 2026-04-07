@@ -232,7 +232,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
 
         isActiveLink(href: string): boolean {
             if (!props.currentPath) return false;
-            if (href === '/account') return props.currentPath === '/account';
+            if (href.endsWith('/account')) return props.currentPath === href;
             return props.currentPath.startsWith(href);
         },
 
@@ -347,7 +347,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                             <button
                                 type="button"
                                 onClick={() => state.handleLogoutClick()}
-                                className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
                             >
                                 {state.getLabel('logoutLabel', 'Log Out')}
                             </button>
@@ -432,7 +432,7 @@ export default function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                                 <button
                                     type="button"
                                     onClick={() => state.handleLogoutClick()}
-                                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
                                 >
                                     {state.getLabel('logoutLabel', 'Log Out')}
                                 </button>

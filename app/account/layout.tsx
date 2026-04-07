@@ -4,18 +4,21 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
+import { Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 export default function AccountLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { state, logout } = useAuth();
+    const { state, logout, isAuthManagerForCompany } = useAuth();
+    const { selectedCompany } = useCompany();
     const router = useRouter();
     const pathname = usePathname();
     const { language } = useLanguage();
@@ -52,6 +55,10 @@ export default function AccountLayout({
                                         { label: 'Orders', href: localizeHref('/account/orders', language) },
                                         { label: 'Quotes', href: localizeHref('/account/quotes', language) },
                                         { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                                        ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
+                                            { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
+                                            { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', language) },
+                                        ] : []),
                                     ]}
                                 />
                             </Card>

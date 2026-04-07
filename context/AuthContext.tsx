@@ -1,7 +1,7 @@
 'use client';
 
 // 'use client' is already at the top of the file, this replacement starts after line 1.
-import { Contact, Customer, UserService } from 'propeller-sdk-v2';
+import { Contact, Customer, Enums, UserService } from 'propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
@@ -25,6 +25,7 @@ interface AuthContextType {
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
   refreshUser: () => Promise<void>;
+  isAuthManagerForCompany: (user: Contact | Customer | null, companyId: number | undefined) => boolean;
 }
 
 type AuthAction =
@@ -320,6 +321,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const isAuthManagerForCompany = (user: Contact | Customer | null, companyId: number | undefined): boolean => {
+    if (!user || !companyId || !('contactId' in user)) return false;
+    const pacData = (user as any).purchaseAuthorizationConfigs;
+    const items: any[] = pacData?.items ?? pacData?._items ?? [];
+    return items.some((pac: any) => {
+      const role = pac.purchaseRole ?? pac._purchaseRole;
+      const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
+      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId;
+    });
+  };
+
   // Listen for external auth events (e.g. from other tabs)
   useEffect(() => {
     const handleUserLoggedIn = () => {
@@ -357,7 +369,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     clearError,
     updateUser,
-    refreshUser
+    refreshUser,
+    isAuthManagerForCompany
   };
 
   return (

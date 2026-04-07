@@ -9,6 +9,8 @@ import {
     CartMainItem,
     CartBaseItem,
     BundleItem,
+    Contact,
+    Customer,
     Enums,
 } from 'propeller-sdk-v2';
 
@@ -84,6 +86,12 @@ export interface CartIconAndSidebarProps {
      */
     labels?: Record<string, string>;
 
+    /** Logged-in user — used to determine purchaser role and authorization limit */
+    user?: Contact | Customer;
+
+    /** Active company ID — used to look up the user's PAC for this company */
+    companyId?: number;
+
     /**
      * Additional class name for the shopping cart icon.
      */
@@ -121,6 +129,7 @@ interface CartIconAndSidebarState {
     getBundleNonLeaders: (item: CartMainItem) => BundleItem[];
     getBundleItemName: (bundleItem: BundleItem) => string;
     getBundleItemPrice: (bundleItem: BundleItem) => string;
+    showCheckoutButton: () => boolean;
 }
 
 export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
@@ -255,6 +264,27 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
             const price = bundleItem.price?.net;
             if (price === undefined || price === null) return '';
             return `\u20AC${Number(price).toFixed(2)}`;
+        },
+
+        showCheckoutButton() {
+            if (props.cartCheckoutButton === false) return false;
+            if (!props.user || !('contactId' in props.user)) return true;
+            if (!props.companyId) return true;
+            const pacData = (props.user as any).purchaseAuthorizationConfigs;
+            const items: any[] = pacData?.items ?? pacData?._items ?? [];
+            const purchaserPAC = items.find((pac: any) => {
+                const role = pac.purchaseRole ?? pac._purchaseRole;
+                const pacCompanyId =
+                    pac.company?.companyId ??
+                    pac.company?._companyId ??
+                    pac._company?.companyId ??
+                    pac._company?._companyId;
+                return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+            });
+            if (!purchaserPAC) return true;
+            const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+            const totalNet = props.cart?.total?.totalNet ?? 0;
+            return totalNet <= limit;
         },
     });
 
@@ -507,7 +537,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                 </div>
 
                                 {/* Checkout button */}
-                                <Show when={props.cartCheckoutButton !== false}>
+                                <Show when={state.showCheckoutButton()}>
                                     <button
                                         type="button"
                                         onClick={() => state.handleCheckoutClick()}

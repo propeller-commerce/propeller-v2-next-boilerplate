@@ -1,6 +1,8 @@
 'use client';
 import * as React from 'react';
-import { Cart } from 'propeller-sdk-v2';
+
+import { useState } from 'react';
+import { Cart, CartService, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
 
 export interface CartSummaryProps {
   /** The shopping cart used to populate the cart summary data */
@@ -38,6 +40,23 @@ export interface CartSummaryProps {
 
   /** Custom price formatting function */
   formatPrice?: (price: number) => string;
+
+  /** GraphQL client — required for the default requestPurchaseAuthorization handler */
+  graphqlClient?: GraphQLClient;
+
+  /** Logged-in user — used to determine purchaser role and authorization limit */
+  user?: Contact | Customer;
+
+  /** Active company ID — used to look up the user's PAC for this company */ companyId?: number;
+  /**  * Override the default CartService.requestPurchaseAuthorization() call.  * Note: when this override is used, afterRequestAuthorization receives the original cart.  */ onRequestAuthorization?: (
+    cart: Cart
+  ) => void;
+  /** Fires after authorization request is sent; receives the updated cart */ afterRequestAuthorization?: (
+    cart: Cart
+  ) => void;
+  /** Called when requestPurchaseAuthorization fails; receives the error */ onError?: (
+    err: Error
+  ) => void;
 }
 interface CartSummaryState {
   title: () => string;
@@ -48,6 +67,8 @@ interface CartSummaryState {
   showTotalExclVat: () => boolean;
   showTotalVat: () => boolean;
   showCheckoutButton: () => boolean;
+  showRequestAuthorizationButton: () => boolean;
+  requestLoading: boolean;
   getLabel: (key: string, fallback: string) => string;
   formatItemPrice: (price: number) => string;
   subtotal: () => number;
@@ -60,6 +81,7 @@ interface CartSummaryState {
   totalVat: () => number;
   totalInclVat: () => number;
   handleCheckoutClick: () => void;
+  handleRequestAuthorizationClick: () => Promise<void>;
 }
 function CartSummary(props: CartSummaryProps) {
   function title(): ReturnType<CartSummaryState['title']> {
@@ -131,6 +153,53 @@ function CartSummary(props: CartSummaryProps) {
       props.onCheckoutButtonClick(props.cart);
     }
   }
+  function showRequestAuthorizationButton(): ReturnType<
+    CartSummaryState['showRequestAuthorizationButton']
+  > {
+    if (!props.user || !('contactId' in props.user)) return false;
+    if (!props.companyId) return false;
+    const pacData = (props.user as any).purchaseAuthorizationConfigs;
+    const items: any[] = pacData?.items ?? pacData?._items ?? [];
+    const purchaserPAC = items.find((pac: any) => {
+      const role = pac.purchaseRole ?? pac._purchaseRole;
+      const pacCompanyId =
+        pac.company?.companyId ??
+        pac.company?._companyId ??
+        pac._company?.companyId ??
+        pac._company?._companyId;
+      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    });
+    if (!purchaserPAC) return false;
+    const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+    const totalNet = props.cart?.total?.totalNet ?? 0;
+    return totalNet > limit;
+  }
+  const [requestLoading, setRequestLoading] = useState<CartSummaryState['requestLoading']>(
+    () => false
+  );
+  async function handleRequestAuthorizationClick(): ReturnType<
+    CartSummaryState['handleRequestAuthorizationClick']
+  > {
+    setRequestLoading(true);
+    try {
+      let updatedCart: any = props.cart;
+      if (props.onRequestAuthorization) {
+        props.onRequestAuthorization(props.cart);
+      } else if (props.graphqlClient) {
+        const cartService = new CartService(props.graphqlClient);
+        updatedCart = await cartService.requestPurchaseAuthorization({ id: props.cart.cartId });
+      }
+      if (props.afterRequestAuthorization) {
+        props.afterRequestAuthorization(updatedCart);
+      }
+    } catch (err: any) {
+      if (props.onError) {
+        props.onError(err instanceof Error ? err : new Error(String(err)));
+      }
+    } finally {
+      setRequestLoading(false);
+    }
+  }
   return (
     <div className="w-full bg-white space-y-3">
       <h2 className="text-xl font-bold mb-4">{title()}</h2>
@@ -180,7 +249,7 @@ function CartSummary(props: CartSummaryProps) {
         <span>{getLabel('total', 'Total:')}</span>
         <span>{formatItemPrice(totalInclVat())}</span>
       </div>
-      {showCheckoutButton() ? (
+      {showCheckoutButton() && !showRequestAuthorizationButton() ? (
         <button
           type="button"
           className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
@@ -189,8 +258,20 @@ function CartSummary(props: CartSummaryProps) {
           {getLabel('checkoutButton', 'Continue to Checkout')}
         </button>
       ) : null}
+      {showRequestAuthorizationButton() ? (
+        <button
+          type="button"
+          className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={(event) => handleRequestAuthorizationClick()}
+          disabled={requestLoading}
+        >
+          {requestLoading ? <>{getLabel('requestingAuthorization', 'Requesting...')}</> : null}
+          {!requestLoading ? (
+            <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
+          ) : null}
+        </button>
+      ) : null}
     </div>
   );
 }
-
 export default CartSummary;

@@ -52,7 +52,7 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
     return (props.portalMode as string) === 'semi-closed' && !props.user;
   }
   function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
-    return props.includeTax !== undefined ? !!props.includeTax : true;
+    return props.includeTax !== undefined ? !!props.includeTax : false;
   }
   function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
     return (props.bulkPrices as ProductPrice[]) || [];

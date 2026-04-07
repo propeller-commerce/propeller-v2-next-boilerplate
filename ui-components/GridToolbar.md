@@ -101,7 +101,7 @@ GridToolbar does not make API calls itself. It emits user intent via callbacks (
 
 ```ts
 // pseudo-code: maintain sort and page size as local state
-let sort = [{ field: "CATEGORY_ORDER", order: "ASC" }];
+let sort = [{ field: "CATEGORY_ORDER", order: "DESC" }];
 let pageSize = 12;
 
 // When the user changes sort via the toolbar:
@@ -139,7 +139,7 @@ function onOffsetChange(size: number) {
 | Prop          | Type                                          | Default                                        | Description                                                                            |
 | ------------- | --------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `sortOptions` | `string[]`                                    | All `ProductSortField` values                  | Sort field keys to show in the dropdown (e.g. `['NAME', 'PRICE']`)                     |
-| `defaultSort` | `{ field: string; order: string }[]`          | `[{ field: 'CATEGORY_ORDER', order: 'ASC' }]` | Active sort. First element is used                                                      |
+| `defaultSort` | `{ field: string; order: string }[]`          | `[{ field: 'CATEGORY_ORDER', order: 'DESC' }]` | Active sort. First element is used                                                      |
 | `onSortChange`| `(field: string, order: string) => void`      | --                                             | Called when sort field or direction changes. Receives new field key and `'ASC'`/`'DESC'` |
 
 ### Page Size
@@ -196,7 +196,7 @@ function gridToolbar(options: GridToolbarOptions): void
 | Field | Type | Default | Maps to |
 |---|---|---|---|
 | `sortOptions` | `string[]` | All `ProductSortField` values | Sort field keys |
-| `defaultSort` | `{ field: string; order: string }[]` | `[{ field: 'CATEGORY_ORDER', order: 'ASC' }]` | Active sort state |
+| `defaultSort` | `{ field: string; order: string }[]` | `[{ field: 'CATEGORY_ORDER', order: 'DESC' }]` | Active sort state |
 | `offset` | `number[]` | `[12, 24, 48]` | Page size options |
 | `defaultOffset` | `number` | `12` | Selected page size |
 | `viewMode` | `string` | `'grid'` | Layout mode (`'grid'` or `'list'`) |

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import ProductSlider from '@/components/common/ProductSlider';
 import { menuService } from '@/lib/services/MenuService';
 import { categoryService } from '@/lib/api';
 import type { Category, Cluster, Product } from 'propeller-sdk-v2';
@@ -163,44 +162,6 @@ export default function HomeFallback() {
           </div>
         </section>
       )}
-
-      {/* Featured Products */}
-      <section className="py-24 bg-slate-50/30 relative">
-        <div className="container-width">
-          <div className="flex items-end justify-between mb-12 border-b border-border/40 pb-6">
-            <div>
-              <Badge variant="outline" className="mb-4 text-primary border-primary/20">Recommended</Badge>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Featured Products</h2>
-            </div>
-            <Button variant="ghost" className="hidden sm:flex group font-semibold" asChild>
-              <Link href={localizeHref('/', language)}>
-                View All Products
-                <span className="ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
-              </Link>
-            </Button>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="h-full border-muted/40">
-                  <div className="aspect-square bg-slate-100 animate-pulse rounded-t-lg" />
-                  <CardContent className="p-4 space-y-3">
-                    <div className="h-4 bg-slate-100 animate-pulse rounded w-3/4" />
-                    <div className="h-4 bg-slate-100 animate-pulse rounded w-1/2" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : featuredProducts.length > 0 ? (
-            <ProductSlider title="" products={featuredProducts} />
-          ) : (
-            <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed text-muted-foreground">
-              <p>Check back soon for new products!</p>
-            </div>
-          )}
-        </div>
-      </section>
     </>
   );
 }

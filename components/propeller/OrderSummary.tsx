@@ -169,7 +169,18 @@ function OrderSummary(props: OrderSummaryProps) {
   function requestDate(): ReturnType<OrderSummaryState['requestDate']> {
     const date = props.order?.postageData?.requestDate;
     if (!date) return '';
-    return formatOrderDate(date);
+    if (props.formatDate) {
+      return props.formatDate(date);
+    }
+    try {
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch {
+      return date;
+    }
   }
   return (
     <div className={containerClass()}>

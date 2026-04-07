@@ -20,6 +20,7 @@ import {
   CartMainItem,
   CartBaseItem,
   Cluster,
+  PurchaseAuthorizationConfig,
 } from 'propeller-sdk-v2';
 
 export interface AddToCartProps {
@@ -129,6 +130,7 @@ export interface AddToCartProps {
   configuration?: any;
 
   /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */ companyId?: number;
+  /**   * When true, tax-inclusive price (net) is shown.   * When false, tax-exclusive price (gross) is shown.   * Defaults to false.   */ includeTax?: boolean;
 }
 /** * Cart query variables interface Variables for the cart query */ /** * Cart query variables interface Variables for the cart query */ export interface CartQueryVariables {
   /** Cart ID to fetch */ cartId: string;
@@ -145,6 +147,8 @@ export interface AddToCartProps {
   toastMessage: string;
   toastType: string;
   toastVisible: boolean;
+  includeTax: boolean;
+  priceListener: any;
   getMinQuantity: () => number;
   getStep: () => number;
   increment: () => void;
@@ -157,6 +161,8 @@ export interface AddToCartProps {
   getProductSku: () => string;
   getProductPrice: () => string;
   addedCartItem: CartMainItem | null;
+  activeFullCart: Cart | null;
+  checkoutAllowed: () => boolean;
   getModalImageUrl: () => string;
   getModalName: () => string;
   getModalPrice: () => string;
@@ -177,12 +183,33 @@ function AddToCart(props: AddToCartProps) {
   const [toastType, setToastType] = useState<AddToCartState['toastType']>(() => '');
   const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
   const [addedCartItem, setAddedCartItem] = useState<AddToCartState['addedCartItem']>(() => null);
+  const [includeTax, setIncludeTax] = useState<AddToCartState['includeTax']>(() => false);
+  const [priceListener, setPriceListener] = useState<AddToCartState['priceListener']>(() => null);
+  const [activeFullCart, setActiveFullCart] = useState<AddToCartState['activeFullCart']>(
+    () => null
+  );
+  function checkoutAllowed(): ReturnType<AddToCartState['checkoutAllowed']> {
+    if (!props.user || !('contactId' in props.user)) return true;
+    if (!props.companyId) return true;
+    if (!activeFullCart) return true;
+    const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+    const purchaserPAC = items.find((pac: PurchaseAuthorizationConfig) => {
+      const role = pac.purchaseRole;
+      const pacCompanyId = pac.company?.companyId;
+      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    });
+    if (!purchaserPAC) return true;
+    const limit = purchaserPAC.authorizationLimit ?? 0;
+    const totalNet = activeFullCart?.total?.totalNet ?? 0;
+    return totalNet <= limit;
+  }
   function getMinQuantity(): ReturnType<AddToCartState['getMinQuantity']> {
-    const min = (props.product as any)?.minimumQuantity;
+    const min = (props.product as Product)?.minimumQuantity;
     return min && min > 0 ? min : 1;
   }
   function getStep(): ReturnType<AddToCartState['getStep']> {
-    const unit = (props.product as any)?.unit;
+    const unit = (props.product as Product)?.unit;
     return unit && unit > 0 ? unit : 1;
   }
   function increment(): ReturnType<AddToCartState['increment']> {
@@ -207,19 +234,20 @@ function AddToCart(props: AddToCartProps) {
     setToastVisible(false);
   }
   function getProductName(): ReturnType<AddToCartState['getProductName']> {
-    return (props.product as any)?.names?.[0]?.value || 'Product';
+    return (props.product as Product)?.names?.[0]?.value || 'Product';
   }
   function getProductUrl(): ReturnType<AddToCartState['getProductUrl']> {
     return props.configuration.urls.getProductUrl(props.product, props.language);
   }
   function getProductImageUrl(): ReturnType<AddToCartState['getProductImageUrl']> {
-    return (props.product as any)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+    return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
   function getProductSku(): ReturnType<AddToCartState['getProductSku']> {
-    return (props.product as any)?.sku || '';
+    return (props.product as Product)?.sku || '';
   }
   function getProductPrice(): ReturnType<AddToCartState['getProductPrice']> {
-    const price = props.price !== undefined ? props.price : (props.product as any)?.price?.gross;
+    const price =
+      props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
     if (!price && price !== 0) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
@@ -227,7 +255,7 @@ function AddToCart(props: AddToCartProps) {
     const cartService = new CartService(props.graphqlClient);
     /* 1. Check for existing carts for this user first */ if (props.user) {
       try {
-        const searchInput: CartSearchInput = { offset: 100 };
+        const searchInput: CartSearchInput = { offset: 100, statuses: [Enums.CartStatus.OPEN] };
         if ('contactId' in props.user && props.user.contactId) {
           searchInput.contactIds = [props.user.contactId];
           const resolvedCompanyId =
@@ -245,7 +273,7 @@ function AddToCart(props: AddToCartProps) {
             cartId: existingCartId,
             imageSearchFilters: props.configuration.imageSearchFiltersGrid,
             imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+            language: props.configuration.language || 'NL',
           };
           const cart = await cartService.getCart(cartVariables);
           setActiveCartId(cart.cartId);
@@ -258,12 +286,13 @@ function AddToCart(props: AddToCartProps) {
         console.error('Failed to check existing carts', e);
       }
     }
-    /* 2. Start a new cart */ const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+    /* 2. Start a new cart */ const language = props.configuration.language || 'NL';
     const startCartInput: CartStartInput = { language };
     if (props.user) {
       if ('contactId' in props.user && props.user.contactId) {
         startCartInput.contactId = props.user.contactId;
-        const resolvedCompanyId = (props.companyId as number) || (props.user as any).companyId;
+        const resolvedCompanyId =
+          (props.companyId as number) || (props.user as Contact).company?.companyId;
         if (resolvedCompanyId) {
           startCartInput.companyId = resolvedCompanyId as number;
         }
@@ -275,7 +304,7 @@ function AddToCart(props: AddToCartProps) {
       input: startCartInput,
       imageSearchFilters: props.configuration.imageSearchFiltersGrid,
       imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-      language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+      language: props.configuration.language || 'NL',
     };
     let newCart = await cartService.startCart(cartStartVars);
     /* 3. Assign Default Addresses */ if (newCart && props.user) {
@@ -379,7 +408,10 @@ function AddToCart(props: AddToCartProps) {
           props.price,
           props.showModal
         );
-        const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+        setActiveFullCart(cart);
+        const addedItem = cart.items?.find(
+          (item: CartMainItem) => item.productId === props.product.productId
+        );
         setAddedCartItem(addedItem || null);
         props.afterAddToCart?.(cart, addedItem);
       } else {
@@ -409,6 +441,7 @@ function AddToCart(props: AddToCartProps) {
           imageSearchFilters: props.configuration.imageSearchFiltersGrid,
           imageVariantFilters: props.configuration.imageVariantFiltersSmall,
         });
+        setActiveFullCart(cart);
         const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
         setAddedCartItem(addedItem || null);
         props.afterAddToCart?.(cart, addedItem);
@@ -441,7 +474,9 @@ function AddToCart(props: AddToCartProps) {
   }
   function getModalPrice(): ReturnType<AddToCartState['getModalPrice']> {
     if (addedCartItem) {
-      return '\u20AC' + Number(addedCartItem.totalSumNet).toFixed(2);
+      const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
+      const price = useTax ? addedCartItem.totalSumNet : addedCartItem.totalSum;
+      return '\u20AC' + Number(price).toFixed(2);
     }
     return getProductPrice();
   }
@@ -666,7 +701,11 @@ function AddToCart(props: AddToCartProps) {
                         {child.product?.names?.[0]?.value || 'Option'}
                       </span>
                       <span className="text-gray-400 whitespace-nowrap ml-2">
-                        {'\u20AC' + (child.totalSum?.toFixed(2) || '0.00')}
+                        {'\u20AC' +
+                          (((props.includeTax !== undefined ? !!props.includeTax : includeTax)
+                            ? child.totalSumNet
+                            : child.totalSum
+                          )?.toFixed(2) || '0.00')}
                       </span>
                     </div>
                   ))}
@@ -681,16 +720,18 @@ function AddToCart(props: AddToCartProps) {
               >
                 {getLabel('continueShopping', 'Continue shopping')}
               </button>
-              <button
-                type="button"
-                className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
-                onClick={(event) => {
-                  closeModal();
-                  if (props.onProceedToCheckout) props.onProceedToCheckout();
-                }}
-              >
-                {getLabel('proceedToCheckout', 'Proceed to checkout')}
-              </button>
+              {checkoutAllowed() ? (
+                <button
+                  type="button"
+                  className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  onClick={(event) => {
+                    closeModal();
+                    if (props.onProceedToCheckout) props.onProceedToCheckout();
+                  }}
+                >
+                  {getLabel('proceedToCheckout', 'Proceed to checkout')}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

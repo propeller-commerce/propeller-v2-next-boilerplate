@@ -87,7 +87,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
   return (
-    <div className="company-switcher relative inline-block" ref={containerRef}>
+    <div className="company-switcher relative inline-block" ref={containerRef as any}>
       <button
         type="button"
         aria-haspopup="listbox"

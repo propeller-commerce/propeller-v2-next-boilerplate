@@ -95,7 +95,7 @@ To build a custom bulk-prices display:
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| includeTax | `boolean` | `true` (or localStorage) | When `true`, shows `tier.net` (incl. VAT). When `false`, shows `tier.gross` (excl. VAT). If omitted, defers to the PriceToggle state |
+| includeTax | `boolean` | `false` (excl. VAT) | When `true`, shows `tier.net` (incl. VAT). When `false`, shows `tier.gross` (excl. VAT). If omitted, defers to the PriceToggle state |
 | taxZone | `string` | `'NL'` | Tax zone code passed to the product query |
 
 ### Visibility
@@ -126,7 +126,7 @@ function renderBulkPrices(bulkPrices: ProductPrice[], options?: BulkPriceOptions
 | Field | Type | Default | Maps to |
 |-------|------|---------|---------|
 | `bulkPrices` | `ProductPrice[]` | — | `bulkPrices` prop |
-| `includeTax` | `boolean` | `true` | `includeTax` prop |
+| `includeTax` | `boolean` | `false` | `includeTax` prop |
 | `taxZone` | `string` | `'NL'` | `taxZone` prop |
 | `portalMode` | `string` | `'open'` | `portalMode` prop |
 | `user` | `Contact \| Customer \| null` | `null` | `user` prop |
@@ -177,7 +177,7 @@ These are suggested defaults. Override per-key to support localization.
 
 The component integrates with the global PriceToggle mechanism:
 
-- On mount it reads `localStorage.getItem('price_include_tax')` to determine the initial VAT mode (default: `true`, meaning prices include VAT).
+- On mount it reads `localStorage.getItem('price_include_tax')` to determine the initial VAT mode (default: `false`, meaning prices exclude VAT).
 - It listens for the `priceToggleChanged` custom event. When the user flips the toggle elsewhere on the page, this component re-renders with the updated mode.
 - The `includeTax` prop, when explicitly passed, takes precedence over the localStorage / event-driven value.
 - The price column header dynamically shows "(incl. VAT)" or "(excl. VAT)" to reflect the active mode.

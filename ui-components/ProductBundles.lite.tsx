@@ -169,7 +169,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
     const state = useStore<ProductBundlesState>({
         bundles: [] as Bundle[],
         isLoading: false,
-        includeTax: true,
+        includeTax: false,
         isMounted: false,
         addingBundleId: null as string | null,
         lastAddedBundle: null as Bundle | null,
@@ -264,7 +264,8 @@ export default function ProductBundles(props: ProductBundlesProps) {
             if (props.user) {
                 try {
                     const searchInput: CartSearchInput = {
-                        offset: 100
+                        offset: 100,
+                        statuses: [Enums.CartStatus.OPEN]
                     };
 
                     if ('contactId' in props.user && props.user.contactId) {

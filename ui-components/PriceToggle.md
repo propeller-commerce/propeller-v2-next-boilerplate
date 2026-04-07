@@ -130,7 +130,7 @@ const label = includeTax ? 'incl. VAT' : 'excl. VAT';
 
 Key points for the listener pattern:
 
-- Initialize `includeTax` to `true` (not `false`) to match the default and avoid SSR/hydration mismatches.
+- Initialize `includeTax` to `false` (excl. VAT) to match the default and avoid SSR/hydration mismatches.
 - If an explicit `includeTax` prop is passed, let it take precedence over the localStorage/event value.
 - Always clean up the event listener when the component is destroyed.
 

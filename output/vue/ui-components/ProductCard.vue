@@ -495,7 +495,7 @@ interface ProductCardState {
 
 const props = defineProps<ProductCardProps>();
 const isFavorite = ref<ProductCardState['isFavorite']>(false);
-const includeTax = ref<ProductCardState['includeTax']>(true);
+const includeTax = ref<ProductCardState['includeTax']>(false);
 const priceListener = ref<ProductCardState['priceListener']>(null);
 
 function isRow(): ReturnType<ProductCardState['isRow']> {

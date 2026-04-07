@@ -168,7 +168,7 @@ interface ProductBundlesState {
 function ProductBundles(props: ProductBundlesProps) {
   const [bundles, setBundles] = useState<ProductBundlesState['bundles']>(() => []);
   const [isLoading, setIsLoading] = useState<ProductBundlesState['isLoading']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ProductBundlesState['includeTax']>(() => true);
+  const [includeTax, setIncludeTax] = useState<ProductBundlesState['includeTax']>(() => false);
   const [isMounted, setIsMounted] = useState<ProductBundlesState['isMounted']>(() => false);
   const [addingBundleId, setAddingBundleId] = useState<ProductBundlesState['addingBundleId']>(
     () => null
@@ -256,6 +256,7 @@ function ProductBundles(props: ProductBundlesProps) {
       try {
         const searchInput: CartSearchInput = {
           offset: 100,
+          statuses: [Enums.CartStatus.OPEN],
         };
         if ('contactId' in props.user && props.user.contactId) {
           searchInput.contactIds = [props.user.contactId];

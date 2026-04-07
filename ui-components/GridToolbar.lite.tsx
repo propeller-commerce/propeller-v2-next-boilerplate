@@ -56,7 +56,7 @@ export interface GridToolbarProps {
 
     /**
      * Active sort — first element is used.
-     * Defaults to [{ field: 'CATEGORY_ORDER', order: 'ASC' }].
+     * Defaults to [{ field: 'CATEGORY_ORDER', order: 'DESC' }].
      */
     defaultSort?: { field: string; order: string }[];
 
@@ -205,7 +205,7 @@ interface GridToolbarState {
 export default function GridToolbar(props: GridToolbarProps) {
     const state = useStore<GridToolbarState>({
         currentSortField: Enums.ProductSortField.CATEGORY_ORDER,
-        currentSortOrder: Enums.SortOrder.ASC,
+        currentSortOrder: Enums.SortOrder.DESC,
         currentOffset: 12,
         currentViewMode: 'grid',
 
@@ -282,7 +282,7 @@ export default function GridToolbar(props: GridToolbarProps) {
     onUpdate(() => {
         const sort = (props.defaultSort as { field: string; order: string }[]) || [];
         state.currentSortField = sort.length > 0 ? (sort[0].field || Enums.ProductSortField.CATEGORY_ORDER) : Enums.ProductSortField.CATEGORY_ORDER;
-        state.currentSortOrder = sort.length > 0 ? (sort[0].order || Enums.SortOrder.ASC) : Enums.SortOrder.ASC;
+        state.currentSortOrder = sort.length > 0 ? (sort[0].order || Enums.SortOrder.DESC) : Enums.SortOrder.DESC;
     }, [props.defaultSort]);
 
     // Sync per-page offset from defaultOffset prop.
@@ -457,7 +457,7 @@ export default function GridToolbar(props: GridToolbarProps) {
                             onClick={() => {
                                 if (props.onPriceFilterRemove) props.onPriceFilterRemove();
                             }}
-                            className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                            className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-secondary-foreground hover:bg-primary hover:text-destructive-foreground transition-colors"
                         >
                             {state.getLabel('price')}: €
                             {(props.priceFilterMin as number) ?? 0} –
@@ -475,7 +475,7 @@ export default function GridToolbar(props: GridToolbarProps) {
                                     if (props.onFilterRemove)
                                         props.onFilterRemove(badge.key, badge.value);
                                 }}
-                                className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
+                                className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
                             >
                                 {badge.value} <span>×</span>
                             </span>

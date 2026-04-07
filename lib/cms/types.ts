@@ -109,11 +109,19 @@ export interface CmsFaq {
   questions: { question: string; answer: string }[];
 }
 
+export interface CmsProductCard {
+  slug: string;
+  name: string;
+  image: CmsImage | null;
+  price: number | null;
+  priceSuffix: string | null;
+}
+
 export interface CmsProductCards {
   _type: 'product-cards';
   title: string;
   subtitle: string | null;
-  productSkus: string[];
+  products: CmsProductCard[];
   buttonText: string | null;
   buttonUrl: string | null;
 }

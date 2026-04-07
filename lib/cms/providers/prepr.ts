@@ -160,7 +160,13 @@ function normalizeBlock(raw: any): CmsBlock | null {
           _type: 'product-cards',
           title: raw.heading || '',
           subtitle: raw.sub_heading || null,
-          productSkus: cards.map((c: any) => c.sku || '').filter(Boolean),
+          products: cards.map((c: any) => ({
+            slug: c._slug || '',
+            name: c.name || '',
+            image: normalizeImage(c.image),
+            price: c.price ?? null,
+            priceSuffix: c.price_suffix || null,
+          })),
           buttonText: btn?.text || null,
           buttonUrl: btn?.url || null,
         } as CmsProductCards;
@@ -175,10 +181,10 @@ function normalizeBlock(raw: any): CmsBlock | null {
             title: post.title || '',
             slug: post._slug || '',
             cover: normalizeImage(post.cover),
-            excerpt: post.description || null,
+            excerpt: post.excerpt || null,
             readTime: post._read_time || null,
-            author: post.author ? { name: post.author.name || '', avatar: normalizeImage(post.author.avatar) } : null,
-            category: post.category?.name || null,
+            author: post.author ? { name: post.author.name || '', avatar: null } : null,
+            category: post.categories?.[0]?.name || null,
           })),
         } as CmsPostCards;
       }
@@ -300,14 +306,15 @@ function normalizeAuthor(raw: any): CmsAuthor | null {
 }
 
 function normalizeArticle(raw: any): CmsArticle {
+  const firstCategory = raw.categories?.[0];
   return {
     id: raw._id,
     title: raw.title || '',
-    description: raw.description || null,
+    description: raw.excerpt || null,
     slug: raw._slug || '',
     cover: normalizeImage(raw.cover),
     author: normalizeAuthor(raw.author),
-    category: raw.category ? { name: raw.category.name || '', slug: raw.category._slug || raw.category.slug || '' } : null,
+    category: firstCategory ? { name: firstCategory.name || '', slug: firstCategory._slug || '' } : null,
     blocks: normalizeBlocks(raw.content || []),
     publishedAt: raw._publish_on || null,
   };
@@ -359,9 +366,8 @@ const BLOCK_FRAGMENTS = `
     cards {
       __typename
       ... on Product {
-        sku
         _slug
-        title
+        name
         image { ${IMAGE_FIELDS} }
         price
         price_suffix
@@ -369,16 +375,15 @@ const BLOCK_FRAGMENTS = `
       ... on Post {
         title
         _slug
-        description
+        excerpt
         _read_time
         cover { ${IMAGE_FIELDS} }
         author {
           name
-          avatar { ${IMAGE_FIELDS} }
         }
-        category {
-          name
+        categories {
           _slug
+          name
         }
       }
     }
@@ -495,15 +500,13 @@ export function createPreprProvider(): CmsProvider {
               _id
               _slug
               title
-              description
+              excerpt
               _publish_on
               cover { ${IMAGE_FIELDS} }
               author {
                 name
-                avatar { ${IMAGE_FIELDS} }
-                email
               }
-              category {
+              categories {
                 name
                 _slug
               }
@@ -525,15 +528,13 @@ export function createPreprProvider(): CmsProvider {
               _id
               _slug
               title
-              description
+              excerpt
               _publish_on
               cover { ${IMAGE_FIELDS} }
               author {
                 name
-                avatar { ${IMAGE_FIELDS} }
-                email
               }
-              category {
+              categories {
                 name
                 _slug
               }

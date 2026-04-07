@@ -343,7 +343,8 @@ const BUTTON_FRAGMENT = `
   }
 `;
 
-const BLOCK_FRAGMENTS = `
+// Shared block fragments safe for both Page and Post content
+const COMMON_BLOCK_FRAGMENTS = `
   __typename
   ... on Hero {
     heading
@@ -358,6 +359,15 @@ const BLOCK_FRAGMENTS = `
     image { ${IMAGE_FIELDS} }
     image_position
   }
+  ... on CTA {
+    heading
+    sub_heading
+  }
+`;
+
+// Page-only blocks (FAQ, Static, Contact, Cards are not valid on Post content)
+const PAGE_BLOCK_FRAGMENTS = `
+  ${COMMON_BLOCK_FRAGMENTS}
   ... on Cards {
     heading
     sub_heading
@@ -388,10 +398,6 @@ const BLOCK_FRAGMENTS = `
       }
     }
   }
-  ... on CTA {
-    heading
-    sub_heading
-  }
   ... on Contact {
     heading
     sub_heading
@@ -414,6 +420,9 @@ const BLOCK_FRAGMENTS = `
   }
 `;
 
+// Post content only supports common blocks (no FAQ, Static, Contact, Cards)
+const POST_BLOCK_FRAGMENTS = COMMON_BLOCK_FRAGMENTS;
+
 // ── Provider factory ──
 
 export function createPreprProvider(): CmsProvider {
@@ -429,7 +438,7 @@ export function createPreprProvider(): CmsProvider {
               title
               ${SEO_FRAGMENT}
               content {
-                ${BLOCK_FRAGMENTS}
+                ${PAGE_BLOCK_FRAGMENTS}
               }
             }
           }
@@ -477,7 +486,7 @@ export function createPreprProvider(): CmsProvider {
         }`);
         const nav = data?.Navigation;
         const navLinks: CmsNavLink[] = (nav?.top_navigation || []).map((item: any) => {
-          const url = item.use_external_link ? (item.external_url || '') : (item.link?._slug ? `/${item.link._slug}` : '');
+          const url = item.link?._slug ? `/${item.link._slug}` : (item.external_url || '');
           return { label: item.text || '', url, highlight: false };
         });
         return normalizeGlobal({ navLinks, siteName: nav?.internal_name || '' });
@@ -495,7 +504,7 @@ export function createPreprProvider(): CmsProvider {
     async getArticles() {
       try {
         const data = await preprFetch<any>(`{
-          Posts(sort: _publish_on_DESC, limit: 100) {
+          Posts(sort: publish_on_DESC, limit: 100) {
             items {
               _id
               _slug
@@ -539,7 +548,7 @@ export function createPreprProvider(): CmsProvider {
                 _slug
               }
               content {
-                ${BLOCK_FRAGMENTS}
+                ${POST_BLOCK_FRAGMENTS}
               }
             }
           }

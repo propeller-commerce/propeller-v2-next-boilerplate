@@ -11,6 +11,11 @@ import type {
   CmsCategoryBanner,
   CmsArticle,
   CmsAuthor,
+  CmsFeature,
+  CmsFaq,
+  CmsProductCards,
+  CmsPostCards,
+  CmsStatic,
 } from '../types';
 
 // ── GraphQL client ──
@@ -34,8 +39,9 @@ async function preprFetch<T = any>(query: string, variables?: Record<string, any
 
   const json = await res.json();
 
-  if (json.errors) {
-    throw new Error(`Prepr GraphQL errors: ${JSON.stringify(json.errors)}`);
+  if (json.errors?.length) {
+    console.error(`[CMS:Prepr] GraphQL errors:`, json.errors.map((e: any) => e.message).join(', '));
+    if (!json.data) return {} as T;
   }
 
   return json.data as T;
@@ -56,9 +62,9 @@ function normalizeImage(raw: any): CmsImage | null {
 function normalizeSeo(raw: any): CmsSeo | null {
   if (!raw) return null;
   return {
-    metaTitle: raw.metaTitle || raw.meta_title || '',
-    metaDescription: raw.metaDescription || raw.meta_description || '',
-    shareImage: normalizeImage(raw.shareImage || raw.share_image),
+    metaTitle: raw.meta_title || '',
+    metaDescription: raw.meta_description || '',
+    shareImage: normalizeImage(raw.meta_image),
   };
 }
 
@@ -92,87 +98,135 @@ function parseIds(value: any): number[] {
 }
 
 const TYPENAME_MAP: Record<string, string> = {
-  HeroBanner: 'hero-banner',
-  RichText: 'rich-text',
-  Media: 'media',
-  Quote: 'quote',
-  ValueProps: 'value-props',
-  CallToAction: 'call-to-action',
-  ProductCarousel: 'product-carousel',
-  ContactForm: 'contact-form',
-  Slider: 'slider',
-  ProductSlider: 'product-slider',
+  Hero: 'hero-banner',
+  Feature: 'feature',
+  Cards: 'cards',
+  CTA: 'call-to-action',
+  Contact: 'contact-form',
+  FAQ: 'faq',
+  Static: 'static',
 };
 
-function normalizeBlock(raw: any): CmsBlock | null {
-  const type = TYPENAME_MAP[raw.__typename];
-  if (!type) return null;
+function normalizeButton(raw: any): { text: string; url: string; type: string } | null {
+  if (!raw) return null;
+  const url = raw.use_external_link ? (raw.external_url || '') : (raw.link?._slug || '');
+  return { text: raw.text || '', url, type: raw.button_type || 'primary' };
+}
 
-  switch (type) {
-    case 'hero-banner':
+// Track feature index for alternating left/right layout
+let featureIndex = 0;
+
+function normalizeBlock(raw: any): CmsBlock | null {
+  const typename = raw.__typename;
+  if (!TYPENAME_MAP[typename]) return null;
+
+  switch (typename) {
+    case 'Hero': {
+      const buttons = (raw.buttons || []).map(normalizeButton).filter(Boolean);
+      const primary = buttons[0];
+      const secondary = buttons[1];
       return {
         _type: 'hero-banner',
-        title: raw.title || '',
-        subtitle: raw.subtitle || null,
+        title: raw.heading || '',
+        subtitle: raw.sub_heading || null,
         image: normalizeImage(raw.image),
-        ctaText: raw.ctaText || raw.cta_text || null,
-        ctaUrl: raw.ctaUrl || raw.cta_url || null,
-        secondaryCtaText: raw.secondaryCtaText || raw.secondary_cta_text || null,
-        secondaryCtaUrl: raw.secondaryCtaUrl || raw.secondary_cta_url || null,
-      };
-    case 'rich-text':
-      return { _type: 'rich-text', body: raw.body || raw.html || '' };
-    case 'media':
-      return { _type: 'media', file: normalizeImage(raw.file) };
-    case 'quote':
-      return { _type: 'quote', title: raw.title || null, body: raw.body || '' };
-    case 'value-props':
-      return { _type: 'value-props', items: (raw.items || []).map(normalizeValuePropItem) };
-    case 'call-to-action':
-      return {
-        _type: 'call-to-action',
-        title: raw.title || '',
-        description: raw.description || null,
-        buttonText: raw.buttonText || raw.button_text || '',
-        buttonUrl: raw.buttonUrl || raw.button_url || '',
-        variant: raw.variant || 'primary',
-      };
-    case 'product-carousel':
-      return {
-        _type: 'product-carousel',
-        title: raw.title || '',
-        categoryId: raw.categoryId || raw.category_id || '',
-        limit: raw.limit || 8,
-      };
-    case 'contact-form':
-      return {
-        _type: 'contact-form',
-        title: raw.title || null,
-        description: raw.description || null,
-        successMessage: raw.successMessage || raw.success_message || 'Thank you for your message. We will get back to you soon.',
-      };
-    case 'slider':
-      return {
-        _type: 'slider',
-        files: (raw.files || []).map((f: any) => normalizeImage(f)).filter(Boolean) as CmsImage[],
-      };
-    case 'product-slider': {
-      let productIds: number[] = [];
-      let clusterIds: number[] = [];
-      if (raw.items && Array.isArray(raw.items)) {
-        productIds = raw.items.filter((p: any) => !p.isCluster).map((p: any) => Number(p.id)).filter((n: number) => !isNaN(n));
-        clusterIds = raw.items.filter((p: any) => p.isCluster).map((p: any) => Number(p.id)).filter((n: number) => !isNaN(n));
-      } else {
-        productIds = parseIds(raw.productIds || raw.product_ids);
-        clusterIds = parseIds(raw.clusterIds || raw.cluster_ids);
-      }
-      return {
-        _type: 'product-slider',
-        title: raw.title || '',
-        productIds,
-        clusterIds,
+        ctaText: primary?.text || null,
+        ctaUrl: primary?.url || null,
+        secondaryCtaText: secondary?.text || null,
+        secondaryCtaUrl: secondary?.url || null,
       };
     }
+    case 'Feature': {
+      const btn = normalizeButton(raw.button);
+      const position = raw.image_position === 'Right' ? 'right' : raw.image_position === 'Left' ? 'left' : (featureIndex % 2 === 0 ? 'left' : 'right');
+      featureIndex++;
+      return {
+        _type: 'feature',
+        title: raw.heading || '',
+        description: raw.sub_heading || null,
+        image: normalizeImage(raw.image),
+        imagePosition: position,
+        buttonText: btn?.text || null,
+        buttonUrl: btn?.url || null,
+      } as CmsFeature;
+    }
+    case 'Cards': {
+      const cards = raw.cards || [];
+      const firstType = cards[0]?.__typename;
+
+      if (firstType === 'Product') {
+        const btn = normalizeButton(raw.button);
+        return {
+          _type: 'product-cards',
+          title: raw.heading || '',
+          subtitle: raw.sub_heading || null,
+          productSkus: cards.map((c: any) => c.sku || '').filter(Boolean),
+          buttonText: btn?.text || null,
+          buttonUrl: btn?.url || null,
+        } as CmsProductCards;
+      }
+
+      if (firstType === 'Post') {
+        return {
+          _type: 'post-cards',
+          title: raw.heading || '',
+          subtitle: raw.sub_heading || null,
+          posts: cards.map((post: any) => ({
+            title: post.title || '',
+            slug: post._slug || '',
+            cover: normalizeImage(post.cover),
+            excerpt: post.description || null,
+            readTime: post._read_time || null,
+            author: post.author ? { name: post.author.name || '', avatar: normalizeImage(post.author.avatar) } : null,
+            category: post.category?.name || null,
+          })),
+        } as CmsPostCards;
+      }
+
+      // Fallback: generic value-props
+      return {
+        _type: 'value-props',
+        items: cards.map((card: any) => ({
+          icon: card.image?.url || '',
+          title: card.heading || '',
+          text: card.sub_heading || '',
+        })),
+      };
+    }
+    case 'CTA':
+      return {
+        _type: 'call-to-action',
+        title: raw.heading || '',
+        description: raw.sub_heading || null,
+        buttonText: '',
+        buttonUrl: '',
+        variant: 'primary',
+      };
+    case 'Contact':
+      return {
+        _type: 'contact-form',
+        title: raw.heading || null,
+        description: raw.sub_heading || null,
+        successMessage: 'Thank you for your message. We will get back to you soon.',
+        phone: raw.phone_number || null,
+        email: raw.email || null,
+        formTitle: raw.form_title || null,
+      };
+    case 'FAQ':
+      return {
+        _type: 'faq',
+        title: raw.title || '',
+        questions: (raw.questions || []).map((q: any) => ({
+          question: q.question || '',
+          answer: q.answer || '',
+        })),
+      } as CmsFaq;
+    case 'Static':
+      return {
+        _type: 'static',
+        staticType: raw.static_type || '',
+        title: raw.title || null,
+      } as CmsStatic;
     default:
       return null;
   }
@@ -187,11 +241,11 @@ function normalizePage(raw: any): CmsPage {
   return {
     id: raw._id,
     title: raw.title || '',
-    slug: raw.slug || raw._slug || '',
-    description: raw.description || null,
-    template: raw.template || 'default',
+    slug: raw._slug || '',
+    description: null,
+    template: 'default',
     seo: normalizeSeo(raw.seo),
-    blocks: normalizeBlocks(raw.blocks || []),
+    blocks: normalizeBlocks(raw.content || []),
   };
 }
 
@@ -250,12 +304,12 @@ function normalizeArticle(raw: any): CmsArticle {
     id: raw._id,
     title: raw.title || '',
     description: raw.description || null,
-    slug: raw.slug || raw._slug || '',
+    slug: raw._slug || '',
     cover: normalizeImage(raw.cover),
     author: normalizeAuthor(raw.author),
-    category: raw.category ? { name: raw.category.name || '', slug: raw.category.slug || '' } : null,
-    blocks: normalizeBlocks(raw.blocks || []),
-    publishedAt: raw.publishedAt || raw._publish_on || null,
+    category: raw.category ? { name: raw.category.name || '', slug: raw.category._slug || raw.category.slug || '' } : null,
+    blocks: normalizeBlocks(raw.content || []),
+    publishedAt: raw._publish_on || null,
   };
 }
 
@@ -265,71 +319,93 @@ const IMAGE_FIELDS = `url width height`;
 
 const SEO_FRAGMENT = `
   seo {
-    metaTitle: meta_title
-    metaDescription: meta_description
-    shareImage: share_image {
-      ${IMAGE_FIELDS}
-    }
+    meta_title
+    meta_description
+    meta_image { ${IMAGE_FIELDS} }
+  }
+`;
+
+const BUTTON_FRAGMENT = `
+  text
+  use_external_link
+  external_url
+  button_type
+  link {
+    ... on Page { _slug }
+    ... on Post { _slug }
   }
 `;
 
 const BLOCK_FRAGMENTS = `
   __typename
-  ... on HeroBanner {
-    title
-    subtitle
+  ... on Hero {
+    heading
+    sub_heading
     image { ${IMAGE_FIELDS} }
-    ctaText: cta_text
-    ctaUrl: cta_url
-    secondaryCtaText: secondary_cta_text
-    secondaryCtaUrl: secondary_cta_url
+    buttons { ${BUTTON_FRAGMENT} }
   }
-  ... on RichText {
-    body
-    html
+  ... on Feature {
+    heading
+    sub_heading
+    button { ${BUTTON_FRAGMENT} }
+    image { ${IMAGE_FIELDS} }
+    image_position
   }
-  ... on Media {
-    file { ${IMAGE_FIELDS} }
-  }
-  ... on Quote {
-    title
-    body
-  }
-  ... on ValueProps {
-    items {
-      icon
-      title
-      text
-    }
-  }
-  ... on CallToAction {
-    title
-    description
-    buttonText: button_text
-    buttonUrl: button_url
+  ... on Cards {
+    heading
+    sub_heading
     variant
-  }
-  ... on ProductCarousel {
-    title
-    categoryId: category_id
-    limit
-  }
-  ... on ContactForm {
-    title
-    description
-    successMessage: success_message
-  }
-  ... on Slider {
-    files { ${IMAGE_FIELDS} }
-  }
-  ... on ProductSlider {
-    title
-    productIds: product_ids
-    clusterIds: cluster_ids
-    items {
-      id
-      isCluster
+    button { ${BUTTON_FRAGMENT} }
+    cards {
+      __typename
+      ... on Product {
+        sku
+        _slug
+        title
+        image { ${IMAGE_FIELDS} }
+        price
+        price_suffix
+      }
+      ... on Post {
+        title
+        _slug
+        description
+        _read_time
+        cover { ${IMAGE_FIELDS} }
+        author {
+          name
+          avatar { ${IMAGE_FIELDS} }
+        }
+        category {
+          name
+          _slug
+        }
+      }
     }
+  }
+  ... on CTA {
+    heading
+    sub_heading
+  }
+  ... on Contact {
+    heading
+    sub_heading
+    form_title
+    phone_number
+    email
+    hubspot_form_id
+    hubspot_portal_id
+  }
+  ... on FAQ {
+    title
+    questions {
+      question
+      answer
+    }
+  }
+  ... on Static {
+    title
+    static_type
   }
 `;
 
@@ -339,23 +415,20 @@ export function createPreprProvider(): CmsProvider {
   return {
     async getPage(slug: string) {
       try {
-        const data = await preprFetch<any>(`
-          query GetPage($slug: String!) {
-            Pages(where: { slug: $slug }, limit: 1) {
-              items {
-                _id
-                title
-                slug
-                description
-                template
-                ${SEO_FRAGMENT}
-                blocks {
-                  ${BLOCK_FRAGMENTS}
-                }
+        const lookupSlug = slug === 'home' ? '/' : slug;
+        const data = await preprFetch<any>(`{
+          Pages(where: { _slug_any: ["${lookupSlug}"] }, limit: 1) {
+            items {
+              _id
+              _slug
+              title
+              ${SEO_FRAGMENT}
+              content {
+                ${BLOCK_FRAGMENTS}
               }
             }
           }
-        `, { slug });
+        }`);
         const entry = data?.Pages?.items?.[0];
         if (!entry) return null;
         return normalizePage(entry);
@@ -367,16 +440,12 @@ export function createPreprProvider(): CmsProvider {
 
     async getAllPageSlugs() {
       try {
-        const data = await preprFetch<any>(`
-          query GetAllPageSlugs {
-            Pages(limit: 100) {
-              items {
-                slug
-              }
-            }
+        const data = await preprFetch<any>(`{
+          Pages(limit: 100) {
+            items { _slug }
           }
-        `);
-        return (data?.Pages?.items || []).map((entry: any) => entry.slug);
+        }`);
+        return (data?.Pages?.items || []).map((entry: any) => entry._slug);
       } catch (error) {
         console.error('[CMS:Prepr] Failed to fetch page slugs:', error);
         return [];
@@ -385,54 +454,28 @@ export function createPreprProvider(): CmsProvider {
 
     async getGlobal() {
       try {
-        const data = await preprFetch<any>(`
-          query GetGlobal {
-            Global {
-              siteName: site_name
-              siteDescription: site_description
-              favicon { ${IMAGE_FIELDS} }
-              defaultSeo: default_seo {
-                metaTitle: meta_title
-                metaDescription: meta_description
-                shareImage: share_image { ${IMAGE_FIELDS} }
+        const data = await preprFetch<any>(`{
+          Navigation {
+            _id
+            internal_name
+            top_navigation {
+              text
+              use_external_link
+              external_url
+              button_type
+              link {
+                ... on Page { _slug }
+                ... on Post { _slug }
               }
-              logo { ${IMAGE_FIELDS} }
-              logoAlt: logo_alt
-              topBarEnabled: top_bar_enabled
-              topBarPhone: top_bar_phone
-              topBarAnnouncement: top_bar_announcement
-              topBarAnnouncementEnabled: top_bar_announcement_enabled
-              showVatToggle: show_vat_toggle
-              showLanguageSwitcher: show_language_switcher
-              availableLanguages: available_languages
-              showSearch: show_search
-              showAccount: show_account
-              showCart: show_cart
-              showCategoriesMenu: show_categories_menu
-              categoriesMenuLabel: categories_menu_label
-              navLinks: nav_links {
-                label
-                url
-                highlight
-              }
-              footerDescription: footer_description
-              footerColumns: footer_columns {
-                title
-                links {
-                  label
-                  url
-                  highlight
-                }
-              }
-              footerEmail: footer_email
-              footerPhone: footer_phone
-              copyrightText: copyright_text
             }
           }
-        `);
-        const entry = data?.Global;
-        if (!entry) return null;
-        return normalizeGlobal(entry);
+        }`);
+        const nav = data?.Navigation;
+        const navLinks: CmsNavLink[] = (nav?.top_navigation || []).map((item: any) => {
+          const url = item.use_external_link ? (item.external_url || '') : (item.link?._slug ? `/${item.link._slug}` : '');
+          return { label: item.text || '', url, highlight: false };
+        });
+        return normalizeGlobal({ navLinks, siteName: nav?.internal_name || '' });
       } catch (error) {
         console.error('[CMS:Prepr] Failed to fetch global:', error);
         return null;
@@ -440,55 +483,34 @@ export function createPreprProvider(): CmsProvider {
     },
 
     async getCategoryBanner(categoryId: string) {
-      try {
-        const data = await preprFetch<any>(`
-          query GetCategoryBanner($categoryId: String!) {
-            CategoryBanners(where: { category_id: $categoryId }, limit: 1) {
-              items {
-                categoryId: category_id
-                title
-                subtitle
-                image { ${IMAGE_FIELDS} }
-                ctaText: cta_text
-                ctaUrl: cta_url
-              }
-            }
-          }
-        `, { categoryId });
-        const entry = data?.CategoryBanners?.items?.[0];
-        if (!entry) return null;
-        return normalizeCategoryBanner(entry);
-      } catch {
-        return null;
-      }
+      // CategoryBanner model does not exist in this Prepr environment yet
+      return null;
     },
 
     async getArticles() {
       try {
-        const data = await preprFetch<any>(`
-          query GetArticles {
-            Articles(sort: publishedAt_DESC, limit: 100) {
-              items {
-                _id
-                title
-                description
-                slug
-                publishedAt: _publish_on
-                cover { ${IMAGE_FIELDS} }
-                author {
-                  name
-                  avatar { ${IMAGE_FIELDS} }
-                  email
-                }
-                category {
-                  name
-                  slug
-                }
+        const data = await preprFetch<any>(`{
+          Posts(sort: _publish_on_DESC, limit: 100) {
+            items {
+              _id
+              _slug
+              title
+              description
+              _publish_on
+              cover { ${IMAGE_FIELDS} }
+              author {
+                name
+                avatar { ${IMAGE_FIELDS} }
+                email
+              }
+              category {
+                name
+                _slug
               }
             }
           }
-        `);
-        return (data?.Articles?.items || []).map((entry: any) => normalizeArticle(entry));
+        }`);
+        return (data?.Posts?.items || []).map((entry: any) => normalizeArticle(entry));
       } catch (error) {
         console.error('[CMS:Prepr] Failed to fetch articles:', error);
         return [];
@@ -497,33 +519,31 @@ export function createPreprProvider(): CmsProvider {
 
     async getArticle(slug: string) {
       try {
-        const data = await preprFetch<any>(`
-          query GetArticle($slug: String!) {
-            Articles(where: { slug: $slug }, limit: 1) {
-              items {
-                _id
-                title
-                description
-                slug
-                publishedAt: _publish_on
-                cover { ${IMAGE_FIELDS} }
-                author {
-                  name
-                  avatar { ${IMAGE_FIELDS} }
-                  email
-                }
-                category {
-                  name
-                  slug
-                }
-                blocks {
-                  ${BLOCK_FRAGMENTS}
-                }
+        const data = await preprFetch<any>(`{
+          Posts(where: { _slug_any: ["${slug}"] }, limit: 1) {
+            items {
+              _id
+              _slug
+              title
+              description
+              _publish_on
+              cover { ${IMAGE_FIELDS} }
+              author {
+                name
+                avatar { ${IMAGE_FIELDS} }
+                email
+              }
+              category {
+                name
+                _slug
+              }
+              content {
+                ${BLOCK_FRAGMENTS}
               }
             }
           }
-        `, { slug });
-        const entry = data?.Articles?.items?.[0];
+        }`);
+        const entry = data?.Posts?.items?.[0];
         if (!entry) return null;
         return normalizeArticle(entry);
       } catch (error) {
@@ -534,16 +554,12 @@ export function createPreprProvider(): CmsProvider {
 
     async getAllArticleSlugs() {
       try {
-        const data = await preprFetch<any>(`
-          query GetAllArticleSlugs {
-            Articles(limit: 100) {
-              items {
-                slug
-              }
-            }
+        const data = await preprFetch<any>(`{
+          Posts(limit: 100) {
+            items { _slug }
           }
-        `);
-        return (data?.Articles?.items || []).map((entry: any) => entry.slug);
+        }`);
+        return (data?.Posts?.items || []).map((entry: any) => entry._slug);
       } catch (error) {
         console.error('[CMS:Prepr] Failed to fetch article slugs:', error);
         return [];

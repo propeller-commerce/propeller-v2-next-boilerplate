@@ -8,6 +8,11 @@ import ContactForm from './blocks/ContactForm';
 import MediaBlock from './blocks/MediaBlock';
 import QuoteBlock from './blocks/QuoteBlock';
 import ProductSliderBlock from './blocks/ProductSliderBlock';
+import FeatureBlock from './blocks/FeatureBlock';
+import FAQBlock from './blocks/FAQBlock';
+import PostCardsBlock from './blocks/PostCardsBlock';
+import ProductCardsBlock from './blocks/ProductCardsBlock';
+import StaticBlock from './blocks/StaticBlock';
 
 const blockComponents: Record<string, React.ComponentType<{ block: any }>> = {
   'hero-banner': HeroBanner,
@@ -19,6 +24,11 @@ const blockComponents: Record<string, React.ComponentType<{ block: any }>> = {
   'media': MediaBlock,
   'quote': QuoteBlock,
   'product-slider': ProductSliderBlock,
+  'feature': FeatureBlock,
+  'faq': FAQBlock,
+  'post-cards': PostCardsBlock,
+  'product-cards': ProductCardsBlock,
+  'static': StaticBlock,
 };
 
 export default function DynamicBlockRenderer({ blocks }: { blocks: CmsBlock[] }) {

@@ -268,11 +268,13 @@ export default function AddressesPage() {
 
       {/* Default Addresses */}
       <div className="space-y-4 pb-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg">Default Addresses</h2>
-        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
           <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-md">Default Billing Address</h2>
+            </div>
             {defaultAddresses.invoice ? (
               <AddressCard
                 key={`inv-${defaultAddresses.invoice.id}-${selectedCompany?.companyId ?? 'default'}`}
@@ -292,12 +294,16 @@ export default function AddressesPage() {
             )}
           </div>
           <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-md">Default Delivery Address</h2>
+            </div>
             {defaultAddresses.delivery ? (
               <AddressCard
                 key={`del-${defaultAddresses.delivery.id}-${selectedCompany?.companyId ?? 'default'}`}
                 graphqlClient={graphqlClient}
                 address={defaultAddresses.delivery}
                 enableDelete={false}
+
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
@@ -316,7 +322,7 @@ export default function AddressesPage() {
       {/* Billing Addresses */}
       <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Billing Addresses</h2>
+          <h2 className="text-xl font-semibold">Additional Billing Addresses</h2>
           <Button size="sm" onClick={() => handleAddAddress(Enums.AddressType.invoice)}>
             <Plus className="w-4 h-4 mr-2" />
             Add New
@@ -344,7 +350,7 @@ export default function AddressesPage() {
       {/* Delivery Addresses */}
       <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Delivery Addresses</h2>
+          <h2 className="text-xl font-semibold">Additional Delivery Addresses</h2>
           <Button size="sm" onClick={() => handleAddAddress(Enums.AddressType.delivery)}>
             <Plus className="w-4 h-4 mr-2" />
             Add New

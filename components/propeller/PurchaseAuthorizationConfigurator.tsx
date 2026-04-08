@@ -578,7 +578,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {!hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={
                                     isRowLoading(contact.contactId) ||
                                     !getRowRole(contact.contactId)
@@ -594,7 +594,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={
                                     isRowLoading(contact.contactId) ||
                                     isCurrentUser(contact.contactId)

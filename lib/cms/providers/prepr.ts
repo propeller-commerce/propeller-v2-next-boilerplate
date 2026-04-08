@@ -129,7 +129,7 @@ function normalizeBlock(raw: any): CmsBlock | null {
         _type: 'hero-banner',
         title: raw.heading || '',
         subtitle: raw.sub_heading || null,
-        image: normalizeImage(raw.image),
+        image: normalizeImage(raw.image || raw.asset),
         ctaText: primary?.text || null,
         ctaUrl: primary?.url || null,
         secondaryCtaText: secondary?.text || null,
@@ -151,16 +151,41 @@ function normalizeBlock(raw: any): CmsBlock | null {
       } as CmsFeature;
     }
     case 'Cards': {
+      // Support both schemas: cards[] (propeller env) or products[] (demo env)
       const cards = raw.cards || [];
-      const firstType = cards[0]?.__typename;
+      const products = raw.products || [];
+      const firstCardType = cards[0]?.__typename;
+      const title = raw.heading || raw.title || '';
+      const subtitle = raw.sub_heading || null;
 
-      if (firstType === 'Product') {
+      // Products from _json (demo env) — contains Propeller product IDs
+      if (products.length > 0 && products[0]?._json) {
+        return {
+          _type: 'product-cards',
+          title,
+          subtitle,
+          products: products.map((p: any) => ({
+            productId: p._json?.productId ? parseInt(String(p._json.productId), 10) : null,
+            slug: '',
+            name: '',
+            image: null,
+            price: p._json?.price ?? null,
+            priceSuffix: null,
+          })),
+          buttonText: null,
+          buttonUrl: null,
+        } as CmsProductCards;
+      }
+
+      // Product cards from propeller env (rich Product type with fields)
+      if (firstCardType === 'Product') {
         const btn = normalizeButton(raw.button);
         return {
           _type: 'product-cards',
-          title: raw.heading || '',
-          subtitle: raw.sub_heading || null,
+          title,
+          subtitle,
           products: cards.map((c: any) => ({
+            productId: null,
             slug: c._slug || '',
             name: c.name || '',
             image: normalizeImage(c.image),
@@ -172,11 +197,11 @@ function normalizeBlock(raw: any): CmsBlock | null {
         } as CmsProductCards;
       }
 
-      if (firstType === 'Post') {
+      if (firstCardType === 'Post') {
         return {
           _type: 'post-cards',
-          title: raw.heading || '',
-          subtitle: raw.sub_heading || null,
+          title,
+          subtitle,
           posts: cards.map((post: any) => ({
             title: post.title || '',
             slug: post._slug || '',
@@ -222,7 +247,7 @@ function normalizeBlock(raw: any): CmsBlock | null {
       return {
         _type: 'faq',
         title: raw.title || '',
-        questions: (raw.questions || []).map((q: any) => ({
+        questions: (raw.questions || raw.faq_items || []).map((q: any) => ({
           question: q.question || '',
           answer: q.answer || '',
         })),
@@ -343,85 +368,163 @@ const BUTTON_FRAGMENT = `
   }
 `;
 
-// Shared block fragments safe for both Page and Post content
-const COMMON_BLOCK_FRAGMENTS = `
-  __typename
-  ... on Hero {
-    heading
-    sub_heading
-    image { ${IMAGE_FIELDS} }
-    buttons { ${BUTTON_FRAGMENT} }
-  }
-  ... on Feature {
-    heading
-    sub_heading
-    button { ${BUTTON_FRAGMENT} }
-    image { ${IMAGE_FIELDS} }
-    image_position
-  }
-  ... on CTA {
-    heading
-    sub_heading
-  }
-`;
+// ── Dynamic schema introspection ──
 
-// Page-only blocks (FAQ, Static, Contact, Cards are not valid on Post content)
-const PAGE_BLOCK_FRAGMENTS = `
-  ${COMMON_BLOCK_FRAGMENTS}
-  ... on Cards {
-    heading
-    sub_heading
-    variant
-    button { ${BUTTON_FRAGMENT} }
-    cards {
-      __typename
-      ... on Product {
-        _slug
-        name
-        image { ${IMAGE_FIELDS} }
-        price
-        price_suffix
-      }
-      ... on Post {
-        title
-        _slug
-        excerpt
-        _read_time
-        cover { ${IMAGE_FIELDS} }
-        author {
-          name
+interface SchemaInfo {
+  types: Set<string>;
+  queryFields: Set<string>;
+  pageContentTypes: Set<string>;
+  fields: Record<string, Set<string>>;
+}
+
+let _schema: SchemaInfo | null = null;
+
+async function getSchema(): Promise<SchemaInfo> {
+  if (_schema) return _schema;
+  try {
+    const data = await preprFetch<any>(`{
+      __schema { types { name kind } }
+      QueryType: __type(name: "Query") { fields { name } }
+      PageContent: __type(name: "Page_Content") { possibleTypes { name } }
+      HeroType: __type(name: "Hero") { fields { name } }
+      CardsType: __type(name: "Cards") { fields { name } }
+      SEOType: __type(name: "SEO") { fields { name } }
+      PostType: __type(name: "Post") { fields { name } }
+      AuthorType: __type(name: "Author") { fields { name } }
+    }`);
+
+    const types = new Set<string>(
+      (data?.__schema?.types || [])
+        .filter((t: any) => t.kind === 'OBJECT' || t.kind === 'UNION' || t.kind === 'ENUM')
+        .map((t: any) => t.name as string)
+    );
+
+    const queryFields = new Set<string>(
+      (data?.QueryType?.fields || []).map((f: any) => f.name as string)
+    );
+
+    const pageContentTypes = new Set<string>(
+      (data?.PageContent?.possibleTypes || []).map((t: any) => t.name as string)
+    );
+
+    const fields: Record<string, Set<string>> = {};
+    const typeMap: [string, string][] = [['HeroType', 'Hero'], ['CardsType', 'Cards'], ['SEOType', 'SEO'], ['PostType', 'Post'], ['AuthorType', 'Author']];
+    for (const [key, prefix] of typeMap) {
+      fields[prefix] = new Set<string>((data?.[key]?.fields || []).map((f: any) => f.name as string));
+    }
+
+    _schema = { types, queryFields, pageContentTypes, fields };
+  } catch {
+    _schema = { types: new Set(), queryFields: new Set(), pageContentTypes: new Set(), fields: {} };
+  }
+  return _schema;
+}
+
+function has(schema: SchemaInfo, typeName: string): boolean {
+  return schema.types.has(typeName);
+}
+
+function hasField(schema: SchemaInfo, typeName: string, fieldName: string): boolean {
+  return schema.fields[typeName]?.has(fieldName) ?? false;
+}
+
+function inPageContent(schema: SchemaInfo, typeName: string): boolean {
+  // If Page_Content union doesn't exist (not introspectable), fall back to type existence
+  return schema.pageContentTypes.size === 0 ? has(schema, typeName) : schema.pageContentTypes.has(typeName);
+}
+
+function buildSeoFragment(schema: SchemaInfo): string {
+  const hasMetaImage = hasField(schema, 'SEO', 'meta_image');
+  return `seo {
+    meta_title
+    meta_description
+    ${hasMetaImage ? `meta_image { ${IMAGE_FIELDS} }` : ''}
+  }`;
+}
+
+function buildBlockFragments(schema: SchemaInfo, forPage: boolean): string {
+  const fragments: string[] = ['__typename'];
+  const isRich = has(schema, 'Button'); // Rich env (propeller) has Button type
+
+  if (has(schema, 'Hero')) {
+    fragments.push(`... on Hero {
+      heading
+      ${hasField(schema, 'Hero', 'sub_heading') ? 'sub_heading' : ''}
+      ${hasField(schema, 'Hero', 'image') ? `image { ${IMAGE_FIELDS} }` : ''}
+      ${hasField(schema, 'Hero', 'asset') ? `asset { ${IMAGE_FIELDS} }` : ''}
+      ${hasField(schema, 'Hero', 'buttons') ? `buttons { ${BUTTON_FRAGMENT} }` : ''}
+    }`);
+  }
+
+  if (has(schema, 'Feature') && (forPage ? inPageContent(schema, 'Feature') : true)) {
+    fragments.push(`... on Feature {
+      heading sub_heading
+      button { ${BUTTON_FRAGMENT} }
+      image { ${IMAGE_FIELDS} }
+      image_position
+    }`);
+  }
+
+  if (has(schema, 'CTA') && (forPage ? inPageContent(schema, 'CTA') : true)) {
+    fragments.push(`... on CTA { heading sub_heading }`);
+  }
+
+  if (has(schema, 'Text') && (forPage ? inPageContent(schema, 'Text') : true)) {
+    fragments.push(`... on Text { html body }`);
+  }
+
+  if (has(schema, 'Quote') && (forPage ? inPageContent(schema, 'Quote') : true)) {
+    fragments.push(`... on Quote { body author }`);
+  }
+
+  if (has(schema, 'Assets') && (forPage ? inPageContent(schema, 'Assets') : true)) {
+    fragments.push(`... on Assets { items { ${IMAGE_FIELDS} } }`);
+  }
+
+  // Page-only blocks
+  if (forPage) {
+    if (has(schema, 'Cards') && inPageContent(schema, 'Cards')) {
+      if (isRich) {
+        // Propeller env: heading, sub_heading, variant, cards[], button
+        const cardsSubs: string[] = ['__typename'];
+        if (has(schema, 'Product')) {
+          cardsSubs.push(`... on Product { _slug name image { ${IMAGE_FIELDS} } price price_suffix }`);
         }
-        categories {
-          _slug
-          name
+        if (has(schema, 'Post')) {
+          cardsSubs.push(`... on Post { title _slug excerpt _read_time cover { ${IMAGE_FIELDS} } author { name } categories { _slug name } }`);
         }
+        fragments.push(`... on Cards {
+          heading sub_heading variant
+          button { ${BUTTON_FRAGMENT} }
+          cards { ${cardsSubs.join('\n')} }
+        }`);
+      } else {
+        // Demo/simple env: title, products[] with _json containing Propeller IDs
+        fragments.push(`... on Cards {
+          title
+          products { _id _json }
+        }`);
       }
     }
-  }
-  ... on Contact {
-    heading
-    sub_heading
-    form_title
-    phone_number
-    email
-    hubspot_form_id
-    hubspot_portal_id
-  }
-  ... on FAQ {
-    title
-    questions {
-      question
-      answer
+
+    if (has(schema, 'Contact') && inPageContent(schema, 'Contact')) {
+      fragments.push(`... on Contact {
+        heading sub_heading form_title phone_number email hubspot_form_id hubspot_portal_id
+      }`);
+    }
+
+    if (has(schema, 'FAQ') && inPageContent(schema, 'FAQ')) {
+      const faqField = has(schema, 'FAQItem') ? 'faq_items' : 'questions';
+      fragments.push(`... on FAQ { title ${faqField} { question answer } }`);
+    }
+
+    if (has(schema, 'Static') && inPageContent(schema, 'Static')) {
+      fragments.push(`... on Static { title static_type }`);
     }
   }
-  ... on Static {
-    title
-    static_type
-  }
-`;
 
-// Post content only supports common blocks (no FAQ, Static, Contact, Cards)
-const POST_BLOCK_FRAGMENTS = COMMON_BLOCK_FRAGMENTS;
+  return fragments.join('\n');
+}
 
 // ── Provider factory ──
 
@@ -429,6 +532,9 @@ export function createPreprProvider(): CmsProvider {
   return {
     async getPage(slug: string) {
       try {
+        const schema = await getSchema();
+        const pageFragments = buildBlockFragments(schema, true);
+        const seoFragment = buildSeoFragment(schema);
         const lookupSlug = slug === 'home' ? '/' : slug;
         const data = await preprFetch<any>(`{
           Pages(where: { _slug_any: ["${lookupSlug}"] }, limit: 1) {
@@ -436,9 +542,9 @@ export function createPreprProvider(): CmsProvider {
               _id
               _slug
               title
-              ${SEO_FRAGMENT}
+              ${seoFragment}
               content {
-                ${PAGE_BLOCK_FRAGMENTS}
+                ${pageFragments}
               }
             }
           }
@@ -468,6 +574,13 @@ export function createPreprProvider(): CmsProvider {
 
     async getGlobal() {
       try {
+        const schema = await getSchema();
+
+        // Not all Prepr environments have a Navigation query
+        if (!schema.queryFields.has('Navigation')) {
+          return normalizeGlobal({ navLinks: [], siteName: '' });
+        }
+
         const data = await preprFetch<any>(`{
           Navigation {
             _id
@@ -503,6 +616,10 @@ export function createPreprProvider(): CmsProvider {
 
     async getArticles() {
       try {
+        const schema = await getSchema();
+        const hasCover = hasField(schema, 'Post', 'cover');
+        const hasCategories = hasField(schema, 'Post', 'categories');
+        const hasAuthorName = hasField(schema, 'Author', 'name');
         const data = await preprFetch<any>(`{
           Posts(sort: publish_on_DESC, limit: 100) {
             items {
@@ -511,14 +628,9 @@ export function createPreprProvider(): CmsProvider {
               title
               excerpt
               _publish_on
-              cover { ${IMAGE_FIELDS} }
-              author {
-                name
-              }
-              categories {
-                name
-                _slug
-              }
+              ${hasCover ? `cover { ${IMAGE_FIELDS} }` : ''}
+              ${hasAuthorName ? `author { name }` : ''}
+              ${hasCategories ? `categories { name _slug }` : ''}
             }
           }
         }`);
@@ -531,6 +643,11 @@ export function createPreprProvider(): CmsProvider {
 
     async getArticle(slug: string) {
       try {
+        const schema = await getSchema();
+        const postFragments = buildBlockFragments(schema, false);
+        const hasCover = hasField(schema, 'Post', 'cover');
+        const hasCategories = hasField(schema, 'Post', 'categories');
+        const hasAuthorName = hasField(schema, 'Author', 'name');
         const data = await preprFetch<any>(`{
           Posts(where: { _slug_any: ["${slug}"] }, limit: 1) {
             items {
@@ -539,16 +656,11 @@ export function createPreprProvider(): CmsProvider {
               title
               excerpt
               _publish_on
-              cover { ${IMAGE_FIELDS} }
-              author {
-                name
-              }
-              categories {
-                name
-                _slug
-              }
+              ${hasCover ? `cover { ${IMAGE_FIELDS} }` : ''}
+              ${hasAuthorName ? `author { name }` : ''}
+              ${hasCategories ? `categories { name _slug }` : ''}
               content {
-                ${POST_BLOCK_FRAGMENTS}
+                ${postFragments}
               }
             }
           }

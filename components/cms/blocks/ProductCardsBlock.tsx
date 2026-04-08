@@ -1,8 +1,27 @@
-import Image from 'next/image';
+'use client';
+
 import Link from 'next/link';
 import type { CmsProductCards } from '@/lib/cms/types';
+import ProductSlider from '@/components/propeller/ProductSlider';
+import { graphqlClient } from '@/lib/api';
+import { config } from '@/data/config';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { usePrice } from '@/context/PriceContext';
+import { useCompany } from '@/context/CompanyContext';
 
 export default function ProductCardsBlock({ block }: { block: CmsProductCards }) {
+  const { state } = useAuth();
+  const { cart, saveCart } = useCart();
+  const { language } = useLanguage();
+  const { includeTax } = usePrice();
+  const { selectedCompany } = useCompany();
+
+  const productIds = block.products
+    .map((p) => typeof p.productId === 'string' ? parseInt(p.productId, 10) : p.productId)
+    .filter((id): id is number => id != null && !isNaN(id) && id > 0);
+
   return (
     <section className="bg-primary/5 py-16 lg:py-20">
       <div className="container-width">
@@ -18,43 +37,24 @@ export default function ProductCardsBlock({ block }: { block: CmsProductCards })
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {block.products.map((product, i) => (
-            <Link
-              key={product.slug || i}
-              href={`/product/${product.slug}`}
-              className="group bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition"
-            >
-              <div className="relative aspect-video bg-muted">
-                {product.image ? (
-                  <Image
-                    src={product.image.url}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-2">
-                  {product.name}
-                </h3>
-                {product.price != null && (
-                  <p className="text-primary font-bold mt-1">
-                    &euro;{product.price.toLocaleString('nl-NL', { minimumFractionDigits: 0 })}
-                    {product.priceSuffix && <span className="text-muted-foreground font-normal text-xs ml-1">{product.priceSuffix}</span>}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {productIds.length > 0 ? (
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            productIds={productIds.map(Number)}
+            configuration={config}
+            language={language}
+            user={state.user}
+            cartId={cart?.cartId}
+            companyId={selectedCompany?.companyId}
+            includeTax={includeTax}
+            taxZone="NL"
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+          />
+        ) : (
+          <p className="text-muted-foreground text-center">No products configured.</p>
+        )}
       </div>
     </section>
   );

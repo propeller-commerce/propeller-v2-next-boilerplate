@@ -60,6 +60,9 @@ export interface AddressCardProps {
   /** Display Set Default button @default true */
   enableSetDefault?: boolean;
 
+  /** Display the "Default ... Address" badge @default false */
+  showDefaultBadge?: boolean;
+
   /** Called when address is edited; receives the updated address object */
   onEdit?: (address: Address) => void | Promise<void>;
 
@@ -350,7 +353,7 @@ function AddressCard(props: AddressCardProps) {
             {!!props.showPhone && addr?.()?.phone ? (
               <div className="text-gray-600">{addr?.()?.phone}</div>
             ) : null}
-            {addr?.()?.isDefault === 'Y' ? (
+            {props.showDefaultBadge === true && addr?.()?.isDefault === 'Y' ? (
               <div className="mt-2">
                 <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
                   Default {addr?.()?.type} Address

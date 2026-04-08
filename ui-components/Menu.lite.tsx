@@ -138,6 +138,7 @@ export default function Menu(props: MenuProps) {
                     return `
                         categories {
                             categoryId
+                            hidden
                             name(language: $language) { value language }
                             slug(language: $language) { value }
                             ${buildCategoriesQuery(currentDepth - 1)}
@@ -149,6 +150,7 @@ export default function Menu(props: MenuProps) {
                     query Menu($categoryId: Float, $language: String) {
                         category(categoryId: $categoryId) {
                             categoryId
+                            hidden
                             name(language: $language) { value language }
                             slug(language: $language) { value }
                             ${buildCategoriesQuery(depth)}
@@ -244,6 +246,7 @@ export default function Menu(props: MenuProps) {
         getSubCategories(cat: Category): Category[] {
             const subs = (cat as any).categories || [];
             return subs.filter((sub: Category) => {
+                if ((sub as any).hidden === 'Y' || (sub as any).hidden === true) return false;
                 const name = state.getCategoryName(sub);
                 const slug = state.getCategorySlug(sub);
                 return name && slug;

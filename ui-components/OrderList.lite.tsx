@@ -165,10 +165,10 @@ export default function OrderList(props: OrderListProps) {
                         Enums.OrderSearchFields.ITEM_NAME,
                         Enums.OrderSearchFields.REMARKS
                     ],
+                    sortInputs: state.searchForm.sortInput || { field: Enums.OrderSortField.CREATED_AT, order: Enums.SortOrder.DESC },
                     ...(state.searchForm.createdAt && { createdAt: state.searchForm.createdAt }),
                     ...(state.searchForm.lastModifiedAt && { lastModifiedAt: state.searchForm.lastModifiedAt }),
                     ...(state.searchForm.price && { price: state.searchForm.price }),
-                    ...(state.searchForm.sortInput && { sortInput: state.searchForm.sortInput }),
                     ...(state.searchForm.type && { type: state.searchForm.type })
                 };
 

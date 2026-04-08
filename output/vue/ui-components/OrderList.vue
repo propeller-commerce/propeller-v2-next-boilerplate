@@ -606,6 +606,10 @@ async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOr
         Enums.OrderSearchFields.ITEM_NAME,
         Enums.OrderSearchFields.REMARKS,
       ],
+      sortInputs: searchForm.value.sortInput || {
+        field: Enums.OrderSortField.CREATED_AT,
+        order: Enums.SortOrder.DESC,
+      },
       ...(searchForm.value.createdAt && {
         createdAt: searchForm.value.createdAt,
       }),
@@ -614,9 +618,6 @@ async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOr
       }),
       ...(searchForm.value.price && {
         price: searchForm.value.price,
-      }),
-      ...(searchForm.value.sortInput && {
-        sortInput: searchForm.value.sortInput,
       }),
       ...(searchForm.value.type && {
         type: searchForm.value.type,

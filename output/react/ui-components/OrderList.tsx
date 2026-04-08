@@ -162,6 +162,10 @@ function OrderList(props: OrderListProps) {
           Enums.OrderSearchFields.ITEM_NAME,
           Enums.OrderSearchFields.REMARKS,
         ],
+        sortInputs: searchForm.sortInput || {
+          field: Enums.OrderSortField.CREATED_AT,
+          order: Enums.SortOrder.DESC,
+        },
         ...(searchForm.createdAt && {
           createdAt: searchForm.createdAt,
         }),
@@ -170,9 +174,6 @@ function OrderList(props: OrderListProps) {
         }),
         ...(searchForm.price && {
           price: searchForm.price,
-        }),
-        ...(searchForm.sortInput && {
-          sortInput: searchForm.sortInput,
         }),
         ...(searchForm.type && {
           type: searchForm.type,

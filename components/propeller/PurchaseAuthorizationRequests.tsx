@@ -71,7 +71,7 @@ interface PurchaseAuthorizationRequestsState {
   formatDate: (dateStr: string) => string;
   formatPrice: (price: number) => string;
   getTotalQuantity: (cart: Cart) => number;
-  getContactName: (deliveryAddress: CartAddress) => string;
+  getContactName: (contact: Contact) => string;
   getModalItems: () => CartMainItem[];
   loadCarts: () => Promise<void>;
   handleViewCart: (cart: Cart) => Promise<void>;
@@ -131,12 +131,12 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     return items.reduce((sum: number, item: CartMainItem) => sum + (item.quantity || 0), 0);
   }
   function getContactName(
-    deliveryAddress: CartAddress
+    contact: Contact
   ): ReturnType<PurchaseAuthorizationRequestsState['getContactName']> {
-    if (!deliveryAddress) return '';
-    const firstName = deliveryAddress.firstName ?? '';
-    const middleName = deliveryAddress.middleName ?? '';
-    const lastName = deliveryAddress.lastName ?? '';
+    if (!contact) return '';
+    const firstName = contact.firstName ?? '';
+    const middleName = contact.middleName ?? '';
+    const lastName = contact.lastName ?? '';
     return [firstName, middleName, lastName].filter(Boolean).join(' ');
   }
   function getModalItems(): ReturnType<PurchaseAuthorizationRequestsState['getModalItems']> {
@@ -279,10 +279,10 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                           </td>
                           <td className="px-4 py-3">
                             <div className="font-medium">
-                              {getContactName(cart.deliveryAddress)}
+                              {getContactName(cart.contact as Contact)}
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              {cart.deliveryAddress?.email}
+                              {cart.contact?.email}
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -339,10 +339,10 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                           {getLabel('requesterInfo', 'Requester')}
                         </h4>
                         <p className="text-sm font-medium">
-                          {getContactName(selectedCart?.deliveryAddress as CartAddress)}
+                          {getContactName(selectedCart?.contact as Contact)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {selectedCart?.deliveryAddress?.email}
+                          {selectedCart?.contact?.email}
                         </p>
                       </div>
                       <div>

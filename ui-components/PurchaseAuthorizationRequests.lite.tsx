@@ -74,7 +74,7 @@ interface PurchaseAuthorizationRequestsState {
     formatDate: (dateStr: string) => string;
     formatPrice: (price: number) => string;
     getTotalQuantity: (cart: Cart) => number;
-    getContactName: (deliveryAddress: CartAddress) => string;
+    getContactName: (contact: Contact) => string;
     getModalItems: () => CartMainItem[];
     loadCarts: () => Promise<void>;
     handleViewCart: (cart: Cart) => Promise<void>;
@@ -123,11 +123,11 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
             return items.reduce((sum: number, item: CartMainItem) => sum + (item.quantity || 0), 0);
         },
 
-        getContactName(deliveryAddress: CartAddress): string {
-            if (!deliveryAddress) return '';
-            const firstName = deliveryAddress.firstName ?? '';
-            const middleName = deliveryAddress.middleName ?? '';
-            const lastName = deliveryAddress.lastName ?? '';
+        getContactName(contact: Contact): string {
+            if (!contact) return '';
+            const firstName = contact.firstName ?? '';
+            const middleName = contact.middleName ?? '';
+            const lastName = contact.lastName ?? '';
             return [firstName, middleName, lastName].filter(Boolean).join(' ');
         },
 
@@ -293,10 +293,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                                     {/* Requested by — contact name + email */}
                                                     <td className="px-4 py-3">
                                                         <div className="font-medium">
-                                                            {state.getContactName(cart.deliveryAddress)}
+                                                            {state.getContactName(cart.contact as Contact)}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                                            {cart.deliveryAddress?.email}
+                                                            {cart.contact?.email}
                                                         </div>
                                                     </td>
 
@@ -361,10 +361,10 @@ export default function PurchaseAuthorizationRequests(props: PurchaseAuthorizati
                                                 {state.getLabel('requesterInfo', 'Requester')}
                                             </h4>
                                             <p className="text-sm font-medium">
-                                                {state.getContactName(state.selectedCart?.deliveryAddress as CartAddress)}
+                                                {state.getContactName(state.selectedCart?.contact as Contact)}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                {state.selectedCart?.deliveryAddress?.email}
+                                                {state.selectedCart?.contact?.email}
                                             </p>
                                         </div>
 

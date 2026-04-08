@@ -7,7 +7,7 @@ import { createPreprProvider } from './providers/prepr';
  * Defaults to 'strapi'. Add new providers here as needed.
  */
 function createProvider(): CmsProvider {
-  const provider = process.env.CMS_PROVIDER || 'strapi';
+  const provider = process.env.CMS_PROVIDER || process.env.NEXT_PUBLIC_CMS_PROVIDER || 'strapi';
 
   switch (provider) {
     case 'strapi':
@@ -33,4 +33,4 @@ export const resolveImageUrl = cms.resolveImageUrl.bind(cms);
 
 // Re-export the provider instance and types
 export { cms };
-export type { CmsProvider } from './core';
+export type { CmsProvider, CmsPageOptions } from './core';

@@ -121,7 +121,7 @@ export const config = {
   productTrackAttributes: [],
   categoryTrackAttributes: [],
   clusterTrackAttributes: [],
-  companyTrackAttributes: [],
+  companyTrackAttributes: ['SYSTEM_USER_GROUPS'],
   contactTrackAttributes: [],
   customerTrackAttributes: [],
   includeVAT: false,

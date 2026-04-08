@@ -407,7 +407,7 @@ function GridToolbar(props: GridToolbarProps) {
           </button>
           {props.priceFilterMin !== undefined || props.priceFilterMax !== undefined ? (
             <span
-              className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-secondary-foreground hover:bg-primary hover:text-destructive-foreground transition-colors"
+              className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
               onClick={(event) => {
                 if (props.onPriceFilterRemove) props.onPriceFilterRemove();
               }}

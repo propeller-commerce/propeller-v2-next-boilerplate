@@ -173,6 +173,8 @@ export default function SearchPage() {
                 collapsed={true}
                 clearSignal={clearSignal}
                 activeTextFilters={filters}
+                activePriceMin={minPrice}
+                activePriceMax={maxPrice}
                 className=""
               />
             </aside>

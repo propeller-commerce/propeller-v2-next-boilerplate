@@ -110,6 +110,7 @@ export interface CmsFaq {
 }
 
 export interface CmsProductCard {
+  productId: number | null;
   slug: string;
   name: string;
   image: CmsImage | null;

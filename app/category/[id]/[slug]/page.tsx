@@ -259,6 +259,8 @@ export default function CategoryPage() {
                 collapsed={true}
                 clearSignal={clearSignal}
                 activeTextFilters={filters}
+                activePriceMin={minPrice}
+                activePriceMax={maxPrice}
                 className=""
               />
             </aside>

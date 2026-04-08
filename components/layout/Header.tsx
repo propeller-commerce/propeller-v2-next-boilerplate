@@ -223,6 +223,9 @@ export default function Header() {
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
                     graphqlClient={graphqlClient}
+                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
+                    companyId={selectedCompany?.companyId}
+                    configuration={config}
                     language={language}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {

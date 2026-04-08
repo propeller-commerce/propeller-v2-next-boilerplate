@@ -4,7 +4,7 @@
  * Covers: ProductGrid, GridFilters, GridToolbar, SearchBar components.
  *
  * Responsibilities:
- * - CategoryService query building
+ * - CategoryService query building (mirrors ProductGrid.lite.tsx fetch logic exactly)
  * - Race condition prevention (fetchId counter)
  * - Language-based product filtering (untranslated excluded)
  * - Dual-mode: controlled (external products prop) vs uncontrolled (internal fetch)
@@ -28,6 +28,17 @@ import type {
   AttributeFilter,
   ProductTextFilterInput,
   Category,
+  CategoryQueryVariables,
+  CategoryProductSearchInput,
+  ProductSortInput,
+  SearchFieldsInput,
+  ProductPriceFilterInput,
+  PriceCalculateProductInput,
+  FilterAvailableAttributeInput,
+  MediaImageProductSearchInput,
+  TransformationsInput,
+  ProductsQueryVariables,
+  ProductSearchInput,
 } from 'propeller-sdk-v2';
 import { usePagination } from './shared/usePagination';
 
@@ -53,8 +64,8 @@ export interface UseProductSearchOptions {
   pageSize?: Ref<number>;
   configuration: {
     baseCategoryId?: number;
-    imageSearchFiltersGrid?: any;
-    imageVariantFiltersMedium?: any;
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersMedium?: TransformationsInput;
   };
   onFiltersChange?: (filters: AttributeFilter[]) => void;
   onPriceBoundsChange?: (min: number, max: number) => void;
@@ -89,12 +100,12 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     onFiltersChange,
     onPriceBoundsChange,
     onItemsFoundChange,
-    onPageChange,
     onProductsResponse,
     onCategoryChange,
   } = options;
 
   const languageRef = options.language ?? ref('NL');
+  const taxZone = options.taxZone || 'NL';
   const textFiltersRef = options.textFilters ?? ref<ProductTextFilterInput[] | undefined>(undefined);
   const priceMinRef = options.priceFilterMin ?? ref<number | undefined>(undefined);
   const priceMaxRef = options.priceFilterMax ?? ref<number | undefined>(undefined);
@@ -133,12 +144,12 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
 
   // ── Language filter ───────────────────────────────────────────────────────
 
-  function filterByLanguage(products: (Product | Cluster)[], language: string): (Product | Cluster)[] {
-    if (!language) return products;
+  function filterByLanguage(products: (Product | Cluster)[], lang: string): (Product | Cluster)[] {
+    if (!lang) return products;
     return products.filter((p) => {
-      const names = (p as Product).names;
+      const names = (p as Product).names || (p as Cluster).names || [];
       if (!names || names.length === 0) return true;
-      return names.some((n: any) => n.language?.toUpperCase() === language.toUpperCase() && n.value);
+      return names.some((n: { language?: string }) => n.language === lang);
     });
   }
 
@@ -152,46 +163,129 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
 
     try {
       const service = new CategoryService(graphqlClient);
-      const language = languageRef.value || 'NL';
-      const catId = options.categoryId?.value ?? configuration.baseCategoryId;
+      const lang = languageRef.value || 'NL';
+      const isWideSearch = !!(options.term?.value) || !!(options.brand?.value);
+      const catId = isWideSearch
+        ? (configuration?.baseCategoryId ?? 0)
+        : (options.categoryId?.value ?? configuration?.baseCategoryId ?? 0);
 
       if (!catId) return;
 
-      const productSearchInput: any = {
-        offset: pageSizeRef.value,
+      const activeSortField = (sortFieldRef.value ?? currentSortField.value) as Enums.ProductSortField;
+      const activeSortOrder = (sortOrderRef.value ?? currentSortOrder.value) as Enums.SortOrder;
+
+      // Build sort inputs
+      const sortInputs: ProductSortInput[] = activeSortField
+        ? [{ field: activeSortField, order: activeSortOrder }]
+        : [];
+
+      // Build search fields with boost when searching by term
+      const searchFields: SearchFieldsInput[] = options.term?.value
+        ? [
+            {
+              fieldNames: [
+                Enums.ProductSearchableField.NAME,
+                Enums.ProductSearchableField.KEYWORDS,
+                Enums.ProductSearchableField.SKU,
+                Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+              ],
+              boost: 5,
+            },
+            {
+              fieldNames: [
+                Enums.ProductSearchableField.DESCRIPTION,
+                Enums.ProductSearchableField.MANUFACTURER,
+                Enums.ProductSearchableField.MANUFACTURER_CODE,
+                Enums.ProductSearchableField.EAN_CODE,
+                Enums.ProductSearchableField.BAR_CODE,
+                Enums.ProductSearchableField.CLUSTER_ID,
+                Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                Enums.ProductSearchableField.PRODUCT_ID,
+                Enums.ProductSearchableField.SHORT_DESCRIPTION,
+                Enums.ProductSearchableField.SUPPLIER,
+                Enums.ProductSearchableField.SUPPLIER_CODE,
+              ],
+              boost: 1,
+            },
+          ]
+        : [];
+
+      // Build price filter
+      const priceFilter: ProductPriceFilterInput | undefined =
+        priceMinRef.value !== undefined || priceMaxRef.value !== undefined
+          ? { from: priceMinRef.value ?? 0, to: priceMaxRef.value ?? 999999 }
+          : undefined;
+
+      // Resolve user IDs
+      const user = userRef.value;
+      const userId: number | undefined =
+        user && 'contactId' in user
+          ? (user as Contact).contactId
+          : user && 'customerId' in user
+          ? (user as Customer).customerId
+          : undefined;
+
+      const contactId: number | undefined =
+        user && 'contactId' in user ? (user as Contact).contactId : undefined;
+
+      const customerId: number | undefined =
+        user && 'customerId' in user ? (user as Customer).customerId : undefined;
+
+      const categoryProductSearchInput: CategoryProductSearchInput = {
+        language: lang,
         page: pagination.currentPage.value,
-        ...(options.term?.value && { term: options.term.value }),
+        offset: pageSizeRef.value,
+        statuses: [
+          Enums.ProductStatus.A,
+          Enums.ProductStatus.P,
+          Enums.ProductStatus.T,
+          Enums.ProductStatus.S,
+        ],
+        hidden: false,
+        ...(options.term?.value && { term: options.term.value, searchFields }),
         ...(options.brand?.value && { manufacturers: [options.brand.value] }),
         ...(textFiltersRef.value?.length && { textFilters: textFiltersRef.value }),
-        ...(priceMinRef.value !== undefined && { priceMin: priceMinRef.value }),
-        ...(priceMaxRef.value !== undefined && { priceMax: priceMaxRef.value }),
-        ...(sortFieldRef.value && {
-          sortField: sortFieldRef.value,
-          sortOrder: sortOrderRef.value || 'ASC',
-        }),
+        ...(priceFilter && { price: priceFilter }),
+        ...(sortInputs.length && { sortInputs }),
         ...(companyIdRef.value && { companyId: companyIdRef.value }),
-        ...(userRef.value && { taxZone: options.taxZone }),
+        ...(userId !== undefined && { userId }),
       };
 
-      const response = await service.getCategory({
+      const priceCalculateProductInput: PriceCalculateProductInput = {
+        taxZone,
+        ...(companyIdRef.value && { companyId: companyIdRef.value }),
+        ...(contactId !== undefined && { contactId }),
+        ...(customerId !== undefined && { customerId }),
+      };
+
+      const filterAvailableAttributeInput: FilterAvailableAttributeInput = {
+        isSearchable: true,
+      };
+
+      const variables: CategoryQueryVariables = {
         categoryId: catId,
-        language,
-        categoryProductSearchInput: productSearchInput,
-        imageSearchFilters: configuration.imageSearchFiltersGrid,
-        imageVariantFilters: configuration.imageVariantFiltersMedium,
-      } as any);
+        language: lang,
+        categoryProductSearchInput,
+        priceCalculateProductInput,
+        filterAvailableAttributeInput,
+        imageSearchFilters: configuration?.imageSearchFiltersGrid,
+        imageVariantFilters: configuration?.imageVariantFiltersMedium,
+      };
+
+      const response = await service.getCategory(variables);
 
       // Ignore stale responses
       if (thisId !== fetchId) return;
 
-      const productsResponse = (response as any)?.products;
-      const rawProducts: (Product | Cluster)[] = productsResponse?.items || [];
-      const filtered = filterByLanguage(rawProducts, language);
+      const productsResponse = response?.products as ProductsResponse | undefined;
+      const rawProducts = (productsResponse?.items ?? []) as (Product | Cluster)[];
+      const filtered = filterByLanguage(rawProducts, lang);
 
       internalProducts.value = filtered;
-      const found = filtered.length < rawProducts.length
-        ? Math.max(0, (productsResponse?.itemsFound ?? 0) - (rawProducts.length - filtered.length))
-        : (productsResponse?.itemsFound ?? 0);
+
+      const untranslatedCount = rawProducts.length - filtered.length;
+      const apiTotal = productsResponse?.itemsFound ?? rawProducts.length;
+      const found = Math.max(0, apiTotal - untranslatedCount);
 
       itemsFound.value = found;
       onItemsFoundChange?.(found);
@@ -199,8 +293,8 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
       if (productsResponse) {
         pagination.setFromResponse({
           itemsFound: found,
-          pages: productsResponse.pages,
-          offset: productsResponse.offset,
+          pages: productsResponse.pages ?? 1,
+          offset: productsResponse.offset ?? pageSizeRef.value,
         });
         onProductsResponse?.(productsResponse);
       }
@@ -209,9 +303,10 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         onFiltersChange?.(productsResponse.filters);
       }
 
-      if (productsResponse?.priceRange) {
-        const pr = productsResponse.priceRange;
-        onPriceBoundsChange?.(pr.min ?? 0, pr.max ?? 0);
+      const minPrice = productsResponse?.minPrice;
+      const maxPrice = productsResponse?.maxPrice;
+      if (minPrice !== undefined && maxPrice !== undefined) {
+        onPriceBoundsChange?.(minPrice, maxPrice);
       }
 
       if (response) {
@@ -239,20 +334,27 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
       searchLoading.value = true;
       try {
         const service = new ProductService(graphqlClient);
-        const language = languageRef.value || 'NL';
-        const result = await service.getProducts({
-          language,
-          imageVariantFilters: {} as any,
-          input: {
-            term,
-            statuses: ['A', 'P', 'T', 'S'],
-            offset: 10,
-            sortField: Enums.ProductSortField.RELEVANCE,
-            sortOrder: Enums.SortOrder.DESC,
-            isSearchable: true,
-          } as any,
-        });
-        searchResults.value = (result as any)?.items || [];
+        const lang = languageRef.value || 'NL';
+        const input: ProductSearchInput = {
+          term,
+          language: lang,
+          page: 1,
+          offset: 10,
+          statuses: [
+            Enums.ProductStatus.A,
+            Enums.ProductStatus.P,
+            Enums.ProductStatus.T,
+            Enums.ProductStatus.S,
+          ],
+          sortInputs: [{ field: Enums.ProductSortField.RELEVANCE, order: Enums.SortOrder.DESC }],
+        };
+        const variables: ProductsQueryVariables = {
+          input,
+          language: lang,
+          imageVariantFilters: configuration?.imageVariantFiltersMedium as TransformationsInput,
+        };
+        const result = await service.getProducts(variables);
+        searchResults.value = (result?.items ?? []) as (Product | Cluster)[];
       } catch {
         searchResults.value = [];
       } finally {

@@ -1,17 +1,15 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   GraphQLClient,
   Cluster,
-  ClusterService,
-  ClusterConfigSetting,
   LocalizedString,
   Contact,
   Customer,
 } from 'propeller-sdk-v2';
-import { ClusterQueryVariables } from 'propeller-sdk-v2/dist/service/ClusterService';
+import { useProductInfo } from '@/composables/react/useProductInfo';
 
 export interface ClusterInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -98,31 +96,27 @@ export interface ClusterInfoProps {
    */
   textLabels?: string[];
 }
-interface ClusterInfoState {
-  internalCluster: Cluster | null;
-  loading: boolean;
-  getCluster: () => Cluster | null;
-  getClusterName: () => string;
-  getClusterSku: () => string;
-}
+
 function ClusterInfo(props: ClusterInfoProps) {
-  const [internalCluster, setInternalCluster] = useState<ClusterInfoState['internalCluster']>(
-    () => null
+  const { cluster: fetchedCluster, loading, fetchCluster } = useProductInfo(
+    props.graphqlClient
+      ? { graphqlClient: props.graphqlClient, language: props.language, configuration: props.configuration }
+      : { graphqlClient: {} as GraphQLClient, language: props.language, configuration: props.configuration }
   );
-  const [loading, setLoading] = useState<ClusterInfoState['loading']>(() => false);
-  function getCluster(): ReturnType<ClusterInfoState['getCluster']> {
-    return (props.cluster as Cluster) || internalCluster;
+
+  const activeCluster: Cluster | null = props.cluster || fetchedCluster;
+
+  function getClusterName(): string {
+    if (!activeCluster) return '';
+    const lang = props.language || 'NL';
+    const match = activeCluster.names?.find((n: LocalizedString) => n.language === lang);
+    return match?.value || activeCluster.names?.[0]?.value || '';
   }
-  function getClusterName(): ReturnType<ClusterInfoState['getClusterName']> {
-    const cluster = getCluster();
-    if (!cluster) return '';
-    const lang = (props.language as string) || 'NL';
-    const match = cluster.names?.find((n: LocalizedString) => n.language === lang);
-    return match?.value || cluster.names?.[0]?.value || '';
+
+  function getClusterSku(): string {
+    return activeCluster?.sku || '';
   }
-  function getClusterSku(): ReturnType<ClusterInfoState['getClusterSku']> {
-    return getCluster()?.sku || '';
-  }
+
   useEffect(() => {
     if (props.cluster) {
       if (props.onClusterLoaded) {
@@ -131,59 +125,15 @@ function ClusterInfo(props: ClusterInfoProps) {
       return;
     }
     if (!props.clusterId || !props.graphqlClient) return;
-    setLoading(true);
-    const service = new ClusterService(props.graphqlClient as GraphQLClient);
-    const lang = (props.language as string) || 'NL';
-    const taxZone = props.taxZone || 'NL';
-    service
-      .getClusterConfig(props.clusterId as number)
-      .then((clusterConfig: Cluster) => {
-        const attributeNames: string[] =
-          clusterConfig?.config?.settings?.map((setting: ClusterConfigSetting) => setting.name) ||
-          [];
-        const variables: ClusterQueryVariables = {
-          clusterId: props.clusterId as number,
-          imageSearchFilters:
-            props.imageSearchFilters || props.configuration.imageSearchFiltersGrid,
-          imageVariantFilters:
-            props.imageVariantFilters || props.configuration.imageVariantFiltersMedium,
-          language: lang,
-          priceCalculateProductInput: {
-            taxZone: taxZone,
-            ...(props.user &&
-              'company' in props.user && {
-                companyId: (props.user as Contact)?.company?.companyId,
-              }),
-            ...(props.user &&
-              'contactId' in props.user && {
-                contactId: (props.user as Contact)?.contactId,
-              }),
-            ...(props.user &&
-              'customerId' in props.user && {
-                customerId: (props.user as Customer)?.customerId,
-              }),
-          },
-          ...(attributeNames.length > 0 && {
-            attributeResultSearchInput: {
-              attributeDescription: {
-                names: attributeNames,
-              },
-            },
-          }),
-        };
-        return service.getCluster(variables);
-      })
-      .then((cluster: Cluster) => {
-        setInternalCluster(cluster);
-        setLoading(false);
-        if (props.onClusterLoaded) {
-          props.onClusterLoaded(cluster);
-        }
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+    fetchCluster(props.clusterId);
   }, [props.clusterId]);
+
+  useEffect(() => {
+    if (fetchedCluster && props.onClusterLoaded) {
+      props.onClusterLoaded(fetchedCluster);
+    }
+  }, [fetchedCluster]);
+
   return (
     <div className={`cluster-info ${(props.className as string) || ''}`}>
       {loading && !props.cluster ? (

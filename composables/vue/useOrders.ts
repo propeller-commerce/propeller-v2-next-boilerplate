@@ -21,8 +21,6 @@ import type {
   Order,
   OrderItem,
   Cart,
-  Contact,
-  Customer,
   OrderSearchArguments,
   DateSearchInput,
   DecimalSearchInput,
@@ -136,7 +134,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     try {
       const service = new OrderService(graphqlClient);
 
-      const userId: number = isContact(u) ? u.contactId : (u as Customer).customerId;
+      const userId: number = isContact(u) ? u.contactId : isCustomer(u) ? u.customerId : 0;
       const companyId = companyIdRef.value ?? (isContact(u) ? u.company?.companyId : null);
 
       const searchArgs: OrderSearchArguments = {
@@ -158,8 +156,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
       orders.value = response.items || [];
       pagination.setFromResponse(response);
       pagination.currentPage.value = page;
-    } catch (e: any) {
-      error.value = e?.message || 'Failed to fetch orders';
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch orders';
       orders.value = [];
     } finally {
       loading.value = false;
@@ -219,8 +217,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
       window.URL.revokeObjectURL(url);
 
       return { success: true };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to download PDF' };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to download PDF' };
     }
   }
 
@@ -254,7 +252,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
 
       // Filter to product parent items (exclude bonuses and children)
       const allProducts = order.items.filter(
-        (item: OrderItem) => item.class === 'product' && item.isBonus === 'N'
+        (item: OrderItem) => item.class === Enums.OrderItemClass.product && item.isBonus === Enums.YesNo.N
       );
       const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
 
@@ -309,8 +307,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
         return { success: true, cart: lastCart };
       }
       return { success: false, error: 'No items were added' };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Reorder failed' };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Reorder failed' };
     }
   }
 
@@ -330,8 +328,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
       const service = new OrderService(graphqlClient);
       await service.setOrderStatus({ orderId, ...flags });
       return { success: true };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to update status' };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to update status' };
     }
   }
 

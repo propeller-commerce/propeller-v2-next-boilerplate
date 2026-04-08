@@ -224,6 +224,8 @@ export default function Header() {
                   <SearchBar
                     graphqlClient={graphqlClient}
                     language={language}
+                    configuration={config}
+                    companyId={selectedCompany?.companyId}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
@@ -302,6 +304,8 @@ export default function Header() {
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}
+                    configuration={config}
+                    language={language}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                   />
                   // <Button

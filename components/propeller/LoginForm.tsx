@@ -6,11 +6,8 @@ import {
   Contact,
   Customer,
   GraphQLClient,
-  LoginService,
-  UserService,
-  LoginInput,
-  ViewerResult,
 } from 'propeller-sdk-v2';
+import { useAuth } from '@/composables/react/useAuth';
 
 export interface LoginFormProps {
   /**
@@ -109,91 +106,70 @@ export interface LoginFormProps {
    */
   accountHeaderLoginForm?: boolean;
 }
-interface LoginFormState {
-  email: string;
-  password: string;
-  loading: boolean;
-  error: string;
-  getLabel: (key: string, fallback: string) => string;
-  emailLabel: () => string;
-  passwordLabel: () => string;
-  emailPlaceholder: () => string;
-  passwordPlaceholder: () => string;
-  forgotPasswordText: () => string;
-  registerText: () => string;
-  registerLinkText: () => string;
-  guestCheckoutLinkText: () => string;
-  resolvedTitle: () => string;
-  resolvedButtonText: () => string;
-  showForgotPassword: () => boolean;
-  showRegister: () => boolean;
-  showGuestCheckout: () => boolean;
-  isLoading: () => boolean;
-  errorMessage: () => string;
-  handleSubmit: (e: any) => Promise<void>;
-}
+
 function LoginForm(props: LoginFormProps) {
-  const [email, setEmail] = useState<LoginFormState['email']>(() => '');
-  const [password, setPassword] = useState<LoginFormState['password']>(() => '');
-  const [loading, setLoading] = useState<LoginFormState['loading']>(() => false);
-  const [error, setError] = useState<LoginFormState['error']>(() => '');
-  function getLabel(key: string, fallback: string): ReturnType<LoginFormState['getLabel']> {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const { loading, error: authError, login } = useAuth({
+    graphqlClient: props.graphqlClient as GraphQLClient,
+  });
+
+  function getLabel(key: string, fallback: string): string {
     return (props.labels as any)?.[key] || fallback;
   }
-  function emailLabel(): ReturnType<LoginFormState['emailLabel']> {
+  function emailLabel(): string {
     return props.labels?.email || 'Email';
   }
-  function passwordLabel(): ReturnType<LoginFormState['passwordLabel']> {
+  function passwordLabel(): string {
     return props.labels?.password || 'Password';
   }
-  function emailPlaceholder(): ReturnType<LoginFormState['emailPlaceholder']> {
+  function emailPlaceholder(): string {
     return props.labels?.emailPlaceholder || 'name@example.com';
   }
-  function passwordPlaceholder(): ReturnType<LoginFormState['passwordPlaceholder']> {
+  function passwordPlaceholder(): string {
     return props.labels?.passwordPlaceholder || '••••••••';
   }
-  function forgotPasswordText(): ReturnType<LoginFormState['forgotPasswordText']> {
+  function forgotPasswordText(): string {
     return props.labels?.forgotPassword || 'Forgot password?';
   }
-  function registerText(): ReturnType<LoginFormState['registerText']> {
+  function registerText(): string {
     return props.labels?.registerText || "Don't have an account?";
   }
-  function registerLinkText(): ReturnType<LoginFormState['registerLinkText']> {
+  function registerLinkText(): string {
     return props.labels?.registerLink || 'Create an Account';
   }
-  function guestCheckoutLinkText(): ReturnType<LoginFormState['guestCheckoutLinkText']> {
+  function guestCheckoutLinkText(): string {
     return props.labels?.guestCheckoutLink || 'Continue as Guest';
   }
-  function resolvedTitle(): ReturnType<LoginFormState['resolvedTitle']> {
+  function resolvedTitle(): string {
     return props.title !== undefined ? props.title : 'Log in';
   }
-  function resolvedButtonText(): ReturnType<LoginFormState['resolvedButtonText']> {
+  function resolvedButtonText(): string {
     return props.buttonText || 'Login';
   }
-  function showForgotPassword(): ReturnType<LoginFormState['showForgotPassword']> {
+  function showForgotPassword(): boolean {
     return props.displayForgotPasswordLink !== false;
   }
-  function showRegister(): ReturnType<LoginFormState['showRegister']> {
+  function showRegister(): boolean {
     return props.displayRegisterLink !== false;
   }
-  function showGuestCheckout(): ReturnType<LoginFormState['showGuestCheckout']> {
+  function showGuestCheckout(): boolean {
     return props.displayGuestCheckoutLink !== false;
   }
-  function isLoading(): ReturnType<LoginFormState['isLoading']> {
-    // Self-contained mode uses internal state; delegation mode uses prop
+  function isLoading(): boolean {
     if (props.onLoginSubmit) {
       return props.loginLoading === true;
     }
     return loading;
   }
-  function errorMessage(): ReturnType<LoginFormState['errorMessage']> {
-    // Self-contained mode uses internal state; delegation mode uses prop
+  function errorMessage(): string {
     if (props.onLoginSubmit) {
       return props.loginError || '';
     }
-    return error;
+    return authError || '';
   }
-  async function handleSubmit(e: any): ReturnType<LoginFormState['handleSubmit']> {
+  async function handleSubmit(e: any): Promise<void> {
     e.preventDefault();
     if (props.beforeLogin) {
       props.beforeLogin();
@@ -204,69 +180,19 @@ function LoginForm(props: LoginFormProps) {
       return;
     }
 
-    // Self-contained mode: handle login via SDK
+    // Self-contained mode: handle login via composable
     if (!props.graphqlClient) {
-      setError('Login is not configured. Please provide graphqlClient or onLoginSubmit.');
       return;
     }
     if (loading) return;
-    setLoading(true);
-    setError('');
-    try {
-      const loginService = new LoginService(props.graphqlClient as GraphQLClient);
-      const userService = new UserService(props.graphqlClient as GraphQLClient);
-      const loginInput: LoginInput = {
-        email: email,
-        password: password,
-      };
-      const loginResponse = await loginService.login(loginInput);
-      if (!loginResponse?.session) {
-        throw new Error('Invalid response: No session data received');
-      }
-      const session = loginResponse.session;
-      const accessToken = session.accessToken;
-      const refreshToken = session.refreshToken;
-      if (!accessToken || !refreshToken) {
-        throw new Error('Invalid response: Missing authentication tokens');
-      }
 
-      // Update GraphQL client with auth header
-      const currentConfig = props.graphqlClient.getConfig();
-      props.graphqlClient.updateConfig({
-        headers: {
-          ...currentConfig.headers,
-          Authorization: 'Bearer ' + accessToken,
-        },
-      });
-
-      // Fetch viewer data
-      let user: ViewerResult | null = null;
-      try {
-        user = await userService.getViewer({});
-      } catch (viewerError: any) {}
-
-      // Dispatch event for AuthContext to pick up
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
-
-      // Reset form
+    const result = await login(email, password);
+    if (result.success && result.user) {
       setEmail('');
       setPassword('');
-
-      // Notify parent
       if (props.afterLogin) {
-        props.afterLogin(
-          user as unknown as Contact | Customer,
-          accessToken,
-          refreshToken,
-          session?.expirationTime
-        );
+        props.afterLogin(result.user as Contact | Customer, result.accessToken, result.refreshToken, result.expiresAt);
       }
-    } catch (err: any) {
-      setError("The credentials you entered don't match our records. Please try again.");
-    } finally {
-      setLoading(false);
     }
   }
   return (

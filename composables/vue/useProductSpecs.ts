@@ -11,7 +11,7 @@
 
 import { ref, type Ref } from 'vue';
 import { ProductService } from 'propeller-sdk-v2';
-import type { GraphQLClient, AttributeResult } from 'propeller-sdk-v2';
+import type { GraphQLClient, AttributeResult, AttributeResultSearchInput } from 'propeller-sdk-v2';
 import {
   extractAttributeValues,
   getAttributeDisplayName,
@@ -53,6 +53,7 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
   const loading = ref(false);
   const error = ref<string | null>(null);
 
+  // Mirrors ProductSpecifications.lite.tsx buildGroups logic.
   function buildGroups(attrs: AttributeResult[], language: string): AttributeGroup[] {
     const ungrouped: AttributeDisplayItem[] = [];
     const groupMap: Record<string, AttributeDisplayItem[]> = {};
@@ -66,10 +67,10 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
         name: attr.attributeDescription?.name || '',
         displayName,
         values,
-        type: (attr.value as any)?.type || 'TEXT',
+        type: attr.value?.type || 'TEXT',
       };
 
-      const groupName = (attr.attributeDescription as any)?.group || '';
+      const groupName = attr.attributeDescription?.group || '';
       if (groupName) {
         if (!groupMap[groupName]) groupMap[groupName] = [];
         groupMap[groupName].push(item);
@@ -78,9 +79,9 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
       }
     }
 
-    const groups: AttributeGroup[] = Object.entries(groupMap).map(([name, attrs]) => ({
+    const groups: AttributeGroup[] = Object.entries(groupMap).map(([name, attributes]) => ({
       name,
-      attributes: attrs,
+      attributes,
     }));
 
     if (ungrouped.length) {
@@ -96,12 +97,18 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
     try {
       const service = new ProductService(graphqlClient);
       const language = languageRef.value || 'NL';
-      const result = await service.getAttributeResultByProductId(productId, {} as any);
-      const items = ((result as any)?.items as AttributeResult[]) || [];
+      // Mirrors ProductSpecifications.lite.tsx: isPublic: true, page: 1, offset: 2000
+      const searchInput: AttributeResultSearchInput = {
+        attributeDescription: { isPublic: true },
+        page: 1,
+        offset: 2000,
+      };
+      const result = await service.getAttributeResultByProductId(productId, searchInput);
+      const items: AttributeResult[] = result?.items ?? [];
       attributes.value = items;
       groupedAttributes.value = buildGroups(items, language);
-    } catch (e: any) {
-      error.value = e?.message || 'Failed to fetch specifications';
+    } catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch specifications';
     } finally {
       loading.value = false;
     }

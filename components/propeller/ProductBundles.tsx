@@ -4,23 +4,15 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
   GraphQLClient,
-  BundleService,
-  CartService,
-  BundleQueryVariables,
   Contact,
   Customer,
   Cart,
   Enums,
-  CartAddBundleVariables,
-  CartSearchInput,
   Bundle,
   BundleItem,
   Product,
-  CartQueryVariables,
-  CartStartInput,
-  CartStartVariables,
-  Address,
 } from 'propeller-sdk-v2';
+import { useProductBundles } from '@/composables/react/useProductBundles';
 
 export interface ProductBundlesProps {
   // === Core ===
@@ -132,109 +124,95 @@ export interface ProductBundlesProps {
   /** Extra CSS class applied to the root wrapper element. */
   className?: string;
 }
-interface ProductBundlesState {
-  bundles: Bundle[];
-  isLoading: boolean;
-  includeTax: boolean;
-  isMounted: boolean;
-  addingBundleId: string | null;
-  lastAddedBundle: Bundle | null;
-  activeCartId: string;
-  toastMessage: string;
-  toastType: string;
-  toastVisible: boolean;
-  modalVisible: boolean;
-  getIncludeTax: () => boolean;
-  getShowItems: () => boolean;
-  getLayout: () => string;
-  getIsAnonymous: () => boolean;
-  getHidePrices: () => boolean;
-  getLabel: (key: string, fallback: string) => string;
-  formatPrice: (value: number) => string;
-  getBundlePrice: (bundle: Bundle) => number;
-  getOriginalPrice: (bundle: Bundle) => number;
-  getItemPrice: (item: BundleItem) => number;
-  hasDiscount: (bundle: Bundle) => boolean;
-  getDiscountPercentage: (bundle: Bundle) => number;
-  getProductImage: (product: Product) => string;
-  getProductName: (product: Product) => string;
-  showToast: (message: string, type: string) => void;
-  dismissToast: () => void;
-  closeModal: () => void;
-  fetchBundles: () => Promise<void>;
-  handleAddToCart: (bundle: Bundle) => Promise<void>;
-  initCart: () => Promise<void>;
-}
+
 function ProductBundles(props: ProductBundlesProps) {
-  const [bundles, setBundles] = useState<ProductBundlesState['bundles']>(() => []);
-  const [isLoading, setIsLoading] = useState<ProductBundlesState['isLoading']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ProductBundlesState['includeTax']>(() => false);
-  const [isMounted, setIsMounted] = useState<ProductBundlesState['isMounted']>(() => false);
-  const [addingBundleId, setAddingBundleId] = useState<ProductBundlesState['addingBundleId']>(
-    () => null
-  );
-  const [lastAddedBundle, setLastAddedBundle] = useState<ProductBundlesState['lastAddedBundle']>(
-    () => null
-  );
-  const [activeCartId, setActiveCartId] = useState<ProductBundlesState['activeCartId']>(() => '');
-  const [toastMessage, setToastMessage] = useState<ProductBundlesState['toastMessage']>(() => '');
-  const [toastType, setToastType] = useState<ProductBundlesState['toastType']>(() => '');
-  const [toastVisible, setToastVisible] = useState<ProductBundlesState['toastVisible']>(
-    () => false
-  );
-  const [modalVisible, setModalVisible] = useState<ProductBundlesState['modalVisible']>(
-    () => false
-  );
-  function getIncludeTax(): ReturnType<ProductBundlesState['getIncludeTax']> {
-    return props.includeTax !== undefined ? !!props.includeTax : includeTax;
+  const [isMounted, setIsMounted] = useState<boolean>(() => false);
+  const [addingBundleId, setAddingBundleId] = useState<string | null>(() => null);
+  const [lastAddedBundle, setLastAddedBundle] = useState<Bundle | null>(() => null);
+  const [toastMessage, setToastMessage] = useState<string>(() => '');
+  const [toastType, setToastType] = useState<string>(() => '');
+  const [toastVisible, setToastVisible] = useState<boolean>(() => false);
+  const [modalVisible, setModalVisible] = useState<boolean>(() => false);
+
+  const {
+    bundles: fetchedBundles,
+    loading: isLoading,
+    cartId: composableCartId,
+    fetchBundles,
+    addBundleToCart: composableAddBundleToCart,
+  } = useProductBundles({
+    graphqlClient: props.graphqlClient,
+    user: (props.user as any) || null,
+    language: props.language,
+    configuration: props.configuration || {},
+    onCartCreated: props.onCartCreated,
+  });
+
+  // Cast fetched bundles back to SDK Bundle type for display
+  const bundles = fetchedBundles as unknown as Bundle[];
+
+  function getIncludeTax(): boolean {
+    return props.includeTax !== undefined ? !!props.includeTax : false;
   }
-  function getShowItems(): ReturnType<ProductBundlesState['getShowItems']> {
+
+  function getShowItems(): boolean {
     return props.showIndividualItems !== undefined ? !!props.showIndividualItems : true;
   }
-  function getLayout(): ReturnType<ProductBundlesState['getLayout']> {
+
+  function getLayout(): string {
     return (props.layout as string) || 'horizontal';
   }
-  function getIsAnonymous(): ReturnType<ProductBundlesState['getIsAnonymous']> {
+
+  function getIsAnonymous(): boolean {
     return !props.user;
   }
-  function getHidePrices(): ReturnType<ProductBundlesState['getHidePrices']> {
+
+  function getHidePrices(): boolean {
     return (props.portalMode as string) === 'semi-closed' && getIsAnonymous();
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductBundlesState['getLabel']> {
+
+  function getLabel(key: string, fallback: string): string {
     const val = (props.labels as Record<string, string>)?.[key];
     return val !== undefined ? val : fallback;
   }
-  function formatPrice(value: number): ReturnType<ProductBundlesState['formatPrice']> {
+
+  function formatPrice(value: number): string {
     return '\u20AC' + Number(value).toFixed(2);
   }
-  function getBundlePrice(bundle: Bundle): ReturnType<ProductBundlesState['getBundlePrice']> {
+
+  function getBundlePrice(bundle: Bundle): number {
     return getIncludeTax() ? bundle.price?.net || 0 : bundle.price?.gross || 0;
   }
-  function getOriginalPrice(bundle: Bundle): ReturnType<ProductBundlesState['getOriginalPrice']> {
+
+  function getOriginalPrice(bundle: Bundle): number {
     return getIncludeTax() ? bundle.price?.originalNet || 0 : bundle.price?.originalGross || 0;
   }
-  function getItemPrice(item: BundleItem): ReturnType<ProductBundlesState['getItemPrice']> {
+
+  function getItemPrice(item: BundleItem): number {
     return getIncludeTax() ? item.price?.net || 0 : item.price?.gross || 0;
   }
-  function hasDiscount(bundle: Bundle): ReturnType<ProductBundlesState['hasDiscount']> {
+
+  function hasDiscount(bundle: Bundle): boolean {
     const current: number = getBundlePrice(bundle);
     const original: number = getOriginalPrice(bundle);
     return original > 0 && current < original;
   }
-  function getDiscountPercentage(
-    bundle: Bundle
-  ): ReturnType<ProductBundlesState['getDiscountPercentage']> {
+
+  function getDiscountPercentage(bundle: Bundle): number {
     const original: number = getOriginalPrice(bundle);
     if (original <= 0) return 0;
     return Math.round(((original - getBundlePrice(bundle)) / original) * 100);
   }
-  function getProductImage(product: Product): ReturnType<ProductBundlesState['getProductImage']> {
+
+  function getProductImage(product: Product): string {
     return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-  function getProductName(product: Product): ReturnType<ProductBundlesState['getProductName']> {
+
+  function getProductName(product: Product): string {
     return product?.names?.[0]?.value || '';
   }
-  function showToast(message: string, type: string): ReturnType<ProductBundlesState['showToast']> {
+
+  function showToast(message: string, type: string): void {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
@@ -242,176 +220,17 @@ function ProductBundles(props: ProductBundlesProps) {
       setToastVisible(false);
     }, 3000);
   }
-  function dismissToast(): ReturnType<ProductBundlesState['dismissToast']> {
+
+  function dismissToast(): void {
     setToastVisible(false);
   }
-  function closeModal(): ReturnType<ProductBundlesState['closeModal']> {
+
+  function closeModal(): void {
     setModalVisible(false);
     setLastAddedBundle(null);
   }
-  async function initCart(): ReturnType<ProductBundlesState['initCart']> {
-    const cartService = new CartService(props.graphqlClient);
-    // 1. Check for existing carts for this user first
-    if (props.user) {
-      try {
-        const searchInput: CartSearchInput = {
-          offset: 100,
-          statuses: [Enums.CartStatus.OPEN],
-        };
-        if ('contactId' in props.user && props.user.contactId) {
-          searchInput.contactIds = [props.user.contactId];
-          if (
-            props.user.company &&
-            'companyId' in props.user.company &&
-            props.user.company.companyId
-          ) {
-            searchInput.companyIds = [props.user.company.companyId];
-          }
-        } else if ('customerId' in props.user && props.user.customerId) {
-          searchInput.customerIds = [props.user.customerId];
-        }
-        const carts = await cartService.getCarts(searchInput);
-        if (carts && carts.items && carts.items.length > 0) {
-          const cartId = carts.items[carts.items.length - 1].cartId;
-          const cartVariables: CartQueryVariables = {
-            cartId: cartId,
-            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-          };
-          const cart = await cartService.getCart(cartVariables);
-          setActiveCartId(cart.cartId);
-          if (props.onCartCreated) {
-            props.onCartCreated(cart);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to check existing carts', e);
-      }
-    }
 
-    // 2. Start a new cart
-    const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-    const startCartInput: CartStartInput = {
-      language,
-    };
-    if (props.user) {
-      if ('contactId' in props.user && props.user.contactId) {
-        startCartInput.contactId = props.user.contactId;
-        if ('companyId' in props.user && props.user.companyId) {
-          startCartInput.companyId = props.user.companyId as number;
-        }
-      } else if ('customerId' in props.user && props.user.customerId) {
-        startCartInput.customerId = props.user.customerId;
-      }
-    }
-    const cartStartVars: CartStartVariables = {
-      input: startCartInput,
-      imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-      imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-      language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-    };
-    let newCart = await cartService.startCart(cartStartVars);
-
-    // 3. Assign Default Addresses
-    if (newCart && props.user) {
-      const addresses =
-        'company' in props.user
-          ? props.user.company?.addresses
-          : (props.user as Customer).addresses;
-      if (addresses && Array.isArray(addresses)) {
-        const defaultInvoice = addresses.find(
-          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice'
-        );
-        const defaultDelivery = addresses.find(
-          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery'
-        );
-        if (defaultInvoice) {
-          newCart = await cartService.updateCartAddress({
-            id: newCart.cartId,
-            input: {
-              type: Enums.CartAddressType.INVOICE,
-              firstName: defaultInvoice.firstName || '',
-              lastName: defaultInvoice.lastName || '',
-              street: defaultInvoice.street || '',
-              postalCode: defaultInvoice.postalCode || '',
-              city: defaultInvoice.city || '',
-              country: defaultInvoice.country || 'NL',
-              company: defaultInvoice.company || '',
-              gender: defaultInvoice.gender || Enums.Gender.U,
-              middleName: defaultInvoice.middleName || '',
-              number: defaultInvoice.number || '',
-              numberExtension: defaultInvoice.numberExtension || '',
-              email: defaultInvoice.email || '',
-              mobile: defaultInvoice.mobile || '',
-              phone: defaultInvoice.phone || '',
-              notes: defaultInvoice.notes || '',
-            },
-            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: language,
-          });
-        }
-        if (defaultDelivery) {
-          newCart = await cartService.updateCartAddress({
-            id: newCart.cartId,
-            input: {
-              type: Enums.CartAddressType.DELIVERY,
-              firstName: defaultDelivery.firstName || '',
-              lastName: defaultDelivery.lastName || '',
-              street: defaultDelivery.street || '',
-              postalCode: defaultDelivery.postalCode || '',
-              city: defaultDelivery.city || '',
-              country: defaultDelivery.country || 'NL',
-              company: defaultDelivery.company || '',
-              gender: defaultDelivery.gender || Enums.Gender.U,
-              middleName: defaultDelivery.middleName || '',
-              number: defaultDelivery.number || '',
-              numberExtension: defaultDelivery.numberExtension || '',
-              email: defaultDelivery.email || '',
-              mobile: defaultDelivery.mobile || '',
-              phone: defaultDelivery.phone || '',
-              notes: defaultDelivery.notes || '',
-            },
-            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: language,
-          });
-        }
-      }
-    }
-    setActiveCartId(newCart.cartId);
-    if (props.onCartCreated) {
-      props.onCartCreated(newCart);
-    }
-  }
-  async function fetchBundles(): ReturnType<ProductBundlesState['fetchBundles']> {
-    if (!props.graphqlClient || !props.productId) return;
-    setIsLoading(true);
-    try {
-      const bundleService = new BundleService(props.graphqlClient);
-      const productBundlesQueryVariables: BundleQueryVariables = {
-        input: {
-          productIds: [props.productId],
-          taxZone: props.taxZone || 'NL',
-          page: 1,
-          offset: 20,
-        },
-        language: props.language || 'NL',
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-        imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
-      };
-      const result = await bundleService.getBundles(productBundlesQueryVariables);
-      setBundles(result?.items || []);
-    } catch (e) {
-      setBundles([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-  async function handleAddToCart(
-    bundle: Bundle
-  ): ReturnType<ProductBundlesState['handleAddToCart']> {
+  async function handleAddToCart(bundle: Bundle): Promise<void> {
     if (addingBundleId) return;
     setAddingBundleId(bundle.id);
     try {
@@ -423,32 +242,16 @@ function ProductBundles(props: ProductBundlesProps) {
           props.beforeBundleAddToCart(bundle.id, 1);
         }
 
-        // Internal CartService fallback — resolve cart ID
-        let cartId = props.cartId || activeCartId;
-        if (!cartId) {
-          if (props.createCart) {
-            await initCart();
-            cartId = activeCartId;
-          }
-          if (!cartId) {
-            showToast(getLabel('noCartId', 'No cart ID provided'), 'error');
-            return;
-          }
+        const existingCartId = props.cartId || composableCartId;
+        const result = await composableAddBundleToCart(bundle.id as unknown as number, existingCartId || undefined);
+
+        if (!result.success) {
+          showToast(result.error || getLabel('noCartId', 'No cart ID provided'), 'error');
+          return;
         }
-        const cartService = new CartService(props.graphqlClient);
-        const cartAddBundleVariables: CartAddBundleVariables = {
-          id: cartId,
-          input: {
-            bundleId: bundle.id,
-            quantity: 1,
-          },
-          language: props.language || 'NL',
-          imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-          imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-        };
-        const cart = await cartService.addBundleToCart(cartAddBundleVariables);
-        if (props.afterBundleAddToCart) {
-          props.afterBundleAddToCart(cart, bundle);
+
+        if (result.cart && props.afterBundleAddToCart) {
+          props.afterBundleAddToCart(result.cart, bundle);
         }
       }
       if (props.showModal) {
@@ -465,12 +268,15 @@ function ProductBundles(props: ProductBundlesProps) {
       setAddingBundleId(null);
     }
   }
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
   useEffect(() => {
-    fetchBundles();
+    fetchBundles(props.productId);
   }, [props.productId]);
+
   return (
     <>
       {isMounted && !isLoading && bundles.length > 0 ? (

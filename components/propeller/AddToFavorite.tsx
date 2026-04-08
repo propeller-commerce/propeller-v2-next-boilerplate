@@ -1,14 +1,13 @@
 'use client';
-import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import {
-  FavoriteListService,
   FavoriteList,
   GraphQLClient,
   Contact,
   Customer,
 } from 'propeller-sdk-v2';
+import { useFavorites } from '@/composables/react/useFavorites';
 
 export interface AddToFavoriteProps {
   /** The initialized GraphQL Client instance */
@@ -32,143 +31,104 @@ export interface AddToFavoriteProps {
   /** Called after a favorite list mutation (add/remove) succeeds */
   onFavoriteChanged?: () => void;
 }
-interface AddToFavoriteState {
-  /** IDs of lists that contain this product/cluster (optimistic local tracking) */
-  memberListIds: Set<string>;
-  showModal: boolean;
-  selectedListId: string;
-  addLoading: boolean;
-  removeLoading: boolean;
-  _isMounted: boolean;
-  isFavorited: () => boolean;
-  isProduct: () => boolean;
-  itemId: () => number;
-  toggleModal: () => void;
-  closeModal: () => void;
-  handleAddToList: () => Promise<void>;
-  handleRemoveFromList: (listId: string) => Promise<void>;
-  getLabel: (key: string, fallback: string) => string;
-  getMemberLists: () => FavoriteList[];
-  getNonMemberLists: () => FavoriteList[];
-}
+
 function AddToFavorite(props: AddToFavoriteProps) {
-  const [memberListIds, setMemberListIds] = useState<AddToFavoriteState['memberListIds']>(
-    () => new Set<string>()
-  );
-  const [showModal, setShowModal] = useState<AddToFavoriteState['showModal']>(() => false);
-  const [selectedListId, setSelectedListId] = useState<AddToFavoriteState['selectedListId']>(
-    () => ''
-  );
-  const [addLoading, setAddLoading] = useState<AddToFavoriteState['addLoading']>(() => false);
-  const [removeLoading, setRemoveLoading] = useState<AddToFavoriteState['removeLoading']>(
-    () => false
-  );
-  const [_isMounted, set_isMounted] = useState<AddToFavoriteState['_isMounted']>(() => false);
-  function isFavorited(): ReturnType<AddToFavoriteState['isFavorited']> {
-    return memberListIds.size > 0;
+  const { lists, addToList, removeFromList } = useFavorites({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+  });
+
+  const [isOpen, setIsOpen] = useState(() => false);
+  const [loading, setLoading] = useState(() => false);
+  const [_isMounted, set_isMounted] = useState(() => false);
+  const [selectedListId, setSelectedListId] = useState(() => '');
+  const [memberListIds, setMemberListIds] = useState<Set<string>>(() => new Set<string>());
+
+  function getLabel(key: string, fallback: string): string {
+    const labels = props.labels as Record<string, string> | undefined;
+    return labels?.[key] || fallback;
   }
-  function isProduct(): ReturnType<AddToFavoriteState['isProduct']> {
+
+  function isProduct(): boolean {
     return !!props.productId;
   }
-  function itemId(): ReturnType<AddToFavoriteState['itemId']> {
+
+  function itemId(): number {
     return (props.productId || props.clusterId || 0) as number;
   }
-  function toggleModal(): ReturnType<AddToFavoriteState['toggleModal']> {
+
+  function isFavorited(): boolean {
+    return memberListIds.size > 0;
+  }
+
+  function getMemberLists(): FavoriteList[] {
+    return lists.filter((list: FavoriteList) => memberListIds.has(String(list.id)));
+  }
+
+  function getNonMemberLists(): FavoriteList[] {
+    return lists.filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
+  }
+
+  function toggleModal() {
     if (!props.user) return;
-    if (!showModal) {
+    if (!isOpen) {
       const nonMember = getNonMemberLists();
       if (nonMember.length > 0 && !selectedListId) {
         setSelectedListId(String(nonMember[0].id));
       }
     }
-    setShowModal(!showModal);
+    setIsOpen(!isOpen);
   }
-  function closeModal(): ReturnType<AddToFavoriteState['closeModal']> {
-    setShowModal(false);
+
+  function closeModal() {
+    setIsOpen(false);
   }
-  async function handleAddToList(): ReturnType<AddToFavoriteState['handleAddToList']> {
-    if (!selectedListId || !props.graphqlClient || addLoading) return;
-    setAddLoading(true);
+
+  async function handleAddToList() {
+    if (!selectedListId || loading) return;
+    setLoading(true);
     try {
-      const service = new FavoriteListService(props.graphqlClient);
-      const input = isProduct()
-        ? {
-            productIds: [itemId()],
-          }
-        : {
-            clusterIds: [itemId()],
-          };
-      await service.addFavoriteListItems(selectedListId, input);
+      await addToList(selectedListId, props.productId, props.clusterId);
       const newMemberIds = new Set(memberListIds);
       newMemberIds.add(String(selectedListId));
       setMemberListIds(newMemberIds);
       setSelectedListId('');
-      setShowModal(false);
+      setIsOpen(false);
       if (props.onFavoriteChanged) props.onFavoriteChanged();
     } catch (error) {
       console.error('Error adding to favorite list:', error);
     } finally {
-      setAddLoading(false);
+      setLoading(false);
     }
   }
-  async function handleRemoveFromList(
-    listId: string
-  ): ReturnType<AddToFavoriteState['handleRemoveFromList']> {
-    if (!props.graphqlClient || removeLoading) return;
-    setRemoveLoading(true);
+
+  async function handleRemoveFromList(listId: string) {
+    if (loading) return;
+    setLoading(true);
     try {
-      const service = new FavoriteListService(props.graphqlClient);
-      const input = isProduct()
-        ? {
-            productIds: [itemId()],
-          }
-        : {
-            clusterIds: [itemId()],
-          };
-      await service.removeFavoriteListItems(listId, input);
+      await removeFromList(listId, props.productId, props.clusterId);
       const newMemberIds = new Set(memberListIds);
       newMemberIds.delete(String(listId));
       setMemberListIds(newMemberIds);
       setSelectedListId('');
-      setShowModal(false);
+      setIsOpen(false);
       if (props.onFavoriteChanged) props.onFavoriteChanged();
     } catch (error) {
       console.error('Error removing from favorite list:', error);
     } finally {
-      setRemoveLoading(false);
+      setLoading(false);
     }
   }
-  function getLabel(key: string, fallback: string): ReturnType<AddToFavoriteState['getLabel']> {
-    const labels = props.labels as Record<string, string> | undefined;
-    return labels?.[key] || fallback;
-  }
-  function getMemberLists(): ReturnType<AddToFavoriteState['getMemberLists']> {
-    const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
-    return (userLists || []).filter((list: FavoriteList) => memberListIds.has(String(list.id)));
-  }
-  function getNonMemberLists(): ReturnType<AddToFavoriteState['getNonMemberLists']> {
-    const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
-    return (userLists || []).filter((list: FavoriteList) => !memberListIds.has(String(list.id)));
-  }
-  function computeMemberListIds() {
+
+  function computeMemberListIds(): Set<string> {
     if (!props.user || !itemId()) return new Set<string>();
-    const userLists = (props.user as any)?.favoriteLists?.items as FavoriteList[] | undefined;
     const memberIds = new Set<string>();
-    (userLists || []).forEach((list: FavoriteList) => {
+    lists.forEach((list: FavoriteList) => {
       const productsRef = list?.products as
-        | {
-            items?: {
-              productId?: number;
-              clusterId?: number;
-            }[];
-          }
+        | { items?: { productId?: number; clusterId?: number }[] }
         | undefined;
       const clustersRef = list?.clusters as
-        | {
-            items?: {
-              clusterId?: number;
-            }[];
-          }
+        | { items?: { clusterId?: number }[] }
         | undefined;
       if (isProduct()) {
         if (productsRef?.items?.some((item) => item.productId === itemId())) {
@@ -184,12 +144,15 @@ function AddToFavorite(props: AddToFavoriteProps) {
     });
     return memberIds;
   }
+
   useEffect(() => {
     set_isMounted(true);
   }, []);
+
   useEffect(() => {
     setMemberListIds(computeMemberListIds());
-  }, [props.user, props.productId, props.clusterId]);
+  }, [props.user, props.productId, props.clusterId, lists]);
+
   // Listen for user data changes (e.g. after favorite list modifications on other pages)
   useEffect(() => {
     const handler = () => {
@@ -225,6 +188,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
     window.addEventListener('userLoggedIn', handler);
     return () => window.removeEventListener('userLoggedIn', handler);
   }, [props.productId, props.clusterId]);
+
   return (
     <>
       {props.user ? (
@@ -271,7 +235,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                 </svg>
               ) : null}
             </button>
-            {showModal && _isMounted ? (
+            {isOpen && _isMounted ? (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-lg max-w-md w-full shadow-lg border">
                   <div className="flex justify-between items-center p-6 pb-4">
@@ -309,7 +273,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                               className="flex items-center gap-2 py-2 w-full text-left hover:bg-gray-50 rounded-md px-1 transition-colors disabled:opacity-50"
                               key={list.id}
                               onClick={(event) => handleRemoveFromList(String(list.id))}
-                              disabled={removeLoading}
+                              disabled={loading}
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -338,9 +302,9 @@ function AddToFavorite(props: AddToFavoriteProps) {
                                 handleRemoveFromList(String(memberLists[0].id));
                               }
                             }}
-                            disabled={removeLoading}
+                            disabled={loading}
                           >
-                            {removeLoading ? (
+                            {loading ? (
                               <>{getLabel('removing', 'Removing...')}</>
                             ) : (
                               <>{getLabel('removeFromFavorites', 'Remove from favorites')}</>
@@ -374,9 +338,9 @@ function AddToFavorite(props: AddToFavoriteProps) {
                           type="button"
                           className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
                           onClick={(event) => handleAddToList()}
-                          disabled={!selectedListId || addLoading}
+                          disabled={!selectedListId || loading}
                         >
-                          {addLoading ? (
+                          {loading ? (
                             <>{getLabel('adding', 'Adding...')}</>
                           ) : (
                             <>{getLabel('addToFavorites', 'Add to favorites')}</>

@@ -6,16 +6,17 @@
 
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { CartService, CrossupsellService, Enums } from 'propeller-sdk-v2';
-import type { GraphQLClient, Cart, CartMainItem, Product, Cluster, Contact, MediaImageProductSearchInput, TransformationsInput, PurchaseAuthorizationConfig } from 'propeller-sdk-v2';
+import type { GraphQLClient, Cart, CartMainItem, Product, Cluster, Contact, Customer, MediaImageProductSearchInput, TransformationsInput, PurchaseAuthorizationConfig, Crossupsell, CrossupsellsQueryVariables, CrossupsellSearchInput } from 'propeller-sdk-v2';
 import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
 
 export interface UseCartOptions {
   graphqlClient: GraphQLClient;
   user: AnyUser;
+  cartId?: string;
   companyId?: number;
   language?: string;
-  configuration: { language?: string; imageSearchFiltersGrid: MediaImageProductSearchInput; imageVariantFiltersSmall: TransformationsInput };
+  configuration?: { language?: string; imageSearchFiltersGrid: MediaImageProductSearchInput; imageVariantFiltersSmall: TransformationsInput };
   onCartCreated?: (cart: Cart) => void;
 }
 
@@ -26,27 +27,35 @@ export interface AddItemOptions {
   enableStockValidation?: boolean; cartId?: string; createCart?: boolean;
 }
 
+export interface GetCrossupsellsOptions {
+  productId?: number;
+  clusterId?: number;
+  types?: string[];
+  taxZone?: string;
+  imageVariantFilters?: TransformationsInput;
+}
+
 export interface UseCartReturn {
   cart: Cart | null; cartId: string; loading: boolean; error: string | null; checkoutAllowed: boolean;
   resolveCart: () => Promise<Cart>;
   addItem: (options: AddItemOptions) => Promise<{ success: boolean; cart?: Cart; item?: CartMainItem | null; error?: string }>;
-  updateItemQuantity: (cartItemId: string, quantity: number) => Promise<void>;
+  updateItemQuantity: (cartItemId: string, quantity: number) => Promise<Cart | undefined>;
   updateItemNotes: (cartItemId: string, notes: string, debounceMs?: number) => void;
-  deleteItem: (cartItemId: string) => Promise<void>;
-  addActionCode: (code: string) => Promise<void>;
-  removeActionCode: (code: string) => Promise<void>;
+  deleteItem: (cartItemId: string) => Promise<Cart | undefined>;
+  addActionCode: (code: string) => Promise<Cart | undefined>;
+  removeActionCode: (code: string) => Promise<Cart | undefined>;
   requestAuthorization: () => Promise<{ success: boolean; error?: string }>;
-  getCrossupsells: (productId: number) => Promise<any[]>;
+  getCrossupsells: (options: GetCrossupsellsOptions) => Promise<Crossupsell[]>;
   getMinQuantity: (product: Product) => number;
   getStep: (product: Product) => number;
 }
 
 export function useCart(options: UseCartOptions): UseCartReturn {
   const { graphqlClient, user, companyId, configuration, onCartCreated } = options;
-  const language = options.language || configuration.language || 'NL';
+  const language = options.language || configuration?.language || 'NL';
 
   const [cart, setCart] = useState<Cart | null>(null);
-  const [cartId, setCartId] = useState('');
+  const [cartId, setCartId] = useState(options.cartId || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const notesTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -56,24 +65,24 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     if (!companyId) return true;
     if (!cart) return true;
     const pacData = (user as Contact).purchaseAuthorizationConfigs;
-    const items: PurchaseAuthorizationConfig[] = (pacData as any)?.items ?? [];
+    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
     const purchaserPac = items.find((pac: PurchaseAuthorizationConfig) =>
-      pac.purchaseRole === Enums.PurchaseRole.PURCHASER && (pac as any).company?.companyId === companyId
+      pac.purchaseRole === Enums.PurchaseRole.PURCHASER && pac.company?.companyId === companyId
     );
     if (!purchaserPac) return true;
     const limit = purchaserPac.authorizationLimit ?? 0;
-    const totalNet = (cart as any).total?.totalNet ?? 0;
-    return totalNet <= limit;
+    const totalGross = cart.total?.totalGross ?? 0;
+    return totalGross <= limit;
   }, [user, companyId, cart]);
 
-  function getMinQuantity(product: Product): number { const min = product.minimumQuantity; return min && min > 0 ? min : 1; }
-  function getStep(product: Product): number { const unit = product.unit; return unit && unit > 0 ? unit : 1; }
+  function getMinQuantity(product: Product | null | undefined): number { const min = product?.minimumQuantity; return min && min > 0 ? min : 1; }
+  function getStep(product: Product | null | undefined): number { const unit = product?.unit; return unit && unit > 0 ? unit : 1; }
 
   const resolveCart = useCallback(async (): Promise<Cart> => {
     const config: CartInitConfig = {
       graphqlClient, user, companyId, language,
-      imageSearchFilters: configuration.imageSearchFiltersGrid,
-      imageVariantFilters: configuration.imageVariantFiltersSmall,
+      imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,
+      imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,
       onCartCreated: (c) => { setCart(c); setCartId(c.cartId); onCartCreated?.(c); },
     };
     const resolved = await initCart(config);
@@ -85,14 +94,14 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     setLoading(true); setError(null);
     try {
       if (opts.enableStockValidation) {
-        const available = (opts.product as any).inventory?.totalQuantity ?? 0;
+        const available = opts.product.inventory?.totalQuantity ?? 0;
         if (available < opts.quantity) return { success: false, error: 'Insufficient stock available' };
       }
       const childItemInputs = opts.childItems?.map((id) => ({ productId: id, quantity: opts.quantity }));
       if (opts.onAddToCart) {
         const resultCart = opts.onAddToCart(opts.product, opts.cluster?.clusterId, opts.quantity, childItemInputs, opts.notes, opts.price);
         setCart(resultCart); setCartId(resultCart.cartId);
-        const addedItem = (resultCart as any).items?.find((i: any) => i.productId === opts.product.productId) ?? null;
+        const addedItem = resultCart.items?.find((i: CartMainItem) => i.productId === opts.product.productId) ?? null;
         opts.afterAddToCart?.(resultCart, addedItem);
         return { success: true, cart: resultCart, item: addedItem };
       }
@@ -105,23 +114,24 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       const resultCart = await service.addItemToCart({
         id: resolvedCartId,
         input: { productId: opts.product.productId, quantity: opts.quantity, ...(opts.cluster?.clusterId !== undefined && { clusterId: opts.cluster.clusterId }), ...(childItemInputs && { childItems: childItemInputs }), ...(opts.notes && { notes: opts.notes }), ...(opts.price !== undefined && { price: opts.price }) },
-        language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall,
+        language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,
       });
       setCart(resultCart); setCartId(resultCart.cartId);
       const addedItem = (resultCart as any).items?.find((i: any) => i.productId === opts.product.productId) ?? null;
       opts.afterAddToCart?.(resultCart, addedItem);
       return { success: true, cart: resultCart, item: addedItem };
-    } catch (e: any) { const msg = e?.message || 'Failed to add item to cart'; setError(msg); return { success: false, error: msg }; }
+    } catch (e: unknown) { const msg = e instanceof Error ? e.message : 'Failed to add item to cart'; setError(msg); return { success: false, error: msg }; }
     finally { setLoading(false); }
   }, [graphqlClient, cartId, language, configuration, resolveCart]);
 
-  const updateItemQuantity = useCallback(async (cartItemId: string, quantity: number): Promise<void> => {
-    if (!cartId) return; setLoading(true);
+  const updateItemQuantity = useCallback(async (cartItemId: string, quantity: number): Promise<Cart | undefined> => {
+    if (!cartId) return undefined; setLoading(true);
     try {
       const service = new CartService(graphqlClient);
-      const updated = await service.updateCartItem({ id: cartId, itemId: cartItemId, input: { quantity }, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
+      const updated = await service.updateCartItem({ id: cartId, itemId: cartItemId, input: { quantity }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
       setCart(updated);
-    } catch (e: any) { setError(e?.message || 'Failed to update quantity'); }
+      return updated;
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to update quantity'); }
     finally { setLoading(false); }
   }, [graphqlClient, cartId, language, configuration]);
 
@@ -131,53 +141,83 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       if (!cartId) return;
       try {
         const service = new CartService(graphqlClient);
-        const updated = await service.updateCartItem({ id: cartId, itemId: cartItemId, input: { notes }, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
+        const updated = await service.updateCartItem({ id: cartId, itemId: cartItemId, input: { notes }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
         setCart(updated);
-      } catch (e: any) { setError(e?.message || 'Failed to update notes'); }
+      } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to update notes'); }
     }, debounceMs);
   }, [graphqlClient, cartId, language, configuration]);
 
-  const deleteItem = useCallback(async (cartItemId: string): Promise<void> => {
-    if (!cartId) return; setLoading(true);
+  const deleteItem = useCallback(async (cartItemId: string): Promise<Cart | undefined> => {
+    if (!cartId) return undefined; setLoading(true);
     try {
       const service = new CartService(graphqlClient);
-      const updated = await service.deleteCartItem({ id: cartId, itemId: cartItemId, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
+      const updated = await service.deleteCartItem({
+        id: cartId,
+        itemId: cartItemId,
+        input: { itemId: cartItemId },
+        language,
+        imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,
+        imageVariantFilters: configuration?.imageVariantFiltersSmall
+      });
       setCart(updated);
-    } catch (e: any) { setError(e?.message || 'Failed to delete item'); }
+      return updated;
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to delete item'); }
     finally { setLoading(false); }
   }, [graphqlClient, cartId, language, configuration]);
 
-  const addActionCode = useCallback(async (code: string): Promise<void> => {
-    if (!cartId) return;
+  const addActionCode = useCallback(async (code: string): Promise<Cart | undefined> => {
+    if (!cartId) return undefined;
     try {
       const service = new CartService(graphqlClient);
-      const updated = await service.addActionCodeToCart({ id: cartId, input: { actionCode: code }, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
+      const updated = await service.addActionCodeToCart({ id: cartId, input: { actionCode: code }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
       setCart(updated);
-    } catch (e: any) { setError(e?.message || 'Failed to add action code'); }
+      return updated;
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to add action code'); }
   }, [graphqlClient, cartId, language, configuration]);
 
-  const removeActionCode = useCallback(async (code: string): Promise<void> => {
-    if (!cartId) return;
+  const removeActionCode = useCallback(async (code: string): Promise<Cart | undefined> => {
+    if (!cartId) return undefined;
     try {
       const service = new CartService(graphqlClient);
-      const updated = await service.removeActionCodeFromCart({ id: cartId, input: { actionCode: code }, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
+      const updated = await service.removeActionCodeFromCart({ id: cartId, input: { actionCode: code }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
       setCart(updated);
-    } catch (e: any) { setError(e?.message || 'Failed to remove action code'); }
+      return updated;
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to remove action code'); }
   }, [graphqlClient, cartId, language, configuration]);
 
   const requestAuthorization = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
     if (!cartId) return { success: false, error: 'No cart' };
     try { const service = new CartService(graphqlClient); await service.requestPurchaseAuthorization({ id: cartId }); return { success: true }; }
-    catch (e: any) { return { success: false, error: e?.message || 'Failed to request authorization' }; }
+    catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : 'Failed to request authorization' }; }
   }, [graphqlClient, cartId]);
 
-  const getCrossupsells = useCallback(async (productId: number): Promise<any[]> => {
+  const getCrossupsells = useCallback(async (opts: GetCrossupsellsOptions): Promise<Crossupsell[]> => {
+    const { productId, clusterId, types, taxZone, imageVariantFilters } = opts;
+    if (!productId && !clusterId) return [];
     try {
       const service = new CrossupsellService(graphqlClient);
-      const result = await service.getCrossupsells({ productId, language } as any);
-      return (result as any)?.items ?? [];
+      const variables: CrossupsellsQueryVariables = {
+        input: {
+          types: (types ?? [Enums.CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
+          page: 1,
+          offset: 50,
+          ...(productId && !clusterId && { productIdsFrom: [productId] }),
+          ...(clusterId && { clusterIdsFrom: [clusterId] }),
+        },
+        language,
+        imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,
+        imageVariantFilters: imageVariantFilters ?? configuration?.imageVariantFiltersSmall as TransformationsInput,
+        priceCalculateProductInput: {
+          taxZone: taxZone || 'NL',
+          ...(user && 'company' in user && { companyId: (user as Contact)?.company?.companyId }),
+          ...(user && 'contactId' in user && { contactId: (user as Contact)?.contactId }),
+          ...(user && 'customerId' in user && { customerId: (user as Customer)?.customerId }),
+        },
+      };
+      const result = await service.getCrossupsells(variables);
+      return result?.items ?? [];
     } catch { return []; }
-  }, [graphqlClient, language]);
+  }, [graphqlClient, language, configuration, user]);
 
   return { cart, cartId, loading, error, checkoutAllowed, resolveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, getCrossupsells, getMinQuantity, getStep };
 }

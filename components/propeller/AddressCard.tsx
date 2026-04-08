@@ -2,14 +2,8 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import {
-  GraphQLClient,
-  Address,
-  CartAddress,
-  WarehouseAddress,
-  OrderAddress,
-  Enums,
-} from 'propeller-sdk-v2';
+import { GraphQLClient, Address, CartAddress, WarehouseAddress, OrderAddress, Enums } from 'propeller-sdk-v2';
+import { useAddress } from '@/composables/react/useAddress';
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */
@@ -107,78 +101,45 @@ export interface AddressCardProps {
 
   /** Called before save starts */
   beforeSave?: () => void;
+
+  /** The authenticated user (needed by useAddress for SDK operations) */
+  user?: any;
 }
-interface AddressCardState {
-  showEditModal: boolean;
-  showDeleteConfirm: boolean;
-  localAddress: any;
-  editCompany: string;
-  editGender: Enums.Gender;
-  editFirstName: string;
-  editMiddleName: string;
-  editLastName: string;
-  editStreet: string;
-  editNumber: string;
-  editNumberExtension: string;
-  editPostalCode: string;
-  editCity: string;
-  editCountry: string;
-  editEmail: string;
-  editPhone: string;
-  editNotes: string;
-  editIcp: Enums.YesNo;
-  saving: boolean;
-  getLabel: (key: string, fallback: string) => string;
-  getCountryName: (code: string) => string;
-  addr: () => any;
-  showCard: () => boolean;
-  salutation: () => string;
-  fullName: () => string;
-  streetLine: () => string;
-  cityLine: () => string;
-  formTitle: () => string;
-  openEditModal: () => void;
-  handleSaveEdit: (e: any) => Promise<void>;
-  confirmDelete: () => void;
-  handleSetDefault: () => void;
-  closeEditModal: () => void;
-}
+
 function AddressCard(props: AddressCardProps) {
-  const [showEditModal, setShowEditModal] = useState<AddressCardState['showEditModal']>(
-    () => false
-  );
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<AddressCardState['showDeleteConfirm']>(
-    () => false
-  );
-  const [saving, setSaving] = useState<AddressCardState['saving']>(() => false);
-  const [localAddress, setLocalAddress] = useState<AddressCardState['localAddress']>(() => null);
-  const [editCompany, setEditCompany] = useState<AddressCardState['editCompany']>(() => '');
-  const [editGender, setEditGender] = useState<AddressCardState['editGender']>(
-    () => Enums.Gender.U
-  );
-  const [editFirstName, setEditFirstName] = useState<AddressCardState['editFirstName']>(() => '');
-  const [editMiddleName, setEditMiddleName] = useState<AddressCardState['editMiddleName']>(
-    () => ''
-  );
-  const [editLastName, setEditLastName] = useState<AddressCardState['editLastName']>(() => '');
-  const [editStreet, setEditStreet] = useState<AddressCardState['editStreet']>(() => '');
-  const [editNumber, setEditNumber] = useState<AddressCardState['editNumber']>(() => '');
-  const [editNumberExtension, setEditNumberExtension] = useState<
-    AddressCardState['editNumberExtension']
-  >(() => '');
-  const [editPostalCode, setEditPostalCode] = useState<AddressCardState['editPostalCode']>(
-    () => ''
-  );
-  const [editCity, setEditCity] = useState<AddressCardState['editCity']>(() => '');
-  const [editCountry, setEditCountry] = useState<AddressCardState['editCountry']>(() => '');
-  const [editEmail, setEditEmail] = useState<AddressCardState['editEmail']>(() => '');
-  const [editPhone, setEditPhone] = useState<AddressCardState['editPhone']>(() => '');
-  const [editNotes, setEditNotes] = useState<AddressCardState['editNotes']>(() => '');
-  const [editIcp, setEditIcp] = useState<AddressCardState['editIcp']>(() => Enums.YesNo.N);
-  function getLabel(key: string, fallback: string): ReturnType<AddressCardState['getLabel']> {
+  // useAddress is used when graphqlClient + user are available for SDK-backed operations.
+  // The component also supports callback-only mode (onEdit/onDelete props).
+  const addressHook = props.graphqlClient && props.user
+    ? useAddress({ graphqlClient: props.graphqlClient, user: props.user })
+    : null;
+
+  const [showEditModal, setShowEditModal] = useState(() => false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(() => false);
+  const [saving, setSaving] = useState(() => false);
+  const [localAddress, setLocalAddress] = useState<any>(() => null);
+  const [editCompany, setEditCompany] = useState(() => '');
+  const [editGender, setEditGender] = useState<Enums.Gender>(() => Enums.Gender.U);
+  const [editFirstName, setEditFirstName] = useState(() => '');
+  const [editMiddleName, setEditMiddleName] = useState(() => '');
+  const [editLastName, setEditLastName] = useState(() => '');
+  const [editStreet, setEditStreet] = useState(() => '');
+  const [editNumber, setEditNumber] = useState(() => '');
+  const [editNumberExtension, setEditNumberExtension] = useState(() => '');
+  const [editPostalCode, setEditPostalCode] = useState(() => '');
+  const [editCity, setEditCity] = useState(() => '');
+  const [editCountry, setEditCountry] = useState(() => '');
+  const [editEmail, setEditEmail] = useState(() => '');
+  const [editPhone, setEditPhone] = useState(() => '');
+  const [editNotes, setEditNotes] = useState(() => '');
+  const [editIcp, setEditIcp] = useState<Enums.YesNo>(() => Enums.YesNo.N);
+
+  const isSaving = addressHook ? addressHook.loading : saving;
+
+  function getLabel(key: string, fallback: string): string {
     return (props.labels as any)?.[key] || fallback;
   }
-  function getCountryName(code: string): ReturnType<AddressCardState['getCountryName']> {
+
+  function getCountryName(code: string): string {
     if (!code) return '';
     const list = props.countries || [];
     for (let i = 0; i < list.length; i++) {
@@ -186,21 +147,25 @@ function AddressCard(props: AddressCardProps) {
     }
     return code;
   }
-  function addr(): ReturnType<AddressCardState['addr']> {
+
+  function addr(): any {
     return localAddress || props.address;
   }
-  function showCard(): ReturnType<AddressCardState['showCard']> {
+
+  function showCard(): boolean {
     if (props.isNew) return false;
     if (props.inline && !props.address) return false;
     return true;
   }
-  function salutation(): ReturnType<AddressCardState['salutation']> {
+
+  function salutation(): string {
     const g = addr?.()?.gender;
     if (g === 'M') return 'Mr.';
     if (g === 'F') return 'Mrs.';
     return '';
   }
-  function fullName(): ReturnType<AddressCardState['fullName']> {
+
+  function fullName(): string {
     const parts: string[] = [];
     if (props.showSalutation !== false && salutation()) {
       parts.push(salutation());
@@ -210,7 +175,8 @@ function AddressCard(props: AddressCardProps) {
     if (addr?.()?.lastName) parts.push(addr().lastName);
     return parts.join(' ');
   }
-  function streetLine(): ReturnType<AddressCardState['streetLine']> {
+
+  function streetLine(): string {
     const parts: string[] = [];
     if (addr?.()?.street) parts.push(addr().street);
     if (props.showNumberExtension !== false) {
@@ -219,7 +185,8 @@ function AddressCard(props: AddressCardProps) {
     }
     return parts.join(' ');
   }
-  function cityLine(): ReturnType<AddressCardState['cityLine']> {
+
+  function cityLine(): string {
     const parts: string[] = [];
     if (props.showPostalCode !== false && addr?.()?.postalCode) {
       parts.push(addr().postalCode);
@@ -229,12 +196,14 @@ function AddressCard(props: AddressCardProps) {
     }
     return parts.join(' ');
   }
-  function formTitle(): ReturnType<AddressCardState['formTitle']> {
+
+  function formTitle(): string {
     if (props.title) return props.title;
     if (props.isNew) return getLabel('newTitle', 'New Address');
     return getLabel('editTitle', 'Edit Address');
   }
-  function openEditModal(): ReturnType<AddressCardState['openEditModal']> {
+
+  function openEditModal() {
     const a = addr();
     setEditCompany(a?.company || '');
     setEditGender(a?.gender || 'M');
@@ -253,10 +222,10 @@ function AddressCard(props: AddressCardProps) {
     setEditIcp(a?.icp || Enums.YesNo.N);
     setShowEditModal(true);
   }
-  async function handleSaveEdit(e: any): ReturnType<AddressCardState['handleSaveEdit']> {
+
+  async function handleSaveEdit(e: any) {
     e.preventDefault();
-    if (saving) return;
-    setSaving(true);
+    if (isSaving) return;
     if (props.beforeSave) {
       props.beforeSave();
     }
@@ -281,9 +250,12 @@ function AddressCard(props: AddressCardProps) {
       icp: editIcp as Enums.YesNo,
     } as unknown as Address;
     setLocalAddress(editedAddress);
+    setSaving(true);
     try {
       if (props.onEdit) {
         await props.onEdit(editedAddress);
+      } else if (addressHook && addr?.()?.id) {
+        await addressHook.updateAddress(addr().id, editedAddress as any);
       }
       setShowEditModal(false);
       if (props.afterEdit) {
@@ -293,11 +265,14 @@ function AddressCard(props: AddressCardProps) {
       setSaving(false);
     }
   }
-  function confirmDelete(): ReturnType<AddressCardState['confirmDelete']> {
+
+  function confirmDelete() {
     const id = addr?.()?.id;
     if (id != null) {
       if (props.onDelete) {
         props.onDelete(addr());
+      } else if (addressHook) {
+        addressHook.deleteAddress(id);
       }
       setShowDeleteConfirm(false);
       if (props.afterDelete) {
@@ -307,25 +282,31 @@ function AddressCard(props: AddressCardProps) {
       setShowDeleteConfirm(false);
     }
   }
-  function handleSetDefault(): ReturnType<AddressCardState['handleSetDefault']> {
+
+  function handleSetDefault() {
     if (props.onSetDefault) {
       props.onSetDefault(addr());
+    } else if (addressHook && addr?.()?.id) {
+      addressHook.setDefaultAddress(addr().id);
     }
     if (props.afterSetDefault) {
       props.afterSetDefault(addr());
     }
   }
-  function closeEditModal(): ReturnType<AddressCardState['closeEditModal']> {
+
+  function closeEditModal() {
     setShowEditModal(false);
     if (props.isNew && props.onCancel) {
       props.onCancel();
     }
   }
+
   useEffect(() => {
     if (props.isNew || (props.inline && !props.address)) {
       openEditModal();
     }
   }, []);
+
   return (
     <div>
       {showCard() ? (
@@ -614,7 +595,7 @@ function AddressCard(props: AddressCardProps) {
                   type="button"
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
-                  disabled={saving}
+                  disabled={isSaving}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
@@ -624,7 +605,7 @@ function AddressCard(props: AddressCardProps) {
                   type="button"
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
-                  disabled={saving}
+                  disabled={isSaving}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
@@ -632,9 +613,9 @@ function AddressCard(props: AddressCardProps) {
               <button
                 type="submit"
                 className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
-                disabled={saving}
+                disabled={isSaving}
               >
-                {saving ? <>{getLabel('saving', 'Saving...')}</> : <>{getLabel('save', 'Save')}</>}
+                {isSaving ? <>{getLabel('saving', 'Saving...')}</> : <>{getLabel('save', 'Save')}</>}
               </button>
             </div>
           </form>
@@ -873,16 +854,16 @@ function AddressCard(props: AddressCardProps) {
                   type="button"
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
-                  disabled={saving}
+                  disabled={isSaving}
                 >
                   {getLabel('cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
-                  disabled={saving}
+                  disabled={isSaving}
                 >
-                  {saving ? (
+                  {isSaving ? (
                     <>{getLabel('saving', 'Saving...')}</>
                   ) : (
                     <>{getLabel('save', 'Save')}</>

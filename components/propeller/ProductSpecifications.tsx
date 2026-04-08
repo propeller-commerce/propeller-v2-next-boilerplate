@@ -1,14 +1,14 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   GraphQLClient,
-  ProductService,
   AttributeResult,
   LocalizedString,
   Enums,
 } from 'propeller-sdk-v2';
+import { useProductSpecs } from '@/composables/react/useProductSpecs';
 
 export interface ProductSpecificationsProps {
   /**
@@ -50,25 +50,18 @@ export interface ProductSpecificationsProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductSpecificationsState {
-  internalAttributes: AttributeResult[];
-  loading: boolean;
-  getAttributes: () => AttributeResult[];
-  getGroups: () => string[];
-  getAttributesByGroup: (group: string) => AttributeResult[];
-  getAttributeLabel: (attr: AttributeResult) => string;
-  getAttributeValue: (attr: AttributeResult) => string;
-  hasPublicAttributes: () => boolean;
-}
+
 function ProductSpecifications(props: ProductSpecificationsProps) {
-  const [internalAttributes, setInternalAttributes] = useState<
-    ProductSpecificationsState['internalAttributes']
-  >(() => []);
-  const [loading, setLoading] = useState<ProductSpecificationsState['loading']>(() => false);
-  function getAttributes(): ReturnType<ProductSpecificationsState['getAttributes']> {
+  const { attributes: fetchedAttributes, loading, fetchSpecs } = useProductSpecs(
+    props.graphqlClient
+      ? { graphqlClient: props.graphqlClient, language: props.language }
+      : { graphqlClient: {} as GraphQLClient, language: props.language }
+  );
+
+  function getAttributes(): AttributeResult[] {
     // Prefer fetched internalAttributes; fall back to props.attributes
-    const attrs = internalAttributes.length
-      ? internalAttributes
+    const attrs = fetchedAttributes.length
+      ? fetchedAttributes
       : (props.attributes as AttributeResult[]) || [];
     return attrs.filter(
       (a: AttributeResult) =>
@@ -78,7 +71,8 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
         getAttributeValue(a) !== '0'
     );
   }
-  function getGroups(): ReturnType<ProductSpecificationsState['getGroups']> {
+
+  function getGroups(): string[] {
     const attrs = getAttributes();
     const seen: string[] = [];
     attrs.forEach((a: AttributeResult) => {
@@ -87,24 +81,21 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     });
     return seen;
   }
-  function getAttributesByGroup(
-    group: string
-  ): ReturnType<ProductSpecificationsState['getAttributesByGroup']> {
+
+  function getAttributesByGroup(group: string): AttributeResult[] {
     return getAttributes().filter(
       (a: AttributeResult) => (a.attributeDescription?.group || '') === group
     );
   }
-  function getAttributeLabel(
-    attr: AttributeResult
-  ): ReturnType<ProductSpecificationsState['getAttributeLabel']> {
+
+  function getAttributeLabel(attr: AttributeResult): string {
     const lang = (props.language as string) || 'NL';
     const descs = attr.attributeDescription?.descriptions || [];
     const match = descs.find((d: LocalizedString) => d.language === lang);
     return match?.value || attr.attributeDescription?.name || '';
   }
-  function getAttributeValue(
-    attr: AttributeResult
-  ): ReturnType<ProductSpecificationsState['getAttributeValue']> {
+
+  function getAttributeValue(attr: AttributeResult): string {
     const v = attr.value;
     if (!v) return '';
     const lang = (props.language as string) || 'NL';
@@ -136,29 +127,16 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     if (typeof fallback === 'boolean') return fallback ? 'Yes' : 'No';
     return String(fallback);
   }
-  function hasPublicAttributes(): ReturnType<ProductSpecificationsState['hasPublicAttributes']> {
+
+  function hasPublicAttributes(): boolean {
     return getAttributes().length > 0;
   }
+
   useEffect(() => {
     if (!props.productId || !props.graphqlClient) return;
-    setLoading(true);
-    const service = new ProductService(props.graphqlClient as GraphQLClient);
-    service
-      .getAttributeResultByProductId(props.productId as number, {
-        attributeDescription: {
-          isPublic: true,
-        },
-        page: 1,
-        offset: 2000,
-      })
-      .then((result: { items?: AttributeResult[] }) => {
-        setInternalAttributes(result?.items || []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+    fetchSpecs(props.productId);
   }, [props.productId]);
+
   return (
     <>
       {!loading && hasPublicAttributes() ? (

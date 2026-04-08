@@ -31,8 +31,8 @@ export interface CartInitConfig {
   /** Active company ID — overrides user's default company for cart lookup and creation */
   companyId?: number;
   language?: string;
-  imageSearchFilters: MediaImageProductSearchInput;
-  imageVariantFilters: TransformationsInput;
+  imageSearchFilters?: MediaImageProductSearchInput;
+  imageVariantFilters?: TransformationsInput;
   onCartCreated?: (cart: Cart) => void;
 }
 
@@ -78,8 +78,8 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
         const existingCartId = carts.items[carts.items.length - 1].cartId;
         const cart = await cartService.getCart({
           cartId: existingCartId,
-          imageSearchFilters,
-          imageVariantFilters,
+          imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
+          imageVariantFilters: imageVariantFilters as TransformationsInput,
           language,
         });
         onCartCreated?.(cart);
@@ -107,8 +107,8 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
 
   const startVars: CartStartVariables = {
     input: startInput,
-    imageSearchFilters,
-    imageVariantFilters,
+    imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
+    imageVariantFilters: imageVariantFilters as TransformationsInput,
     language,
   };
 
@@ -147,8 +147,8 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
       cart = await cartService.updateCartAddress({
         id: cart.cartId,
         input: { type: Enums.CartAddressType.INVOICE, ...addressBase(defaultInvoice) },
-        imageSearchFilters,
-        imageVariantFilters,
+        imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
+        imageVariantFilters: imageVariantFilters as TransformationsInput,
         language,
       });
     }
@@ -157,8 +157,8 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
       cart = await cartService.updateCartAddress({
         id: cart.cartId,
         input: { type: Enums.CartAddressType.DELIVERY, ...addressBase(defaultDelivery) },
-        imageSearchFilters,
-        imageVariantFilters,
+        imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
+        imageVariantFilters: imageVariantFilters as TransformationsInput,
         language,
       });
     }

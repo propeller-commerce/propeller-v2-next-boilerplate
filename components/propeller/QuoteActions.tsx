@@ -2,7 +2,8 @@
 import * as React from 'react';
 
 import { useState } from 'react';
-import { Order, OrderService, GraphQLClient, Enums } from 'propeller-sdk-v2';
+import { Order, GraphQLClient } from 'propeller-sdk-v2';
+import { useOrders } from '@/composables/react/useOrders';
 
 export interface QuoteActionsProps {
   /** GraphQL client for the Propeller SDK */
@@ -27,60 +28,49 @@ export interface QuoteActionsProps {
   /** Action when the "Terms and conditions" link is clicked */
   onTermsAndConditionsClick?: () => void;
 }
-interface QuoteActionsState {
-  termsAccepted: boolean;
-  loading: boolean;
-  showTermsAndConditions: () => boolean;
-  isAcceptDisabled: () => boolean;
-  getLabel: (key: string, fallback: string) => string;
-  handleTermsChange: (checked: boolean) => void;
-  handleTermsLinkClick: (event: Event) => void;
-  handleAcceptClick: () => Promise<void>;
-}
+
 function QuoteActions(props: QuoteActionsProps) {
-  const [termsAccepted, setTermsAccepted] = useState<QuoteActionsState['termsAccepted']>(
-    () => false
-  );
-  const [loading, setLoading] = useState<QuoteActionsState['loading']>(() => false);
-  function showTermsAndConditions(): ReturnType<QuoteActionsState['showTermsAndConditions']> {
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { setQuoteStatus } = useOrders({
+    graphqlClient: props.graphqlClient!,
+    user: null,
+  });
+
+  function showTermsAndConditions(): boolean {
     return props.showTermsAndConditions !== undefined ? props.showTermsAndConditions : true;
   }
-  function isAcceptDisabled(): ReturnType<QuoteActionsState['isAcceptDisabled']> {
+
+  function isAcceptDisabled(): boolean {
     if (showTermsAndConditions() && !termsAccepted) return true;
     if (loading) return true;
     return false;
   }
-  function getLabel(key: string, fallback: string): ReturnType<QuoteActionsState['getLabel']> {
+
+  function getLabel(key: string, fallback: string): string {
     return props.labels?.[key] || fallback;
   }
-  function handleTermsChange(checked: boolean): ReturnType<QuoteActionsState['handleTermsChange']> {
+
+  function handleTermsChange(checked: boolean) {
     setTermsAccepted(checked);
   }
-  function handleTermsLinkClick(
-    event: Event
-  ): ReturnType<QuoteActionsState['handleTermsLinkClick']> {
+
+  function handleTermsLinkClick(event: Event) {
     event.preventDefault();
     if (props.onTermsAndConditionsClick) {
       props.onTermsAndConditionsClick();
     }
   }
-  async function handleAcceptClick(): ReturnType<QuoteActionsState['handleAcceptClick']> {
+
+  async function handleAcceptClick() {
     if (isAcceptDisabled()) return;
     setLoading(true);
     try {
       if (props.onAccept) {
         props.onAccept(props.quote);
       } else if (props.graphqlClient && props.quote?.id) {
-        const orderService = new OrderService(props.graphqlClient);
-        await orderService.setOrderStatus({
-          orderId: props.quote.id,
-          status: 'NEW' as string,
-          payStatus: Enums.PaymentStatuses.OPEN,
-          sendOrderConfirmationEmail: true,
-          addPDFAttachment: true,
-          triggerOrderSendConfirmEvent: true,
-          deleteCart: true,
-        });
+        await setQuoteStatus(props.quote.id, { isQuoteAccepted: true });
       }
       if (props.afterAccept) {
         props.afterAccept(props.quote);
@@ -89,6 +79,7 @@ function QuoteActions(props: QuoteActionsProps) {
       setLoading(false);
     }
   }
+
   return (
     <div className="quote-actions space-y-4">
       {showTermsAndConditions() ? (

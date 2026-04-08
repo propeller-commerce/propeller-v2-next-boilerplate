@@ -1,11 +1,9 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   GraphQLClient,
-  ProductService,
-  CrossupsellService,
   Product,
   Cluster,
   Contact,
@@ -13,9 +11,8 @@ import {
   Cart,
   CartMainItem,
   Enums,
-  CrossupsellsQueryVariables,
-  Crossupsell,
 } from 'propeller-sdk-v2';
+import { useProductSlider } from '@/composables/react/useProductSlider';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
 
@@ -122,57 +119,39 @@ export interface ProductSliderProps {
     string
   >;
 }
-interface ProductSliderState {
-  loadedItems: any[];
-  isLoading: boolean;
-  scrollPosition: number;
-  containerWidth: number;
-  scrollWidth: number;
-  items: () => (Product | Cluster)[];
-  isCrossUpsellMode: () => boolean;
-  crossUpsellTitle: () => string;
-  sliderTitle: () => string | undefined;
-  mobileCount: () => number;
-  tabletCount: () => number;
-  desktopCount: () => number;
-  canScrollLeft: () => boolean;
-  canScrollRight: () => boolean;
-  portalMode: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  isCluster: (item: any) => boolean;
-  getItemId: (item: any) => number;
-  fetchCrossUpsells: () => Promise<void>;
-  fetchItems: () => Promise<void>;
-  doFetch: () => void;
-  sliderId: string;
-  scrollLeft: () => void;
-  scrollRight: () => void;
-  getTrackEl: () => HTMLElement | null;
-  handleScroll: (e: any) => void;
-  handleProductClick: (product: Product) => void;
-  handleClusterClick: (cluster: Cluster) => void;
-}
+
 function ProductSlider(props: ProductSliderProps) {
-  const [loadedItems, setLoadedItems] = useState<ProductSliderState['loadedItems']>(() => []);
-  const [isLoading, setIsLoading] = useState<ProductSliderState['isLoading']>(() => false);
-  const [scrollPosition, setScrollPosition] = useState<ProductSliderState['scrollPosition']>(
-    () => 0
-  );
-  const [containerWidth, setContainerWidth] = useState<ProductSliderState['containerWidth']>(
-    () => 0
-  );
-  const [scrollWidth, setScrollWidth] = useState<ProductSliderState['scrollWidth']>(() => 0);
-  const [sliderId, setSliderId] = useState<ProductSliderState['sliderId']>(() => '');
-  function items(): ReturnType<ProductSliderState['items']> {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [sliderId] = useState(() => 'slider-' + Math.random().toString(36).substring(2, 9));
+
+  const {
+    products: fetchedItems,
+    loading: isLoading,
+    canScrollLeft,
+    canScrollRight,
+    fetchCrossupsells,
+    fetchProducts,
+    scrollLeft: sliderScrollLeft,
+    scrollRight: sliderScrollRight,
+    onScroll: sliderOnScroll,
+  } = useProductSlider({
+    graphqlClient: props.graphqlClient,
+    language: props.language,
+    configuration: props.configuration,
+  });
+
+  function items(): (Product | Cluster)[] {
     if (props.products && props.products.length > 0) {
       return props.products;
     }
-    return loadedItems;
+    return fetchedItems as (Product | Cluster)[];
   }
-  function isCrossUpsellMode(): ReturnType<ProductSliderState['isCrossUpsellMode']> {
+
+  function isCrossUpsellMode(): boolean {
     return !!(props.crossUpsellTypes && props.crossUpsellTypes.length > 0);
   }
-  function crossUpsellTitle(): ReturnType<ProductSliderState['crossUpsellTitle']> {
+
+  function crossUpsellTitle(): string {
     if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return '';
     const typeLabels: Record<string, string> = {
       ACCESSORIES: 'Accessories',
@@ -185,179 +164,75 @@ function ProductSlider(props: ProductSliderProps) {
       .map((t: string) => props.labels?.[t.toLowerCase()] || typeLabels[t] || t)
       .join(' & ');
   }
-  function sliderTitle(): ReturnType<ProductSliderState['sliderTitle']> {
+
+  function sliderTitle(): string | undefined {
     if (props.title !== undefined) return props.title;
     if (isCrossUpsellMode()) return crossUpsellTitle();
     return undefined;
   }
-  function mobileCount(): ReturnType<ProductSliderState['mobileCount']> {
-    return props.itemsPerView?.mobile || 1;
-  }
-  function tabletCount(): ReturnType<ProductSliderState['tabletCount']> {
-    return props.itemsPerView?.tablet || 2;
-  }
-  function desktopCount(): ReturnType<ProductSliderState['desktopCount']> {
+
+  function desktopCount(): number {
     return props.itemsPerView?.desktop || 4;
   }
-  function canScrollLeft(): ReturnType<ProductSliderState['canScrollLeft']> {
-    return scrollPosition > 0;
-  }
-  function canScrollRight(): ReturnType<ProductSliderState['canScrollRight']> {
-    return scrollPosition < scrollWidth - containerWidth - 1;
-  }
-  function portalMode(): ReturnType<ProductSliderState['portalMode']> {
+
+  function portalMode(): string {
     return (props.portalMode as string) || 'open';
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductSliderState['getLabel']> {
+
+  function getLabel(key: string, fallback: string): string {
     const val = (props.labels as Record<string, string>)?.[key];
     return val !== undefined ? val : fallback;
   }
-  function isCluster(item: any): ReturnType<ProductSliderState['isCluster']> {
+
+  function isCluster(item: any): boolean {
     return 'clusterId' in item && !('productId' in item);
   }
-  function getItemId(item: any): ReturnType<ProductSliderState['getItemId']> {
+
+  function getItemId(item: any): number {
     return isCluster(item) ? item.clusterId : item.productId;
   }
-  async function fetchCrossUpsells(): ReturnType<ProductSliderState['fetchCrossUpsells']> {
-    if (!props.graphqlClient) return;
-    if (!props.crossUpsellTypes || props.crossUpsellTypes.length === 0) return;
-    if (!props.productId && !props.clusterId) return;
-    setIsLoading(true);
-    try {
-      const crossupsellService = new CrossupsellService(props.graphqlClient);
-      const searchInput: CrossupsellsQueryVariables = {
-        input: {
-          types: props.crossUpsellTypes,
-          page: 1,
-          offset: 50,
-          ...(props.productId && { productIdsFrom: [props.productId] }),
-          ...(props.clusterId && { clusterIdsFrom: [props.clusterId] }),
-        },
-        language: props.language || 'NL',
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-        imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
-        priceCalculateProductInput: {
-          taxZone: props.taxZone || 'NL',
-          ...(props.companyId && { companyId: props.companyId }),
-          ...(props.user &&
-            'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
-          ...(props.user &&
-            'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
-        },
-      };
-      const result = await crossupsellService.getCrossupsells(searchInput);
-      const crossupsells: Crossupsell[] = result?.items || [];
-      const items: any[] = [];
-      for (let i = 0; i < crossupsells.length; i++) {
-        const cu = crossupsells[i] as Crossupsell;
-        if (cu.productTo) {
-          items.push(cu.productTo);
-        } else if (cu.clusterTo) {
-          items.push(cu.clusterTo);
-        }
-      }
-      setLoadedItems(items);
-    } catch (e) {
-      setLoadedItems([]);
-    } finally {
-      setIsLoading(false);
+
+  function handleScrollLeft(): void {
+    if (trackRef.current) {
+      const scrollAmount = trackRef.current.clientWidth * 0.8;
+      trackRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     }
   }
-  async function fetchItems(): ReturnType<ProductSliderState['fetchItems']> {
-    if (!props.graphqlClient) return;
-    const hasProductIds = props.productIds && props.productIds.length > 0;
-    const hasClusterIds = props.clusterIds && props.clusterIds.length > 0;
-    if (!hasProductIds && !hasClusterIds) return;
-    setIsLoading(true);
-    try {
-      const productService = new ProductService(props.graphqlClient);
-      const response = await productService.getProducts({
-        input: {
-          productIds: props.productIds || [],
-          clusterIds: props.clusterIds || [],
-          language: props.language || 'NL',
-          page: 1,
-          offset: 50,
-          statuses: [
-            Enums.ProductStatus.A,
-            Enums.ProductStatus.P,
-            Enums.ProductStatus.T,
-            Enums.ProductStatus.S,
-          ],
-        },
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid || { page: 1, offset: 1 },
-        imageVariantFilters: props.configuration?.imageVariantFiltersMedium || {
-          transformations: [
-            {
-              name: 'grid',
-              transformation: {
-                format: Enums.Format.WEBP,
-                height: 300,
-                width: 300,
-                fit: Enums.Fit.BOUNDS,
-              },
-            },
-          ],
-        },
-        filterAvailableAttributeInput: { isSearchable: true },
-      });
-      setLoadedItems(response.items || []);
-    } catch (e) {
-      setLoadedItems([]);
-    } finally {
-      setIsLoading(false);
+
+  function handleScrollRight(): void {
+    if (trackRef.current) {
+      const scrollAmount = trackRef.current.clientWidth * 0.8;
+      trackRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   }
-  function doFetch(): ReturnType<ProductSliderState['doFetch']> {
-    if (props.products && props.products.length > 0) return;
-    if (isCrossUpsellMode()) {
-      fetchCrossUpsells();
-    } else {
-      fetchItems();
+
+  function handleScroll(e: any): void {
+    if (trackRef.current) {
+      sliderOnScroll(trackRef.current);
     }
   }
-  function getTrackEl(): ReturnType<ProductSliderState['getTrackEl']> {
-    return document.querySelector(`[data-slider-id="${sliderId}"]`) as HTMLElement | null;
-  }
-  function scrollLeft(): ReturnType<ProductSliderState['scrollLeft']> {
-    const el = getTrackEl();
-    if (el) {
-      const scrollAmount = el.clientWidth * 0.8;
-      el.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-    }
-  }
-  function scrollRight(): ReturnType<ProductSliderState['scrollRight']> {
-    const el = getTrackEl();
-    if (el) {
-      const scrollAmount = el.clientWidth * 0.8;
-      el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  }
-  function handleScroll(e: any): ReturnType<ProductSliderState['handleScroll']> {
-    const el = e.target as HTMLElement;
-    setScrollPosition(el.scrollLeft);
-    setContainerWidth(el.clientWidth);
-    setScrollWidth(el.scrollWidth);
-  }
-  function handleProductClick(
-    product: Product
-  ): ReturnType<ProductSliderState['handleProductClick']> {
+
+  function handleProductClick(product: Product): void {
     if (props.onProductClick) {
       props.onProductClick(product);
     }
   }
-  function handleClusterClick(
-    cluster: Cluster
-  ): ReturnType<ProductSliderState['handleClusterClick']> {
+
+  function handleClusterClick(cluster: Cluster): void {
     if (props.onClusterClick) {
       props.onClusterClick(cluster);
     }
   }
+
   useEffect(() => {
-    setSliderId('slider-' + Math.random().toString(36).substring(2, 9));
-  }, []);
-  useEffect(() => {
-    doFetch(); /* NOTE: arrays compared by value to avoid stale-reference refetches */
+    if (props.products && props.products.length > 0) return;
+    if (isCrossUpsellMode()) {
+      if (props.productId) {
+        fetchCrossupsells({ productId: props.productId });
+      }
+    } else if (props.productIds && props.productIds.length > 0) {
+      fetchProducts(props.productIds);
+    }
   }, [
     JSON.stringify(props.productIds),
     JSON.stringify(props.clusterIds),
@@ -367,20 +242,20 @@ function ProductSlider(props: ProductSliderProps) {
     props.language,
     props.companyId,
   ]);
+
   useEffect(() => {
     /* Initialize scroll dimensions once sliderId is set and items are rendered */ if (
       sliderId &&
       items().length > 0
     ) {
       setTimeout(() => {
-        const el = getTrackEl();
-        if (el) {
-          setContainerWidth(el.clientWidth);
-          setScrollWidth(el.scrollWidth);
+        if (trackRef.current) {
+          sliderOnScroll(trackRef.current);
         }
       }, 50);
     }
   }, [sliderId, items().length]);
+
   return (
     <>
       {' '}
@@ -394,8 +269,8 @@ function ProductSlider(props: ProductSliderProps) {
                   <div className="flex gap-2">
                     <button
                       className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={(event) => scrollLeft()}
-                      disabled={!canScrollLeft()}
+                      onClick={(event) => handleScrollLeft()}
+                      disabled={!canScrollLeft}
                       aria-label={getLabel('scrollLeft', 'Scroll left')}
                     >
                       <svg
@@ -412,8 +287,8 @@ function ProductSlider(props: ProductSliderProps) {
                     </button>
                     <button
                       className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
-                      onClick={(event) => scrollRight()}
-                      disabled={!canScrollRight()}
+                      onClick={(event) => handleScrollRight()}
+                      disabled={!canScrollRight}
                       aria-label={getLabel('scrollRight', 'Scroll right')}
                     >
                       <svg
@@ -442,6 +317,7 @@ function ProductSlider(props: ProductSliderProps) {
             ) : null}
             {!isLoading && items().length > 0 ? (
               <div
+                ref={trackRef}
                 className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
                 data-slider-id={sliderId}
                 onScroll={(e) => handleScroll(e)}

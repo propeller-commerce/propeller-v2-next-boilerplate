@@ -1,19 +1,16 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  FavoriteListService,
   FavoriteList,
   GraphQLClient,
   Contact,
   Customer,
 } from 'propeller-sdk-v2';
+import { useFavorites } from '@/composables/react/useFavorites';
+export type { FavoriteListFormData } from '@/composables/react/useFavorites';
 
-export interface FavoriteListFormData {
-  name: string;
-  isDefault: boolean;
-}
 export interface FavoriteListsProps {
   /** The authenticated user (Contact or Customer) */
   user: Contact | Customer | null;
@@ -75,10 +72,10 @@ export interface FavoriteListsProps {
   };
 
   /** Action function triggered when creating a new favorite list. If not provided, the default action is executed */
-  onCreate?: (favoriteListData: FavoriteListFormData) => void;
+  onCreate?: (favoriteListData: { name: string; isDefault: boolean }) => void;
 
   /** Action function triggered when editing a favorite list. If not provided, the default action is executed */
-  onEdit?: (favoriteListId: string, favoriteListData: FavoriteListFormData) => void;
+  onEdit?: (favoriteListId: string, favoriteListData: { name: string; isDefault: boolean }) => void;
 
   /** Action function triggered when deleting a favorite list. If not provided, the default action is executed */
   onDelete?: (favoriteListId: string) => void;
@@ -86,227 +83,43 @@ export interface FavoriteListsProps {
   /** Called after any list mutation (create, edit, delete) succeeds */
   onListChanged?: () => void;
 }
-interface FavoriteListsState {
-  lists: FavoriteList[];
-  loading: boolean;
-  editingListId: string | null;
-  editListName: string;
-  editSetAsDefault: boolean;
-  showDeleteModal: boolean;
-  listToDelete: FavoriteList | null;
-  showCreateModal: boolean;
-  newListName: string;
-  newSetAsDefault: boolean;
-  isMounted: boolean;
-  saving: boolean;
-  fetchLists: () => void;
-  handleEditList: (list: FavoriteList) => void;
-  handleCancelEdit: () => void;
-  handleUpdateList: (listId: string) => Promise<void>;
-  handleDeleteList: (list: FavoriteList) => void;
-  handleConfirmDelete: () => Promise<void>;
-  handleCancelDelete: () => void;
-  closeCreateModal: () => void;
-  handleCreateList: () => Promise<void>;
-  formatDate: (dateString: string) => string;
-  getTotalCount: (list: FavoriteList) => number;
-  getProductCount: (list: FavoriteList) => number;
-  getClusterCount: (list: FavoriteList) => number;
-  getLabel: (key: string, fallback: string) => string;
-  displayedLists: () => FavoriteList[];
-}
+
 function FavoriteLists(props: FavoriteListsProps) {
-  const [lists, setLists] = useState<FavoriteListsState['lists']>(() => []);
-  const [loading, setLoading] = useState<FavoriteListsState['loading']>(() => false);
-  const [editingListId, setEditingListId] = useState<FavoriteListsState['editingListId']>(
-    () => null
-  );
-  const [editListName, setEditListName] = useState<FavoriteListsState['editListName']>(() => '');
-  const [editSetAsDefault, setEditSetAsDefault] = useState<FavoriteListsState['editSetAsDefault']>(
-    () => false
-  );
-  const [showDeleteModal, setShowDeleteModal] = useState<FavoriteListsState['showDeleteModal']>(
-    () => false
-  );
-  const [listToDelete, setListToDelete] = useState<FavoriteListsState['listToDelete']>(() => null);
-  const [showCreateModal, setShowCreateModal] = useState<FavoriteListsState['showCreateModal']>(
-    () => false
-  );
-  const [newListName, setNewListName] = useState<FavoriteListsState['newListName']>(() => '');
-  const [newSetAsDefault, setNewSetAsDefault] = useState<FavoriteListsState['newSetAsDefault']>(
-    () => false
-  );
-  const [isMounted, setIsMounted] = useState<FavoriteListsState['isMounted']>(() => false);
-  const [saving, setSaving] = useState<FavoriteListsState['saving']>(() => false);
-  function fetchLists(): ReturnType<FavoriteListsState['fetchLists']> {
-    setLists((props.user as any)?.favoriteLists?.items || []);
-  }
-  function handleEditList(list: FavoriteList): ReturnType<FavoriteListsState['handleEditList']> {
-    setEditingListId(String(list.id));
-    setEditListName(list.name);
-    setEditSetAsDefault(list.isDefault || false);
-  }
-  function handleCancelEdit(): ReturnType<FavoriteListsState['handleCancelEdit']> {
-    setEditingListId(null);
-    setEditListName('');
-    setEditSetAsDefault(false);
-  }
-  async function handleUpdateList(
-    listId: string
-  ): ReturnType<FavoriteListsState['handleUpdateList']> {
-    if (!editListName.trim() || saving) return;
-    const formData = {
-      name: editListName,
-      isDefault: editSetAsDefault,
-    };
+  const {
+    lists,
+    loading,
+    saving,
+    editingListId,
+    editListName,
+    editSetAsDefault,
+    newListName,
+    newSetAsDefault,
+    listToDelete,
+    fetchLists,
+    startEdit,
+    cancelEdit,
+    setEditListName,
+    setEditSetAsDefault,
+    setNewListName,
+    setNewSetAsDefault,
+    updateList,
+    confirmDelete,
+    deleteList,
+    createList,
+  } = useFavorites({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+    onCreate: props.onCreate,
+    onEdit: props.onEdit,
+    onDelete: props.onDelete,
+    onListChanged: props.onListChanged,
+  });
 
-    // If onEdit callback is provided, delegate to parent
-    if (props.onEdit) {
-      props.onEdit(listId, formData);
-      handleCancelEdit();
-      return;
-    }
-    if (!props.graphqlClient || saving) return;
-    setSaving(true);
-    try {
-      const service = new FavoriteListService(props.graphqlClient);
+  const [showCreateModal, setShowCreateModal] = useState(() => false);
+  const [showDeleteModal, setShowDeleteModal] = useState(() => false);
+  const [isMounted, setIsMounted] = useState(() => false);
 
-      // If setting as default, first unset the current default
-      if (formData.isDefault) {
-        const currentDefault = lists.find(
-          (l: FavoriteList) => l.isDefault && String(l.id) !== listId
-        );
-        if (currentDefault) {
-          await service.updateFavoriteList(String(currentDefault.id), {
-            name: currentDefault.name,
-            isDefault: false,
-          });
-        }
-      }
-      await service.updateFavoriteList(listId, {
-        name: formData.name,
-        isDefault: formData.isDefault,
-      });
-
-      // Optimistic update — clear default from others when setting a new default
-      setLists(
-        lists.map((l: FavoriteList) => {
-          if (String(l.id) === listId) {
-            return {
-              ...l,
-              name: formData.name,
-              isDefault: formData.isDefault,
-            } as FavoriteList;
-          }
-          if (formData.isDefault && l.isDefault) {
-            return {
-              ...l,
-              isDefault: false,
-            } as FavoriteList;
-          }
-          return l;
-        })
-      );
-      handleCancelEdit();
-      if (props.onListChanged) props.onListChanged();
-    } catch (error) {
-      console.error('Error updating favorite list:', error);
-      fetchLists();
-    } finally {
-      setSaving(false);
-    }
-  }
-  function handleDeleteList(
-    list: FavoriteList
-  ): ReturnType<FavoriteListsState['handleDeleteList']> {
-    setListToDelete(list);
-    setShowDeleteModal(true);
-  }
-  async function handleConfirmDelete(): ReturnType<FavoriteListsState['handleConfirmDelete']> {
-    if (!listToDelete) return;
-    const deletedId = String(listToDelete.id);
-
-    // If onDelete callback is provided, delegate to parent
-    if (props.onDelete) {
-      props.onDelete(deletedId);
-      setShowDeleteModal(false);
-      setListToDelete(null);
-      return;
-    }
-    if (!props.graphqlClient) return;
-    try {
-      const service = new FavoriteListService(props.graphqlClient);
-      await service.deleteFavoriteList(deletedId);
-
-      // Optimistic update
-      setLists(lists.filter((l: FavoriteList) => String(l.id) !== deletedId));
-      setShowDeleteModal(false);
-      setListToDelete(null);
-      if (props.onListChanged) props.onListChanged();
-    } catch (error) {
-      console.error('Error deleting favorite list:', error);
-      fetchLists();
-    }
-  }
-  function handleCancelDelete(): ReturnType<FavoriteListsState['handleCancelDelete']> {
-    setShowDeleteModal(false);
-    setListToDelete(null);
-  }
-  function closeCreateModal(): ReturnType<FavoriteListsState['closeCreateModal']> {
-    setShowCreateModal(false);
-  }
-  async function handleCreateList(): ReturnType<FavoriteListsState['handleCreateList']> {
-    if (!newListName.trim() || saving) return;
-    setSaving(true);
-    const formData = {
-      name: newListName,
-      isDefault: newSetAsDefault,
-    };
-
-    // If onCreate callback is provided, delegate to parent
-    if (props.onCreate) {
-      props.onCreate(formData);
-      setNewListName('');
-      setNewSetAsDefault(false);
-      closeCreateModal();
-      return;
-    }
-    if (!props.graphqlClient || !props.user) return;
-    try {
-      const service = new FavoriteListService(props.graphqlClient);
-
-      // If setting as default, first unset the current default
-      if (formData.isDefault) {
-        const currentDefault = lists.find((l: FavoriteList) => l.isDefault);
-        if (currentDefault) {
-          await service.updateFavoriteList(String(currentDefault.id), {
-            name: currentDefault.name,
-            isDefault: false,
-          });
-        }
-      }
-      const isContact = 'contactId' in props.user;
-      const contactId = isContact ? (props.user as Contact).contactId : undefined;
-      const customerId = !isContact ? (props.user as Customer).customerId : undefined;
-      await service.createFavoriteList({
-        name: formData.name,
-        isDefault: formData.isDefault,
-        contactId: contactId,
-        customerId: customerId,
-      } as Parameters<FavoriteListService['createFavoriteList']>[0]);
-      setNewListName('');
-      setNewSetAsDefault(false);
-      closeCreateModal();
-
-      // onListChanged triggers refreshUser → props.user updates → fetchLists runs via onUpdate
-      if (props.onListChanged) props.onListChanged();
-    } catch (error) {
-      console.error('Error creating favorite list:', error);
-    } finally {
-      setSaving(false);
-    }
-  }
-  function formatDate(dateString: string): ReturnType<FavoriteListsState['formatDate']> {
+  function formatDate(dateString: string): string {
     if (props.formatDate) return props.formatDate(dateString);
     if (!dateString) return '-';
     const d = new Date(dateString);
@@ -315,30 +128,34 @@ function FavoriteLists(props: FavoriteListsProps) {
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   }
-  function getProductCount(list: FavoriteList): ReturnType<FavoriteListsState['getProductCount']> {
+
+  function getProductCount(list: FavoriteList): number {
     const products = list.products;
     if (!products) return 0;
     if (products.itemsFound !== undefined) return products.itemsFound;
     if (products.items) return products.items.length;
     return 0;
   }
-  function getClusterCount(list: FavoriteList): ReturnType<FavoriteListsState['getClusterCount']> {
+
+  function getClusterCount(list: FavoriteList): number {
     const clusters = list.clusters;
     if (!clusters) return 0;
     if (clusters.itemsFound !== undefined) return clusters.itemsFound;
     if (clusters.items) return clusters.items.length;
     return 0;
   }
-  function getTotalCount(list: FavoriteList): ReturnType<FavoriteListsState['getTotalCount']> {
+
+  function getTotalCount(list: FavoriteList): number {
     return getProductCount(list) + getClusterCount(list);
   }
-  function getLabel(key: string, fallback: string): ReturnType<FavoriteListsState['getLabel']> {
+
+  function getLabel(key: string, fallback: string): string {
     const labels = props.labels as Record<string, string> | undefined;
     return labels?.[key] || fallback;
   }
-  function displayedLists(): ReturnType<FavoriteListsState['displayedLists']> {
+
+  const displayedLists = useMemo((): FavoriteList[] => {
     if (props.limit && props.limit > 0) {
-      // Sort by updatedAt descending, then take the first N
       const sorted = [...lists].sort((a: FavoriteList, b: FavoriteList) => {
         const dateA = new Date(a.updatedAt || '').getTime();
         const dateB = new Date(b.updatedAt || '').getTime();
@@ -347,21 +164,50 @@ function FavoriteLists(props: FavoriteListsProps) {
       return sorted.slice(0, props.limit);
     }
     return lists;
-  }
+  }, [lists, props.limit]);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
   useEffect(() => {
     if (props.user) {
       fetchLists();
     }
   }, [props.user]);
+
+  function handleDeleteClick(list: FavoriteList) {
+    confirmDelete(list);
+    setShowDeleteModal(true);
+  }
+
+  async function handleConfirmDelete() {
+    await deleteList();
+    setShowDeleteModal(false);
+  }
+
+  function handleCancelDelete() {
+    setShowDeleteModal(false);
+  }
+
+  function closeCreateModal() {
+    setShowCreateModal(false);
+  }
+
+  async function handleCreateList() {
+    if (!newListName.trim() || saving) return;
+    await createList(newListName, newSetAsDefault);
+    setNewListName('');
+    setNewSetAsDefault(false);
+    closeCreateModal();
+  }
+
   return (
     <div className={props.className}>
       {props.allowFavoriteListCreate !== false &&
       !loading &&
       isMounted &&
-      displayedLists().length > 0 ? (
+      displayedLists.length > 0 ? (
         <div className="flex justify-end mb-4">
           <button
             className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
@@ -412,9 +258,9 @@ function FavoriteLists(props: FavoriteListsProps) {
       ) : null}
       {!loading && isMounted ? (
         <>
-          {displayedLists().length > 0 ? (
+          {displayedLists.length > 0 ? (
             <div className="space-y-4">
-              {displayedLists()?.map((list) => (
+              {displayedLists?.map((list) => (
                 <div
                   key={list.id}
                   onClick={(event) => {
@@ -464,14 +310,14 @@ function FavoriteLists(props: FavoriteListsProps) {
                           <div className="flex gap-2">
                             <button
                               className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
-                              onClick={(event) => handleUpdateList(String(list.id))}
+                              onClick={(event) => updateList(String(list.id))}
                               disabled={!editListName.trim()}
                             >
                               {getLabel('editSave', 'Save')}
                             </button>
                             <button
                               className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                              onClick={(event) => handleCancelEdit()}
+                              onClick={(event) => cancelEdit()}
                             >
                               {getLabel('editCancel', 'Cancel')}
                             </button>
@@ -543,7 +389,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                           className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditList(list);
+                            startEdit(list);
                           }}
                         >
                           <svg
@@ -566,7 +412,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                           className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteList(list);
+                            handleDeleteClick(list);
                           }}
                         >
                           <svg
@@ -592,7 +438,7 @@ function FavoriteLists(props: FavoriteListsProps) {
               ))}
             </div>
           ) : null}
-          {displayedLists().length === 0 ? (
+          {displayedLists.length === 0 ? (
             <div className="border border-gray-200 rounded-lg p-12 text-center space-y-4">
               <div className="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
                 <svg

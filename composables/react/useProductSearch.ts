@@ -20,6 +20,17 @@ import type {
   AttributeFilter,
   ProductTextFilterInput,
   Category,
+  CategoryQueryVariables,
+  CategoryProductSearchInput,
+  ProductSortInput,
+  SearchFieldsInput,
+  ProductPriceFilterInput,
+  PriceCalculateProductInput,
+  FilterAvailableAttributeInput,
+  MediaImageProductSearchInput,
+  TransformationsInput,
+  ProductsQueryVariables,
+  ProductSearchInput,
 } from 'propeller-sdk-v2';
 import { usePagination } from './shared/usePagination';
 
@@ -43,8 +54,8 @@ export interface UseProductSearchOptions {
   pageSize?: number;
   configuration: {
     baseCategoryId?: number;
-    imageSearchFiltersGrid?: any;
-    imageVariantFiltersMedium?: any;
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersMedium?: TransformationsInput;
   };
   onFiltersChange?: (filters: AttributeFilter[]) => void;
   onPriceBoundsChange?: (min: number, max: number) => void;
@@ -75,6 +86,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
 
   const isControlled = options.products !== undefined;
   const language = options.language || 'NL';
+  const taxZone = options.taxZone || 'NL';
   const pageSize = options.pageSize ?? 12;
 
   const [internalProducts, setInternalProducts] = useState<(Product | Cluster)[]>([]);
@@ -104,9 +116,9 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
   function filterByLanguage(products: (Product | Cluster)[], lang: string): (Product | Cluster)[] {
     if (!lang) return products;
     return products.filter((p) => {
-      const names = (p as Product).names;
+      const names = (p as Product).names || (p as Cluster).names || [];
       if (!names || names.length === 0) return true;
-      return names.some((n: any) => n.language?.toUpperCase() === lang.toUpperCase() && n.value);
+      return names.some((n: { language?: string }) => n.language === lang);
     });
   }
 
@@ -120,40 +132,131 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
 
     try {
       const service = new CategoryService(graphqlClient);
-      const catId = options.categoryId ?? configuration.baseCategoryId;
+      const isWideSearch = !!options.term || !!options.brand;
+      const catId = isWideSearch
+        ? (configuration?.baseCategoryId ?? 0)
+        : (options.categoryId ?? configuration?.baseCategoryId ?? 0);
+
       if (!catId) return;
 
-      const productSearchInput: any = {
-        offset: pageSize,
+      const lang = language;
+      const activeSortField = (options.sortField ?? currentSortField) as Enums.ProductSortField;
+      const activeSortOrder = (options.sortOrder ?? currentSortOrder) as Enums.SortOrder;
+
+      // Build sort inputs
+      const sortInputs: ProductSortInput[] = (activeSortField)
+        ? [{ field: activeSortField, order: activeSortOrder }]
+        : [];
+
+      // Build search fields with boost when searching by term
+      const searchFields: SearchFieldsInput[] = options.term
+        ? [
+          {
+            fieldNames: [
+              Enums.ProductSearchableField.NAME,
+              Enums.ProductSearchableField.KEYWORDS,
+              Enums.ProductSearchableField.SKU,
+              Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+            ],
+            boost: 5,
+          },
+          {
+            fieldNames: [
+              Enums.ProductSearchableField.DESCRIPTION,
+              Enums.ProductSearchableField.MANUFACTURER,
+              Enums.ProductSearchableField.MANUFACTURER_CODE,
+              Enums.ProductSearchableField.EAN_CODE,
+              Enums.ProductSearchableField.BAR_CODE,
+              Enums.ProductSearchableField.CLUSTER_ID,
+              Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+              Enums.ProductSearchableField.PRODUCT_ID,
+              Enums.ProductSearchableField.SHORT_DESCRIPTION,
+              Enums.ProductSearchableField.SUPPLIER,
+              Enums.ProductSearchableField.SUPPLIER_CODE,
+            ],
+            boost: 1,
+          },
+        ]
+        : [];
+
+      // Build price filter
+      const priceFilter: ProductPriceFilterInput | undefined =
+        options.priceFilterMin !== undefined || options.priceFilterMax !== undefined
+          ? { from: options.priceFilterMin ?? 0, to: options.priceFilterMax ?? 999999 }
+          : undefined;
+
+      // Resolve user IDs
+      const userId: number | undefined =
+        options.user && 'contactId' in options.user
+          ? (options.user as Contact).contactId
+          : options.user && 'customerId' in options.user
+            ? (options.user as Customer).customerId
+            : undefined;
+
+      const contactId: number | undefined =
+        options.user && 'contactId' in options.user
+          ? (options.user as Contact).contactId
+          : undefined;
+
+      const customerId: number | undefined =
+        options.user && 'customerId' in options.user
+          ? (options.user as Customer).customerId
+          : undefined;
+
+      const categoryProductSearchInput: CategoryProductSearchInput = {
+        language: lang,
         page: pagination.currentPage,
-        ...(options.term && { term: options.term }),
+        offset: pageSize,
+        statuses: [
+          Enums.ProductStatus.A,
+          Enums.ProductStatus.P,
+          Enums.ProductStatus.T,
+          Enums.ProductStatus.S,
+        ],
+        hidden: false,
+        ...(options.term && { term: options.term, searchFields }),
         ...(options.brand && { manufacturers: [options.brand] }),
         ...(options.textFilters?.length && { textFilters: options.textFilters }),
-        ...(options.priceFilterMin !== undefined && { priceMin: options.priceFilterMin }),
-        ...(options.priceFilterMax !== undefined && { priceMax: options.priceFilterMax }),
-        ...(options.sortField && { sortField: options.sortField, sortOrder: options.sortOrder || 'ASC' }),
+        ...(priceFilter && { price: priceFilter }),
+        ...(sortInputs.length && { sortInputs }),
         ...(options.companyId && { companyId: options.companyId }),
-        ...(options.taxZone && { taxZone: options.taxZone }),
+        ...(userId !== undefined && { userId }),
       };
 
-      const response = await service.getCategory({
+      const priceCalculateProductInput: PriceCalculateProductInput = {
+        taxZone,
+        ...(options.companyId && { companyId: options.companyId }),
+        ...(contactId !== undefined && { contactId }),
+        ...(customerId !== undefined && { customerId }),
+      };
+
+      const filterAvailableAttributeInput: FilterAvailableAttributeInput = {
+        isSearchable: true,
+      };
+
+      const variables: CategoryQueryVariables = {
         categoryId: catId,
-        language,
-        categoryProductSearchInput: productSearchInput,
-        imageSearchFilters: configuration.imageSearchFiltersGrid,
-        imageVariantFilters: configuration.imageVariantFiltersMedium,
-      } as any);
+        language: lang,
+        categoryProductSearchInput,
+        priceCalculateProductInput,
+        filterAvailableAttributeInput,
+        imageSearchFilters: configuration?.imageSearchFiltersGrid,
+        imageVariantFilters: configuration?.imageVariantFiltersMedium,
+      };
+
+      const response = await service.getCategory(variables);
 
       if (thisId !== fetchIdRef.current) return;
 
-      const productsResponse = (response as any)?.products;
-      const rawProducts: (Product | Cluster)[] = productsResponse?.items || [];
-      const filtered = filterByLanguage(rawProducts, language);
+      const productsResponse = response?.products as ProductsResponse | undefined;
+      const rawProducts = (productsResponse?.items ?? []) as (Product | Cluster)[];
+      const filtered = filterByLanguage(rawProducts, lang);
 
-      setInternalProducts(filtered as (Product | Cluster)[]);
-      const found = filtered.length < rawProducts.length
-        ? Math.max(0, (productsResponse?.itemsFound ?? 0) - (rawProducts.length - filtered.length))
-        : (productsResponse?.itemsFound ?? 0);
+      setInternalProducts(filtered);
+
+      const untranslatedCount = rawProducts.length - filtered.length;
+      const apiTotal = productsResponse?.itemsFound ?? rawProducts.length;
+      const found = Math.max(0, apiTotal - untranslatedCount);
 
       setItemsFound(found);
       options.onItemsFoundChange?.(found);
@@ -161,8 +264,8 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
       if (productsResponse) {
         pagination.setFromResponse({
           itemsFound: found,
-          pages: productsResponse.pages,
-          offset: productsResponse.offset,
+          pages: productsResponse.pages ?? 1,
+          offset: productsResponse.offset ?? pageSize,
         });
         options.onProductsResponse?.(productsResponse);
       }
@@ -171,9 +274,10 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         options.onFiltersChange?.(productsResponse.filters);
       }
 
-      if (productsResponse?.priceRange) {
-        const pr = productsResponse.priceRange;
-        options.onPriceBoundsChange?.(pr.min ?? 0, pr.max ?? 0);
+      const minPrice = productsResponse?.minPrice;
+      const maxPrice = productsResponse?.maxPrice;
+      if (minPrice !== undefined && maxPrice !== undefined) {
+        options.onPriceBoundsChange?.(minPrice, maxPrice);
       }
 
       if (response) {
@@ -197,7 +301,9 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     options.sortField,
     options.sortOrder,
     options.companyId,
+    options.user,
     language,
+    taxZone,
     pageSize,
     pagination.currentPage,
     configuration,
@@ -218,19 +324,26 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         setSearchLoading(true);
         try {
           const service = new ProductService(graphqlClient);
-          const result = await service.getProducts({
+          const input: ProductSearchInput = {
+            term,
             language,
-            imageVariantFilters: {} as any,
-            input: {
-              term,
-              statuses: ['A', 'P', 'T', 'S'],
-              offset: 10,
-              sortField: Enums.ProductSortField.RELEVANCE,
-              sortOrder: Enums.SortOrder.DESC,
-              isSearchable: true,
-            } as any,
-          });
-          setSearchResults((result as any)?.items || []);
+            page: 1,
+            offset: 10,
+            statuses: [
+              Enums.ProductStatus.A,
+              Enums.ProductStatus.P,
+              Enums.ProductStatus.T,
+              Enums.ProductStatus.S,
+            ],
+            sortInputs: [{ field: Enums.ProductSortField.RELEVANCE, order: Enums.SortOrder.DESC }],
+          };
+          const variables: ProductsQueryVariables = {
+            input,
+            language,
+            imageVariantFilters: configuration?.imageVariantFiltersMedium as TransformationsInput,
+          };
+          const result = await service.getProducts(variables);
+          setSearchResults((result?.items ?? []) as (Product | Cluster)[]);
         } catch {
           setSearchResults([]);
         } finally {
@@ -238,7 +351,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         }
       }, 300);
     },
-    [graphqlClient, language]
+    [graphqlClient, language, configuration]
   );
 
   // ── Effects ───────────────────────────────────────────────────────────────
@@ -250,6 +363,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     options.term,
     options.brand,
     language,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     JSON.stringify(options.textFilters),
     options.priceFilterMin,
     options.priceFilterMax,

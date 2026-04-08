@@ -4,24 +4,14 @@ import * as React from 'react';
 import { useState } from 'react';
 import {
   GraphQLClient,
-  OrderService,
-  CartService,
   Order,
-  OrderItem,
   Cart,
   Contact,
   Customer,
-  Address,
-  Enums,
-  Base64File,
-  CartChildItemInput,
-  CartSearchInput,
-  CartStartInput,
-  CartStartVariables,
-  CartAddItemVariables,
   MediaImageProductSearchInput,
   TransformationsInput,
 } from 'propeller-sdk-v2';
+import { useOrders } from '@/composables/react/useOrders';
 
 export interface OrderActionsProps {
   /** GraphQL client for the Propeller SDK */
@@ -51,28 +41,24 @@ export interface CartQueryVariables {
   imageSearchFilters: MediaImageProductSearchInput;
   imageVariantFilters: TransformationsInput;
 }
-interface OrderActionsState {
-  reordering: boolean;
-  downloading: boolean;
-  toastMessage: string;
-  toastType: string;
-  toastVisible: boolean;
-  activeCartId: string;
-  showToast: (message: string, type: string) => void;
-  dismissToast: () => void;
-  getLabel: (key: string, fallback: string) => string;
-  handleDownloadPDF: () => Promise<void>;
-  initCart: () => Promise<string>;
-  handleReorder: () => Promise<void>;
-}
+
 function OrderActions(props: OrderActionsProps) {
-  const [reordering, setReordering] = useState<OrderActionsState['reordering']>(() => false);
-  const [downloading, setDownloading] = useState<OrderActionsState['downloading']>(() => false);
-  const [toastMessage, setToastMessage] = useState<OrderActionsState['toastMessage']>(() => '');
-  const [toastType, setToastType] = useState<OrderActionsState['toastType']>(() => '');
-  const [toastVisible, setToastVisible] = useState<OrderActionsState['toastVisible']>(() => false);
-  const [activeCartId, setActiveCartId] = useState<OrderActionsState['activeCartId']>(() => '');
-  function showToast(message: string, type: string): ReturnType<OrderActionsState['showToast']> {
+  const [reordering, setReordering] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const { downloadPdf, reorder } = useOrders({
+    graphqlClient: props.graphqlClient,
+    user: props.user as any,
+    companyId: props.companyId,
+    configuration: props.configuration,
+    onCartCreated: props.onCartCreated,
+    afterReorder: props.afterReorder,
+  });
+
+  function showToast(message: string, type: string) {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
@@ -80,58 +66,25 @@ function OrderActions(props: OrderActionsProps) {
       setToastVisible(false);
     }, 3000);
   }
-  function dismissToast(): ReturnType<OrderActionsState['dismissToast']> {
+
+  function dismissToast() {
     setToastVisible(false);
   }
-  function getLabel(key: string, fallback: string): ReturnType<OrderActionsState['getLabel']> {
+
+  function getLabel(key: string, fallback: string): string {
     return (props.labels as any)?.[key] || fallback;
   }
-  async function handleDownloadPDF(): ReturnType<OrderActionsState['handleDownloadPDF']> {
+
+  async function handleDownloadPDF() {
     if (!props.order?.id) return;
     setDownloading(true);
     try {
-      const orderService = new OrderService(props.graphqlClient);
-      const pdfResponse = await orderService.getOrderPDF(props.order.id);
-      if (!pdfResponse) {
-        showToast(getLabel('pdfError', 'Failed to download PDF'), 'error');
-        return;
-      }
-      let byteArray: Uint8Array;
-      let contentType = 'application/pdf';
-      let fileName = `order-${props.order.id}-confirmation.pdf`;
-      if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
-        const response = pdfResponse as Base64File;
-        const byteCharacters = atob(response.base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        byteArray = new Uint8Array(byteNumbers);
-        contentType = response.contentType || contentType;
-        fileName = response.fileName || fileName;
-      } else if (typeof pdfResponse === 'string') {
-        const byteCharacters = atob(pdfResponse);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        byteArray = new Uint8Array(byteNumbers);
+      const result = await downloadPdf(props.order);
+      if (result.success) {
+        showToast(getLabel('pdfSuccess', 'PDF downloaded successfully'), 'success');
       } else {
         showToast(getLabel('pdfError', 'Failed to download PDF'), 'error');
-        return;
       }
-      const blob = new Blob([byteArray as any], {
-        type: contentType,
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      showToast(getLabel('pdfSuccess', 'PDF downloaded successfully'), 'success');
     } catch (error) {
       console.error('Error downloading PDF:', error);
       showToast(getLabel('pdfError', 'Failed to download PDF'), 'error');
@@ -139,217 +92,17 @@ function OrderActions(props: OrderActionsProps) {
       setDownloading(false);
     }
   }
-  async function initCart(): ReturnType<OrderActionsState['initCart']> {
-    const cartService = new CartService(props.graphqlClient);
 
-    /* 1. Check for existing carts for this user */
-    if (props.user) {
-      try {
-        const searchInput: CartSearchInput = {
-          offset: 100,
-          statuses: [Enums.CartStatus.OPEN],
-        };
-        if ('contactId' in props.user && props.user.contactId) {
-          searchInput.contactIds = [props.user.contactId];
-          const resolvedCompanyId =
-            (props.companyId as number) || (props.user.company && props.user.company.companyId);
-          if (resolvedCompanyId) {
-            searchInput.companyIds = [resolvedCompanyId];
-          }
-        } else if ('customerId' in props.user && props.user.customerId) {
-          searchInput.customerIds = [props.user.customerId];
-        }
-        const carts = await cartService.getCarts(searchInput);
-        if (carts && carts.items && carts.items.length > 0) {
-          const existingCartId = carts.items[carts.items.length - 1].cartId;
-          const cartVariables: CartQueryVariables = {
-            cartId: existingCartId,
-            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-          };
-          const cart = await cartService.getCart(cartVariables);
-          setActiveCartId(cart.cartId);
-          if (props.onCartCreated) {
-            props.onCartCreated(cart);
-          }
-          return cart.cartId;
-        }
-      } catch (e) {
-        console.error('Failed to check existing carts', e);
-      }
-    }
-
-    /* 2. Start a new cart */
-    const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-    const startCartInput: CartStartInput = {
-      language,
-    };
-    if (props.user) {
-      if ('contactId' in props.user && props.user.contactId) {
-        startCartInput.contactId = props.user.contactId;
-        const resolvedCompanyId = (props.companyId as number) || (props.user as any).companyId;
-        if (resolvedCompanyId) {
-          startCartInput.companyId = resolvedCompanyId as number;
-        }
-      } else if ('customerId' in props.user && props.user.customerId) {
-        startCartInput.customerId = props.user.customerId;
-      }
-    }
-    const cartStartVars: CartStartVariables = {
-      input: startCartInput,
-      imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-      imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-      language: language,
-    };
-    let newCart = await cartService.startCart(cartStartVars);
-
-    /* 3. Assign default addresses */
-    if (newCart && props.user) {
-      const addresses =
-        'company' in props.user
-          ? props.user.company?.addresses
-          : (props.user as Customer).addresses;
-      if (addresses && Array.isArray(addresses)) {
-        const defaultInvoice = addresses.find(
-          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice'
-        );
-        const defaultDelivery = addresses.find(
-          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery'
-        );
-        if (defaultInvoice) {
-          newCart = await cartService.updateCartAddress({
-            id: newCart.cartId,
-            input: {
-              type: Enums.CartAddressType.INVOICE,
-              firstName: defaultInvoice.firstName || '',
-              lastName: defaultInvoice.lastName || '',
-              street: defaultInvoice.street || '',
-              postalCode: defaultInvoice.postalCode || '',
-              city: defaultInvoice.city || '',
-              country: defaultInvoice.country || 'NL',
-              company: defaultInvoice.company || '',
-              gender: defaultInvoice.gender || Enums.Gender.U,
-              middleName: defaultInvoice.middleName || '',
-              number: defaultInvoice.number || '',
-              numberExtension: defaultInvoice.numberExtension || '',
-              email: defaultInvoice.email || '',
-              mobile: defaultInvoice.mobile || '',
-              phone: defaultInvoice.phone || '',
-              notes: defaultInvoice.notes || '',
-            },
-            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: language,
-          });
-        }
-        if (defaultDelivery) {
-          newCart = await cartService.updateCartAddress({
-            id: newCart.cartId,
-            input: {
-              type: Enums.CartAddressType.DELIVERY,
-              firstName: defaultDelivery.firstName || '',
-              lastName: defaultDelivery.lastName || '',
-              street: defaultDelivery.street || '',
-              postalCode: defaultDelivery.postalCode || '',
-              city: defaultDelivery.city || '',
-              country: defaultDelivery.country || 'NL',
-              company: defaultDelivery.company || '',
-              gender: defaultDelivery.gender || Enums.Gender.U,
-              middleName: defaultDelivery.middleName || '',
-              number: defaultDelivery.number || '',
-              numberExtension: defaultDelivery.numberExtension || '',
-              email: defaultDelivery.email || '',
-              mobile: defaultDelivery.mobile || '',
-              phone: defaultDelivery.phone || '',
-              notes: defaultDelivery.notes || '',
-            },
-            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-            language: language,
-          });
-        }
-      }
-    }
-    setActiveCartId(newCart.cartId);
-    if (props.onCartCreated) {
-      props.onCartCreated(newCart);
-    }
-    return newCart.cartId;
-  }
-  async function handleReorder(): ReturnType<OrderActionsState['handleReorder']> {
+  async function handleReorder() {
     if (!props.order?.items) return;
     setReordering(true);
     try {
-      /* Resolve cart ID */
-      let cartId = props.cartId || activeCartId;
-      if (!cartId) {
-        cartId = await initCart();
-        if (!cartId) {
-          showToast(getLabel('noCartId', 'Could not create or find a cart'), 'error');
-          return;
-        }
+      const result = await reorder(props.order, props.cartId);
+      if (result.success) {
+        showToast(getLabel('reorderSuccess', 'All items added to cart'), 'success');
+      } else {
+        showToast(getLabel('reorderError', 'Failed to add items to cart'), 'error');
       }
-      const cartService = new CartService(props.graphqlClient);
-      const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-
-      /* Filter to product items that are not bonuses and not children */
-      const allProducts = props.order.items.filter(
-        (item: OrderItem) => item.class === 'product' && item.isBonus === 'N'
-      );
-      const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
-
-      /* Build a map of child items by parentOrderItemId */
-      const childMap = new Map<number, OrderItem[]>();
-      allProducts
-        .filter((item: OrderItem) => item.parentOrderItemId)
-        .forEach((item: OrderItem) => {
-          const children = childMap.get(item.parentOrderItemId!) || [];
-          children.push(item);
-          childMap.set(item.parentOrderItemId!, children);
-        });
-      let lastCart: Cart | null = null;
-      for (let i = 0; i < parentItems.length; i++) {
-        const item = parentItems[i];
-        if (!item.productId) continue;
-        const isCluster =
-          item.product && item.product.cluster && typeof item.product.cluster === 'object';
-        const children = childMap.get(item.id) || [];
-        let childItems: CartChildItemInput[] | undefined = undefined;
-        let clusterId: number | undefined = undefined;
-        if (isCluster && item.product!.cluster) {
-          clusterId = item.product!.cluster.clusterId;
-          if (children.length > 0) {
-            childItems = children
-              .filter((child: OrderItem) => child.productId)
-              .map((child: OrderItem) => ({
-                productId: child.productId!,
-                quantity: child.quantity || item.quantity || 1,
-              }));
-          }
-        }
-        const addVars: CartAddItemVariables = {
-          id: cartId,
-          input: {
-            productId: item.productId,
-            quantity: item.quantity || 1,
-            ...(clusterId !== undefined && {
-              clusterId,
-            }),
-            ...(childItems && {
-              childItems,
-            }),
-          },
-          language: language,
-          imageSearchFilters: props.configuration.imageSearchFiltersGrid,
-          imageVariantFilters: props.configuration.imageVariantFiltersSmall,
-        };
-        lastCart = await cartService.addItemToCart(addVars);
-      }
-      if (lastCart && props.afterReorder) {
-        props.afterReorder(lastCart);
-      }
-      showToast(getLabel('reorderSuccess', 'All items added to cart'), 'success');
     } catch (error) {
       console.error('Error during re-order:', error);
       showToast(getLabel('reorderError', 'Failed to add items to cart'), 'error');
@@ -357,6 +110,7 @@ function OrderActions(props: OrderActionsProps) {
       setReordering(false);
     }
   }
+
   return (
     <div className={props.className}>
       <div className="flex flex-row items-center gap-3 flex-shrink-0">

@@ -1,21 +1,8 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import {
-  Contact,
-  Customer,
-  GraphQLClient,
-  Cart,
-  CartService,
-  CartSearchInput,
-  Enums,
-  CartAddress,
-  CartMainItem,
-  CartQueryVariables,
-  CartAcceptPurchaseAuthorizationVariables,
-  PurchaseAuthorizationConfig,
-} from 'propeller-sdk-v2';
+import { Contact, Customer, GraphQLClient, Cart } from 'propeller-sdk-v2';
+import { usePurchaseAuthorizationRequests } from '@/composables/react/usePurchaseAuthorization';
 
 export interface PurchaseAuthorizationRequestsProps {
   /** GraphQL client for the Propeller SDK */
@@ -60,177 +47,42 @@ export interface PurchaseAuthorizationRequestsProps {
   /** Called when an SDK operation fails; receives the normalized error */
   onError?: (err: Error) => void;
 }
-interface PurchaseAuthorizationRequestsState {
-  carts: Cart[];
-  loading: boolean;
-  selectedCart: Cart | null;
-  modalLoading: boolean;
-  acceptLoading: boolean;
-  isAuthManager: () => boolean;
-  getLabel: (key: string, fallback: string) => string;
-  formatDate: (dateStr: string) => string;
-  formatPrice: (price: number) => string;
-  getTotalQuantity: (cart: Cart) => number;
-  getContactName: (deliveryAddress: CartAddress) => string;
-  getModalItems: () => CartMainItem[];
-  loadCarts: () => Promise<void>;
-  handleViewCart: (cart: Cart) => Promise<void>;
-  handleAcceptRequest: () => Promise<void>;
-  closeModal: () => void;
-}
+
 function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps) {
-  const [carts, setCarts] = useState<PurchaseAuthorizationRequestsState['carts']>(() => []);
-  const [loading, setLoading] = useState<PurchaseAuthorizationRequestsState['loading']>(() => true);
-  const [selectedCart, setSelectedCart] = useState<
-    PurchaseAuthorizationRequestsState['selectedCart']
-  >(() => null);
-  const [modalLoading, setModalLoading] = useState<
-    PurchaseAuthorizationRequestsState['modalLoading']
-  >(() => false);
-  const [acceptLoading, setAcceptLoading] = useState<
-    PurchaseAuthorizationRequestsState['acceptLoading']
-  >(() => false);
-  function isAuthManager(): ReturnType<PurchaseAuthorizationRequestsState['isAuthManager']> {
-    if (!props.user || !('contactId' in props.user)) return false;
-    const pacData = (props.user as any).purchaseAuthorizationConfigs;
-    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? pacData?._items ?? [];
-    return items.some((pac: PurchaseAuthorizationConfig) => {
-      const role = pac.purchaseRole;
-      const pacCompanyId = pac.company?.companyId;
-      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === props.companyId;
-    });
+  const {
+    carts, loading, selectedCart, modalLoading, acceptLoading, isAuthManager,
+    getTotalQuantity, getContactName, getModalItems,
+    handleViewCart, handleAcceptRequest, closeModal,
+  } = usePurchaseAuthorizationRequests({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+    companyId: props.companyId,
+    configuration: props.configuration,
+    onAcceptRequest: props.onAcceptRequest,
+    afterAcceptRequest: props.afterAcceptRequest,
+    onError: props.onError,
+  });
+
+  function getLabel(key: string, fallback: string): string {
+    return props.labels?.[key] || fallback;
   }
-  function getLabel(
-    key: string,
-    fallback: string
-  ): ReturnType<PurchaseAuthorizationRequestsState['getLabel']> {
-    return (props.labels as any)?.[key] || fallback;
-  }
-  function formatDate(
-    dateStr: string
-  ): ReturnType<PurchaseAuthorizationRequestsState['formatDate']> {
+
+  function formatDate(dateStr: string): string {
     if (props.formatDate) return props.formatDate(dateStr);
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
   }
-  function formatPrice(
-    price: number
-  ): ReturnType<PurchaseAuthorizationRequestsState['formatPrice']> {
+
+  function formatPrice(price: number): string {
     if (props.formatPrice) return props.formatPrice(price);
     if (!price) return '-';
-    return `€${Number(price).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return `€${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
-  function getTotalQuantity(
-    cart: Cart
-  ): ReturnType<PurchaseAuthorizationRequestsState['getTotalQuantity']> {
-    const items = cart?.items || [];
-    return items.reduce((sum: number, item: CartMainItem) => sum + (item.quantity || 0), 0);
-  }
-  function getContactName(
-    deliveryAddress: CartAddress
-  ): ReturnType<PurchaseAuthorizationRequestsState['getContactName']> {
-    if (!deliveryAddress) return '';
-    const firstName = deliveryAddress.firstName ?? '';
-    const middleName = deliveryAddress.middleName ?? '';
-    const lastName = deliveryAddress.lastName ?? '';
-    return [firstName, middleName, lastName].filter(Boolean).join(' ');
-  }
-  function getModalItems(): ReturnType<PurchaseAuthorizationRequestsState['getModalItems']> {
-    if (!selectedCart) return [];
-    return (selectedCart as Cart).items || [];
-  }
-  async function loadCarts(): ReturnType<PurchaseAuthorizationRequestsState['loadCarts']> {
-    if (!props.graphqlClient || !props.companyId) return;
-    setLoading(true);
-    try {
-      const cartService = new CartService(props.graphqlClient);
-      const searchInput: CartSearchInput = {
-        statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION],
-        companyIds: [props.companyId],
-      };
-      const response = await cartService.getCarts(searchInput);
-      setCarts(response?.items || []);
-    } catch (err: any) {
-      if (props.onError) {
-        props.onError(err instanceof Error ? err : new Error(String(err)));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-  async function handleViewCart(
-    cart: Cart
-  ): ReturnType<PurchaseAuthorizationRequestsState['handleViewCart']> {
-    setSelectedCart(cart);
-    setModalLoading(true);
-    try {
-      const cartService = new CartService(props.graphqlClient);
-      const fullCart = await cartService.getCart({
-        cartId: cart.cartId,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-        imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-      });
-      setSelectedCart(fullCart);
-    } catch (err: any) {
-      if (props.onError) {
-        props.onError(err instanceof Error ? err : new Error(String(err)));
-      }
-    } finally {
-      setModalLoading(false);
-    }
-  }
-  async function handleAcceptRequest(): ReturnType<
-    PurchaseAuthorizationRequestsState['handleAcceptRequest']
-  > {
-    if (!selectedCart) return;
-    setAcceptLoading(true);
-    const cartId = selectedCart.cartId;
-    try {
-      let cartForCallback: any = selectedCart;
-      if (props.onAcceptRequest) {
-        props.onAcceptRequest(cartId);
-      } else {
-        const cartService = new CartService(props.graphqlClient);
-        const cartVars: CartAcceptPurchaseAuthorizationVariables = {
-          id: selectedCart.cartId,
-          input: {
-            contactId: (props.user as Contact).contactId,
-          },
-          imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-          imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-          language: props.configuration?.language || 'NL',
-        };
-        cartForCallback = await cartService.acceptPurchaseAuthorizationRequest(cartVars);
-      }
-      if (props.afterAcceptRequest) {
-        props.afterAcceptRequest(cartForCallback as Cart);
-      }
-      setSelectedCart(null);
-      await loadCarts();
-    } catch (err: any) {
-      if (props.onError) {
-        props.onError(err instanceof Error ? err : new Error(String(err)));
-      }
-    } finally {
-      setAcceptLoading(false);
-    }
-  }
-  function closeModal(): ReturnType<PurchaseAuthorizationRequestsState['closeModal']> {
-    setSelectedCart(null);
-  }
-  useEffect(() => {
-    if (props.graphqlClient && props.companyId) {
-      loadCarts();
-    }
-  }, [props.companyId]);
+
   return (
     <div className={`purchase-authorization-requests ${props.className || ''}`}>
-      {isAuthManager() ? (
+      {isAuthManager ? (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">{getLabel('title', 'Authorization Requests')}</h2>
           {loading ? (
@@ -268,7 +120,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {carts?.map((cart, index) => (
+                      {carts.map((cart, index) => (
                         <tr className="hover:bg-muted/30 transition-colors" key={index}>
                           <td className="px-4 py-3 text-muted-foreground">
                             {formatDate(cart.lastModifiedAt ?? '')}
@@ -279,17 +131,17 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                           </td>
                           <td className="px-4 py-3">
                             <div className="font-medium">
-                              {getContactName(cart.deliveryAddress)}
+                              {getContactName(cart.contact)}
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              {cart.deliveryAddress?.email}
+                              {cart.contact?.email}
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <button
                               type="button"
                               className="px-3 py-1.5 text-sm border border-input rounded-md bg-background hover:bg-muted/50 transition-colors"
-                              onClick={(event) => handleViewCart(cart)}
+                              onClick={() => handleViewCart(cart)}
                             >
                               {getLabel('view', 'View')}
                             </button>
@@ -302,9 +154,9 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
               ) : null}
             </>
           ) : null}
-          {!!selectedCart ? (
+          {selectedCart ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-              <div className="fixed inset-0 bg-gray-500/20" onClick={(event) => closeModal()} />
+              <div className="fixed inset-0 bg-gray-500/20" onClick={() => closeModal()} />
               <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
                   <h3 className="text-base font-semibold text-gray-900">
@@ -313,15 +165,9 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                   <button
                     type="button"
                     className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                    onClick={(event) => closeModal()}
+                    onClick={() => closeModal()}
                   >
-                    <svg
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      className="h-5 w-5"
-                      strokeWidth={2}
-                    >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -338,12 +184,8 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">
                           {getLabel('requesterInfo', 'Requester')}
                         </h4>
-                        <p className="text-sm font-medium">
-                          {getContactName(selectedCart?.deliveryAddress as CartAddress)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedCart?.deliveryAddress?.email}
-                        </p>
+                        <p className="text-sm font-medium">{getContactName(selectedCart.contact)}</p>
+                        <p className="text-sm text-muted-foreground">{selectedCart.contact?.email}</p>
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">
@@ -368,11 +210,9 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                              {getModalItems()?.map((item, idx) => (
+                              {getModalItems().map((item, idx) => (
                                 <tr key={idx}>
-                                  <td className="px-3 py-2">
-                                    {item.product?.names?.[0]?.value ?? ''}
-                                  </td>
+                                  <td className="px-3 py-2">{item.product?.names?.[0]?.value ?? ''}</td>
                                   <td className="px-3 py-2 text-right">{item.quantity ?? 0}</td>
                                   <td className="px-3 py-2 text-right">
                                     {formatPrice(
@@ -393,20 +233,17 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       <div className="border-t border-border pt-4 space-y-2 text-sm">
                         <div className="flex justify-between text-muted-foreground">
                           <span>{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
-                          <span>{formatPrice((selectedCart as Cart)?.total?.totalGross ?? 0)}</span>
+                          <span>{formatPrice(selectedCart.total?.totalGross ?? 0)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
                           <span>{getLabel('totalVat', 'VAT:')}</span>
                           <span>
-                            {formatPrice(
-                              ((selectedCart as Cart)?.total?.totalNet ?? 0) -
-                                ((selectedCart as Cart)?.total?.totalGross ?? 0)
-                            )}
+                            {formatPrice((selectedCart.total?.totalNet ?? 0) - (selectedCart.total?.totalGross ?? 0))}
                           </span>
                         </div>
                         <div className="flex justify-between font-bold text-base border-t border-border pt-2">
                           <span>{getLabel('total', 'Total:')}</span>
-                          <span>{formatPrice((selectedCart as Cart)?.total?.totalNet ?? 0)}</span>
+                          <span>{formatPrice(selectedCart.total?.totalNet ?? 0)}</span>
                         </div>
                       </div>
                     </div>
@@ -414,14 +251,14 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       <button
                         type="button"
                         className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                        onClick={(event) => closeModal()}
+                        onClick={() => closeModal()}
                       >
                         {getLabel('cancel', 'Cancel')}
                       </button>
                       <button
                         type="button"
                         className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={(event) => handleAcceptRequest()}
+                        onClick={() => handleAcceptRequest()}
                         disabled={acceptLoading}
                       >
                         {acceptLoading ? <>{getLabel('accepting', 'Accepting...')}</> : null}

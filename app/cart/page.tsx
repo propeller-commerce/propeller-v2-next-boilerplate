@@ -58,6 +58,7 @@ export default function CartPage() {
                     includeTax={includeTax}
                     user={state.user as Contact | Customer}
                     taxZone={'NL'}
+                    companyId={selectedCompany?.companyId}
                     language={'NL'}
                     graphqlClient={graphqlClient}
                     cartId={cart!.cartId}
@@ -66,7 +67,7 @@ export default function CartPage() {
                     showCrossupsells={true}
                     crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}
-                    afterCartUpdate={saveCart}
+                    afterCartUpdate={(cart: Cart) => { saveCart(cart); }}
                   />
                 ))}
               </div>

@@ -2,12 +2,23 @@
  * useFavorites (React) — Favorite list CRUD with optimistic updates.
  *
  * React mirror of vue/useFavorites.ts.
+ * Mirrors FavoriteLists.lite.tsx, FavoriteListDetails.lite.tsx, AddToFavorite.lite.tsx.
+ *
+ * Responsibilities:
+ * - fetchLists: read favoriteLists from Contact/Customer (no separate SDK call needed)
+ * - createList: FavoriteListService.createFavoriteList with contactId/customerId from user
+ * - updateList / deleteList: FavoriteListService CRUD
+ * - addToList / removeFromList: FavoriteListService item management
+ * - isProductInList: check products.items for a given productId
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { FavoriteListService } from 'propeller-sdk-v2';
-import type { GraphQLClient, FavoriteList } from 'propeller-sdk-v2';
+import type { GraphQLClient, FavoriteList, FavoriteListsCreateInput, Product } from 'propeller-sdk-v2';
 import type { AnyUser } from '../shared/utils/userIdentity';
+import { isContact, isCustomer } from '../shared/utils/userIdentity';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface FavoriteListFormData {
   name: string;
@@ -51,6 +62,8 @@ export interface UseFavoritesReturn {
   isProductInList: (listId: string, productId: number) => boolean;
 }
 
+// ── Composable ────────────────────────────────────────────────────────────────
+
 export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
   const { graphqlClient, user, onCreate, onEdit, onDelete, onListChanged } = options;
 
@@ -65,9 +78,21 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
   const [newSetAsDefault, setNewSetAsDefault] = useState(false);
   const [listToDelete, setListToDelete] = useState<FavoriteList | null>(null);
 
+  // ── Fetch lists ───────────────────────────────────────────────────────────
+  // Mirrors FavoriteLists.lite.tsx: reads favoriteLists from user object directly.
+
   const fetchLists = useCallback(() => {
-    setLists((user as any)?.favoriteLists?.items || []);
+    if (!user) { setLists([]); return; }
+    const items = user.favoriteLists?.items ?? [];
+    setLists(items);
   }, [user]);
+
+  // Auto-sync lists from user whenever user changes (covers initial mount).
+  useEffect(() => {
+    fetchLists();
+  }, [fetchLists]);
+
+  // ── Edit state helpers ────────────────────────────────────────────────────
 
   const startEdit = useCallback((list: FavoriteList) => {
     setEditingListId(String(list.id));
@@ -80,6 +105,8 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
     setEditListName('');
     setEditSetAsDefault(false);
   }, []);
+
+  // ── Update list ───────────────────────────────────────────────────────────
 
   const updateList = useCallback(
     async (listId: string): Promise<void> => {
@@ -98,11 +125,16 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
         setLists((prev) => prev.map((l) => String(l.id) === listId ? updated : l));
         cancelEdit();
         onListChanged?.();
-      } catch (e: any) { setError(e?.message || 'Failed to update list'); }
-      finally { setSaving(false); }
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to update list');
+      } finally {
+        setSaving(false);
+      }
     },
     [graphqlClient, editListName, editSetAsDefault, lists, onEdit, onListChanged, cancelEdit]
   );
+
+  // ── Delete list ───────────────────────────────────────────────────────────
 
   const confirmDelete = useCallback((list: FavoriteList) => setListToDelete(list), []);
 
@@ -118,12 +150,16 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
       const service = new FavoriteListService(graphqlClient);
       await service.deleteFavoriteList(listId);
       onListChanged?.();
-    } catch (e: any) {
-      setError(e?.message || 'Failed to delete list');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to delete list');
       setLists((prev) => [...prev, list]);
+    } finally {
+      setSaving(false);
     }
-    finally { setSaving(false); }
   }, [graphqlClient, listToDelete, onDelete, onListChanged]);
+
+  // ── Create list ───────────────────────────────────────────────────────────
+  // Mirrors FavoriteLists.lite.tsx: passes contactId/customerId from user.
 
   const createList = useCallback(
     async (name: string, isDefault: boolean): Promise<void> => {
@@ -138,14 +174,22 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
             await service.updateFavoriteList(String(currentDefault.id), { name: currentDefault.name, isDefault: false });
           }
         }
-        const created = await service.createFavoriteList({ name, isDefault });
+        const createInput: FavoriteListsCreateInput = { name, isDefault };
+        if (isContact(user)) createInput.contactId = user.contactId;
+        if (isCustomer(user)) createInput.customerId = user.customerId;
+        const created = await service.createFavoriteList(createInput);
         setLists((prev) => [...prev, created]);
         onListChanged?.();
-      } catch (e: any) { setError(e?.message || 'Failed to create list'); }
-      finally { setSaving(false); }
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to create list');
+      } finally {
+        setSaving(false);
+      }
     },
-    [graphqlClient, lists, onCreate, onListChanged]
+    [graphqlClient, user, lists, onCreate, onListChanged]
   );
+
+  // ── Add / remove items ────────────────────────────────────────────────────
 
   const addToList = useCallback(
     async (listId: string, productId?: number, clusterId?: number): Promise<void> => {
@@ -156,7 +200,9 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
           ...(clusterId && { clusterIds: [clusterId] }),
         });
         setLists((prev) => prev.map((l) => String(l.id) === listId ? updated : l));
-      } catch (e: any) { setError(e?.message || 'Failed to add to list'); }
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to add to list');
+      }
     },
     [graphqlClient]
   );
@@ -170,16 +216,21 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
           ...(clusterId && { clusterIds: [clusterId] }),
         });
         setLists((prev) => prev.map((l) => String(l.id) === listId ? updated : l));
-      } catch (e: any) { setError(e?.message || 'Failed to remove from list'); }
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to remove from list');
+      }
     },
     [graphqlClient]
   );
+
+  // ── Check product in list ─────────────────────────────────────────────────
+  // list.products is ProductsResponse; items are IBaseProduct but runtime Product.
 
   const isProductInList = useCallback(
     (listId: string, productId: number): boolean => {
       const list = lists.find((l) => String(l.id) === listId);
       if (!list) return false;
-      return ((list as any).products?.items || []).some((p: any) => p.productId === productId);
+      return (list.products?.items ?? []).some((p) => (p as Product).productId === productId);
     },
     [lists]
   );

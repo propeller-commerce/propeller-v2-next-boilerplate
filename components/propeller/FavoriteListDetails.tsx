@@ -1,12 +1,9 @@
 'use client';
-import * as React from 'react';
-
 import { useState, useEffect } from 'react';
 import {
   Product,
   Cluster,
   FavoriteList,
-  FavoriteListService,
   GraphQLClient,
   Contact,
   Customer,
@@ -15,6 +12,7 @@ import {
   CartChildItemInput,
   ProductsResponse,
 } from 'propeller-sdk-v2';
+import { useFavorites } from '@/composables/react/useFavorites';
 import FavoriteListItem from './FavoriteListItem';
 import GridPagination from './GridPagination';
 
@@ -129,50 +127,39 @@ export interface FavoriteListDetailsProps {
 
   /** Include tax in prices. Pass from PriceContext's usePrice() */ includeTax?: boolean;
 }
-interface FavoriteListDetailsState {
-  loading: boolean;
-  favoriteList: FavoriteList | null;
-  allItems: (Product | Cluster)[];
-  currentPage: number;
-  isMounted: boolean;
-  prevListId: string;
-  getLabel: (key: string, fallback: string) => string;
-  getItemsPerPage: () => number;
-  getTotalPages: () => number;
-  getPagedItems: () => (Product | Cluster)[];
-  getPaginationData: () => Record<string, number>;
-  handlePageChange: (page: number) => void;
-  buildFetchVariables: () => Record<string, unknown>;
-  fetchList: () => Promise<void>;
-  handleItemDelete: (itemId: string) => void;
-}
+
 function FavoriteListDetails(props: FavoriteListDetailsProps) {
-  const [loading, setLoading] = useState<FavoriteListDetailsState['loading']>(() => true);
-  const [favoriteList, setFavoriteList] = useState<FavoriteListDetailsState['favoriteList']>(
-    () => null
-  );
-  const [allItems, setAllItems] = useState<FavoriteListDetailsState['allItems']>(() => []);
-  const [currentPage, setCurrentPage] = useState<FavoriteListDetailsState['currentPage']>(() => 1);
-  const [isMounted, setIsMounted] = useState<FavoriteListDetailsState['isMounted']>(() => false);
-  const [prevListId, setPrevListId] = useState<FavoriteListDetailsState['prevListId']>(() => '');
-  function getLabel(
-    key: string,
-    fallback: string
-  ): ReturnType<FavoriteListDetailsState['getLabel']> {
+  useFavorites({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+  });
+
+  const [loading, setLoading] = useState(() => true);
+  const [, setFavoriteList] = useState<FavoriteList | null>(() => null);
+  const [allItems, setAllItems] = useState<(Product | Cluster)[]>(() => []);
+  const [currentPage, setCurrentPage] = useState(() => 1);
+  const [isMounted, setIsMounted] = useState(() => false);
+  const [prevListId, setPrevListId] = useState(() => '');
+
+  function getLabel(key: string, fallback: string): string {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-  function getItemsPerPage(): ReturnType<FavoriteListDetailsState['getItemsPerPage']> {
+
+  function getItemsPerPage(): number {
     return props.itemsPerPage || 12;
   }
-  function getTotalPages(): ReturnType<FavoriteListDetailsState['getTotalPages']> {
+
+  function getTotalPages(): number {
     return Math.max(1, Math.ceil(allItems.length / getItemsPerPage()));
   }
-  function getPagedItems(): ReturnType<FavoriteListDetailsState['getPagedItems']> {
+
+  function getPagedItems(): (Product | Cluster)[] {
     const perPage = getItemsPerPage();
     const start = (currentPage - 1) * perPage;
     return allItems.slice(start, start + perPage);
   }
-  function getPaginationData(): ReturnType<FavoriteListDetailsState['getPaginationData']> {
+
+  function getPaginationData(): Record<string, number> {
     return {
       page: currentPage,
       pages: getTotalPages(),
@@ -180,12 +167,12 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       offset: getItemsPerPage(),
     };
   }
-  function handlePageChange(
-    page: number
-  ): ReturnType<FavoriteListDetailsState['handlePageChange']> {
+
+  function handlePageChange(page: number) {
     setCurrentPage(page);
   }
-  function buildFetchVariables(): ReturnType<FavoriteListDetailsState['buildFetchVariables']> {
+
+  function buildFetchVariables(): Record<string, unknown> {
     const priceInput: Record<string, unknown> = { taxZone: 'NL' };
     if (props.user) {
       if ('customerId' in props.user) {
@@ -218,10 +205,12 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       },
     };
   }
-  async function fetchList(): ReturnType<FavoriteListDetailsState['fetchList']> {
+
+  async function fetchList() {
     if (!props.graphqlClient || !props.favoriteListId) return;
     setLoading(true);
     try {
+      const { FavoriteListService } = await import('propeller-sdk-v2');
       const service = new FavoriteListService(props.graphqlClient);
       const list = await service.getFavoriteList(buildFetchVariables());
       setFavoriteList(list);
@@ -247,9 +236,8 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       setLoading(false);
     }
   }
-  function handleItemDelete(
-    itemId: string
-  ): ReturnType<FavoriteListDetailsState['handleItemDelete']> {
+
+  function handleItemDelete(itemId: string) {
     /* Determine item type before removing from local state */ const deletedItem = allItems.find(
       (item: Product | Cluster) => {
         if ('productId' in item) return String(item.productId) === itemId;
@@ -270,17 +258,20 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       props.onItemDelete(itemId, itemType);
     }
   }
+
   useEffect(() => {
     setIsMounted(true);
     setPrevListId(props.favoriteListId || '');
     fetchList();
   }, []);
+
   useEffect(() => {
     if (props.favoriteListId && props.favoriteListId !== prevListId) {
       setPrevListId(props.favoriteListId);
       fetchList();
     }
   }, [props.favoriteListId]);
+
   return (
     <div className={props.className || ''}>
       {loading ? (
@@ -305,7 +296,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
         <>
           {allItems.length > 0 ? (
             <div className="space-y-3">
-              {getPagedItems()?.map((item, idx) => (
+              {getPagedItems()?.map((item) => (
                 <div
                   key={
                     'productId' in item

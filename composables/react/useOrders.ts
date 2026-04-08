@@ -118,7 +118,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
       setError(null);
       try {
         const service = new OrderService(graphqlClient);
-        const userId: number = isContact(user) ? user.contactId : (user as any).customerId;
+        const userId: number = isContact(user) ? user.contactId : isCustomer(user) ? user.customerId : 0;
         const resolvedCompanyId = companyId ?? (isContact(user) ? user.company?.companyId : null);
 
         const searchArgs: OrderSearchArguments = {
@@ -139,8 +139,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
         const response = await service.getOrders(searchArgs);
         setOrders(response.items || []);
         pagination.setFromResponse(response);
-      } catch (e: any) {
-        setError(e?.message || 'Failed to fetch orders');
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to fetch orders');
         setOrders([]);
       } finally {
         setLoading(false);
@@ -197,8 +197,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
         return { success: true };
-      } catch (e: any) {
-        return { success: false, error: e?.message || 'Failed to download PDF' };
+      } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : 'Failed to download PDF' };
       }
     },
     [graphqlClient]
@@ -226,7 +226,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
 
         const cartService = new CartService(graphqlClient);
         const allProducts = order.items.filter(
-          (item: OrderItem) => item.class === 'product' && item.isBonus === 'N'
+          (item: OrderItem) => item.class === Enums.OrderItemClass.product && item.isBonus === Enums.YesNo.N
         );
         const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
         const childMap = new Map<number, OrderItem[]>();
@@ -276,8 +276,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
           return { success: true, cart: lastCart };
         }
         return { success: false, error: 'No items were added' };
-      } catch (e: any) {
-        return { success: false, error: e?.message || 'Reorder failed' };
+      } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : 'Reorder failed' };
       }
     },
     [graphqlClient, user, companyId, language, configuration, onCartCreated, afterReorder]
@@ -300,8 +300,8 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
         const service = new OrderService(graphqlClient);
         await service.setOrderStatus({ orderId, ...flags });
         return { success: true };
-      } catch (e: any) {
-        return { success: false, error: e?.message || 'Failed to update status' };
+      } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : 'Failed to update status' };
       }
     },
     [graphqlClient]

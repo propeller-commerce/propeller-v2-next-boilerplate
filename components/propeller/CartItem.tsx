@@ -4,22 +4,19 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
   GraphQLClient,
-  CartService,
-  CrossupsellService,
   CartMainItem,
   CartBaseItem,
   BundleItem,
   Cart,
   ProductInventory,
-  CrossupsellSearchInput,
   Crossupsell,
   Product,
   Cluster,
   Enums,
-  CrossupsellsQueryVariables,
   Contact,
   Customer,
 } from 'propeller-sdk-v2';
+import { useCart } from '@/composables/react/useCart';
 
 export interface CartItemProps {
   /** GraphQL client for the Propeller SDK */
@@ -93,97 +90,76 @@ export interface CartItemProps {
 
   /** Include tax in price. Defaults to false. */
   includeTax?: boolean;
+
+  /** Active company ID — used to look up the user's PAC for this company */
+  companyId?: number;
 }
-interface CartItemState {
-  quantity: number;
-  notes: string;
-  loading: boolean;
-  deleting: boolean;
-  notesTimeout: any;
-  crossupsells: Crossupsell[];
-  crossupsellsLoading: boolean;
-  getLabel: (key: string, fallback: string) => string;
-  getProductName: () => string;
-  getProductUrl: () => string;
-  getProductImageUrl: () => string;
-  getProductSku: () => string;
-  getInventory: () => ProductInventory | null;
-  getFormattedPrice: () => string;
-  isBundleItem: () => boolean;
-  getBundleName: () => string;
-  getBundlePrice: () => string;
-  getBundleLeaderName: () => string;
-  getBundleLeaderPrice: () => string;
-  getBundleNonLeaders: () => BundleItem[];
-  getBundleItemName: (bundleItem: BundleItem) => string;
-  getBundleItemPrice: (bundleItem: BundleItem) => string;
-  handleQuantityChange: (newQuantity: number) => void;
-  handleNoteChange: (note: string) => void;
-  handleDelete: () => void;
-  fetchCrossupsells: () => void;
-  getCrossupsellName: (item: Crossupsell) => string;
-  getCrossupsellImageUrl: (item: Crossupsell) => string;
-  getCrossupsellUrl: (item: Crossupsell) => string;
-  getVisibleCrossupsells: () => Crossupsell[];
-}
+
 function CartItem(props: CartItemProps) {
-  const [quantity, setQuantity] = useState<CartItemState['quantity']>(() => 1);
-  const [notes, setNotes] = useState<CartItemState['notes']>(() => '');
-  const [loading, setLoading] = useState<CartItemState['loading']>(() => false);
-  const [deleting, setDeleting] = useState<CartItemState['deleting']>(() => false);
-  const [notesTimeout, setNotesTimeout] = useState<CartItemState['notesTimeout']>(
-    () => null as unknown
-  );
-  const [crossupsells, setCrossupsells] = useState<CartItemState['crossupsells']>(() => []);
-  const [crossupsellsLoading, setCrossupsellsLoading] = useState<
-    CartItemState['crossupsellsLoading']
-  >(() => false);
-  function getLabel(key: string, fallback: string): ReturnType<CartItemState['getLabel']> {
+  // --- composable ---
+  const { updateItemQuantity, updateItemNotes, deleteItem, getCrossupsells } = useCart({
+    graphqlClient: props.graphqlClient,
+    user: props.user ?? null,
+    cartId: props.cartId,
+    configuration: props.configuration,
+    companyId: props.companyId,
+  });
+
+  // --- local UI state ---
+  const [quantity, setQuantity] = useState<number>(() => 1);
+  const [notes, setNotes] = useState<string>(() => '');
+  const [loading, setLoading] = useState<boolean>(() => false);
+  const [deleting, setDeleting] = useState<boolean>(() => false);
+  const [crossupsells, setCrossupsells] = useState<Crossupsell[]>(() => []);
+  const [crossupsellsLoading, setCrossupsellsLoading] = useState<boolean>(() => false);
+
+  // --- display helpers ---
+  function getLabel(key: string, fallback: string): string {
     return props.labels?.[key] || fallback;
   }
-  function getProductName(): ReturnType<CartItemState['getProductName']> {
+  function getProductName(): string {
     return props.cartItem.product?.names?.[0]?.value || 'Product';
   }
-  function getProductUrl(): ReturnType<CartItemState['getProductUrl']> {
+  function getProductUrl(): string {
     if (props.configuration && props.configuration.urls) {
       return props.configuration.urls.getProductUrl(props.cartItem.product, props.language);
     }
     return '#';
   }
-  function getProductImageUrl(): ReturnType<CartItemState['getProductImageUrl']> {
+  function getProductImageUrl(): string {
     return props.cartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
-  function getProductSku(): ReturnType<CartItemState['getProductSku']> {
+  function getProductSku(): string {
     return props.cartItem.product?.sku || '';
   }
-  function getInventory(): ReturnType<CartItemState['getInventory']> {
+  function getInventory(): ProductInventory | null {
     const inv = props.cartItem.product?.inventory;
     return inv || null;
   }
-  function getFormattedPrice(): ReturnType<CartItemState['getFormattedPrice']> {
+  function getFormattedPrice(): string {
     const item = props.cartItem;
     const price = props.includeTax ? item?.totalSumNet || 0 : item?.totalSum || 0;
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-  function isBundleItem(): ReturnType<CartItemState['isBundleItem']> {
+  function isBundleItem(): boolean {
     return !!props.cartItem.bundle;
   }
-  function getBundleName(): ReturnType<CartItemState['getBundleName']> {
+  function getBundleName(): string {
     return props.cartItem.bundle?.name || 'Bundle';
   }
-  function getBundlePrice(): ReturnType<CartItemState['getBundlePrice']> {
+  function getBundlePrice(): string {
     const price = props.cartItem.bundle?.price?.net;
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-  function getBundleLeaderName(): ReturnType<CartItemState['getBundleLeaderName']> {
+  function getBundleLeaderName(): string {
     const items = props.cartItem.bundle?.items;
     if (!items) return '';
     const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
     if (!leader) return '';
     return leader.product.names?.[0]?.value || 'Product';
   }
-  function getBundleLeaderPrice(): ReturnType<CartItemState['getBundleLeaderPrice']> {
+  function getBundleLeaderPrice(): string {
     const items = props.cartItem.bundle?.items;
     if (!items) return '';
     const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
@@ -192,26 +168,42 @@ function CartItem(props: CartItemProps) {
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-  function getBundleNonLeaders(): ReturnType<CartItemState['getBundleNonLeaders']> {
+  function getBundleNonLeaders(): BundleItem[] {
     const items = props.cartItem.bundle?.items;
     if (!items) return [];
     return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
   }
-  function getBundleItemName(
-    bundleItem: BundleItem
-  ): ReturnType<CartItemState['getBundleItemName']> {
+  function getBundleItemName(bundleItem: BundleItem): string {
     return bundleItem.product.names?.[0]?.value || 'Product';
   }
-  function getBundleItemPrice(
-    bundleItem: BundleItem
-  ): ReturnType<CartItemState['getBundleItemPrice']> {
+  function getBundleItemPrice(bundleItem: BundleItem): string {
     const price = bundleItem.price?.net;
     if (price === undefined || price === null) return '';
     return `\u20AC${Number(price).toFixed(2)}`;
   }
-  function handleQuantityChange(
-    newQuantity: number
-  ): ReturnType<CartItemState['handleQuantityChange']> {
+  function getCrossupsellName(item: Crossupsell): string {
+    const product = item?.productTo || item?.clusterTo;
+    return product?.names?.[0]?.value || 'Product';
+  }
+  function getCrossupsellImageUrl(item: Crossupsell): string {
+    const product = (item?.productTo || item?.clusterTo) as Product | undefined;
+    return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  }
+  function getCrossupsellUrl(item: Crossupsell): string {
+    const product = item?.productTo || item?.clusterTo;
+    if (props.configuration && props.configuration.urls && product) {
+      return props.configuration.urls.getProductUrl(product, props.language);
+    }
+    return '#';
+  }
+  function getVisibleCrossupsells(): Crossupsell[] {
+    const items = crossupsells || [];
+    const limit = props.crossupsellLimit || 3;
+    return items.slice(0, limit);
+  }
+
+  // --- actions via composable ---
+  async function handleQuantityChange(newQuantity: number): Promise<void> {
     if (newQuantity < 1 || loading) return;
     setQuantity(newQuantity);
     setLoading(true);
@@ -220,65 +212,27 @@ function CartItem(props: CartItemProps) {
       setLoading(false);
       return;
     }
-    const cartService = new CartService(props.graphqlClient);
-    cartService
-      .updateCartItem({
-        id: props.cartId,
-        itemId: props.cartItem.itemId.toString(),
-        input: {
-          quantity: newQuantity,
-        },
-        language: props.language || 'NL',
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-        imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-      })
-      .then((updatedCart: Cart) => {
-        setLoading(false);
-        if (props.afterCartUpdate) {
-          props.afterCartUpdate(updatedCart);
-        }
-      })
-      .catch((error: Error) => {
-        console.error('Failed to update cart item quantity:', error);
-        setQuantity(props.cartItem.quantity);
-        setLoading(false);
-      });
+    try {
+      const updatedCart = await updateItemQuantity(props.cartItem.itemId.toString(), newQuantity);
+      if (updatedCart && props.afterCartUpdate) props.afterCartUpdate(updatedCart);
+      setLoading(false);
+    } catch (error: any) {
+      console.error('Failed to update cart item quantity:', error);
+      setQuantity(props.cartItem.quantity);
+      setLoading(false);
+    }
   }
-  function handleNoteChange(note: string): ReturnType<CartItemState['handleNoteChange']> {
+
+  function handleNoteChange(note: string): void {
     setNotes(note);
     if (props.onNoteChange) {
       props.onNoteChange(props.cartItem, note);
       return;
     }
-    if (notesTimeout) {
-      clearTimeout(notesTimeout);
-    }
-    setNotesTimeout(
-      setTimeout(() => {
-        const cartService = new CartService(props.graphqlClient);
-        cartService
-          .updateCartItem({
-            id: props.cartId,
-            itemId: props.cartItem.itemId,
-            input: {
-              notes: note,
-            },
-            language: props.language || 'NL',
-            imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-            imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-          })
-          .then((updatedCart: Cart) => {
-            if (props.afterCartUpdate) {
-              props.afterCartUpdate(updatedCart);
-            }
-          })
-          .catch((error: Error) => {
-            console.error('Failed to update cart item notes:', error);
-          });
-      }, 500)
-    );
+    updateItemNotes(props.cartItem.itemId, note, 500);
   }
-  function handleDelete(): ReturnType<CartItemState['handleDelete']> {
+
+  async function handleDelete(): Promise<void> {
     if (deleting) return;
     setDeleting(true);
     if (props.onDelete) {
@@ -286,103 +240,34 @@ function CartItem(props: CartItemProps) {
       setDeleting(false);
       return;
     }
-    const cartService = new CartService(props.graphqlClient);
-    cartService
-      .deleteCartItem({
-        id: props.cartId,
-        itemId: props.cartItem.itemId,
-        input: {
-          itemId: props.cartItem.itemId,
-        },
-        language: props.language || 'NL',
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-        imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-      })
-      .then((updatedCart: Cart) => {
-        setDeleting(false);
-        if (props.afterCartUpdate) {
-          props.afterCartUpdate(updatedCart);
-        }
-      })
-      .catch((error: Error) => {
-        console.error('Failed to delete cart item:', error);
-        setDeleting(false);
-      });
-  }
-  function fetchCrossupsells(): ReturnType<CartItemState['fetchCrossupsells']> {
-    if (!props.showCrossupsells) return;
-    const productId = props.cartItem?.productId;
-    const clusterId = props.cartItem?.clusterId;
-    if (!productId && !clusterId) return;
-    setCrossupsellsLoading(true);
-    const crossupsellService = new CrossupsellService(props.graphqlClient);
-    const searchInput: CrossupsellsQueryVariables = {
-      input: {
-        types: (props.crossupsellTypes || [
-          Enums.CrossupsellType.ACCESSORIES,
-        ]) as CrossupsellSearchInput['types'],
-        page: 1,
-        offset: 50,
-        ...(productId &&
-          !clusterId && {
-            productIdsFrom: [productId],
-          }),
-        ...(clusterId && {
-          clusterIdsFrom: [clusterId],
-        }),
-      },
-      language: props.language || 'NL',
-      imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-      imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
-      priceCalculateProductInput: {
-        taxZone: props.taxZone || 'NL',
-        ...(props.user &&
-          'company' in props.user && {
-            companyId: (props.user as Contact)?.company?.companyId,
-          }),
-        ...(props.user &&
-          'contactId' in props.user && {
-            contactId: (props.user as Contact)?.contactId,
-          }),
-        ...(props.user &&
-          'customerId' in props.user && {
-            customerId: (props.user as Customer)?.customerId,
-          }),
-      },
-    };
-    crossupsellService
-      .getCrossupsells(searchInput)
-      .then((response) => {
-        setCrossupsells(response?.items || []);
-        setCrossupsellsLoading(false);
-      })
-      .catch(() => {
-        setCrossupsells([]);
-        setCrossupsellsLoading(false);
-      });
-  }
-  function getVisibleCrossupsells(): ReturnType<CartItemState['getVisibleCrossupsells']> {
-    const items = crossupsells || [];
-    const limit = props.crossupsellLimit || 3;
-    return items.slice(0, limit);
-  }
-  function getCrossupsellName(item: Crossupsell): ReturnType<CartItemState['getCrossupsellName']> {
-    const product = item?.productTo || item?.clusterTo;
-    return product?.names?.[0]?.value || 'Product';
-  }
-  function getCrossupsellImageUrl(
-    item: Crossupsell
-  ): ReturnType<CartItemState['getCrossupsellImageUrl']> {
-    const product = (item?.productTo || item?.clusterTo) as Product | undefined;
-    return product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-  }
-  function getCrossupsellUrl(item: Crossupsell): ReturnType<CartItemState['getCrossupsellUrl']> {
-    const product = item?.productTo || item?.clusterTo;
-    if (props.configuration && props.configuration.urls && product) {
-      return props.configuration.urls.getProductUrl(product, props.language);
+    try {
+      const updatedCart = await deleteItem(props.cartItem.itemId);
+      if (updatedCart && props.afterCartUpdate) props.afterCartUpdate(updatedCart);
+      setDeleting(false);
+    } catch (error: any) {
+      console.error('Failed to delete cart item:', error);
+      setDeleting(false);
     }
-    return '#';
   }
+
+  function fetchCrossupsells(): void {
+    if (!props.showCrossupsells) return;
+    setCrossupsellsLoading(true);
+    getCrossupsells({
+      productId: props.cartItem?.productId,
+      clusterId: props.cartItem?.clusterId,
+      types: props.crossupsellTypes,
+      taxZone: props.taxZone,
+      imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
+    }).then((items) => {
+      setCrossupsells(items);
+      setCrossupsellsLoading(false);
+    }).catch(() => {
+      setCrossupsells([]);
+      setCrossupsellsLoading(false);
+    });
+  }
+
   useEffect(() => {
     setQuantity(props.cartItem.quantity || 1);
     setNotes(props.cartItem.notes || '');
@@ -480,8 +365,8 @@ function CartItem(props: CartItemProps) {
           </div>
         ) : null}
         {!!props.cartItem.clusterId &&
-        !!props.cartItem.childItems &&
-        props.cartItem.childItems.length > 0 ? (
+          !!props.cartItem.childItems &&
+          props.cartItem.childItems.length > 0 ? (
           <div className="mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
               {getLabel('includedOptions', 'Included Options:')}

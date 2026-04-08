@@ -10,6 +10,7 @@ import {
   Contact,
   Customer,
   Enums,
+  PurchaseAuthorizationConfig,
 } from 'propeller-sdk-v2';
 
 export interface CartIconAndSidebarProps {
@@ -87,9 +88,20 @@ export interface CartIconAndSidebarProps {
   /** Logged-in user — used to determine purchaser role and authorization limit */
   user?: Contact | Customer;
 
-  /** Active company ID — used to look up the user's PAC for this company */ companyId?: number;
-  /**  * Additional class name for the shopping cart icon.  */ iconClassName?: string;
-  /**  * Additional class name for the shopping cart sidebar.  */ sidebarClassName?: string;
+  /** Configuration object passed to the component */
+  configuration?: any;
+
+  /** Language code passed to CartService operations. Defaults to 'en'. */
+  language?: string;
+
+  /** Active company ID — used to look up the user's PAC for this company */
+  companyId?: number;
+
+  /**  * Additional class name for the shopping cart icon.  */
+  iconClassName?: string;
+
+  /**  * Additional class name for the shopping cart sidebar.  */
+  sidebarClassName?: string;
 }
 interface CartIconAndSidebarState {
   isMounted: boolean;
@@ -128,7 +140,11 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   function getTotalItems(): ReturnType<CartIconAndSidebarState['getTotalItems']> {
     const items = props.cart?.items;
     if (!items) return 0;
-    return items.length;
+    let quantity = 0;
+    items.forEach((item: CartMainItem) => {
+      quantity += item.quantity;
+    });
+    return quantity;
   }
   function getTotalPrice(): ReturnType<CartIconAndSidebarState['getTotalPrice']> {
     const total = props.cart?.total?.totalNet;
@@ -155,11 +171,9 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     const product = item.product;
     if (!product) return '#';
     if (product.class === Enums.ProductClass.PRODUCT) {
-      const slug = product.slugs?.[0]?.value || '';
-      return `/product/${product.productId}/${slug}`;
+      return props.configuration.urls.getProductUrl(product, props.language);
     } else if (product.class === Enums.ProductClass.CLUSTER) {
-      const slug = product.slugs?.[0]?.value || '';
-      return `/cluster/${product.clusterId || product.productId}/${slug}`;
+      return props.configuration.urls.getClusterUrl(product, props.language);
     }
     return '#';
   }
@@ -256,21 +270,17 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     if (props.cartCheckoutButton === false) return false;
     if (!props.user || !('contactId' in props.user)) return true;
     if (!props.companyId) return true;
-    const pacData = (props.user as any).purchaseAuthorizationConfigs;
-    const items: any[] = pacData?.items ?? pacData?._items ?? [];
-    const purchaserPAC = items.find((pac: any) => {
-      const role = pac.purchaseRole ?? pac._purchaseRole;
-      const pacCompanyId =
-        pac.company?.companyId ??
-        pac.company?._companyId ??
-        pac._company?.companyId ??
-        pac._company?._companyId;
+    const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+    const purchaserPAC = items.find((pac: PurchaseAuthorizationConfig) => {
+      const role = pac.purchaseRole;
+      const pacCompanyId = pac.company?.companyId;
       return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
     });
     if (!purchaserPAC) return true;
-    const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
-    const totalNet = props.cart?.total?.totalNet ?? 0;
-    return totalNet <= limit;
+    const limit = purchaserPAC.authorizationLimit ?? 0;
+    const totalGross = props.cart?.total?.totalGross ?? 0;
+    return totalGross <= limit;
   }
   useEffect(() => {
     setIsMounted(true);

@@ -3,10 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
-
-// Module-level deduplication: concurrent fetches for the same cache key share one API call.
-// Prevents duplicate requests from React Strict Mode and multiple Menu instances.
-const inflightFetches = new Map<string, Promise<Category | null>>();
+import { useMenu } from '@/composables/react/useMenu';
 
 export interface MenuProps {
   /**
@@ -75,49 +72,36 @@ export interface MenuProps {
   /** Configuration object passed to the component */
   configuration?: any;
 }
-interface MenuState {
-  rootCategory: Category | null;
-  isLoading: boolean;
-  hasError: boolean;
-  hoveredL1Id: number | null;
-  hoveredL2Id: number | null;
-  expandedL1: number | null;
-  expandedL2: number | null;
-  getUserKey: () => string;
-  getCacheKey: () => string;
-  getCachedMenu: () => Category | null;
-  cacheMenu: (data: Category) => void;
-  clearCache: () => void;
-  getCategoryName: (cat: Category) => string;
-  getCategorySlug: (cat: Category) => string;
-  getCategoryUrl: (cat: Category) => string;
-  getSubCategories: (cat: Category) => Category[];
-  handleItemClick: (cat: Category, e: any) => void;
-  setHoveredL1: (id: number | null) => void;
-  setHoveredL2: (id: number | null) => void;
-  getLabel: (key: string, fallback: string) => string;
-  getMenuStyle: () => string;
-  getLinkFormat: () => string;
-}
+
+// Module-level deduplication: concurrent fetches for the same cache key share one API call.
+// Prevents duplicate requests from React Strict Mode and multiple Menu instances.
+const inflightFetches = new Map<string, Promise<Category | null>>();
+
 function Menu(props: MenuProps) {
-  const [rootCategory, setRootCategory] = useState<MenuState['rootCategory']>(() => null);
-  const [isLoading, setIsLoading] = useState<MenuState['isLoading']>(() => true);
-  const [hasError, setHasError] = useState<MenuState['hasError']>(() => false);
-  const [hoveredL1Id, setHoveredL1Id] = useState<MenuState['hoveredL1Id']>(() => null);
-  const [hoveredL2Id, setHoveredL2Id] = useState<MenuState['hoveredL2Id']>(() => null);
-  const [expandedL1, setExpandedL1] = useState<MenuState['expandedL1']>(() => null);
-  const [expandedL2, setExpandedL2] = useState<MenuState['expandedL2']>(() => null);
-  function getUserKey(): ReturnType<MenuState['getUserKey']> {
+  const [rootCategory, setRootCategory] = useState<Category | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [hoveredL1Id, setHoveredL1Id] = useState<number | null>(null);
+  const [hoveredL2Id, setHoveredL2Id] = useState<number | null>(null);
+  const [expandedL1, setExpandedL1] = useState<number | null>(null);
+  const [expandedL2, setExpandedL2] = useState<number | null>(null);
+
+  const { clearCache } = useMenu({
+    graphqlClient: props.graphqlClient,
+    language: props.language,
+  });
+
+  function getUserKey(): string {
     if (!props.user) return '';
     if ('contactId' in (props.user as any)) return `c${(props.user as Contact).contactId}`;
     return `u${(props.user as Customer).customerId}`;
   }
-  function getCacheKey(): ReturnType<MenuState['getCacheKey']> {
+  function getCacheKey(): string {
     const lang = (props.language as string) || 'NL';
     const userKey = getUserKey();
     return `propeller_menu_${props.categoryId}_${lang}${userKey ? `_${userKey}` : ''}`;
   }
-  function getCachedMenu(): ReturnType<MenuState['getCachedMenu']> {
+  function getCachedMenu(): Category | null {
     if (typeof window === 'undefined') return null;
     try {
       const raw = localStorage.getItem(getCacheKey());
@@ -132,7 +116,7 @@ function Menu(props: MenuProps) {
     }
     return null;
   }
-  function cacheMenu(data: Category): ReturnType<MenuState['cacheMenu']> {
+  function cacheMenu(data: Category): void {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(
@@ -146,24 +130,20 @@ function Menu(props: MenuProps) {
       // ignore — quota exceeded etc.
     }
   }
-  function clearCache(): ReturnType<MenuState['clearCache']> {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(getCacheKey());
-  }
-  function getCategoryName(cat: Category): ReturnType<MenuState['getCategoryName']> {
+  function getCategoryName(cat: Category): string {
     const lang = (props.language as string) || 'NL';
     const match = cat.name?.find((n: LocalizedString) => n.language === lang);
     return match?.value || cat.name?.[0]?.value || '';
   }
-  function getCategorySlug(cat: Category): ReturnType<MenuState['getCategorySlug']> {
+  function getCategorySlug(cat: Category): string {
     const lang = (props.language as string) || 'NL';
     const match = cat.slug?.find((s: LocalizedString) => s.language === lang);
     return match?.value || cat.slug?.[0]?.value || '';
   }
-  function getCategoryUrl(cat: Category): ReturnType<MenuState['getCategoryUrl']> {
+  function getCategoryUrl(cat: Category): string {
     return props.configuration.urls.getCategoryUrl(cat, props.language);
   }
-  function getSubCategories(cat: Category): ReturnType<MenuState['getSubCategories']> {
+  function getSubCategories(cat: Category): Category[] {
     const subs = (cat as any).categories || [];
     return subs.filter((sub: Category) => {
       const name = getCategoryName(sub);
@@ -171,26 +151,26 @@ function Menu(props: MenuProps) {
       return name && slug;
     });
   }
-  function handleItemClick(cat: Category, e: any): ReturnType<MenuState['handleItemClick']> {
+  function handleItemClick(cat: Category, e: any): void {
     if (props.onMenuItemClick) {
       e.preventDefault();
       (props.onMenuItemClick as (cat: Category) => void)(cat);
     }
   }
-  function setHoveredL1(id: number | null): ReturnType<MenuState['setHoveredL1']> {
+  function setHoveredL1(id: number | null): void {
     setHoveredL1Id(id);
     setHoveredL2Id(null);
   }
-  function setHoveredL2(id: number | null): ReturnType<MenuState['setHoveredL2']> {
+  function setHoveredL2(id: number | null): void {
     setHoveredL2Id(id);
   }
-  function getLabel(key: string, fallback: string): ReturnType<MenuState['getLabel']> {
+  function getLabel(key: string, fallback: string): string {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
-  function getMenuStyle(): ReturnType<MenuState['getMenuStyle']> {
+  function getMenuStyle(): string {
     return (props.menuStyle as string) || 'dropdown-vertical';
   }
-  function getLinkFormat(): ReturnType<MenuState['getLinkFormat']> {
+  function getLinkFormat(): string {
     return props.configuration.urls.pattern;
   }
   useEffect(() => {
@@ -344,7 +324,7 @@ function Menu(props: MenuProps) {
             </ul>
             {getSubCategories(rootCategory as Category)?.map((l1, idx) =>
               hoveredL1Id === l1.categoryId && getSubCategories(l1).length > 0 ? (
-                <ul className="w-64 py-1 border-r border-border flex-shrink-0">
+                <ul key={l1.categoryId || idx} className="w-64 py-1 border-r border-border flex-shrink-0">
                   {getSubCategories(l1)?.map((l2, idx2) => (
                     <li
                       key={l2.categoryId || idx2}

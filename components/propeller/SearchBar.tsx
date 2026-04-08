@@ -1,8 +1,9 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import { GraphQLClient, ProductService, Product, Cluster, Enums } from 'propeller-sdk-v2';
+import { useState, useEffect, useRef } from 'react';
+import { GraphQLClient, Product, Cluster } from 'propeller-sdk-v2';
+import { useProductSearch } from '@/composables/react/useProductSearch';
 
 export interface SearchBarResult {
   /** Unique identifier */
@@ -20,6 +21,7 @@ export interface SearchBarResult {
   /** Whether this is a cluster (vs product) */
   isCluster?: boolean;
 }
+
 export interface SearchBarProps {
   /** Propeller SDK GraphQL client */
   graphqlClient: GraphQLClient;
@@ -61,214 +63,127 @@ export interface SearchBarProps {
   containerClassName?: string;
 
   /**
+   * Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall.
+   */
+  configuration?: any;
+
+  /**
    * Active company ID from the company switcher.
-   * When provided, can be forwarded to price calculation in search results
-   * if the underlying SDK call supports priceCalculateProductInput.
    */
   companyId?: number;
 }
-interface SearchBarState {
-  searchTerm: string;
-  results: SearchBarResult[];
-  isLoading: boolean;
-  showDropdown: boolean;
-  itemsFound: number;
-  debounceTimer: any;
-  clickOutsideListener: {
-    fn: ((e: MouseEvent) => void) | null;
+
+function mapToSearchBarResult(item: Product | Cluster): SearchBarResult {
+  const isCluster = 'clusterId' in item;
+  const displayItem = isCluster ? (item as Cluster).defaultProduct : item;
+  const id = isCluster ? (item as Cluster).clusterId : (item as Product).productId;
+  const slug = item.slugs?.[0]?.value || '';
+  const url = isCluster ? '/cluster/' + id + '/' + slug : '/product/' + id + '/' + slug;
+  return {
+    id,
+    name: item.names?.[0]?.value || 'Product',
+    sku: item.sku || displayItem?.sku || '',
+    price: displayItem?.price?.gross || 0,
+    imageUrl: displayItem?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '',
+    url,
+    isCluster,
   };
-  placeholder: () => string;
-  minLength: () => number;
-  debounceMs: () => number;
-  maxResults: () => number;
-  noImageUrl: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  formatItemPrice: (price: number) => string;
-  mapProductToResult: (item: Product | Cluster) => SearchBarResult;
-  handleInputChange: (value: string) => void;
-  fetchResults: (term: string) => Promise<void>;
-  handleSubmit: (e: any) => void;
-  handleResultClick: (result: SearchBarResult) => void;
-  handleViewAllClick: () => void;
 }
+
 function SearchBar(props: SearchBarProps) {
-  const [searchTerm, setSearchTerm] = useState<SearchBarState['searchTerm']>(() => '');
-  const [results, setResults] = useState<SearchBarState['results']>(() => []);
-  const [isLoading, setIsLoading] = useState<SearchBarState['isLoading']>(() => false);
-  const [showDropdown, setShowDropdown] = useState<SearchBarState['showDropdown']>(() => false);
-  const [itemsFound, setItemsFound] = useState<SearchBarState['itemsFound']>(() => 0);
-  const [debounceTimer, setDebounceTimer] = useState<SearchBarState['debounceTimer']>(() => null);
-  const [clickOutsideListener, setClickOutsideListener] = useState<
-    SearchBarState['clickOutsideListener']
-  >(() => ({
-    fn: null as any,
-  }));
-  function placeholder(): ReturnType<SearchBarState['placeholder']> {
-    return props.placeholder || 'Search products...';
-  }
-  function minLength(): ReturnType<SearchBarState['minLength']> {
-    return props.minSearchLength !== undefined ? props.minSearchLength : 3;
-  }
-  function debounceMs(): ReturnType<SearchBarState['debounceMs']> {
-    return props.debounceMs !== undefined ? props.debounceMs : 300;
-  }
-  function maxResults(): ReturnType<SearchBarState['maxResults']> {
-    return props.maxResults !== undefined ? props.maxResults : 8;
-  }
-  function noImageUrl(): ReturnType<SearchBarState['noImageUrl']> {
-    return props.noImageUrl || '';
-  }
-  function getLabel(key: string, fallback: string): ReturnType<SearchBarState['getLabel']> {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [localTerm, setLocalTerm] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const minLength = props.minSearchLength !== undefined ? props.minSearchLength : 3;
+  const maxResults = props.maxResults !== undefined ? props.maxResults : 8;
+
+  const { search, searchResults, searchLoading } = useProductSearch({
+    graphqlClient: props.graphqlClient,
+    language: props.language,
+    configuration: props.configuration || {},
+    companyId: props.companyId,
+  });
+
+  const results: SearchBarResult[] = searchResults
+    .slice(0, maxResults)
+    .map((item) => mapToSearchBarResult(item as Product | Cluster));
+
+  const itemsFound = searchResults.length;
+
+  function getLabel(key: string, fallback: string): string {
     return props.labels?.[key] || fallback;
   }
-  function formatItemPrice(price: number): ReturnType<SearchBarState['formatItemPrice']> {
+
+  function formatItemPrice(price: number): string {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-  function mapProductToResult(
-    item: Product | Cluster
-  ): ReturnType<SearchBarState['mapProductToResult']> {
-    const isCluster = 'clusterId' in item;
-    const displayItem = isCluster ? (item as Cluster).defaultProduct : item;
-    const id = isCluster ? (item as Cluster).clusterId : (item as Product).productId;
-    const slug = item.slugs?.[0]?.value || '';
-    const url = isCluster ? '/cluster/' + id + '/' + slug : '/product/' + id + '/' + slug;
-    return {
-      id: id,
-      name: item.names?.[0]?.value || 'Product',
-      sku: item.sku || displayItem?.sku || '',
-      price: displayItem?.price?.gross || 0,
-      imageUrl: displayItem?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '',
-      url: url,
-      isCluster: isCluster,
-    } as SearchBarResult;
+
+  function noImageUrl(): string {
+    return props.noImageUrl || '';
   }
-  function handleInputChange(value: string): ReturnType<SearchBarState['handleInputChange']> {
-    setSearchTerm(value);
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-    if (value.length < minLength()) {
-      setResults([]);
+
+  function handleInputChange(value: string) {
+    setLocalTerm(value);
+    if (value.length < minLength) {
       setShowDropdown(false);
       return;
     }
-    setDebounceTimer(
-      setTimeout(() => {
-        fetchResults(value);
-      }, debounceMs())
-    );
+    search(value);
+    setShowDropdown(true);
   }
-  async function fetchResults(term: string): ReturnType<SearchBarState['fetchResults']> {
-    if (!props.graphqlClient) return;
-    setIsLoading(true);
-    try {
-      const productService = new ProductService(props.graphqlClient);
-      const response = await productService.getProducts({
-        input: {
-          term: term,
-          language: props.language || 'NL',
-          page: 1,
-          offset: maxResults(),
-          statuses: [
-            Enums.ProductStatus.A,
-            Enums.ProductStatus.P,
-            Enums.ProductStatus.T,
-            Enums.ProductStatus.S,
-          ],
-          hidden: false,
-          sortInputs: [
-            {
-              field: Enums.ProductSortField.RELEVANCE,
-              order: Enums.SortOrder.DESC,
-            },
-          ],
-        },
-        imageSearchFilters: {
-          page: 1,
-          offset: 1,
-        },
-        imageVariantFilters: {
-          transformations: [
-            {
-              name: 'thumb',
-              transformation: {
-                format: Enums.Format.WEBP,
-                height: 100,
-                width: 100,
-                fit: Enums.Fit.BOUNDS,
-              },
-            },
-          ],
-        },
-        filterAvailableAttributeInput: {
-          isSearchable: true,
-        },
-      });
-      const items = response.items || [];
-      const mapped: SearchBarResult[] = [];
-      for (let i = 0; i < items.length && i < maxResults(); i++) {
-        mapped.push(mapProductToResult(items[i] as Product | Cluster));
-      }
-      setResults(mapped);
-      setItemsFound(response.itemsFound || 0);
+
+  // Keep dropdown open when results arrive
+  useEffect(() => {
+    if (searchResults.length > 0) {
       setShowDropdown(true);
-    } catch (e) {
-      setResults([]);
-      setShowDropdown(false);
-    } finally {
-      setIsLoading(false);
     }
-  }
-  function handleSubmit(e: any): ReturnType<SearchBarState['handleSubmit']> {
+  }, [searchResults]);
+
+  function handleSubmit(e: any) {
     e.preventDefault();
-    const term = searchTerm.trim();
+    const term = localTerm.trim();
     if (props.onSubmit) {
       props.onSubmit(term);
       setShowDropdown(false);
     }
   }
-  function handleResultClick(
-    result: SearchBarResult
-  ): ReturnType<SearchBarState['handleResultClick']> {
+
+  function handleResultClick(result: SearchBarResult) {
     if (props.onResultClick) {
       props.onResultClick(result);
     }
     setShowDropdown(false);
-    setSearchTerm('');
+    setLocalTerm('');
   }
-  function handleViewAllClick(): ReturnType<SearchBarState['handleViewAllClick']> {
+
+  function handleViewAllClick() {
     if (props.onViewAllClick) {
-      props.onViewAllClick(searchTerm);
+      props.onViewAllClick(localTerm);
     }
     setShowDropdown(false);
   }
+
+  // Click-outside to close dropdown
   useEffect(() => {
     const listener = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target && !target.closest('[data-search-bar]')) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
       }
     };
-    setClickOutsideListener({
-      fn: listener,
-    });
     document.addEventListener('mousedown', listener);
+    return () => document.removeEventListener('mousedown', listener);
   }, []);
-  useEffect(() => {
-    return () => {
-      if (clickOutsideListener.fn) {
-        document.removeEventListener('mousedown', clickOutsideListener.fn);
-      }
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-    };
-  }, []);
+
   return (
-    <div data-search-bar className={props.containerClassName || 'relative flex-1 max-w-2xl mx-8'}>
+    <div
+      ref={containerRef}
+      data-search-bar
+      className={props.containerClassName || 'relative flex-1 max-w-2xl mx-8'}
+    >
       <form onSubmit={(e) => handleSubmit(e)}>
         <div className="relative">
           <button
@@ -289,11 +204,11 @@ function SearchBar(props: SearchBarProps) {
             type="search"
             autoComplete="off"
             className="w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-gray-500"
-            placeholder={placeholder()}
-            value={searchTerm}
+            placeholder={props.placeholder || 'Search products...'}
+            value={localTerm}
             onChange={(e) => handleInputChange((e.target as HTMLInputElement).value)}
           />
-          {isLoading ? (
+          {searchLoading ? (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
             </div>
@@ -332,7 +247,7 @@ function SearchBar(props: SearchBarProps) {
                   ) : null}
                 </div>
               ))}
-              {itemsFound > maxResults() ? (
+              {itemsFound > maxResults ? (
                 <div
                   className="p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
                   onClick={(event) => handleViewAllClick()}
@@ -342,9 +257,9 @@ function SearchBar(props: SearchBarProps) {
               ) : null}
             </>
           ) : null}
-          {results.length === 0 && searchTerm.length >= minLength() && !isLoading ? (
+          {results.length === 0 && localTerm.length >= minLength && !searchLoading ? (
             <div className="p-4 text-center text-gray-500">
-              {getLabel('noResults', 'No products found for')} &quot;{searchTerm}&quot;
+              {getLabel('noResults', 'No products found for')} &quot;{localTerm}&quot;
             </div>
           ) : null}
         </div>

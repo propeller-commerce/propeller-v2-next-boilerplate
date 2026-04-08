@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { ProductService } from 'propeller-sdk-v2';
-import type { GraphQLClient, AttributeResult } from 'propeller-sdk-v2';
+import type { GraphQLClient, AttributeResult, AttributeResultSearchInput } from 'propeller-sdk-v2';
 import { extractAttributeValues, getAttributeDisplayName } from '../shared/utils/attributeExtractor';
 
 export interface AttributeGroup {
@@ -43,21 +43,28 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function buildGroups(attrs: AttributeResult[]): AttributeGroup[] {
+  // Mirrors ProductSpecifications.lite.tsx buildGroups logic.
+  // React version matches Vue: accepts language param for group-name resolution.
+  function buildGroups(attrs: AttributeResult[], lang: string): AttributeGroup[] {
     const ungrouped: AttributeDisplayItem[] = [];
     const groupMap: Record<string, AttributeDisplayItem[]> = {};
     for (const attr of attrs) {
       const values = extractAttributeValues(attr);
       if (!values.length) continue;
-      const displayName = getAttributeDisplayName(attr, language);
-      const item: AttributeDisplayItem = { name: attr.attributeDescription?.name || '', displayName, values, type: (attr.value as any)?.type || 'TEXT' };
-      const groupName = (attr.attributeDescription as any)?.group || '';
+      const displayName = getAttributeDisplayName(attr, lang);
+      const item: AttributeDisplayItem = {
+        name: attr.attributeDescription?.name || '',
+        displayName,
+        values,
+        type: attr.value?.type || 'TEXT',
+      };
+      const groupName = attr.attributeDescription?.group || '';
       if (groupName) {
         if (!groupMap[groupName]) groupMap[groupName] = [];
         groupMap[groupName].push(item);
       } else { ungrouped.push(item); }
     }
-    const groups: AttributeGroup[] = Object.entries(groupMap).map(([name, attrs]) => ({ name, attributes: attrs }));
+    const groups: AttributeGroup[] = Object.entries(groupMap).map(([name, attributes]) => ({ name, attributes }));
     if (ungrouped.length) groups.push({ name: '', attributes: ungrouped });
     return groups;
   }
@@ -66,11 +73,17 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
     setLoading(true); setError(null);
     try {
       const service = new ProductService(graphqlClient);
-      const result = await service.getAttributeResultByProductId(productId, {} as any);
-      const items = ((result as any)?.items as AttributeResult[]) || [];
+      // Mirrors ProductSpecifications.lite.tsx: isPublic: true, page: 1, offset: 2000
+      const searchInput: AttributeResultSearchInput = {
+        attributeDescription: { isPublic: true },
+        page: 1,
+        offset: 2000,
+      };
+      const result = await service.getAttributeResultByProductId(productId, searchInput);
+      const items: AttributeResult[] = result?.items ?? [];
       setAttributes(items);
-      setGroupedAttributes(buildGroups(items));
-    } catch (e: any) { setError(e?.message || 'Failed to fetch specifications'); }
+      setGroupedAttributes(buildGroups(items, language));
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to fetch specifications'); }
     finally { setLoading(false); }
   }, [graphqlClient, language]);
 

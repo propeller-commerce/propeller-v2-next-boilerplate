@@ -6,19 +6,9 @@ import {
   Contact,
   Customer,
   GraphQLClient,
-  UserService,
-  CompanyService,
-  AddressService,
-  RegisterContactResponse,
-  RegisterCustomerResponse,
   Enums,
-  Company,
-  ContactRegisterInput,
-  CustomerRegisterInput,
-  CreateCompanyInput,
-  CustomerAddressCreateInput,
-  CompanyAddressCreateInput,
 } from 'propeller-sdk-v2';
+import { useAuth } from '@/composables/react/useAuth';
 
 export interface RegisterFormProps {
   /** GraphQL client for the Propeller SDK */
@@ -109,250 +99,165 @@ export interface RegisterFormProps {
    */
   countries?: Record<string, string>;
 }
-interface RegisterFormState {
-  // Personal details
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  phone: string;
-  gender: Enums.Gender;
-  // Company fields (Contact only)
-  companyName: string;
-  vatNumber: string;
-  cocNumber: string;
-  // Billing/Invoice address
-  billingStreet: string;
-  billingNumber: string;
-  billingNumberExtension: string;
-  billingPostalCode: string;
-  billingCity: string;
-  billingCountry: string;
-  // Delivery address
-  sameAsDelivery: boolean;
-  deliveryStreet: string;
-  deliveryNumber: string;
-  deliveryNumberExtension: string;
-  deliveryPostalCode: string;
-  deliveryCity: string;
-  deliveryCountry: string;
-  // User type
-  selectedUserType: '' | 'Contact' | 'Customer';
-  // State
-  loading: boolean;
-  error: string;
-  submitted: boolean;
-  resolvedTitle: () => string;
-  resolvedButtonText: () => string;
-  showUserTypeSelector: () => boolean;
-  effectiveUserType: () => string;
-  isContact: () => boolean;
-  isCustomer: () => boolean;
-  showLoginLink: () => boolean;
-  personalDetailsTitle: () => string;
-  billingAddressTitle: () => string;
-  deliveryAddressTitle: () => string;
-  passwordTitle: () => string;
-  sameAsDeliveryLabel: () => string;
-  firstNameLabel: () => string;
-  middleNameLabel: () => string;
-  lastNameLabel: () => string;
-  emailLabel: () => string;
-  passwordLabel: () => string;
-  confirmPasswordLabel: () => string;
-  phoneLabel: () => string;
-  genderLabel: () => string;
-  companyNameLabel: () => string;
-  vatNumberLabel: () => string;
-  cocNumberLabel: () => string;
-  streetLabel: () => string;
-  numberLabel: () => string;
-  numberExtensionLabel: () => string;
-  postalCodeLabel: () => string;
-  cityLabel: () => string;
-  countryLabel: () => string;
-  userTypeLabel: () => string;
-  contactLabel: () => string;
-  customerLabel: () => string;
-  emailPlaceholder: () => string;
-  passwordPlaceholder: () => string;
-  passwordMismatchText: () => string;
-  loginText: () => string;
-  loginLinkText: () => string;
-  isFieldRequired: (fieldName: string) => boolean;
-  handleSubmit: (e: Event | any) => Promise<void>;
-}
+
 function RegisterForm(props: RegisterFormProps) {
-  const [firstName, setFirstName] = useState<RegisterFormState['firstName']>(() => '');
-  const [middleName, setMiddleName] = useState<RegisterFormState['middleName']>(() => '');
-  const [lastName, setLastName] = useState<RegisterFormState['lastName']>(() => '');
-  const [email, setEmail] = useState<RegisterFormState['email']>(() => '');
-  const [password, setPassword] = useState<RegisterFormState['password']>(() => '');
-  const [confirmPassword, setConfirmPassword] = useState<RegisterFormState['confirmPassword']>(
-    () => ''
-  );
-  const [phone, setPhone] = useState<RegisterFormState['phone']>(() => '');
-  const [gender, setGender] = useState<RegisterFormState['gender']>(() => Enums.Gender.U);
-  const [companyName, setCompanyName] = useState<RegisterFormState['companyName']>(() => '');
-  const [vatNumber, setVatNumber] = useState<RegisterFormState['vatNumber']>(() => '');
-  const [cocNumber, setCocNumber] = useState<RegisterFormState['cocNumber']>(() => '');
-  const [billingStreet, setBillingStreet] = useState<RegisterFormState['billingStreet']>(() => '');
-  const [billingNumber, setBillingNumber] = useState<RegisterFormState['billingNumber']>(() => '');
-  const [billingNumberExtension, setBillingNumberExtension] = useState<
-    RegisterFormState['billingNumberExtension']
-  >(() => '');
-  const [billingPostalCode, setBillingPostalCode] = useState<
-    RegisterFormState['billingPostalCode']
-  >(() => '');
-  const [billingCity, setBillingCity] = useState<RegisterFormState['billingCity']>(() => '');
-  const [billingCountry, setBillingCountry] = useState<RegisterFormState['billingCountry']>(
-    () => ''
-  );
-  const [sameAsDelivery, setSameAsDelivery] = useState<RegisterFormState['sameAsDelivery']>(
-    () => true
-  );
-  const [deliveryStreet, setDeliveryStreet] = useState<RegisterFormState['deliveryStreet']>(
-    () => ''
-  );
-  const [deliveryNumber, setDeliveryNumber] = useState<RegisterFormState['deliveryNumber']>(
-    () => ''
-  );
-  const [deliveryNumberExtension, setDeliveryNumberExtension] = useState<
-    RegisterFormState['deliveryNumberExtension']
-  >(() => '');
-  const [deliveryPostalCode, setDeliveryPostalCode] = useState<
-    RegisterFormState['deliveryPostalCode']
-  >(() => '');
-  const [deliveryCity, setDeliveryCity] = useState<RegisterFormState['deliveryCity']>(() => '');
-  const [deliveryCountry, setDeliveryCountry] = useState<RegisterFormState['deliveryCountry']>(
-    () => ''
-  );
-  const [selectedUserType, setSelectedUserType] = useState<RegisterFormState['selectedUserType']>(
-    () => ''
-  );
-  const [loading, setLoading] = useState<RegisterFormState['loading']>(() => false);
-  const [error, setError] = useState<RegisterFormState['error']>(() => '');
-  const [submitted, setSubmitted] = useState<RegisterFormState['submitted']>(() => false);
-  function resolvedTitle(): ReturnType<RegisterFormState['resolvedTitle']> {
+  // Personal details
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<Enums.Gender>(Enums.Gender.U);
+  // Company fields (Contact only)
+  const [companyName, setCompanyName] = useState('');
+  const [vatNumber, setVatNumber] = useState('');
+  const [cocNumber, setCocNumber] = useState('');
+  // Billing/Invoice address
+  const [billingStreet, setBillingStreet] = useState('');
+  const [billingNumber, setBillingNumber] = useState('');
+  const [billingNumberExtension, setBillingNumberExtension] = useState('');
+  const [billingPostalCode, setBillingPostalCode] = useState('');
+  const [billingCity, setBillingCity] = useState('');
+  const [billingCountry, setBillingCountry] = useState('');
+  // Delivery address
+  const [sameAsDelivery, setSameAsDelivery] = useState(true);
+  const [deliveryStreet, setDeliveryStreet] = useState('');
+  const [deliveryNumber, setDeliveryNumber] = useState('');
+  const [deliveryNumberExtension, setDeliveryNumberExtension] = useState('');
+  const [deliveryPostalCode, setDeliveryPostalCode] = useState('');
+  const [deliveryCity, setDeliveryCity] = useState('');
+  const [deliveryCountry, setDeliveryCountry] = useState('');
+  // User type
+  const [selectedUserType, setSelectedUserType] = useState<'' | 'Contact' | 'Customer'>('');
+  // State
+  const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const { loading, registerContact, registerCustomer } = useAuth({
+    graphqlClient: props.graphqlClient,
+    language: props.preferredLanguage || 'NL',
+  });
+
+  function resolvedTitle(): string {
     return props.title !== undefined ? props.title : 'Create account';
   }
-  function resolvedButtonText(): ReturnType<RegisterFormState['resolvedButtonText']> {
+  function resolvedButtonText(): string {
     return props.buttonText || 'Register';
   }
-  function showUserTypeSelector(): ReturnType<RegisterFormState['showUserTypeSelector']> {
+  function showUserTypeSelector(): boolean {
     return props.showUserType === undefined || props.showUserType === null;
   }
-  function effectiveUserType(): ReturnType<RegisterFormState['effectiveUserType']> {
+  function effectiveUserType(): string {
     if (props.showUserType) return props.showUserType;
     return selectedUserType;
   }
-  function isContact(): ReturnType<RegisterFormState['isContact']> {
+  function isContact(): boolean {
     return effectiveUserType() === 'Contact';
   }
-  function isCustomer(): ReturnType<RegisterFormState['isCustomer']> {
+  function isCustomer(): boolean {
     return effectiveUserType() === 'Customer';
   }
-  function showLoginLink(): ReturnType<RegisterFormState['showLoginLink']> {
+  function showLoginLink(): boolean {
     return props.displayLoginLink !== false;
   }
-  function personalDetailsTitle(): ReturnType<RegisterFormState['personalDetailsTitle']> {
+  function personalDetailsTitle(): string {
     return props.labels?.personalDetailsTitle || 'Your details';
   }
-  function billingAddressTitle(): ReturnType<RegisterFormState['billingAddressTitle']> {
+  function billingAddressTitle(): string {
     return props.labels?.billingAddressTitle || 'Billing address';
   }
-  function deliveryAddressTitle(): ReturnType<RegisterFormState['deliveryAddressTitle']> {
+  function deliveryAddressTitle(): string {
     return props.labels?.deliveryAddressTitle || 'Delivery address';
   }
-  function passwordTitle(): ReturnType<RegisterFormState['passwordTitle']> {
+  function passwordTitle(): string {
     return props.labels?.passwordTitle || 'Password';
   }
-  function sameAsDeliveryLabel(): ReturnType<RegisterFormState['sameAsDeliveryLabel']> {
+  function sameAsDeliveryLabel(): string {
     return props.labels?.sameAsDelivery || 'Delivery address is the same as billing address';
   }
-  function firstNameLabel(): ReturnType<RegisterFormState['firstNameLabel']> {
+  function firstNameLabel(): string {
     return props.labels?.firstName || 'First name';
   }
-  function middleNameLabel(): ReturnType<RegisterFormState['middleNameLabel']> {
+  function middleNameLabel(): string {
     return props.labels?.middleName || 'Insertion';
   }
-  function lastNameLabel(): ReturnType<RegisterFormState['lastNameLabel']> {
+  function lastNameLabel(): string {
     return props.labels?.lastName || 'Last name';
   }
-  function emailLabel(): ReturnType<RegisterFormState['emailLabel']> {
+  function emailLabel(): string {
     return props.labels?.email || 'Email address';
   }
-  function passwordLabel(): ReturnType<RegisterFormState['passwordLabel']> {
+  function passwordLabel(): string {
     return props.labels?.password || 'Password';
   }
-  function confirmPasswordLabel(): ReturnType<RegisterFormState['confirmPasswordLabel']> {
+  function confirmPasswordLabel(): string {
     return props.labels?.confirmPassword || 'Repeat password';
   }
-  function phoneLabel(): ReturnType<RegisterFormState['phoneLabel']> {
+  function phoneLabel(): string {
     return props.labels?.phone || 'Phone number';
   }
-  function genderLabel(): ReturnType<RegisterFormState['genderLabel']> {
+  function genderLabel(): string {
     return props.labels?.gender || 'Title';
   }
-  function companyNameLabel(): ReturnType<RegisterFormState['companyNameLabel']> {
+  function companyNameLabel(): string {
     return props.labels?.companyName || 'Company name';
   }
-  function vatNumberLabel(): ReturnType<RegisterFormState['vatNumberLabel']> {
+  function vatNumberLabel(): string {
     return props.labels?.vatNumber || 'VAT number';
   }
-  function cocNumberLabel(): ReturnType<RegisterFormState['cocNumberLabel']> {
+  function cocNumberLabel(): string {
     return props.labels?.cocNumber || 'CoC number';
   }
-  function streetLabel(): ReturnType<RegisterFormState['streetLabel']> {
+  function streetLabel(): string {
     return props.labels?.street || 'Street';
   }
-  function numberLabel(): ReturnType<RegisterFormState['numberLabel']> {
+  function numberLabel(): string {
     return props.labels?.number || 'Number';
   }
-  function numberExtensionLabel(): ReturnType<RegisterFormState['numberExtensionLabel']> {
+  function numberExtensionLabel(): string {
     return props.labels?.numberExtension || 'Apt/Suite/Unit';
   }
-  function postalCodeLabel(): ReturnType<RegisterFormState['postalCodeLabel']> {
+  function postalCodeLabel(): string {
     return props.labels?.postalCode || 'Postal code';
   }
-  function cityLabel(): ReturnType<RegisterFormState['cityLabel']> {
+  function cityLabel(): string {
     return props.labels?.city || 'City';
   }
-  function countryLabel(): ReturnType<RegisterFormState['countryLabel']> {
+  function countryLabel(): string {
     return props.labels?.country || 'Country';
   }
-  function userTypeLabel(): ReturnType<RegisterFormState['userTypeLabel']> {
+  function userTypeLabel(): string {
     return props.labels?.userTypeLabel || 'Account type';
   }
-  function contactLabel(): ReturnType<RegisterFormState['contactLabel']> {
+  function contactLabel(): string {
     return props.labels?.contactLabel || 'Company';
   }
-  function customerLabel(): ReturnType<RegisterFormState['customerLabel']> {
+  function customerLabel(): string {
     return props.labels?.customerLabel || 'Consumer';
   }
-  function emailPlaceholder(): ReturnType<RegisterFormState['emailPlaceholder']> {
+  function emailPlaceholder(): string {
     return props.labels?.emailPlaceholder || 'name@example.com';
   }
-  function passwordPlaceholder(): ReturnType<RegisterFormState['passwordPlaceholder']> {
+  function passwordPlaceholder(): string {
     return props.labels?.passwordPlaceholder || '••••••••';
   }
-  function passwordMismatchText(): ReturnType<RegisterFormState['passwordMismatchText']> {
+  function passwordMismatchText(): string {
     return props.labels?.passwordMismatch || 'Passwords do not match';
   }
-  function loginText(): ReturnType<RegisterFormState['loginText']> {
+  function loginText(): string {
     return props.labels?.loginText || 'Already have an account?';
   }
-  function loginLinkText(): ReturnType<RegisterFormState['loginLinkText']> {
+  function loginLinkText(): string {
     return props.labels?.loginLink || 'Log in';
   }
-  function isFieldRequired(fieldName: string): ReturnType<RegisterFormState['isFieldRequired']> {
+  function isFieldRequired(fieldName: string): boolean {
     if (fieldName === 'companyName' && isContact()) return true;
     if (!props.requiredFields) return false;
     return props.requiredFields.indexOf(fieldName) !== -1;
   }
-  async function handleSubmit(e: Event | any): ReturnType<RegisterFormState['handleSubmit']> {
+  async function handleSubmit(e: Event | any): Promise<void> {
     e.preventDefault();
     if (!effectiveUserType()) {
       setError('Please select an account type.');
@@ -366,206 +271,63 @@ function RegisterForm(props: RegisterFormProps) {
     if (props.beforeRegistration) {
       props.beforeRegistration();
     }
-    setLoading(true);
     setError('');
-    try {
-      const userService = new UserService(props.graphqlClient as GraphQLClient);
-      const addressService = new AddressService(props.graphqlClient as GraphQLClient);
-      const baseInput: Record<string, unknown> = {
-        email: email,
-        password: password,
-      };
-      baseInput.firstName = firstName;
-      baseInput.middleName = middleName;
-      baseInput.lastName = lastName;
-      baseInput.phone = phone;
-      baseInput.gender = gender;
-      baseInput.primaryLanguage = props.preferredLanguage || 'NL';
-      let response: RegisterContactResponse | RegisterCustomerResponse;
-      let userId: number = 0;
-      let company: Company | null = null;
-      if (isContact()) {
-        // Create company if company fields are filled
-        if (companyName) {
-          const companyService = new CompanyService(props.graphqlClient as GraphQLClient);
-          const companyInput: CreateCompanyInput = {
-            name: companyName,
-            taxNumber: vatNumber,
-            cocNumber: cocNumber,
-            email: email,
-            phone: phone,
-          };
-          company = await companyService.createCompany(companyInput);
-        }
-        const contactInput: ContactRegisterInput = {
-          contactRegisterInput: {
-            ...baseInput,
-            parentId: company?.companyId as number,
-          },
-          companyAttributesInput: {},
-          contactAttributesInput: {},
-          contactPAConfigInput: {
-            page: 1,
-            offset: 10,
-          },
-        };
-        response = await userService.registerContact(contactInput);
-        const contactData = (response as RegisterContactResponse)?.contact as any;
-        userId = Number(contactData?.contactId || contactData?.id || 0);
 
-        // Authenticate before creating company/addresses
-        const session = (response as RegisterContactResponse)?.session;
-        if (session?.accessToken) {
-          const currentConfig = (props.graphqlClient as GraphQLClient).getConfig();
-          (props.graphqlClient as GraphQLClient).updateConfig({
-            headers: {
-              ...currentConfig.headers,
-              Authorization: 'Bearer ' + session.accessToken,
-            },
-          });
-        }
-      } else {
-        const customerInput: CustomerRegisterInput = {
-          customerRegisterInput: {
-            ...baseInput,
-            gender: gender,
-            primaryLanguage: props.preferredLanguage || 'NL',
-          },
-          customerAttributesInput: {},
-        };
-        response = await userService.registerCustomer(customerInput);
-        const customerData = (response as RegisterCustomerResponse)?.customer as any;
-        userId = Number(customerData?.customerId || customerData?.id || 0);
+    let result;
+    if (isContact()) {
+      result = await registerContact({
+        email,
+        password,
+        firstName,
+        middleName,
+        lastName,
+        phone,
+        gender,
+        companyName,
+        vatNumber,
+        cocNumber,
+        street: billingStreet,
+        number: billingNumber,
+        numberExtension: billingNumberExtension,
+        postalCode: billingPostalCode,
+        city: billingCity,
+        country: billingCountry,
+        deliveryStreet: sameAsDelivery ? billingStreet : deliveryStreet,
+        deliveryNumber: sameAsDelivery ? billingNumber : deliveryNumber,
+        deliveryPostalCode: sameAsDelivery ? billingPostalCode : deliveryPostalCode,
+        deliveryCity: sameAsDelivery ? billingCity : deliveryCity,
+        deliveryCountry: sameAsDelivery ? billingCountry : deliveryCountry,
+        sameDeliveryAsBilling: sameAsDelivery,
+      }, props.preferredLanguage || 'NL');
+    } else {
+      result = await registerCustomer({
+        email,
+        password,
+        firstName,
+        middleName,
+        lastName,
+        phone,
+        gender,
+        street: billingStreet,
+        number: billingNumber,
+        postalCode: billingPostalCode,
+        city: billingCity,
+        country: billingCountry,
+      }, props.preferredLanguage || 'NL');
+    }
 
-        // Authenticate before creating addresses
-        const session = (response as RegisterCustomerResponse)?.session;
-        if (session?.accessToken) {
-          const currentConfig = (props.graphqlClient as GraphQLClient).getConfig();
-          (props.graphqlClient as GraphQLClient).updateConfig({
-            headers: {
-              ...currentConfig.headers,
-              Authorization: 'Bearer ' + session.accessToken,
-            },
-          });
-        }
-      }
-      const session = (response as RegisterContactResponse | RegisterCustomerResponse)?.session;
-      const user = isContact()
-        ? (response as RegisterContactResponse)?.contact
-        : (response as RegisterCustomerResponse)?.customer;
-
-      // Create invoice/billing address
-
-      let invoiceAddress: CustomerAddressCreateInput | CompanyAddressCreateInput;
-      if (isCustomer()) {
-        invoiceAddress = {
-          firstName: firstName,
-          middleName: middleName,
-          lastName: lastName,
-          street: billingStreet,
-          number: billingNumber,
-          numberExtension: billingNumberExtension,
-          postalCode: billingPostalCode,
-          city: billingCity,
-          country: billingCountry,
-          type: Enums.AddressType.invoice,
-          isDefault: Enums.YesNo.Y,
-          customerId: userId,
-        };
-        await addressService.createCustomerAddress(invoiceAddress);
-      } else {
-        invoiceAddress = {
-          firstName: firstName,
-          middleName: middleName,
-          lastName: lastName,
-          company: companyName,
-          street: billingStreet,
-          number: billingNumber,
-          numberExtension: billingNumberExtension,
-          postalCode: billingPostalCode,
-          city: billingCity,
-          country: billingCountry,
-          type: Enums.AddressType.invoice,
-          isDefault: Enums.YesNo.Y,
-          companyId: company?.companyId as number,
-        };
-        await addressService.createCompanyAddress(invoiceAddress);
-      }
-
-      // Create delivery address
-      if (sameAsDelivery) {
-        if (isCustomer()) {
-          const deliveryAddress: CustomerAddressCreateInput = {
-            ...(invoiceAddress as CustomerAddressCreateInput),
-          };
-          deliveryAddress.type = Enums.AddressType.delivery;
-          await addressService.createCustomerAddress(deliveryAddress);
-        } else {
-          const deliveryAddress: CompanyAddressCreateInput = {
-            ...(invoiceAddress as CompanyAddressCreateInput),
-          };
-          deliveryAddress.type = Enums.AddressType.delivery;
-          await addressService.createCompanyAddress(deliveryAddress);
-        }
-      } else {
-        if (isCustomer()) {
-          const deliveryAddress: CustomerAddressCreateInput = {
-            firstName: firstName,
-            middleName: middleName,
-            lastName: lastName,
-            street: deliveryStreet,
-            number: deliveryNumber,
-            numberExtension: deliveryNumberExtension,
-            postalCode: deliveryPostalCode,
-            city: deliveryCity,
-            country: deliveryCountry,
-            type: Enums.AddressType.delivery,
-            isDefault: Enums.YesNo.Y,
-            customerId: userId,
-          };
-          await addressService.createCustomerAddress(deliveryAddress);
-        } else {
-          const deliveryAddress: CompanyAddressCreateInput = {
-            firstName: firstName,
-            middleName: middleName,
-            lastName: lastName,
-            street: deliveryStreet,
-            number: deliveryNumber,
-            numberExtension: deliveryNumberExtension,
-            postalCode: deliveryPostalCode,
-            city: deliveryCity,
-            country: deliveryCountry,
-            type: Enums.AddressType.delivery,
-            isDefault: Enums.YesNo.Y,
-            companyId: company?.companyId as number,
-          };
-          await addressService.createCompanyAddress(deliveryAddress);
-        }
-      }
+    if (result.success && result.user) {
       setSubmitted(true);
-
-      // Auto-login if enabled and session tokens are present
-      if (props.automaticLogin !== false && session?.accessToken && session?.refreshToken) {
+      if (props.automaticLogin !== false) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('userLoggedIn'));
         }
       }
       if (props.afterRegistration) {
-        if (props.automaticLogin !== false && session?.accessToken && session?.refreshToken) {
-          props.afterRegistration(
-            user as unknown as Contact | Customer,
-            session?.accessToken,
-            session?.refreshToken,
-            session?.expirationTime
-          );
-        } else {
-          props.afterRegistration(user as unknown as Contact | Customer);
-        }
+        props.afterRegistration(result.user as Contact | Customer);
       }
-    } catch (err: any) {
-      setError(err?.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+    } else if (result.error) {
+      setError(result.error);
     }
   }
   return (

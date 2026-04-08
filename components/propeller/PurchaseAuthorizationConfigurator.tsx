@@ -1,21 +1,8 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
-import {
-  Contact,
-  Customer,
-  GraphQLClient,
-  Company,
-  PurchaseAuthorizationConfig,
-  CompanyService,
-  PurchaseAuthorizationConfigService,
-  UserService,
-  RegisterContactInput,
-  Enums,
-  AttributeResultSearchInput,
-  PurchaseAuthorizationConfigCreateInput,
-} from 'propeller-sdk-v2';
+import { Enums, GraphQLClient, Contact, Customer, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, RegisterContactInput } from 'propeller-sdk-v2';
+import { usePurchaseAuthorizationConfigurator } from '@/composables/react/usePurchaseAuthorization';
 
 export interface PurchaseAuthorizationConfiguratorProps {
   /** GraphQL client for the Propeller SDK */
@@ -69,409 +56,37 @@ export interface PurchaseAuthorizationConfiguratorProps {
   /** Configuration object from the application */
   configuration?: Record<string, any>;
 }
-interface RowEdit {
-  role: string;
-  limit: number | undefined;
-  dirty: boolean;
-}
-interface AddContactFormState {
-  gender: string;
-  email: string;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  phone: string;
-}
-interface PurchaseAuthorizationConfiguratorState {
-  company: Company | null;
-  loading: boolean;
-  currentPage: number;
-  pageOffset: number;
-  rowEdits: Record<number, RowEdit>;
-  pacMap: Record<number, PurchaseAuthorizationConfig>;
-  actionLoading: Record<number, boolean>;
-  showAddContactModal: boolean;
-  addContactForm: AddContactFormState;
-  addContactLoading: boolean;
-  addContactError: string;
-  isAuthManager: () => boolean;
-  getContacts: () => any[];
-  getTotalPages: () => number;
-  getLabel: (key: string, fallback: string) => string;
-  loadCompany: (page: number) => Promise<void>;
-  buildMaps: (contacts: Contact[]) => void;
-  handleRoleChange: (contactId: number, role: string) => void;
-  handleLimitChange: (contactId: number, value: string) => void;
-  handleCreate: (contactId: number) => Promise<void>;
-  handleSave: (contactId: number) => Promise<void>;
-  handleDelete: (contactId: number) => Promise<void>;
-  handlePageChange: (page: number) => void;
-  openAddContactModal: () => void;
-  closeAddContactModal: () => void;
-  handleAddContactSubmit: () => Promise<void>;
-  hasPac: (contactId: number) => boolean;
-  isCurrentUser: (contactId: number) => boolean;
-  isRowDirty: (contactId: number) => boolean;
-  getRowRole: (contactId: number) => string;
-  getRowLimit: (contactId: number) => number | undefined;
-  isRowLoading: (contactId: number) => boolean;
-}
+
 function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfiguratorProps) {
-  const [company, setCompany] = useState<PurchaseAuthorizationConfiguratorState['company']>(
-    () => null
-  );
-  const [loading, setLoading] = useState<PurchaseAuthorizationConfiguratorState['loading']>(
-    () => true
-  );
-  const [currentPage, setCurrentPage] = useState<
-    PurchaseAuthorizationConfiguratorState['currentPage']
-  >(() => 1);
-  const [pageOffset, setPageOffset] = useState<
-    PurchaseAuthorizationConfiguratorState['pageOffset']
-  >(() => 10);
-  const [rowEdits, setRowEdits] = useState<PurchaseAuthorizationConfiguratorState['rowEdits']>(
-    () => ({})
-  );
-  const [pacMap, setPacMap] = useState<PurchaseAuthorizationConfiguratorState['pacMap']>(
-    () => ({})
-  );
-  const [actionLoading, setActionLoading] = useState<
-    PurchaseAuthorizationConfiguratorState['actionLoading']
-  >(() => ({}));
-  const [showAddContactModal, setShowAddContactModal] = useState<
-    PurchaseAuthorizationConfiguratorState['showAddContactModal']
-  >(() => false);
-  const [addContactForm, setAddContactForm] = useState<
-    PurchaseAuthorizationConfiguratorState['addContactForm']
-  >(() => ({
-    gender: '',
-    email: '',
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    phone: '',
-  }));
-  const [addContactLoading, setAddContactLoading] = useState<
-    PurchaseAuthorizationConfiguratorState['addContactLoading']
-  >(() => false);
-  const [addContactError, setAddContactError] = useState<
-    PurchaseAuthorizationConfiguratorState['addContactError']
-  >(() => '');
-  function isAuthManager(): ReturnType<PurchaseAuthorizationConfiguratorState['isAuthManager']> {
-    if (!props.user || !('contactId' in props.user)) return false;
-    const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
-    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
-    return items.some((pac: PurchaseAuthorizationConfig) => {
-      const role = pac.purchaseRole;
-      const companyId = pac.company?.companyId;
-      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && companyId === props.companyId;
-    });
+  const {
+    company, loading, contacts, totalPages, currentPage, isAuthManager,
+    showAddContactModal, addContactForm, addContactLoading, addContactError,
+    hasPac, isCurrentUser, isRowDirty, getRowRole, getRowLimit, isRowLoading,
+    handleRoleChange, handleLimitChange, handleCreate, handleSave, handleDelete,
+    handlePageChange, openAddContactModal, closeAddContactModal, setAddContactForm,
+    handleAddContactSubmit,
+  } = usePurchaseAuthorizationConfigurator({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+    companyId: props.companyId,
+    beforeContactCreate: props.beforeContactCreate,
+    onContactCreate: props.onContactCreate,
+    afterContactCreate: props.afterContactCreate,
+    onPurchaseAuthorizationCreate: props.onPurchaseAuthorizationCreate,
+    afterPurchaseAuthorizationCreate: props.afterPurchaseAuthorizationCreate,
+    onPurchaseAuthorizationUpdate: props.onPurchaseAuthorizationUpdate,
+    afterPurchaseAuthorizationUpdate: props.afterPurchaseAuthorizationUpdate,
+    onPurchaseAuthorizationDelete: props.onPurchaseAuthorizationDelete,
+    afterPurchaseAuthorizationDelete: props.afterPurchaseAuthorizationDelete,
+  });
+
+  function getLabel(key: string, fallback: string): string {
+    return props.labels?.[key] || fallback;
   }
-  function getContacts(): ReturnType<PurchaseAuthorizationConfiguratorState['getContacts']> {
-    if (!company) return [];
-    const contactsData = (company as Company).contacts;
-    return contactsData?.items ?? [];
-  }
-  function getTotalPages(): ReturnType<PurchaseAuthorizationConfiguratorState['getTotalPages']> {
-    if (!company) return 0;
-    const contactsData = (company as Company).contacts;
-    return contactsData?.pages ?? 0;
-  }
-  function getLabel(
-    key: string,
-    fallback: string
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['getLabel']> {
-    return (props.labels as any)?.[key] || fallback;
-  }
-  function buildMaps(
-    contacts: Contact[]
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['buildMaps']> {
-    const newPacMap: Record<number, PurchaseAuthorizationConfig> = {};
-    const newRowEdits: Record<number, RowEdit> = {};
-    contacts.forEach((contact: Contact) => {
-      const cId: number = contact.contactId;
-      const pacData = contact.purchaseAuthorizationConfigs;
-      const pacItems: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
-      if (pacItems.length > 0) {
-        newPacMap[cId] = pacItems[0];
-      }
-      const pac = newPacMap[cId];
-      newRowEdits[cId] = {
-        role: pac ? pac.purchaseRole : '',
-        limit: pac ? pac.authorizationLimit : undefined,
-        dirty: false,
-      };
-    });
-    setPacMap(newPacMap);
-    setRowEdits(newRowEdits);
-  }
-  async function loadCompany(
-    page: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['loadCompany']> {
-    if (!props.graphqlClient || !props.companyId) return;
-    setLoading(true);
-    try {
-      const companyService = new CompanyService(props.graphqlClient);
-      const company = await companyService.getCompany({
-        id: props.companyId,
-        $contactSearchArguments: {
-          page: page,
-          offset: pageOffset,
-        },
-        $contactPAConfigInput: {
-          companyIds: [props.companyId],
-          page: 1,
-          offset: 100,
-        },
-        $companyAttributesInput: {} as AttributeResultSearchInput,
-      });
-      setCompany(company);
-      // Extract contacts directly from the fetched result (not via state.getContacts())
-      // to avoid reading stale state before React flushes the company assignment.
-      const freshContactsData = company.contacts;
-      const freshContacts: Contact[] = freshContactsData?.items ?? [];
-      buildMaps(freshContacts);
-    } finally {
-      setLoading(false);
-    }
-  }
-  function handleRoleChange(
-    contactId: number,
-    role: string
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['handleRoleChange']> {
-    const current = rowEdits[contactId] || {
-      role: '',
-      limit: undefined,
-      dirty: false,
-    };
-    setRowEdits({
-      ...rowEdits,
-      [contactId]: {
-        ...current,
-        role,
-        dirty: true,
-      },
-    });
-  }
-  function handleLimitChange(
-    contactId: number,
-    value: string
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['handleLimitChange']> {
-    const current = rowEdits[contactId] || {
-      role: '',
-      limit: undefined,
-      dirty: false,
-    };
-    const limit = value === '' ? undefined : Number(value);
-    setRowEdits({
-      ...rowEdits,
-      [contactId]: {
-        ...current,
-        limit,
-        dirty: true,
-      },
-    });
-  }
-  async function handleCreate(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['handleCreate']> {
-    setActionLoading({
-      ...actionLoading,
-      [contactId]: true,
-    });
-    try {
-      const edit = rowEdits[contactId] || {
-        role: Enums.PurchaseRole.PURCHASER,
-        limit: undefined,
-        dirty: false,
-      };
-      const input: PurchaseAuthorizationConfigCreateInput = {
-        contactId,
-        companyId: props.companyId,
-        purchaseRole: (edit.role || Enums.PurchaseRole.PURCHASER) as Enums.PurchaseRole,
-        authorizationLimit: edit.limit,
-      };
-      if (props.onPurchaseAuthorizationCreate) {
-        props.onPurchaseAuthorizationCreate(input);
-      } else {
-        const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
-        const pac = await pacService.createPurchaseAuthorizationConfig(input);
-        if (props.afterPurchaseAuthorizationCreate) {
-          props.afterPurchaseAuthorizationCreate(pac);
-        } else {
-          await loadCompany(currentPage);
-        }
-      }
-    } finally {
-      setActionLoading({
-        ...actionLoading,
-        [contactId]: false,
-      });
-    }
-  }
-  async function handleSave(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['handleSave']> {
-    const pac = pacMap[contactId];
-    if (!pac) return;
-    setActionLoading({
-      ...actionLoading,
-      [contactId]: true,
-    });
-    try {
-      const edit = rowEdits[contactId];
-      const pacId: string = pac.id;
-      if (props.onPurchaseAuthorizationUpdate) {
-        props.onPurchaseAuthorizationUpdate(pac);
-      } else {
-        const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
-        const updated = await pacService.updatePurchaseAuthorizationConfig(pacId, {
-          purchaseRole: (edit.role || pac.purchaseRole) as Enums.PurchaseRole,
-          authorizationLimit: edit.limit,
-        });
-        if (props.afterPurchaseAuthorizationUpdate) {
-          props.afterPurchaseAuthorizationUpdate(updated);
-        } else {
-          await loadCompany(currentPage);
-        }
-      }
-    } finally {
-      setActionLoading({
-        ...actionLoading,
-        [contactId]: false,
-      });
-    }
-  }
-  async function handleDelete(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['handleDelete']> {
-    const pac = pacMap[contactId];
-    if (!pac) return;
-    setActionLoading({
-      ...actionLoading,
-      [contactId]: true,
-    });
-    try {
-      const pacId: string = pac.id;
-      if (props.onPurchaseAuthorizationDelete) {
-        props.onPurchaseAuthorizationDelete(pac);
-      } else {
-        const pacService = new PurchaseAuthorizationConfigService(props.graphqlClient);
-        const deleted = await pacService.deletePurchaseAuthorizationConfig(pacId);
-        if (props.afterPurchaseAuthorizationDelete) {
-          props.afterPurchaseAuthorizationDelete(deleted);
-        } else {
-          await loadCompany(currentPage);
-        }
-      }
-    } finally {
-      setActionLoading({
-        ...actionLoading,
-        [contactId]: false,
-      });
-    }
-  }
-  function handlePageChange(
-    page: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['handlePageChange']> {
-    setCurrentPage(page);
-  }
-  function openAddContactModal(): ReturnType<
-    PurchaseAuthorizationConfiguratorState['openAddContactModal']
-  > {
-    setAddContactError('');
-    setShowAddContactModal(true);
-  }
-  function closeAddContactModal(): ReturnType<
-    PurchaseAuthorizationConfiguratorState['closeAddContactModal']
-  > {
-    setShowAddContactModal(false);
-    setAddContactError('');
-    setAddContactForm({
-      gender: '',
-      email: '',
-      firstName: '',
-      middleName: '',
-      lastName: '',
-      phone: '',
-    });
-  }
-  async function handleAddContactSubmit(): ReturnType<
-    PurchaseAuthorizationConfiguratorState['handleAddContactSubmit']
-  > {
-    setAddContactLoading(true);
-    setAddContactError('');
-    try {
-      const input: RegisterContactInput = {
-        parentId: props.companyId,
-        gender: addContactForm.gender as Enums.Gender,
-        email: addContactForm.email,
-        firstName: addContactForm.firstName,
-        middleName: addContactForm.middleName,
-        lastName: addContactForm.lastName,
-        phone: addContactForm.phone,
-      };
-      if (props.beforeContactCreate) {
-        props.beforeContactCreate(input);
-      }
-      if (props.onContactCreate) {
-        props.onContactCreate(input);
-      } else {
-        const userService = new UserService(props.graphqlClient);
-        const result = await userService.registerContact({
-          contactRegisterInput: input,
-        });
-        const contact = result.contact;
-        if (props.afterContactCreate) {
-          props.afterContactCreate(contact as any);
-        } else {
-          await loadCompany(currentPage);
-        }
-      }
-      closeAddContactModal();
-    } catch (err: any) {
-      setAddContactError(err?.message || 'Failed to create contact');
-    } finally {
-      setAddContactLoading(false);
-    }
-  }
-  function hasPac(contactId: number): ReturnType<PurchaseAuthorizationConfiguratorState['hasPac']> {
-    return !!pacMap[contactId];
-  }
-  function isCurrentUser(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['isCurrentUser']> {
-    const userId = (props.user as Contact).contactId;
-    return userId === contactId;
-  }
-  function isRowDirty(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['isRowDirty']> {
-    return !!rowEdits[contactId]?.dirty;
-  }
-  function getRowRole(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['getRowRole']> {
-    return rowEdits[contactId]?.role ?? '';
-  }
-  function getRowLimit(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['getRowLimit']> {
-    return rowEdits[contactId]?.limit;
-  }
-  function isRowLoading(
-    contactId: number
-  ): ReturnType<PurchaseAuthorizationConfiguratorState['isRowLoading']> {
-    return !!actionLoading[contactId];
-  }
-  useEffect(() => {
-    if (props.graphqlClient && props.companyId) {
-      loadCompany(currentPage);
-    }
-  }, [props.companyId, currentPage]);
+
   return (
     <div className={`purchase-authorization-configurator ${props.className || ''}`}>
-      {isAuthManager() ? (
+      {isAuthManager ? (
         <>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -482,7 +97,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                 <button
                   type="button"
                   className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition text-sm font-medium"
-                  onClick={(event) => openAddContactModal()}
+                  onClick={() => openAddContactModal()}
                 >
                   {getLabel('addContact', 'Add contact')}
                 </button>
@@ -517,7 +132,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {getContacts()?.map((contact) => (
+                      {contacts.map((contact) => (
                         <tr className="hover:bg-muted/30 transition-colors" key={contact.contactId}>
                           <td className="px-4 py-3 text-muted-foreground">{contact.contactId}</td>
                           <td className="px-4 py-3">
@@ -553,9 +168,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                 className="w-28 border border-input rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                                 value={getRowLimit(contact.contactId) ?? ''}
                                 disabled={isCurrentUser(contact.contactId)}
-                                onChange={(e) =>
-                                  handleLimitChange(contact.contactId, e.target.value)
-                                }
+                                onChange={(e) => handleLimitChange(contact.contactId, e.target.value)}
                                 placeholder={getLabel('limitPlaceholder', '0.00')}
                               />
                             ) : null}
@@ -567,7 +180,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                   type="button"
                                   className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={isRowLoading(contact.contactId)}
-                                  onClick={(event) => handleSave(contact.contactId)}
+                                  onClick={() => handleSave(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
@@ -579,11 +192,8 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                 <button
                                   type="button"
                                   className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                  disabled={
-                                    isRowLoading(contact.contactId) ||
-                                    !getRowRole(contact.contactId)
-                                  }
-                                  onClick={(event) => handleCreate(contact.contactId)}
+                                  disabled={isRowLoading(contact.contactId) || !getRowRole(contact.contactId)}
+                                  onClick={() => handleCreate(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
@@ -595,11 +205,8 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                 <button
                                   type="button"
                                   className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                  disabled={
-                                    isRowLoading(contact.contactId) ||
-                                    isCurrentUser(contact.contactId)
-                                  }
-                                  onClick={(event) => handleDelete(contact.contactId)}
+                                  disabled={isRowLoading(contact.contactId) || isCurrentUser(contact.contactId)}
+                                  onClick={() => handleDelete(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
@@ -614,27 +221,24 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     </tbody>
                   </table>
                 </div>
-                {getTotalPages() > 1 ? (
+                {totalPages > 1 ? (
                   <div className="flex items-center justify-center gap-3 pt-2">
                     <button
                       type="button"
                       className="text-sm px-3 py-1.5 border border-border rounded-md hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
                       disabled={currentPage <= 1}
-                      onClick={(event) => handlePageChange(currentPage - 1)}
+                      onClick={() => handlePageChange(currentPage - 1)}
                     >
                       {getLabel('previous', 'Previous')}
                     </button>
                     <span className="text-sm text-muted-foreground">
-                      {getLabel('page', 'Page')}
-                      {currentPage}
-                      {getLabel('of', 'of')}
-                      {getTotalPages()}
+                      {getLabel('page', 'Page')} {currentPage} {getLabel('of', 'of')} {totalPages}
                     </span>
                     <button
                       type="button"
                       className="text-sm px-3 py-1.5 border border-border rounded-md hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
-                      disabled={currentPage >= getTotalPages()}
-                      onClick={(event) => handlePageChange(currentPage + 1)}
+                      disabled={currentPage >= totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
                     >
                       {getLabel('next', 'Next')}
                     </button>
@@ -646,48 +250,37 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
           {showAddContactModal ? (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-              onClick={(event) => closeAddContactModal()}
+              onClick={() => closeAddContactModal()}
             >
               <div
                 className="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
-                    {getLabel('addContactTitle', 'Add Contact')}
-                  </h3>
+                  <h3 className="text-lg font-semibold">{getLabel('addContactTitle', 'Add Contact')}</h3>
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground transition"
-                    onClick={(event) => closeAddContactModal()}
+                    onClick={() => closeAddContactModal()}
                   >
                     ✕
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {getLabel('companyName', 'Company')}
-                  </label>
+                  <label className="block text-sm font-medium mb-1">{getLabel('companyName', 'Company')}</label>
                   <input
                     type="text"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-muted cursor-not-allowed"
                     readOnly
-                    value={(company as Company)?.name ?? ''}
+                    value={(company as any)?.name ?? ''}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {getLabel('gender', 'Gender')}
-                  </label>
+                  <label className="block text-sm font-medium mb-1">{getLabel('gender', 'Gender')}</label>
                   <select
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     value={addContactForm.gender}
-                    onChange={(e) => {
-                      setAddContactForm({
-                        ...addContactForm,
-                        gender: e.target.value,
-                      });
-                    }}
+                    onChange={(e) => setAddContactForm({ ...addContactForm, gender: e.target.value })}
                   >
                     <option value="">{getLabel('selectGender', '— Select —')}</option>
                     <option value={Enums.Gender.M}>{getLabel('genderM', 'Male')}</option>
@@ -696,95 +289,60 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {getLabel('email', 'Email')} *
-                  </label>
+                  <label className="block text-sm font-medium mb-1">{getLabel('email', 'Email')} *</label>
                   <input
                     type="email"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     value={addContactForm.email}
-                    onChange={(e) => {
-                      setAddContactForm({
-                        ...addContactForm,
-                        email: e.target.value,
-                      });
-                    }}
+                    onChange={(e) => setAddContactForm({ ...addContactForm, email: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      {getLabel('firstName', 'First name')}
-                    </label>
+                    <label className="block text-sm font-medium mb-1">{getLabel('firstName', 'First name')}</label>
                     <input
                       type="text"
                       className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                       value={addContactForm.firstName}
-                      onChange={(e) => {
-                        setAddContactForm({
-                          ...addContactForm,
-                          firstName: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => setAddContactForm({ ...addContactForm, firstName: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      {getLabel('middleName', 'Middle')}
-                    </label>
+                    <label className="block text-sm font-medium mb-1">{getLabel('middleName', 'Middle')}</label>
                     <input
                       type="text"
                       className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                       value={addContactForm.middleName}
-                      onChange={(e) => {
-                        setAddContactForm({
-                          ...addContactForm,
-                          middleName: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => setAddContactForm({ ...addContactForm, middleName: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      {getLabel('lastName', 'Last name')}
-                    </label>
+                    <label className="block text-sm font-medium mb-1">{getLabel('lastName', 'Last name')}</label>
                     <input
                       type="text"
                       className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                       value={addContactForm.lastName}
-                      onChange={(e) => {
-                        setAddContactForm({
-                          ...addContactForm,
-                          lastName: e.target.value,
-                        });
-                      }}
+                      onChange={(e) => setAddContactForm({ ...addContactForm, lastName: e.target.value })}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {getLabel('phone', 'Phone')}
-                  </label>
+                  <label className="block text-sm font-medium mb-1">{getLabel('phone', 'Phone')}</label>
                   <input
                     type="tel"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     value={addContactForm.phone}
-                    onChange={(e) => {
-                      setAddContactForm({
-                        ...addContactForm,
-                        phone: e.target.value,
-                      });
-                    }}
+                    onChange={(e) => setAddContactForm({ ...addContactForm, phone: e.target.value })}
                   />
                 </div>
-                {!!addContactError ? (
+                {addContactError ? (
                   <p className="text-sm text-red-600">{addContactError}</p>
                 ) : null}
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
                     className="px-4 py-2 text-sm border border-border rounded-md hover:bg-muted transition"
-                    onClick={(event) => closeAddContactModal()}
+                    onClick={() => closeAddContactModal()}
                   >
                     {getLabel('cancel', 'Cancel')}
                   </button>
@@ -792,7 +350,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     type="button"
                     className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     disabled={addContactLoading || !addContactForm.email}
-                    onClick={(event) => handleAddContactSubmit()}
+                    onClick={() => handleAddContactSubmit()}
                   >
                     {addContactLoading ? (
                       <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

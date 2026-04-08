@@ -2,7 +2,8 @@
 import * as React from 'react';
 
 import { useState } from 'react';
-import { Cart, CartService, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
+import { Cart, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
+import { useCart } from '@/composables/react/useCart';
 
 export interface CartSummaryProps {
   /** The shopping cart used to populate the cart summary data */
@@ -58,139 +59,118 @@ export interface CartSummaryProps {
     err: Error
   ) => void;
 }
-interface CartSummaryState {
-  title: () => string;
-  showSubtotal: () => boolean;
-  showDiscount: () => boolean;
-  showShippingCosts: () => boolean;
-  showVATs: () => boolean;
-  showTotalExclVat: () => boolean;
-  showTotalVat: () => boolean;
-  showCheckoutButton: () => boolean;
-  showRequestAuthorizationButton: () => boolean;
-  requestLoading: boolean;
-  getLabel: (key: string, fallback: string) => string;
-  formatItemPrice: (price: number) => string;
-  subtotal: () => number;
-  hasDiscount: () => boolean;
-  discountAmount: () => number;
-  hasShippingCosts: () => boolean;
-  shippingCosts: () => number;
-  totalExclVat: () => number;
-  taxLevels: () => NonNullable<Cart['taxLevels']>;
-  totalVat: () => number;
-  totalInclVat: () => number;
-  handleCheckoutClick: () => void;
-  handleRequestAuthorizationClick: () => Promise<void>;
-}
+
 function CartSummary(props: CartSummaryProps) {
-  function title(): ReturnType<CartSummaryState['title']> {
+  // --- composable ---
+  const { checkoutAllowed, requestAuthorization } = useCart({
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
+    cartId: props.cart?.cartId,
+    companyId: props.companyId,
+  });
+
+  // --- local UI state ---
+  const [requestLoading, setRequestLoading] = useState<boolean>(() => false);
+
+  // --- display helpers ---
+  function title(): string {
     return props.title || 'Order summary';
   }
-  function showSubtotal(): ReturnType<CartSummaryState['showSubtotal']> {
+  function showSubtotal(): boolean {
     return props.showSubtotal !== undefined ? props.showSubtotal : true;
   }
-  function showDiscount(): ReturnType<CartSummaryState['showDiscount']> {
+  function showDiscount(): boolean {
     return props.showDiscount !== undefined ? props.showDiscount : true;
   }
-  function showShippingCosts(): ReturnType<CartSummaryState['showShippingCosts']> {
+  function showShippingCosts(): boolean {
     return props.showShippingCosts !== undefined ? props.showShippingCosts : true;
   }
-  function showVATs(): ReturnType<CartSummaryState['showVATs']> {
+  function showVATs(): boolean {
     return props.showVATs !== undefined ? props.showVATs : true;
   }
-  function showTotalExclVat(): ReturnType<CartSummaryState['showTotalExclVat']> {
+  function showTotalExclVat(): boolean {
     return props.showTotalExclVat !== undefined ? props.showTotalExclVat : true;
   }
-  function showTotalVat(): ReturnType<CartSummaryState['showTotalVat']> {
+  function showTotalVat(): boolean {
     return props.showTotalVat !== undefined ? props.showTotalVat : true;
   }
-  function showCheckoutButton(): ReturnType<CartSummaryState['showCheckoutButton']> {
+  function showCheckoutButton(): boolean {
     return props.showCheckoutButton !== undefined ? props.showCheckoutButton : true;
   }
-  function getLabel(key: string, fallback: string): ReturnType<CartSummaryState['getLabel']> {
+  function getLabel(key: string, fallback: string): string {
     return props.labels?.[key] || fallback;
   }
-  function formatItemPrice(price: number): ReturnType<CartSummaryState['formatItemPrice']> {
+  function formatItemPrice(price: number): string {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-  function subtotal(): ReturnType<CartSummaryState['subtotal']> {
+  function subtotal(): number {
     return props.cart?.total?.subTotal || 0;
   }
-  function hasDiscount(): ReturnType<CartSummaryState['hasDiscount']> {
+  function hasDiscount(): boolean {
     const total = props.cart?.total;
     return (total?.discount || 0) > 0;
   }
-  function discountAmount(): ReturnType<CartSummaryState['discountAmount']> {
+  function discountAmount(): number {
     return props.cart?.total?.discount || 0;
   }
-  function hasShippingCosts(): ReturnType<CartSummaryState['hasShippingCosts']> {
+  function hasShippingCosts(): boolean {
     return (props.cart?.postageData?.price || 0) > 0;
   }
-  function shippingCosts(): ReturnType<CartSummaryState['shippingCosts']> {
+  function shippingCosts(): number {
     return Number(props.cart?.postageData?.price || 0);
   }
-  function totalExclVat(): ReturnType<CartSummaryState['totalExclVat']> {
+  function totalExclVat(): number {
     return props.cart?.total?.totalGross || 0;
   }
-  function taxLevels(): ReturnType<CartSummaryState['taxLevels']> {
+  function taxLevels(): NonNullable<Cart['taxLevels']> {
     const levels = props.cart?.taxLevels || [];
     return levels.filter((t) => t.taxPercentage > 0 && t.price > 0);
   }
-  function totalVat(): ReturnType<CartSummaryState['totalVat']> {
+  function totalVat(): number {
     const net = props.cart?.total?.totalNet || 0;
     const gross = props.cart?.total?.totalGross || 0;
     return net - gross;
   }
-  function totalInclVat(): ReturnType<CartSummaryState['totalInclVat']> {
+  function totalInclVat(): number {
     return props.cart?.total?.totalNet || 0;
   }
-  function handleCheckoutClick(): ReturnType<CartSummaryState['handleCheckoutClick']> {
+  function handleCheckoutClick(): void {
     if (props.onCheckoutButtonClick) {
       props.onCheckoutButtonClick(props.cart);
     }
   }
-  function showRequestAuthorizationButton(): ReturnType<
-    CartSummaryState['showRequestAuthorizationButton']
-  > {
-    if (!props.user || !('contactId' in props.user)) return false;
-    if (!props.companyId) return false;
-    const pacData = (props.user as any).purchaseAuthorizationConfigs;
+  function showRequestAuthorizationButton(): boolean {
+    if (!props.user || !('contactId' in props.user)) { console.log('[PAC] no user or not contact'); return false; }
+    if (!props.companyId) { console.log('[PAC] no companyId prop'); return false; }
+    const pacData = (props.user as any).purchaseAuthorizationConfigs ?? (props.user as any)._purchaseAuthorizationConfigs;
     const items: any[] = pacData?.items ?? pacData?._items ?? [];
+    console.log('[PAC] companyId:', props.companyId, typeof props.companyId, '| pacItems:', items.length, items);
     const purchaserPAC = items.find((pac: any) => {
       const role = pac.purchaseRole ?? pac._purchaseRole;
-      const pacCompanyId =
-        pac.company?.companyId ??
-        pac.company?._companyId ??
-        pac._company?.companyId ??
-        pac._company?._companyId;
-      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+      const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
+      console.log('[PAC] checking pac — role:', role, '| pacCompanyId:', pacCompanyId, typeof pacCompanyId);
+      return role === Enums.PurchaseRole.PURCHASER && Number(pacCompanyId) === Number(props.companyId);
     });
-    if (!purchaserPAC) return false;
+    if (!purchaserPAC) { console.log('[PAC] no PURCHASER PAC found for companyId', props.companyId); return false; }
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
-    const totalNet = props.cart?.total?.totalNet ?? 0;
-    return totalNet > limit;
+    const totalGross = props.cart?.total?.totalGross ?? 0;
+    console.log('[PAC] limit:', limit, '| totalGross:', totalGross, '| exceeds:', totalGross > limit);
+    return totalGross > limit;
   }
-  const [requestLoading, setRequestLoading] = useState<CartSummaryState['requestLoading']>(
-    () => false
-  );
-  async function handleRequestAuthorizationClick(): ReturnType<
-    CartSummaryState['handleRequestAuthorizationClick']
-  > {
+
+  async function handleRequestAuthorizationClick(): Promise<void> {
     setRequestLoading(true);
     try {
-      let updatedCart: any = props.cart;
       if (props.onRequestAuthorization) {
         props.onRequestAuthorization(props.cart);
-      } else if (props.graphqlClient) {
-        const cartService = new CartService(props.graphqlClient);
-        updatedCart = await cartService.requestPurchaseAuthorization({ id: props.cart.cartId });
-      }
-      if (props.afterRequestAuthorization) {
-        props.afterRequestAuthorization(updatedCart);
+        props.afterRequestAuthorization?.(props.cart);
+      } else {
+        const result = await requestAuthorization();
+        if (!result.success) throw new Error(result.error || 'Failed to request authorization');
+        props.afterRequestAuthorization?.(props.cart);
       }
     } catch (err: any) {
       if (props.onError) {
@@ -200,6 +180,7 @@ function CartSummary(props: CartSummaryProps) {
       setRequestLoading(false);
     }
   }
+
   return (
     <div className="w-full bg-white space-y-3">
       <h2 className="text-xl font-bold mb-4">{title()}</h2>

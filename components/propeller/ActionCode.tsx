@@ -2,7 +2,8 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { GraphQLClient, CartService, Cart, CartActionCodeVariables } from 'propeller-sdk-v2';
+import { GraphQLClient, Cart } from 'propeller-sdk-v2';
+import { useCart } from '@/composables/react/useCart';
 
 export interface ActionCodeProps {
   /** GraphQL client for the Propeller SDK */
@@ -38,116 +39,84 @@ export interface ActionCodeProps {
   /** Language code for CartService operations. Defaults to 'NL'. */
   language?: string;
 }
-interface ActionCodeState {
-  code: string;
-  loading: boolean;
-  error: string;
-  isMounted: boolean;
-  getLabel: (key: string, fallback: string) => string;
-  title: () => string;
-  showRemoveCode: () => boolean;
-  appliedCode: () => string;
-  hasAppliedCode: () => boolean;
-  handleApply: () => Promise<void>;
-  handleRemove: () => Promise<void>;
-  handleKeyDown: (e: any) => void;
-}
+
 function ActionCode(props: ActionCodeProps) {
-  const [code, setCode] = useState<ActionCodeState['code']>(() => '');
-  const [loading, setLoading] = useState<ActionCodeState['loading']>(() => false);
-  const [error, setError] = useState<ActionCodeState['error']>(() => '');
-  const [isMounted, setIsMounted] = useState<ActionCodeState['isMounted']>(() => false);
-  function getLabel(key: string, fallback: string): ReturnType<ActionCodeState['getLabel']> {
+  // --- composable ---
+  const { addActionCode, removeActionCode, loading } = useCart({
+    graphqlClient: props.graphqlClient,
+    user: null,
+    cartId: props.cart?.cartId,
+    configuration: props.configuration,
+  });
+
+  // --- local UI state ---
+  const [code, setCode] = useState<string>(() => '');
+  const [error, setError] = useState<string>(() => '');
+  const [isMounted, setIsMounted] = useState<boolean>(() => false);
+
+  // --- display helpers ---
+  function getLabel(key: string, fallback: string): string {
     return props.labels?.[key] || fallback;
   }
-  function title(): ReturnType<ActionCodeState['title']> {
+  function title(): string {
     return props.title || 'Action code';
   }
-  function showRemoveCode(): ReturnType<ActionCodeState['showRemoveCode']> {
+  function showRemoveCode(): boolean {
     return props.showRemoveCode !== undefined ? props.showRemoveCode : true;
   }
-  function appliedCode(): ReturnType<ActionCodeState['appliedCode']> {
+  function appliedCode(): string {
     return props.cart?.actionCode || '';
   }
-  function hasAppliedCode(): ReturnType<ActionCodeState['hasAppliedCode']> {
+  function hasAppliedCode(): boolean {
     return !!props.cart?.actionCode;
   }
-  async function handleApply(): ReturnType<ActionCodeState['handleApply']> {
+
+  // --- actions via composable ---
+  async function handleApply(): Promise<void> {
     if (!code.trim() || loading) return;
-    setLoading(true);
     setError('');
     if (props.onActionCodeApply) {
       props.onActionCodeApply(code.trim(), props.cart);
-      setLoading(false);
+      setCode('');
       return;
     }
-    const cartService = new CartService(props.graphqlClient);
-    const cartActionCodeVariables: CartActionCodeVariables = {
-      id: props.cart?.cartId,
-      input: {
-        actionCode: code.trim(),
-      },
-      language: props.language || 'NL',
-      imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-      imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-    };
-    await cartService
-      .addActionCodeToCart(cartActionCodeVariables)
-      .then((updatedCart: Cart) => {
-        setLoading(false);
-        setCode('');
-        if (props.afterActionCodeApply) {
-          props.afterActionCodeApply(updatedCart);
-        }
-      })
-      .catch((error: any) => {
-        setLoading(false);
-        setError(getLabel('errorApply', 'Failed to apply action code. Please try again.'));
-        console.error('Failed to apply action code:', error);
-      });
+    try {
+      const updatedCart = await addActionCode(code.trim());
+      setCode('');
+      if (updatedCart && props.afterActionCodeApply) props.afterActionCodeApply(updatedCart);
+    } catch (err: any) {
+      setError(getLabel('errorApply', 'Failed to apply action code. Please try again.'));
+      console.error('Failed to apply action code:', err);
+    }
   }
-  async function handleRemove(): ReturnType<ActionCodeState['handleRemove']> {
+
+  async function handleRemove(): Promise<void> {
     if (loading || !hasAppliedCode()) return;
-    setLoading(true);
     setError('');
-    const code = appliedCode();
+    const currentCode = appliedCode();
     if (props.onActionCodeRemove) {
-      props.onActionCodeRemove(code, props.cart);
-      setLoading(false);
+      props.onActionCodeRemove(currentCode, props.cart);
       return;
     }
-    const cartService = new CartService(props.graphqlClient);
-    const cartActionCodeVariables: CartActionCodeVariables = {
-      id: props.cart?.cartId,
-      input: {
-        actionCode: code,
-      },
-      language: props.language || 'NL',
-      imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-      imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-    };
-    await cartService
-      .removeActionCodeFromCart(cartActionCodeVariables)
-      .then((updatedCart: Cart) => {
-        setLoading(false);
-        if (props.afterActionCodeRemove) {
-          props.afterActionCodeRemove(updatedCart);
-        }
-      })
-      .catch((error: any) => {
-        setLoading(false);
-        setError(getLabel('errorRemove', 'Failed to remove action code. Please try again.'));
-        console.error('Failed to remove action code:', error);
-      });
+    try {
+      const updatedCart = await removeActionCode(currentCode);
+      if (updatedCart && props.afterActionCodeRemove) props.afterActionCodeRemove(updatedCart);
+    } catch (err: any) {
+      setError(getLabel('errorRemove', 'Failed to remove action code. Please try again.'));
+      console.error('Failed to remove action code:', err);
+    }
   }
-  function handleKeyDown(e: any): ReturnType<ActionCodeState['handleKeyDown']> {
+
+  function handleKeyDown(e: any): void {
     if (e.key === 'Enter') {
       handleApply();
     }
   }
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
   return (
     <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
       <h2 className="text-lg font-bold">{title()}</h2>

@@ -3,10 +3,14 @@ import * as React from 'react';
 
 import { useState, useRef, useEffect } from 'react';
 import { Contact, Company } from 'propeller-sdk-v2';
+import { useCompany } from '@/composables/react/useCompany';
 
 export interface CompanySwitcherProps {
   /** The contact to whom the companies are assigned. Default company is user.company, all companies are in user.companies. */
   user: Contact;
+
+  /** GraphQL client for the Propeller SDK */
+  graphqlClient?: any;
 
   /** Icon identifier for the company switcher trigger button. @default 'default-company-switch-icon' */
   icon?: string;
@@ -17,24 +21,16 @@ export interface CompanySwitcherProps {
   /** Callback fired when the user selects a company. */
   onCompanyChange: (company: Company) => void;
 }
-interface CompanySwitcherState {
-  isOpen: boolean;
-  activeCompanyId: number | null;
-  getCompanies: () => Company[];
-  getActiveCompany: () => Company | null;
-  getActiveCompanyName: () => string;
-  getIcon: () => string;
-  isActive: (company: Company) => boolean;
-  toggleDropdown: () => void;
-  selectCompany: (company: Company) => void;
-}
+
 function CompanySwitcher(props: CompanySwitcherProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState<CompanySwitcherState['isOpen']>(() => false);
-  const [activeCompanyId, setActiveCompanyId] = useState<CompanySwitcherState['activeCompanyId']>(
-    () => null
-  );
-  function getCompanies(): ReturnType<CompanySwitcherState['getCompanies']> {
+  const [isOpen, setIsOpen] = useState(() => false);
+  const [activeCompanyId, setActiveCompanyId] = useState<number | null>(() => null);
+
+  // useCompany provides SDK methods; company list is derived from user prop
+  useCompany(props.graphqlClient ? { graphqlClient: props.graphqlClient } : { graphqlClient: null as any });
+
+  function getCompanies(): Company[] {
     // sanitizeUser in AuthContext is not recursive, so CompaniesResponse fields
     // may still have their raw _items key instead of the getter-based items.
     const companiesRaw = props.user.companies as any;
@@ -48,7 +44,8 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     }
     return [];
   }
-  function getActiveCompany(): ReturnType<CompanySwitcherState['getActiveCompany']> {
+
+  function getActiveCompany(): Company | null {
     const idToUse = activeCompanyId ?? (props.selectedCompanyId as number | undefined) ?? null;
     if (idToUse !== null) {
       const companies = getCompanies();
@@ -57,25 +54,31 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     }
     return (props.user.company as Company | undefined) ?? null;
   }
-  function getActiveCompanyName(): ReturnType<CompanySwitcherState['getActiveCompanyName']> {
+
+  function getActiveCompanyName(): string {
     const company = getActiveCompany();
     return company ? company.name : 'Select company';
   }
-  function getIcon(): ReturnType<CompanySwitcherState['getIcon']> {
+
+  function getIcon(): string {
     return props.icon ?? 'default-company-switch-icon';
   }
-  function isActive(company: Company): ReturnType<CompanySwitcherState['isActive']> {
+
+  function isActive(company: Company): boolean {
     const active = getActiveCompany();
     return active !== null && active.companyId === company.companyId;
   }
-  function toggleDropdown(): ReturnType<CompanySwitcherState['toggleDropdown']> {
+
+  function toggleDropdown() {
     setIsOpen(!isOpen);
   }
-  function selectCompany(company: Company): ReturnType<CompanySwitcherState['selectCompany']> {
+
+  function selectCompany(company: Company) {
     setActiveCompanyId(company.companyId);
     setIsOpen(false);
     props.onCompanyChange(company);
   }
+
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -86,6 +89,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
   return (
     <div className="company-switcher relative inline-block" ref={containerRef as any}>
       <button

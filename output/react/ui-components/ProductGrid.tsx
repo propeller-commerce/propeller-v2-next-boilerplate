@@ -14,7 +14,7 @@ import {
   ProductsResponse,
   Category,
 } from 'propeller-sdk-v2';
-import { useProductSearch } from '../../../composables/react/useProductSearch';
+import { useProductSearch } from '@/composables/react/useProductSearch';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
 

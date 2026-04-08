@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -12,6 +12,7 @@ import {
   OrderlistService,
   Orderlist,
 } from 'propeller-sdk-v2';
+import { useProductInfo } from '@/composables/react/useProductInfo';
 
 export interface ProductInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
@@ -104,31 +105,27 @@ export interface ProductInfoProps {
    */
   textLabels?: string[];
 }
-interface ProductInfoState {
-  internalProduct: Product | null;
-  loading: boolean;
-  getProduct: () => Product | null;
-  getProductName: () => string;
-  getProductSku: () => string;
-}
+
 function ProductInfo(props: ProductInfoProps) {
-  const [internalProduct, setInternalProduct] = useState<ProductInfoState['internalProduct']>(
-    () => null
+  const { product: fetchedProduct, loading, fetchProduct } = useProductInfo(
+    props.graphqlClient
+      ? { graphqlClient: props.graphqlClient, language: props.language, configuration: props.configuration }
+      : { graphqlClient: {} as GraphQLClient, language: props.language, configuration: props.configuration }
   );
-  const [loading, setLoading] = useState<ProductInfoState['loading']>(() => false);
-  function getProduct(): ReturnType<ProductInfoState['getProduct']> {
-    return (props.product as Product) || internalProduct;
+
+  const activeProduct: Product | null = props.product || fetchedProduct;
+
+  function getProductName(): string {
+    if (!activeProduct) return '';
+    const lang = props.language || 'NL';
+    const match = activeProduct.names?.find((n: LocalizedString) => n.language === lang);
+    return match?.value || activeProduct.names?.[0]?.value || '';
   }
-  function getProductName(): ReturnType<ProductInfoState['getProductName']> {
-    const product = getProduct();
-    if (!product) return '';
-    const lang = (props.language as string) || 'NL';
-    const match = product.names?.find((n: LocalizedString) => n.language === lang);
-    return match?.value || product.names?.[0]?.value || '';
+
+  function getProductSku(): string {
+    return activeProduct?.sku || '';
   }
-  function getProductSku(): ReturnType<ProductInfoState['getProductSku']> {
-    return getProduct()?.sku || '';
-  }
+
   useEffect(() => {
     if (props.product) {
       if (props.onProductLoaded) {
@@ -137,79 +134,15 @@ function ProductInfo(props: ProductInfoProps) {
       return;
     }
     if (!props.productId || !props.graphqlClient) return;
-    setLoading(true);
-    const service = new ProductService(props.graphqlClient as GraphQLClient);
-    const taxZone = props.taxZone || 'NL';
-    let orderListsPromise: Promise<number[]> = Promise.resolve([]);
-    if (props.user && props.companyId) {
-      const orderlistService = new OrderlistService(props.graphqlClient as GraphQLClient);
-      orderListsPromise = orderlistService
-        .getOrderlists({
-          companyIds: [props.companyId],
-        })
-        .then((orderlists: any) => {
-          return orderlists.items?.map((orderList: Orderlist) => orderList.id) || [];
-        });
-    }
-    orderListsPromise.then((orderLists: number[]) => {
-      service
-        .getProduct({
-          productId: props.productId as number,
-          language: (props.language as string) || 'NL',
-          applyOrderlists: true,
-          orderlistIds: orderLists,
-          imageSearchFilters: props.imageSearchFilters || props.configuration.imageSearchFilters,
-          imageVariantFilters:
-            props.imageVariantFilters || props.configuration.imageVariantFiltersLarge,
-          priceCalculateProductInput: {
-            taxZone: taxZone,
-            ...(props.companyId && {
-              companyId: props.companyId as number,
-            }),
-            ...(props.user &&
-              'contactId' in props.user && {
-                contactId: (props.user as Contact)?.contactId,
-              }),
-            ...(props.user &&
-              'customerId' in props.user && {
-                customerId: (props.user as Customer)?.customerId,
-              }),
-          },
-          userBulkPriceProductInput: {
-            taxZone: taxZone,
-            ...(props.companyId && {
-              companyId: props.companyId as number,
-            }),
-            ...(props.user &&
-              'contactId' in props.user && {
-                contactId: (props.user as Contact)?.contactId,
-              }),
-            ...(props.user &&
-              'customerId' in props.user && {
-                customerId: (props.user as Customer)?.customerId,
-              }),
-          },
-          ...(props.configuration.productTrackAttributes &&
-            props.configuration.productTrackAttributes.length > 0 && {
-              attributeResultSearchInput: {
-                attributeDescription: {
-                  names: props.configuration.productTrackAttributes,
-                },
-              },
-            }),
-        })
-        .then((product: Product) => {
-          setInternalProduct(product);
-          setLoading(false);
-          if (props.onProductLoaded) {
-            props.onProductLoaded(product);
-          }
-        })
-        .catch(() => {
-          setLoading(false);
-        });
-    });
+    fetchProduct(props.productId);
   }, [props.productId, props.product, props.language, props.user, props.companyId]);
+
+  useEffect(() => {
+    if (fetchedProduct && props.onProductLoaded) {
+      props.onProductLoaded(fetchedProduct);
+    }
+  }, [fetchedProduct]);
+
   return (
     <div className={`product-info ${(props.className as string) || ''}`}>
       {loading && !props.product ? (

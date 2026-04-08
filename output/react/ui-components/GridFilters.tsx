@@ -62,6 +62,10 @@ export interface GridFiltersProps {
   /** Currently active text filters (URL-driven). Syncs internal checkbox state when filters are removed externally. */
   activeTextFilters?: Record<string, string[]>;
 
+  /** Currently active price filter range (URL-driven). When undefined, resets price inputs to bounds. */
+  activePriceMin?: number;
+  activePriceMax?: number;
+
   /** Extra CSS class on the root element. */
   className?: string;
 }
@@ -246,6 +250,12 @@ function GridFilters(props: GridFiltersProps) {
     if (!props.activeTextFilters) return;
     setSelectedFilters(props.activeTextFilters as Record<string, string[]>);
   }, [props.activeTextFilters]);
+  useEffect(() => {
+    if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+      setCurrentMin((props.priceMin as number) || 0);
+      setCurrentMax((props.priceMax as number) || 9999);
+    }
+  }, [props.activePriceMin, props.activePriceMax]);
   return (
     <div
       className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}

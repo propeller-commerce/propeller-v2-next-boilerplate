@@ -99,7 +99,7 @@
         </button>
         <template v-if="priceFilterMin !== undefined || priceFilterMax !== undefined">
           <span
-            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-secondary-foreground hover:bg-primary hover:text-destructive-foreground transition-colors"
+            class="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
             @click="
               async (event) => {
                 if (onPriceFilterRemove) onPriceFilterRemove();

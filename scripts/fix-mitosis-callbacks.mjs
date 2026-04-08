@@ -860,6 +860,50 @@ const FILE_PATCHES = [
         from: "lessThan: val,",
         to: "lessThan: val ?? undefined,",
     },
+    // ── OrderShipments patches ───────────────────────────────────────────────
+    //
+    // Mitosis drops the `const shipments` variable declared outside `useStore`
+    // and generates broken `.map()` calls due to operator-precedence issues when
+    // the `For` helper targets a cast expression like `(x as T[]) || []`.
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: inject shipments derived variable',
+        from: [
+            '  const [activeShipment, setActiveShipment] = useState<OrderShipmentsState[\'activeShipment\']>(',
+            '    () => null',
+            '  );',
+        ].join('\n'),
+        to: [
+            '  const [activeShipment, setActiveShipment] = useState<OrderShipmentsState[\'activeShipment\']>(',
+            '    () => null',
+            '  );',
+            '  const shipments: Shipment[] = (props.order?.shipments as Shipment[]) || [];',
+        ].join('\n'),
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: fix shipment items map operator precedence',
+        from: [
+            '                        {(activeShipment?.items as ShipmentItem[]) ||',
+            '                          []?.map((shipmentItem, idx) => (',
+        ].join('\n'),
+        to: '                        {((activeShipment?.items as ShipmentItem[]) || []).map((shipmentItem: ShipmentItem, idx: number) => (',
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: fix trackAndTraces map operator precedence',
+        from: [
+            '                    {(activeShipment?.trackAndTraces as TrackAndTrace[]) ||',
+            '                      []?.map((tat, tatIdx) =>',
+        ].join('\n'),
+        to: '                    {((activeShipment?.trackAndTraces as TrackAndTrace[]) || []).map((tat: TrackAndTrace, tatIdx: number) =>',
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: guard track-and-trace link on URL only (not code)',
+        from: '!!(tat.carrier?.trackAndTraceURL || tat.code)',
+        to: '!!tat.carrier?.trackAndTraceURL',
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────

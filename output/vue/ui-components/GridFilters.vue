@@ -182,6 +182,10 @@ export interface GridFiltersProps {
   /** Currently active text filters (URL-driven). Syncs internal checkbox state when filters are removed externally. */
   activeTextFilters?: Record<string, string[]>;
 
+  /** Currently active price filter range (URL-driven). When undefined, resets price inputs to bounds. */
+  activePriceMin?: number;
+  activePriceMax?: number;
+
   /** Extra CSS class on the root element. */
   className?: string;
 }
@@ -267,6 +271,16 @@ watch(
   () => {
     if (!props.activeTextFilters) return;
     selectedFilters.value = props.activeTextFilters as Record<string, string[]>;
+  },
+  { immediate: true }
+);
+watch(
+  () => [props.activePriceMin, props.activePriceMax],
+  () => {
+    if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+      currentMin.value = (props.priceMin as number) || 0;
+      currentMax.value = (props.priceMax as number) || 9999;
+    }
   },
   { immediate: true }
 );

@@ -251,7 +251,6 @@ function GridFilters(props: GridFiltersProps) {
     setSelectedFilters(props.activeTextFilters as Record<string, string[]>);
   }, [props.activeTextFilters]);
   useEffect(() => {
-    // When active price filter is cleared externally (e.g. toolbar badge removed), reset inputs to bounds
     if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
       setCurrentMin((props.priceMin as number) || 0);
       setCurrentMax((props.priceMax as number) || 9999);

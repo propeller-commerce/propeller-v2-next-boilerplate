@@ -1,4 +1,4 @@
-import type { CmsProvider } from '../core';
+import type { CmsProvider, CmsPageOptions } from '../core';
 import type {
   CmsImage,
   CmsSeo,
@@ -20,13 +20,14 @@ import type {
 
 // ── GraphQL client ──
 
-async function preprFetch<T = any>(query: string, variables?: Record<string, any>): Promise<T> {
-  const endpoint = `https://graphql.prepr.io/${process.env.PREPR_ACCESS_TOKEN}`;
+async function preprFetch<T = any>(query: string, variables?: Record<string, any>, extraHeaders?: Record<string, string>): Promise<T> {
+  const token = process.env.PREPR_ACCESS_TOKEN || process.env.NEXT_PUBLIC_PREPR_ACCESS_TOKEN;
+  const endpoint = `https://graphql.prepr.io/${token}`;
   const isDev = process.env.NODE_ENV === 'development';
 
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
     body: JSON.stringify({ query, variables }),
     cache: isDev ? 'no-store' : undefined,
     next: isDev ? undefined : { revalidate: 60 },
@@ -530,12 +531,17 @@ function buildBlockFragments(schema: SchemaInfo, forPage: boolean): string {
 
 export function createPreprProvider(): CmsProvider {
   return {
-    async getPage(slug: string) {
+    async getPage(slug: string, options?: CmsPageOptions) {
       try {
         const schema = await getSchema();
         const pageFragments = buildBlockFragments(schema, true);
         const seoFragment = buildSeoFragment(schema);
         const lookupSlug = slug === 'home' ? '/' : slug;
+        const segments = options?.segments?.filter(Boolean).sort();
+        const headers: Record<string, string> = {};
+        if (segments?.length) {
+          headers['Prepr-Segments'] = segments.join(',');
+        }
         const data = await preprFetch<any>(`{
           Pages(where: { _slug_any: ["${lookupSlug}"] }, limit: 1) {
             items {
@@ -548,7 +554,7 @@ export function createPreprProvider(): CmsProvider {
               }
             }
           }
-        }`);
+        }`, undefined, headers);
         const entry = data?.Pages?.items?.[0];
         if (!entry) return null;
         return normalizePage(entry);

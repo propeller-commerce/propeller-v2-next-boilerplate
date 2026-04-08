@@ -171,8 +171,8 @@ function CartSummary(props: CartSummaryProps) {
     });
     if (!purchaserPAC) return false;
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
-    const totalNet = props.cart?.total?.totalNet ?? 0;
-    return totalNet > limit;
+    const totalGross = props.cart?.total?.totalGross ?? 0;
+    return totalGross > limit;
   }
   const [requestLoading, setRequestLoading] = useState<CartSummaryState['requestLoading']>(
     () => false

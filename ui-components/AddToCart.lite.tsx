@@ -22,7 +22,8 @@ import {
     CartMainItem,
     CartBaseItem,
     Cluster,
-    PurchaseAuthorizationConfig
+    PurchaseAuthorizationConfig,
+    Company
 } from 'propeller-sdk-v2';
 
 export interface AddToCartProps {
@@ -356,7 +357,7 @@ export default function AddToCart(props: AddToCartProps) {
 
             /* 3. Assign Default Addresses */
             if (newCart && props.user) {
-                const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
+                const addresses = 'companies' in props.user ? props.user.companies?.items?.find((company: Company) => company.companyId === props.companyId)?.addresses : (props.user as Customer).addresses;
 
                 if (addresses && Array.isArray(addresses)) {
                     const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');

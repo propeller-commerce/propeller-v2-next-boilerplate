@@ -17,6 +17,7 @@ import {
     CartStartInput,
     CartStartVariables,
     Address,
+    Company,
 } from 'propeller-sdk-v2';
 
 export interface ProductBundlesProps {
@@ -53,6 +54,12 @@ export interface ProductBundlesProps {
 
     /** Authenticated user — used for semi-closed visibility check. */
     user?: Contact | Customer | null;
+
+    /** Active company ID from the company switcher. 
+     * Overrides user's default company for cart creation and lookup. 
+     * If not provided, the user's default company is used.
+     */
+    companyId?: number;
 
     /** Cart ID — required when onAddToCart is not provided */
     cartId?: string;
@@ -328,7 +335,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
 
             // 3. Assign Default Addresses
             if (newCart && props.user) {
-                const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
+                const addresses = 'companies' in props.user ? props.user.companies?.items?.find((company: Company) => company.companyId === props.companyId)?.addresses : (props.user as Customer).addresses;
 
                 if (addresses && Array.isArray(addresses)) {
                     const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');

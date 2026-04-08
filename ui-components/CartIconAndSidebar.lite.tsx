@@ -141,7 +141,14 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         getTotalItems() {
             const items = props.cart?.items;
             if (!items) return 0;
-            return items.length;
+
+            let total = 0;
+
+            items.forEach((item: CartMainItem) => {
+                total += item.quantity;
+            });
+
+            return total;
         },
 
         getTotalPrice() {

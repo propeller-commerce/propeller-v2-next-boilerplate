@@ -266,7 +266,7 @@
      import { onMounted, ref } from "vue"
 
 
-   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, CartBaseItem, Cluster, PurchaseAuthorizationConfig } from 'propeller-sdk-v2';
+   import  { CartService, CartChildItemInput, GraphQLClient, Product, Cart, Contact, Customer, CartSearchInput, TransformationsInput, MediaImageProductSearchInput, CartStartInput, CartStartVariables, Address, Enums, CartMainItem, CartBaseItem, Cluster, PurchaseAuthorizationConfig, Company } from 'propeller-sdk-v2';
 
 
 
@@ -591,7 +591,7 @@ let newCart = await cartService.startCart(cartStartVars);
 
 /* 3. Assign Default Addresses */
 if (newCart && props.user) {
-  const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
+  const addresses = 'companies' in props.user ? props.user.companies?.items?.find((company: Company) => company.companyId === props.companyId)?.addresses : (props.user as Customer).addresses;
   if (addresses && Array.isArray(addresses)) {
     const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');
     const defaultDelivery = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery');

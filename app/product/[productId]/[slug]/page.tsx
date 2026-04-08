@@ -141,6 +141,7 @@ export default function ProductPage() {
             <ProductBundles
               graphqlClient={graphqlClient}
               productId={productId}
+              companyId={selectedCompany?.companyId}
               language={language}
               cartId={cart?.cartId}
               taxZone="NL"

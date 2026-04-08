@@ -18,6 +18,7 @@ import {
     CartAddItemVariables,
     MediaImageProductSearchInput,
     TransformationsInput,
+    Company,
 } from 'propeller-sdk-v2';
 
 export interface OrderActionsProps {
@@ -223,7 +224,7 @@ export default function OrderActions(props: OrderActionsProps) {
 
             /* 3. Assign default addresses */
             if (newCart && props.user) {
-                const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
+                const addresses = 'companies' in props.user ? props.user.companies?.items?.find((company: Company) => company.companyId === props.companyId)?.addresses : (props.user as Customer).addresses;
 
                 if (addresses && Array.isArray(addresses)) {
                     const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');

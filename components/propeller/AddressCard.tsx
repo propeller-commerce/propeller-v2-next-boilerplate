@@ -326,6 +326,9 @@ function AddressCard(props: AddressCardProps) {
       openEditModal();
     }
   }, []);
+  useEffect(() => {
+    setLocalAddress(null);
+  }, [props.address]);
   return (
     <div>
       {showCard() ? (

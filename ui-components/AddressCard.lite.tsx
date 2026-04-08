@@ -3,6 +3,7 @@ import {
     Show,
     For,
     onMount,
+    onUpdate,
 } from '@builder.io/mitosis';
 import {
     GraphQLClient,
@@ -327,6 +328,10 @@ export default function AddressCard(props: AddressCardProps) {
             }
         },
     });
+
+    onUpdate(() => {
+        state.localAddress = null;
+    }, [props.address]);
 
     onMount(() => {
         if (props.isNew || (props.inline && !props.address)) {

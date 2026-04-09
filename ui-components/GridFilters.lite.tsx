@@ -72,6 +72,12 @@ export interface GridFiltersProps {
     activePriceMin?: number;
     activePriceMax?: number;
 
+    /**
+     * When true, all checkboxes and price inputs are disabled.
+     * Wire to ProductGrid's `onLoadingChange` to block rapid re-clicks while a fetch is in flight.
+     */
+    isLoading?: boolean;
+
     /** Extra CSS class on the root element. */
     className?: string;
 }
@@ -81,6 +87,7 @@ interface GridFiltersState {
     currentMin: number;
     currentMax: number;
     expandedFilters: Record<string, boolean>;
+    isPending: boolean;
     showPriceFilter: () => boolean;
     getFilterName: (filter: AttributeFilter) => string;
     getFilterTitle: (filter: AttributeFilter) => string;
@@ -107,6 +114,7 @@ export default function GridFilters(props: GridFiltersProps) {
         currentMin: 0,
         currentMax: 9999,
         expandedFilters: {},
+        isPending: false,
 
         showPriceFilter(): boolean {
             const mode = (props.portalMode as string) || 'open';
@@ -177,6 +185,7 @@ export default function GridFilters(props: GridFiltersProps) {
             if (next.length === 0) {
                 state.expandedFilters = { ...state.expandedFilters, [name]: false };
             }
+            state.isPending = true;
             props.onFilterChange(filter, value);
             if (props.getSelectedFilters) props.getSelectedFilters();
         },
@@ -192,6 +201,7 @@ export default function GridFilters(props: GridFiltersProps) {
         },
 
         applyPrice() {
+            state.isPending = true;
             if (props.onPriceChange) props.onPriceChange(state.currentMin, state.currentMax);
             if (props.getSelectedFilters) props.getSelectedFilters();
         },
@@ -275,8 +285,13 @@ export default function GridFilters(props: GridFiltersProps) {
         }
     }, [props.activePriceMin, props.activePriceMax]);
 
+    // Clear the immediate-click pending lock once the ProductGrid fetch resolves.
+    onUpdate(() => {
+        if (!props.isLoading) state.isPending = false;
+    }, [props.isLoading]);
+
     return (
-        <div className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}>
+        <div className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${state.isPending ? 'opacity-50 pointer-events-none' : ''} ${(props.className as string) || ''}`}>
 
             {/* ── Active filter count + clear ─────────────────────── */}
             {/* <Show when={state.hasActiveFilters()}>

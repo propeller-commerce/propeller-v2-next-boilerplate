@@ -62,6 +62,7 @@ export default function CategoryPage() {
     (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filtersLoading, setFiltersLoading] = useState(false);
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
@@ -261,6 +262,7 @@ export default function CategoryPage() {
                 activeTextFilters={filters}
                 activePriceMin={minPrice}
                 activePriceMax={maxPrice}
+                isLoading={filtersLoading}
                 className=""
               />
             </aside>
@@ -321,6 +323,7 @@ export default function CategoryPage() {
                 }}
                 onItemsFoundChange={setItemsFound}
                 onPageItemCountChange={setPageItemCount}
+                onLoadingChange={setFiltersLoading}
                 page={currentPage}
                 onPageChange={setCurrentPage}
                 afterAddToCart={(cart, item) => {

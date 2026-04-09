@@ -65,6 +65,7 @@ export default function SearchPage() {
   const [itemsFound, setItemsFound] = useState<number>(0);
   const [pageItemCount, setPageItemCount] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [filtersLoading, setFiltersLoading] = useState(false);
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
 
   const { state } = useAuth();
@@ -175,6 +176,7 @@ export default function SearchPage() {
                 activeTextFilters={filters}
                 activePriceMin={minPrice}
                 activePriceMax={maxPrice}
+                isLoading={filtersLoading}
                 className=""
               />
             </aside>
@@ -237,6 +239,7 @@ export default function SearchPage() {
                 }}
                 onItemsFoundChange={setItemsFound}
                 onPageItemCountChange={setPageItemCount}
+                onLoadingChange={setFiltersLoading}
                 page={currentPage}
                 afterAddToCart={(updatedCart) => {
                   console.log('updatedCart', updatedCart);

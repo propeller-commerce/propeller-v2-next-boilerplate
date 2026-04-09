@@ -141,6 +141,9 @@ export interface ProductGridProps {
   /**  * Called after each successful internal data fetch with the full  * Category object — use to populate sibling components like GridTitle,  * CategoryDescription, and CategoryShortDescription.  */ onCategoryChange?: (
     category: Category
   ) => void;
+  /**  * Called whenever the internal loading state changes.  * Use to disable sibling components (e.g. GridFilters) while a fetch is in flight.  */ onLoadingChange?: (
+    isLoading: boolean
+  ) => void;
   /**  * Externally controlled current page.  * When provided, the grid uses this value instead of its internal page  * counter. Wire this to the `onPageChange` callback from a sibling  * GridPagination so the two components stay in sync.  * When changed the grid automatically re-fetches.  */ page?: number;
   /**  * Number of products per page. Defaults to 12.  * When changed the grid automatically re-fetches (page resets to 1).  */ pageSize?: number;
   /**  * Sort field to use (e.g. 'NAME', 'PRICE').  * When provided overrides internal sort state.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortField?: string;
@@ -221,6 +224,7 @@ function ProductGrid(props: ProductGridProps) {
     ) {
       setIsInternalLoading(true);
     }
+    if (props.onLoadingChange) props.onLoadingChange(true);
     try {
       const service = new CategoryService(props.graphqlClient as GraphQLClient);
       const taxZone = props.taxZone || 'NL';
@@ -363,6 +367,7 @@ function ProductGrid(props: ProductGridProps) {
     } finally {
       if (myFetchId === fetchIdRef.current) {
         setIsInternalLoading(false);
+        if (props.onLoadingChange) props.onLoadingChange(false);
       }
     }
   }

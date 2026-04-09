@@ -27,8 +27,7 @@ tasks:
     desc: "Builds the frontend application."
     dir: "{{.BUILD_PATH}}/source"
     cmds:
-      - set -e
-      - cd {{.BUILD_PATH}}/source
+      - echo "$ENV_FILE" > .env
       - npm install
       - NODE_ENV=production npm run build
       - echo "Cleaning old build artifacts..."

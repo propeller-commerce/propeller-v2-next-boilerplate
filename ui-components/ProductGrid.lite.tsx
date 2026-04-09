@@ -578,7 +578,7 @@ export default function ProductGrid(props: ProductGridProps) {
             }
             state.fetchProducts();
         }
-    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId]);
+    }, [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId, props.user]);
 
     return (
         <div className={`w-full ${(props.className as string) || ''}`}>

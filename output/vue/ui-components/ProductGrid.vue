@@ -534,7 +534,7 @@ const fetchId= ref<ProductGridState["fetchId"]>(0)
 
 
 
-  watch(() => [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId], () => { if (props.products === undefined) {
+  watch(() => [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId, props.user], () => { if (props.products === undefined) {
 if (props.page !== undefined) {
   currentPage.value = props.page as number;
 }

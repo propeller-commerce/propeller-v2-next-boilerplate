@@ -39,9 +39,9 @@ export default function SearchPage() {
     searchParams.forEach((value, key) => {
       if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
         try {
-          newFilters[key] = JSON.parse(decodeURIComponent(value));
+          newFilters[key] = JSON.parse(value);
         } catch {
-          newFilters[key] = [decodeURIComponent(value)];
+          newFilters[key] = [value];
         }
       }
     });
@@ -89,7 +89,7 @@ export default function SearchPage() {
 
     Object.entries(newFilters).forEach(([key, values]) => {
       if (values.length > 0) {
-        urlParams.set(key, encodeURIComponent(JSON.stringify(values)));
+        urlParams.set(key, JSON.stringify(values));
       }
     });
 

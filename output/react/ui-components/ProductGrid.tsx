@@ -429,6 +429,7 @@ function ProductGrid(props: ProductGridProps) {
     props.language,
     props.page,
     props.companyId,
+    props.user,
   ]);
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>

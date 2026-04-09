@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
+import AddressSelector from '@/components/propeller/AddressSelector';
 import CartCarriers from '@/components/propeller/CartCarriers';
 import DeliveryDate from '@/components/propeller/DeliveryDate';
 import CartOverview from '@/components/propeller/CartOverview';
@@ -704,9 +705,19 @@ function CheckoutPageInner() {
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
                           countries={COUNTRIES}
                         />
-                        <div className="flex gap-4">
+                        <div className="flex items-center gap-4">
                           <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
                           <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>Confirm Delivery Address</Button>
+                          {authState.isAuthenticated && (
+                            <AddressSelector
+                              user={authState.user}
+                              companyId={getActiveCompany()?.companyId}
+                              addressType={Enums.AddressType.delivery}
+                              onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
+                              countries={COUNTRIES}
+                              className="ml-auto"
+                            />
+                          )}
                         </div>
                       </div>
                     ) : (

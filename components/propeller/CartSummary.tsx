@@ -57,6 +57,9 @@ export interface CartSummaryProps {
   /** Called when requestPurchaseAuthorization fails; receives the error */ onError?: (
     err: Error
   ) => void;
+  /** Action handler when the "Request a Quote" button is clicked */ onRequestQuoteClick?: (
+    cart: Cart
+  ) => void;
 }
 interface CartSummaryState {
   title: () => string;
@@ -250,13 +253,26 @@ function CartSummary(props: CartSummaryProps) {
         <span>{formatItemPrice(totalInclVat())}</span>
       </div>
       {showCheckoutButton() && !showRequestAuthorizationButton() ? (
-        <button
-          type="button"
-          className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
-          onClick={(event) => handleCheckoutClick()}
-        >
-          {getLabel('checkoutButton', 'Continue to Checkout')}
-        </button>
+        <>
+          <button
+            type="button"
+            className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
+            onClick={(event) => handleCheckoutClick()}
+          >
+            {getLabel('checkoutButton', 'Continue to Checkout')}
+          </button>{' '}
+          {!!props.onRequestQuoteClick ? (
+            <button
+              type="button"
+              className="block w-full bg-white border border-secondary text-secondary text-center py-3 rounded-lg hover:bg-secondary/5 transition font-semibold mt-2"
+              onClick={(event) =>
+                props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart)
+              }
+            >
+              {getLabel('requestQuoteButton', 'Request a Quote')}
+            </button>
+          ) : null}
+        </>
       ) : null}
       {showRequestAuthorizationButton() ? (
         <button

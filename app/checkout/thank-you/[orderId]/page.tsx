@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
@@ -21,9 +21,11 @@ interface OrderDetails {
   items?: OrderItem[];
 }
 
-export default function ThankYouPage() {
+function ThankYouPageInner() {
   const params = useParams();
   const orderId = params?.orderId as string;
+  const searchParams = useSearchParams();
+  const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
   const { state: authState } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
@@ -103,8 +105,14 @@ export default function ThankYouPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Thank You for Your Order!</h1>
-            <p className="text-lg text-gray-600">Your order has been successfully placed and is being processed.</p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              {isQuoteMode ? 'Thank You for Your Quote Request!' : 'Thank You for Your Order!'}
+            </h1>
+            <p className="text-lg text-gray-600">
+              {isQuoteMode
+                ? 'Your quote request has been successfully submitted. We will get back to you shortly.'
+                : 'Your order has been successfully placed and is being processed.'}
+            </p>
           </div>
 
           {orderDetails && (
@@ -248,5 +256,13 @@ export default function ThankYouPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function ThankYouPage() {
+  return (
+    <Suspense>
+      <ThankYouPageInner />
+    </Suspense>
   );
 }

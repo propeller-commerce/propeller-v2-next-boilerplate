@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
@@ -52,8 +52,10 @@ const COUNTRIES = [
   { code: 'US', name: 'United States' },
 ];
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
   const { cart: contextCart, getCart } = useCart();
   const { state: authState, refreshUser } = useAuth();
@@ -70,6 +72,8 @@ export default function CheckoutPage() {
   });
   const sameAsInvoiceRef = useRef(false);
   const orderPlacedRef = useRef(false);
+  const [quoteReference, setQuoteReference] = useState('');
+  const [quoteNotes, setQuoteNotes] = useState('');
 
   useEffect(() => {
     // Wait for auth to finish hydrating before initializing checkout
@@ -439,24 +443,32 @@ export default function CheckoutPage() {
         });
       }
 
+      const orderStatus = isQuoteMode ? 'REQUEST' : 'NEW';
       const response = await cartService.processCart({
         id: state.cart!.cartId,
-        input: { orderStatus: 'NEW' as string, language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL' }
+        input: { orderStatus: orderStatus as string, language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL' }
       });
 
       if (response?.cartOrderId) {
         const orderId = response.cartOrderId;
         const orderServiceResponse = await orderService.setOrderStatus({
           orderId: orderId,
-          status: 'NEW' as string,
+          status: orderStatus as string,
           payStatus: Enums.PaymentStatuses.OPEN,
-          sendOrderConfirmationEmail: true,
-          addPDFAttachment: true,
-          triggerOrderSendConfirmEvent: true,
+          sendOrderConfirmationEmail: isQuoteMode ? false : true,
+          addPDFAttachment: isQuoteMode ? false : true,
+          triggerOrderSendConfirmEvent: isQuoteMode ? false : true,
           deleteCart: true
         });
 
         if (orderServiceResponse?.id === orderId) {
+          if (isQuoteMode) {
+            await orderService.triggerQuoteSendRequest({
+              orderId: orderId,
+              language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+            });
+          }
+
           localStorage.removeItem('cart');
           const managerCart = localStorage.getItem('manager_cart');
           if (managerCart) {
@@ -465,7 +477,10 @@ export default function CheckoutPage() {
           }
           if (getCart) await getCart();
         }
-        router.push(localizeHref(`/checkout/thank-you/${orderId}`, language));
+        const thankYouUrl = isQuoteMode
+          ? localizeHref(`/checkout/thank-you/${orderId}`, language) + '?mode=quote'
+          : localizeHref(`/checkout/thank-you/${orderId}`, language);
+        router.push(thankYouUrl);
       } else {
         throw new Error("No Order ID returned");
       }
@@ -473,7 +488,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error(error);
       orderPlacedRef.current = false;
-      setState(prev => ({ ...prev, error: 'Failed to place order', loading: false }));
+      setState(prev => ({ ...prev, error: isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order', loading: false }));
     }
   };
 
@@ -590,10 +605,14 @@ export default function CheckoutPage() {
             <StepIndicator step={1} currentStep={state.currentStep} title="Details" />
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
             <StepIndicator step={2} currentStep={state.currentStep} title="Shipping" />
+            {!isQuoteMode && (
+              <>
+                <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
+                <StepIndicator step={3} currentStep={state.currentStep} title="Payment" />
+              </>
+            )}
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={3} currentStep={state.currentStep} title="Payment" />
-            <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={4} currentStep={state.currentStep} title="Review" />
+            <StepIndicator step={isQuoteMode ? 3 : 4} currentStep={state.currentStep} title="Review" />
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -706,8 +725,8 @@ export default function CheckoutPage() {
                 )}
               </Card>
 
-              {/* Step 3: Payment & Delivery Method */}
-              <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
+              {/* Step 3: Payment & Delivery Method (normal mode only) */}
+              {!isQuoteMode && <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 3 && setState(prev => ({ ...prev, currentStep: 3 }))}>
                   <CardTitle className="text-lg flex items-center gap-2">3. Payment & Delivery</CardTitle>
                 </CardHeader>
@@ -756,24 +775,67 @@ export default function CheckoutPage() {
                     </div>
                   </CardContent>
                 )}
-              </Card>
+              </Card>}
 
-              {/* Step 4: Review */}
-              <Card className={`${state.currentStep === 4 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
-                </CardHeader>
-                {state.currentStep === 4 && (
-                  <CardContent className="animate-in slide-in-from-top-2">
-                    <CartOverview
-                      graphqlClient={graphqlClient}
-                      cart={state.cart}
-                      onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
-                      onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
-                    />
-                  </CardContent>
-                )}
-              </Card>
+              {/* Step 4 (normal): Review & Place Order */}
+              {!isQuoteMode && (
+                <Card className={`${state.currentStep === 4 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
+                  </CardHeader>
+                  {state.currentStep === 4 && (
+                    <CardContent className="animate-in slide-in-from-top-2">
+                      <CartOverview
+                        graphqlClient={graphqlClient}
+                        cart={state.cart}
+                        onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
+                        onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
+                      />
+                    </CardContent>
+                  )}
+                </Card>
+              )}
+
+              {/* Step 3 (quote mode): Quote Details */}
+              {isQuoteMode && (
+                <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">3. Quote Details</CardTitle>
+                  </CardHeader>
+                  {state.currentStep === 3 && (
+                    <CardContent className="space-y-6 animate-in slide-in-from-top-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-reference">Reference</label>
+                        <input
+                          id="quote-reference"
+                          type="text"
+                          value={quoteReference}
+                          onChange={(e) => setQuoteReference(e.target.value)}
+                          placeholder="Your reference (optional)"
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-notes">Notes</label>
+                        <textarea
+                          id="quote-notes"
+                          value={quoteNotes}
+                          onChange={(e) => setQuoteNotes(e.target.value)}
+                          placeholder="Additional notes for your quote request (optional)"
+                          rows={4}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                        />
+                      </div>
+                      <div className="flex gap-4 pt-2">
+                        <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>Back</Button>
+                        <Button onClick={() => handlePlaceOrder(quoteReference || undefined, quoteNotes || undefined)} isLoading={state.loading}>
+                          Place Quote Request
+                        </Button>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              )}
             </div>
 
             <div className="lg:w-1/3">
@@ -811,5 +873,13 @@ export default function CheckoutPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <CheckoutPageInner />
+    </Suspense>
   );
 }

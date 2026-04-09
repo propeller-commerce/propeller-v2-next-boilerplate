@@ -88,6 +88,9 @@ export interface CartIconAndSidebarProps {
   user?: Contact | Customer;
 
   /** Active company ID — used to look up the user's PAC for this company */ companyId?: number;
+  /** Action handler when the "Request a Quote" button is clicked */ onRequestQuoteClick?: (
+    cart: Cart
+  ) => void;
   /**  * Additional class name for the shopping cart icon.  */ iconClassName?: string;
   /**  * Additional class name for the shopping cart sidebar.  */ sidebarClassName?: string;
 }
@@ -554,6 +557,18 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       onClick={(event) => handleCheckoutClick()}
                     >
                       {getLabel('checkoutButton', 'Checkout')}
+                    </button>
+                  ) : null}
+                  {!!props.onRequestQuoteClick ? (
+                    <button
+                      type="button"
+                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
+                      onClick={(event) => {
+                        closeSidebar();
+                        props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart);
+                      }}
+                    >
+                      {getLabel('requestQuoteButton', 'Request a Quote')}
                     </button>
                   ) : null}
                   {props.cartPageButton !== false ? (

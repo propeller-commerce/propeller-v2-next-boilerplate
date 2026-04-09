@@ -58,6 +58,9 @@ export interface CartSummaryProps {
 
     /** Called when requestPurchaseAuthorization fails; receives the error */
     onError?: (err: Error) => void;
+
+    /** Action handler when the "Request a Quote" button is clicked */
+    onRequestQuoteClick?: (cart: Cart) => void;
 }
 
 interface CartSummaryState {
@@ -285,6 +288,15 @@ export default function CartSummary(props: CartSummaryProps) {
                 >
                     {state.getLabel('checkoutButton', 'Continue to Checkout')}
                 </button>
+                <Show when={!!props.onRequestQuoteClick}>
+                    <button
+                        type="button"
+                        onClick={() => props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart)}
+                        className="block w-full bg-white border border-secondary text-secondary text-center py-3 rounded-lg hover:bg-secondary/5 transition font-semibold mt-2"
+                    >
+                        {state.getLabel('requestQuoteButton', 'Request a Quote')}
+                    </button>
+                </Show>
             </Show>
 
             <Show when={state.showRequestAuthorizationButton}>

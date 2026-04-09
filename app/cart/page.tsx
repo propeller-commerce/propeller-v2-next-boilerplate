@@ -85,6 +85,7 @@ export default function CartPage() {
                         saveCart(updatedCart);
                         router.push(`/authorization-request-sent/${updatedCart.cartId}`);
                       }}
+                      onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
                     />
                     <ActionCode
                       graphqlClient={graphqlClient}

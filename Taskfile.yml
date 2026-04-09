@@ -27,7 +27,6 @@ tasks:
     desc: "Builds the frontend application."
     dir: "{{.BUILD_PATH}}/source"
     cmds:
-      - echo "$ENV_FILE" > .env
       - npm install
       - NODE_ENV=production npm run build
       - echo "Cleaning old build artifacts..."
@@ -40,7 +39,6 @@ tasks:
     desc: "Builds the Strapi CMS. Rebuilds only when cms/ directory has changed."
     dir: "{{.BUILD_PATH}}/source/cms"
     cmds:
-      - echo "$ENV_FILE_CMS" > .env
       - |
         if [ ! -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
           echo "Strapi does not exist, building..."

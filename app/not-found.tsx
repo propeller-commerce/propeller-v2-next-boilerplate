@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { localizeHref } from '@/data/config';
 
 export default function NotFound() {
   return (
@@ -14,8 +15,8 @@ export default function NotFound() {
             The page you're looking for doesn't exist or has been moved.
           </p>
           <Link
-            href="/"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+            href={localizeHref('/')}
+            className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition"
           >
             Go Home
           </Link>

@@ -1,25 +1,35 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useCart } from '@/context/CartContext';
+import { usePrice } from '@/context/PriceContext';
+import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CartTotals from '@/components/common/CartTotals';
+import CartItem from '@/components/propeller/CartItem';
+import CartSummary from '@/components/propeller/CartSummary';
+import ActionCode from '@/components/propeller/ActionCode';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useState } from 'react';
-import type { CartMainItem } from 'propeller-sdk-v2';
+import { useRouter } from 'next/navigation';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
+import { type CartMainItem, type Cart, type Contact, type Customer, Enums } from 'propeller-sdk-v2';
+import { graphqlClient } from '@/lib/api';
+import { config } from '@/data/config';
+
+const subscribe = () => () => { };
 
 export default function CartPage() {
-  const { cart, updateCartItem, removeFromCart } = useCart();
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
+  const { cart, saveCart } = useCart();
+  const { includeTax } = usePrice();
+  const { state } = useAuth();
+  const router = useRouter();
+  const { language } = useLanguage();
+  const { selectedCompany } = useCompany();
 
-  const items = cart?.items || [];
-
-  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    setQuantities({ ...quantities, [itemId]: newQuantity });
-    await updateCartItem(itemId, newQuantity);
-  };
+  const items = mounted ? (cart?.items || []) : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
@@ -32,7 +42,7 @@ export default function CartPage() {
             <div className="text-center py-12">
               <p className="text-xl text-muted-foreground mb-4">Your cart is empty</p>
               <Link
-                href="/"
+                href={localizeHref('/', language)}
                 className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition"
               >
                 Continue Shopping
@@ -42,96 +52,50 @@ export default function CartPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
-                {items.map((item: CartMainItem) => {
-                  const imageUrl =
-                    item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url ||
-                    '/no-image.webp';
-                  const name = item.product?.names?.[0]?.value || 'Product';
-                  const sku = item.product?.sku || '';
-                  const price = item.totalSumNet || 0;
-                  const qty = quantities[item.itemId] ?? item.quantity;
-
-                  return (
-                    <div key={item.itemId} className="flex gap-4 bg-card p-4 rounded-lg shadow-sm border border-border/60">
-                      <div className="w-24 h-24 flex-shrink-0 bg-muted rounded border border-border/60 flex items-center justify-center overflow-hidden relative">
-                        <Image
-                          src={imageUrl}
-                          alt={name}
-                          fill
-                          className="object-contain p-1"
-                          onError={(e) => {
-                            const img = e.target as HTMLImageElement;
-                            img.src = '/no-image.webp';
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{name}</h3>
-                        <p className="text-sm text-muted-foreground">{sku}</p>
-                        <p className="text-lg font-bold text-primary mt-2">€{price.toFixed(2)}</p>
-
-                        {/* Cluster Child Items */}
-                        {(item as any).clusterId && (item as any).childItems && (item as any).childItems.length > 0 && (
-                          <div className="mt-3 space-y-1.5 border-l-2 border-muted pl-3">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Included Options:</p>
-                            {(item as any).childItems.map((child: any, idx: number) => (
-                              <div key={idx} className="flex flex-wrap gap-x-2 text-sm text-foreground/90">
-                                <span className="font-medium">{child.product?.names?.[0]?.value || 'Option'}</span>
-                                <span className="text-muted-foreground hidden sm:inline">-</span>
-                                <span className="text-muted-foreground text-xs self-center">{child.product?.sku}</span>
-                                <div className="flex-1 border-b border-dotted border-border/60 mx-1 mb-1"></div>
-                                <span className="font-semibold text-primary">€{(child.totalSum || 0).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center border border-border/60 rounded">
-                          <button
-                            onClick={() => handleQuantityChange(item.itemId, qty - 1)}
-                            className="px-3 py-1 hover:bg-muted"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            value={qty}
-                            onChange={(e) =>
-                              handleQuantityChange(item.itemId, parseInt(e.target.value) || 1)
-                            }
-                            className="w-16 text-center border-x border-border/60 bg-background"
-                            min="1"
-                          />
-                          <button
-                            onClick={() => handleQuantityChange(item.itemId, qty + 1)}
-                            className="px-3 py-1 hover:bg-muted"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => removeFromCart(item.itemId, name)}
-                          className="text-destructive hover:text-destructive/80 text-sm"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                {items.map((item: CartMainItem) => (
+                  <CartItem
+                    key={item.itemId}
+                    includeTax={includeTax}
+                    user={state.user as Contact | Customer}
+                    taxZone={'NL'}
+                    language={'NL'}
+                    graphqlClient={graphqlClient}
+                    cartId={cart!.cartId}
+                    cartItem={item}
+                    configuration={config}
+                    showCrossupsells={true}
+                    crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+                    crossupsellLimit={2}
+                    afterCartUpdate={saveCart}
+                  />
+                ))}
               </div>
 
               {/* Cart Summary */}
-              <div className="bg-card p-6 rounded-lg shadow-sm border border-border/60 h-fit">
-                <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                {cart && <CartTotals cart={cart} showCalculations={true} />}
-                <Link
-                  href="/checkout"
-                  className="block w-full bg-primary text-primary-foreground text-center py-3 rounded-lg hover:bg-primary/90 transition font-semibold mt-4"
-                >
-                  Continue to Checkout
-                </Link>
+              <div className="h-fit space-y-4">
+                {cart && (
+                  <>
+                    <CartSummary
+                      cart={cart}
+                      graphqlClient={graphqlClient}
+                      user={state.user as Contact | Customer}
+                      companyId={selectedCompany?.companyId}
+                      onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
+                      afterRequestAuthorization={(updatedCart: Cart) => {
+                        saveCart(updatedCart);
+                        router.push(`/authorization-request-sent/${updatedCart.cartId}`);
+                      }}
+                      onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                    />
+                    <ActionCode
+                      graphqlClient={graphqlClient}
+                      cart={cart}
+                      configuration={config}
+                      afterActionCodeApply={saveCart}
+                      afterActionCodeRemove={saveCart}
+                    />
+                  </>
+                )}
               </div>
             </div>
           )}

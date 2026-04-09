@@ -2,29 +2,36 @@
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import UserMenu from '@/components/common/UserMenu';
+import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useCompany } from '@/context/CompanyContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
+import { Contact, Customer, Enums } from 'propeller-sdk-v2';
 
 export default function AccountLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { state } = useAuth();
+    const { state, logout, isAuthManagerForCompany } = useAuth();
+    const { selectedCompany } = useCompany();
     const router = useRouter();
+    const pathname = usePathname();
+    const { language } = useLanguage();
 
-    // Protect account routes
+    // Protect account routes — wait for auth to finish loading before checking
     useEffect(() => {
-        if (!state.isAuthenticated) {
-            router.push('/login');
+        if (!state.isLoading && !state.isAuthenticated) {
+            router.push(localizeHref('/login', language));
         }
-    }, [state.isAuthenticated, router]);
+    }, [state.isLoading, state.isAuthenticated, router, language]);
 
-    if (!state.isAuthenticated) {
-        return null; // or loading spinner
+    if (state.isLoading || !state.isAuthenticated) {
+        return null;
     }
 
     return (
@@ -36,7 +43,24 @@ export default function AccountLayout({
                         {/* Sidebar Navigation */}
                         <aside className="w-full lg:w-72 flex-shrink-0">
                             <Card className="overflow-hidden border-border bg-card shadow-sm sticky top-24">
-                                <UserMenu />
+                                <AccountIconAndMenu
+                                    variant="sidebar"
+                                    currentPath={pathname}
+                                    user={state.user}
+                                    onMenuItemClick={(href) => router.push(localizeHref(href, language))}
+                                    onLogoutClick={() => logout()}
+                                    menuLinks={[
+                                        { label: 'Dashboard', href: localizeHref('/account', language) },
+                                        { label: 'Addresses', href: localizeHref('/account/addresses', language) },
+                                        { label: 'Orders', href: localizeHref('/account/orders', language) },
+                                        { label: 'Quotes', href: localizeHref('/account/quotes', language) },
+                                        { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                                        ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
+                                            { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
+                                            { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', language) },
+                                        ] : []),
+                                    ]}
+                                />
                             </Card>
                         </aside>
 

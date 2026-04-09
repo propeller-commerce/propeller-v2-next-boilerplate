@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_shared_value_prop_items",
+  "info": {
+    "displayName": "Value Prop Item",
+    "icon": "star",
+    "description": "Single value proposition with icon, title and text"
+  },
+  "options": {},
+  "attributes": {
+    "icon": {
+      "type": "string",
+      "required": true
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "text": {
+      "type": "string"
+    }
+  }
+}

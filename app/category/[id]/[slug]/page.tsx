@@ -1,33 +1,76 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ProductOrClusterCard from '@/components/common/ProductOrClusterCard';
-import FiltersSidebar from '@/components/common/FiltersSidebar';
-import { categoryService } from '@/lib/api';
-import { Category, Cluster, Enums, Product } from 'propeller-sdk-v2';
-import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
-import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Card, CardContent } from '@/components/ui/Card';
+import { graphqlClient } from '@/lib/api';
+import { AttributeFilter, Category, Cluster, Enums, Product, ProductsResponse } from 'propeller-sdk-v2';
+import ProductGrid from '@/components/propeller/ProductGrid';
+import GridToolbar from '@/components/propeller/GridToolbar';
+import GridFilters from '@/components/propeller/GridFilters';
+import GridPagination from '@/components/propeller/GridPagination';
+import GridTitle from '@/components/propeller/GridTitle';
+import CategoryDescription from '@/components/propeller/CategoryDescription';
+import { useAuth } from '@/context/AuthContext';
+import { config, localizeHref } from '@/data/config';
+import { useCart } from '@/context/CartContext';
+import { usePrice } from '@/context/PriceContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
+import type { CmsCategoryBanner } from '@/lib/cms/types';
+import { getCategoryBanner } from '@/lib/cms';
+import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
+import Breadcrumbs from '@/components/propeller/Breadcrumbs';
 
 export default function CategoryPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const categoryId = parseInt(params.id as string);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<Record<string, string[]>>({});
-  const [minPrice, setMinPrice] = useState<number | undefined>();
-  const [maxPrice, setMaxPrice] = useState<number | undefined>();
-  const [offset, setOffset] = useState(12);
-  const [sortField, setSortField] = useState<Enums.ProductSortField>(Enums.ProductSortField.CATEGORY_ORDER);
-  const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(Enums.SortOrder.ASC);
+  const [category, setCategory] = useState<Category>();
+  // Initialise URL-derived state directly from searchParams so the useEffect
+  // below produces no state changes (and therefore no extra fetches) on first load.
+  const [currentPage, setCurrentPage] = useState(() => parseInt(searchParams.get('page') || '1'));
+  const [filters, setFilters] = useState<Record<string, string[]>>(() => {
+    const initial: Record<string, string[]> = {};
+    searchParams.forEach((value, key) => {
+      if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
+        try { initial[key] = JSON.parse(decodeURIComponent(value)); }
+        catch { initial[key] = [decodeURIComponent(value)]; }
+      }
+    });
+    return initial;
+  });
+  const [minPrice, setMinPrice] = useState<number | undefined>(() =>
+    searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined
+  );
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(() =>
+    searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
+  );
+  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
+  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
+  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
+  const [clearSignal, setClearSignal] = useState(0);
+  const [itemsFound, setItemsFound] = useState<number>(0);
+  const [pageItemCount, setPageItemCount] = useState<number>(0);
+  const [offset, setOffset] = useState(() => parseInt(searchParams.get('offset') || '12'));
+  const [sortField, setSortField] = useState<Enums.ProductSortField>(() =>
+    (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.CATEGORY_ORDER
+  );
+  const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(() =>
+    (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC
+  );
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const { state } = useAuth();
+  const { selectedCompany } = useCompany();
+  const { cart, saveCart } = useCart();
+  const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
+  const { includeTax } = usePrice();
+  const { language } = useLanguage();
+
+  // CMS banner
+  const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
 
   // Parse URL parameters
   useEffect(() => {
@@ -44,79 +87,36 @@ export default function CategoryPage() {
     });
 
     setCurrentPage(parseInt(searchParams.get('page') || '1'));
-    setFilters(newFilters);
+    // Use functional update so React can bail out when content is unchanged,
+    // avoiding a spurious re-render (and downstream ProductGrid re-fetch) when
+    // the searchParams object reference changes but the URL content is the same.
+    setFilters(prev =>
+      JSON.stringify(prev) === JSON.stringify(newFilters) ? prev : newFilters
+    );
     setMinPrice(searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined);
     setMaxPrice(searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined);
     setOffset(parseInt(searchParams.get('offset') || '12'));
     setSortField(searchParams.get('sortField') as Enums.ProductSortField || Enums.ProductSortField.CATEGORY_ORDER);
-    setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder | Enums.SortOrder.DESC) || Enums.SortOrder.ASC);
+    setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC);
   }, [searchParams]);
 
+  // Fetch CMS banner
   useEffect(() => {
-    const fetchCategory = async () => {
-      setLoading(true);
-      try {
-        const categoryQueryVariables: CategoryQueryVariables = {
-          categoryId,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-          imageSearchFilters: imageSearchFiltersGrid,
-          imageVariantFilters: imageVariantFiltersMedium,
-          categoryProductSearchInput: {
-            language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-            page: currentPage,
-            offset: offset,
-            hidden: false,
-            statuses: [
-              Enums.ProductStatus.A,
-              Enums.ProductStatus.P,
-              Enums.ProductStatus.T,
-              Enums.ProductStatus.S
-            ],
-            sortInputs: [{
-              field: sortField as Enums.ProductSortField,
-              order: sortOrder
-            }],
-            ...(minPrice !== undefined && maxPrice !== undefined ? {
-              price: {
-                from: minPrice,
-                to: maxPrice
-              }
-            } : minPrice !== undefined ? {
-              price: {
-                from: minPrice,
-                to: 999999
-              }
-            } : maxPrice !== undefined ? {
-              price: {
-                from: 0,
-                to: maxPrice
-              }
-            } : {}),
-            ...(Object.keys(filters).length > 0 ? {
-              textFilters: Object.entries(filters).map(([name, values]) => ({
-                name,
-                values,
-                exclude: false,
-                type: Enums.AttributeType.TEXT
-              }))
-            } : {})
-          },
-          filterAvailableAttributeInput: {
-            isSearchable: true
-          }
-        };
+    getCategoryBanner(String(categoryId)).then(setBanner);
+  }, [categoryId]);
 
-        const data = await categoryService.getCategory(categoryQueryVariables);
-        setCategory(data);
-      } catch (error) {
-        console.error('Failed to load category:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategory();
-  }, [categoryId, currentPage, filters, minPrice, maxPrice, offset, sortField, sortOrder]);
+  // Update URL slug when language or category changes — use history.replaceState
+  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
+  useEffect(() => {
+    if (!category) return;
+    const match = category.slug?.find((s: { language?: string; value?: string }) => s.language === language);
+    const newSlug = match?.value || category.slug?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (newSlug && newSlug !== currentSlug) {
+      const search = window.location.search;
+      window.history.replaceState(null, '', localizeHref(`/category/${categoryId}/${newSlug}`, language) + search);
+    }
+  }, [category, language, categoryId]);
 
   const updateURL = (
     newFilters: Record<string, string[]>,
@@ -141,16 +141,22 @@ export default function CategoryPage() {
     if (newMaxPrice !== undefined) searchParams.set('maxPrice', newMaxPrice.toString());
     if (newOffset !== undefined && newOffset !== 12) searchParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER') searchParams.set('sortField', newSortField);
-    if (newSortOrder !== undefined && newSortOrder !== 'ASC') searchParams.set('sortOrder', newSortOrder);
+    if (newSortOrder !== undefined && newSortOrder !== 'DESC') searchParams.set('sortOrder', newSortOrder);
 
     const newSearch = searchParams.toString();
-    router.push(`/category/${categoryId}/${params.slug}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
+    router.push(`${localizeHref(`/category/${categoryId}/${params.slug}`, language)}${newSearch ? `?${newSearch}` : ''}`, { scroll: false });
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   };
 
-  const handleFilterChange = (filterName: string, values: string[]) => {
-    const newFilters = { ...filters, [filterName]: values };
-    if (values.length === 0) delete newFilters[filterName];
+  const handleFilterChange = (filter: AttributeFilter, value: string | number) => {
+    const name = filter.attributeDescription?.name || '';
+    const current = filters[name] || [];
+    const valueStr = String(value);
+    const next = current.includes(valueStr)
+      ? current.filter((v: string) => v !== valueStr)
+      : [...current, valueStr];
+    const newFilters = { ...filters, [name]: next };
+    if (next.length === 0) delete newFilters[name];
     updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
   };
 
@@ -171,13 +177,47 @@ export default function CategoryPage() {
   };
 
   const clearAllFilters = () => {
+    setClearSignal(s => s + 1);
     updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
   };
 
-  const categoryName = (category?.name?.[0]?.value as string) || 'Category';
+  const handleFilterRemove = (filterName: string, value: string) => {
+    const current = filters[filterName] || [];
+    const newVals = current.filter(v => v !== value);
+    const newFilters = { ...filters, [filterName]: newVals };
+    if (newVals.length === 0) delete newFilters[filterName];
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+  };
+
+  const productClick = (product: Product) => {
+    router.push(config.urls.getProductUrl(product, language));
+  };
+
+  // Stable defaultSort reference for GridToolbar — only changes when URL sort params change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const defaultSort = useMemo(
+    () => [{ field: sortField as string, order: sortOrder as string }],
+    [sortField, sortOrder]
+  );
+
+  const categoryName = (
+    category?.name?.find((n: { language?: string; value?: string }) => n.language === language)?.value
+    || category?.name?.[0]?.value
+    || 'Category'
+  ) as string;
   const products = (category?.products?.items || []) as (Product | Cluster)[];
   const totalPages = category?.products?.pages || 1;
   const hasActiveFilters = Object.keys(filters).length > 0 || minPrice !== undefined || maxPrice !== undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const activeTextFilters = useMemo(() => Object.entries(filters)
+    .filter(([, values]) => values.length > 0)
+    .map(([name, values]) => ({
+      name,
+      values,
+      exclude: false,
+      type: Enums.AttributeType.TEXT,
+    })), [JSON.stringify(filters)]);
+
 
   // Render Logic
   return (
@@ -185,167 +225,127 @@ export default function CategoryPage() {
       <Header />
       <main className="flex-1 py-8">
         <div className="container-width">
-          {/* Category Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">{categoryName}</h1>
-            {category?.shortDescription?.[0]?.value && (
-              <div className="prose prose-slate max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: category.shortDescription[0].value }} />
-            )}
+          <div className="propeller-breadcrumbs mb-6">
+            <Breadcrumbs categoryPath={category?.categoryPath || []} language={language} showCurrent={true} configuration={config} />
           </div>
+          {/* CMS Category Banner */}
+          {banner && <CategoryBanner banner={banner} />}
+
+          {/* Category Header */}
+          <GridTitle
+            title={categoryName}
+            language={language}
+          />
+
+          <CategoryDescription
+            category={category}
+            language={language}
+          />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}
             <aside className="w-full lg:w-64 flex-shrink-0">
-              {loading && !category ? (
-                <div className="bg-card rounded-lg border p-6 h-96 animate-pulse" />
-              ) : category?.products ? (
-                <FiltersSidebar
-                  productsResponse={category.products}
-                  currentFilters={filters}
-                  currentMinPrice={minPrice}
-                  currentMaxPrice={maxPrice}
-                  onFilterChange={handleFilterChange}
-                  onPriceRangeChange={handlePriceRangeChange}
-                />
-              ) : null}
+              <GridFilters
+                filters={gridFilters}
+                priceMin={priceBoundsMin}
+                priceMax={priceBoundsMax}
+                language={language}
+                onFilterChange={handleFilterChange}
+                onPriceChange={handlePriceRangeChange}
+                onClearFilters={clearAllFilters}
+                isMobile={false}
+                portalMode="open"
+                user={state.user}
+                collapsed={true}
+                clearSignal={clearSignal}
+                activeTextFilters={filters}
+                activePriceMin={minPrice}
+                activePriceMax={maxPrice}
+                className=""
+              />
             </aside>
 
             {/* Products Grid */}
             <div className="flex-1 w-full">
-              {/* Toolbar */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0">
-                <div className="text-sm text-muted-foreground font-medium">
-                  {loading ? 'Submitting...' : `${category?.products?.itemsFound || 0} Products`}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <select
-                    value={offset}
-                    onChange={(e) => handleOffsetChange(parseInt(e.target.value))}
-                    className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value={12}>12 per page</option>
-                    <option value={24}>24 per page</option>
-                    <option value={48}>48 per page</option>
-                  </select>
-
-                  <div className="h-4 w-px bg-border hidden sm:block" />
-
-                  <select
-                    value={sortField}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="CATEGORY_ORDER">Default Sorting</option>
-                    <option value="NAME">Name</option>
-                    <option value="PRICE">Price</option>
-                    <option value="SKU">SKU</option>
-                    <option value="SUPPLIER_CODE">Supplier code</option>
-                    <option value="CREATED_AT">Created date</option>
-                    <option value="LAST_MODIFIED_AT">Last modified date</option>
-                    <option value="RELEVANCE">Relevance</option>
-                    <option value="PRIORITY">Priority</option>
-                  </select>
-
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => handleSortChange(sortField, e.target.value as 'ASC' | 'DESC')}
-                    className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="ASC">Low to High</option>
-                    <option value="DESC">High to Low</option>
-                  </select>
-                </div>
+              {/* Toolbar — sticky on mobile, static on lg+ */}
+              <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
+                <GridToolbar
+                  itemsFound={itemsFound}
+                  page={currentPage}
+                  pageSize={offset}
+                  pageItemCount={pageItemCount}
+                  activeTextFilters={filters}
+                  priceFilterMin={minPrice}
+                  priceFilterMax={maxPrice}
+                  user={state.user}
+                  onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
+                  onOffsetChange={handleOffsetChange}
+                  onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
+                  onFilterRemove={handleFilterRemove}
+                  onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+                  onClearFilters={clearAllFilters}
+                />
               </div>
 
-              {/* Active Filters Bar */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-7 px-2 text-xs">
-                    Clear All
-                  </Button>
-                  {(minPrice !== undefined || maxPrice !== undefined) && (
-                    <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => handlePriceRangeChange(undefined, undefined)}>
-                      Price: €{minPrice ?? 0} - €{maxPrice ?? '∞'} <span>×</span>
-                    </Badge>
-                  )}
-                  {Object.entries(filters).map(([key, values]) =>
-                    values.map(val => (
-                      <Badge key={`${key}-${val}`} variant="outline" className="gap-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground hover:border-destructive" onClick={() => handleFilterChange(key, values.filter(v => v !== val))}>
-                        {val} <span>×</span>
-                      </Badge>
-                    ))
-                  )}
-                </div>
-              )}
-
               {/* Grid */}
-              {loading && !category ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <Card key={i} className="w-full h-full flex flex-col overflow-hidden border-border/60">
-                      <div className="relative aspect-square bg-slate-100 animate-pulse" />
-                      <CardContent className="p-4 flex-1 flex flex-col gap-2">
-                        <div className="h-3 bg-slate-100 animate-pulse rounded w-1/4" />
-                        <div className="h-4 bg-slate-100 animate-pulse rounded w-3/4" />
-                        <div className="h-4 bg-slate-100 animate-pulse rounded w-1/2" />
-                        <div className="mt-auto pt-2">
-                          <div className="h-5 bg-slate-100 animate-pulse rounded w-1/3" />
-                        </div>
-                      </CardContent>
-                      <div className="p-4 pt-0">
-                        <div className="flex items-center gap-2">
-                          <div className="h-9 flex-1 bg-slate-100 animate-pulse rounded" />
-                          <div className="h-9 flex-1 bg-slate-100 animate-pulse rounded" />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-                  {products.map((product) => (
-                    <div key={(product as Product).productId || (product as Cluster).clusterId} className="w-full">
-                      <ProductOrClusterCard
-                        item={product}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Empty State */}
-              {!loading && products.length === 0 && (
-                <div className="text-center py-24 bg-muted/20 rounded-xl border border-dashed">
-                  <h3 className="text-lg font-semibold">No products found</h3>
-                  <p className="text-muted-foreground">Try adjusting your filters.</p>
-                  <Button variant="link" onClick={clearAllFilters}>Clear Filters</Button>
-                </div>
-              )}
+              <ProductGrid
+                graphqlClient={graphqlClient}
+                categoryId={categoryId}
+                configuration={config}
+                user={state.user}
+                companyId={selectedCompany?.companyId}
+                onProductClick={productClick}
+                language={language}
+                showModal={true}
+                createCart={true}
+                cartId={cart?.cartId}
+                includeTax={includeTax}
+                onCartCreated={(cart) => {
+                  saveCart(cart);
+                }}
+                columns={viewMode === 'list' ? 1 : 3}
+                textFilters={activeTextFilters}
+                priceFilterMin={minPrice}
+                priceFilterMax={maxPrice}
+                pageSize={offset}
+                sortField={sortField as string}
+                sortOrder={sortOrder as string}
+                showAvailability={false}
+                showStock={true}
+                onFiltersChange={setGridFilters}
+                onPriceBoundsChange={(min, max) => {
+                  if (!priceBoundsMin && !priceBoundsMax) {
+                    setPriceBoundsMin(min);
+                    setPriceBoundsMax(max);
+                  }
+                }}
+                onItemsFoundChange={setItemsFound}
+                onPageItemCountChange={setPageItemCount}
+                page={currentPage}
+                onPageChange={setCurrentPage}
+                afterAddToCart={(cart, item) => {
+                  saveCart(cart);
+                  console.log('Cart updated:', cart);
+                  console.log('Added item:', item);
+                }}
+                onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+                onProductsResponse={setProductsResponse}
+                onCategoryChange={setCategory}
+                onClusterClick={(cluster: Cluster) => {
+                  router.push(config.urls.getClusterUrl(cluster, language));
+                }}
+              />
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-12">
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                  >
-                    Previous
-                  </Button>
-                  {/* Simplified Pagination for now - just numbers */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
+              <div className="flex justify-center gap-2 mt-12">
+                {productsResponse && (
+                  <GridPagination
+                    products={productsResponse}
+                    onPageChange={handlePageChange}
+                    variant='full'
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

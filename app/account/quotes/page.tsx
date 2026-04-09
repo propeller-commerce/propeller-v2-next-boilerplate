@@ -1,30 +1,79 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import OrderList from '@/components/account/OrderList';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
+import { graphqlClient } from '@/lib/api';
+import OrderList from '@/components/propeller/OrderList';
+import { Contact, Customer, Company } from 'propeller-sdk-v2';
+
 
 export default function QuotesPage() {
-    const { state } = useAuth();
-    const router = useRouter();
+  const { state } = useAuth();
+  const { selectedCompany } = useCompany();
+  const router = useRouter();
+  const { language } = useLanguage();
 
-    useEffect(() => {
-        if (!state.isAuthenticated) {
-            router.push('/login');
-        }
-    }, [state.isAuthenticated, router]);
+  const isContact = (u: Contact | Customer | null): u is Contact =>
+    u !== null && 'company' in u;
 
-    if (!state.isAuthenticated) return null;
+  /** Resolve the active company for a Contact user (respects company switcher) */
+  const getActiveCompany = (): Company | null => {
+    if (!state.user || !isContact(state.user)) return null;
+    return (selectedCompany) ?? null;
+  };
 
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">My Quotes</h1>
-            </div>
-            <div className="bg-card shadow-sm">
-                <OrderList type="quotes" />
-            </div>
-        </div>
-    );
+  const companyId = getActiveCompany()?.companyId;
+
+  if (!state.isAuthenticated) return null;
+
+  const paginationLabels = {
+    view: 'Weergave',
+    previous: 'Vorige',
+    next: 'Volgende',
+    showingPage: 'Pagina',
+    of: 'van',
+    noOrders: 'Geen offertes',
+    loading: 'Laden',
+    order: 'Order',
+    date: 'Datum',
+    status: 'Status',
+    total: 'Totaal',
+    action: 'Actie',
+  };
+
+  const ordersColumnConf = {
+    id: '#',
+    date: 'Datum',
+    status: 'Status',
+    validUntil: 'Geldig tot',
+    total: 'Totaal',
+  }
+
+  const columns = ['id', 'date', 'status', 'validUntil', 'total'];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Quote History</h1>
+      </div>
+      <div className="bg-card shadow-sm">
+        <OrderList
+          graphqlClient={graphqlClient}
+          user={state.user}
+          companyId={companyId}
+          onOrderClick={(orderId) => router.push(localizeHref(`/account/quotes/${orderId}`, language))}
+          orderStatus={["QUOTATION"]}
+          labels={paginationLabels}
+          rowsClickable={true}
+          searchFields={['term', 'createdAt', 'price']}
+          columnConfig={ordersColumnConf}
+          columns={columns}
+          enableSearch={true}
+        />
+      </div>
+    </div>
+  );
 }

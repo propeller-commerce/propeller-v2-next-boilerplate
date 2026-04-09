@@ -246,14 +246,19 @@ export const cacheSettings = {
   staticContentTTL: 86400000, // 24 hours in milliseconds
 };
 
-// Helper for object key cleanup
-export const stripLeadingUnderscores = <T extends Record<string, any>>(obj: T): Record<string, any> => {
-  const result: Record<string, any> = {};
-
-  for (const [key, value] of Object.entries(obj)) {
-    const newKey = key.startsWith('_') ? key.slice(1) : key;
-    result[newKey] = value;
+// Helper for object key cleanup — recursively strips underscore-prefixed keys
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const stripLeadingUnderscores = (obj: unknown): any => {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(stripLeadingUnderscores);
+  if (typeof obj === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const newKey = key.startsWith('_') ? key.slice(1) : key;
+      result[newKey] = stripLeadingUnderscores(value);
+    }
+    return result;
   }
-
-  return result;
+  return obj;
 }

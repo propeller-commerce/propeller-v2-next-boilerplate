@@ -1,181 +1,202 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import Image from 'next/image';
-import { productService } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
-import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { imageSearchFilters, imageVariantFiltersLarge, imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
-import { cn } from '@/lib/utils';
-import { ImageVariant, Product } from 'propeller-sdk-v2';
+import { Product, ProductPrice as ProductPriceSDK, CartService, Enums } from 'propeller-sdk-v2';
+import AddToCart from '@/components/propeller/AddToCart';
+import ItemStock from '@/components/propeller/ItemStock';
+import ProductInfo from '@/components/propeller/ProductInfo';
+import ProductGallery from '@/components/propeller/ProductGallery';
+import ProductPrice from '@/components/propeller/ProductPrice';
+import ProductShortDescription from '@/components/propeller/ProductShortDescription';
+import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
+import Breadcrumbs from '@/components/propeller/Breadcrumbs';
+import ProductTabs from '@/components/propeller/ProductTabs';
+import { usePrice } from '@/context/PriceContext';
+import { graphqlClient } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { config, localizeHref } from '@/data/config';
+import ProductSlider from '@/components/propeller/ProductSlider';
+import ProductBundles from '@/components/propeller/ProductBundles';
+import AddToFavorite from '@/components/propeller/AddToFavorite';
+import { useLanguage } from '@/context/LanguageContext';
+import { useCompany } from '@/context/CompanyContext';
+
 
 export default function ProductPage() {
   const params = useParams();
+  const { state, refreshUser } = useAuth();
+  const { selectedCompany } = useCompany();
   const productId = parseInt(params.productId as string);
   const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const { addToCart } = useCart();
-  const [isAdding, setIsAdding] = useState(false);
+  const { cart, saveCart } = useCart();
+  const router = useRouter();
+  const { includeTax } = usePrice();
+  const { language } = useLanguage();
+  const images: string[] = product?.media?.images?.items?.flatMap(
+    image => image.imageVariants?.map(variant => variant.url).filter((url): url is string => !!url) ?? []
+  ) ?? [];
 
+  const price = product?.price as ProductPriceSDK;
+
+  // Update URL slug when language or product changes — use history.replaceState
+  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const data = await productService.getProduct({
-          productId,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-          imageSearchFilters: imageSearchFilters,
-          imageVariantFilters: imageVariantFiltersLarge,
-        });
-        setProduct(data);
-      } catch (error) {
-        console.error('Failed to load product:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [productId]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <main className="flex-1 py-12">
-          <div className="container-width">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 animate-pulse">
-              <div className="space-y-4">
-                <div className="aspect-square bg-slate-100 rounded-xl" />
-                <div className="flex gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="w-20 h-20 bg-slate-100 rounded-lg" />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div className="h-4 bg-slate-100 rounded w-1/4" />
-                <div className="h-10 bg-slate-100 rounded w-3/4" />
-                <div className="h-8 bg-slate-100 rounded w-1/3" />
-                <div className="h-24 bg-slate-100 rounded" />
-                <div className="h-16 bg-slate-100 rounded" />
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!product) return null; // Or 404
-
-  const images = product.media?.images?.items?.[0]?.imageVariants?.map((v: ImageVariant) => v.url) || ['/no-image.webp'];
-  const name = product.names?.[0]?.value || 'Product';
-  const sku = product.sku || '';
-  const price = product.price?.gross || 0;
-  const stock = product.inventory?.totalQuantity || 0;
-  const description = product.descriptions?.[0]?.value || '';
-
-  const handleAddToCart = async () => {
-    setIsAdding(true);
-    await addToCart(productId, quantity, name);
-    setIsAdding(false);
-  };
+    if (!product) return;
+    const match = product.slugs?.find((s: { language?: string; value?: string }) => s.language === language);
+    const slug = match?.value || product.slugs?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (slug && slug !== currentSlug) {
+      window.history.replaceState(null, '', localizeHref(`/product/${productId}/${slug}`, language));
+    }
+  }, [product, language, productId]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-            {/* Gallery Column */}
-            <div className="space-y-4">
-              <div className="relative aspect-square bg-white rounded-xl overflow-hidden border border-border">
-                <Image
-                  src={images[selectedImage]}
-                  alt={name}
-                  fill
-                  className="object-contain p-8"
-                  priority
-                />
-              </div>
+          <div className="propeller-breadcrumbs mb-6">
+            <Breadcrumbs categoryPath={product?.categoryPath || []} language={language} configuration={config} showCurrent={true} />
+          </div>
 
-              {images.length > 1 && (
-                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                  {images.map((img: string, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={cn(
-                        "relative w-20 h-20 flex-shrink-0 rounded-lg border-2 overflow-hidden transition-all",
-                        selectedImage === idx ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-border"
-                      )}
-                    >
-                      <Image src={img} alt={`${name} ${idx + 1}`} fill className="object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            {/* Left: Image Gallery */}
+            <div className="bg-white rounded-lg shadow p-6">
+              {/* Gallery Column */}
+              <ProductGallery images={images} />
             </div>
 
             {/* Details Column */}
             <div className="flex flex-col">
               <div className="mb-6">
-                <div className="text-sm font-mono text-muted-foreground mb-2">SKU: {sku}</div>
-                <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">{name}</h1>
+                <ProductInfo
+                  user={state.user}
+                  companyId={selectedCompany?.companyId}
+                  productId={productId}
+                  graphqlClient={graphqlClient}
+                  language={language}
+                  imageSearchFilters={imageSearchFilters}
+                  imageVariantFilters={imageVariantFiltersLarge}
+                  onProductLoaded={setProduct}
+                  configuration={config}
+                />
 
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="text-3xl font-bold text-primary">€{price.toFixed(2)}</div>
-                  {stock > 0 ? (
-                    <Badge variant="secondary" className="bg-violet-100 text-violet-700 hover:bg-violet-100">
-                      In Stock ({stock})
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">Out of Stock</Badge>
-                  )}
+                <ProductPrice price={price} includeTax={includeTax} />
+                <div className="mt-6">
+                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} includeTax={includeTax} labels={{ title: '' }} />
+                </div>
+                <div className="mt-6">
+                  <ProductShortDescription product={product as Product} language={language} />
                 </div>
 
-                {product.shortDescriptions?.[0]?.value && (
-                  <div className="prose prose-slate text-muted-foreground">
-                    {product.shortDescriptions[0].value}
+                {product?.inventory && (
+                  <div className="mt-4">
+                    <ItemStock inventory={product.inventory} showAvailability={false} />
                   </div>
                 )}
               </div>
 
-              <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
-                <div className="flex items-end gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Quantity</label>
-                    <div className="flex items-center h-11 bg-background border border-input rounded-md overflow-hidden">
-                      <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 h-full hover:bg-secondary transition">-</button>
-                      <input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-12 text-center h-full border-none focus:ring-0 bg-transparent"
-                      />
-                      <button onClick={() => setQuantity(quantity + 1)} className="px-3 h-full hover:bg-secondary transition">+</button>
-                    </div>
+              {product && (
+                <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
+                  <div className="flex items-center gap-2">
+                    <AddToCart
+                      user={state.user}
+                      companyId={selectedCompany?.companyId}
+                      product={product}
+                      cartId={cart?.cartId}
+                      graphqlClient={graphqlClient}
+                      createCart={true}
+                      onCartCreated={(cart) => {
+                        saveCart(cart);
+                      }}
+                      className='flex items-center w-full gap-2'
+                      configuration={config}
+                      showModal={true}
+                      afterAddToCart={(cart) => {
+                        saveCart(cart);
+                      }}
+                      onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
+                    <AddToFavorite
+                      graphqlClient={graphqlClient}
+                      user={state.user}
+                      productId={product.productId}
+                      onFavoriteChanged={refreshUser}
+                    />
                   </div>
-                  <Button size="lg" className="flex-1 h-11 text-base" onClick={handleAddToCart} isLoading={isAdding}>
-                    {stock > 0 ? 'Add to Cart' : 'Add to Cart (Pre-order)'}
-                  </Button>
-                </div>
-              </Card>
+                </Card>
+              )}
 
-              <div className="space-y-6 border-t pt-8">
-                <h2 className="text-xl font-bold">Description</h2>
-                <div className="prose prose-slate max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: description }} />
-              </div>
             </div>
           </div>
+          <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} language={language} />
+          <div className="my-6">
+            <ProductBundles
+              graphqlClient={graphqlClient}
+              productId={productId}
+              companyId={selectedCompany?.companyId}
+              language={language}
+              cartId={cart?.cartId}
+              taxZone="NL"
+              includeTax={includeTax}
+              configuration={config}
+              user={state.user}
+              createCart={true}
+              showModal={true}
+              onCartCreated={(newCart) => saveCart(newCart)}
+              afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
+              onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            />
+          </div>
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+            productId={productId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.RELATED]}
+            productId={productId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
         </div>
       </main>
       <Footer />

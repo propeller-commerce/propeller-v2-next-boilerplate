@@ -1,11 +1,12 @@
 'use client';
 
 // 'use client' is already at the top of the file, this replacement starts after line 1.
-import { Contact, Customer } from 'propeller-sdk-v2';
+import { Contact, Customer, Enums, UserService } from 'propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
 import { graphqlClient } from '@/lib/api';
+import { localizeHref } from '@/data/config';
 
 type User = Contact | Customer;
 
@@ -23,6 +24,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
+  isAuthManagerForCompany: (user: Contact | Customer | null, companyId: number | undefined) => boolean;
 }
 
 type AuthAction =
@@ -195,6 +198,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
 
+    // Read language before clearing localStorage
+    const lang = typeof window !== 'undefined'
+      ? localStorage.getItem('preferred_language') || 'NL'
+      : 'NL';
+
     // Clear local storage except 'menuData'
     if (typeof window !== 'undefined') {
       const menuData = localStorage.getItem('menuData');
@@ -210,7 +218,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.dispatchEvent(new CustomEvent('userLoggedOut'));
 
     // Redirect to home
-    router.push('/');
+    router.push(localizeHref('/', lang));
   }, [router]);
 
   // Session timeout logic
@@ -261,6 +269,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
   }, []);
 
+  // Helper to remove leading underscores from object keys
+  const sanitizeUser = (data: any): User => {
+    if (!data || typeof data !== 'object') return data;
+
+    const cleanData: any = {};
+    Object.keys(data).forEach(key => {
+      const cleanKey = key.startsWith('_') ? key.substring(1) : key;
+      cleanData[cleanKey] = data[key];
+    });
+
+    return cleanData as User;
+  };
+
   const updateUser = useCallback((userData: Partial<User>): void => {
     dispatch({ type: 'UPDATE_USER', payload: userData });
 
@@ -270,11 +291,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [state.user]);
 
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      const userService = new UserService(graphqlClient);
+      const viewerData = await userService.getViewer({});
+      if (viewerData) {
+        const strip = (obj: any): any => {
+          if (obj === null || obj === undefined) return obj;
+          if (Array.isArray(obj)) return obj.map(strip);
+          if (typeof obj === 'object') {
+            const r: any = {};
+            for (const [k, val] of Object.entries(obj)) {
+              r[k.startsWith('_') ? k.slice(1) : k] = strip(val);
+            }
+            return r;
+          }
+          return obj;
+        };
+        const plain = strip(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)));
+        const storedToken = localStorage.getItem('accessToken');
+        localStorage.setItem('user', JSON.stringify(plain));
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: { user: plain as User, accessToken: storedToken || '' },
+        });
+      }
+    } catch (e) {
+      console.error('Error refreshing user data:', e);
+    }
+  }, []);
+
+  const isAuthManagerForCompany = (user: Contact | Customer | null, companyId: number | undefined): boolean => {
+    if (!user || !companyId || !('contactId' in user)) return false;
+    const pacData = (user as any).purchaseAuthorizationConfigs;
+    const items: any[] = pacData?.items ?? pacData?._items ?? [];
+    return items.some((pac: any) => {
+      const role = pac.purchaseRole ?? pac._purchaseRole;
+      const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
+      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId;
+    });
+  };
+
   // Listen for external auth events (e.g. from other tabs)
   useEffect(() => {
     const handleUserLoggedIn = () => {
-      // Logic to reload user from storage if needed
-      // For now, we mainly use this to sync state across tabs if we implemented storage listeners
+      const storedToken = localStorage.getItem('accessToken');
+      const storedUser = localStorage.getItem('user');
+      if (storedToken && storedUser) {
+        try {
+          const user = sanitizeUser(JSON.parse(storedUser));
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: { user, accessToken: storedToken },
+          });
+        } catch (e) {
+          console.error('Failed to parse stored user on userLoggedIn event:', e);
+        }
+      }
     };
 
     const handleUserLoggedOut = () => {
@@ -296,6 +369,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     clearError,
     updateUser,
+    refreshUser,
+    isAuthManagerForCompany
   };
 
   return (

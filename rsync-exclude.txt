@@ -1,0 +1,12 @@
+# Exclude specific files
+.env
+
+# Exclude directories
+src/i18n
+public/uploads
+cms/public/uploads
+.git
+.tmp
+
+# Exclude files by pattern
+#*.iso

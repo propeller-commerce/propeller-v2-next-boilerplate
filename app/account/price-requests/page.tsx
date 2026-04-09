@@ -1,20 +1,11 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { FileQuestion } from 'lucide-react';
 
 export default function PriceRequestsPage() {
     const { state } = useAuth();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!state.isAuthenticated) {
-            router.push('/login');
-        }
-    }, [state.isAuthenticated, router]);
 
     if (!state.isAuthenticated) return null;
 

@@ -154,7 +154,7 @@ function OrderList(props: OrderListProps) {
         ...(!props.showCompanyOrders && {
           userId: [userId],
         }),
-        ...(companyId && {
+        ...(props.showCompanyOrders && companyId && {
           companyIds: [companyId],
         }),
         page: page,

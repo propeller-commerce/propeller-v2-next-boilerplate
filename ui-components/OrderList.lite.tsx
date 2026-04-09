@@ -157,7 +157,7 @@ export default function OrderList(props: OrderListProps) {
                 const searchArgs: OrderSearchArguments = {
                     status: statuses,
                     ...(!props.showCompanyOrders && { userId: [userId] }),
-                    ...(companyId && { companyIds: [companyId] }),
+                    ...(props.showCompanyOrders && companyId && { companyIds: [companyId] }),
                     page: page,
                     offset: state.itemsPerPage,
                     term: state.searchForm.term || "",

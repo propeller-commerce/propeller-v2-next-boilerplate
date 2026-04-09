@@ -220,6 +220,7 @@ function Menu(props: MenuProps) {
         return `
                         categories {
                             categoryId
+                            hidden
                             name(language: $language) { value language }
                             slug(language: $language) { value }
                             ${buildCategoriesQuery(currentDepth - 1)}
@@ -230,6 +231,7 @@ function Menu(props: MenuProps) {
                     query Menu($categoryId: Float, $language: String) {
                         category(categoryId: $categoryId) {
                             categoryId
+                            hidden
                             name(language: $language) { value language }
                             slug(language: $language) { value }
                             ${buildCategoriesQuery(depth)}

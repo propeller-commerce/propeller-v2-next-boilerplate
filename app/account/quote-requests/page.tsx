@@ -52,7 +52,7 @@ export default function QuotesPage() {
     total: 'Totaal',
   }
 
-  const columns = ['id', 'date', 'status', 'validUntil', 'total'];
+  const columns = ['id', 'date', 'status', 'total'];
 
   return (
     <div className="space-y-6">
@@ -64,7 +64,7 @@ export default function QuotesPage() {
           graphqlClient={graphqlClient}
           user={state.user}
           companyId={companyId}
-          onOrderClick={(orderId) => { }}
+          onOrderClick={(orderId) => router.push(localizeHref(`/account/quote-requests/${orderId}`, language))}
           orderStatus={["REQUEST"]}
           labels={paginationLabels}
           rowsClickable={true}

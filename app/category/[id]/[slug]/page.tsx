@@ -36,8 +36,8 @@ export default function CategoryPage() {
     const initial: Record<string, string[]> = {};
     searchParams.forEach((value, key) => {
       if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
-        try { initial[key] = JSON.parse(decodeURIComponent(value)); }
-        catch { initial[key] = [decodeURIComponent(value)]; }
+        try { initial[key] = JSON.parse(value); }
+        catch { initial[key] = [value]; }
       }
     });
     return initial;
@@ -62,6 +62,7 @@ export default function CategoryPage() {
     (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filtersLoading, setFiltersLoading] = useState(false);
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
@@ -79,9 +80,9 @@ export default function CategoryPage() {
     searchParams.forEach((value, key) => {
       if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
         try {
-          newFilters[key] = JSON.parse(decodeURIComponent(value));
+          newFilters[key] = JSON.parse(value);
         } catch {
-          newFilters[key] = [decodeURIComponent(value)];
+          newFilters[key] = [value];
         }
       }
     });
@@ -133,7 +134,7 @@ export default function CategoryPage() {
 
     Object.entries(newFilters).forEach(([key, values]) => {
       if (values.length > 0) {
-        searchParams.set(key, encodeURIComponent(JSON.stringify(values)));
+        searchParams.set(key, JSON.stringify(values));
       }
     });
 
@@ -261,6 +262,7 @@ export default function CategoryPage() {
                 activeTextFilters={filters}
                 activePriceMin={minPrice}
                 activePriceMax={maxPrice}
+                isLoading={filtersLoading}
                 className=""
               />
             </aside>
@@ -321,6 +323,7 @@ export default function CategoryPage() {
                 }}
                 onItemsFoundChange={setItemsFound}
                 onPageItemCountChange={setPageItemCount}
+                onLoadingChange={setFiltersLoading}
                 page={currentPage}
                 onPageChange={setCurrentPage}
                 afterAddToCart={(cart, item) => {

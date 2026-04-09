@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Cart, CartCarrier } from 'propeller-sdk-v2';
 
 export interface CartCarriersProps {
@@ -65,6 +65,11 @@ function CartCarriers(props: CartCarriersProps) {
       props.onCarrierSelect(carrier);
     }
   }
+  useEffect(() => {
+    if (!selectedName && props.cart?.postageData?.carrier) {
+      setSelectedName(props.cart.postageData.carrier as string);
+    }
+  }, [props.cart]);
   return (
     <div className={containerClass()}>
       {carriers().length > 0 ? (

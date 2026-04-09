@@ -1,4 +1,4 @@
-import { useStore, Show, For } from '@builder.io/mitosis';
+import { useStore, Show, For, onUpdate } from '@builder.io/mitosis';
 import { Cart, CartCarrier } from 'propeller-sdk-v2';
 
 export interface CartCarriersProps {
@@ -73,6 +73,12 @@ export default function CartCarriers(props: CartCarriersProps) {
             }
         },
     });
+
+    onUpdate(() => {
+        if (!state.selectedName && props.cart?.postageData?.carrier) {
+            state.selectedName = props.cart.postageData.carrier as string;
+        }
+    }, [props.cart]);
 
     return (
         <div className={state.containerClass}>

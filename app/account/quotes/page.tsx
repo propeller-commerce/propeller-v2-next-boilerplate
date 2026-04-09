@@ -64,6 +64,7 @@ export default function QuotesPage() {
           graphqlClient={graphqlClient}
           user={state.user}
           companyId={companyId}
+          showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/quotes/${orderId}`, language))}
           orderStatus={["QUOTATION"]}
           labels={paginationLabels}

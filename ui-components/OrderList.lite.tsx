@@ -59,6 +59,9 @@ export interface OrderListProps {
     /** Rows are clickable */
     rowsClickable?: boolean;
 
+    /** Show company orders */
+    showCompanyOrders?: boolean;
+
     /** Format price */
     formatPrice?: (price: number) => string;
 
@@ -153,7 +156,7 @@ export default function OrderList(props: OrderListProps) {
 
                 const searchArgs: OrderSearchArguments = {
                     status: statuses,
-                    userId: [userId],
+                    ...(!props.showCompanyOrders && { userId: [userId] }),
                     ...(companyId && { companyIds: [companyId] }),
                     page: page,
                     offset: state.itemsPerPage,

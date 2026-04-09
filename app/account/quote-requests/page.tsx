@@ -10,7 +10,7 @@ import OrderList from '@/components/propeller/OrderList';
 import { Contact, Customer, Company } from 'propeller-sdk-v2';
 
 
-export default function OrdersPage() {
+export default function QuotesPage() {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function OrdersPage() {
     next: 'Volgende',
     showingPage: 'Pagina',
     of: 'van',
-    noOrders: 'Geen orders',
+    noOrders: 'Geen offertes',
     loading: 'Laden',
     order: 'Order',
     date: 'Datum',
@@ -48,6 +48,7 @@ export default function OrdersPage() {
     id: '#',
     date: 'Datum',
     status: 'Status',
+    validUntil: 'Geldig tot',
     total: 'Totaal',
   }
 
@@ -56,7 +57,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Order History</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Quote requests</h1>
       </div>
       <div className="bg-card shadow-sm">
         <OrderList
@@ -64,13 +65,14 @@ export default function OrdersPage() {
           user={state.user}
           companyId={companyId}
           showCompanyOrders={false}
-          onOrderClick={(orderId) => router.push(localizeHref(`/account/orders/${orderId}`, language))}
+          onOrderClick={(orderId) => router.push(localizeHref(`/account/quote-requests/${orderId}`, language))}
+          orderStatus={["REQUEST"]}
           labels={paginationLabels}
           rowsClickable={true}
-          searchFields={['term', 'createdAt', 'price']}
+          // searchFields={['term', 'createdAt', 'price']}
           columnConfig={ordersColumnConf}
           columns={columns}
-          enableSearch={true}
+        // enableSearch={true}
         />
       </div>
     </div>

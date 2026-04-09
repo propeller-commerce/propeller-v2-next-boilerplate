@@ -361,6 +361,12 @@ import  ClusterCard from './ClusterCard.vue';
  onCategoryChange?: (category: Category) => void;
 
  /**
+  * Called whenever the internal loading state changes.
+  * Use to disable sibling components (e.g. GridFilters) while a fetch is in flight.
+  */
+ onLoadingChange?: (isLoading: boolean) => void;
+
+ /**
   * Externally controlled current page.
   * When provided, the grid uses this value instead of its internal page
   * counter. Wire this to the `onPageChange` callback from a sibling
@@ -528,7 +534,7 @@ const fetchId= ref<ProductGridState["fetchId"]>(0)
 
 
 
-  watch(() => [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId], () => { if (props.products === undefined) {
+  watch(() => [props.textFilters, props.priceFilterMin, props.priceFilterMax, props.categoryId, props.term, props.brand, props.sortField, props.sortOrder, props.pageSize, props.language, props.page, props.companyId, props.user], () => { if (props.products === undefined) {
 if (props.page !== undefined) {
   currentPage.value = props.page as number;
 }
@@ -542,6 +548,7 @@ fetchId.value = myFetchId;
 if (internalProducts.value.length === 0) {
   isInternalLoading.value = true;
 }
+if (props.onLoadingChange) props.onLoadingChange(true);
 try {
   const service = new CategoryService(props.graphqlClient as GraphQLClient);
   const taxZone = props.taxZone || 'NL';
@@ -660,6 +667,7 @@ try {
 } finally {
   if (myFetchId === fetchId.value) {
     isInternalLoading.value = false;
+    if (props.onLoadingChange) props.onLoadingChange(false);
   }
 }
 }

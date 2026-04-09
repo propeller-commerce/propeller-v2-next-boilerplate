@@ -558,7 +558,7 @@ export default function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                 </Show>
 
                                 {/* Request a Quote button */}
-                                <Show when={!!props.onRequestQuoteClick}>
+                                <Show when={!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user}>
                                     <button
                                         type="button"
                                         onClick={() => { state.closeSidebar(); props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart); }}

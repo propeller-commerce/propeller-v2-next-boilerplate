@@ -559,7 +559,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       {getLabel('checkoutButton', 'Checkout')}
                     </button>
                   ) : null}
-                  {!!props.onRequestQuoteClick ? (
+                  {!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
                     <button
                       type="button"
                       className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"

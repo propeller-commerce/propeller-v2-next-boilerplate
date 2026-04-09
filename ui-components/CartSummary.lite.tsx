@@ -288,7 +288,7 @@ export default function CartSummary(props: CartSummaryProps) {
                 >
                     {state.getLabel('checkoutButton', 'Continue to Checkout')}
                 </button>
-                <Show when={!!props.onRequestQuoteClick}>
+                <Show when={!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user}>
                     <button
                         type="button"
                         onClick={() => props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart)}

@@ -261,7 +261,7 @@ function CartSummary(props: CartSummaryProps) {
           >
             {getLabel('checkoutButton', 'Continue to Checkout')}
           </button>{' '}
-          {!!props.onRequestQuoteClick ? (
+          {!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
             <button
               type="button"
               className="block w-full bg-white border border-secondary text-secondary text-center py-3 rounded-lg hover:bg-secondary/5 transition font-semibold mt-2"

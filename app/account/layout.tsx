@@ -54,6 +54,7 @@ export default function AccountLayout({
                                         { label: 'Addresses', href: localizeHref('/account/addresses', language) },
                                         { label: 'Orders', href: localizeHref('/account/orders', language) },
                                         { label: 'Quotes', href: localizeHref('/account/quotes', language) },
+                                        { label: 'Quote requests', href: localizeHref('/account/quote-requests', language) },
                                         { label: 'Favorites', href: localizeHref('/account/favorites', language) },
                                         ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
                                             { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },

@@ -598,10 +598,9 @@ async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOr
       ...(!props.showCompanyOrders && {
         userId: [userId],
       }),
-      ...(companyId &&
-        props.showCompanyOrders && {
-          companyIds: [companyId],
-        }),
+      ...(companyId && {
+        companyIds: [companyId],
+      }),
       page: page,
       offset: itemsPerPage.value,
       term: searchForm.value.term || '',

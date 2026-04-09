@@ -6,16 +6,32 @@ import { createPreprProvider } from './providers/prepr';
  * Resolve the active CMS provider based on the CMS_PROVIDER env var.
  * Defaults to 'strapi'. Add new providers here as needed.
  */
+/** No-op provider when no CMS is configured. */
+function createNoneProvider(): CmsProvider {
+  return {
+    getPage: async () => null,
+    getAllPageSlugs: async () => [],
+    getGlobal: async () => null,
+    getCategoryBanner: async () => null,
+    getArticles: async () => [],
+    getArticle: async () => null,
+    getAllArticleSlugs: async () => [],
+    resolveImageUrl: (path: string) => path,
+  };
+}
+
 function createProvider(): CmsProvider {
-  const provider = process.env.CMS_PROVIDER || process.env.NEXT_PUBLIC_CMS_PROVIDER || 'strapi';
+  const provider = process.env.CMS_PROVIDER || process.env.NEXT_PUBLIC_CMS_PROVIDER || 'none';
 
   switch (provider) {
+    case 'none':
+      return createNoneProvider();
     case 'strapi':
       return createStrapiProvider();
     case 'prepr':
       return createPreprProvider();
     default:
-      throw new Error(`Unknown CMS provider: "${provider}". Supported: strapi, prepr`);
+      throw new Error(`Unknown CMS provider: "${provider}". Supported: none, strapi, prepr`);
   }
 }
 

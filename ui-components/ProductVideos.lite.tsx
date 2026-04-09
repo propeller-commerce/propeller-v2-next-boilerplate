@@ -77,6 +77,10 @@ export default function ProductVideos(props: ProductVideosProps) {
         },
 
         getEmbedUrl(uri: string): string {
+            // Already an embed URL — return as-is
+            if (uri.includes('youtube.com/embed/') || uri.includes('player.vimeo.com/video/')) {
+                return uri;
+            }
             // YouTube watch URL → embed URL
             if (uri.includes('youtube.com/watch')) {
                 const url = new URL(uri);
@@ -88,10 +92,14 @@ export default function ProductVideos(props: ProductVideosProps) {
                 const videoId = uri.split('youtu.be/')[1]?.split('?')[0] || '';
                 return `https://www.youtube.com/embed/${videoId}`;
             }
-            // Vimeo
+            // Vimeo standard URL (https://vimeo.com/ID or https://vimeo.com/ID/HASH)
             if (uri.includes('vimeo.com/')) {
-                const videoId = uri.split('vimeo.com/')[1]?.split('?')[0] || '';
-                return `https://player.vimeo.com/video/${videoId}`;
+                const parts = uri.split('vimeo.com/')[1]?.split('?')[0]?.split('/') || [];
+                const videoId = parts[0] || '';
+                const hash = parts[1] || '';
+                return hash
+                    ? `https://player.vimeo.com/video/${videoId}?h=${hash}`
+                    : `https://player.vimeo.com/video/${videoId}`;
             }
             return uri;
         },

@@ -57,6 +57,9 @@ export interface OrderListProps {
   /** Rows are clickable */
   rowsClickable?: boolean;
 
+  /** Show company orders */
+  showCompanyOrders?: boolean;
+
   /** Format price */
   formatPrice?: (price: number) => string;
 
@@ -148,10 +151,13 @@ function OrderList(props: OrderListProps) {
       const companyId = props.companyId || companyIdFallback || null;
       const searchArgs: OrderSearchArguments = {
         status: statuses,
-        userId: [userId],
-        ...(companyId && {
-          companyIds: [companyId],
+        ...(!props.showCompanyOrders && {
+          userId: [userId],
         }),
+        ...(companyId &&
+          props.showCompanyOrders && {
+            companyIds: [companyId],
+          }),
         page: page,
         offset: itemsPerPage,
         term: searchForm.term || '',

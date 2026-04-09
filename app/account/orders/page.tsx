@@ -63,6 +63,7 @@ export default function OrdersPage() {
           graphqlClient={graphqlClient}
           user={state.user}
           companyId={companyId}
+          showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/orders/${orderId}`, language))}
           labels={paginationLabels}
           rowsClickable={true}

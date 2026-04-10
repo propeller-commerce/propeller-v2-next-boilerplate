@@ -42,7 +42,8 @@ tasks:
     cmds:
       - echo "$ENV_FILE_CMS" > .env
       - |
-        if [ ! -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
+        strapi_exists=$(sudo sh -c 'if [ ! -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then echo "false"; fi')
+        if [ "$strapi_exists" == "false" ]; then
           echo "Strapi does not exist, building..."
           npm install
           NODE_ENV=production npm run build

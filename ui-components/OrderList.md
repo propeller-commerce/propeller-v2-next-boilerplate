@@ -192,6 +192,7 @@ const quoteResponse = await orderService.getOrders(quoteArgs);
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `initialItemsPerPage` | `number` | `10` | Number of orders per page. |
+| `hidePagination` | `boolean` | `false` | When `true`, pagination controls are hidden even when there are multiple pages. |
 
 ### Formatting and Localization
 

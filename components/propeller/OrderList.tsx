@@ -60,6 +60,9 @@ export interface OrderListProps {
   /** Show company orders */
   showCompanyOrders?: boolean;
 
+  /** Hide pagination controls */
+  hidePagination?: boolean;
+
   /** Format price */
   formatPrice?: (price: number) => string;
 
@@ -572,7 +575,7 @@ function OrderList(props: OrderListProps) {
                   </tbody>
                 </table>
               </div>
-              {totalPages > 1 ? (
+              {!props.hidePagination && totalPages > 1 ? (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button

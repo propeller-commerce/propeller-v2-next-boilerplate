@@ -205,6 +205,19 @@ const crossupsells = await crossupsellService.getCrossupsells({
 
 // Limit the displayed results
 const limitedItems = crossupsells?.items?.slice(0, 4) || [];
+
+// Add a cross-sell product to the cart
+const cartService = new CartService(graphqlClient);
+const productId = crossupsellItem.productTo?.productId || crossupsellItem.clusterTo?.id;
+const updatedCart = await cartService.addItemToCart({
+  id: cartId,
+  input: { productId, quantity: 1 },
+  language: 'NL',
+});
+
+// Get cross-sell price
+const product = crossupsellItem.productTo || crossupsellItem.clusterTo;
+const price = includeTax ? product?.price?.net : product?.price?.gross;
 ```
 
 ### Delegation Mode (External Cart Mutations)
@@ -375,6 +388,7 @@ The following props are purely presentational and are not part of the SDK layer.
 | `notesPlaceholder` | `'Add a note for this item...'` | Notes textarea placeholder |
 | `includedOptions` | `'Included Options:'` | Heading above cluster child items |
 | `crossupsellTitle` | `'You might also like'` | Cross-sell section heading |
+| `addToCart` | `'Add to cart'` | Tooltip for the cross-sell add-to-cart button |
 
   </TabItem>
   <TabItem value="byo" label="Build Your Own">
@@ -388,6 +402,7 @@ const defaultLabels = {
   notesPlaceholder: 'Add a note for this item...',
   includedOptions: 'Included Options:',
   crossupsellTitle: 'You might also like',
+  addToCart: 'Add to cart',
 };
 ```
 
@@ -447,8 +462,10 @@ These are suggested defaults. Override per-key to support localization.
 
 - When `showCrossupsells={true}`, the component fetches cross-sell products on mount via `CrossupsellService.getCrossupsells()`.
 - Products are fetched using `productIdsFrom` (for simple products) or `clusterIdsFrom` (for cluster products).
-- Results are displayed as horizontally scrollable compact cards with thumbnail and name, limited by `crossupsellLimit` (default 3).
-- Clicking a cross-sell navigates to the product page, or calls `onCrossupsellClick` if provided.
+- Results are displayed as vertically stacked cards with thumbnail, name, price, and an add-to-cart button, limited by `crossupsellLimit` (default 3).
+- Prices respect the `includeTax` prop (shows `price.net` when true, `price.gross` when false).
+- The add-to-cart button adds 1 quantity of the cross-sell product directly to the current cart via `CartService.addItemToCart()`. A loading spinner is shown during the operation, and `afterCartUpdate` is called on success.
+- Clicking the product name/image navigates to the product page, or calls `onCrossupsellClick` if provided.
 - Errors are caught silently -- the section simply does not appear.
 
 ---
@@ -584,6 +601,7 @@ Used for quantity updates and item deletion. Each mutation returns the full upda
 
 - **`CartService.updateCartItem()`** -- updates quantity or notes for a cart item
 - **`CartService.deleteCartItem()`** -- removes an item from the cart
+- **`CartService.addItemToCart()`** -- adds a cross-sell product to the cart (1 quantity)
 
 ### CrossupsellService
 

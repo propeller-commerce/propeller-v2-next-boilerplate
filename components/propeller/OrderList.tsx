@@ -63,6 +63,9 @@ export interface OrderListProps {
   /** Hide pagination controls */
   hidePagination?: boolean;
 
+  /** Filter orders by channel IDs */
+  channelIds?: number[];
+
   /** Format price */
   formatPrice?: (price: number) => string;
 
@@ -157,7 +160,7 @@ function OrderList(props: OrderListProps) {
         ...(!props.showCompanyOrders && {
           userId: [userId],
         }),
-        ...(props.showCompanyOrders && companyId && {
+        ...(companyId && {
           companyIds: [companyId],
         }),
         page: page,
@@ -186,7 +189,10 @@ function OrderList(props: OrderListProps) {
         ...(searchForm.type && {
           type: searchForm.type,
         }),
-      };
+        ...(props.channelIds && props.channelIds.length > 0 && {
+          channelIds: props.channelIds,
+        }),
+      } as OrderSearchArguments;
       const response: OrderResponse = await orderService.getOrders(searchArgs);
       setOrders(response.items || []);
       setTotalItems(response.itemsFound || 0);

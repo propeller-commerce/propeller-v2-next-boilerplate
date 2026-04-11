@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
-import { localizeHref } from '@/data/config';
+import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import OrderList from '@/components/propeller/OrderList';
@@ -71,6 +71,7 @@ export default function OrdersPage() {
           columnConfig={ordersColumnConf}
           columns={columns}
           enableSearch={true}
+          channelIds={[config.channelId]}
         />
       </div>
     </div>

@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
-import { localizeHref } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import OrderList from '@/components/propeller/OrderList';
@@ -62,6 +62,7 @@ export default function QuotesPage() {
       <div className="bg-card shadow-sm">
         <OrderList
           graphqlClient={graphqlClient}
+          channelIds={[config.channelId]}
           user={state.user}
           companyId={companyId}
           showCompanyOrders={false}

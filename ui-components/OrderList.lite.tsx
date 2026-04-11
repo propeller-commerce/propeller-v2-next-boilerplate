@@ -65,6 +65,9 @@ export interface OrderListProps {
     /** Hide pagination controls. Defaults to false. */
     hidePagination?: boolean;
 
+    /** Filter orders by channel IDs */
+    channelIds?: number[];
+
     /** Format price */
     formatPrice?: (price: number) => string;
 
@@ -160,7 +163,7 @@ export default function OrderList(props: OrderListProps) {
                 const searchArgs: OrderSearchArguments = {
                     status: statuses,
                     ...(!props.showCompanyOrders && { userId: [userId] }),
-                    ...(props.showCompanyOrders && companyId && { companyIds: [companyId] }),
+                    ...(companyId && { companyIds: [companyId] }),
                     page: page,
                     offset: state.itemsPerPage,
                     term: state.searchForm.term || "",
@@ -175,8 +178,9 @@ export default function OrderList(props: OrderListProps) {
                     ...(state.searchForm.createdAt && { createdAt: state.searchForm.createdAt }),
                     ...(state.searchForm.lastModifiedAt && { lastModifiedAt: state.searchForm.lastModifiedAt }),
                     ...(state.searchForm.price && { price: state.searchForm.price }),
-                    ...(state.searchForm.type && { type: state.searchForm.type })
-                };
+                    ...(state.searchForm.type && { type: state.searchForm.type }),
+                    ...(props.channelIds && props.channelIds.length > 0 && { channelIds: props.channelIds })
+                } as OrderSearchArguments;
 
                 const response: OrderResponse = await orderService.getOrders(searchArgs);
 

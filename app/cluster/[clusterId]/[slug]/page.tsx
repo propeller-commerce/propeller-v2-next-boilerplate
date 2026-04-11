@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import ClusterConfigurator from '@/components/propeller/ClusterConfigurator';
 import ClusterOptions from '@/components/propeller/ClusterOptions';
 import ClusterInfo from '@/components/propeller/ClusterInfo';
-import { Cluster, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { Cluster, Enums, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import ProductGallery from '@/components/propeller/ProductGallery';
@@ -25,6 +25,7 @@ import ProductTabs from '@/components/propeller/ProductTabs';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
+import ProductSlider from '@/components/propeller/ProductSlider';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
 
@@ -164,6 +165,8 @@ export default function ClusterPage() {
                   onClusterLoaded={handleClusterLoaded}
                   language={language}
                   configuration={config}
+                  imageSearchFilters={config.imageSearchFilters}
+                  imageVariantFilters={config.imageVariantFiltersLarge}
                 />
 
                 {cluster && (
@@ -246,7 +249,112 @@ export default function ClusterPage() {
             </div>
           </div>
           {/* Product Tabs - Description, Specifications, etc. */}
-          <ProductTabs product={selectedProduct as Product} language={language} />
+          <ProductTabs product={selectedProduct as Product} language={language} className='pb-8' />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+            clusterId={clusterId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.ALTERNATIVES]}
+            clusterId={clusterId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.RELATED]}
+            clusterId={clusterId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.OPTIONS]}
+            clusterId={clusterId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
+          <ProductSlider
+            graphqlClient={graphqlClient}
+            crossUpsellTypes={[Enums.CrossupsellType.PARTS]}
+            clusterId={clusterId}
+            language={language}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            includeTax={includeTax}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            configuration={config}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          />
         </div>
       </main>
       <Footer />

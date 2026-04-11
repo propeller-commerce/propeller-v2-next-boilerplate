@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Order, OrderService, GraphQLClient, Enums } from 'propeller-sdk-v2';
 
 export interface QuoteActionsProps {
@@ -42,6 +42,7 @@ function QuoteActions(props: QuoteActionsProps) {
     () => false
   );
   const [loading, setLoading] = useState<QuoteActionsState['loading']>(() => false);
+  const acceptingRef = useRef(false);
   function showTermsAndConditions(): ReturnType<QuoteActionsState['showTermsAndConditions']> {
     return props.showTermsAndConditions !== undefined ? props.showTermsAndConditions : true;
   }
@@ -65,7 +66,8 @@ function QuoteActions(props: QuoteActionsProps) {
     }
   }
   async function handleAcceptClick(): ReturnType<QuoteActionsState['handleAcceptClick']> {
-    if (isAcceptDisabled()) return;
+    if (isAcceptDisabled() || acceptingRef.current) return;
+    acceptingRef.current = true;
     setLoading(true);
     try {
       if (props.onAccept) {
@@ -75,10 +77,8 @@ function QuoteActions(props: QuoteActionsProps) {
         await orderService.setOrderStatus({
           orderId: props.quote.id,
           status: 'NEW' as string,
-          payStatus: Enums.PaymentStatuses.OPEN,
           sendOrderConfirmationEmail: true,
           addPDFAttachment: true,
-          triggerOrderSendConfirmEvent: true,
           deleteCart: true,
         });
       }
@@ -87,6 +87,7 @@ function QuoteActions(props: QuoteActionsProps) {
       }
     } finally {
       setLoading(false);
+      acceptingRef.current = false;
     }
   }
   return (

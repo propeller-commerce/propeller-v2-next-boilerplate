@@ -821,8 +821,9 @@ function CheckoutPageInner() {
                           id="quote-reference"
                           type="text"
                           value={quoteReference}
-                          onChange={(e) => setQuoteReference(e.target.value)}
+                          onChange={(e) => setQuoteReference(e.target.value.slice(0, 255))}
                           placeholder="Your reference (optional)"
+                          maxLength={255}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </div>
@@ -831,9 +832,10 @@ function CheckoutPageInner() {
                         <textarea
                           id="quote-notes"
                           value={quoteNotes}
-                          onChange={(e) => setQuoteNotes(e.target.value)}
+                          onChange={(e) => setQuoteNotes(e.target.value.slice(0, 255))}
                           placeholder="Additional notes for your quote request (optional)"
                           rows={4}
+                          maxLength={255}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                         />
                       </div>

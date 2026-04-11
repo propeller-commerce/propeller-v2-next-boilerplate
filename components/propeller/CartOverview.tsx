@@ -127,10 +127,10 @@ function CartOverview(props: CartOverviewProps) {
   function handleReferenceChange(
     value: string
   ): ReturnType<CartOverviewState['handleReferenceChange']> {
-    setReference(value);
+    setReference(value.slice(0, 255));
   }
   function handleNotesChange(value: string): ReturnType<CartOverviewState['handleNotesChange']> {
-    setNotes(value);
+    setNotes(value.slice(0, 255));
   }
   function handleTermsChange(checked: boolean): ReturnType<CartOverviewState['handleTermsChange']> {
     setTermsAccepted(checked);
@@ -266,6 +266,7 @@ function CartOverview(props: CartOverviewProps) {
               value={reference}
               onChange={(event) => handleReferenceChange(event.target.value)}
               placeholder={getLabel('referencePlaceholder', 'Your reference number')}
+              maxLength={255}
             />
           </div>
         ) : null}
@@ -279,6 +280,7 @@ function CartOverview(props: CartOverviewProps) {
               value={notes}
               onChange={(event) => handleNotesChange(event.target.value)}
               placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}
+              maxLength={255}
             />
           </div>
         ) : null}

@@ -54,8 +54,49 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
   function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
     return props.includeTax !== undefined ? !!props.includeTax : false;
   }
+  function getTierQuantity(tier: ProductPrice): number | null {
+    const discount = tier.discount as (IDiscount & { quantityFrom?: number }) | undefined;
+    return discount?.quantityFrom ?? tier.quantity ?? null;
+  }
   function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
-    return (props.bulkPrices as ProductPrice[]) || [];
+    const all = (props.bulkPrices as ProductPrice[]) || [];
+    if (all.length === 0) return [];
+    const now = new Date();
+    const groups = new Map<number, ProductPrice[]>();
+    for (const tier of all) {
+      const qty = getTierQuantity(tier);
+      if (qty === null) continue;
+      const list = groups.get(qty) || [];
+      list.push(tier);
+      groups.set(qty, list);
+    }
+    const filtered: ProductPrice[] = [];
+    for (const [, prices] of groups) {
+      const validDated: ProductPrice[] = [];
+      const nullDated: ProductPrice[] = [];
+      for (const tier of prices) {
+        const discount = tier.discount as (IDiscount & { validFrom?: string; validTo?: string }) | undefined;
+        if (!discount) {
+          filtered.push(tier);
+          continue;
+        }
+        const validFrom = discount.validFrom ?? null;
+        const validTo = discount.validTo ?? null;
+        if (validFrom === null && validTo === null) {
+          nullDated.push(tier);
+          continue;
+        }
+        let isValid = true;
+        if (validFrom !== null && now < new Date(validFrom)) isValid = false;
+        if (isValid && validTo !== null && now > new Date(validTo)) isValid = false;
+        if (isValid) validDated.push(tier);
+      }
+      if (validDated.length > 0) filtered.push(validDated[0]);
+      else if (nullDated.length > 0) filtered.push(nullDated[0]);
+    }
+    filtered.sort((a, b) => (getTierQuantity(a) ?? 0) - (getTierQuantity(b) ?? 0));
+    if (filtered.length === 1 && getTierQuantity(filtered[0]) === 1) return [];
+    return filtered;
   }
   function hasItems(): ReturnType<ProductBulkPricesState['hasItems']> {
     return getBulkPrices().length > 0;

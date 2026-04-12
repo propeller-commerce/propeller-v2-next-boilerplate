@@ -71,11 +71,15 @@ To build a custom bulk-prices display:
 
 2. **Choose the price field** -- use `tier.net` for VAT-inclusive prices and `tier.gross` for VAT-exclusive prices. To support the global PriceToggle, read `localStorage.getItem('price_include_tax')` and listen for `priceToggleChanged` events.
 
-3. **Compute quantity ranges** -- iterate over the sorted tiers. For each tier, read `tier.discount?.quantityFrom` (or fall back to `tier.quantity`). The upper bound of a range is one less than the next tier's threshold. The final tier has no upper bound.
+3. **Filter and deduplicate tiers** -- group tiers by `quantityFrom` (or `tier.quantity` fallback). For each group, prefer a tier whose `discount.validFrom`/`validTo` window contains the current time; if none is active, fall back to a tier with both dates `null` (always valid). Skip the group entirely if neither applies.
 
-4. **Handle empty state** -- if the array is empty or absent, render nothing.
+4. **Compute quantity ranges** -- iterate over the sorted, filtered tiers. For each tier, read `tier.discount?.quantityFrom` (or fall back to `tier.quantity`). The upper bound of a range is one less than the next tier's threshold. The final tier has no upper bound.
 
-5. **Handle semi-closed portal** -- if your store uses `portalMode: 'semi-closed'`, check for an authenticated `user` before rendering pricing.
+5. **Hide single-row case** -- if filtering leaves exactly one tier and it starts at quantity `1`, render nothing (there is no useful bulk pricing to show).
+
+6. **Handle empty state** -- if the array is empty or absent, render nothing.
+
+7. **Handle semi-closed portal** -- if your store uses `portalMode: 'semi-closed'`, check for an authenticated `user` before rendering pricing.
 
   </TabItem>
 </Tabs>
@@ -196,9 +200,27 @@ Each tier's upper bound is one less than the next tier's `quantityFrom`. The las
 
 Prices are formatted as EUR with two decimal places (e.g., `EUR 12.50`).
 
+### Tier filtering and deduplication
+
+Before rendering, the component filters the raw `bulkPrices` array to avoid showing duplicate or expired tiers:
+
+1. **Group by quantity** — tiers are grouped by their `quantityFrom` value (or `tier.quantity` as fallback).
+2. **Date validity check** — within each group, the component inspects `discount.validFrom` and `discount.validTo`:
+   - Tiers with no `discount` field are kept as-is.
+   - Tiers where both `validFrom` and `validTo` are `null` are treated as **always valid** (null-date tiers).
+   - Tiers with date bounds are checked against the current time; only those currently in range are kept.
+3. **Selection per group**:
+   - If one or more date-bounded tiers are currently valid, the first valid tier is chosen.
+   - Otherwise, the first null-date tier is used as a fallback.
+4. **Sort** — the resulting tiers are sorted ascending by quantity.
+5. **Single-row suppression** — if only one tier remains and its quantity is `1`, the table is hidden (bulk pricing with a single row starting at quantity 1 provides no useful information).
+
+This mirrors the behaviour of the legacy PHP storefront so customers only see the currently applicable tier per quantity.
+
 ### Visibility rules
 
 - **No bulk prices**: The component renders nothing.
+- **Single tier starting at quantity 1**: The component is hidden (see above).
 - **Semi-closed portal + no user**: The component is hidden. Pass a `user` object to make it visible.
 
 ## SDK Services
@@ -215,6 +237,8 @@ The component reads from `ProductPrice` objects (the items inside `product.bulkP
 | `gross` | `number` | Unit price excluding VAT. Displayed when `includeTax` is `false` |
 | `quantity` | `number` | Fallback quantity threshold when `discount.quantityFrom` is absent |
 | `discount.quantityFrom` | `number` | Primary quantity threshold used to compute the range label |
+| `discount.validFrom` | `string` | ISO date when the tier becomes active. Used by the filtering step |
+| `discount.validTo` | `string` | ISO date when the tier expires. Used by the filtering step |
 
 ### Fetching bulk prices
 

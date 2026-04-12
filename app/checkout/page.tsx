@@ -631,7 +631,7 @@ function CheckoutPageInner() {
                     <CardTitle className="text-lg flex items-center gap-2">1. Invoice Address</CardTitle>
                     {state.currentStep > 1 && state.cart?.invoiceAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number}, {state.cart.invoiceAddress.city}
+                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number} {state.cart.invoiceAddress.numberExtension}, {state.cart.invoiceAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -688,7 +688,7 @@ function CheckoutPageInner() {
                     <CardTitle className="text-lg flex items-center gap-2">2. Shipping Address</CardTitle>
                     {state.currentStep > 2 && state.cart?.deliveryAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number}, {state.cart.deliveryAddress.city}
+                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number} {state.cart.deliveryAddress.numberExtension}, {state.cart.deliveryAddress.city}
                       </Badge>
                     )}
                   </div>

@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         port: '1337',
         pathname: '/uploads/**',
       },
+      {         
+        protocol: 'https',
+        hostname: 'nextjs-boilerplate.dev.wp-propel.com',
+        pathname: '/cms/uploads/**',
+      },
       {
         protocol: 'https',
         hostname: '*.stream.prepr.io',

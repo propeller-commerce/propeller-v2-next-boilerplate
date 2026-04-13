@@ -303,11 +303,17 @@ export default function Header() {
                     cart={cart as Cart}
                     user={state.isAuthenticated ? (state.user as Contact | Customer) : undefined}
                     companyId={selectedCompany?.companyId}
+                    graphqlClient={graphqlClient}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                     onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                    afterRequestAuthorization={(updatedCart) => {
+                      saveCart(updatedCart);
+                      router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
+                    }}
+                    onError={(err) => console.error('Authorization request failed:', err)}
                   />
                   // <Button
                   //   variant="ghost"

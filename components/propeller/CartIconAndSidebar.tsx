@@ -10,6 +10,8 @@ import {
   Contact,
   Customer,
   Enums,
+  CartService,
+  GraphQLClient,
 } from 'propeller-sdk-v2';
 
 export interface CartIconAndSidebarProps {
@@ -91,6 +93,18 @@ export interface CartIconAndSidebarProps {
   /** Action handler when the "Request a Quote" button is clicked */ onRequestQuoteClick?: (
     cart: Cart
   ) => void;
+
+  /** GraphQL client — used for internal CartService calls (e.g. purchase authorization) */
+  graphqlClient?: GraphQLClient;
+
+  /** Override the internal request purchase authorization call */
+  onRequestAuthorization?: (cart: Cart) => void;
+
+  /** Fires after a successful purchase authorization request with the updated cart */
+  afterRequestAuthorization?: (cart: Cart) => void;
+
+  /** Error handler for authorization request failures */
+  onError?: (error: Error) => void;
   /**  * Additional class name for the shopping cart icon.  */ iconClassName?: string;
   /**  * Additional class name for the shopping cart sidebar.  */ sidebarClassName?: string;
 }
@@ -121,6 +135,9 @@ interface CartIconAndSidebarState {
   getBundleItemName: (bundleItem: BundleItem) => string;
   getBundleItemPrice: (bundleItem: BundleItem) => string;
   showCheckoutButton: () => boolean;
+  showRequestAuthorizationButton: () => boolean;
+  requestLoading: boolean;
+  handleRequestAuthorizationClick: () => Promise<void>;
 }
 function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   const [isMounted, setIsMounted] = useState<CartIconAndSidebarState['isMounted']>(() => false);
@@ -278,6 +295,53 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
     const totalNet = props.cart?.total?.totalNet ?? 0;
     return totalNet <= limit;
+  }
+  function showRequestAuthorizationButton(): ReturnType<
+    CartIconAndSidebarState['showRequestAuthorizationButton']
+  > {
+    if (!props.user || !('contactId' in props.user)) return false;
+    if (!props.companyId) return false;
+    const pacData = (props.user as any).purchaseAuthorizationConfigs;
+    const items: any[] = pacData?.items ?? pacData?._items ?? [];
+    const purchaserPAC = items.find((pac: any) => {
+      const role = pac.purchaseRole ?? pac._purchaseRole;
+      const pacCompanyId =
+        pac.company?.companyId ??
+        pac.company?._companyId ??
+        pac._company?.companyId ??
+        pac._company?._companyId;
+      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    });
+    if (!purchaserPAC) return false;
+    const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
+    const totalGross = props.cart?.total?.totalGross ?? 0;
+    return totalGross > limit;
+  }
+  const [requestLoading, setRequestLoading] = useState<CartIconAndSidebarState['requestLoading']>(
+    () => false
+  );
+  async function handleRequestAuthorizationClick(): ReturnType<
+    CartIconAndSidebarState['handleRequestAuthorizationClick']
+  > {
+    setRequestLoading(true);
+    try {
+      let updatedCart: any = props.cart;
+      if (props.onRequestAuthorization) {
+        props.onRequestAuthorization(props.cart);
+      } else if (props.graphqlClient) {
+        const cartService = new CartService(props.graphqlClient);
+        updatedCart = await cartService.requestPurchaseAuthorization({ id: props.cart.cartId });
+      }
+      if (props.afterRequestAuthorization) {
+        props.afterRequestAuthorization(updatedCart);
+      }
+    } catch (err: any) {
+      if (props.onError) {
+        props.onError(err instanceof Error ? err : new Error(String(err)));
+      }
+    } finally {
+      setRequestLoading(false);
+    }
   }
   useEffect(() => {
     setIsMounted(true);
@@ -550,7 +614,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                     </span>
                     <span className="text-base font-bold text-gray-900">{getTotalPrice()}</span>
                   </div>
-                  {showCheckoutButton() ? (
+                  {showCheckoutButton() && !showRequestAuthorizationButton() ? (
                     <button
                       type="button"
                       className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
@@ -559,7 +623,20 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       {getLabel('checkoutButton', 'Checkout')}
                     </button>
                   ) : null}
-                  {!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
+                  {showRequestAuthorizationButton() ? (
+                    <button
+                      type="button"
+                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={(event) => handleRequestAuthorizationClick()}
+                      disabled={requestLoading}
+                    >
+                      {requestLoading ? <>{getLabel('requestingAuthorization', 'Requesting...')}</> : null}
+                      {!requestLoading ? (
+                        <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
+                      ) : null}
+                    </button>
+                  ) : null}
+                  {!showRequestAuthorizationButton() && !!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
                     <button
                       type="button"
                       className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"

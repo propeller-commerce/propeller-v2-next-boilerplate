@@ -169,7 +169,7 @@ interface ProductBundlesState {
   closeModal: () => void;
   fetchBundles: () => Promise<void>;
   handleAddToCart: (bundle: Bundle) => Promise<void>;
-  initCart: () => Promise<void>;
+  initCart: () => Promise<string>;
 }
 function ProductBundles(props: ProductBundlesProps) {
   const [bundles, setBundles] = useState<ProductBundlesState['bundles']>(() => []);
@@ -290,6 +290,7 @@ function ProductBundles(props: ProductBundlesProps) {
           if (props.onCartCreated) {
             props.onCartCreated(cart);
           }
+          return cart.cartId;
         }
       } catch (e) {
         console.error('Failed to check existing carts', e);
@@ -392,6 +393,7 @@ function ProductBundles(props: ProductBundlesProps) {
     if (props.onCartCreated) {
       props.onCartCreated(newCart);
     }
+    return newCart.cartId;
   }
   async function fetchBundles(): ReturnType<ProductBundlesState['fetchBundles']> {
     if (!props.graphqlClient || !props.productId) return;
@@ -435,8 +437,7 @@ function ProductBundles(props: ProductBundlesProps) {
         let cartId = props.cartId || activeCartId;
         if (!cartId) {
           if (props.createCart) {
-            await initCart();
-            cartId = activeCartId;
+            cartId = await initCart();
           }
           if (!cartId) {
             showToast(getLabel('noCartId', 'No cart ID provided'), 'error');

@@ -169,7 +169,7 @@ interface ProductBundlesState {
     closeModal: () => void;
     fetchBundles: () => Promise<void>;
     handleAddToCart: (bundle: Bundle) => Promise<void>;
-    initCart: () => Promise<void>;
+    initCart: () => Promise<string>;
 }
 
 export default function ProductBundles(props: ProductBundlesProps) {
@@ -303,6 +303,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
                         if (props.onCartCreated) {
                             props.onCartCreated(cart);
                         }
+                        return cart.cartId;
                     }
                 } catch (e) {
                     console.error("Failed to check existing carts", e);
@@ -402,6 +403,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
             if (props.onCartCreated) {
                 props.onCartCreated(newCart);
             }
+            return newCart.cartId;
         },
 
         async fetchBundles(): Promise<void> {
@@ -450,8 +452,7 @@ export default function ProductBundles(props: ProductBundlesProps) {
 
                     if (!cartId) {
                         if (props.createCart) {
-                            await state.initCart();
-                            cartId = state.activeCartId;
+                            cartId = await state.initCart();
                         }
 
                         if (!cartId) {

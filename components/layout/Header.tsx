@@ -310,7 +310,7 @@ export default function Header() {
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                     onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
                     afterRequestAuthorization={(updatedCart) => {
-                      saveCart(updatedCart);
+                      clearCart();
                       router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
                     }}
                     onError={(err) => console.error('Authorization request failed:', err)}

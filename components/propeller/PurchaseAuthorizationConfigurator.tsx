@@ -214,16 +214,16 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
       const companyService = new CompanyService(props.graphqlClient);
       const company = await companyService.getCompany({
         id: props.companyId,
-        $contactSearchArguments: {
+        contactSearchArguments: {
           page: page,
           offset: pageOffset,
         },
-        $contactPAConfigInput: {
+        contactPAConfigInput: {
           companyIds: [props.companyId],
           page: 1,
           offset: 100,
         },
-        $companyAttributesInput: {} as AttributeResultSearchInput,
+        companyAttributesInput: {} as AttributeResultSearchInput,
       });
       setCompany(company);
       // Extract contacts directly from the fetched result (not via state.getContacts())

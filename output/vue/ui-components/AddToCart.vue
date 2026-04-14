@@ -241,21 +241,6 @@
             >
               {{ getLabel('continueShopping', 'Continue shopping') }}
             </button>
-            <template v-if="checkoutAllowed()">
-              <button
-                type="button"
-                class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
-                @click="
-                  async (event) => {
-                    closeModal();
-                    if (onProceedToCheckout) onProceedToCheckout();
-                  }
-                "
-              >
-                {{ getLabel('proceedToCheckout', 'Proceed to checkout') }}
-              </button>
-            </template>
-
             <template
               v-if="checkoutAllowed() && !!onRequestQuoteClick && !!user && 'contactId' in user"
             >
@@ -270,6 +255,21 @@
                 "
               >
                 {{ getLabel('requestQuoteButton', 'Request a Quote') }}
+              </button>
+            </template>
+
+            <template v-if="checkoutAllowed()">
+              <button
+                type="button"
+                class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                @click="
+                  async (event) => {
+                    closeModal();
+                    if (onProceedToCheckout) onProceedToCheckout();
+                  }
+                "
+              >
+                {{ getLabel('proceedToCheckout', 'Proceed to checkout') }}
               </button>
             </template>
           </div>

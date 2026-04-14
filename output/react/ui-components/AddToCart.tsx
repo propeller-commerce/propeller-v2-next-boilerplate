@@ -727,18 +727,6 @@ function AddToCart(props: AddToCartProps) {
               >
                 {getLabel('continueShopping', 'Continue shopping')}
               </button>
-              {checkoutAllowed() ? (
-                <button
-                  type="button"
-                  className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
-                  onClick={(event) => {
-                    closeModal();
-                    if (props.onProceedToCheckout) props.onProceedToCheckout();
-                  }}
-                >
-                  {getLabel('proceedToCheckout', 'Proceed to checkout')}
-                </button>
-              ) : null}
               {checkoutAllowed() &&
               !!props.onRequestQuoteClick &&
               !!props.user &&
@@ -753,6 +741,18 @@ function AddToCart(props: AddToCartProps) {
                   }}
                 >
                   {getLabel('requestQuoteButton', 'Request a Quote')}
+                </button>
+              ) : null}
+              {checkoutAllowed() ? (
+                <button
+                  type="button"
+                  className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  onClick={(event) => {
+                    closeModal();
+                    if (props.onProceedToCheckout) props.onProceedToCheckout();
+                  }}
+                >
+                  {getLabel('proceedToCheckout', 'Proceed to checkout')}
                 </button>
               ) : null}
             </div>

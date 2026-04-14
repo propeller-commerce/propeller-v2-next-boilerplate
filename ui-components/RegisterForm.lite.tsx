@@ -17,7 +17,8 @@ import {
     CustomerRegisterInput,
     CreateCompanyInput,
     CustomerAddressCreateInput,
-    CompanyAddressCreateInput
+    CompanyAddressCreateInput,
+    CompanyCreateVariables
 } from 'propeller-sdk-v2';
 
 export interface RegisterFormProps {
@@ -339,7 +340,20 @@ export default function RegisterForm(props: RegisterFormProps) {
                             email: state.email,
                             phone: state.phone,
                         };
-                        company = await companyService.createCompany(companyInput);
+
+                        const variables: CompanyCreateVariables = {
+                            input: companyInput,
+                            contactPAConfigInput: {
+                                page: 1,
+                                offset: 10
+                            },
+                            companyAttributesInput: {},
+                            contactSearchArguments: {
+                                page: 1,
+                                offset: 10
+                            }
+                        };
+                        company = await companyService.createCompany(variables);
                     }
 
                     const contactInput: ContactRegisterInput = {

@@ -61,7 +61,7 @@ export default function CategoryPage() {
   const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(() =>
     (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC
   );
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filtersLoading, setFiltersLoading] = useState(false);
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
@@ -282,6 +282,7 @@ export default function CategoryPage() {
                   user={state.user}
                   onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                   onOffsetChange={handleOffsetChange}
+                  viewMode={viewMode}
                   onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
                   onFilterRemove={handleFilterRemove}
                   onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
@@ -299,7 +300,7 @@ export default function CategoryPage() {
                 onProductClick={productClick}
                 language={language}
                 showModal={true}
-                createCart={true}
+                createCart={true}                
                 cartId={cart?.cartId}
                 includeTax={includeTax}
                 onCartCreated={(cart) => {

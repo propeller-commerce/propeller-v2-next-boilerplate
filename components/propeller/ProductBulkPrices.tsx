@@ -66,7 +66,17 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
     return discount?.quantityFrom ?? tier.quantity ?? null;
   }
   function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
-    const all = (props.bulkPrices as ProductPrice[]) || [];
+    const rawAll = (props.bulkPrices as ProductPrice[]) || [];
+    const all = rawAll.filter((tier) => {
+      const t = tier as ProductPrice & {
+        type?: string;
+        discountType?: string;
+      };
+      const priceType = t.type ?? (t.discount as { type?: string } | undefined)?.type;
+      const discountType =
+        t.discountType ?? (t.discount as { discountType?: string } | undefined)?.discountType;
+      return !(priceType === 'PRICESHEET' && discountType === 'LIST_PRICE_MIN');
+    });
     if (all.length === 0) return [];
     const now = new Date();
     const groups = new Map<number, ProductPrice[]>();

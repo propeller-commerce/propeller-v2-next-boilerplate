@@ -350,9 +350,9 @@ function CheckoutPageInner() {
       saveCart(updatedCart);
 
       // When editing an existing address and user is logged in, also update user's account address
-      if (!advance && authState.isAuthenticated) {
-        await updateUserAddress(addressData, type);
-      }
+      // if (!advance && authState.isAuthenticated) {
+      //   await updateUserAddress(addressData, type);
+      // }
 
       // Anonymous user: if "same as invoice" is checked, also save as delivery address
       if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && sameAsInvoiceRef.current) {

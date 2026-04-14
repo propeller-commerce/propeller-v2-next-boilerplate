@@ -904,6 +904,53 @@ const FILE_PATCHES = [
         from: '!!(tat.carrier?.trackAndTraceURL || tat.code)',
         to: '!!tat.carrier?.trackAndTraceURL',
     },
+    {
+        // Mitosis compiles `state.selectedCode = x; state.payMethods.find(m => m.code === state.selectedCode)`
+        // to `setSelectedCode(x); payMethods().find(m => m.code === selectedCode)`.
+        // `setSelectedCode` is async — `selectedCode` is still '' (the previous render's value)
+        // when find() runs, so the match is always undefined and onPaymethodSelect is never called.
+        //
+        // Fix: capture the value in a local const before the setter so the find() uses
+        // the live value instead of the stale closure.
+        file: resolve('../output/react/ui-components/CartPaymethods.tsx'),
+        label: 'React → CartPaymethods: fix stale closure in preselect onUpdate — use local const instead of selectedCode',
+        from: [
+            '      setSelectedCode(props.cart.paymentData.method as string);',
+            '      if (props.onPaymethodSelect) {',
+            '        const match = payMethods().find((m: CartPaymethod) => m.code === selectedCode);',
+            '        if (match) props.onPaymethodSelect(match);',
+            '      }',
+        ].join('\n'),
+        to: [
+            '      const code = props.cart.paymentData.method as string;',
+            '      setSelectedCode(code);',
+            '      if (props.onPaymethodSelect) {',
+            '        const match = payMethods().find((m: CartPaymethod) => m.code === code);',
+            '        if (match) props.onPaymethodSelect(match);',
+            '      }',
+        ].join('\n'),
+    },
+    {
+        // Same stale-closure bug as CartPaymethods — see comment above.
+        // `setSelectedName(x)` is async; `selectedName` is still '' when find() runs.
+        file: resolve('../output/react/ui-components/CartCarriers.tsx'),
+        label: 'React → CartCarriers: fix stale closure in preselect onUpdate — use local const instead of selectedName',
+        from: [
+            '      setSelectedName(props.cart.postageData.carrier as string);',
+            '      if (props.onCarrierSelect) {',
+            '        const match = carriers().find((c: CartCarrier) => c.name === selectedName);',
+            '        if (match) props.onCarrierSelect(match);',
+            '      }',
+        ].join('\n'),
+        to: [
+            '      const name = props.cart.postageData.carrier as string;',
+            '      setSelectedName(name);',
+            '      if (props.onCarrierSelect) {',
+            '        const match = carriers().find((c: CartCarrier) => c.name === name);',
+            '        if (match) props.onCarrierSelect(match);',
+            '      }',
+        ].join('\n'),
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────

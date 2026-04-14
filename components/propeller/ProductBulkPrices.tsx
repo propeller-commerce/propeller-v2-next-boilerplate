@@ -72,9 +72,24 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
         type?: string;
         discountType?: string;
       };
-      const priceType = t.type ?? (t.discount as { type?: string } | undefined)?.type;
+      const priceType =
+        t.type ??
+        (
+          t.discount as
+            | {
+                type?: string;
+              }
+            | undefined
+        )?.type;
       const discountType =
-        t.discountType ?? (t.discount as { discountType?: string } | undefined)?.discountType;
+        t.discountType ??
+        (
+          t.discount as
+            | {
+                discountType?: string;
+              }
+            | undefined
+        )?.discountType;
       return !(priceType === 'PRICESHEET' && discountType === 'LIST_PRICE_MIN');
     });
     if (all.length === 0) return [];

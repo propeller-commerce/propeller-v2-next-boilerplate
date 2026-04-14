@@ -778,6 +778,8 @@ function CheckoutPageInner() {
                         <p className="text-sm text-destructive">Please select a delivery date</p>
                       )}
                       <DeliveryDate
+                        cart={state.cart}
+                        initialDate={state.cart?.postageData?.requestDate as string | undefined}
                         onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
                       />
                     </div>

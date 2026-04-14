@@ -91,6 +91,10 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
     onUpdate(() => {
         if (!state.selectedCode && props.cart?.paymentData?.method) {
             state.selectedCode = props.cart.paymentData.method as string;
+            if (props.onPaymethodSelect) {
+                const match = state.payMethods.find((m: CartPaymethod) => m.code === state.selectedCode);
+                if (match) props.onPaymethodSelect(match);
+            }
         }
     }, [props.cart]);
 

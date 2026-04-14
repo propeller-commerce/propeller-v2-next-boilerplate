@@ -67,7 +67,12 @@ function CartCarriers(props: CartCarriersProps) {
   }
   useEffect(() => {
     if (!selectedName && props.cart?.postageData?.carrier) {
-      setSelectedName(props.cart.postageData.carrier as string);
+      const name = props.cart.postageData.carrier as string;
+      setSelectedName(name);
+      if (props.onCarrierSelect) {
+        const match = carriers().find((c: CartCarrier) => c.name === name);
+        if (match) props.onCarrierSelect(match);
+      }
     }
   }, [props.cart]);
   return (

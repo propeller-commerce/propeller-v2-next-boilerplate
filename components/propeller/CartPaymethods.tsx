@@ -81,7 +81,12 @@ function CartPaymethods(props: CartPaymethodsProps) {
   }
   useEffect(() => {
     if (!selectedCode && props.cart?.paymentData?.method) {
-      setSelectedCode(props.cart.paymentData.method as string);
+      const code = props.cart.paymentData.method as string;
+      setSelectedCode(code);
+      if (props.onPaymethodSelect) {
+        const match = payMethods().find((m: CartPaymethod) => m.code === code);
+        if (match) props.onPaymethodSelect(match);
+      }
     }
   }, [props.cart]);
   return (

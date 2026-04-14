@@ -77,6 +77,10 @@ export default function CartCarriers(props: CartCarriersProps) {
     onUpdate(() => {
         if (!state.selectedName && props.cart?.postageData?.carrier) {
             state.selectedName = props.cart.postageData.carrier as string;
+            if (props.onCarrierSelect) {
+                const match = state.carriers.find((c: CartCarrier) => c.name === state.selectedName);
+                if (match) props.onCarrierSelect(match);
+            }
         }
     }, [props.cart]);
 

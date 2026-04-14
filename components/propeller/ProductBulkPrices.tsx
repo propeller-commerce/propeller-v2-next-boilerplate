@@ -42,6 +42,7 @@ interface ProductBulkPricesState {
   isHidden: () => boolean;
   hasItems: () => boolean;
   getIncludeTax: () => boolean;
+  getTierQuantity: (tier: ProductPrice) => number | null;
   getBulkPrices: () => ProductPrice[];
   getPrice: (tier: ProductPrice) => string;
   getQuantityLabel: (tier: ProductPrice, index: number) => string;
@@ -54,8 +55,14 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
   function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
     return props.includeTax !== undefined ? !!props.includeTax : false;
   }
-  function getTierQuantity(tier: ProductPrice): number | null {
-    const discount = tier.discount as (IDiscount & { quantityFrom?: number }) | undefined;
+  function getTierQuantity(
+    tier: ProductPrice
+  ): ReturnType<ProductBulkPricesState['getTierQuantity']> {
+    const discount = tier.discount as
+      | (IDiscount & {
+          quantityFrom?: number;
+        })
+      | undefined;
     return discount?.quantityFrom ?? tier.quantity ?? null;
   }
   function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
@@ -75,7 +82,12 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
       const validDated: ProductPrice[] = [];
       const nullDated: ProductPrice[] = [];
       for (const tier of prices) {
-        const discount = tier.discount as (IDiscount & { validFrom?: string; validTo?: string }) | undefined;
+        const discount = tier.discount as
+          | (IDiscount & {
+              validFrom?: string;
+              validTo?: string;
+            })
+          | undefined;
         if (!discount) {
           filtered.push(tier);
           continue;

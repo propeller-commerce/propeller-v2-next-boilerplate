@@ -354,7 +354,7 @@
               </tbody>
             </table>
           </div>
-          <template v-if="totalPages > 1">
+          <template v-if="!hidePagination && totalPages > 1">
             <div
               class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
             >
@@ -487,6 +487,12 @@ export interface OrderListProps {
 
   /** Show company orders */
   showCompanyOrders?: boolean;
+
+  /** Hide pagination controls. Defaults to false. */
+  hidePagination?: boolean;
+
+  /** Filter orders by channel IDs */
+  channelIds?: number[];
 
   /** Format price */
   formatPrice?: (price: number) => string;
@@ -627,7 +633,11 @@ async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOr
       ...(searchForm.value.type && {
         type: searchForm.value.type,
       }),
-    };
+      ...(props.channelIds &&
+        props.channelIds.length > 0 && {
+          channelIds: props.channelIds,
+        }),
+    } as OrderSearchArguments;
     const response: OrderResponse = await orderService.getOrders(searchArgs);
     orders.value = response.items || [];
     totalItems.value = response.itemsFound || 0;

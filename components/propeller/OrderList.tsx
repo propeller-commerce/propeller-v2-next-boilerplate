@@ -60,7 +60,7 @@ export interface OrderListProps {
   /** Show company orders */
   showCompanyOrders?: boolean;
 
-  /** Hide pagination controls */
+  /** Hide pagination controls. Defaults to false. */
   hidePagination?: boolean;
 
   /** Filter orders by channel IDs */
@@ -189,9 +189,10 @@ function OrderList(props: OrderListProps) {
         ...(searchForm.type && {
           type: searchForm.type,
         }),
-        ...(props.channelIds && props.channelIds.length > 0 && {
-          channelIds: props.channelIds,
-        }),
+        ...(props.channelIds &&
+          props.channelIds.length > 0 && {
+            channelIds: props.channelIds,
+          }),
       } as OrderSearchArguments;
       const response: OrderResponse = await orderService.getOrders(searchArgs);
       setOrders(response.items || []);

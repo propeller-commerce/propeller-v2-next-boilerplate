@@ -60,6 +60,12 @@ export interface OrderListProps {
   /** Show company orders */
   showCompanyOrders?: boolean;
 
+  /** Hide pagination controls. Defaults to false. */
+  hidePagination?: boolean;
+
+  /** Filter orders by channel IDs */
+  channelIds?: number[];
+
   /** Format price */
   formatPrice?: (price: number) => string;
 
@@ -183,7 +189,11 @@ function OrderList(props: OrderListProps) {
         ...(searchForm.type && {
           type: searchForm.type,
         }),
-      };
+        ...(props.channelIds &&
+          props.channelIds.length > 0 && {
+            channelIds: props.channelIds,
+          }),
+      } as OrderSearchArguments;
       const response: OrderResponse = await orderService.getOrders(searchArgs);
       setOrders(response.items || []);
       setTotalItems(response.itemsFound || 0);
@@ -572,7 +582,7 @@ function OrderList(props: OrderListProps) {
                   </tbody>
                 </table>
               </div>
-              {totalPages > 1 ? (
+              {!props.hidePagination && totalPages > 1 ? (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button

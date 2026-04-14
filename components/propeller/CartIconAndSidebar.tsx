@@ -93,18 +93,14 @@ export interface CartIconAndSidebarProps {
   /** Action handler when the "Request a Quote" button is clicked */ onRequestQuoteClick?: (
     cart: Cart
   ) => void;
-
-  /** GraphQL client — used for internal CartService calls (e.g. purchase authorization) */
-  graphqlClient?: GraphQLClient;
-
-  /** Override the internal request purchase authorization call */
-  onRequestAuthorization?: (cart: Cart) => void;
-
-  /** Fires after a successful purchase authorization request with the updated cart */
-  afterRequestAuthorization?: (cart: Cart) => void;
-
-  /** Error handler for authorization request failures */
-  onError?: (error: Error) => void;
+  /** GraphQL client — used for internal CartService calls (e.g. purchase authorization) */ graphqlClient?: GraphQLClient;
+  /** Override the internal request purchase authorization call */ onRequestAuthorization?: (
+    cart: Cart
+  ) => void;
+  /** Fires after a successful purchase authorization request with the updated cart */ afterRequestAuthorization?: (
+    cart: Cart
+  ) => void;
+  /** Error handler for authorization request failures */ onError?: (error: Error) => void;
   /**  * Additional class name for the shopping cart icon.  */ iconClassName?: string;
   /**  * Additional class name for the shopping cart sidebar.  */ sidebarClassName?: string;
 }
@@ -630,13 +626,18 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       onClick={(event) => handleRequestAuthorizationClick()}
                       disabled={requestLoading}
                     >
-                      {requestLoading ? <>{getLabel('requestingAuthorization', 'Requesting...')}</> : null}
+                      {requestLoading ? (
+                        <>{getLabel('requestingAuthorization', 'Requesting...')}</>
+                      ) : null}
                       {!requestLoading ? (
                         <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
                       ) : null}
                     </button>
                   ) : null}
-                  {!showRequestAuthorizationButton() && !!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
+                  {!showRequestAuthorizationButton() &&
+                  !!props.onRequestQuoteClick &&
+                  !!props.user &&
+                  'contactId' in props.user ? (
                     <button
                       type="button"
                       className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"

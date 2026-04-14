@@ -58,7 +58,7 @@ function CheckoutPageInner() {
   const searchParams = useSearchParams();
   const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
-  const { cart: contextCart, getCart } = useCart();
+  const { cart: contextCart, getCart, clearCart } = useCart();
   const { state: authState, refreshUser } = useAuth();
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
@@ -875,6 +875,14 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         title="Order Summary"
                         showCheckoutButton={false}
+                        graphqlClient={graphqlClient}
+                        user={authState.user ?? undefined}
+                        companyId={getActiveCompany()?.companyId ?? undefined}
+                        afterRequestAuthorization={(updatedCart) => {
+                          clearCart();
+                          router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
+                        }}
+                        onError={(err) => console.error('Authorization request failed:', err)}
                       />
                     )}
                   </CardContent>

@@ -12,6 +12,7 @@ import AddressCard from '@/components/propeller/AddressCard';
 
 import { cartService, orderService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
@@ -58,8 +59,9 @@ function CheckoutPageInner() {
   const searchParams = useSearchParams();
   const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
-  const { cart: contextCart, getCart, clearCart } = useCart();
+  const { cart: contextCart, getCart, clearCart, saveCart } = useCart();
   const { state: authState, refreshUser } = useAuth();
+  const { selectedCompany } = useCompany();
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
     cart: null,
@@ -107,8 +109,8 @@ function CheckoutPageInner() {
     const initializeCheckout = async () => {
       let cartToUse = contextCart;
       if (!cartToUse) {
-        const cartData = localStorage.getItem('cart');
-        if (cartData) cartToUse = deserializeCart(cartData);
+        const cartData = contextCart;
+        if (cartData) cartToUse = cartData;
       }
 
       if (!cartToUse || !cartToUse.items || cartToUse.items.length === 0) {
@@ -189,7 +191,7 @@ function CheckoutPageInner() {
               }
             }
 
-            localStorage.setItem('cart', serializeCart(updatedCart));
+            saveCart(updatedCart);
             cartToUse = updatedCart;
           } catch (error) {
             console.error('Error pre-populating cart addresses:', error);
@@ -236,13 +238,13 @@ function CheckoutPageInner() {
   const getActiveCompany = (): Company | null => {
     const user = authState.user;
     if (!user || !isContact(user)) return null;
-    const stored = localStorage.getItem('selected_company_id');
+    const stored = selectedCompany?.companyId;
     if (stored) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const companiesRaw = (user as any).companies;
       const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
       if (Array.isArray(items)) {
-        const found = items.find((c: Company) => c.companyId === parseInt(stored, 10));
+        const found = items.find((c: Company) => c.companyId === stored);
         if (found) return found;
       }
     }
@@ -345,7 +347,7 @@ function CheckoutPageInner() {
       };
 
       const updatedCart = await cartService.updateCartAddress(variables);
-      localStorage.setItem('cart', serializeCart(updatedCart));
+      saveCart(updatedCart);
 
       // When editing an existing address and user is logged in, also update user's account address
       if (!advance && authState.isAuthenticated) {
@@ -365,7 +367,7 @@ function CheckoutPageInner() {
           imageSearchFilters: imageSearchFiltersGrid,
           language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
         });
-        localStorage.setItem('cart', serializeCart(cartWithDelivery));
+        saveCart(cartWithDelivery);
         setState(prev => ({
           ...prev,
           cart: cartWithDelivery,
@@ -422,7 +424,7 @@ function CheckoutPageInner() {
         language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
       });
 
-      localStorage.setItem('cart', serializeCart(updatedCart));
+      saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
     } catch (error) {
       console.error(error);
@@ -470,10 +472,10 @@ function CheckoutPageInner() {
             });
           }
 
-          localStorage.removeItem('cart');
+          clearCart();
           const managerCart = localStorage.getItem('manager_cart');
           if (managerCart) {
-            localStorage.setItem('cart', managerCart);
+            saveCart(deserializeCart(managerCart) as Cart);
             localStorage.removeItem('manager_cart');
           }
           if (getCart) await getCart();

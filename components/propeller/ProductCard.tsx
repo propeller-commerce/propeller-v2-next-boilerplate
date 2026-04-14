@@ -202,7 +202,10 @@ export interface ProductCardProps {
    * Active company ID from the company switcher.
    * When provided, overrides the user's default company for cart creation and lookup.  */ companyId?: number;
   /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */ onProceedToCheckout?: () => void;
-  /** Label overrides for UI strings  *  * available labels:  * - outOfStock  * - noCartId  * - errorAdding  * - addedToCart  * - modalTitle  * - quantity  * - continueShopping  * - proceedToCheckout  * - add  * - adding */ addToCartLabels?: Record<
+  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */ onRequestQuoteClick?: (
+    cart: Cart
+  ) => void;
+  /** Label overrides for UI strings  *  * available labels:  * - outOfStock  * - noCartId  * - errorAdding  * - addedToCart  * - modalTitle  * - quantity  * - continueShopping  * - proceedToCheckout  * - requestQuoteButton  * - add  * - adding */ addToCartLabels?: Record<
     string,
     string
   >;
@@ -447,6 +450,7 @@ function ProductCard(props: ProductCardProps) {
                 enableStockValidation={props.enableStockValidation}
                 language={props.language}
                 onProceedToCheckout={props.onProceedToCheckout}
+                onRequestQuoteClick={props.onRequestQuoteClick}
                 labels={props.addToCartLabels}
                 companyId={props.companyId}
               />
@@ -520,6 +524,7 @@ function ProductCard(props: ProductCardProps) {
               enableStockValidation={props.enableStockValidation}
               language={props.language}
               onProceedToCheckout={props.onProceedToCheckout}
+              onRequestQuoteClick={props.onRequestQuoteClick}
               labels={props.addToCartLabels}
               companyId={props.companyId}
             />

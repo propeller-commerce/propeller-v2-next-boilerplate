@@ -246,6 +246,7 @@ export default function SearchPage() {
                   saveCart(updatedCart);
                 }}
                 onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+                onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
                 onProductsResponse={setProductsResponse}
                 onProductClick={(product: Product) => {
                   router.push(config.urls.getProductUrl(product, language));

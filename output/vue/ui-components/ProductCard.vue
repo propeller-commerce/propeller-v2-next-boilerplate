@@ -158,6 +158,7 @@
             :enableStockValidation="enableStockValidation"
             :language="language"
             :onProceedToCheckout="onProceedToCheckout"
+            :onRequestQuoteClick="onRequestQuoteClick"
             :labels="addToCartLabels"
             :companyId="companyId"
           ></AddToCart>
@@ -238,6 +239,7 @@
           :enableStockValidation="enableStockValidation"
           :language="language"
           :onProceedToCheckout="onProceedToCheckout"
+          :onRequestQuoteClick="onRequestQuoteClick"
           :labels="addToCartLabels"
           :companyId="companyId"
         ></AddToCart>
@@ -454,6 +456,9 @@ export interface ProductCardProps {
   /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
   onProceedToCheckout?: () => void;
 
+  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */
+  onRequestQuoteClick?: (cart: Cart) => void;
+
   /** Label overrides for UI strings
    *
    * available labels:
@@ -465,6 +470,7 @@ export interface ProductCardProps {
    * - quantity
    * - continueShopping
    * - proceedToCheckout
+   * - requestQuoteButton
    * - add
    * - adding
    */

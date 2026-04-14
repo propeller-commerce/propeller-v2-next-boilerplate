@@ -164,6 +164,9 @@ export interface ProductSliderProps {
     /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
     onProceedToCheckout?: () => void;
 
+    /** Called when "Request a Quote" is clicked in the AddToCart modal. */
+    onRequestQuoteClick?: (cart: Cart) => void;
+
     /**
      * Label overrides forwarded to the embedded AddToCart component.
      * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,
@@ -560,6 +563,7 @@ export default function ProductSlider(props: ProductSliderProps) {
                                             enableStockValidation={props.stockValidation}
                                             language={props.language}
                                             onProceedToCheckout={props.onProceedToCheckout}
+                                            onRequestQuoteClick={props.onRequestQuoteClick}
                                             addToCartLabels={props.addToCartLabels}
                                             enableAddFavorite={props.enableAddFavorite}
                                             showStock={props.showStock}

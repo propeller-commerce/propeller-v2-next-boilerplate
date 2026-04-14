@@ -63,6 +63,7 @@ export interface AddToCartProps {
    * - quantity
    * - continueShopping
    * - proceedToCheckout
+   * - requestQuoteButton
    * - add
    * - adding
    */
@@ -126,6 +127,9 @@ export interface AddToCartProps {
 
   /** Callback fired when the "Proceed to checkout" modal button is clicked */
   onProceedToCheckout?: () => void;
+
+  /** Callback fired when the "Request a Quote" modal button is clicked */
+  onRequestQuoteClick?: (cart: Cart) => void;
 
   /** Configuration object passed to the component */
   configuration?: any;
@@ -733,6 +737,22 @@ function AddToCart(props: AddToCartProps) {
                   }}
                 >
                   {getLabel('proceedToCheckout', 'Proceed to checkout')}
+                </button>
+              ) : null}
+              {checkoutAllowed() &&
+              !!props.onRequestQuoteClick &&
+              !!props.user &&
+              'contactId' in props.user ? (
+                <button
+                  type="button"
+                  className="flex-1 inline-flex justify-center rounded-md border border-secondary bg-white px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  onClick={(event) => {
+                    closeModal();
+                    if (props.onRequestQuoteClick && activeFullCart)
+                      props.onRequestQuoteClick(activeFullCart);
+                  }}
+                >
+                  {getLabel('requestQuoteButton', 'Request a Quote')}
                 </button>
               ) : null}
             </div>

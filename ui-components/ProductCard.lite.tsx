@@ -209,6 +209,9 @@ export interface ProductCardProps {
     /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
     onProceedToCheckout?: () => void;
 
+    /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */
+    onRequestQuoteClick?: (cart: Cart) => void;
+
     /** Label overrides for UI strings
      *
      * available labels:
@@ -220,6 +223,7 @@ export interface ProductCardProps {
      * - quantity
      * - continueShopping
      * - proceedToCheckout
+     * - requestQuoteButton
      * - add
      * - adding
     */
@@ -524,6 +528,7 @@ export default function ProductCard(props: ProductCardProps) {
                             enableStockValidation={props.enableStockValidation}
                             language={props.language}
                             onProceedToCheckout={props.onProceedToCheckout}
+                            onRequestQuoteClick={props.onRequestQuoteClick}
                             labels={props.addToCartLabels}
                             companyId={props.companyId}
                             className="flex w-full items-center gap-2"
@@ -597,6 +602,7 @@ export default function ProductCard(props: ProductCardProps) {
                         enableStockValidation={props.enableStockValidation}
                         language={props.language}
                         onProceedToCheckout={props.onProceedToCheckout}
+                        onRequestQuoteClick={props.onRequestQuoteClick}
                         labels={props.addToCartLabels}
                         companyId={props.companyId}
                         className="flex w-full items-center gap-2"

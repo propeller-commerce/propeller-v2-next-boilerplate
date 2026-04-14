@@ -332,6 +332,7 @@ export default function CategoryPage() {
                   console.log('Added item:', item);
                 }}
                 onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+                onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
                 onProductsResponse={setProductsResponse}
                 onCategoryChange={setCategory}
                 onClusterClick={(cluster: Cluster) => {

@@ -105,6 +105,7 @@
                       :enableStockValidation="stockValidation"
                       :language="language || 'NL'"
                       :onProceedToCheckout="onProceedToCheckout"
+                      :onRequestQuoteClick="onRequestQuoteClick"
                       :addToCartLabels="addToCartLabels"
                       :enableAddFavorite="enableAddFavorite"
                       :showStock="showStock"
@@ -436,6 +437,9 @@ import  ClusterCard from './ClusterCard.vue';
 
  /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */
  onProceedToCheckout?: () => void;
+
+ /** Called when "Request a Quote" is clicked in the AddToCart modal. */
+ onRequestQuoteClick?: (cart: Cart) => void;
 
  /**
   * Label overrides forwarded directly to the embedded AddToCart component.

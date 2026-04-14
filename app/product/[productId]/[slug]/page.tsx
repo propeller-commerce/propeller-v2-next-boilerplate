@@ -123,7 +123,8 @@ export default function ProductPage() {
                       afterAddToCart={(cart) => {
                         saveCart(cart);
                       }}
-                      onProceedToCheckout={() => router.push(localizeHref('/checkout', language))} />
+                      onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+                      onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))} />
                     <AddToFavorite
                       graphqlClient={graphqlClient}
                       user={state.user}
@@ -172,6 +173,7 @@ export default function ProductPage() {
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
@@ -193,6 +195,7 @@ export default function ProductPage() {
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}

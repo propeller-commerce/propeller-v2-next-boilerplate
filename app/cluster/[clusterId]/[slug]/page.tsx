@@ -250,7 +250,10 @@ export default function ClusterPage() {
             </div>
           </div>
           {/* Product Tabs - Description, Specifications, etc. */}
-          <ProductTabs product={selectedProduct as Product} language={language} className='pb-8' />
+          {displayProduct && (
+            <ProductTabs product={displayProduct as Product} productId={(displayProduct as Product).productId} graphqlClient={graphqlClient} language={language} className='pb-8' />
+          )}
+
           <ProductSlider
             graphqlClient={graphqlClient}
             crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}

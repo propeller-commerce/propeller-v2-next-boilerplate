@@ -102,6 +102,8 @@ export interface CartIconAndSidebarProps {
 
   /**  * Additional class name for the shopping cart sidebar.  */
   sidebarClassName?: string;
+  /** Callback fired when "Request a Quote" is clicked in the sidebar. Only shown for contacts when prop is provided. */
+  onRequestQuoteClick?: (cart: Cart) => void;
 }
 interface CartIconAndSidebarState {
   isMounted: boolean;
@@ -569,6 +571,15 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       onClick={(event) => handleCartPageClick()}
                     >
                       {getLabel('cartPageButton', 'View Cart Details')}
+                    </button>
+                  ) : null}
+                  {props.onRequestQuoteClick && props.user && 'contactId' in props.user ? (
+                    <button
+                      type="button"
+                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
+                      onClick={(event) => { closeSidebar(); props.onRequestQuoteClick!(props.cart); }}
+                    >
+                      {getLabel('requestQuoteButton', 'Request a Quote')}
                     </button>
                   ) : null}
                 </div>

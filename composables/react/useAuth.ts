@@ -173,7 +173,12 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           email: input.email,
           ...(input.phone && { phone: input.phone }),
         };
-        const company = await companyService.createCompany(companyInput);
+        const company = await companyService.createCompany({
+          input: companyInput,
+          contactPAConfigInput: { page: 1, offset: 10 },
+          companyAttributesInput: {},
+          contactSearchArguments: { page: 1, offset: 10 },
+        });
         companyId = company.companyId;
       }
 

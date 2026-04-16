@@ -63,27 +63,27 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
 
   // ── Fetch company ─────────────────────────────────────────────────────────
   // Mirrors PurchaseAuthorizationConfigurator.lite.tsx loadCompany():
-  // - $contactSearchArguments: { page: 1, offset: 50 }
-  // - $contactPAConfigInput: { companyIds: [companyId], page: 1, offset: 100 }
-  // - $companyAttributesInput: {}
+  // - contactSearchArguments: { page: 1, offset: 50 }
+  // - contactPAConfigInput: { companyIds: [companyId], page: 1, offset: 100 }
+  // - companyAttributesInput: {}
 
   async function fetchCompany(companyId: number, overrides?: Partial<Omit<CompanyVariables, 'id'>>): Promise<void> {
     loading.value = true;
     error.value = null;
     try {
       const service = new CompanyService(graphqlClient);
-      const $contactSearchArguments: ContactSearchArguments = { page: 1, offset: 50 };
-      const $contactPAConfigInput: ContactPurchaseAuthorizationConfigSearchInput = {
+      const contactSearchArguments: ContactSearchArguments = { page: 1, offset: 50 };
+      const contactPAConfigInput: ContactPurchaseAuthorizationConfigSearchInput = {
         companyIds: [companyId],
         page: 1,
         offset: 100,
       };
-      const $companyAttributesInput: AttributeResultSearchInput = {};
+      const companyAttributesInput: AttributeResultSearchInput = {};
       const variables: CompanyVariables = {
         id: companyId,
-        $contactSearchArguments: overrides?.$contactSearchArguments ?? $contactSearchArguments,
-        $contactPAConfigInput: overrides?.$contactPAConfigInput ?? $contactPAConfigInput,
-        $companyAttributesInput: overrides?.$companyAttributesInput ?? $companyAttributesInput,
+        contactSearchArguments: overrides?.contactSearchArguments ?? contactSearchArguments,
+        contactPAConfigInput: overrides?.contactPAConfigInput ?? contactPAConfigInput,
+        companyAttributesInput: overrides?.companyAttributesInput ?? companyAttributesInput,
       };
       const result = await service.getCompany(variables);
       company.value = result;

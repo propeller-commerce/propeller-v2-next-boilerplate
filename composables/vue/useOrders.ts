@@ -59,6 +59,7 @@ export interface UseOrdersOptions {
     imageSearchFiltersGrid?: MediaImageProductSearchInput;
     imageVariantFiltersSmall?: TransformationsInput;
   };
+  channelIds?: number[];
   onCartCreated?: (cart: Cart) => void;
   afterReorder?: (cart: Cart) => void;
 }
@@ -150,6 +151,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
         ...(searchForm.value.price && { price: searchForm.value.price }),
         ...(searchForm.value.sortInput && { sortInputs: [searchForm.value.sortInput as OrderSortInput] }),
         ...(searchForm.value.type && { type: [searchForm.value.type] }),
+        ...(options.channelIds?.length && { channelIds: options.channelIds }),
       };
 
       const response = await service.getOrders(searchArgs);

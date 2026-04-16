@@ -63,6 +63,12 @@ export interface OrderListProps {
   /** Get status color */
   getStatusColor?: (status: string) => string;
 
+  /** When true, hides the pagination controls. Defaults to false. */
+  hidePagination?: boolean;
+
+  /** Filter orders by these channel IDs. */
+  channelIds?: number[];
+
   /** Localization labels */
   labels?: {
     view?: string;
@@ -91,6 +97,7 @@ function OrderList(props: OrderListProps) {
     orderStatuses: props.orderStatus,
     termFields: props.termFields as any,
     itemsPerPage: props.initialItemsPerPage || 10,
+    channelIds: props.channelIds,
   });
 
   function handlePageChange(newPage: number) {
@@ -468,7 +475,7 @@ function OrderList(props: OrderListProps) {
                   </tbody>
                 </table>
               </div>
-              {totalPages > 1 ? (
+              {!props.hidePagination && totalPages > 1 ? (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button

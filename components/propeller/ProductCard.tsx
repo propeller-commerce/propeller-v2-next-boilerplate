@@ -206,6 +206,12 @@ export interface ProductCardProps {
     string,
     string
   >;
+  /** When false, hides the price. Defaults to true. */
+  showPrice?: boolean;
+  /** When false, hides the AddToCart control. Defaults to true. */
+  allowAddToCart?: boolean;
+  /** Callback fired when "Request a Quote" is clicked in the AddToCart modal. */
+  onRequestQuoteClick?: (cart: Cart) => void;
 }
 interface ProductCardState {
   isFavorite: boolean;
@@ -422,35 +428,38 @@ function ProductCard(props: ProductCardProps) {
                 labels={props.stockLabels}
               />
             ) : null}
-            {!!getProductPrice() ? (
+            {props.showPrice !== false && !!getProductPrice() ? (
               <span className="font-bold text-gray-900 text-sm whitespace-nowrap">
                 {getProductPrice()}
               </span>
             ) : null}
-            <div className="flex-shrink-0 ml-auto">
-              <AddToCart
-                className="flex w-full items-center gap-2"
-                graphqlClient={props.graphqlClient}
-                user={props.user}
-                product={props.product}
-                cartId={props.cartId}
-                configuration={props.configuration}
-                childItems={props.childItems}
-                notes={props.notes}
-                price={props.price}
-                createCart={props.createCart}
-                onCartCreated={props.onCartCreated}
-                onAddToCart={props.onAddToCart}
-                afterAddToCart={props.afterAddToCart}
-                showModal={props.showModal}
-                allowIncrDecr={props.allowIncrDecr}
-                enableStockValidation={props.enableStockValidation}
-                language={props.language}
-                onProceedToCheckout={props.onProceedToCheckout}
-                labels={props.addToCartLabels}
-                companyId={props.companyId}
-              />
-            </div>
+            {props.allowAddToCart !== false ? (
+              <div className="flex-shrink-0 ml-auto">
+                <AddToCart
+                  className="flex w-full items-center gap-2"
+                  graphqlClient={props.graphqlClient}
+                  user={props.user}
+                  product={props.product}
+                  cartId={props.cartId}
+                  configuration={props.configuration}
+                  childItems={props.childItems}
+                  notes={props.notes}
+                  price={props.price}
+                  createCart={props.createCart}
+                  onCartCreated={props.onCartCreated}
+                  onAddToCart={props.onAddToCart}
+                  afterAddToCart={props.afterAddToCart}
+                  showModal={props.showModal}
+                  allowIncrDecr={props.allowIncrDecr}
+                  enableStockValidation={props.enableStockValidation}
+                  language={props.language}
+                  onProceedToCheckout={props.onProceedToCheckout}
+                  labels={props.addToCartLabels}
+                  companyId={props.companyId}
+                  onRequestQuoteClick={props.onRequestQuoteClick}
+                />
+              </div>
+            ) : null}
           </div>
         </>
       ) : null}
@@ -492,7 +501,7 @@ function ProductCard(props: ProductCardProps) {
             {props.showShortDescription && !!getProductShortDescription() ? (
               <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
             ) : null}
-            {!!getProductPrice() ? (
+            {props.showPrice !== false && !!getProductPrice() ? (
               <div className="mt-auto pt-1">
                 <span className="font-bold text-gray-900 text-base sm:text-lg">
                   {getProductPrice()}
@@ -500,30 +509,33 @@ function ProductCard(props: ProductCardProps) {
               </div>
             ) : null}
           </div>{' '}
-          <div className="px-3 pb-3 sm:px-4 sm:pb-4">
-            <AddToCart
-              className="flex w-full items-center gap-2"
-              graphqlClient={props.graphqlClient}
-              user={props.user}
-              product={props.product}
-              cartId={props.cartId}
-              configuration={props.configuration}
-              childItems={props.childItems}
-              notes={props.notes}
-              price={props.price}
-              createCart={props.createCart}
-              onCartCreated={props.onCartCreated}
-              onAddToCart={props.onAddToCart}
-              afterAddToCart={props.afterAddToCart}
-              showModal={props.showModal}
-              allowIncrDecr={props.allowIncrDecr}
-              enableStockValidation={props.enableStockValidation}
-              language={props.language}
-              onProceedToCheckout={props.onProceedToCheckout}
-              labels={props.addToCartLabels}
-              companyId={props.companyId}
-            />
-          </div>
+          {props.allowAddToCart !== false ? (
+            <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+              <AddToCart
+                className="flex w-full items-center gap-2"
+                graphqlClient={props.graphqlClient}
+                user={props.user}
+                product={props.product}
+                cartId={props.cartId}
+                configuration={props.configuration}
+                childItems={props.childItems}
+                notes={props.notes}
+                price={props.price}
+                createCart={props.createCart}
+                onCartCreated={props.onCartCreated}
+                onAddToCart={props.onAddToCart}
+                afterAddToCart={props.afterAddToCart}
+                showModal={props.showModal}
+                allowIncrDecr={props.allowIncrDecr}
+                enableStockValidation={props.enableStockValidation}
+                language={props.language}
+                onProceedToCheckout={props.onProceedToCheckout}
+                labels={props.addToCartLabels}
+                companyId={props.companyId}
+                onRequestQuoteClick={props.onRequestQuoteClick}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>

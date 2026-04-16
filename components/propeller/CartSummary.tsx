@@ -58,6 +58,8 @@ export interface CartSummaryProps {
   /** Called when requestPurchaseAuthorization fails; receives the error */ onError?: (
     err: Error
   ) => void;
+  /** Callback fired when "Request a Quote" is clicked. Only shown for contacts when prop is provided. */
+  onRequestQuoteClick?: (cart: Cart) => void;
 }
 
 function CartSummary(props: CartSummaryProps) {
@@ -161,6 +163,10 @@ function CartSummary(props: CartSummaryProps) {
     return totalGross > limit;
   }
 
+  function showRequestQuoteButton(): boolean {
+    return !!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user;
+  }
+
   async function handleRequestAuthorizationClick(): Promise<void> {
     setRequestLoading(true);
     try {
@@ -250,6 +256,15 @@ function CartSummary(props: CartSummaryProps) {
           {!requestLoading ? (
             <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
           ) : null}
+        </button>
+      ) : null}
+      {showRequestQuoteButton() ? (
+        <button
+          type="button"
+          className="block w-full bg-white text-secondary text-center py-3 rounded-lg border border-secondary hover:bg-secondary/5 transition font-semibold mt-2"
+          onClick={() => props.onRequestQuoteClick!(props.cart)}
+        >
+          {getLabel('requestQuoteButton', 'Request a Quote')}
         </button>
       ) : null}
     </div>

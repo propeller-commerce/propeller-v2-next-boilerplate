@@ -156,9 +156,9 @@ export function usePurchaseAuthorizationConfigurator(
   async function loadCompany(page: number): Promise<void> {
     if (!graphqlClient || !companyId.value) return;
     await fetchCompany(companyId.value, {
-      $contactSearchArguments: { page, offset: pageOffset },
-      $contactPAConfigInput: { companyIds: [companyId.value], page: 1, offset: 100 },
-      $companyAttributesInput: {} as AttributeResultSearchInput,
+      contactSearchArguments: { page, offset: pageOffset },
+      contactPAConfigInput: { companyIds: [companyId.value], page: 1, offset: 100 },
+      companyAttributesInput: {} as AttributeResultSearchInput,
     });
     buildMaps((company.value as Company)?.contacts?.items ?? []);
   }

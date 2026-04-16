@@ -64,6 +64,15 @@ export interface GridFiltersProps {
 
   /** Extra CSS class on the root element. */
   className?: string;
+
+  /**
+   * Currently active price filter min from URL state.
+   * When both activePriceMin and activePriceMax become undefined the price inputs reset to the priceMin/priceMax bounds.
+   */
+  activePriceMin?: number;
+
+  /** Currently active price filter max from URL state. */
+  activePriceMax?: number;
 }
 interface GridFiltersState {
   selectedFilters: Record<string, string[]>;
@@ -246,6 +255,12 @@ function GridFilters(props: GridFiltersProps) {
     if (!props.activeTextFilters) return;
     setSelectedFilters(props.activeTextFilters as Record<string, string[]>);
   }, [props.activeTextFilters]);
+  useEffect(() => {
+    if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+      setCurrentMin((props.priceMin as number) || 0);
+      setCurrentMax((props.priceMax as number) || 9999);
+    }
+  }, [props.activePriceMin, props.activePriceMax]);
   return (
     <div
       className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}

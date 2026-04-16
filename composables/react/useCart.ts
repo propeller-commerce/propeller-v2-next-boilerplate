@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { CartService, CrossupsellService, Enums } from 'propeller-sdk-v2';
-import type { GraphQLClient, Cart, CartMainItem, Product, Cluster, Contact, Customer, MediaImageProductSearchInput, TransformationsInput, PurchaseAuthorizationConfig, Crossupsell, CrossupsellsQueryVariables, CrossupsellSearchInput } from 'propeller-sdk-v2';
+import type { GraphQLClient, Cart, CartMainItem, Product, Cluster, Contact, Customer, MediaImageProductSearchInput, TransformationsInput, PurchaseAuthorizationConfig, Crossupsell, CrossupsellsQueryVariables, CrossupsellSearchInput, CartProcessResponse } from 'propeller-sdk-v2';
 import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
 
@@ -45,6 +45,7 @@ export interface UseCartReturn {
   addActionCode: (code: string) => Promise<Cart | undefined>;
   removeActionCode: (code: string) => Promise<Cart | undefined>;
   requestAuthorization: () => Promise<{ success: boolean; error?: string }>;
+  processCart: (orderStatus?: string) => Promise<{ success: boolean; response?: CartProcessResponse; error?: string }>;
   getCrossupsells: (options: GetCrossupsellsOptions) => Promise<Crossupsell[]>;
   getMinQuantity: (product: Product) => number;
   getStep: (product: Product) => number;
@@ -191,6 +192,17 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : 'Failed to request authorization' }; }
   }, [graphqlClient, cartId]);
 
+  const processCart = useCallback(async (orderStatus = 'COMPLETE'): Promise<{ success: boolean; response?: CartProcessResponse; error?: string }> => {
+    if (!cartId) return { success: false, error: 'No cart' };
+    try {
+      const service = new CartService(graphqlClient);
+      const response = await service.processCart({ id: cartId, input: { orderStatus, language } });
+      return { success: true, response };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to process cart' };
+    }
+  }, [graphqlClient, cartId, language]);
+
   const getCrossupsells = useCallback(async (opts: GetCrossupsellsOptions): Promise<Crossupsell[]> => {
     const { productId, clusterId, types, taxZone, imageVariantFilters } = opts;
     if (!productId && !clusterId) return [];
@@ -219,5 +231,5 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     } catch { return []; }
   }, [graphqlClient, language, configuration, user]);
 
-  return { cart, cartId, loading, error, checkoutAllowed, resolveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, getCrossupsells, getMinQuantity, getStep };
+  return { cart, cartId, loading, error, checkoutAllowed, resolveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, processCart, getCrossupsells, getMinQuantity, getStep };
 }

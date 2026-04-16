@@ -56,6 +56,7 @@ export interface AddToCartProps {
    * - quantity
    * - continueShopping
    * - proceedToCheckout
+   * - requestQuoteButton
    * - add
    * - adding
    */
@@ -125,6 +126,8 @@ export interface AddToCartProps {
 
   /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */ companyId?: number;
   /**   * When true, tax-inclusive price (net) is shown.   * When false, tax-exclusive price (gross) is shown.   * Defaults to false.   */ includeTax?: boolean;
+  /** Callback fired when "Request a Quote" is clicked in the add-to-cart modal. Only shown for contacts when checkout is allowed. */
+  onRequestQuoteClick?: (cart: Cart) => void;
 }
 /** * Cart query variables interface Variables for the cart query */ /** * Cart query variables interface Variables for the cart query */ export interface CartQueryVariables {
   /** Cart ID to fetch */ cartId: string;
@@ -505,6 +508,18 @@ function AddToCart(props: AddToCartProps) {
               >
                 {getLabel('continueShopping', 'Continue shopping')}
               </button>
+              {checkoutAllowed && props.onRequestQuoteClick && props.user && 'contactId' in props.user ? (
+                <button
+                  type="button"
+                  className="flex-1 inline-flex justify-center rounded-md border border-input bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  onClick={(event) => {
+                    closeModal();
+                    if (cart) props.onRequestQuoteClick!(cart);
+                  }}
+                >
+                  {getLabel('requestQuoteButton', 'Request a Quote')}
+                </button>
+              ) : null}
               {checkoutAllowed ? (
                 <button
                   type="button"

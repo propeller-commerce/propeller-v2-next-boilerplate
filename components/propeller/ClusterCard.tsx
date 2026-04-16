@@ -16,6 +16,9 @@ export interface ClusterCardProps {
   /** Show the cluster name. Defaults to true. */
   showName?: boolean;
 
+  /** When false, hides the price. Defaults to true. */
+  showPrice?: boolean;
+
   /** Show the default product image. Defaults to true. */
   showImage?: boolean;
 
@@ -196,6 +199,7 @@ function ClusterCard(props: ClusterCardProps) {
     return 'text-green-600 bg-green-50';
   }
   function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
+    if (props.showPrice === false) return '';
     const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
     const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
     const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;

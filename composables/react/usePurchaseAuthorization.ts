@@ -166,9 +166,9 @@ export function usePurchaseAuthorizationConfigurator(
   const loadCompany = useCallback(async (page: number): Promise<void> => {
     if (!graphqlClient || !companyId) return;
     await fetchCompany(companyId, {
-      $contactSearchArguments: { page, offset: pageOffset },
-      $contactPAConfigInput: { companyIds: [companyId], page: 1, offset: 100 },
-      $companyAttributesInput: {} as AttributeResultSearchInput,
+      contactSearchArguments: { page, offset: pageOffset },
+      contactPAConfigInput: { companyIds: [companyId], page: 1, offset: 100 },
+      companyAttributesInput: {} as AttributeResultSearchInput,
     });
   }, [graphqlClient, companyId, pageOffset, fetchCompany]);
 

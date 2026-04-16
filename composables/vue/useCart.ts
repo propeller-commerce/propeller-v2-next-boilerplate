@@ -24,6 +24,7 @@ import type {
   Crossupsell,
   CrossupsellsQueryVariables,
   CrossupsellSearchInput,
+  CartProcessResponse,
 } from 'propeller-sdk-v2';
 import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
@@ -78,6 +79,7 @@ export interface UseCartReturn {
   addActionCode: (code: string) => Promise<Cart | undefined>;
   removeActionCode: (code: string) => Promise<Cart | undefined>;
   requestAuthorization: () => Promise<{ success: boolean; error?: string }>;
+  processCart: (orderStatus?: string) => Promise<{ success: boolean; response?: CartProcessResponse; error?: string }>;
   getCrossupsells: (options: GetCrossupsellsOptions) => Promise<Crossupsell[]>;
   getMinQuantity: (product: Product | null | undefined) => number;
   getStep: (product: Product | null | undefined) => number;
@@ -248,6 +250,18 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     } catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : 'Failed to request authorization' }; }
   }
 
+  async function processCart(orderStatus = 'COMPLETE'): Promise<{ success: boolean; response?: CartProcessResponse; error?: string }> {
+    if (!cartId.value) return { success: false, error: 'No cart' };
+    try {
+      const service = new CartService(graphqlClient);
+      const language = languageRef.value || configuration.language || 'NL';
+      const response = await service.processCart({ id: cartId.value, input: { orderStatus, language } });
+      return { success: true, response };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to process cart' };
+    }
+  }
+
   async function getCrossupsells(opts: GetCrossupsellsOptions): Promise<Crossupsell[]> {
     const { productId, clusterId, types, taxZone, imageVariantFilters } = opts;
     if (!productId && !clusterId) return [];
@@ -278,5 +292,5 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     } catch { return []; }
   }
 
-  return { cart, cartId, loading, error, checkoutAllowed, resolveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, getCrossupsells, getMinQuantity, getStep };
+  return { cart, cartId, loading, error, checkoutAllowed, resolveCart, addItem, updateItemQuantity, updateItemNotes, deleteItem, addActionCode, removeActionCode, requestAuthorization, processCart, getCrossupsells, getMinQuantity, getStep };
 }

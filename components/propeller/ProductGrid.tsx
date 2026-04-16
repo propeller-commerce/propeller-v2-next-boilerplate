@@ -174,6 +174,8 @@ export interface ProductGridProps {
     product: Product
   ) => void;
   /** Extra CSS class applied to the root element. */ className?: string;
+  /** When false, hides the price on each product/cluster card. Defaults to true. */ showPrice?: boolean;
+  /** Callback fired when "Request a Quote" is clicked in the AddToCart modal. Forwarded to each ProductCard → AddToCart. */ onRequestQuoteClick?: (cart: Cart) => void;
 }
 
 function ProductGrid(props: ProductGridProps) {
@@ -216,6 +218,8 @@ function ProductGrid(props: ProductGridProps) {
     if (cols === 1) return 'flex flex-col gap-4';
     if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
     if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 5) return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 6) return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-6 auto-rows-fr';
     return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
 
@@ -240,7 +244,7 @@ function ProductGrid(props: ProductGridProps) {
 
   function getSkeletonItems(): number[] {
     const cols = (props.columns as number) || 3;
-    const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
+    const count = cols === 2 ? 4 : cols === 4 ? 8 : cols === 5 ? 10 : cols === 6 ? 12 : 6;
     const items: number[] = [];
     for (let i = 0; i < count; i++) items.push(i);
     return items;
@@ -317,6 +321,7 @@ function ProductGrid(props: ProductGridProps) {
                           showAvailability={props.showAvailability as boolean}
                           stockLabels={props.stockLabels}
                           enableAddFavorite={props.enableAddFavorite as boolean}
+                          showPrice={props.showPrice}
                           onToggleFavorite={(cluster, isFav) => {
                             if (props.onToggleFavorite) {
                               props.onToggleFavorite(cluster, isFav);
@@ -358,6 +363,8 @@ function ProductGrid(props: ProductGridProps) {
                               showAvailability={props.showAvailability as boolean}
                               stockLabels={props.stockLabels}
                               companyId={props.companyId as number}
+                              showPrice={props.showPrice}
+                              onRequestQuoteClick={props.onRequestQuoteClick}
                               onToggleFavorite={(product, isFav) => {
                                 if (props.onToggleFavorite) {
                                   props.onToggleFavorite(product, isFav);
@@ -384,6 +391,8 @@ function ProductGrid(props: ProductGridProps) {
                               showAvailability={props.showAvailability as boolean}
                               stockLabels={props.stockLabels}
                               companyId={props.companyId as number}
+                              showPrice={props.showPrice}
+                              onRequestQuoteClick={props.onRequestQuoteClick}
                               onToggleFavorite={(product, isFav) => {
                                 if (props.onToggleFavorite) {
                                   props.onToggleFavorite(product, isFav);

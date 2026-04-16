@@ -198,9 +198,9 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                 const companyService = new CompanyService(props.graphqlClient);
                 const company = await companyService.getCompany({
                     id: props.companyId,
-                    $contactSearchArguments: { page: page, offset: state.pageOffset },
-                    $contactPAConfigInput: { companyIds: [props.companyId], page: 1, offset: 100 },
-                    $companyAttributesInput: {} as AttributeResultSearchInput,
+                    contactSearchArguments: { page: page, offset: state.pageOffset },
+                    contactPAConfigInput: { companyIds: [props.companyId], page: 1, offset: 100 },
+                    companyAttributesInput: {} as AttributeResultSearchInput,
                 });
                 state.company = company;
                 // Extract contacts directly from the fetched result (not via state.getContacts())
@@ -517,7 +517,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                                 type="button"
                                                                 disabled={state.isRowLoading(contact.contactId) || !state.getRowRole(contact.contactId)}
                                                                 onClick={() => state.handleCreate(contact.contactId)}
-                                                                className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
                                                                 <Show when={state.isRowLoading(contact.contactId)}>
                                                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
@@ -532,7 +532,7 @@ export default function PurchaseAuthorizationConfigurator(props: PurchaseAuthori
                                                                 type="button"
                                                                 disabled={state.isRowLoading(contact.contactId) || state.isCurrentUser(contact.contactId)}
                                                                 onClick={() => state.handleDelete(contact.contactId)}
-                                                                className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                className="text-xs border border-border px-3 py-1.5 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
                                                                 <Show when={state.isRowLoading(contact.contactId)}>
                                                                     <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />

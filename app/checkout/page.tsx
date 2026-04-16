@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
@@ -12,9 +12,11 @@ import AddressCard from '@/components/propeller/AddressCard';
 
 import { cartService, orderService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
 import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
+import AddressSelector from '@/components/propeller/AddressSelector';
 import CartCarriers from '@/components/propeller/CartCarriers';
 import DeliveryDate from '@/components/propeller/DeliveryDate';
 import CartOverview from '@/components/propeller/CartOverview';
@@ -52,11 +54,14 @@ const COUNTRIES = [
   { code: 'US', name: 'United States' },
 ];
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
-  const { cart: contextCart, getCart } = useCart();
+  const { cart: contextCart, getCart, clearCart, saveCart } = useCart();
   const { state: authState, refreshUser } = useAuth();
+  const { selectedCompany } = useCompany();
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
     cart: null,
@@ -70,6 +75,8 @@ export default function CheckoutPage() {
   });
   const sameAsInvoiceRef = useRef(false);
   const orderPlacedRef = useRef(false);
+  const [quoteReference, setQuoteReference] = useState('');
+  const [quoteNotes, setQuoteNotes] = useState('');
 
   useEffect(() => {
     // Wait for auth to finish hydrating before initializing checkout
@@ -102,8 +109,8 @@ export default function CheckoutPage() {
     const initializeCheckout = async () => {
       let cartToUse = contextCart;
       if (!cartToUse) {
-        const cartData = localStorage.getItem('cart');
-        if (cartData) cartToUse = deserializeCart(cartData);
+        const cartData = contextCart;
+        if (cartData) cartToUse = cartData;
       }
 
       if (!cartToUse || !cartToUse.items || cartToUse.items.length === 0) {
@@ -184,7 +191,7 @@ export default function CheckoutPage() {
               }
             }
 
-            localStorage.setItem('cart', serializeCart(updatedCart));
+            saveCart(updatedCart);
             cartToUse = updatedCart;
           } catch (error) {
             console.error('Error pre-populating cart addresses:', error);
@@ -231,13 +238,13 @@ export default function CheckoutPage() {
   const getActiveCompany = (): Company | null => {
     const user = authState.user;
     if (!user || !isContact(user)) return null;
-    const stored = localStorage.getItem('selected_company_id');
+    const stored = selectedCompany?.companyId;
     if (stored) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const companiesRaw = (user as any).companies;
       const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
       if (Array.isArray(items)) {
-        const found = items.find((c: Company) => c.companyId === parseInt(stored, 10));
+        const found = items.find((c: Company) => c.companyId === stored);
         if (found) return found;
       }
     }
@@ -340,12 +347,12 @@ export default function CheckoutPage() {
       };
 
       const updatedCart = await cartService.updateCartAddress(variables);
-      localStorage.setItem('cart', serializeCart(updatedCart));
+      saveCart(updatedCart);
 
       // When editing an existing address and user is logged in, also update user's account address
-      if (!advance && authState.isAuthenticated) {
-        await updateUserAddress(addressData, type);
-      }
+      // if (!advance && authState.isAuthenticated) {
+      //   await updateUserAddress(addressData, type);
+      // }
 
       // Anonymous user: if "same as invoice" is checked, also save as delivery address
       if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && sameAsInvoiceRef.current) {
@@ -360,7 +367,7 @@ export default function CheckoutPage() {
           imageSearchFilters: imageSearchFiltersGrid,
           language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
         });
-        localStorage.setItem('cart', serializeCart(cartWithDelivery));
+        saveCart(cartWithDelivery);
         setState(prev => ({
           ...prev,
           cart: cartWithDelivery,
@@ -417,7 +424,7 @@ export default function CheckoutPage() {
         language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
       });
 
-      localStorage.setItem('cart', serializeCart(updatedCart));
+      saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
     } catch (error) {
       console.error(error);
@@ -439,33 +446,44 @@ export default function CheckoutPage() {
         });
       }
 
+      const orderStatus = isQuoteMode ? 'REQUEST' : 'NEW';
       const response = await cartService.processCart({
         id: state.cart!.cartId,
-        input: { orderStatus: 'NEW' as string, language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL' }
+        input: { orderStatus: orderStatus as string, language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL' }
       });
 
       if (response?.cartOrderId) {
         const orderId = response.cartOrderId;
         const orderServiceResponse = await orderService.setOrderStatus({
           orderId: orderId,
-          status: 'NEW' as string,
+          status: orderStatus as string,
           payStatus: Enums.PaymentStatuses.OPEN,
-          sendOrderConfirmationEmail: true,
-          addPDFAttachment: true,
-          triggerOrderSendConfirmEvent: true,
+          sendOrderConfirmationEmail: isQuoteMode ? false : true,
+          addPDFAttachment: isQuoteMode ? false : true,
+          triggerOrderSendConfirmEvent: isQuoteMode ? false : true,
           deleteCart: true
         });
 
         if (orderServiceResponse?.id === orderId) {
-          localStorage.removeItem('cart');
+          if (isQuoteMode) {
+            await orderService.triggerQuoteSendRequest({
+              orderId: orderId,
+              language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+            });
+          }
+
+          clearCart();
           const managerCart = localStorage.getItem('manager_cart');
           if (managerCart) {
-            localStorage.setItem('cart', managerCart);
+            saveCart(deserializeCart(managerCart) as Cart);
             localStorage.removeItem('manager_cart');
           }
           if (getCart) await getCart();
         }
-        router.push(localizeHref(`/checkout/thank-you/${orderId}`, language));
+        const thankYouUrl = isQuoteMode
+          ? localizeHref(`/checkout/thank-you/${orderId}`, language) + '?mode=quote'
+          : localizeHref(`/checkout/thank-you/${orderId}`, language);
+        router.push(thankYouUrl);
       } else {
         throw new Error("No Order ID returned");
       }
@@ -473,7 +491,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error(error);
       orderPlacedRef.current = false;
-      setState(prev => ({ ...prev, error: 'Failed to place order', loading: false }));
+      setState(prev => ({ ...prev, error: isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order', loading: false }));
     }
   };
 
@@ -590,10 +608,14 @@ export default function CheckoutPage() {
             <StepIndicator step={1} currentStep={state.currentStep} title="Details" />
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
             <StepIndicator step={2} currentStep={state.currentStep} title="Shipping" />
+            {!isQuoteMode && (
+              <>
+                <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
+                <StepIndicator step={3} currentStep={state.currentStep} title="Payment" />
+              </>
+            )}
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={3} currentStep={state.currentStep} title="Payment" />
-            <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={4} currentStep={state.currentStep} title="Review" />
+            <StepIndicator step={isQuoteMode ? 3 : 4} currentStep={state.currentStep} title="Review" />
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -611,7 +633,7 @@ export default function CheckoutPage() {
                     <CardTitle className="text-lg flex items-center gap-2">1. Invoice Address</CardTitle>
                     {state.currentStep > 1 && state.cart?.invoiceAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number}, {state.cart.invoiceAddress.city}
+                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number} {state.cart.invoiceAddress.numberExtension}, {state.cart.invoiceAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -668,7 +690,7 @@ export default function CheckoutPage() {
                     <CardTitle className="text-lg flex items-center gap-2">2. Shipping Address</CardTitle>
                     {state.currentStep > 2 && state.cart?.deliveryAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number}, {state.cart.deliveryAddress.city}
+                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number} {state.cart.deliveryAddress.numberExtension}, {state.cart.deliveryAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -685,9 +707,19 @@ export default function CheckoutPage() {
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
                           countries={COUNTRIES}
                         />
-                        <div className="flex gap-4">
+                        <div className="flex items-center gap-4">
                           <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
                           <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>Confirm Delivery Address</Button>
+                          {authState.isAuthenticated && (
+                            <AddressSelector
+                              user={authState.user}
+                              companyId={getActiveCompany()?.companyId}
+                              addressType={Enums.AddressType.delivery}
+                              onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
+                              countries={COUNTRIES}
+                              className="ml-auto"
+                            />
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -706,8 +738,8 @@ export default function CheckoutPage() {
                 )}
               </Card>
 
-              {/* Step 3: Payment & Delivery Method */}
-              <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
+              {/* Step 3: Payment & Delivery Method (normal mode only) */}
+              {!isQuoteMode && <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 3 && setState(prev => ({ ...prev, currentStep: 3 }))}>
                   <CardTitle className="text-lg flex items-center gap-2">3. Payment & Delivery</CardTitle>
                 </CardHeader>
@@ -746,6 +778,8 @@ export default function CheckoutPage() {
                         <p className="text-sm text-destructive">Please select a delivery date</p>
                       )}
                       <DeliveryDate
+                        cart={state.cart}
+                        initialDate={state.cart?.postageData?.requestDate as string | undefined}
                         onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
                       />
                     </div>
@@ -756,24 +790,69 @@ export default function CheckoutPage() {
                     </div>
                   </CardContent>
                 )}
-              </Card>
+              </Card>}
 
-              {/* Step 4: Review */}
-              <Card className={`${state.currentStep === 4 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
-                </CardHeader>
-                {state.currentStep === 4 && (
-                  <CardContent className="animate-in slide-in-from-top-2">
-                    <CartOverview
-                      graphqlClient={graphqlClient}
-                      cart={state.cart}
-                      onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
-                      onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
-                    />
-                  </CardContent>
-                )}
-              </Card>
+              {/* Step 4 (normal): Review & Place Order */}
+              {!isQuoteMode && (
+                <Card className={`${state.currentStep === 4 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
+                  </CardHeader>
+                  {state.currentStep === 4 && (
+                    <CardContent className="animate-in slide-in-from-top-2">
+                      <CartOverview
+                        graphqlClient={graphqlClient}
+                        cart={state.cart}
+                        onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
+                        onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
+                      />
+                    </CardContent>
+                  )}
+                </Card>
+              )}
+
+              {/* Step 3 (quote mode): Quote Details */}
+              {isQuoteMode && (
+                <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">3. Quote Details</CardTitle>
+                  </CardHeader>
+                  {state.currentStep === 3 && (
+                    <CardContent className="space-y-6 animate-in slide-in-from-top-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-reference">Reference</label>
+                        <input
+                          id="quote-reference"
+                          type="text"
+                          value={quoteReference}
+                          onChange={(e) => setQuoteReference(e.target.value.slice(0, 255))}
+                          placeholder="Your reference (optional)"
+                          maxLength={255}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-notes">Notes</label>
+                        <textarea
+                          id="quote-notes"
+                          value={quoteNotes}
+                          onChange={(e) => setQuoteNotes(e.target.value.slice(0, 255))}
+                          placeholder="Additional notes for your quote request (optional)"
+                          rows={4}
+                          maxLength={255}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                        />
+                      </div>
+                      <div className="flex gap-4 pt-2">
+                        <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>Back</Button>
+                        <Button onClick={() => handlePlaceOrder(quoteReference || undefined, quoteNotes || undefined)} isLoading={state.loading}>
+                          Place Quote Request
+                        </Button>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              )}
             </div>
 
             <div className="lg:w-1/3">
@@ -800,6 +879,14 @@ export default function CheckoutPage() {
                         cart={state.cart}
                         title="Order Summary"
                         showCheckoutButton={false}
+                        graphqlClient={graphqlClient}
+                        user={authState.user ?? undefined}
+                        companyId={getActiveCompany()?.companyId ?? undefined}
+                        afterRequestAuthorization={(updatedCart) => {
+                          clearCart();
+                          router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
+                        }}
+                        onError={(err) => console.error('Authorization request failed:', err)}
                       />
                     )}
                   </CardContent>
@@ -811,5 +898,13 @@ export default function CheckoutPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <CheckoutPageInner />
+    </Suspense>
   );
 }

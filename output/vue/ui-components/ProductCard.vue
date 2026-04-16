@@ -158,6 +158,7 @@
             :enableStockValidation="enableStockValidation"
             :language="language"
             :onProceedToCheckout="onProceedToCheckout"
+            :onRequestQuoteClick="onRequestQuoteClick"
             :labels="addToCartLabels"
             :companyId="companyId"
           ></AddToCart>
@@ -219,29 +220,33 @@
           </div>
         </template>
       </div>
-      <div class="px-3 pb-3 sm:px-4 sm:pb-4">
-        <AddToCart
-          :graphqlClient="graphqlClient"
-          :user="user"
-          :product="product"
-          :cartId="cartId"
-          :configuration="configuration"
-          :childItems="childItems"
-          :notes="notes"
-          :price="price"
-          :createCart="createCart"
-          :onCartCreated="onCartCreated"
-          :onAddToCart="onAddToCart"
-          :afterAddToCart="afterAddToCart"
-          :showModal="showModal"
-          :allowIncrDecr="allowIncrDecr"
-          :enableStockValidation="enableStockValidation"
-          :language="language"
-          :onProceedToCheckout="onProceedToCheckout"
-          :labels="addToCartLabels"
-          :companyId="companyId"
-        ></AddToCart>
-      </div>
+
+      <template v-if="allowAddToCart !== false">
+        <div class="px-3 pb-3 sm:px-4 sm:pb-4">
+          <AddToCart
+            :graphqlClient="graphqlClient"
+            :user="user"
+            :product="product"
+            :cartId="cartId"
+            :configuration="configuration"
+            :childItems="childItems"
+            :notes="notes"
+            :price="price"
+            :createCart="createCart"
+            :onCartCreated="onCartCreated"
+            :onAddToCart="onAddToCart"
+            :afterAddToCart="afterAddToCart"
+            :showModal="showModal"
+            :allowIncrDecr="allowIncrDecr"
+            :enableStockValidation="enableStockValidation"
+            :language="language"
+            :onProceedToCheckout="onProceedToCheckout"
+            :onRequestQuoteClick="onRequestQuoteClick"
+            :labels="addToCartLabels"
+            :companyId="companyId"
+          ></AddToCart>
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -298,6 +303,18 @@ export interface ProductCardProps {
    * Defaults to true.
    */
   showAvailability?: boolean;
+
+  /**
+   * Show the price below the product name.
+   * Defaults to true.
+   */
+  showPrice?: boolean;
+
+  /**
+   * Show the AddToCart component.
+   * Defaults to true.
+   */
+  allowAddToCart?: boolean;
 
   /**
    * Label overrides forwarded to the embedded ItemStock component.
@@ -454,6 +471,9 @@ export interface ProductCardProps {
   /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
   onProceedToCheckout?: () => void;
 
+  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */
+  onRequestQuoteClick?: (cart: Cart) => void;
+
   /** Label overrides for UI strings
    *
    * available labels:
@@ -465,6 +485,7 @@ export interface ProductCardProps {
    * - quantity
    * - continueShopping
    * - proceedToCheckout
+   * - requestQuoteButton
    * - add
    * - adding
    */
@@ -514,6 +535,7 @@ function getProductImageUrl(): ReturnType<ProductCardState['getProductImageUrl']
   return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
 }
 function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
+  if (!props.showPrice) return '';
   const priceObj = (props.product as Product)?.price;
   const useTax: boolean =
     props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;

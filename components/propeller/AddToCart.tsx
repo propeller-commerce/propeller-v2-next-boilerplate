@@ -121,15 +121,24 @@ export interface AddToCartProps {
   /** Callback fired when the "Proceed to checkout" modal button is clicked */
   onProceedToCheckout?: () => void;
 
+  /** Callback fired when the "Request a Quote" modal button is clicked */
+  onRequestQuoteClick?: (cart: Cart) => void;
+
   /** Configuration object passed to the component */
   configuration?: any;
 
-  /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */ companyId?: number;
-  /**   * When true, tax-inclusive price (net) is shown.   * When false, tax-exclusive price (gross) is shown.   * Defaults to false.   */ includeTax?: boolean;
-  /** Callback fired when "Request a Quote" is clicked in the add-to-cart modal. Only shown for contacts when checkout is allowed. */
-  onRequestQuoteClick?: (cart: Cart) => void;
+  /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */
+  companyId?: number;
+
+  /**
+   * When true, tax-inclusive price (net) is shown.
+   * When false, tax-exclusive price (gross) is shown.
+   * Defaults to false.
+   */
+  includeTax?: boolean;
 }
-/** * Cart query variables interface Variables for the cart query */ /** * Cart query variables interface Variables for the cart query */ export interface CartQueryVariables {
+
+export interface CartQueryVariables {
   /** Cart ID to fetch */ cartId: string;
   /** Language for localized content */ language: string;
   /** Image search filters */ imageSearchFilters: MediaImageProductSearchInput;
@@ -154,7 +163,7 @@ function AddToCart(props: AddToCartProps) {
   const [modalVisible, setModalVisible] = useState<boolean>(() => false);
   const [addedCartItem, setAddedCartItem] = useState<CartMainItem | null>(() => null);
   const [activeFullCart, setActiveFullCart] = useState<Cart | null>(() => null);
-  const [includeTax, setIncludeTax] = useState<boolean>(() => false);
+  const [includeTax] = useState<boolean>(() => false);
 
   // --- display helpers ---
   function getLabel(key: string, fallback: string): string {
@@ -296,7 +305,7 @@ function AddToCart(props: AddToCartProps) {
             <button
               type="button"
               className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
-              onClick={(event) => decrement()}
+              onClick={() => decrement()}
               disabled={quantity <= getMinQuantity(props.product) || loading}
             >
               {' '}
@@ -320,7 +329,7 @@ function AddToCart(props: AddToCartProps) {
             <button
               type="button"
               className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
-              onClick={(event) => increment()}
+              onClick={() => increment()}
               disabled={loading}
             >
               {' '}
@@ -348,7 +357,7 @@ function AddToCart(props: AddToCartProps) {
         <button
           type="button"
           className="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          onClick={(event) => handleAddToCart()}
+          onClick={() => handleAddToCart()}
           disabled={loading}
         >
           {loading ? <>{getLabel('adding', 'Adding...')}</> : null}
@@ -384,7 +393,7 @@ function AddToCart(props: AddToCartProps) {
           </p>
           <button
             type="button"
-            onClick={(event) => dismissToast()}
+            onClick={() => dismissToast()}
             className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
           >
             <svg
@@ -401,7 +410,7 @@ function AddToCart(props: AddToCartProps) {
       ) : null}
       {modalVisible ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="fixed inset-0 bg-gray-500/20" onClick={(event) => closeModal()} />
+          <div className="fixed inset-0 bg-gray-500/20" onClick={() => closeModal()} />
           <div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
               <svg
@@ -419,7 +428,7 @@ function AddToCart(props: AddToCartProps) {
               <button
                 type="button"
                 className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
-                onClick={(event) => closeModal()}
+                onClick={() => closeModal()}
               >
                 <svg
                   fill="none"
@@ -504,15 +513,15 @@ function AddToCart(props: AddToCartProps) {
               <button
                 type="button"
                 className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
-                onClick={(event) => closeModal()}
+                onClick={() => closeModal()}
               >
                 {getLabel('continueShopping', 'Continue shopping')}
               </button>
               {checkoutAllowed && props.onRequestQuoteClick && props.user && 'contactId' in props.user ? (
                 <button
                   type="button"
-                  className="flex-1 inline-flex justify-center rounded-md border border-input bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  onClick={(event) => {
+                  className="flex-1 inline-flex justify-center rounded-md border border-secondary bg-white px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  onClick={() => {
                     closeModal();
                     if (cart) props.onRequestQuoteClick!(cart);
                   }}
@@ -524,7 +533,7 @@ function AddToCart(props: AddToCartProps) {
                 <button
                   type="button"
                   className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
-                  onClick={(event) => {
+                  onClick={() => {
                     closeModal();
                     if (props.onProceedToCheckout) props.onProceedToCheckout();
                   }}

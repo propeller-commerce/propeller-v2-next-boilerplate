@@ -50,6 +50,12 @@ export interface ClusterCardProps {
     showAvailability?: boolean;
 
     /**
+     * Show the price below the product name.
+     * Defaults to true.
+     */
+    showPrice?: boolean;
+
+    /**
      * Label overrides forwarded to the embedded ItemStock component.
      * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
      */
@@ -215,6 +221,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         },
 
         getClusterPrice(): string {
+            if (!props.showPrice) return '';
             const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
             const useTax: boolean = props.includeTax !== undefined ? !!(props.includeTax) : state.includeTax;
             const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;

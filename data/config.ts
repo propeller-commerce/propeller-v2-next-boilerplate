@@ -124,6 +124,7 @@ export const config = {
   companyTrackAttributes: [],
   contactTrackAttributes: [],
   customerTrackAttributes: [],
+  contactPAConfigInput: [],
   includeVAT: false,
   enableRegistration: true,
   enableGuestCheckout: false,

@@ -54,6 +54,15 @@ export interface OrderListProps {
   /** Rows are clickable */
   rowsClickable?: boolean;
 
+  /** Show company orders */
+  showCompanyOrders?: boolean;
+
+  /** Hide pagination controls. Defaults to false. */
+  hidePagination?: boolean;
+
+  /** Filter orders by channel IDs */
+  channelIds?: number[];
+
   /** Format price */
   formatPrice?: (price: number) => string;
 
@@ -62,12 +71,6 @@ export interface OrderListProps {
 
   /** Get status color */
   getStatusColor?: (status: string) => string;
-
-  /** When true, hides the pagination controls. Defaults to false. */
-  hidePagination?: boolean;
-
-  /** Filter orders by these channel IDs. */
-  channelIds?: number[];
 
   /** Localization labels */
   labels?: {

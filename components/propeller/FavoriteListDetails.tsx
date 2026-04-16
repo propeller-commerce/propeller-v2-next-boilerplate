@@ -116,6 +116,9 @@ export interface FavoriteListDetailsProps {
   /** Called when "Proceed to checkout" is clicked in AddToCart modal */
   onProceedToCheckout?: () => void;
 
+  /** Called when "Request a Quote" is clicked in AddToCart modal */
+  onRequestQuoteClick?: (cart: Cart) => void;
+
   /** Label overrides for AddToCart UI strings */
   addToCartLabels?: Record<string, string>;
 
@@ -318,6 +321,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                     enableStockValidation={props.enableStockValidation}
                     language={props.language}
                     onProceedToCheckout={props.onProceedToCheckout}
+                    onRequestQuoteClick={props.onRequestQuoteClick}
                     addToCartLabels={props.addToCartLabels}
                     stockLabels={props.stockLabels}
                     labels={props.itemLabels}

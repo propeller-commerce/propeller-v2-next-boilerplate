@@ -1,9 +1,13 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Cart } from 'propeller-sdk-v2';
 
 export interface DeliveryDateProps {
+  /** The cart to use for the delivery date */
+  cart: Cart;
+
   /** Show the upcoming N days in the date selector */
   showUpcomingDays?: number;
 
@@ -24,6 +28,9 @@ export interface DeliveryDateProps {
 
   /** The CSS class for the container */
   containerClass?: string;
+
+  /** Pre-selected date from cart (e.g. cart.postageData.requestDate: "2026-04-17T00:00:00.000Z") */
+  initialDate?: string;
 }
 interface DeliveryDateState {
   selectedDate: string;
@@ -147,6 +154,17 @@ function DeliveryDate(props: DeliveryDateProps) {
       setModalOpen(false);
     }
   }
+  useEffect(() => {
+    if (props.initialDate && !selectedDate) {
+      // Normalize cart format "2026-04-17T00:00:00.000Z" → "2026-04-17T00:00:00Z"
+      const dot = props.initialDate.lastIndexOf('.');
+      const normalized = dot !== -1 ? props.initialDate.substring(0, dot) + 'Z' : props.initialDate;
+      setSelectedDate(normalized);
+      if (props.onDateSelect) {
+        props.onDateSelect(normalized);
+      }
+    }
+  }, [props.initialDate, props.cart]);
   return (
     <div className={containerClass()}>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">

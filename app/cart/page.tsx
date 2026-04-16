@@ -22,7 +22,7 @@ const subscribe = () => () => { };
 
 export default function CartPage() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
-  const { cart, saveCart } = useCart();
+  const { cart, saveCart, clearCart } = useCart();
   const { includeTax } = usePrice();
   const { state } = useAuth();
   const router = useRouter();
@@ -64,6 +64,7 @@ export default function CartPage() {
                     cartId={cart!.cartId}
                     cartItem={item}
                     configuration={config}
+                    enableIncrementDecrement={false}
                     showCrossupsells={true}
                     crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}
@@ -83,9 +84,10 @@ export default function CartPage() {
                       companyId={selectedCompany?.companyId}
                       onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
                       afterRequestAuthorization={(updatedCart: Cart) => {
-                        saveCart(updatedCart);
+                        clearCart();
                         router.push(`/authorization-request-sent/${updatedCart.cartId}`);
                       }}
+                      onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
                     />
                     <ActionCode
                       graphqlClient={graphqlClient}

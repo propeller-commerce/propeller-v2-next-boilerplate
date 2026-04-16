@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/Card';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
 import OrderTotals from '@/components/propeller/OrderTotals';
 import OrderActions from '@/components/propeller/OrderActions';
+import OrderShipments from '@/components/propeller/OrderShipments';
 
 const COUNTRIES = [
     { code: 'NL', name: 'Netherlands' },
@@ -135,6 +136,9 @@ export default function OrderDetailPage() {
                             }}
                         />
                     </Card>
+
+                    {/* Shipments */}
+                    <OrderShipments order={order} />
 
                     {/* Order Overview */}
                     <div className="pt-10">

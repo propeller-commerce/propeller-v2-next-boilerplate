@@ -22,7 +22,8 @@ import {
     CartMainItem,
     CartBaseItem,
     Cluster,
-    PurchaseAuthorizationConfig
+    PurchaseAuthorizationConfig,
+    Company
 } from 'propeller-sdk-v2';
 
 export interface AddToCartProps {
@@ -64,6 +65,7 @@ export interface AddToCartProps {
      * - quantity
      * - continueShopping
      * - proceedToCheckout
+     * - requestQuoteButton
      * - add
      * - adding
     */
@@ -128,6 +130,9 @@ export interface AddToCartProps {
 
     /** Callback fired when the "Proceed to checkout" modal button is clicked */
     onProceedToCheckout?: () => void;
+
+    /** Callback fired when the "Request a Quote" modal button is clicked */
+    onRequestQuoteClick?: (cart: Cart) => void;
 
     /** Configuration object passed to the component */
     configuration?: any;
@@ -356,7 +361,7 @@ export default function AddToCart(props: AddToCartProps) {
 
             /* 3. Assign Default Addresses */
             if (newCart && props.user) {
-                const addresses = 'company' in props.user ? props.user.company?.addresses : (props.user as Customer).addresses;
+                const addresses = 'companies' in props.user ? props.user.companies?.items?.find((company: Company) => company.companyId === props.companyId)?.addresses : (props.user as Customer).addresses;
 
                 if (addresses && Array.isArray(addresses)) {
                     const defaultInvoice = addresses.find((addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice');
@@ -771,6 +776,18 @@ export default function AddToCart(props: AddToCartProps) {
                             >
                                 {state.getLabel('continueShopping', 'Continue shopping')}
                             </button>
+                            <Show when={state.checkoutAllowed() && !!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        state.closeModal();
+                                        if (props.onRequestQuoteClick && state.activeFullCart) props.onRequestQuoteClick(state.activeFullCart);
+                                    }}
+                                    className="flex-1 inline-flex justify-center rounded-md border border-secondary bg-white px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                                >
+                                    {state.getLabel('requestQuoteButton', 'Request a Quote')}
+                                </button>
+                            </Show>
                             <Show when={state.checkoutAllowed()}>
                                 <button
                                     type="button"

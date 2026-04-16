@@ -860,6 +860,97 @@ const FILE_PATCHES = [
         from: "lessThan: val,",
         to: "lessThan: val ?? undefined,",
     },
+    // ── OrderShipments patches ───────────────────────────────────────────────
+    //
+    // Mitosis drops the `const shipments` variable declared outside `useStore`
+    // and generates broken `.map()` calls due to operator-precedence issues when
+    // the `For` helper targets a cast expression like `(x as T[]) || []`.
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: inject shipments derived variable',
+        from: [
+            '  const [activeShipment, setActiveShipment] = useState<OrderShipmentsState[\'activeShipment\']>(',
+            '    () => null',
+            '  );',
+        ].join('\n'),
+        to: [
+            '  const [activeShipment, setActiveShipment] = useState<OrderShipmentsState[\'activeShipment\']>(',
+            '    () => null',
+            '  );',
+            '  const shipments: Shipment[] = (props.order?.shipments as Shipment[]) || [];',
+        ].join('\n'),
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: fix shipment items map operator precedence',
+        from: [
+            '                        {(activeShipment?.items as ShipmentItem[]) ||',
+            '                          []?.map((shipmentItem, idx) => (',
+        ].join('\n'),
+        to: '                        {((activeShipment?.items as ShipmentItem[]) || []).map((shipmentItem: ShipmentItem, idx: number) => (',
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: fix trackAndTraces map operator precedence',
+        from: [
+            '                    {(activeShipment?.trackAndTraces as TrackAndTrace[]) ||',
+            '                      []?.map((tat, tatIdx) =>',
+        ].join('\n'),
+        to: '                    {((activeShipment?.trackAndTraces as TrackAndTrace[]) || []).map((tat: TrackAndTrace, tatIdx: number) =>',
+    },
+    {
+        file: resolve('../output/react/ui-components/OrderShipments.tsx'),
+        label: 'React → OrderShipments: guard track-and-trace link on URL only (not code)',
+        from: '!!(tat.carrier?.trackAndTraceURL || tat.code)',
+        to: '!!tat.carrier?.trackAndTraceURL',
+    },
+    {
+        // Mitosis compiles `state.selectedCode = x; state.payMethods.find(m => m.code === state.selectedCode)`
+        // to `setSelectedCode(x); payMethods().find(m => m.code === selectedCode)`.
+        // `setSelectedCode` is async — `selectedCode` is still '' (the previous render's value)
+        // when find() runs, so the match is always undefined and onPaymethodSelect is never called.
+        //
+        // Fix: capture the value in a local const before the setter so the find() uses
+        // the live value instead of the stale closure.
+        file: resolve('../output/react/ui-components/CartPaymethods.tsx'),
+        label: 'React → CartPaymethods: fix stale closure in preselect onUpdate — use local const instead of selectedCode',
+        from: [
+            '      setSelectedCode(props.cart.paymentData.method as string);',
+            '      if (props.onPaymethodSelect) {',
+            '        const match = payMethods().find((m: CartPaymethod) => m.code === selectedCode);',
+            '        if (match) props.onPaymethodSelect(match);',
+            '      }',
+        ].join('\n'),
+        to: [
+            '      const code = props.cart.paymentData.method as string;',
+            '      setSelectedCode(code);',
+            '      if (props.onPaymethodSelect) {',
+            '        const match = payMethods().find((m: CartPaymethod) => m.code === code);',
+            '        if (match) props.onPaymethodSelect(match);',
+            '      }',
+        ].join('\n'),
+    },
+    {
+        // Same stale-closure bug as CartPaymethods — see comment above.
+        // `setSelectedName(x)` is async; `selectedName` is still '' when find() runs.
+        file: resolve('../output/react/ui-components/CartCarriers.tsx'),
+        label: 'React → CartCarriers: fix stale closure in preselect onUpdate — use local const instead of selectedName',
+        from: [
+            '      setSelectedName(props.cart.postageData.carrier as string);',
+            '      if (props.onCarrierSelect) {',
+            '        const match = carriers().find((c: CartCarrier) => c.name === selectedName);',
+            '        if (match) props.onCarrierSelect(match);',
+            '      }',
+        ].join('\n'),
+        to: [
+            '      const name = props.cart.postageData.carrier as string;',
+            '      setSelectedName(name);',
+            '      if (props.onCarrierSelect) {',
+            '        const match = carriers().find((c: CartCarrier) => c.name === name);',
+            '        if (match) props.onCarrierSelect(match);',
+            '      }',
+        ].join('\n'),
+    },
 ];
 
 // ── post-patch: remove unused useState declarations ─────────────────────────

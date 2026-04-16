@@ -186,12 +186,14 @@ const quoteResponse = await orderService.getOrders(quoteArgs);
 | `enableSearch` | `boolean` | `false` | Show the search panel above the table. |
 | `searchFields` | `string[]` | `[]` | Which search inputs to render. Options: `'term'`, `'createdAt'`, `'lastModifiedAt'`, `'price'`, `'sortInput'`, `'type'`. When `enableSearch` is `true`, `'term'` is automatically prepended if not already present. |
 | `termFields` | `OrderSearchFields[]` | `[REFERENCE, ITEM_SKU, ID, ITEM_NAME, REMARKS]` | Backend fields searched when the user types a text query. Uses `Enums.OrderSearchFields` values. |
+| `channelIds` | `number[]` | `undefined` | Filter orders by channel IDs. Maps to the Propeller API `channelIds` search argument. |
 
 ### Pagination
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `initialItemsPerPage` | `number` | `10` | Number of orders per page. |
+| `hidePagination` | `boolean` | `false` | When `true`, pagination controls are hidden even when there are multiple pages. |
 
 ### Formatting and Localization
 

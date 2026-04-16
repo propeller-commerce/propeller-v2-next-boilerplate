@@ -53,6 +53,18 @@ export interface ProductCardProps {
   showAvailability?: boolean;
 
   /**
+   * Show the price below the product name.
+   * Defaults to true.
+   */
+  showPrice?: boolean;
+
+  /**
+   * Show the AddToCart component.
+   * Defaults to true.
+   */
+  allowAddToCart?: boolean;
+
+  /**
    * Label overrides forwarded to the embedded ItemStock component.
    * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
    */
@@ -202,16 +214,13 @@ export interface ProductCardProps {
    * Active company ID from the company switcher.
    * When provided, overrides the user's default company for cart creation and lookup.  */ companyId?: number;
   /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */ onProceedToCheckout?: () => void;
-  /** Label overrides for UI strings  *  * available labels:  * - outOfStock  * - noCartId  * - errorAdding  * - addedToCart  * - modalTitle  * - quantity  * - continueShopping  * - proceedToCheckout  * - add  * - adding */ addToCartLabels?: Record<
+  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */ onRequestQuoteClick?: (
+    cart: Cart
+  ) => void;
+  /** Label overrides for UI strings  *  * available labels:  * - outOfStock  * - noCartId  * - errorAdding  * - addedToCart  * - modalTitle  * - quantity  * - continueShopping  * - proceedToCheckout  * - requestQuoteButton  * - add  * - adding */ addToCartLabels?: Record<
     string,
     string
   >;
-  /** When false, hides the price. Defaults to true. */
-  showPrice?: boolean;
-  /** When false, hides the AddToCart control. Defaults to true. */
-  allowAddToCart?: boolean;
-  /** Callback fired when "Request a Quote" is clicked in the AddToCart modal. */
-  onRequestQuoteClick?: (cart: Cart) => void;
 }
 interface ProductCardState {
   isFavorite: boolean;
@@ -252,6 +261,7 @@ function ProductCard(props: ProductCardProps) {
     return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
   }
   function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
+    if (!props.showPrice) return '';
     const priceObj = (props.product as Product)?.price;
     const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
     const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;

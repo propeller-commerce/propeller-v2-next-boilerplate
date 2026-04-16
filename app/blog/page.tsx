@@ -18,7 +18,7 @@ function ArticleCard({ article }: { article: CmsArticle }) {
   return (
     <Link
       href={`/blog/${article.slug}`}
-      className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg"
     >
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
         {article.cover ? (
@@ -38,42 +38,52 @@ function ArticleCard({ article }: { article: CmsArticle }) {
             </svg>
           </div>
         )}
+        {article.category && (
+          <span className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm text-foreground text-xs font-medium px-3 py-1 rounded-full border border-border shadow-sm">
+            {article.category.name}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col p-5">
-        <div className="mb-2 flex items-center gap-3 text-sm text-muted-foreground">
-          {article.category && (
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-              {article.category.name}
-            </span>
-          )}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {article.author ? (
+              article.author.avatar ? (
+                <Image
+                  src={article.author.avatar.url}
+                  alt={article.author.name}
+                  width={28}
+                  height={28}
+                  className="w-7 h-7 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                  {article.author.name.charAt(0)}
+                </div>
+              )
+            ) : null}
+            {article.author && (
+              <span className="text-sm text-muted-foreground font-medium">{article.author.name}</span>
+            )}
+          </div>
           {article.publishedAt && (
-            <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
+            <time dateTime={article.publishedAt} className="text-sm text-muted-foreground">
+              {formatDate(article.publishedAt)}
+            </time>
           )}
         </div>
-        <h2 className="mb-2 text-lg font-semibold leading-snug group-hover:text-primary transition-colors">
+        <h2 className="mb-2 text-lg font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
           {article.title}
         </h2>
         {article.description && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">{article.description}</p>
+          <p className="line-clamp-3 text-sm text-muted-foreground mb-4 flex-1">{article.description}</p>
         )}
-        {article.author && (
-          <div className="mt-auto flex items-center gap-2 pt-4">
-            {article.author.avatar ? (
-              <Image
-                src={article.author.avatar.url}
-                alt={article.author.name}
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
-            ) : (
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                {article.author.name.charAt(0)}
-              </div>
-            )}
-            <span className="text-sm text-muted-foreground">{article.author.name}</span>
-          </div>
-        )}
+        <span className="text-primary font-medium text-sm inline-flex items-center gap-1 mt-auto">
+          Lees meer
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
       </div>
     </Link>
   );

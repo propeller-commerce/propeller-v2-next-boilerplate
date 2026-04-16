@@ -79,10 +79,8 @@ export default function QuoteActions(props: QuoteActionsProps) {
                     await orderService.setOrderStatus({
                         orderId: props.quote.id,
                         status: 'NEW' as string,
-                        payStatus: Enums.PaymentStatuses.OPEN,
                         sendOrderConfirmationEmail: true,
                         addPDFAttachment: true,
-                        triggerOrderSendConfirmEvent: true,
                         deleteCart: true,
                     });
                 }

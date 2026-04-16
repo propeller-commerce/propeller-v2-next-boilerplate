@@ -1,18 +1,21 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
+  OrderService,
+  OrderSearchArguments,
+  OrderResponse,
   Order,
   Contact,
   Customer,
   GraphQLClient,
   Enums,
+  OrderStatus,
   DateSearchInput,
   DecimalSearchInput,
   OrderSortInput,
 } from 'propeller-sdk-v2';
-import { useOrders } from '@/composables/react/useOrders';
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -54,6 +57,15 @@ export interface OrderListProps {
   /** Rows are clickable */
   rowsClickable?: boolean;
 
+  /** Show company orders */
+  showCompanyOrders?: boolean;
+
+  /** Hide pagination controls. Defaults to false. */
+  hidePagination?: boolean;
+
+  /** Filter orders by channel IDs */
+  channelIds?: number[];
+
   /** Format price */
   formatPrice?: (price: number) => string;
 
@@ -79,39 +91,140 @@ export interface OrderListProps {
     action?: string;
   };
 }
-
+interface OrderListState {
+  orders: Order[];
+  columns: string[];
+  loading: boolean;
+  totalItems: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+  rowsClickable: boolean;
+  searchForm: {
+    term?: string;
+    createdAt?: DateSearchInput;
+    lastModifiedAt?: DateSearchInput;
+    price?: DecimalSearchInput;
+    sortInput?: Partial<OrderSortInput>;
+    type?: Enums.OrderType;
+    [key: string]: any;
+  };
+  fetchOrders: (page?: number) => Promise<void>;
+  handlePageChange: (newPage: number) => void;
+  formatDate: (dateString: string) => string;
+  formatPrice: (price: any) => string;
+  getStatusColor: (status: string) => string;
+  getColumnLabel: (col: string) => string;
+  getLabel: (key: string, fallback: string) => string;
+  searchFields: () => string[];
+}
 function OrderList(props: OrderListProps) {
-  const columns = props.columns || ['id', 'date', 'status', 'total'];
-  const rowsClickable = props.rowsClickable || false;
+  const [orders, setOrders] = useState<OrderListState['orders']>(() => []);
+  const [columns, setColumns] = useState<OrderListState['columns']>(
+    () => props.columns || ['id', 'date', 'status', 'total']
+  );
+  const [loading, setLoading] = useState<OrderListState['loading']>(() => true);
+  const [totalItems, setTotalItems] = useState<OrderListState['totalItems']>(() => 0);
+  const [currentPage, setCurrentPage] = useState<OrderListState['currentPage']>(() => 1);
+  const [itemsPerPage, setItemsPerPage] = useState<OrderListState['itemsPerPage']>(
+    () => props.initialItemsPerPage || 10
+  );
+  const [totalPages, setTotalPages] = useState<OrderListState['totalPages']>(() => 0);
+  const [rowsClickable, setRowsClickable] = useState<OrderListState['rowsClickable']>(
+    () => props.rowsClickable || false
+  );
+  const fetchingRef = useRef(false);
+  const [searchForm, setSearchForm] = useState<OrderListState['searchForm']>(() => ({}));
+  async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
+    if (!props.user || !props.graphqlClient || fetchingRef.current) return;
+    fetchingRef.current = true;
+    setLoading(true);
+    try {
+      const orderService = new OrderService(props.graphqlClient);
+      const isContactUser = 'contactId' in props.user;
+      const statuses = props.orderStatus || [
+        'NEW',
+        'CONFIRMED',
+        'VALIDATED',
+        'ORDER', // Default statuses if not provided
+      ];
 
-  const { orders, loading, searchForm, setSearchForm, currentPage, totalPages, fetchOrders, goToPage } = useOrders({
-    graphqlClient: props.graphqlClient,
-    user: props.user as any,
-    companyId: props.companyId,
-    orderStatuses: props.orderStatus,
-    termFields: props.termFields as any,
-    itemsPerPage: props.initialItemsPerPage || 10,
-  });
-
-  function handlePageChange(newPage: number) {
-    if (newPage >= 1 && newPage <= totalPages) {
-      goToPage(newPage);
+      // Explicit cast to any for user ID access as SDK types might be strict interfaces
+      // We handle both Contact (contactId) and Customer (customerId)
+      const userId = isContactUser ? (props.user as any).contactId : (props.user as any).customerId;
+      const companyIdFallback =
+        isContactUser && (props.user as any).company ? (props.user as any).company.companyId : null;
+      const companyId = props.companyId || companyIdFallback || null;
+      const searchArgs: OrderSearchArguments = {
+        status: statuses,
+        ...(!props.showCompanyOrders && {
+          userId: [userId],
+        }),
+        ...(companyId && {
+          companyIds: [companyId],
+        }),
+        page: page,
+        offset: itemsPerPage,
+        term: searchForm.term || '',
+        termFields: props.termFields || [
+          Enums.OrderSearchFields.REFERENCE,
+          Enums.OrderSearchFields.ITEM_SKU,
+          Enums.OrderSearchFields.ID,
+          Enums.OrderSearchFields.ITEM_NAME,
+          Enums.OrderSearchFields.REMARKS,
+        ],
+        sortInputs: searchForm.sortInput || {
+          field: Enums.OrderSortField.CREATED_AT,
+          order: Enums.SortOrder.DESC,
+        },
+        ...(searchForm.createdAt && {
+          createdAt: searchForm.createdAt,
+        }),
+        ...(searchForm.lastModifiedAt && {
+          lastModifiedAt: searchForm.lastModifiedAt,
+        }),
+        ...(searchForm.price && {
+          price: searchForm.price,
+        }),
+        ...(searchForm.type && {
+          type: searchForm.type,
+        }),
+        ...(props.channelIds &&
+          props.channelIds.length > 0 && {
+            channelIds: props.channelIds,
+          }),
+      } as OrderSearchArguments;
+      const response: OrderResponse = await orderService.getOrders(searchArgs);
+      setOrders(response.items || []);
+      setTotalItems(response.itemsFound || 0);
+      if (response.offset) {
+        setItemsPerPage(response.offset);
+      }
+      setTotalPages(Math.ceil((response.itemsFound || 0) / (response.offset || 10)));
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+      fetchingRef.current = false;
     }
   }
-
-  function formatDate(dateString: string): string {
+  function handlePageChange(newPage: number): ReturnType<OrderListState['handlePageChange']> {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  }
+  function formatDate(dateString: string): ReturnType<OrderListState['formatDate']> {
     if (props.formatDate) return props.formatDate(dateString);
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString();
   }
-
-  function formatPrice(price: number): string {
+  function formatPrice(price: number): ReturnType<OrderListState['formatPrice']> {
     if (props.formatPrice) return props.formatPrice(price);
     if (!price) return '-';
     return `€${Number(price).toFixed(2)}`;
   }
-
-  function getStatusColor(status: string): string {
+  function getStatusColor(status: string): ReturnType<OrderListState['getStatusColor']> {
     if (props.getStatusColor) return props.getStatusColor(status);
     switch (status) {
       case 'COMPLETE':
@@ -124,27 +237,28 @@ function OrderList(props: OrderListProps) {
         return 'bg-yellow-100 text-yellow-800';
     }
   }
-
-  function getColumnLabel(col: string): string {
+  function getColumnLabel(col: string): ReturnType<OrderListState['getColumnLabel']> {
     if (props.columnConfig && props.columnConfig[col]) {
       return props.columnConfig[col];
     }
     // Fallback: Capitalize first letter
     return col.charAt(0).toUpperCase() + col.slice(1);
   }
-
-  function getLabel(key: string, fallback: string): string {
+  function getLabel(key: string, fallback: string): ReturnType<OrderListState['getLabel']> {
     return (props.labels as any)?.[key] || fallback;
   }
-
-  function searchFields(): string[] {
+  function searchFields(): ReturnType<OrderListState['searchFields']> {
     const fields = props.searchFields || [];
     if (props.enableSearch && !(fields as string[]).includes('term')) {
       return ['term', ...fields] as string[];
     }
     return fields;
   }
-
+  useEffect(() => {
+    if (props.user) {
+      fetchOrders(currentPage);
+    }
+  }, [props.user, currentPage, props.companyId]);
   return (
     <div className={props.className}>
       {props.enableSearch && searchFields().length > 0 ? (
@@ -468,7 +582,7 @@ function OrderList(props: OrderListProps) {
                   </tbody>
                 </table>
               </div>
-              {totalPages > 1 ? (
+              {!props.hidePagination && totalPages > 1 ? (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button

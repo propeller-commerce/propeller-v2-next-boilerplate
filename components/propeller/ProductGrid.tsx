@@ -65,7 +65,7 @@ export interface ProductGridProps {
 
   // ── Layout ────────────────────────────────────────────────────────────────
 
-  /** Number of columns in the grid. Accepts 2, 3, or 4. Defaults to 3. */
+  /** Number of columns in the grid. Accepts 2, 3, 4, 5, or 6. Defaults to 3. */
   columns?: number;
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -137,6 +137,9 @@ export interface ProductGridProps {
   /**  * Called after each successful internal data fetch with the full  * Category object — use to populate sibling components like GridTitle,  * CategoryDescription, and CategoryShortDescription.  */ onCategoryChange?: (
     category: Category
   ) => void;
+  /**  * Called whenever the internal loading state changes.  * Use to disable sibling components (e.g. GridFilters) while a fetch is in flight.  */ onLoadingChange?: (
+    isLoading: boolean
+  ) => void;
   /**  * Externally controlled current page.  * When provided, the grid uses this value instead of its internal page  * counter. Wire this to the `onPageChange` callback from a sibling  * GridPagination so the two components stay in sync.  * When changed the grid automatically re-fetches.  */ page?: number;
   /**  * Number of products per page. Defaults to 12.  * When changed the grid automatically re-fetches (page resets to 1).  */ pageSize?: number;
   /**  * Sort field to use (e.g. 'NAME', 'PRICE').  * When provided overrides internal sort state.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortField?: string;
@@ -152,12 +155,16 @@ export interface ProductGridProps {
   /**  * When true, AddToCart shows a success modal instead of a toast.  * Defaults to false.  */ showModal?: boolean;
   /**  * Render − / + stepper buttons in AddToCart.  * Defaults to true.  */ allowIncrDecr?: boolean;
   /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */ onProceedToCheckout?: () => void;
+  /** Called when "Request a Quote" is clicked in the AddToCart modal. */ onRequestQuoteClick?: (
+    cart: Cart
+  ) => void;
   /**  * Label overrides forwarded directly to the embedded AddToCart component.  * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,  *       modalTitle, quantity, continueShopping, proceedToCheckout  */ addToCartLabels?: Record<
     string,
     string
   >;
   /* ── Stock display ───────────────────────────────────────────────────────── */ /**  * Show the stock / availability widget on each product card.  * Forwarded directly to `ProductCard.showStock`.  * Defaults to false.  */ showStock?: boolean;
   /**  * Show only the availability indicator inside the stock widget.  * Forwarded to `ProductCard.showAvailability`.  * Defaults to true.  */ showAvailability?: boolean;
+  /**  * Show the price below the product name.  * Defaults to true.  */ showPrice?: boolean;
   /**  * Label overrides forwarded to the embedded ItemStock component inside each card.  * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces  */ stockLabels?: Record<
     string,
     string
@@ -174,8 +181,6 @@ export interface ProductGridProps {
     product: Product
   ) => void;
   /** Extra CSS class applied to the root element. */ className?: string;
-  /** When false, hides the price on each product/cluster card. Defaults to true. */ showPrice?: boolean;
-  /** Callback fired when "Request a Quote" is clicked in the AddToCart modal. Forwarded to each ProductCard → AddToCart. */ onRequestQuoteClick?: (cart: Cart) => void;
 }
 
 function ProductGrid(props: ProductGridProps) {
@@ -316,12 +321,12 @@ function ProductGrid(props: ProductGridProps) {
                           cluster={item as Cluster}
                           configuration={props.configuration}
                           includeTax={props.includeTax as boolean}
+                          showPrice={props.showPrice as boolean}
                           language={(props.language as string) || 'NL'}
                           showStock={props.showStock as boolean}
                           showAvailability={props.showAvailability as boolean}
                           stockLabels={props.stockLabels}
                           enableAddFavorite={props.enableAddFavorite as boolean}
-                          showPrice={props.showPrice}
                           onToggleFavorite={(cluster, isFav) => {
                             if (props.onToggleFavorite) {
                               props.onToggleFavorite(cluster, isFav);
@@ -344,6 +349,8 @@ function ProductGrid(props: ProductGridProps) {
                             <ProductCard
                               columns={(props.columns as number) || 3}
                               product={item as Product}
+                              showPrice={props.showPrice as boolean}
+                              allowAddToCart={props.allowAddToCart as boolean}
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}
@@ -357,14 +364,13 @@ function ProductGrid(props: ProductGridProps) {
                               enableStockValidation={props.stockValidation as boolean}
                               language={(props.language as string) || 'NL'}
                               onProceedToCheckout={props.onProceedToCheckout}
+                              onRequestQuoteClick={props.onRequestQuoteClick}
                               addToCartLabels={props.addToCartLabels}
                               enableAddFavorite={props.enableAddFavorite as boolean}
                               showStock={props.showStock as boolean}
                               showAvailability={props.showAvailability as boolean}
                               stockLabels={props.stockLabels}
                               companyId={props.companyId as number}
-                              showPrice={props.showPrice}
-                              onRequestQuoteClick={props.onRequestQuoteClick}
                               onToggleFavorite={(product, isFav) => {
                                 if (props.onToggleFavorite) {
                                   props.onToggleFavorite(product, isFav);
@@ -381,6 +387,8 @@ function ProductGrid(props: ProductGridProps) {
                             <ProductCard
                               columns={(props.columns as number) || 3}
                               product={item as Product}
+                              showPrice={props.showPrice as boolean}
+                              allowAddToCart={props.allowAddToCart as boolean}
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}
@@ -391,7 +399,6 @@ function ProductGrid(props: ProductGridProps) {
                               showAvailability={props.showAvailability as boolean}
                               stockLabels={props.stockLabels}
                               companyId={props.companyId as number}
-                              showPrice={props.showPrice}
                               onRequestQuoteClick={props.onRequestQuoteClick}
                               onToggleFavorite={(product, isFav) => {
                                 if (props.onToggleFavorite) {

@@ -44,6 +44,7 @@ export const serializeCart = (cart: Cart): string => {
     carriers: deepPlain(cart.carriers),
     actionCode: cart.actionCode,
     vouchers: deepPlain(cart.vouchers),
+    paymentData: deepPlain(cart.paymentData),
     postageData: deepPlain(cart.postageData),
     taxLevels: deepPlain(cart.taxLevels),
   };

@@ -3,19 +3,26 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import {
+  CartService,
+  CartChildItemInput,
   GraphQLClient,
   Product,
   Cart,
   Contact,
   Customer,
-  MediaImageProductSearchInput,
+  CartSearchInput,
   TransformationsInput,
+  MediaImageProductSearchInput,
+  CartStartInput,
+  CartStartVariables,
+  Address,
+  Enums,
   CartMainItem,
   CartBaseItem,
-  CartChildItemInput,
   Cluster,
+  PurchaseAuthorizationConfig,
+  Company,
 } from 'propeller-sdk-v2';
-import { useCart } from '@/composables/react/useCart';
 
 export interface AddToCartProps {
   /** GraphQL client for the Propeller SDK */
@@ -56,6 +63,7 @@ export interface AddToCartProps {
    * - quantity
    * - continueShopping
    * - proceedToCheckout
+   * - requestQuoteButton
    * - add
    * - adding
    */
@@ -120,6 +128,9 @@ export interface AddToCartProps {
   /** Callback fired when the "Proceed to checkout" modal button is clicked */
   onProceedToCheckout?: () => void;
 
+  /** Callback fired when the "Request a Quote" modal button is clicked */
+  onRequestQuoteClick?: (cart: Cart) => void;
+
   /** Configuration object passed to the component */
   configuration?: any;
 
@@ -132,50 +143,91 @@ export interface AddToCartProps {
   /** Image search filters */ imageSearchFilters: MediaImageProductSearchInput;
   /** Image transformation filters */ imageVariantFilters: TransformationsInput;
 }
-
+/** * Cart query variables interface Variables for the cart query */ interface AddToCartState {
+  quantity: number;
+  loading: boolean;
+  success: boolean;
+  modalVisible: boolean;
+  activeCartId: string;
+  toastMessage: string;
+  toastType: string;
+  toastVisible: boolean;
+  includeTax: boolean;
+  priceListener: any;
+  getMinQuantity: () => number;
+  getStep: () => number;
+  increment: () => void;
+  decrement: () => void;
+  showToast: (message: string, type: string) => void;
+  dismissToast: () => void;
+  getProductName: () => string;
+  getProductUrl: () => string;
+  getProductImageUrl: () => string;
+  getProductSku: () => string;
+  getProductPrice: () => string;
+  addedCartItem: CartMainItem | null;
+  activeFullCart: Cart | null;
+  checkoutAllowed: () => boolean;
+  getModalImageUrl: () => string;
+  getModalName: () => string;
+  getModalPrice: () => string;
+  getModalSku: () => string;
+  getChildItems: () => CartBaseItem[];
+  initCart: () => Promise<string>;
+  handleAddToCart: () => Promise<void>;
+  closeModal: () => void;
+  getLabel: (key: string, fallback: string) => string;
+}
 function AddToCart(props: AddToCartProps) {
-  // --- composable ---
-  const { cart, loading, checkoutAllowed, addItem, getMinQuantity, getStep } = useCart({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
-    companyId: props.companyId,
-    configuration: props.configuration,
-    onCartCreated: props.onCartCreated,
-  });
-
-  // --- local UI state ---
-  const [quantity, setQuantity] = useState<number>(() => 1);
-  const [toastMessage, setToastMessage] = useState<string>(() => '');
-  const [toastType, setToastType] = useState<string>(() => '');
-  const [toastVisible, setToastVisible] = useState<boolean>(() => false);
-  const [modalVisible, setModalVisible] = useState<boolean>(() => false);
-  const [addedCartItem, setAddedCartItem] = useState<CartMainItem | null>(() => null);
-  const [activeFullCart, setActiveFullCart] = useState<Cart | null>(() => null);
-  const [includeTax, setIncludeTax] = useState<boolean>(() => false);
-
-  // --- display helpers ---
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as any)?.[key] || fallback;
+  const [quantity, setQuantity] = useState<AddToCartState['quantity']>(() => 1);
+  const [loading, setLoading] = useState<AddToCartState['loading']>(() => false);
+  const [success, setSuccess] = useState<AddToCartState['success']>(() => false);
+  const [modalVisible, setModalVisible] = useState<AddToCartState['modalVisible']>(() => false);
+  const [activeCartId, setActiveCartId] = useState<AddToCartState['activeCartId']>(() => '');
+  const [toastMessage, setToastMessage] = useState<AddToCartState['toastMessage']>(() => '');
+  const [toastType, setToastType] = useState<AddToCartState['toastType']>(() => '');
+  const [toastVisible, setToastVisible] = useState<AddToCartState['toastVisible']>(() => false);
+  const [addedCartItem, setAddedCartItem] = useState<AddToCartState['addedCartItem']>(() => null);
+  const [includeTax, setIncludeTax] = useState<AddToCartState['includeTax']>(() => false);
+  const [priceListener, setPriceListener] = useState<AddToCartState['priceListener']>(() => null);
+  const [activeFullCart, setActiveFullCart] = useState<AddToCartState['activeFullCart']>(
+    () => null
+  );
+  function checkoutAllowed(): ReturnType<AddToCartState['checkoutAllowed']> {
+    if (!props.user || !('contactId' in props.user)) return true;
+    if (!props.companyId) return true;
+    if (!activeFullCart) return true;
+    const pacData = (props.user as Contact).purchaseAuthorizationConfigs;
+    const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+    const purchaserPAC = items.find((pac: PurchaseAuthorizationConfig) => {
+      const role = pac.purchaseRole;
+      const pacCompanyId = pac.company?.companyId;
+      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+    });
+    if (!purchaserPAC) return true;
+    const limit = purchaserPAC.authorizationLimit ?? 0;
+    const totalNet = activeFullCart?.total?.totalNet ?? 0;
+    return totalNet <= limit;
   }
-  function getProductName(): string {
-    return (props.product as Product)?.names?.[0]?.value || 'Product';
+  function getMinQuantity(): ReturnType<AddToCartState['getMinQuantity']> {
+    const min = (props.product as Product)?.minimumQuantity;
+    return min && min > 0 ? min : 1;
   }
-  function getProductUrl(): string {
-    return props.configuration.urls.getProductUrl(props.product, props.language);
+  function getStep(): ReturnType<AddToCartState['getStep']> {
+    const unit = (props.product as Product)?.unit;
+    return unit && unit > 0 ? unit : 1;
   }
-  function getProductImageUrl(): string {
-    return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  function increment(): ReturnType<AddToCartState['increment']> {
+    setQuantity(quantity + getStep());
   }
-  function getProductSku(): string {
-    return (props.product as Product)?.sku || '';
+  function decrement(): ReturnType<AddToCartState['decrement']> {
+    const min = getMinQuantity();
+    const step = getStep();
+    if (quantity - step >= min) {
+      setQuantity(quantity - step);
+    }
   }
-  function getProductPrice(): string {
-    const price =
-      props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
-    if (!price && price !== 0) return '';
-    return `\u20AC${Number(price).toFixed(2)}`;
-  }
-  function showToast(message: string, type: string): void {
+  function showToast(message: string, type: string): ReturnType<AddToCartState['showToast']> {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
@@ -183,33 +235,251 @@ function AddToCart(props: AddToCartProps) {
       setToastVisible(false);
     }, 3000);
   }
-  function dismissToast(): void {
+  function dismissToast(): ReturnType<AddToCartState['dismissToast']> {
     setToastVisible(false);
   }
-  function increment(): void {
-    setQuantity(quantity + getStep(props.product));
+  function getProductName(): ReturnType<AddToCartState['getProductName']> {
+    return (props.product as Product)?.names?.[0]?.value || 'Product';
   }
-  function decrement(): void {
-    const min = getMinQuantity(props.product);
-    const step = getStep(props.product);
-    if (quantity - step >= min) {
-      setQuantity(quantity - step);
+  function getProductUrl(): ReturnType<AddToCartState['getProductUrl']> {
+    return props.configuration.urls.getProductUrl(props.product, props.language);
+  }
+  function getProductImageUrl(): ReturnType<AddToCartState['getProductImageUrl']> {
+    return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  }
+  function getProductSku(): ReturnType<AddToCartState['getProductSku']> {
+    return (props.product as Product)?.sku || '';
+  }
+  function getProductPrice(): ReturnType<AddToCartState['getProductPrice']> {
+    const price =
+      props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
+    if (!price && price !== 0) return '';
+    return `\u20AC${Number(price).toFixed(2)}`;
+  }
+  async function initCart(): ReturnType<AddToCartState['initCart']> {
+    const cartService = new CartService(props.graphqlClient);
+    /* 1. Check for existing carts for this user first */ if (props.user) {
+      try {
+        const searchInput: CartSearchInput = { offset: 100, statuses: [Enums.CartStatus.OPEN] };
+        if ('contactId' in props.user && props.user.contactId) {
+          searchInput.contactIds = [props.user.contactId];
+          const resolvedCompanyId =
+            (props.companyId as number) || (props.user.company && props.user.company.companyId);
+          if (resolvedCompanyId) {
+            searchInput.companyIds = [resolvedCompanyId];
+          }
+        } else if ('customerId' in props.user && props.user.customerId) {
+          searchInput.customerIds = [props.user.customerId];
+        }
+        const carts = await cartService.getCarts(searchInput);
+        if (carts && carts.items && carts.items.length > 0) {
+          const existingCartId = carts.items[carts.items.length - 1].cartId;
+          const cartVariables: CartQueryVariables = {
+            cartId: existingCartId,
+            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+            language: props.configuration.language || 'NL',
+          };
+          const cart = await cartService.getCart(cartVariables);
+          setActiveCartId(cart.cartId);
+          if (props.onCartCreated) {
+            props.onCartCreated(cart);
+          }
+          return cart.cartId;
+        }
+      } catch (e) {
+        console.error('Failed to check existing carts', e);
+      }
+    }
+    /* 2. Start a new cart */ const language = props.configuration.language || 'NL';
+    const startCartInput: CartStartInput = { language };
+    if (props.user) {
+      if ('contactId' in props.user && props.user.contactId) {
+        startCartInput.contactId = props.user.contactId;
+        const resolvedCompanyId =
+          (props.companyId as number) || (props.user as Contact).company?.companyId;
+        if (resolvedCompanyId) {
+          startCartInput.companyId = resolvedCompanyId as number;
+        }
+      } else if ('customerId' in props.user && props.user.customerId) {
+        startCartInput.customerId = props.user.customerId;
+      }
+    }
+    const cartStartVars: CartStartVariables = {
+      input: startCartInput,
+      imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+      imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+      language: props.configuration.language || 'NL',
+    };
+    let newCart = await cartService.startCart(cartStartVars);
+    /* 3. Assign Default Addresses */ if (newCart && props.user) {
+      const addresses =
+        'companies' in props.user
+          ? props.user.companies?.items?.find(
+              (company: Company) => company.companyId === props.companyId
+            )?.addresses
+          : (props.user as Customer).addresses;
+      if (addresses && Array.isArray(addresses)) {
+        const defaultInvoice = addresses.find(
+          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'invoice'
+        );
+        const defaultDelivery = addresses.find(
+          (addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery'
+        );
+        if (defaultInvoice) {
+          newCart = await cartService.updateCartAddress({
+            id: newCart.cartId,
+            input: {
+              type: Enums.CartAddressType.INVOICE,
+              firstName: defaultInvoice.firstName || '',
+              lastName: defaultInvoice.lastName || '',
+              street: defaultInvoice.street || '',
+              postalCode: defaultInvoice.postalCode || '',
+              city: defaultInvoice.city || '',
+              country: defaultInvoice.country || 'NL',
+              company: defaultInvoice.company || '',
+              gender: defaultInvoice.gender || Enums.Gender.U,
+              middleName: defaultInvoice.middleName || '',
+              number: defaultInvoice.number || '',
+              numberExtension: defaultInvoice.numberExtension || '',
+              email: defaultInvoice.email || '',
+              mobile: defaultInvoice.mobile || '',
+              phone: defaultInvoice.phone || '',
+              notes: defaultInvoice.notes || '',
+            },
+            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+            language: language,
+          });
+        }
+        if (defaultDelivery) {
+          newCart = await cartService.updateCartAddress({
+            id: newCart.cartId,
+            input: {
+              type: Enums.CartAddressType.DELIVERY,
+              firstName: defaultDelivery.firstName || '',
+              lastName: defaultDelivery.lastName || '',
+              street: defaultDelivery.street || '',
+              postalCode: defaultDelivery.postalCode || '',
+              city: defaultDelivery.city || '',
+              country: defaultDelivery.country || 'NL',
+              company: defaultDelivery.company || '',
+              gender: defaultDelivery.gender || Enums.Gender.U,
+              middleName: defaultDelivery.middleName || '',
+              number: defaultDelivery.number || '',
+              numberExtension: defaultDelivery.numberExtension || '',
+              email: defaultDelivery.email || '',
+              mobile: defaultDelivery.mobile || '',
+              phone: defaultDelivery.phone || '',
+              notes: defaultDelivery.notes || '',
+            },
+            imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+            imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+            language: language,
+          });
+        }
+      }
+    }
+    setActiveCartId(newCart.cartId);
+    if (props.onCartCreated) {
+      props.onCartCreated(newCart);
+    }
+    return newCart.cartId;
+  }
+  async function handleAddToCart(): ReturnType<AddToCartState['handleAddToCart']> {
+    if (!props.graphqlClient) return;
+    if (props.beforeAddToCart && !props.beforeAddToCart()) return;
+    setLoading(true);
+    setSuccess(false);
+    try {
+      /* Optional stock validation */ if (props.enableStockValidation) {
+        const inventory = props.product.inventory;
+        const available = inventory?.totalQuantity || 0;
+        if (available < quantity) {
+          showToast(getLabel('outOfStock', 'Insufficient stock available'), 'error');
+          return;
+        }
+      }
+      /* Map raw child-item IDs to CartChildItemInput[] */ const childItems:
+        | CartChildItemInput[]
+        | undefined = props.childItems
+        ? props.childItems.map((id: number) => ({ productId: id, quantity: quantity }))
+        : undefined;
+      if (props.onAddToCart) {
+        /* Consumer-provided handler */ const cart = props.onAddToCart(
+          props.product,
+          props.cluster?.clusterId,
+          quantity,
+          childItems,
+          props.notes,
+          props.price,
+          props.showModal
+        );
+        setActiveFullCart(cart);
+        const addedItem = cart.items?.find(
+          (item: CartMainItem) => item.productId === props.product.productId
+        );
+        setAddedCartItem(addedItem || null);
+        props.afterAddToCart?.(cart, addedItem);
+      } else {
+        /* Internal CartService fallback - resolve cart ID */ let cartId =
+          props.cartId || activeCartId;
+        if (!cartId) {
+          if (props.createCart) {
+            cartId = await initCart();
+          }
+          if (!cartId) {
+            showToast(getLabel('noCartId', 'No cart ID provided'), 'error');
+            return;
+          }
+        }
+        const cartService = new CartService(props.graphqlClient);
+        const cart = await cartService.addItemToCart({
+          id: cartId,
+          input: {
+            productId: props.product.productId,
+            quantity: quantity,
+            ...(props.cluster?.clusterId !== undefined && { clusterId: props.cluster?.clusterId }),
+            ...(childItems && { childItems }),
+            ...(props.notes && { notes: props.notes }),
+            ...(props.price !== undefined && { price: props.price }),
+          },
+          language: props.language || 'NL',
+          imageSearchFilters: props.configuration.imageSearchFiltersGrid,
+          imageVariantFilters: props.configuration.imageVariantFiltersSmall,
+        });
+        setActiveFullCart(cart);
+        const addedItem = cart.items?.find((item) => item.productId === props.product.productId);
+        setAddedCartItem(addedItem || null);
+        props.afterAddToCart?.(cart, addedItem);
+      }
+      setSuccess(true);
+      if (props.showModal) {
+        setModalVisible(true);
+      } else {
+        showToast(`${getProductName()} ${getLabel('addedToCart', 'added to cart')}`, 'success');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showToast(getLabel('errorAdding', 'Failed to add item to cart'), 'error');
+    } finally {
+      setLoading(false);
     }
   }
-  function getModalImageUrl(): string {
+  function getModalImageUrl(): ReturnType<AddToCartState['getModalImageUrl']> {
     if (addedCartItem) {
       const img = addedCartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
       if (img) return img;
     }
     return getProductImageUrl();
   }
-  function getModalName(): string {
+  function getModalName(): ReturnType<AddToCartState['getModalName']> {
     if (addedCartItem) {
       return addedCartItem.product?.names?.[0]?.value || getProductName();
     }
     return getProductName();
   }
-  function getModalPrice(): string {
+  function getModalPrice(): ReturnType<AddToCartState['getModalPrice']> {
     if (addedCartItem) {
       const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
       const price = useTax ? addedCartItem.totalSumNet : addedCartItem.totalSum;
@@ -217,74 +487,26 @@ function AddToCart(props: AddToCartProps) {
     }
     return getProductPrice();
   }
-  function getModalSku(): string {
+  function getModalSku(): ReturnType<AddToCartState['getModalSku']> {
     if (addedCartItem) return addedCartItem.product?.sku || '';
     return getProductSku();
   }
-  function getChildItems(): CartBaseItem[] {
+  function getChildItems(): ReturnType<AddToCartState['getChildItems']> {
     const children = addedCartItem?.childItems;
     if (!children || !Array.isArray(children)) return [];
     return children;
   }
-  function closeModal(): void {
+  function closeModal(): ReturnType<AddToCartState['closeModal']> {
     setModalVisible(false);
+    setSuccess(false);
     setAddedCartItem(null);
   }
-
-  // --- main action ---
-  async function handleAddToCart(): Promise<void> {
-    if (!props.graphqlClient) return;
-    if (props.beforeAddToCart && !props.beforeAddToCart()) return;
-
-    const result = await addItem({
-      product: props.product,
-      cluster: props.cluster,
-      childItems: props.childItems,
-      quantity,
-      notes: props.notes,
-      price: props.price,
-      onAddToCart: props.onAddToCart
-        ? (product, clusterId, qty, childItemInputs, notes, price) =>
-            props.onAddToCart!(product, clusterId, qty, childItemInputs, notes, price, props.showModal)
-        : undefined,
-      afterAddToCart: (resultCart, addedItem) => {
-        setActiveFullCart(resultCart);
-        setAddedCartItem(addedItem || null);
-        props.afterAddToCart?.(resultCart, addedItem || undefined);
-      },
-      enableStockValidation: props.enableStockValidation,
-      cartId: props.cartId,
-      createCart: props.createCart,
-    });
-
-    if (!result.success) {
-      showToast(
-        result.error === 'Insufficient stock available'
-          ? getLabel('outOfStock', 'Insufficient stock available')
-          : result.error === 'No cart ID provided'
-          ? getLabel('noCartId', 'No cart ID provided')
-          : getLabel('errorAdding', 'Failed to add item to cart'),
-        'error'
-      );
-      return;
-    }
-
-    if (result.cart) {
-      setActiveFullCart(result.cart);
-      setAddedCartItem(result.item || null);
-    }
-
-    if (props.showModal) {
-      setModalVisible(true);
-    } else {
-      showToast(`${getProductName()} ${getLabel('addedToCart', 'added to cart')}`, 'success');
-    }
+  function getLabel(key: string, fallback: string): ReturnType<AddToCartState['getLabel']> {
+    return (props.labels as any)?.[key] || fallback;
   }
-
   useEffect(() => {
-    setQuantity(getMinQuantity(props.product));
+    setQuantity(getMinQuantity());
   }, []);
-
   return (
     <div className={props.className}>
       <div className="flex items-center gap-2 w-full">
@@ -294,7 +516,7 @@ function AddToCart(props: AddToCartProps) {
               type="button"
               className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
               onClick={(event) => decrement()}
-              disabled={quantity <= getMinQuantity(props.product) || loading}
+              disabled={quantity <= getMinQuantity() || loading}
             >
               {' '}
               -{' '}
@@ -302,13 +524,13 @@ function AddToCart(props: AddToCartProps) {
             <input
               type="number"
               className="w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              min={getMinQuantity(props.product)}
-              step={getStep(props.product)}
+              min={getMinQuantity()}
+              step={getStep()}
               value={quantity}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
-                const min = getMinQuantity(props.product);
-                const step = getStep(props.product);
+                const min = getMinQuantity();
+                const step = getStep();
                 if (!isNaN(val) && val >= min) {
                   setQuantity(Math.round((val - min) / step) * step + min);
                 }
@@ -329,13 +551,13 @@ function AddToCart(props: AddToCartProps) {
           <input
             type="number"
             className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            min={getMinQuantity(props.product)}
-            step={getStep(props.product)}
+            min={getMinQuantity()}
+            step={getStep()}
             value={quantity}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10);
-              const min = getMinQuantity(props.product);
-              const step = getStep(props.product);
+              const min = getMinQuantity();
+              const step = getStep();
               if (!isNaN(val) && val >= min) {
                 setQuantity(Math.round((val - min) / step) * step + min);
               }
@@ -505,7 +727,23 @@ function AddToCart(props: AddToCartProps) {
               >
                 {getLabel('continueShopping', 'Continue shopping')}
               </button>
-              {checkoutAllowed ? (
+              {checkoutAllowed() &&
+              !!props.onRequestQuoteClick &&
+              !!props.user &&
+              'contactId' in props.user ? (
+                <button
+                  type="button"
+                  className="flex-1 inline-flex justify-center rounded-md border border-secondary bg-white px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  onClick={(event) => {
+                    closeModal();
+                    if (props.onRequestQuoteClick && activeFullCart)
+                      props.onRequestQuoteClick(activeFullCart);
+                  }}
+                >
+                  {getLabel('requestQuoteButton', 'Request a Quote')}
+                </button>
+              ) : null}
+              {checkoutAllowed() ? (
                 <button
                   type="button"
                   className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"

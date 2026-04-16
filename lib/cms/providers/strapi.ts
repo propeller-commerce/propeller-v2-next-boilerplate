@@ -125,6 +125,9 @@ function normalizeBlock(strapiUrl: string, raw: any): CmsBlock | null {
         title: raw.title || null,
         description: raw.description || null,
         successMessage: raw.successMessage || 'Thank you for your message. We will get back to you soon.',
+        phone: null,
+        email: null,
+        formTitle: null,
       };
     case 'slider':
       return {

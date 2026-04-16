@@ -62,14 +62,21 @@ export interface GridFiltersProps {
   /** Currently active text filters (URL-driven). Syncs internal checkbox state when filters are removed externally. */
   activeTextFilters?: Record<string, string[]>;
 
-  /** Extra CSS class on the root element. */
-  className?: string;
+  /** Currently active price filter range (URL-driven). When undefined, resets price inputs to bounds. */
+  activePriceMin?: number;
+  activePriceMax?: number;
+
+  /**
+   * When true, all checkboxes and price inputs are disabled.
+   * Wire to ProductGrid's `onLoadingChange` to block rapid re-clicks while a fetch is in flight.  */ isLoading?: boolean;
+  /** Extra CSS class on the root element. */ className?: string;
 }
 interface GridFiltersState {
   selectedFilters: Record<string, string[]>;
   currentMin: number;
   currentMax: number;
   expandedFilters: Record<string, boolean>;
+  isPending: boolean;
   showPriceFilter: () => boolean;
   getFilterName: (filter: AttributeFilter) => string;
   getFilterTitle: (filter: AttributeFilter) => string;
@@ -98,6 +105,7 @@ function GridFilters(props: GridFiltersProps) {
   const [expandedFilters, setExpandedFilters] = useState<GridFiltersState['expandedFilters']>(
     () => ({})
   );
+  const [isPending, setIsPending] = useState<GridFiltersState['isPending']>(() => false);
   function showPriceFilter(): ReturnType<GridFiltersState['showPriceFilter']> {
     const mode = (props.portalMode as string) || 'open';
     if (mode === 'open') return true;
@@ -152,10 +160,7 @@ function GridFilters(props: GridFiltersProps) {
   }
   function toggleAccordion(filterName: string): ReturnType<GridFiltersState['toggleAccordion']> {
     const cur = !!(expandedFilters as Record<string, boolean>)[filterName];
-    setExpandedFilters({
-      ...expandedFilters,
-      [filterName]: !cur,
-    });
+    setExpandedFilters({ ...expandedFilters, [filterName]: !cur });
   }
   function handleCheckbox(
     filter: AttributeFilter,
@@ -165,16 +170,11 @@ function GridFilters(props: GridFiltersProps) {
     const name = (filter as AttributeFilter)?.attributeDescription?.name || '';
     const cur = (selectedFilters as Record<string, string[]>)[name] || [];
     const next = checked ? [...cur, value] : cur.filter((v: string) => v !== value);
-    setSelectedFilters({
-      ...selectedFilters,
-      [name]: next,
-    });
+    setSelectedFilters({ ...selectedFilters, [name]: next });
     if (next.length === 0) {
-      setExpandedFilters({
-        ...expandedFilters,
-        [name]: false,
-      });
+      setExpandedFilters({ ...expandedFilters, [name]: false });
     }
+    setIsPending(true);
     props.onFilterChange(filter, value);
     if (props.getSelectedFilters) props.getSelectedFilters();
   }
@@ -187,6 +187,7 @@ function GridFilters(props: GridFiltersProps) {
     setCurrentMax(n);
   }
   function applyPrice(): ReturnType<GridFiltersState['applyPrice']> {
+    setIsPending(true);
     if (props.onPriceChange) props.onPriceChange(currentMin, currentMax);
     if (props.getSelectedFilters) props.getSelectedFilters();
   }
@@ -211,9 +212,7 @@ function GridFilters(props: GridFiltersProps) {
   useEffect(() => {
     const currentExp = expandedFilters as Record<string, boolean>;
     const open = props.collapsed === false;
-    const nextExp: Record<string, boolean> = {
-      ...currentExp,
-    };
+    const nextExp: Record<string, boolean> = { ...currentExp };
     let changed = false;
     ((props.filters as AttributeFilter[]) || []).forEach((f: AttributeFilter) => {
       const n = f?.attributeDescription?.name;
@@ -246,15 +245,25 @@ function GridFilters(props: GridFiltersProps) {
     if (!props.activeTextFilters) return;
     setSelectedFilters(props.activeTextFilters as Record<string, string[]>);
   }, [props.activeTextFilters]);
+  useEffect(() => {
+    if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+      setCurrentMin((props.priceMin as number) || 0);
+      setCurrentMax((props.priceMax as number) || 9999);
+    }
+  }, [props.activePriceMin, props.activePriceMax]);
+  useEffect(() => {
+    if (!props.isLoading) setIsPending(false);
+  }, [props.isLoading]);
   return (
     <div
-      className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${(props.className as string) || ''}`}
+      className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${isPending ? 'opacity-50 pointer-events-none' : ''} ${(props.className as string) || ''}`}
     >
       {showPriceFilter() && (props.priceMin !== undefined || props.priceMax !== undefined) ? (
         <>
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Price Range
+              {' '}
+              Price Range{' '}
             </h3>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -312,7 +321,7 @@ function GridFilters(props: GridFiltersProps) {
               />
               <div className="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10" />
             </div>
-          </div>
+          </div>{' '}
           <div className="h-px bg-gray-100" />
         </>
       ) : null}
@@ -355,7 +364,7 @@ function GridFilters(props: GridFiltersProps) {
                   />
                   <span className="flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900">
                     {option.value}
-                    <span className="ml-1 text-xs text-gray-400">({getCount(option)})</span>
+                    <span className="ml-1 text-xs text-gray-400"> ({getCount(option)}) </span>
                   </span>
                 </label>
               ))}
@@ -366,5 +375,4 @@ function GridFilters(props: GridFiltersProps) {
     </div>
   );
 }
-
 export default GridFilters;

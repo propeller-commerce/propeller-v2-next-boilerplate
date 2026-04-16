@@ -105,6 +105,9 @@ export interface LoginFormProps {
    * @default true
    */
   accountHeaderLoginForm?: boolean;
+
+  /** Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall. */
+  configuration?: any;
 }
 
 function LoginForm(props: LoginFormProps) {

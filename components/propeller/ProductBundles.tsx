@@ -49,6 +49,11 @@ export interface ProductBundlesProps {
   /** Authenticated user — used for semi-closed visibility check. */
   user?: Contact | Customer | null;
 
+  /** Active company ID from the company switcher.
+   * Overrides user's default company for cart creation and lookup.  * If not provided, the user's default company is used.
+   */
+  companyId?: number;
+
   /** Cart ID — required when onAddToCart is not provided */
   cartId?: string;
 
@@ -124,7 +129,6 @@ export interface ProductBundlesProps {
   /** Extra CSS class applied to the root wrapper element. */
   className?: string;
 }
-
 function ProductBundles(props: ProductBundlesProps) {
   const [isMounted, setIsMounted] = useState<boolean>(() => false);
   const [addingBundleId, setAddingBundleId] = useState<string | null>(() => null);

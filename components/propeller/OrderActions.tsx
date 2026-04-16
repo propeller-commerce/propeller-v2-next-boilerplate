@@ -10,6 +10,7 @@ import {
   Customer,
   MediaImageProductSearchInput,
   TransformationsInput,
+  Company,
 } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
 

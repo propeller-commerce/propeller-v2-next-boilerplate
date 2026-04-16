@@ -223,9 +223,10 @@ export default function Header() {
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
                     graphqlClient={graphqlClient}
-                    language={language}
-                    configuration={config}
+                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
                     companyId={selectedCompany?.companyId}
+                    configuration={config}
+                    language={language}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
@@ -286,6 +287,7 @@ export default function Header() {
                       { label: 'Addresses', href: localizeHref('/account/addresses', language) },
                       { label: 'Orders', href: localizeHref('/account/orders', language) },
                       { label: 'Quotes', href: localizeHref('/account/quotes', language) },
+                      { label: 'Quote requests', href: localizeHref('/account/quote-requests', language) },
                       { label: 'Favorites', href: localizeHref('/account/favorites', language) },
                       ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
                         { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
@@ -301,12 +303,19 @@ export default function Header() {
                     cart={cart as Cart}
                     user={state.isAuthenticated ? (state.user as Contact | Customer) : undefined}
                     companyId={selectedCompany?.companyId}
+                    graphqlClient={graphqlClient}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}
                     configuration={config}
                     language={language}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
+                    onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                    afterRequestAuthorization={(updatedCart) => {
+                      clearCart();
+                      router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
+                    }}
+                    onError={(err) => console.error('Authorization request failed:', err)}
                   />
                   // <Button
                   //   variant="ghost"

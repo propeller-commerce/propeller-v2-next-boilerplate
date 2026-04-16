@@ -1,6 +1,6 @@
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
+import PersonalizedPage from '@/components/cms/PersonalizedPage';
 import { getPage } from '@/lib/cms';
 import HomeFallback from '@/components/cms/HomeFallback';
 
@@ -12,7 +12,7 @@ export default async function Home() {
       <Header />
       <main className="flex-1">
         {page && page.blocks.length > 0 ? (
-          <DynamicBlockRenderer blocks={page.blocks} />
+          <PersonalizedPage defaultPage={page} slug="home" />
         ) : (
           <HomeFallback />
         )}

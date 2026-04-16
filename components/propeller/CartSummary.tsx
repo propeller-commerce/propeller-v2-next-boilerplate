@@ -159,7 +159,6 @@ function CartSummary(props: CartSummaryProps) {
     if (!purchaserPAC) { console.log('[PAC] no PURCHASER PAC found for companyId', props.companyId); return false; }
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
     const totalGross = props.cart?.total?.totalGross ?? 0;
-    console.log('[PAC] limit:', limit, '| totalGross:', totalGross, '| exceeds:', totalGross > limit);
     return totalGross > limit;
   }
 
@@ -237,13 +236,26 @@ function CartSummary(props: CartSummaryProps) {
         <span>{formatItemPrice(totalInclVat())}</span>
       </div>
       {showCheckoutButton() && !showRequestAuthorizationButton() ? (
-        <button
-          type="button"
-          className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
-          onClick={(event) => handleCheckoutClick()}
-        >
-          {getLabel('checkoutButton', 'Continue to Checkout')}
-        </button>
+        <>
+          <button
+            type="button"
+            className="block w-full bg-secondary text-white text-center py-3 rounded-lg hover:bg-secondary/90 transition font-semibold mt-4"
+            onClick={(event) => handleCheckoutClick()}
+          >
+            {getLabel('checkoutButton', 'Continue to Checkout')}
+          </button>{' '}
+          {!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
+            <button
+              type="button"
+              className="block w-full bg-white border border-secondary text-secondary text-center py-3 rounded-lg hover:bg-secondary/5 transition font-semibold mt-2"
+              onClick={(event) =>
+                props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart)
+              }
+            >
+              {getLabel('requestQuoteButton', 'Request a Quote')}
+            </button>
+          ) : null}
+        </>
       ) : null}
       {showRequestAuthorizationButton() ? (
         <button

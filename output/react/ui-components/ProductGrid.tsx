@@ -1,6 +1,7 @@
 'use client';
+import * as React from 'react';
 
-import { useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -9,12 +10,15 @@ import {
   Customer,
   Cart,
   CartMainItem,
+  Enums,
+  CategoryService,
+  CategoryProductSearchInput,
+  CategoryQueryVariables,
   AttributeFilter,
   ProductTextFilterInput,
   ProductsResponse,
   Category,
 } from 'propeller-sdk-v2';
-import { useProductSearch } from '@/composables/react/useProductSearch';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
 
@@ -65,7 +69,7 @@ export interface ProductGridProps {
 
   // ── Layout ────────────────────────────────────────────────────────────────
 
-  /** Number of columns in the grid. Accepts 2, 3, or 4. Defaults to 3. */
+  /** Number of columns in the grid. Accepts 2, 3, 4, 5, or 6. Defaults to 3. */
   columns?: number;
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -137,6 +141,9 @@ export interface ProductGridProps {
   /**  * Called after each successful internal data fetch with the full  * Category object — use to populate sibling components like GridTitle,  * CategoryDescription, and CategoryShortDescription.  */ onCategoryChange?: (
     category: Category
   ) => void;
+  /**  * Called whenever the internal loading state changes.  * Use to disable sibling components (e.g. GridFilters) while a fetch is in flight.  */ onLoadingChange?: (
+    isLoading: boolean
+  ) => void;
   /**  * Externally controlled current page.  * When provided, the grid uses this value instead of its internal page  * counter. Wire this to the `onPageChange` callback from a sibling  * GridPagination so the two components stay in sync.  * When changed the grid automatically re-fetches.  */ page?: number;
   /**  * Number of products per page. Defaults to 12.  * When changed the grid automatically re-fetches (page resets to 1).  */ pageSize?: number;
   /**  * Sort field to use (e.g. 'NAME', 'PRICE').  * When provided overrides internal sort state.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortField?: string;
@@ -152,12 +159,16 @@ export interface ProductGridProps {
   /**  * When true, AddToCart shows a success modal instead of a toast.  * Defaults to false.  */ showModal?: boolean;
   /**  * Render − / + stepper buttons in AddToCart.  * Defaults to true.  */ allowIncrDecr?: boolean;
   /** Called when "Proceed to checkout" is clicked in the AddToCart modal. */ onProceedToCheckout?: () => void;
+  /** Called when "Request a Quote" is clicked in the AddToCart modal. */ onRequestQuoteClick?: (
+    cart: Cart
+  ) => void;
   /**  * Label overrides forwarded directly to the embedded AddToCart component.  * Keys: add, adding, addedToCart, outOfStock, noCartId, errorAdding,  *       modalTitle, quantity, continueShopping, proceedToCheckout  */ addToCartLabels?: Record<
     string,
     string
   >;
   /* ── Stock display ───────────────────────────────────────────────────────── */ /**  * Show the stock / availability widget on each product card.  * Forwarded directly to `ProductCard.showStock`.  * Defaults to false.  */ showStock?: boolean;
   /**  * Show only the availability indicator inside the stock widget.  * Forwarded to `ProductCard.showAvailability`.  * Defaults to true.  */ showAvailability?: boolean;
+  /**  * Show the price below the product name.  * Defaults to true.  */ showPrice?: boolean;
   /**  * Label overrides forwarded to the embedded ItemStock component inside each card.  * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces  */ stockLabels?: Record<
     string,
     string
@@ -175,73 +186,259 @@ export interface ProductGridProps {
   ) => void;
   /** Extra CSS class applied to the root element. */ className?: string;
 }
-
+interface ProductGridState {
+  internalProducts: (Product | Cluster)[];
+  isInternalLoading: boolean;
+  currentPage: number;
+  totalPages: number;
+  itemsFound: number;
+  currentSortField: string;
+  currentSortOrder: string;
+  fetchProducts: () => Promise<void>;
+  isClusterItem: (item: Product | Cluster) => boolean;
+  getGridColsClass: () => string;
+  handlePageChange: (page: number) => void;
+  getDisplayProducts: () => (Product | Cluster)[];
+  getIsLoading: () => boolean;
+  showAddToCart: () => boolean;
+  getSkeletonItems: () => number[];
+}
 function ProductGrid(props: ProductGridProps) {
-  const {
-    displayProducts,
-    isLoading,
-    fetchProducts,
-    goToPage,
-  } = useProductSearch({
-    graphqlClient: props.graphqlClient,
-    products: props.products,
-    categoryId: props.categoryId,
-    term: props.term,
-    brand: props.brand,
-    language: props.language,
-    taxZone: props.taxZone,
-    user: props.user,
-    companyId: props.companyId,
-    textFilters: props.textFilters,
-    priceFilterMin: props.priceFilterMin,
-    priceFilterMax: props.priceFilterMax,
-    sortField: props.sortField,
-    sortOrder: props.sortOrder,
-    pageSize: props.pageSize,
-    configuration: props.configuration || {},
-    onFiltersChange: props.onFiltersChange,
-    onPriceBoundsChange: props.onPriceBoundsChange,
-    onItemsFoundChange: props.onItemsFoundChange,
-    onPageChange: props.onPageChange,
-    onProductsResponse: props.onProductsResponse,
-    onCategoryChange: props.onCategoryChange,
-  });
-
-  function isClusterItem(item: Product | Cluster): boolean {
+  const [internalProducts, setInternalProducts] = useState<ProductGridState['internalProducts']>(
+    () => []
+  );
+  const [isInternalLoading, setIsInternalLoading] = useState<ProductGridState['isInternalLoading']>(
+    () => false
+  );
+  const [currentPage, setCurrentPage] = useState<ProductGridState['currentPage']>(() => 1);
+  const [totalPages, setTotalPages] = useState<ProductGridState['totalPages']>(() => 1);
+  const [itemsFound, setItemsFound] = useState<ProductGridState['itemsFound']>(() => 0);
+  const [currentSortField, setCurrentSortField] = useState<ProductGridState['currentSortField']>(
+    () => ''
+  );
+  const [currentSortOrder, setCurrentSortOrder] = useState<ProductGridState['currentSortOrder']>(
+    () => 'DESC'
+  );
+  const fetchIdRef = useRef<number>(0);
+  async function fetchProducts(): ReturnType<ProductGridState['fetchProducts']> {
+    if (!props.graphqlClient) return;
+    const myFetchId = ++fetchIdRef.current;
+    /* Always show loading on first load; skip skeleton only for language switch with existing products */ if (
+      internalProducts.length === 0
+    ) {
+      setIsInternalLoading(true);
+    }
+    if (props.onLoadingChange) props.onLoadingChange(true);
+    try {
+      const service = new CategoryService(props.graphqlClient as GraphQLClient);
+      const taxZone = props.taxZone || 'NL';
+      /* Category mode: use the category prop.    Search / brand mode: use baseCategoryId to search the full catalog. */ const isWideSearch =
+        !!(props.term as string) || !!(props.brand as string);
+      const catId = isWideSearch
+        ? (props.configuration?.baseCategoryId as number) || 0
+        : props.categoryId
+          ? props.categoryId
+          : (props.configuration?.baseCategoryId as number) || 0;
+      if (props.term && !currentSortField) setCurrentSortField(Enums.ProductSortField.RELEVANCE);
+      const result = await service.getCategory({
+        categoryId: catId,
+        language: (props.language as string) || 'NL',
+        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
+        imageVariantFilters: props.configuration?.imageVariantFiltersMedium,
+        filterAvailableAttributeInput: { isSearchable: true },
+        priceCalculateProductInput: {
+          taxZone: taxZone,
+          ...(props.companyId && { companyId: props.companyId as number }),
+          ...(props.user &&
+            'contactId' in props.user && { contactId: (props.user as Contact)?.contactId }),
+          ...(props.user &&
+            'customerId' in props.user && { customerId: (props.user as Customer)?.customerId }),
+        },
+        categoryProductSearchInput: {
+          language: (props.language as string) || 'NL',
+          page: (props.page as number) || currentPage,
+          offset: (props.pageSize as number) || 12,
+          hidden: false,
+          ...(props.companyId && { companyId: props.companyId as number }),
+          ...(props.user && {
+            userId:
+              'contactId' in props.user
+                ? (props.user as Contact)?.contactId
+                : (props.user as Customer)?.customerId,
+          }),
+          statuses: [
+            Enums.ProductStatus.A,
+            Enums.ProductStatus.P,
+            Enums.ProductStatus.T,
+            Enums.ProductStatus.S,
+          ],
+          ...((props.term as string) && {
+            term: props.term as string,
+            searchFields: [
+              {
+                fieldNames: [
+                  Enums.ProductSearchableField.NAME,
+                  Enums.ProductSearchableField.KEYWORDS,
+                  Enums.ProductSearchableField.SKU,
+                  Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                ],
+                boost: 5,
+              },
+              {
+                fieldNames: [
+                  Enums.ProductSearchableField.DESCRIPTION,
+                  Enums.ProductSearchableField.MANUFACTURER,
+                  Enums.ProductSearchableField.MANUFACTURER_CODE,
+                  Enums.ProductSearchableField.EAN_CODE,
+                  Enums.ProductSearchableField.BAR_CODE,
+                  Enums.ProductSearchableField.CLUSTER_ID,
+                  Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                  Enums.ProductSearchableField.PRODUCT_ID,
+                  Enums.ProductSearchableField.SHORT_DESCRIPTION,
+                  Enums.ProductSearchableField.SUPPLIER,
+                  Enums.ProductSearchableField.SUPPLIER_CODE,
+                ],
+                boost: 1,
+              },
+            ],
+          }),
+          ...((props.brand as string) && { manufacturers: [props.brand as string] }),
+          ...((props.textFilters as any[])?.length > 0 && {
+            textFilters: props.textFilters as any[],
+          }),
+          ...(props.priceFilterMin !== undefined || props.priceFilterMax !== undefined
+            ? {
+                price: {
+                  from: (props.priceFilterMin as number) || 0,
+                  to: (props.priceFilterMax as number) || 999999,
+                },
+              }
+            : {}),
+          ...((props.sortField || currentSortField) && {
+            sortInputs: [
+              {
+                field: ((props.sortField as string) || currentSortField) as Enums.ProductSortField,
+                order: ((props.sortOrder as string) || currentSortOrder) as Enums.SortOrder,
+              },
+            ],
+          }),
+        } as CategoryProductSearchInput,
+      } as CategoryQueryVariables);
+      /* Discard result if a newer fetch was triggered while this one was in-flight */ if (
+        myFetchId !== fetchIdRef.current
+      )
+        return;
+      const lang = (props.language as string) || 'NL';
+      const allItems = (result?.products?.items || []) as (Product | Cluster)[];
+      const filteredItems = allItems.filter((item) => {
+        const names = (item as Product).names || (item as Cluster).names || [];
+        return names.some((n: { language?: string }) => n.language === lang);
+      });
+      setInternalProducts(filteredItems);
+      const apiTotal = (result?.products as any)?.itemsFound ?? allItems.length;
+      /* Decrement itemsFound for untranslated products on this page (WordPress pattern) */ const untranslatedCount =
+        allItems.length - filteredItems.length;
+      const adjustedTotal = apiTotal - untranslatedCount;
+      const totalPages = result?.products?.pages || 1;
+      setTotalPages(totalPages);
+      setItemsFound(adjustedTotal);
+      if (props.onProductsResponse && result?.products) {
+        props.onProductsResponse(result.products as ProductsResponse);
+      }
+      if (props.onCategoryChange && result) {
+        props.onCategoryChange(result as Category);
+      }
+      if (props.onFiltersChange) {
+        props.onFiltersChange((result?.products?.filters || []) as AttributeFilter[]);
+      }
+      if (props.onPriceBoundsChange) {
+        const pMin = result?.products?.minPrice;
+        const pMax = result?.products?.maxPrice;
+        if (pMin !== undefined && pMax !== undefined) {
+          props.onPriceBoundsChange(pMin, pMax);
+        }
+      }
+      if (props.onItemsFoundChange) {
+        props.onItemsFoundChange(adjustedTotal);
+      }
+      if (props.onPageItemCountChange) {
+        props.onPageItemCountChange(filteredItems.length);
+      }
+    } catch {
+      if (myFetchId === fetchIdRef.current) {
+        setInternalProducts([]);
+      }
+    } finally {
+      if (myFetchId === fetchIdRef.current) {
+        setIsInternalLoading(false);
+        if (props.onLoadingChange) props.onLoadingChange(false);
+      }
+    }
+  }
+  function isClusterItem(item: Product | Cluster): ReturnType<ProductGridState['isClusterItem']> {
     return !!(item as any)?.clusterId;
   }
-
-  function getGridColsClass(): string {
+  function getGridColsClass(): ReturnType<ProductGridState['getGridColsClass']> {
     const cols = (props.columns as number) || 3;
     if (cols === 1) return 'flex flex-col gap-4';
     if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
     if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 5)
+      return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 6)
+      return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-6 auto-rows-fr';
     return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
-
-  function handlePageChange(page: number) {
-    goToPage(page);
+  function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
+    setCurrentPage(page);
+    fetchProducts();
     if (props.onPageChange) props.onPageChange(page);
   }
-
-  function getIsLoading(): boolean {
-    return !!(props.isLoading as boolean) || isLoading;
+  function getDisplayProducts(): ReturnType<ProductGridState['getDisplayProducts']> {
+    /* Use props.products when explicitly provided (even if empty array).  Fall through to internally fetched products only when prop is absent. */ if (
+      props.products !== undefined
+    ) {
+      return (props.products as (Product | Cluster)[]) || [];
+    }
+    return internalProducts;
   }
-
-  function showAddToCart(): boolean {
+  function getIsLoading(): ReturnType<ProductGridState['getIsLoading']> {
+    return !!(props.isLoading as boolean) || isInternalLoading;
+  }
+  function showAddToCart(): ReturnType<ProductGridState['showAddToCart']> {
     const mode = (props.portalMode as string) || 'open';
     const allow = (props.allowAddToCart as boolean) !== false;
     return mode === 'open' && allow;
   }
-
-  function getSkeletonItems(): number[] {
+  function getSkeletonItems(): ReturnType<ProductGridState['getSkeletonItems']> {
     const cols = (props.columns as number) || 3;
-    const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
+    const count = cols === 2 ? 4 : cols === 4 ? 8 : cols === 5 ? 10 : cols === 6 ? 12 : 6;
     const items: number[] = [];
     for (let i = 0; i < count; i++) items.push(i);
     return items;
   }
-
+  useEffect(() => {
+    if (props.products === undefined) {
+      if (props.page !== undefined) {
+        setCurrentPage(props.page as number);
+      }
+      fetchProducts();
+    }
+  }, [
+    props.textFilters,
+    props.priceFilterMin,
+    props.priceFilterMax,
+    props.categoryId,
+    props.term,
+    props.brand,
+    props.sortField,
+    props.sortOrder,
+    props.pageSize,
+    props.language,
+    props.page,
+    props.companyId,
+    props.user,
+  ]);
   return (
     <div className={`w-full ${(props.className as string) || ''}`}>
       {getIsLoading() ? (
@@ -274,7 +471,7 @@ function ProductGrid(props: ProductGridProps) {
       ) : null}
       {!getIsLoading() ? (
         <>
-          {displayProducts.length === 0 ? (
+          {getDisplayProducts().length === 0 ? (
             <div className="text-center py-24 bg-gray-50 rounded-xl border border-dashed border-gray-200">
               <svg
                 fill="none"
@@ -296,9 +493,9 @@ function ProductGrid(props: ProductGridProps) {
               </p>
             </div>
           ) : null}{' '}
-          {displayProducts.length > 0 ? (
+          {getDisplayProducts().length > 0 ? (
             <div className={getGridColsClass()}>
-              {displayProducts?.map((item, idx) => (
+              {getDisplayProducts()?.map((item, idx) => (
                 <div key={(item as Product).productId || (item as Cluster).clusterId || idx}>
                   {isClusterItem(item) ? (
                     <>
@@ -308,6 +505,7 @@ function ProductGrid(props: ProductGridProps) {
                           cluster={item as Cluster}
                           configuration={props.configuration}
                           includeTax={props.includeTax as boolean}
+                          showPrice={props.showPrice as boolean}
                           language={(props.language as string) || 'NL'}
                           showStock={props.showStock as boolean}
                           showAvailability={props.showAvailability as boolean}
@@ -335,6 +533,8 @@ function ProductGrid(props: ProductGridProps) {
                             <ProductCard
                               columns={(props.columns as number) || 3}
                               product={item as Product}
+                              showPrice={props.showPrice as boolean}
+                              allowAddToCart={props.allowAddToCart as boolean}
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}
@@ -348,6 +548,7 @@ function ProductGrid(props: ProductGridProps) {
                               enableStockValidation={props.stockValidation as boolean}
                               language={(props.language as string) || 'NL'}
                               onProceedToCheckout={props.onProceedToCheckout}
+                              onRequestQuoteClick={props.onRequestQuoteClick}
                               addToCartLabels={props.addToCartLabels}
                               enableAddFavorite={props.enableAddFavorite as boolean}
                               showStock={props.showStock as boolean}
@@ -370,6 +571,8 @@ function ProductGrid(props: ProductGridProps) {
                             <ProductCard
                               columns={(props.columns as number) || 3}
                               product={item as Product}
+                              showPrice={props.showPrice as boolean}
+                              allowAddToCart={props.allowAddToCart as boolean}
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}

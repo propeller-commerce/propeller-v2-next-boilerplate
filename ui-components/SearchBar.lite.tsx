@@ -1,10 +1,13 @@
 import { useStore, Show, For, onMount, onUnMount } from '@builder.io/mitosis';
 import {
     GraphQLClient,
-    ProductService,
+    CategoryService,
+    CategoryProductSearchInput,
     Product,
     Cluster,
     Enums,
+    Contact,
+    Customer,
 } from 'propeller-sdk-v2';
 
 export interface SearchBarResult {
@@ -27,6 +30,9 @@ export interface SearchBarResult {
 export interface SearchBarProps {
     /** Propeller SDK GraphQL client */
     graphqlClient: GraphQLClient;
+
+    /** The currently logged in user (Contact or Customer) */
+    user?: Contact | Customer | null;
 
     /** Language code for search requests */
     language?: string;
@@ -64,12 +70,23 @@ export interface SearchBarProps {
     /** Additional class name for the container */
     containerClassName?: string;
 
+    /** Tax zone used for price calculation. Defaults to 'NL'. */
+    taxZone?: string;
+
     /**
      * Active company ID from the company switcher.
      * When provided, can be forwarded to price calculation in search results
      * if the underlying SDK call supports priceCalculateProductInput.
      */
     companyId?: number;
+
+    /**
+     * Configuration object providing:
+     *   imageSearchFiltersGrid, imageVariantFiltersMedium — passed to CategoryService
+     *   baseCategoryId — used when querying by term or brand
+     *   urls.getProductUrl / urls.getClusterUrl — for card URL generation
+     */
+    configuration?: any;
 }
 
 interface SearchBarState {
@@ -178,25 +195,13 @@ export default function SearchBar(props: SearchBarProps) {
 
             state.isLoading = true;
             try {
-                const productService = new ProductService(props.graphqlClient);
-                const response = await productService.getProducts({
-                    input: {
-                        term: term,
-                        language: props.language || 'NL',
-                        page: 1,
-                        offset: state.maxResults,
-                        statuses: [
-                            Enums.ProductStatus.A,
-                            Enums.ProductStatus.P,
-                            Enums.ProductStatus.T,
-                            Enums.ProductStatus.S,
-                        ],
-                        hidden: false,
-                        sortInputs: [{
-                            field: Enums.ProductSortField.RELEVANCE,
-                            order: Enums.SortOrder.DESC,
-                        }],
-                    },
+                const service = new CategoryService(props.graphqlClient);
+                const taxZone = props.taxZone || 'NL';
+                const catId = props.configuration?.baseCategoryId || 0;
+
+                const result = await service.getCategory({
+                    categoryId: catId,
+                    language: props.language || 'NL',
                     imageSearchFilters: { page: 1, offset: 1 },
                     imageVariantFilters: {
                         transformations: [{
@@ -210,15 +215,67 @@ export default function SearchBar(props: SearchBarProps) {
                         }],
                     },
                     filterAvailableAttributeInput: { isSearchable: true },
+                    priceCalculateProductInput: {
+                        taxZone: taxZone,
+                        ...(props.companyId && { companyId: props.companyId }),
+                        ...(props.user && 'contactId' in props.user && { contactId: (props.user as Contact).contactId }),
+                        ...(props.user && 'customerId' in props.user && { customerId: (props.user as Customer).customerId }),
+                    },
+                    categoryProductSearchInput: {
+                        language: props.language || 'NL',
+                        page: 1,
+                        offset: state.maxResults,
+                        hidden: false,
+                        term: term,
+                        searchFields: [
+                            {
+                                fieldNames: [
+                                    Enums.ProductSearchableField.NAME,
+                                    Enums.ProductSearchableField.KEYWORDS,
+                                    Enums.ProductSearchableField.SKU,
+                                    Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                                ],
+                                boost: 5,
+                            },
+                            {
+                                fieldNames: [
+                                    Enums.ProductSearchableField.DESCRIPTION,
+                                    Enums.ProductSearchableField.MANUFACTURER,
+                                    Enums.ProductSearchableField.MANUFACTURER_CODE,
+                                    Enums.ProductSearchableField.EAN_CODE,
+                                    Enums.ProductSearchableField.BAR_CODE,
+                                    Enums.ProductSearchableField.CLUSTER_ID,
+                                    Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                                    Enums.ProductSearchableField.PRODUCT_ID,
+                                    Enums.ProductSearchableField.SHORT_DESCRIPTION,
+                                    Enums.ProductSearchableField.SUPPLIER,
+                                    Enums.ProductSearchableField.SUPPLIER_CODE,
+                                ],
+                                boost: 1,
+                            },
+                        ],
+                        statuses: [
+                            Enums.ProductStatus.A,
+                            Enums.ProductStatus.P,
+                            Enums.ProductStatus.T,
+                            Enums.ProductStatus.S,
+                        ],
+                        sortInputs: [{
+                            field: Enums.ProductSortField.RELEVANCE,
+                            order: Enums.SortOrder.DESC,
+                        }],
+                        ...(props.companyId && { companyId: props.companyId }),
+                        ...(props.user && { userId: 'contactId' in props.user ? (props.user as Contact).contactId : (props.user as Customer).customerId }),
+                    } as CategoryProductSearchInput,
                 });
 
-                const items = response.items || [];
+                const items = (result?.products?.items || []) as (Product | Cluster)[];
                 const mapped: SearchBarResult[] = [];
                 for (let i = 0; i < items.length && i < state.maxResults; i++) {
                     mapped.push(state.mapProductToResult(items[i] as Product | Cluster));
                 }
                 state.results = mapped;
-                state.itemsFound = response.itemsFound || 0;
+                state.itemsFound = (result?.products as any)?.itemsFound || 0;
                 state.showDropdown = true;
             } catch (e) {
                 state.results = [];

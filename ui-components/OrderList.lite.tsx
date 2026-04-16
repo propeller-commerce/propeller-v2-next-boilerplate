@@ -59,6 +59,15 @@ export interface OrderListProps {
     /** Rows are clickable */
     rowsClickable?: boolean;
 
+    /** Show company orders */
+    showCompanyOrders?: boolean;
+
+    /** Hide pagination controls. Defaults to false. */
+    hidePagination?: boolean;
+
+    /** Filter orders by channel IDs */
+    channelIds?: number[];
+
     /** Format price */
     formatPrice?: (price: number) => string;
 
@@ -153,7 +162,7 @@ export default function OrderList(props: OrderListProps) {
 
                 const searchArgs: OrderSearchArguments = {
                     status: statuses,
-                    userId: [userId],
+                    ...(!props.showCompanyOrders && { userId: [userId] }),
                     ...(companyId && { companyIds: [companyId] }),
                     page: page,
                     offset: state.itemsPerPage,
@@ -165,12 +174,13 @@ export default function OrderList(props: OrderListProps) {
                         Enums.OrderSearchFields.ITEM_NAME,
                         Enums.OrderSearchFields.REMARKS
                     ],
+                    sortInputs: state.searchForm.sortInput || { field: Enums.OrderSortField.CREATED_AT, order: Enums.SortOrder.DESC },
                     ...(state.searchForm.createdAt && { createdAt: state.searchForm.createdAt }),
                     ...(state.searchForm.lastModifiedAt && { lastModifiedAt: state.searchForm.lastModifiedAt }),
                     ...(state.searchForm.price && { price: state.searchForm.price }),
-                    ...(state.searchForm.sortInput && { sortInput: state.searchForm.sortInput }),
-                    ...(state.searchForm.type && { type: state.searchForm.type })
-                };
+                    ...(state.searchForm.type && { type: state.searchForm.type }),
+                    ...(props.channelIds && props.channelIds.length > 0 && { channelIds: props.channelIds })
+                } as OrderSearchArguments;
 
                 const response: OrderResponse = await orderService.getOrders(searchArgs);
 
@@ -545,7 +555,7 @@ export default function OrderList(props: OrderListProps) {
                         </div>
 
                         {/* Pagination */}
-                        <Show when={state.totalPages > 1}>
+                        <Show when={!props.hidePagination && state.totalPages > 1}>
                             <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                                 <div className="flex-1 flex justify-between sm:hidden">
                                     <button

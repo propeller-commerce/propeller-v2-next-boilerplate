@@ -146,6 +146,7 @@ function Menu(props: MenuProps) {
   function getSubCategories(cat: Category): Category[] {
     const subs = (cat as any).categories || [];
     return subs.filter((sub: Category) => {
+      if ((sub as any).hidden === 'Y' || (sub as any).hidden === true) return false;
       const name = getCategoryName(sub);
       const slug = getCategorySlug(sub);
       return name && slug;

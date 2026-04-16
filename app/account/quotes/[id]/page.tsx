@@ -84,7 +84,7 @@ export default function QuoteDetailPage() {
 
         try {
             const orderService = new OrderService(graphqlClient);
-            const pdfResponse = await orderService.getOrderPDF(Number(quoteId));
+            const pdfResponse = await orderService.getQuotePDF(Number(quoteId));
 
             if (pdfResponse) {
                 if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {

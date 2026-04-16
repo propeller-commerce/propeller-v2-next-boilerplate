@@ -1,4 +1,4 @@
-import { useStore, Show, For } from '@builder.io/mitosis';
+import { useStore, Show, For, onUpdate } from '@builder.io/mitosis';
 import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
 
 export interface CartPaymethodsProps {
@@ -87,6 +87,16 @@ export default function CartPaymethods(props: CartPaymethodsProps) {
             }
         },
     });
+
+    onUpdate(() => {
+        if (!state.selectedCode && props.cart?.paymentData?.method) {
+            state.selectedCode = props.cart.paymentData.method as string;
+            if (props.onPaymethodSelect) {
+                const match = state.payMethods.find((m: CartPaymethod) => m.code === state.selectedCode);
+                if (match) props.onPaymethodSelect(match);
+            }
+        }
+    }, [props.cart]);
 
     return (
         <div className={state.containerClass}>

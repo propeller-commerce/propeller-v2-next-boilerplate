@@ -1,5 +1,9 @@
 <template>
-  <div :class="`space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${className || ''}`">
+  <div
+    :class="`space-y-4 ${isMobile ? 'pb-8' : 'sticky top-24'} ${
+      isPending ? 'opacity-50 pointer-events-none' : ''
+    } ${className || ''}`"
+  >
     <template v-if="showPriceFilter() && (priceMin !== undefined || priceMax !== undefined)">
       <div class="space-y-3">
         <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Price Range</h3>
@@ -182,6 +186,16 @@ export interface GridFiltersProps {
   /** Currently active text filters (URL-driven). Syncs internal checkbox state when filters are removed externally. */
   activeTextFilters?: Record<string, string[]>;
 
+  /** Currently active price filter range (URL-driven). When undefined, resets price inputs to bounds. */
+  activePriceMin?: number;
+  activePriceMax?: number;
+
+  /**
+   * When true, all checkboxes and price inputs are disabled.
+   * Wire to ProductGrid's `onLoadingChange` to block rapid re-clicks while a fetch is in flight.
+   */
+  isLoading?: boolean;
+
   /** Extra CSS class on the root element. */
   className?: string;
 }
@@ -190,6 +204,7 @@ interface GridFiltersState {
   currentMin: number;
   currentMax: number;
   expandedFilters: Record<string, boolean>;
+  isPending: boolean;
   showPriceFilter: () => boolean;
   getFilterName: (filter: AttributeFilter) => string;
   getFilterTitle: (filter: AttributeFilter) => string;
@@ -215,6 +230,7 @@ const selectedFilters = ref<GridFiltersState['selectedFilters']>({});
 const currentMin = ref<GridFiltersState['currentMin']>(0);
 const currentMax = ref<GridFiltersState['currentMax']>(9999);
 const expandedFilters = ref<GridFiltersState['expandedFilters']>({});
+const isPending = ref<GridFiltersState['isPending']>(false);
 
 watch(
   () => [props.filters],
@@ -267,6 +283,23 @@ watch(
   () => {
     if (!props.activeTextFilters) return;
     selectedFilters.value = props.activeTextFilters as Record<string, string[]>;
+  },
+  { immediate: true }
+);
+watch(
+  () => [props.activePriceMin, props.activePriceMax],
+  () => {
+    if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+      currentMin.value = (props.priceMin as number) || 0;
+      currentMax.value = (props.priceMax as number) || 9999;
+    }
+  },
+  { immediate: true }
+);
+watch(
+  () => [props.isLoading],
+  () => {
+    if (!props.isLoading) isPending.value = false;
   },
   { immediate: true }
 );
@@ -342,6 +375,7 @@ function handleCheckbox(
       [name]: false,
     };
   }
+  isPending.value = true;
   props.onFilterChange(filter, value);
   if (props.getSelectedFilters) props.getSelectedFilters();
 }
@@ -354,6 +388,7 @@ function handleMaxChange(value: number): ReturnType<GridFiltersState['handleMaxC
   currentMax.value = n;
 }
 function applyPrice(): ReturnType<GridFiltersState['applyPrice']> {
+  isPending.value = true;
   if (props.onPriceChange) props.onPriceChange(currentMin.value, currentMax.value);
   if (props.getSelectedFilters) props.getSelectedFilters();
 }

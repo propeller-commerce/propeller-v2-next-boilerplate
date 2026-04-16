@@ -76,6 +76,9 @@ export interface CmsContactForm {
   title: string | null;
   description: string | null;
   successMessage: string;
+  phone: string | null;
+  email: string | null;
+  formTitle: string | null;
 }
 
 export interface CmsSlider {
@@ -90,6 +93,61 @@ export interface CmsProductSlider {
   clusterIds: number[];
 }
 
+export interface CmsFeature {
+  _type: 'feature';
+  title: string;
+  description: string | null;
+  image: CmsImage | null;
+  imagePosition: 'left' | 'right';
+  buttonText: string | null;
+  buttonUrl: string | null;
+}
+
+export interface CmsFaq {
+  _type: 'faq';
+  title: string;
+  questions: { question: string; answer: string }[];
+}
+
+export interface CmsProductCard {
+  productId: number | null;
+  slug: string;
+  name: string;
+  image: CmsImage | null;
+  price: number | null;
+  priceSuffix: string | null;
+}
+
+export interface CmsProductCards {
+  _type: 'product-cards';
+  title: string;
+  subtitle: string | null;
+  products: CmsProductCard[];
+  buttonText: string | null;
+  buttonUrl: string | null;
+}
+
+export interface CmsPostCards {
+  _type: 'post-cards';
+  title: string;
+  subtitle: string | null;
+  posts: {
+    title: string;
+    slug: string;
+    cover: CmsImage | null;
+    excerpt: string | null;
+    readTime: number | null;
+    author: { name: string; avatar: CmsImage | null } | null;
+    category: string | null;
+  }[];
+}
+
+export interface CmsStatic {
+  _type: 'static';
+  staticType: string;
+  title: string | null;
+}
+
 export type CmsBlock =
   | CmsHeroBanner
   | CmsRichText
@@ -100,7 +158,12 @@ export type CmsBlock =
   | CmsProductCarousel
   | CmsContactForm
   | CmsSlider
-  | CmsProductSlider;
+  | CmsProductSlider
+  | CmsFeature
+  | CmsFaq
+  | CmsProductCards
+  | CmsPostCards
+  | CmsStatic;
 
 // ── Article / Blog ──
 

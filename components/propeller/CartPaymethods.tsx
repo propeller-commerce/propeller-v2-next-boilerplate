@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
 
 export interface CartPaymethodsProps {
@@ -79,6 +79,16 @@ function CartPaymethods(props: CartPaymethodsProps) {
       props.onPaymethodSelect(method);
     }
   }
+  useEffect(() => {
+    if (!selectedCode && props.cart?.paymentData?.method) {
+      const code = props.cart.paymentData.method as string;
+      setSelectedCode(code);
+      if (props.onPaymethodSelect) {
+        const match = payMethods().find((m: CartPaymethod) => m.code === code);
+        if (match) props.onPaymethodSelect(match);
+      }
+    }
+  }, [props.cart]);
   return (
     <div className={containerClass()}>
       {payMethods().length > 0 ? (

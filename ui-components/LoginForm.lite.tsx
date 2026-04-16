@@ -10,6 +10,7 @@ import {
     UserService,
     LoginInput,
     ViewerResult,
+    ViewerInput,
 } from 'propeller-sdk-v2';
 
 export interface LoginFormProps {
@@ -103,6 +104,9 @@ export interface LoginFormProps {
      * @default true
      */
     accountHeaderLoginForm?: boolean;
+
+    /** Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall. */
+    configuration?: any;
 }
 
 interface LoginFormState {
@@ -252,7 +256,33 @@ export default function LoginForm(props: LoginFormProps) {
                 // Fetch viewer data
                 let user: ViewerResult | null = null;
                 try {
-                    user = await userService.getViewer({});
+                    const viewerInput: ViewerInput = {
+                        ...(props.configuration?.contactTrackAttributes.length && {
+                            contactAttributesInput: {
+                                attributeDescription: {
+                                    names: props.configuration?.contactTrackAttributes
+                                }
+                            }
+                        }),
+                        ...(props.configuration?.customerTrackAttributes.length && {
+                            customerAttributesInput: {
+                                attributeDescription: {
+                                    names: props.configuration?.customerTrackAttributes
+                                }
+                            }
+                        }),
+                        ...(props.configuration?.companyTrackAttributes.length && {
+                            companyAttributesInput: {
+                                attributeDescription: {
+                                    names: props.configuration?.companyTrackAttributes
+                                }
+                            }
+                        }),
+                        ...(props.configuration?.contactPAConfigInput && {
+                            contactPAConfigInput: props.configuration?.contactPAConfigInput
+                        })
+                    };
+                    user = await userService.getViewer(viewerInput);
                 } catch (viewerError: any) { }
 
                 // Dispatch event for AuthContext to pick up

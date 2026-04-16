@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect, useRef } from 'react';
-import { GraphQLClient, Product, Cluster } from 'propeller-sdk-v2';
+import { GraphQLClient, Product, Cluster, Contact, Customer } from 'propeller-sdk-v2';
 import { useProductSearch } from '@/composables/react/useProductSearch';
 
 export interface SearchBarResult {
@@ -25,6 +25,9 @@ export interface SearchBarResult {
 export interface SearchBarProps {
   /** Propeller SDK GraphQL client */
   graphqlClient: GraphQLClient;
+
+  /** The currently logged in user (Contact or Customer) */
+  user?: Contact | Customer | null;
 
   /** Language code for search requests */
   language?: string;
@@ -62,8 +65,14 @@ export interface SearchBarProps {
   /** Additional class name for the container */
   containerClassName?: string;
 
+  /** Tax zone used for price calculation. Defaults to 'NL'. */
+  taxZone?: string;
+
   /**
-   * Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall.
+   * Configuration object providing:
+   *   imageSearchFiltersGrid, imageVariantFiltersMedium — passed to CategoryService
+   *   baseCategoryId — used when querying by term or brand
+   *   urls.getProductUrl / urls.getClusterUrl — for card URL generation
    */
   configuration?: any;
 

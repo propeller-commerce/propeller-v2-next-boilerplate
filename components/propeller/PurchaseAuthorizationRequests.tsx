@@ -47,7 +47,6 @@ export interface PurchaseAuthorizationRequestsProps {
   /** Called when an SDK operation fails; receives the normalized error */
   onError?: (err: Error) => void;
 }
-
 function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps) {
   const {
     carts, loading, selectedCart, modalLoading, acceptLoading, isAuthManager,
@@ -184,8 +183,12 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">
                           {getLabel('requesterInfo', 'Requester')}
                         </h4>
-                        <p className="text-sm font-medium">{getContactName(selectedCart.contact)}</p>
-                        <p className="text-sm text-muted-foreground">{selectedCart.contact?.email}</p>
+                        <p className="text-sm font-medium">
+                          {getContactName(selectedCart?.contact as Contact)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedCart?.contact?.email}
+                        </p>
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">
@@ -233,17 +236,17 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       <div className="border-t border-border pt-4 space-y-2 text-sm">
                         <div className="flex justify-between text-muted-foreground">
                           <span>{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
-                          <span>{formatPrice(selectedCart.total?.totalGross ?? 0)}</span>
+                          <span>{formatPrice(selectedCart?.total?.totalGross ?? 0)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
                           <span>{getLabel('totalVat', 'VAT:')}</span>
                           <span>
-                            {formatPrice((selectedCart.total?.totalNet ?? 0) - (selectedCart.total?.totalGross ?? 0))}
+                            {formatPrice((selectedCart?.total?.totalNet ?? 0) - (selectedCart?.total?.totalGross ?? 0))}
                           </span>
                         </div>
                         <div className="flex justify-between font-bold text-base border-t border-border pt-2">
                           <span>{getLabel('total', 'Total:')}</span>
-                          <span>{formatPrice(selectedCart.total?.totalNet ?? 0)}</span>
+                          <span>{formatPrice(selectedCart?.total?.totalNet ?? 0)}</span>
                         </div>
                       </div>
                     </div>

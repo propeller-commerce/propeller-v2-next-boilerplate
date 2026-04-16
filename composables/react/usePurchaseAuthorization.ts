@@ -306,7 +306,7 @@ export function usePurchaseAuthorizationConfigurator(
         const userService = new UserService(graphqlClient);
         const result = await userService.registerContact({ contactRegisterInput: input });
         if (cbRef.current.afterContactCreate) {
-          cbRef.current.afterContactCreate(result.contact as Contact);
+          cbRef.current.afterContactCreate(result.contact as unknown as Contact);
         } else {
           await loadCompany(currentPage);
         }

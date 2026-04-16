@@ -95,10 +95,8 @@ async function acceptQuote(
   return await orderService.setOrderStatus({
     orderId: quote.id,
     status: 'NEW',
-    payStatus: Enums.PaymentStatuses.OPEN,
     sendOrderConfirmationEmail: true,
     addPDFAttachment: true,
-    triggerOrderSendConfirmEvent: true,
     deleteCart: true,
   });
 }
@@ -179,11 +177,11 @@ async function acceptQuote(
 |---|---|---|---|
 | `orderId` | `number` | — | `quote.id` |
 | `status` | `string` | `'NEW'` | Status to set on acceptance |
-| `payStatus` | `string` | `Enums.PaymentStatuses.OPEN` | Payment status to set |
 | `sendOrderConfirmationEmail` | `boolean` | `true` | Send a confirmation email when status changes |
 | `addPDFAttachment` | `boolean` | `true` | Attach the order overview PDF to the confirmation email |
-| `triggerOrderSendConfirmEvent` | `boolean` | `true` | Trigger the `ORDER_SEND_CONFIRMATION` event via the Event Action Manager |
 | `deleteCart` | `boolean` | `true` | Delete the cart that created this order if it is still available |
+
+> **Important:** Do not include `payStatus` or `triggerOrderSendConfirmEvent` in the input. These fields cause the Propeller API to record "System" instead of the authenticated contact in the version history.
 
 ### Callbacks
 
@@ -245,7 +243,7 @@ These are suggested defaults. Override per-key to support localization.
 
 1. The accept button click sets an internal `loading` flag — the button is disabled, the label switches to "Processing...", and a spinner is shown.
 2. If `onAccept` is provided, it is called with the `quote` object. The base SDK call is skipped entirely.
-3. If `onAccept` is not provided and `graphqlClient` is available, `OrderService.setOrderStatus` is called with: `status: 'NEW'`, `payStatus: OPEN`, `sendOrderConfirmationEmail: true`, `addPDFAttachment: true`, `triggerOrderSendConfirmEvent: true`, `deleteCart: true`.
+3. If `onAccept` is not provided and `graphqlClient` is available, `OrderService.setOrderStatus` is called with: `status: 'NEW'`, `sendOrderConfirmationEmail: true`, `addPDFAttachment: true`, `deleteCart: true`. Note: `payStatus` and `triggerOrderSendConfirmEvent` must NOT be included (see SDK Services section).
 4. After the accept logic completes, `afterAccept` is called with the `quote` object if provided.
 5. The `loading` flag is reset in a `finally` block regardless of success or failure.
 
@@ -271,8 +269,8 @@ import { OrderService, Order, GraphQLClient, Enums } from 'propeller-sdk-v2';
 |---|---|---|
 | `orderId` | `number` | The ID of the order to update |
 | `status` | `string` | The new order status |
-| `payStatus` | `string` | The new payment status |
 | `sendOrderConfirmationEmail` | `boolean` | Send a confirmation email on status change |
 | `addPDFAttachment` | `boolean` | Attach an order overview PDF to the confirmation email |
-| `triggerOrderSendConfirmEvent` | `boolean` | Trigger the `ORDER_SEND_CONFIRMATION` event (subscribable via Event Action Manager) |
 | `deleteCart` | `boolean` | Delete the originating cart if still available |
+
+> **Do not include `payStatus` or `triggerOrderSendConfirmEvent`** in the `setOrderStatus` input for quote acceptance. These fields cause the Propeller API to attribute the change to "System" instead of the authenticated contact in the order version history.

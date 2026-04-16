@@ -354,7 +354,7 @@
               </tbody>
             </table>
           </div>
-          <template v-if="totalPages > 1">
+          <template v-if="!hidePagination && totalPages > 1">
             <div
               class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
             >
@@ -428,11 +428,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Enums } from 'propeller-sdk-v2';
-import type { GraphQLClient, Order, Contact, Customer } from 'propeller-sdk-v2';
-import { useOrders } from '@/composables/vue/useOrders';
-import type { AnyUser } from '@/composables/shared/utils/userIdentity';
+import { computed, ref, watch } from 'vue';
+
+import {
+  OrderService,
+  OrderSearchArguments,
+  OrderResponse,
+  Order,
+  Contact,
+  Customer,
+  GraphQLClient,
+  Enums,
+  OrderStatus,
+  DateSearchInput,
+  DecimalSearchInput,
+  OrderSortInput,
+} from 'propeller-sdk-v2';
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -457,7 +468,7 @@ export interface OrderListProps {
   searchFields?: string[];
 
   /** Term fields configuration (backend) */
-  termFields?: any[];
+  termFields?: any[]; // Using any[] to avoid strict enum import issues in Mitosis for now, effectively OrderSearchFields[]
 
   /** Override company ID for order filtering (respects company switcher) */
   companyId?: number;
@@ -473,6 +484,15 @@ export interface OrderListProps {
 
   /** Rows are clickable */
   rowsClickable?: boolean;
+
+  /** Show company orders */
+  showCompanyOrders?: boolean;
+
+  /** Hide pagination controls. Defaults to false. */
+  hidePagination?: boolean;
+
+  /** Filter orders by channel IDs */
+  channelIds?: number[];
 
   /** Format price */
   formatPrice?: (price: number) => string;
@@ -499,28 +519,48 @@ export interface OrderListProps {
     action?: string;
   };
 }
+interface OrderListState {
+  orders: Order[];
+  columns: string[];
+  loading: boolean;
+  totalItems: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+  fetching: boolean;
+  rowsClickable: boolean;
+  searchForm: {
+    term?: string;
+    createdAt?: DateSearchInput;
+    lastModifiedAt?: DateSearchInput;
+    price?: DecimalSearchInput;
+    sortInput?: Partial<OrderSortInput>;
+    type?: Enums.OrderType;
+    [key: string]: any;
+  };
+  fetchOrders: (page?: number) => Promise<void>;
+  handlePageChange: (newPage: number) => void;
+  formatDate: (dateString: string) => string;
+  formatPrice: (price: any) => string;
+  getStatusColor: (status: string) => string;
+  getColumnLabel: (col: string) => string;
+  getLabel: (key: string, fallback: string) => string;
+  searchFields: string[];
+}
 
 const props = defineProps<OrderListProps>();
-
-const {
-  orders,
-  loading,
-  searchForm,
-  currentPage,
-  totalPages,
-  fetchOrders,
-  goToPage,
-} = useOrders({
-  graphqlClient: props.graphqlClient,
-  user: computed(() => props.user as AnyUser),
-  companyId: computed(() => props.companyId),
-  orderStatuses: props.orderStatus,
-  termFields: props.termFields,
-  itemsPerPage: props.initialItemsPerPage,
-});
-
-const columns = computed(() => props.columns || ['id', 'date', 'status', 'total']);
-const rowsClickable = computed(() => props.rowsClickable || false);
+const orders = ref<OrderListState['orders']>([]);
+const columns = ref<OrderListState['columns']>(
+  props.columns.value || ['id', 'date', 'status', 'total']
+);
+const loading = ref<OrderListState['loading']>(true);
+const totalItems = ref<OrderListState['totalItems']>(0);
+const currentPage = ref<OrderListState['currentPage']>(1);
+const itemsPerPage = ref<OrderListState['itemsPerPage']>(props.initialItemsPerPage || 10);
+const totalPages = ref<OrderListState['totalPages']>(0);
+const rowsClickable = ref<OrderListState['rowsClickable']>(props.rowsClickable.value || false);
+const fetching = ref<OrderListState['fetching']>(false);
+const searchForm = ref<OrderListState['searchForm']>({});
 
 const searchFields = computed(() => {
   const fields = props.searchFields || [];
@@ -530,25 +570,105 @@ const searchFields = computed(() => {
   return fields;
 });
 
-function handlePageChange(newPage: number): void {
-  if (newPage >= 1 && newPage <= totalPages.value) {
-    goToPage(newPage);
+watch(
+  () => [props.user, currentPage.value, props.companyId],
+  () => {
+    if (props.user) {
+      fetchOrders(currentPage.value);
+    }
+  },
+  { immediate: true }
+);
+async function fetchOrders(page: number = 1): ReturnType<OrderListState['fetchOrders']> {
+  if (!props.user || !props.graphqlClient || fetching.value) return;
+  fetching.value = true;
+  loading.value = true;
+  try {
+    const orderService = new OrderService(props.graphqlClient);
+    const isContactUser = 'contactId' in props.user;
+    const statuses = props.orderStatus || [
+      'NEW',
+      'CONFIRMED',
+      'VALIDATED',
+      'ORDER', // Default statuses if not provided
+    ];
+
+    // Explicit cast to any for user ID access as SDK types might be strict interfaces
+    // We handle both Contact (contactId) and Customer (customerId)
+    const userId = isContactUser ? (props.user as any).contactId : (props.user as any).customerId;
+    const companyIdFallback =
+      isContactUser && (props.user as any).company ? (props.user as any).company.companyId : null;
+    const companyId = props.companyId || companyIdFallback || null;
+    const searchArgs: OrderSearchArguments = {
+      status: statuses,
+      ...(!props.showCompanyOrders && {
+        userId: [userId],
+      }),
+      ...(companyId && {
+        companyIds: [companyId],
+      }),
+      page: page,
+      offset: itemsPerPage.value,
+      term: searchForm.value.term || '',
+      termFields: props.termFields || [
+        Enums.OrderSearchFields.REFERENCE,
+        Enums.OrderSearchFields.ITEM_SKU,
+        Enums.OrderSearchFields.ID,
+        Enums.OrderSearchFields.ITEM_NAME,
+        Enums.OrderSearchFields.REMARKS,
+      ],
+      sortInputs: searchForm.value.sortInput || {
+        field: Enums.OrderSortField.CREATED_AT,
+        order: Enums.SortOrder.DESC,
+      },
+      ...(searchForm.value.createdAt && {
+        createdAt: searchForm.value.createdAt,
+      }),
+      ...(searchForm.value.lastModifiedAt && {
+        lastModifiedAt: searchForm.value.lastModifiedAt,
+      }),
+      ...(searchForm.value.price && {
+        price: searchForm.value.price,
+      }),
+      ...(searchForm.value.type && {
+        type: searchForm.value.type,
+      }),
+      ...(props.channelIds &&
+        props.channelIds.length > 0 && {
+          channelIds: props.channelIds,
+        }),
+    } as OrderSearchArguments;
+    const response: OrderResponse = await orderService.getOrders(searchArgs);
+    orders.value = response.items || [];
+    totalItems.value = response.itemsFound || 0;
+    if (response.offset) {
+      itemsPerPage.value = response.offset;
+    }
+    totalPages.value = Math.ceil((response.itemsFound || 0) / (response.offset || 10));
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    orders.value = [];
+  } finally {
+    loading.value = false;
+    fetching.value = false;
   }
 }
-
-function formatDate(dateString: string): string {
+function handlePageChange(newPage: number): ReturnType<OrderListState['handlePageChange']> {
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    currentPage.value = newPage;
+  }
+}
+function formatDate(dateString: string): ReturnType<OrderListState['formatDate']> {
   if (props.formatDate) return props.formatDate(dateString);
   if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString();
 }
-
-function formatPrice(price: number): string {
+function formatPrice(price: number): ReturnType<OrderListState['formatPrice']> {
   if (props.formatPrice) return props.formatPrice(price);
   if (!price) return '-';
   return `€${Number(price).toFixed(2)}`;
 }
-
-function getStatusColor(status: string): string {
+function getStatusColor(status: string): ReturnType<OrderListState['getStatusColor']> {
   if (props.getStatusColor) return props.getStatusColor(status);
   switch (status) {
     case 'COMPLETE':
@@ -561,15 +681,14 @@ function getStatusColor(status: string): string {
       return 'bg-yellow-100 text-yellow-800';
   }
 }
-
-function getColumnLabel(col: string): string {
+function getColumnLabel(col: string): ReturnType<OrderListState['getColumnLabel']> {
   if (props.columnConfig && props.columnConfig[col]) {
     return props.columnConfig[col];
   }
+  // Fallback: Capitalize first letter
   return col.charAt(0).toUpperCase() + col.slice(1);
 }
-
-function getLabel(key: string, fallback: string): string {
+function getLabel(key: string, fallback: string): ReturnType<OrderListState['getLabel']> {
   return (props.labels as any)?.[key] || fallback;
 }
 </script>

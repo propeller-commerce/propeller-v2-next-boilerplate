@@ -39,9 +39,9 @@ export default function SearchPage() {
     searchParams.forEach((value, key) => {
       if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
         try {
-          newFilters[key] = JSON.parse(decodeURIComponent(value));
+          newFilters[key] = JSON.parse(value);
         } catch {
-          newFilters[key] = [decodeURIComponent(value)];
+          newFilters[key] = [value];
         }
       }
     });
@@ -65,6 +65,7 @@ export default function SearchPage() {
   const [itemsFound, setItemsFound] = useState<number>(0);
   const [pageItemCount, setPageItemCount] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [filtersLoading, setFiltersLoading] = useState(false);
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
 
   const { state } = useAuth();
@@ -88,7 +89,7 @@ export default function SearchPage() {
 
     Object.entries(newFilters).forEach(([key, values]) => {
       if (values.length > 0) {
-        urlParams.set(key, encodeURIComponent(JSON.stringify(values)));
+        urlParams.set(key, JSON.stringify(values));
       }
     });
 
@@ -173,6 +174,9 @@ export default function SearchPage() {
                 collapsed={true}
                 clearSignal={clearSignal}
                 activeTextFilters={filters}
+                activePriceMin={minPrice}
+                activePriceMax={maxPrice}
+                isLoading={filtersLoading}
                 className=""
               />
             </aside>
@@ -235,12 +239,14 @@ export default function SearchPage() {
                 }}
                 onItemsFoundChange={setItemsFound}
                 onPageItemCountChange={setPageItemCount}
+                onLoadingChange={setFiltersLoading}
                 page={currentPage}
                 afterAddToCart={(updatedCart) => {
                   console.log('updatedCart', updatedCart);
                   saveCart(updatedCart);
                 }}
                 onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+                onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
                 onProductsResponse={setProductsResponse}
                 onProductClick={(product: Product) => {
                   router.push(config.urls.getProductUrl(product, language));

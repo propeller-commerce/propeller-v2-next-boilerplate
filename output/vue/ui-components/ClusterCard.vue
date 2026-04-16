@@ -262,6 +262,12 @@ export interface ClusterCardProps {
   showAvailability?: boolean;
 
   /**
+   * Show the price below the product name.
+   * Defaults to true.
+   */
+  showPrice?: boolean;
+
+  /**
    * Label overrides forwarded to the embedded ItemStock component.
    * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
    */
@@ -413,6 +419,7 @@ function getStockStatusClass(): ReturnType<ClusterCardState['getStockStatusClass
   return 'text-green-600 bg-green-50';
 }
 function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
+  if (!props.showPrice) return '';
   const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
   const useTax: boolean =
     props.includeTax.value !== undefined ? !!props.includeTax.value : includeTax.value;

@@ -63,6 +63,7 @@
                     :cluster="item"
                     :configuration="configuration"
                     :includeTax="includeTax"
+                    :showPrice="showPrice"
                     :language="language || 'NL'"
                     :showStock="showStock"
                     :showAvailability="showAvailability"
@@ -92,6 +93,8 @@
                     <ProductCard
                       :columns="columns || 3"
                       :product="item"
+                      :showPrice="showPrice"
+                      :allowAddToCart="allowAddToCart"
                       :graphqlClient="graphqlClient"
                       :user="user || null"
                       :configuration="configuration"
@@ -133,6 +136,8 @@
                     <ProductCard
                       :columns="columns || 3"
                       :product="item"
+                      :showPrice="showPrice"
+                      :allowAddToCart="allowAddToCart"
                       :graphqlClient="graphqlClient"
                       :user="user || null"
                       :configuration="configuration"
@@ -227,7 +232,7 @@ import  ClusterCard from './ClusterCard.vue';
 
  // ── Layout ────────────────────────────────────────────────────────────────
 
- /** Number of columns in the grid. Accepts 2, 3, or 4. Defaults to 3. */
+ /** Number of columns in the grid. Accepts 2, 3, 4, 5, or 6. Defaults to 3. */
  columns?: number;
 
  // ── Loading ───────────────────────────────────────────────────────────────
@@ -465,6 +470,12 @@ import  ClusterCard from './ClusterCard.vue';
  showAvailability?: boolean;
 
  /**
+  * Show the price below the product name.
+  * Defaults to true.
+  */
+ showPrice?: boolean;
+
+ /**
   * Label overrides forwarded to the embedded ItemStock component inside each card.
   * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces
   */
@@ -683,6 +694,8 @@ const cols = props.columns as number || 3;
 if (cols === 1) return 'flex flex-col gap-4';
 if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
 if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
+if (cols === 5) return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 auto-rows-fr';
+if (cols === 6) return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-6 auto-rows-fr';
 return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
 }
 function handlePageChange(page: number): ReturnType<ProductGridState["handlePageChange"]>{
@@ -708,7 +721,7 @@ return mode === 'open' && allow;
 }
 function getSkeletonItems(): ReturnType<ProductGridState["getSkeletonItems"]>{
 const cols = props.columns as number || 3;
-const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
+const count = cols === 2 ? 4 : cols === 4 ? 8 : cols === 5 ? 10 : cols === 6 ? 12 : 6;
 const items: number[] = [];
 for (let i = 0; i < count; i++) items.push(i);
 return items;

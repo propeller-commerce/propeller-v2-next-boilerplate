@@ -69,7 +69,7 @@ export interface ProductGridProps {
 
   // ── Layout ────────────────────────────────────────────────────────────────
 
-  /** Number of columns in the grid. Accepts 2, 3, or 4. Defaults to 3. */
+  /** Number of columns in the grid. Accepts 2, 3, 4, 5, or 6. Defaults to 3. */
   columns?: number;
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -168,6 +168,7 @@ export interface ProductGridProps {
   >;
   /* ── Stock display ───────────────────────────────────────────────────────── */ /**  * Show the stock / availability widget on each product card.  * Forwarded directly to `ProductCard.showStock`.  * Defaults to false.  */ showStock?: boolean;
   /**  * Show only the availability indicator inside the stock widget.  * Forwarded to `ProductCard.showAvailability`.  * Defaults to true.  */ showAvailability?: boolean;
+  /**  * Show the price below the product name.  * Defaults to true.  */ showPrice?: boolean;
   /**  * Label overrides forwarded to the embedded ItemStock component inside each card.  * Keys: inStock, outOfStock, lowStock, available, notAvailable, pieces  */ stockLabels?: Record<
     string,
     string
@@ -382,6 +383,10 @@ function ProductGrid(props: ProductGridProps) {
     if (cols === 1) return 'flex flex-col gap-4';
     if (cols === 2) return 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr';
     if (cols === 4) return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 5)
+      return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 auto-rows-fr';
+    if (cols === 6)
+      return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-6 auto-rows-fr';
     return 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
   }
   function handlePageChange(page: number): ReturnType<ProductGridState['handlePageChange']> {
@@ -407,7 +412,7 @@ function ProductGrid(props: ProductGridProps) {
   }
   function getSkeletonItems(): ReturnType<ProductGridState['getSkeletonItems']> {
     const cols = (props.columns as number) || 3;
-    const count = cols === 2 ? 4 : cols === 4 ? 8 : 6;
+    const count = cols === 2 ? 4 : cols === 4 ? 8 : cols === 5 ? 10 : cols === 6 ? 12 : 6;
     const items: number[] = [];
     for (let i = 0; i < count; i++) items.push(i);
     return items;
@@ -500,6 +505,7 @@ function ProductGrid(props: ProductGridProps) {
                           cluster={item as Cluster}
                           configuration={props.configuration}
                           includeTax={props.includeTax as boolean}
+                          showPrice={props.showPrice as boolean}
                           language={(props.language as string) || 'NL'}
                           showStock={props.showStock as boolean}
                           showAvailability={props.showAvailability as boolean}
@@ -527,6 +533,8 @@ function ProductGrid(props: ProductGridProps) {
                             <ProductCard
                               columns={(props.columns as number) || 3}
                               product={item as Product}
+                              showPrice={props.showPrice as boolean}
+                              allowAddToCart={props.allowAddToCart as boolean}
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}
@@ -563,6 +571,8 @@ function ProductGrid(props: ProductGridProps) {
                             <ProductCard
                               columns={(props.columns as number) || 3}
                               product={item as Product}
+                              showPrice={props.showPrice as boolean}
+                              allowAddToCart={props.allowAddToCart as boolean}
                               graphqlClient={props.graphqlClient as GraphQLClient}
                               user={(props.user as Contact | Customer | null) || null}
                               configuration={props.configuration}

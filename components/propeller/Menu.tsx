@@ -2,8 +2,8 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { GraphQLClient, Category, LocalizedString, Contact, Customer } from 'propeller-sdk-v2';
-import { useMenu } from '@/composables/react/useMenu';
+import { GraphQLClient, Category, Contact, Customer } from 'propeller-sdk-v2';
+import { useMenu, MenuCategory } from '@/composables/react/useMenu';
 
 export interface MenuProps {
   /**
@@ -73,89 +73,49 @@ export interface MenuProps {
   configuration?: any;
 }
 
-// Module-level deduplication: concurrent fetches for the same cache key share one API call.
-// Prevents duplicate requests from React Strict Mode and multiple Menu instances.
-const inflightFetches = new Map<string, Promise<Category | null>>();
-
 function Menu(props: MenuProps) {
-  const [rootCategory, setRootCategory] = useState<Category | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
   const [hoveredL1Id, setHoveredL1Id] = useState<number | null>(null);
   const [hoveredL2Id, setHoveredL2Id] = useState<number | null>(null);
   const [expandedL1, setExpandedL1] = useState<number | null>(null);
   const [expandedL2, setExpandedL2] = useState<number | null>(null);
 
-  const { clearCache } = useMenu({
+  // Stable string key derived from user identity — used as dep so that a new
+  // user object reference (same ID) never triggers a spurious re-fetch.
+  const userKey = props.user
+    ? ('contactId' in (props.user as any)
+      ? `c${(props.user as Contact).contactId}`
+      : `u${(props.user as Customer).customerId}`)
+    : '';
+
+  const { categories: menuCategories, loading: isLoading, error: menuError, fetchMenu } = useMenu({
     graphqlClient: props.graphqlClient,
     language: props.language,
+    depth: props.depth,
   });
+  const hasError = menuError !== null;
 
-  function getUserKey(): string {
-    if (!props.user) return '';
-    if ('contactId' in (props.user as any)) return `c${(props.user as Contact).contactId}`;
-    return `u${(props.user as Customer).customerId}`;
+  function getCategoryName(cat: MenuCategory): string {
+    return cat.name;
   }
-  function getCacheKey(): string {
-    const lang = (props.language as string) || 'NL';
-    const userKey = getUserKey();
-    return `propeller_menu_${props.categoryId}_${lang}${userKey ? `_${userKey}` : ''}`;
+  function getCategoryUrl(cat: MenuCategory): string {
+    const lang = props.language || 'NL';
+    return props.configuration.urls.getCategoryUrl(
+      { categoryId: cat.categoryId, slug: [{ value: cat.slug, language: lang }] } as Category,
+      lang
+    );
   }
-  function getCachedMenu(): Category | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = localStorage.getItem(getCacheKey());
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (parsed.expires > Date.now()) {
-        return parsed.data as Category;
-      }
-      localStorage.removeItem(getCacheKey());
-    } catch {
-      // ignore
-    }
-    return null;
+  function getSubCategories(cat: MenuCategory): MenuCategory[] {
+    return (cat.children || []).filter((sub) => sub.name && sub.slug);
   }
-  function cacheMenu(data: Category): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(
-        getCacheKey(),
-        JSON.stringify({
-          data,
-          expires: Date.now() + 43200000,
-        })
-      );
-    } catch {
-      // ignore — quota exceeded etc.
-    }
-  }
-  function getCategoryName(cat: Category): string {
-    const lang = (props.language as string) || 'NL';
-    const match = cat.name?.find((n: LocalizedString) => n.language === lang);
-    return match?.value || cat.name?.[0]?.value || '';
-  }
-  function getCategorySlug(cat: Category): string {
-    const lang = (props.language as string) || 'NL';
-    const match = cat.slug?.find((s: LocalizedString) => s.language === lang);
-    return match?.value || cat.slug?.[0]?.value || '';
-  }
-  function getCategoryUrl(cat: Category): string {
-    return props.configuration.urls.getCategoryUrl(cat, props.language);
-  }
-  function getSubCategories(cat: Category): Category[] {
-    const subs = (cat as any).categories || [];
-    return subs.filter((sub: Category) => {
-      if ((sub as any).hidden === 'Y' || (sub as any).hidden === true) return false;
-      const name = getCategoryName(sub);
-      const slug = getCategorySlug(sub);
-      return name && slug;
-    });
-  }
-  function handleItemClick(cat: Category, e: any): void {
+  function handleItemClick(cat: MenuCategory, e: any): void {
     if (props.onMenuItemClick) {
       e.preventDefault();
-      (props.onMenuItemClick as (cat: Category) => void)(cat);
+      const lang = props.language || 'NL';
+      props.onMenuItemClick({
+        categoryId: cat.categoryId,
+        name: [{ value: cat.name, language: lang }] as any,
+        slug: [{ value: cat.slug, language: lang }] as any,
+      } as Category);
     }
   }
   function setHoveredL1(id: number | null): void {
@@ -171,97 +131,12 @@ function Menu(props: MenuProps) {
   function getMenuStyle(): string {
     return (props.menuStyle as string) || 'dropdown-vertical';
   }
-  function getLinkFormat(): string {
-    return props.configuration.urls.pattern;
-  }
+
   useEffect(() => {
-    let cancelled = false;
     if (!props.graphqlClient) return;
+    fetchMenu(props.categoryId, userKey);
+  }, [props.graphqlClient, props.categoryId, props.language, userKey, fetchMenu]);
 
-    // Try cache first
-    const cached = getCachedMenu();
-    if (cached) {
-      setRootCategory(cached);
-      setIsLoading(false);
-      return;
-    }
-
-    const key = getCacheKey();
-
-    setIsLoading(true);
-    setHasError(false);
-
-    // Deduplicate: if an identical fetch is already in flight, reuse it
-    if (!inflightFetches.has(key)) {
-      const depth = (props.depth as number) || 3;
-      const language = (props.language as string) || 'NL';
-      const buildCategoriesQuery = (currentDepth: number): string => {
-        if (currentDepth === 0) return '';
-        return `
-                        categories {
-                            categoryId
-                            name(language: $language) { value language }
-                            slug(language: $language) { value }
-                            ${buildCategoriesQuery(currentDepth - 1)}
-                        }
-                    `;
-      };
-      const gql = `
-                    query Menu($categoryId: Float, $language: String) {
-                        category(categoryId: $categoryId) {
-                            categoryId
-                            name(language: $language) { value language }
-                            slug(language: $language) { value }
-                            ${buildCategoriesQuery(depth)}
-                        }
-                    }
-                `;
-      const variables: Record<string, any> = {
-        categoryId: props.categoryId as number,
-        language,
-      };
-      if (props.user) {
-        if ('contactId' in (props.user as any)) {
-          variables.contactId = (props.user as Contact).contactId;
-        } else {
-          variables.customerId = (props.user as Customer).customerId;
-        }
-      }
-
-      const fetchPromise = (props.graphqlClient as GraphQLClient)
-        .execute({ query: gql, variables })
-        .then((response) => {
-          const menuData = (response as any)?.data || response;
-          return ((menuData as any)?.category || null) as Category | null;
-        })
-        .finally(() => {
-          inflightFetches.delete(key);
-        });
-
-      inflightFetches.set(key, fetchPromise);
-    }
-
-    inflightFetches.get(key)!
-      .then((root) => {
-        if (cancelled) return;
-        setRootCategory(root as Category);
-        if (root) {
-          cacheMenu(root as Category);
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setHasError(true);
-        setRootCategory(null);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => { cancelled = true; };
-  }, [props.graphqlClient, props.categoryId, props.language, props.user]);
   return (
     <div className={`propeller-menu ${(props.className as string) || ''}`}>
       {isLoading ? (
@@ -275,27 +150,23 @@ function Menu(props: MenuProps) {
           {getLabel('error', 'Failed to load menu')}
         </div>
       ) : null}
-      {!isLoading &&
-      !hasError &&
-      rootCategory !== null &&
-      getSubCategories(rootCategory as Category).length === 0 ? (
+      {!isLoading && !hasError && menuCategories.length === 0 ? (
         <div className="px-4 py-3 text-sm text-muted-foreground">
           {getLabel('empty', 'No categories found')}
         </div>
       ) : null}
       {!isLoading &&
       !hasError &&
-      rootCategory !== null &&
-      getSubCategories(rootCategory as Category).length > 0 &&
+      menuCategories.length > 0 &&
       getMenuStyle() === 'dropdown-vertical' ? (
         <nav
           className={`propeller-menu-dropdown hidden md:block ${(props.menuClass as string) || ''}`}
         >
           <div className="flex bg-popover border border-border shadow-lg">
             <ul className="w-64 py-1 border-r border-border flex-shrink-0">
-              {getSubCategories(rootCategory as Category)?.map((l1, idx) => (
+              {menuCategories?.map((l1, idx) => (
                 <li
-                  key={l1.categoryId || idx}
+                  key={`l1-${l1.categoryId}-${idx}`}
                   onMouseEnter={(event) => setHoveredL1(l1.categoryId)}
                 >
                   <a
@@ -323,12 +194,12 @@ function Menu(props: MenuProps) {
                 </li>
               ))}
             </ul>
-            {getSubCategories(rootCategory as Category)?.map((l1, idx) =>
+            {menuCategories?.map((l1, idx) =>
               hoveredL1Id === l1.categoryId && getSubCategories(l1).length > 0 ? (
-                <ul key={l1.categoryId || idx} className="w-64 py-1 border-r border-border flex-shrink-0">
+                <ul key={`l1-sub-${l1.categoryId}-${idx}`} className="w-64 py-1 border-r border-border flex-shrink-0">
                   {getSubCategories(l1)?.map((l2, idx2) => (
                     <li
-                      key={l2.categoryId || idx2}
+                      key={`l2-${l2.categoryId}-${idx2}`}
                       onMouseEnter={(event) => setHoveredL2(l2.categoryId)}
                     >
                       <a
@@ -358,14 +229,14 @@ function Menu(props: MenuProps) {
                 </ul>
               ) : null
             )}
-            {getSubCategories(rootCategory as Category)?.map((l1) =>
+            {menuCategories?.map((l1) =>
               hoveredL1Id === l1.categoryId ? (
                 <>
                   {getSubCategories(l1)?.map((l2) =>
                     hoveredL2Id === l2.categoryId && getSubCategories(l2).length > 0 ? (
                       <ul className="w-64 py-1 flex-shrink-0">
                         {getSubCategories(l2)?.map((l3, idx3) => (
-                          <li key={l3.categoryId || idx3}>
+                          <li key={`l3-${l3.categoryId}-${idx3}`}>
                             <a
                               className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent/50 transition-colors"
                               href={getCategoryUrl(l3)}
@@ -386,16 +257,15 @@ function Menu(props: MenuProps) {
       ) : null}
       {!isLoading &&
       !hasError &&
-      rootCategory !== null &&
-      getSubCategories(rootCategory as Category).length > 0 &&
+      menuCategories.length > 0 &&
       getMenuStyle() === 'jumbotron' ? (
         <nav
           className={`propeller-menu-jumbotron hidden md:block ${(props.menuClass as string) || ''}`}
         >
           <div className="flex items-center border-b border-border">
-            {getSubCategories(rootCategory as Category)?.map((l1, idx) => (
+            {menuCategories?.map((l1, idx) => (
               <button
-                key={l1.categoryId || idx}
+                key={`l1-${l1.categoryId}-${idx}`}
                 onMouseEnter={(event) => setHoveredL1(l1.categoryId)}
                 onClick={(e) => handleItemClick(l1, e)}
                 className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 ${hoveredL1Id === l1.categoryId ? 'border-primary text-primary' : 'border-transparent text-foreground hover:text-primary hover:border-primary/50'}`}
@@ -404,7 +274,7 @@ function Menu(props: MenuProps) {
               </button>
             ))}
           </div>
-          {getSubCategories(rootCategory as Category)?.map((l1, idx) =>
+          {menuCategories?.map((l1, idx) =>
             hoveredL1Id === l1.categoryId && getSubCategories(l1).length > 0 ? (
               <div
                 className="bg-popover border border-border border-t-0 shadow-lg p-6"
@@ -413,7 +283,7 @@ function Menu(props: MenuProps) {
               >
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {getSubCategories(l1)?.map((l2, idx2) => (
-                    <div key={l2.categoryId || idx2}>
+                    <div key={`l2-${l2.categoryId}-${idx2}`}>
                       <a
                         className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                         href={getCategoryUrl(l2)}
@@ -424,7 +294,7 @@ function Menu(props: MenuProps) {
                       {getSubCategories(l2).length > 0 ? (
                         <ul className="mt-2 space-y-1">
                           {getSubCategories(l2)?.map((l3, idx3) => (
-                            <li key={l3.categoryId || idx3}>
+                            <li key={`l3-${l3.categoryId}-${idx3}`}>
                               <a
                                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
                                 href={getCategoryUrl(l3)}
@@ -446,12 +316,11 @@ function Menu(props: MenuProps) {
       ) : null}
       {!isLoading &&
       !hasError &&
-      rootCategory !== null &&
-      getSubCategories(rootCategory as Category).length > 0 ? (
+      menuCategories.length > 0 ? (
         <nav className={`propeller-menu-mobile md:hidden ${(props.menuClass as string) || ''}`}>
           <ul className="divide-y divide-border">
-            {getSubCategories(rootCategory as Category)?.map((l1, idx) => (
-              <li key={l1.categoryId || idx}>
+            {menuCategories?.map((l1, idx) => (
+              <li key={`l1-mobile-${l1.categoryId}-${idx}`}>
                 <div className="flex items-center">
                   <a
                     className="flex-1 px-4 py-3 text-sm font-medium text-foreground"
@@ -487,7 +356,7 @@ function Menu(props: MenuProps) {
                 {expandedL1 === l1.categoryId && getSubCategories(l1).length > 0 ? (
                   <ul className="bg-accent/30">
                     {getSubCategories(l1)?.map((l2, idx2) => (
-                      <li key={l2.categoryId || idx2}>
+                      <li key={`l2-mobile-${l2.categoryId}-${idx2}`}>
                         <div className="flex items-center">
                           <a
                             className="flex-1 pl-8 pr-4 py-2.5 text-sm text-foreground"
@@ -523,7 +392,7 @@ function Menu(props: MenuProps) {
                         {expandedL2 === l2.categoryId && getSubCategories(l2).length > 0 ? (
                           <ul className="bg-accent/20">
                             {getSubCategories(l2)?.map((l3, idx3) => (
-                              <li key={l3.categoryId || idx3}>
+                              <li key={`l3-mobile-${l3.categoryId}-${idx3}`}>
                                 <a
                                   className="block pl-12 pr-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                                   href={getCategoryUrl(l3)}

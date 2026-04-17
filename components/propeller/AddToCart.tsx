@@ -125,7 +125,12 @@ export interface AddToCartProps {
   onRequestQuoteClick?: (cart: Cart) => void;
 
   /** Configuration object passed to the component */
-  configuration?: any;
+  configuration?: {
+    language?: string;
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersSmall?: TransformationsInput;
+    urls?: { getProductUrl: (product: Product, language?: string) => string };
+  };
 
   /** Active company ID from the company switcher. Overrides user's default company for cart creation and lookup. */
   companyId?: number;
@@ -173,7 +178,7 @@ function AddToCart(props: AddToCartProps) {
     return (props.product as Product)?.names?.[0]?.value || 'Product';
   }
   function getProductUrl(): string {
-    return props.configuration.urls.getProductUrl(props.product, props.language);
+    return props.configuration?.urls?.getProductUrl(props.product, props.language) ?? '#';
   }
   function getProductImageUrl(): string {
     return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';

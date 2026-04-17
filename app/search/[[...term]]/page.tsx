@@ -48,17 +48,20 @@ export default function SearchPage() {
     return newFilters;
   }, [searchParams]);
 
-  const activeTextFilters = useMemo(() => Object.entries(filters)
-    .filter(([, values]) => values.length > 0)
-    .map(([name, values]) => ({
-      name,
-      values,
-      exclude: false,
-      type: Enums.AttributeType.TEXT,
-    })), [filters]);
-
   // Component-local state (not URL-driven)
   const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
+
+  const activeTextFilters = useMemo(() => Object.entries(filters)
+    .filter(([, values]) => values.length > 0)
+    .map(([name, values]) => {
+      const filterDef = gridFilters.find(f => f.attributeDescription?.name === name);
+      return {
+        name,
+        values,
+        exclude: false,
+        type: filterDef?.type ?? Enums.AttributeType.TEXT,
+      };
+    }), [filters, gridFilters]);
   const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
   const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
   const [clearSignal, setClearSignal] = useState(0);

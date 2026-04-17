@@ -177,7 +177,7 @@ export function useProductInfo(options: UseProductInfoOptions): UseProductInfoRe
         clusterId,
         language,
         imageSearchFilters: imageSearchFilters ?? configuration.imageSearchFiltersGrid,
-        imageVariantFilters: imageVariantFilters ?? configuration.imageVariantFiltersMedium,
+        imageVariantFilters: (imageVariantFilters ?? configuration.imageVariantFiltersMedium) as TransformationsInput,
         priceCalculateProductInput: buildPriceInput(),
         ...(attributeNames.length > 0 && {
           attributeResultSearchInput: {

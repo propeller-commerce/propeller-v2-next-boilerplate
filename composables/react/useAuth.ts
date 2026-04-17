@@ -90,6 +90,7 @@ export interface UseAuthOptions {
   graphqlClient: GraphQLClient;
   language?: string;
   onAuthHeaderUpdate?: (token: string) => void;
+  configuration?: any;
 }
 
 export interface UseAuthReturn {
@@ -104,7 +105,7 @@ export interface UseAuthReturn {
 // ── Composable ────────────────────────────────────────────────────────────────
 
 export function useAuth(options: UseAuthOptions): UseAuthReturn {
-  const { graphqlClient, language = 'NL', onAuthHeaderUpdate } = options;
+  const { graphqlClient, language = 'NL', onAuthHeaderUpdate, configuration } = options;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,7 +134,20 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         onAuthHeaderUpdate?.(accessToken);
       }
       const userService = new UserService(graphqlClient);
-      const viewerInput: ViewerInput = {};
+      const viewerInput: ViewerInput = {
+        ...(configuration?.contactTrackAttributes?.length && {
+          contactAttributesInput: { attributeDescription: { names: configuration.contactTrackAttributes } },
+        }),
+        ...(configuration?.customerTrackAttributes?.length && {
+          customerAttributesInput: { attributeDescription: { names: configuration.customerTrackAttributes } },
+        }),
+        ...(configuration?.companyTrackAttributes?.length && {
+          companyAttributesInput: { attributeDescription: { names: configuration.companyTrackAttributes } },
+        }),
+        ...(configuration?.contactPAConfigInput && {
+          contactPAConfigInput: configuration.contactPAConfigInput,
+        }),
+      };
       const viewer = await userService.getViewer(viewerInput);
       const user = viewer as Contact | Customer;
       if (typeof window !== 'undefined') {
@@ -147,7 +161,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
     } finally {
       setLoading(false);
     }
-  }, [graphqlClient, language, onAuthHeaderUpdate]);
+  }, [graphqlClient, language, onAuthHeaderUpdate, configuration]);
 
   // ── Register contact ──────────────────────────────────────────────────────
   // Mirrors RegisterForm.lite.tsx contact registration path:

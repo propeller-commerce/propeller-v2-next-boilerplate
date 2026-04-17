@@ -51,6 +51,11 @@ export interface UseMenuReturn {
 
 const CACHE_TTL_DEFAULT = 12 * 60 * 60 * 1000; // 12h
 
+// Module-level inflight dedup map — prevents two concurrent fetchMenu calls for
+// the same key (e.g. Menu + HomeFallback both mounting at the same time) from
+// both hitting the API. The second caller awaits the promise and reads from cache.
+const inflightFetches = new Map<string, Promise<void>>();
+
 // ── Pure helpers (module-level, no reactive deps) ─────────────────────────────
 
 /**
@@ -108,6 +113,8 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
       const raw = localStorage.getItem(key);
       if (!raw) return null;
       const parsed: { data: MenuCategory[]; expiresAt: number } = JSON.parse(raw);
+      // Reject stale format (old Menu.tsx stored { data: Category, expires: ... })
+      if (!Array.isArray(parsed.data)) { localStorage.removeItem(key); return null; }
       if (Date.now() > parsed.expiresAt) { localStorage.removeItem(key); return null; }
       return parsed.data;
     } catch { return null; }
@@ -132,8 +139,24 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
     const cached = getFromCache(key);
     if (cached) { setCategories(cached); return; }
 
+    // Piggyback on an in-flight fetch for the same key instead of firing a
+    // duplicate request (e.g. Menu + HomeFallback both mounting simultaneously).
+    if (inflightFetches.has(key)) {
+      setLoading(true);
+      await inflightFetches.get(key);
+      setLoading(false);
+      const fresh = getFromCache(key);
+      if (fresh) setCategories(fresh);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+
+    let resolve!: () => void;
+    const promise = new Promise<void>(res => { resolve = res; });
+    inflightFetches.set(key, promise);
+
     try {
       // Build recursive query — mirrors Menu.lite.tsx buildCategoriesQuery() + query string
       const gql = `
@@ -162,6 +185,8 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to fetch menu');
     } finally {
+      inflightFetches.delete(key);
+      resolve();
       setLoading(false);
     }
   }, [graphqlClient, language, depth, cacheTtlMs]);

@@ -15,6 +15,8 @@ import {
   Enums,
   Contact,
   Customer,
+  MediaImageProductSearchInput,
+  TransformationsInput,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
 
@@ -71,7 +73,13 @@ export interface CartItemProps {
   language?: string;
 
   /** Configuration object for image filters and URL generation */
-  configuration?: any;
+  configuration?: {
+    language?: string;
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersSmall?: TransformationsInput;
+    imageVariantFiltersMedium?: TransformationsInput;
+    urls?: { getProductUrl: (product: Product, language?: string) => string };
+  };
 
   /** Show cross-sell/upsell product suggestions below the item. Defaults to false. */
   showCrossupsells?: boolean;
@@ -122,8 +130,8 @@ function CartItem(props: CartItemProps) {
     return props.cartItem.product?.names?.[0]?.value || 'Product';
   }
   function getProductUrl(): string {
-    if (props.configuration && props.configuration.urls) {
-      return props.configuration.urls.getProductUrl(props.cartItem.product, props.language);
+    if (props.configuration?.urls && props.cartItem.product) {
+      return props.configuration.urls.getProductUrl(props.cartItem.product as Product, props.language);
     }
     return '#';
   }
@@ -192,8 +200,8 @@ function CartItem(props: CartItemProps) {
   }
   function getCrossupsellUrl(item: Crossupsell): string {
     const product = item?.productTo || item?.clusterTo;
-    if (props.configuration && props.configuration.urls && product) {
-      return props.configuration.urls.getProductUrl(product, props.language);
+    if (props.configuration?.urls && product) {
+      return props.configuration.urls.getProductUrl(product as Product, props.language);
     }
     return '#';
   }

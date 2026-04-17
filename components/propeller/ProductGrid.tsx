@@ -229,6 +229,10 @@ function ProductGrid(props: ProductGridProps) {
   }
 
   useEffect(() => {
+    if (props.onLoadingChange) props.onLoadingChange(isLoading);
+  }, [isLoading]);
+
+  useEffect(() => {
     if (props.page !== undefined) goToPage(props.page);
   }, [props.page]);
 

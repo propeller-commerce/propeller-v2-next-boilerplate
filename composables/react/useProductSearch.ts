@@ -34,6 +34,10 @@ import type {
 } from 'propeller-sdk-v2';
 import { usePagination } from './shared/usePagination';
 
+// Module-level dedup set — prevents two concurrent identical fetches from both
+// hitting the API (React Strict Mode runs every effect twice in development).
+const inflightFetches = new Set<string>();
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface UseProductSearchOptions {
@@ -104,6 +108,16 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pagination = usePagination(pageSize);
 
+  // Stable string key from the user's ID — prevents re-fetches when the user
+  // object reference changes but the underlying identity hasn't (common with
+  // useReducer-based auth contexts that return a new state object on every
+  // dispatch, even if the user data is unchanged).
+  const userKey = options.user
+    ? ('contactId' in options.user
+      ? String((options.user as Contact).contactId)
+      : String((options.user as Customer).customerId))
+    : '';
+
   const displayProducts = useMemo<(Product | Cluster)[]>(
     () => (isControlled ? options.products! : internalProducts),
     [isControlled, options.products, internalProducts]
@@ -128,16 +142,41 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     if (!graphqlClient || isControlled) return;
 
     const thisId = ++fetchIdRef.current;
+
+    // ── Inflight dedup (guards against React Strict Mode double-effect) ───────
+    // Bail out when nothing to fetch: no categoryId, term, or brand.
+    // This prevents components like SearchBar (which only use `search()`) from
+    // triggering a spurious category fetch on mount via the baseCategoryId fallback.
+    if (!options.categoryId && !options.term && !options.brand) return;
+
+    const isWideSearch = !!options.term || !!options.brand;
+    const catId = isWideSearch
+      ? (configuration?.baseCategoryId ?? 0)
+      : (options.categoryId ?? configuration?.baseCategoryId ?? 0);
+
+    if (!catId) return;
+
+    const inflightKey = [
+      catId, language, pagination.currentPage, pageSize,
+      options.term ?? '', options.brand ?? '',
+      options.sortField ?? '', options.sortOrder ?? '',
+      options.companyId ?? '', userKey,
+      JSON.stringify(options.textFilters ?? []),
+      options.priceFilterMin ?? '', options.priceFilterMax ?? '',
+    ].join('|');
+
+    if (inflightFetches.has(inflightKey)) {
+      // Identical fetch already in flight — undo the ID increment so the
+      // in-flight request can still commit its result via the thisId check.
+      fetchIdRef.current--;
+      return;
+    }
+    inflightFetches.add(inflightKey);
+
     setInternalLoading(true);
 
     try {
       const service = new CategoryService(graphqlClient);
-      const isWideSearch = !!options.term || !!options.brand;
-      const catId = isWideSearch
-        ? (configuration?.baseCategoryId ?? 0)
-        : (options.categoryId ?? configuration?.baseCategoryId ?? 0);
-
-      if (!catId) return;
 
       const lang = language;
       const activeSortField = (options.sortField ?? currentSortField) as Enums.ProductSortField;
@@ -287,6 +326,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
       console.error('[useProductSearch] fetchProducts error:', e);
       if (thisId === fetchIdRef.current) setInternalProducts([]);
     } finally {
+      inflightFetches.delete(inflightKey);
       if (thisId === fetchIdRef.current) setInternalLoading(false);
     }
   }, [
@@ -301,7 +341,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     options.sortField,
     options.sortOrder,
     options.companyId,
-    options.user,
+    userKey,
     language,
     taxZone,
     pageSize,
@@ -336,6 +376,33 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
               Enums.ProductStatus.S,
             ],
             sortInputs: [{ field: Enums.ProductSortField.RELEVANCE, order: Enums.SortOrder.DESC }],
+            searchFields: [
+              {
+                fieldNames: [
+                  Enums.ProductSearchableField.NAME,
+                  Enums.ProductSearchableField.KEYWORDS,
+                  Enums.ProductSearchableField.SKU,
+                  Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                ],
+                boost: 5,
+              },
+              {
+                fieldNames: [
+                  Enums.ProductSearchableField.DESCRIPTION,
+                  Enums.ProductSearchableField.MANUFACTURER,
+                  Enums.ProductSearchableField.MANUFACTURER_CODE,
+                  Enums.ProductSearchableField.EAN_CODE,
+                  Enums.ProductSearchableField.BAR_CODE,
+                  Enums.ProductSearchableField.CLUSTER_ID,
+                  Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                  Enums.ProductSearchableField.PRODUCT_ID,
+                  Enums.ProductSearchableField.SHORT_DESCRIPTION,
+                  Enums.ProductSearchableField.SUPPLIER,
+                  Enums.ProductSearchableField.SUPPLIER_CODE,
+                ],
+                boost: 1,
+              },
+            ],
           };
           const variables: ProductsQueryVariables = {
             input,
@@ -351,7 +418,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         }
       }, 300);
     },
-    [graphqlClient, language, configuration]
+    [graphqlClient, language, configuration, userKey]
   );
 
   // ── Effects ───────────────────────────────────────────────────────────────
@@ -371,6 +438,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     options.sortOrder,
     pageSize,
     options.companyId,
+    userKey,
     pagination.currentPage,
   ]);
 

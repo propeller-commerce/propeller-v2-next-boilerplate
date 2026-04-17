@@ -68,7 +68,8 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
   const { graphqlClient, user, onCreate, onEdit, onDelete, onListChanged } = options;
 
   const [lists, setLists] = useState<FavoriteList[]>([]);
-  const [loading] = useState(false);
+  // fetchLists reads synchronously from the user object — no async loading needed.
+  const loading = false;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingListId, setEditingListId] = useState<string | null>(null);

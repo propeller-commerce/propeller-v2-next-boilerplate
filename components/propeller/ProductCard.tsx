@@ -14,6 +14,7 @@ import {
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
+import ProductPriceDisplay from './ProductPrice';
 
 export interface ProductCardProps {
   // === Core ===
@@ -438,10 +439,12 @@ function ProductCard(props: ProductCardProps) {
                 labels={props.stockLabels}
               />
             ) : null}
-            {props.showPrice !== false && !!getProductPrice() ? (
-              <span className="font-bold text-gray-900 text-sm whitespace-nowrap">
-                {getProductPrice()}
-              </span>
+            {props.showPrice !== false && !!props.product?.price ? (
+              <ProductPriceDisplay
+                price={props.product.price}
+                includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
+                priceSize="text-sm"
+              />
             ) : null}
             {props.allowAddToCart !== false ? (
               <div className="flex-shrink-0 ml-auto">
@@ -511,11 +514,13 @@ function ProductCard(props: ProductCardProps) {
             {props.showShortDescription && !!getProductShortDescription() ? (
               <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
             ) : null}
-            {props.showPrice !== false && !!getProductPrice() ? (
+            {props.showPrice !== false && !!props.product?.price ? (
               <div className="mt-auto pt-1">
-                <span className="font-bold text-gray-900 text-base sm:text-lg">
-                  {getProductPrice()}
-                </span>
+                <ProductPriceDisplay
+                  price={props.product.price}
+                  includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
+                  priceSize="text-base sm:text-lg"
+                />
               </div>
             ) : null}
           </div>{' '}

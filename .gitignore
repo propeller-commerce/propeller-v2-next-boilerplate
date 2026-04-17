@@ -45,8 +45,6 @@ next-env.d.ts
 # local tool config
 .kiro/
 .vscode/
-.claude/
-CLAUDE.md
 /output/*
 # devbox dir
 .devbox/

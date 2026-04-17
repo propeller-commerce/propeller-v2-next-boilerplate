@@ -16,7 +16,7 @@ export interface UseCartOptions {
   cartId?: string;
   companyId?: number;
   language?: string;
-  configuration?: { language?: string; imageSearchFiltersGrid: MediaImageProductSearchInput; imageVariantFiltersSmall: TransformationsInput };
+  configuration?: { language?: string; imageSearchFiltersGrid?: MediaImageProductSearchInput; imageVariantFiltersSmall?: TransformationsInput };
   onCartCreated?: (cart: Cart) => void;
 }
 
@@ -118,7 +118,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
         language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,
       });
       setCart(resultCart); setCartId(resultCart.cartId);
-      const addedItem = (resultCart as any).items?.find((i: any) => i.productId === opts.product.productId) ?? null;
+      const addedItem = resultCart.items?.find((i: CartMainItem) => i.productId === opts.product.productId) ?? null;
       opts.afterAddToCart?.(resultCart, addedItem);
       return { success: true, cart: resultCart, item: addedItem };
     } catch (e: unknown) { const msg = e instanceof Error ? e.message : 'Failed to add item to cart'; setError(msg); return { success: false, error: msg }; }
@@ -139,6 +139,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
   const updateItemNotes = useCallback((cartItemId: string, notes: string, debounceMs = 500): void => {
     if (notesTimers.current[cartItemId]) clearTimeout(notesTimers.current[cartItemId]);
     notesTimers.current[cartItemId] = setTimeout(async () => {
+      delete notesTimers.current[cartItemId];
       if (!cartId) return;
       try {
         const service = new CartService(graphqlClient);

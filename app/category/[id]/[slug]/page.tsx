@@ -212,12 +212,15 @@ export default function CategoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const activeTextFilters = useMemo(() => Object.entries(filters)
     .filter(([, values]) => values.length > 0)
-    .map(([name, values]) => ({
-      name,
-      values,
-      exclude: false,
-      type: Enums.AttributeType.TEXT,
-    })), [JSON.stringify(filters)]);
+    .map(([name, values]) => {
+      const filterDef = gridFilters.find(f => f.attributeDescription?.name === name);
+      return {
+        name,
+        values,
+        exclude: false,
+        type: filterDef?.type ?? Enums.AttributeType.TEXT,
+      };
+    }), [JSON.stringify(filters), gridFilters]);
 
 
   // Render Logic
@@ -298,11 +301,13 @@ export default function CategoryPage() {
                 user={state.user}
                 companyId={selectedCompany?.companyId}
                 onProductClick={productClick}
+                allowAddToCart={true}
+                showPrice={true}
                 language={language}
-                showModal={true}
-                createCart={true}                
-                cartId={cart?.cartId}
                 includeTax={includeTax}
+                showModal={true}
+                createCart={true}
+                cartId={cart?.cartId}
                 onCartCreated={(cart) => {
                   saveCart(cart);
                 }}

@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { menuService } from '@/lib/services/MenuService';
-import { categoryService } from '@/lib/api';
-import type { Category, Cluster, Product } from 'propeller-sdk-v2';
+import { graphqlClient, categoryService } from '@/lib/api';
+import { useMenu } from '@/composables/react/useMenu';
+import type { Cluster, Product } from 'propeller-sdk-v2';
 import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
 import { Button } from '@/components/ui/Button';
@@ -22,58 +22,58 @@ interface CategoryDisplay {
   slug: string;
 }
 
+const baseCategoryId = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10);
+const categoryIcons = ['\uD83D\uDCBB', '\u2328\uFE0F', '\uD83C\uDF10', '\uD83D\uDDA5\uFE0F', '\uD83C\uDFAE', '\uD83D\uDD0C'];
+
 export default function HomeFallback() {
   const [featuredProducts, setFeaturedProducts] = useState<(Product | Cluster)[]>([]);
-  const [categories, setCategories] = useState<CategoryDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const { language } = useLanguage();
 
+  const { categories: menuCategories, fetchMenu } = useMenu({
+    graphqlClient,
+    language,
+  });
+
+  const categories: CategoryDisplay[] = menuCategories.slice(0, 6).map((cat, index) => ({
+    id: cat.categoryId,
+    name: cat.name,
+    icon: categoryIcons[index] || '\uD83D\uDCE6',
+    categoryId: cat.categoryId,
+    slug: cat.slug,
+  }));
+
   useEffect(() => {
-    const loadHomeData = async () => {
+    fetchMenu(baseCategoryId);
+  }, [fetchMenu]);
+
+  useEffect(() => {
+    if (menuCategories.length === 0) return;
+    const firstCat = menuCategories[0];
+
+    const loadProducts = async () => {
+      setLoading(true);
       try {
-        const menu = await menuService.getMenu();
-
-        if (menu?.category?.categories) {
-          const topCategories = menu.category.categories.slice(0, 6).map((item: Category, index: number) => {
-            const icons = ['\uD83D\uDCBB', '\u2328\uFE0F', '\uD83C\uDF10', '\uD83D\uDDA5\uFE0F', '\uD83C\uDFAE', '\uD83D\uDD0C'];
-            return {
-              id: item.categoryId,
-              name: item.name?.[0]?.value || 'Category',
-              icon: icons[index] || '\uD83D\uDCE6',
-              categoryId: item.categoryId,
-              slug: item.slug?.[0]?.value || ''
-            };
-          });
-          setCategories(topCategories);
-
-          if (topCategories.length > 0) {
-            try {
-              const categoryQueryVariables: CategoryQueryVariables = {
-                categoryId: topCategories[0].categoryId,
-                language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-                imageSearchFilters: imageSearchFiltersGrid,
-                imageVariantFilters: imageVariantFiltersMedium
-              };
-
-              const categoryData = await categoryService.getCategory(categoryQueryVariables);
-
-              if (categoryData.products?.items) {
-                setFeaturedProducts(categoryData.products.items.slice(0, 8) as (Product | Cluster)[]);
-              }
-            } catch (error) {
-              console.error('Failed to load featured products:', error);
-            }
-          }
+        const lang = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+        const categoryQueryVariables: CategoryQueryVariables = {
+          categoryId: firstCat.categoryId,
+          language: lang,
+          imageSearchFilters: imageSearchFiltersGrid,
+          imageVariantFilters: imageVariantFiltersMedium,
+        };
+        const categoryData = await categoryService.getCategory(categoryQueryVariables);
+        if (categoryData.products?.items) {
+          setFeaturedProducts(categoryData.products.items.slice(0, 8) as (Product | Cluster)[]);
         }
       } catch (error) {
-        console.error('Failed to load home data:', error);
+        console.error('Failed to load featured products:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadHomeData();
-  }, []);
+    loadProducts();
+  }, [menuCategories]);
 
   return (
     <>

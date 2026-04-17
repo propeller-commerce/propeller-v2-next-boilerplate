@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n '$contactSearchArguments\\\\|$contactPAConfigInput\\\\|$companyAttributesInput' d:/laragon/www/propeller-next/composables/react/useCompany.ts d:/laragon/www/propeller-next/composables/vue/useCompany.ts)",
+      "Bash(git checkout *)",
+      "Bash(xargs -I{} dirname {})",
+      "Bash(xargs -I{} basename {})",
+      "Bash(xargs -I{} cat {})",
+      "Edit(/.claude/skills/propeller-composable-components/**)",
+      "Bash(grep -v \"^$\")",
+      "Bash(sed -n '330,350p' components/propeller/CartIconAndSidebar.tsx)",
+      "Bash(sed -n '285,305p' components/propeller/CartItem.tsx)",
+      "Bash(sed -n '180,200p' components/propeller/ProductTabs.tsx)",
+      "Bash(sed -n '128,145p' d:/laragon/www/propeller-next/components/propeller/CartItem.tsx)",
+      "Bash(sed -n '197,210p' d:/laragon/www/propeller-next/components/propeller/CartItem.tsx)"
+    ],
+    "additionalDirectories": [
+      "d:\\laragon\\www\\propeller-next\\.claude\\skills",
+      "d:\\laragon\\www\\propeller-next\\output\\vue\\ui-components",
+      "d:\\laragon\\www\\propeller-next\\components\\vue"
+    ]
+  },
+  "enabledPlugins": {
+    "fullstack-dev-skills@fullstack-dev-skills": true
+  }
+}

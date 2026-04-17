@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run mitosis:build:*)",
+      "Read(//d/laragon/www/npm/propeller-sdk-v2/**)",
+      "Bash(git commit:*)",
+      "Read(//d/laragon/www/node_modules/propeller-sdk-v2/**)",
+      "Bash(grep -r \"sendPasswordReset\\\\|login\\(\" node_modules/propeller-sdk-v2/src/services/LoginService*)",
+      "Bash(grep -r \"addFavoriteList\\\\|deleteFavoriteList\\\\|updateFavoriteList\\\\|createFavoriteList\" node_modules/propeller-sdk-v2/src/services/FavoriteListService*)",
+      "Bash(grep -r \"sendPasswordReset\\\\|login\\\\b\" d:/laragon/www/npm/propeller-sdk-v2/src/services/Login*)",
+      "Bash(grep -n \"sendPassword\\\\|resetPassword\\\\|forgotPassword\" d:/laragon/www/propeller-next/node_modules/propeller-sdk-v2/dist/service/*.d.ts)",
+      "Read(//d/laragon/www/propeller-next/**)",
+      "Bash(sed -i 's/imageSearchFilters,$/imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,/g; s/imageVariantFilters,$/imageVariantFilters: imageVariantFilters as TransformationsInput,/g' composables/shared/utils/cartInit.ts)",
+      "Bash(sed -i 's/imageSearchFilters: configuration?\\\\.imageSearchFiltersGrid,/imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,/g; s/imageVariantFilters: configuration?\\\\.imageVariantFiltersSmall,/imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,/g' composables/react/useCart.ts)",
+      "Bash(xargs cat:*)",
+      "Bash(xargs head:*)",
+      "Bash(grep -l \"from '@/composables/vue/\" d:/laragon/www/propeller-next/output/vue/ui-components/*.vue)"
+    ],
+    "additionalDirectories": [
+      "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"
+    ]
+  }
+}

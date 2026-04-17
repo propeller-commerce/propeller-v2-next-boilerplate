@@ -244,7 +244,7 @@ function CartSummary(props: CartSummaryProps) {
           >
             {getLabel('checkoutButton', 'Continue to Checkout')}
           </button>{' '}
-          {!!props.onRequestQuoteClick && !!props.user && 'contactId' in props.user ? (
+          {!!props.onRequestQuoteClick && showRequestQuoteButton() ? (
             <button
               type="button"
               className="block w-full bg-white border border-secondary text-secondary text-center py-3 rounded-lg hover:bg-secondary/5 transition font-semibold mt-2"
@@ -268,15 +268,6 @@ function CartSummary(props: CartSummaryProps) {
           {!requestLoading ? (
             <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
           ) : null}
-        </button>
-      ) : null}
-      {showRequestQuoteButton() ? (
-        <button
-          type="button"
-          className="block w-full bg-white text-secondary text-center py-3 rounded-lg border border-secondary hover:bg-secondary/5 transition font-semibold mt-2"
-          onClick={() => props.onRequestQuoteClick!(props.cart)}
-        >
-          {getLabel('requestQuoteButton', 'Request a Quote')}
         </button>
       ) : null}
     </div>

@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react';
 import {
   Product,
   GraphQLClient,
-  ProductService,
   PaginatedMediaDocumentResponse,
   PaginatedMediaVideoResponse,
   AttributeResult,
 } from 'propeller-sdk-v2';
+import { useProductSpecs } from '@/composables/react/useProductSpecs';
 import ProductDescription from './ProductDescription';
 import ProductSpecifications from './ProductSpecifications';
 import ProductDownloads from './ProductDownloads';
@@ -126,11 +126,14 @@ interface ProductTabsState {
   getSpecsAttributes: () => AttributeResult[];
 }
 function ProductTabs(props: ProductTabsProps) {
+  // --- composable ---
+  const { attributes: fetchedAttributes, fetchSpecs } = useProductSpecs({
+    graphqlClient: props.graphqlClient as GraphQLClient,
+    language: props.language || 'NL',
+  });
+
   const [activeTab, setActiveTab] = useState<ProductTabsState['activeTab']>(() => 'description');
   const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(() => false);
-  const [fetchedAttributes, setFetchedAttributes] = useState<ProductTabsState['fetchedAttributes']>(
-    () => []
-  );
   function getSpecsAttributes(): ReturnType<ProductTabsState['getSpecsAttributes']> {
     return fetchedAttributes.length
       ? fetchedAttributes
@@ -183,19 +186,7 @@ function ProductTabs(props: ProductTabsProps) {
   }, [props.product, props.language]);
   useEffect(() => {
     if (!props.productId || !props.graphqlClient) return;
-    const service = new ProductService(props.graphqlClient as GraphQLClient);
-    service
-      .getAttributeResultByProductId(props.productId as number, {
-        attributeDescription: {
-          isPublic: true,
-        },
-        page: 1,
-        offset: 2000,
-      })
-      .then((result: { items?: AttributeResult[] }) => {
-        setFetchedAttributes(result?.items || []);
-      })
-      .catch(() => {});
+    fetchSpecs(props.productId as number);
   }, [props.productId]);
   return (
     <>

@@ -15,7 +15,6 @@ import {
   Enums,
   Contact,
   Customer,
-  CartService,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
 
@@ -98,7 +97,7 @@ export interface CartItemProps {
 
 function CartItem(props: CartItemProps) {
   // --- composable ---
-  const { updateItemQuantity, updateItemNotes, deleteItem, getCrossupsells } = useCart({
+  const { updateItemQuantity, updateItemNotes, deleteItem, getCrossupsells, addItem } = useCart({
     graphqlClient: props.graphqlClient,
     user: props.user ?? null,
     cartId: props.cartId,
@@ -284,28 +283,16 @@ function CartItem(props: CartItemProps) {
     return `\u20AC${Number(value).toFixed(2)}`;
   }
 
-  function handleAddCrossupsellToCart(item: Crossupsell): void {
+  async function handleAddCrossupsellToCart(item: Crossupsell): Promise<void> {
     if (!props.cartId || addingCrossupsellId) return;
     const productId = getCrossupsellProductId(item);
     if (!productId) return;
     setAddingCrossupsellId(productId);
-    const cartService = new CartService(props.graphqlClient);
-    cartService
-      .addItemToCart({
-        id: props.cartId,
-        input: { productId, quantity: 1 },
-        language: props.language || 'NL',
-        imageSearchFilters: props.configuration?.imageSearchFiltersGrid,
-        imageVariantFilters: props.configuration?.imageVariantFiltersSmall,
-      })
-      .then((updatedCart: Cart) => {
-        setAddingCrossupsellId(null);
-        if (props.afterCartUpdate) props.afterCartUpdate(updatedCart);
-      })
-      .catch((error: Error) => {
-        console.error('Failed to add crossupsell to cart:', error);
-        setAddingCrossupsellId(null);
-      });
+    const result = await addItem({ product: { productId } as Product, quantity: 1, cartId: props.cartId });
+    setAddingCrossupsellId(null);
+    if (result.success && result.cart && props.afterCartUpdate) {
+      props.afterCartUpdate(result.cart);
+    }
   }
 
   useEffect(() => {

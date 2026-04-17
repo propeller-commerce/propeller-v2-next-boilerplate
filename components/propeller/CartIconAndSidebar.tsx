@@ -11,9 +11,9 @@ import {
   Customer,
   Enums,
   PurchaseAuthorizationConfig,
-  CartService,
   GraphQLClient,
 } from 'propeller-sdk-v2';
+import { useCart } from '@/composables/react/useCart';
 
 export interface CartIconAndSidebarProps {
   /**
@@ -152,6 +152,14 @@ interface CartIconAndSidebarState {
   handleRequestAuthorizationClick: () => Promise<void>;
 }
 function CartIconAndSidebar(props: CartIconAndSidebarProps) {
+  // --- composable ---
+  const { requestAuthorization } = useCart({
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
+    cartId: props.cart?.cartId,
+    companyId: props.companyId,
+  });
+
   const [isMounted, setIsMounted] = useState<CartIconAndSidebarState['isMounted']>(() => false);
   const [sidebarOpen, setSidebarOpen] = useState<CartIconAndSidebarState['sidebarOpen']>(
     () => false
@@ -334,9 +342,10 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
       let updatedCart: any = props.cart;
       if (props.onRequestAuthorization) {
         props.onRequestAuthorization(props.cart);
-      } else if (props.graphqlClient) {
-        const cartService = new CartService(props.graphqlClient);
-        updatedCart = await cartService.requestPurchaseAuthorization({ id: props.cart.cartId });
+      } else {
+        const result = await requestAuthorization();
+        if (!result.success) throw new Error(result.error || 'Failed to request authorization');
+        updatedCart = props.cart;
       }
       if (props.afterRequestAuthorization) {
         props.afterRequestAuthorization(updatedCart);

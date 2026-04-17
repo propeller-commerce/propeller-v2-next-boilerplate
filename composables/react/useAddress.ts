@@ -114,7 +114,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
             postalCode: input.postalCode,
             city: input.city,
             country: input.country,
-            type: input.type ?? Enums.AddressType.home,
+            type: input.type ?? Enums.AddressType.delivery,
             customerId: ids.customerId,
             ...(input.firstName && { firstName: input.firstName }),
             ...(input.lastName && { lastName: input.lastName }),

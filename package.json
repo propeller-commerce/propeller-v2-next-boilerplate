@@ -15,7 +15,11 @@
     "mitosis:format": "prettier --ignore-path /dev/null --write \"output/react/**/*.tsx\" \"output/vue/**/*.vue\"",
     "mitosis:copy": "cp -f output/react/ui-components/*.tsx components/propeller/",
     "mitosis:build": "node scripts/mitosis-build.mjs && npm run mitosis:fix && npm run mitosis:format && node scripts/fix-mitosis-callbacks.mjs --patches-only && npm run mitosis:copy",
-    "sdk:sync": "npm update propeller-sdk-v2 && npm install --install-links"
+    "sdk:sync": "npm update propeller-sdk-v2 && npm install --install-links",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -36,6 +40,7 @@
   "devDependencies": {
     "@builder.io/mitosis": "^0.13.0",
     "@builder.io/mitosis-cli": "^0.13.0",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^20",

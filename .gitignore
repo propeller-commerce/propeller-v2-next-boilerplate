@@ -42,6 +42,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# playwright
+e2e/storage-state/*.json
+playwright-report/
+test-results/
+
 # local tool config
 .kiro/
 .vscode/

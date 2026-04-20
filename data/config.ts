@@ -115,6 +115,7 @@ export const config = {
   imageVariantFiltersSmall: imageVariantFiltersSmall,
   imageVariantFiltersMedium: imageVariantFiltersMedium,
   imageVariantFiltersLarge: imageVariantFiltersLarge,
+  taxZone: 'NL',
   portal: {
     mode: PORTAL_MODE.OPEN,
   },

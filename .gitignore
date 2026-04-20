@@ -50,7 +50,6 @@ test-results/
 # local tool config
 .kiro/
 .vscode/
-/output/*
 # devbox dir
 .devbox/
 docs/

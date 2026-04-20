@@ -312,10 +312,9 @@ function GridFilters(props: GridFiltersProps) {
                 min={getMinBound()}
                 max={getMaxBound()}
                 value={currentMin}
-                onChange={(e) => {
-                  handleMinChange(parseFloat(e.target.value));
-                  applyPrice();
-                }}
+                onChange={(e) => handleMinChange(parseFloat(e.target.value))}
+                onPointerUp={() => applyPrice()}
+                onTouchEnd={() => applyPrice()}
               />
               <input
                 type="range"
@@ -323,10 +322,9 @@ function GridFilters(props: GridFiltersProps) {
                 min={getMinBound()}
                 max={getMaxBound()}
                 value={currentMax}
-                onChange={(e) => {
-                  handleMaxChange(parseFloat(e.target.value));
-                  applyPrice();
-                }}
+                onChange={(e) => handleMaxChange(parseFloat(e.target.value))}
+                onPointerUp={() => applyPrice()}
+                onTouchEnd={() => applyPrice()}
               />
               <div className="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10" />
             </div>

@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { imageSearchFilters, imageVariantFiltersLarge, imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
-import { Product, ProductPrice as ProductPriceSDK, CartService, Enums } from 'propeller-sdk-v2';
+import { Product, ProductPrice as ProductPriceSDK, Enums } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
 import ItemStock from '@/components/propeller/ItemStock';
 import ProductInfo from '@/components/propeller/ProductInfo';

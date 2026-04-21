@@ -203,14 +203,14 @@ function FavoriteLists(props: FavoriteListsProps) {
   }
 
   return (
-    <div className={props.className}>
+    <div className={`propeller-favorite-lists ${props.className || ''}`} data-loading={loading ? 'true' : 'false'}>
       {props.allowFavoriteListCreate !== false &&
       !loading &&
       isMounted &&
       displayedLists.length > 0 ? (
-        <div className="flex justify-end mb-4">
+        <div className="propeller-favorite-lists__toolbar flex justify-end mb-4">
           <button
-            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
+            className="propeller-favorite-lists__create-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control text-primary-foreground bg-primary hover:bg-primary/80"
             onClick={(event) => {
               setShowCreateModal(true);
             }}
@@ -236,21 +236,21 @@ function FavoriteLists(props: FavoriteListsProps) {
       ) : null}
       {loading ? (
         <div className="space-y-4">
-          <div className="border border-gray-200 rounded-lg p-6 animate-pulse">
+          <div className="propeller-favorite-lists__skeleton border border-border rounded-container p-6 animate-pulse">
             <div className="flex justify-between items-start">
               <div className="space-y-2 flex-1">
-                <div className="h-6 w-1/3 bg-gray-200 rounded" />
-                <div className="h-4 w-1/4 bg-gray-200 rounded" />
-                <div className="h-4 w-1/2 bg-gray-200 rounded" />
+                <div className="h-6 w-1/3 bg-border rounded" />
+                <div className="h-4 w-1/4 bg-border rounded" />
+                <div className="h-4 w-1/2 bg-border rounded" />
               </div>
             </div>
           </div>
-          <div className="border border-gray-200 rounded-lg p-6 animate-pulse">
+          <div className="propeller-favorite-lists__skeleton border border-border rounded-container p-6 animate-pulse">
             <div className="flex justify-between items-start">
               <div className="space-y-2 flex-1">
-                <div className="h-6 w-1/3 bg-gray-200 rounded" />
-                <div className="h-4 w-1/4 bg-gray-200 rounded" />
-                <div className="h-4 w-1/2 bg-gray-200 rounded" />
+                <div className="h-6 w-1/3 bg-border rounded" />
+                <div className="h-4 w-1/4 bg-border rounded" />
+                <div className="h-4 w-1/2 bg-border rounded" />
               </div>
             </div>
           </div>
@@ -259,7 +259,7 @@ function FavoriteLists(props: FavoriteListsProps) {
       {!loading && isMounted ? (
         <>
           {displayedLists.length > 0 ? (
-            <div className="space-y-4">
+            <div className="propeller-favorite-lists__list space-y-4">
               {displayedLists?.map((list) => (
                 <div
                   key={list.id}
@@ -268,8 +268,10 @@ function FavoriteLists(props: FavoriteListsProps) {
                       props.onListClick(list.id);
                     }
                   }}
+                  data-editing={editingListId === String(list.id) ? 'true' : 'false'}
+                  data-default={list.isDefault ? 'true' : 'false'}
                   className={
-                    'border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors' +
+                    'propeller-favorite-lists__item border border-border rounded-container p-6 hover:bg-surface-hover transition-colors' +
                     (editingListId !== String(list.id) && props.onListClick
                       ? ' cursor-pointer'
                       : '')
@@ -278,12 +280,12 @@ function FavoriteLists(props: FavoriteListsProps) {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       {editingListId === String(list.id) ? (
-                        <div className="space-y-4">
+                        <div className="propeller-favorite-lists__edit space-y-4">
                           <div className="space-y-2">
                             <input
                               type="text"
                               placeholder="Enter list name"
-                              className="max-w-md block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                              className="propeller-favorite-lists__input max-w-md block w-full rounded-control border border-input px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                               value={editListName}
                               onChange={(e) => {
                                 setEditListName(e.target.value);
@@ -293,7 +295,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                           <div className="flex items-center space-x-2">
                             <input
                               type="checkbox"
-                              className="rounded border-gray-300"
+                              className="propeller-favorite-lists__checkbox rounded border-input"
                               id={`default-edit-${list.id}`}
                               checked={editSetAsDefault}
                               onChange={(e) => {
@@ -301,7 +303,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                               }}
                             />
                             <label
-                              className="text-sm text-gray-500"
+                              className="propeller-favorite-lists__checkbox-label text-sm text-muted-foreground"
                               htmlFor={`default-edit-${list.id}`}
                             >
                               {getLabel('makeDefault', 'Make default')}
@@ -309,14 +311,14 @@ function FavoriteLists(props: FavoriteListsProps) {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
+                              className="propeller-favorite-lists__save-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-control text-primary-foreground bg-primary hover:bg-primary/80 disabled:opacity-50"
                               onClick={(event) => updateList(String(list.id))}
                               disabled={!editListName.trim()}
                             >
                               {getLabel('editSave', 'Save')}
                             </button>
                             <button
-                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                              className="propeller-favorite-lists__cancel-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-control border border-input text-foreground bg-card hover:bg-surface-hover"
                               onClick={(event) => cancelEdit()}
                             >
                               {getLabel('editCancel', 'Cancel')}
@@ -325,16 +327,16 @@ function FavoriteLists(props: FavoriteListsProps) {
                         </div>
                       ) : null}
                       {editingListId !== String(list.id) ? (
-                        <div className="space-y-2">
+                        <div className="propeller-favorite-lists__display space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl font-semibold">{list.name}</span>
+                            <span className="propeller-favorite-lists__name text-xl font-semibold">{list.name}</span>
                             {props.showDefaultIndicator !== false && list.isDefault ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              <span className="propeller-favorite-lists__default-badge inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                 {getLabel('defaultBadge', 'Default')}
                               </span>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="propeller-favorite-lists__meta flex items-center gap-4 text-sm text-muted-foreground">
                             {props.showLastModified !== false ? (
                               <div className="flex items-center gap-1">
                                 <svg
@@ -383,10 +385,10 @@ function FavoriteLists(props: FavoriteListsProps) {
                       ) : null}
                     </div>
                     {props.showActions !== false && editingListId !== String(list.id) ? (
-                      <div className="flex gap-2">
+                      <div className="propeller-favorite-lists__actions flex gap-2">
                         <button
                           title="Edit"
-                          className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                          className="propeller-favorite-lists__edit-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                           onClick={(e) => {
                             e.stopPropagation();
                             startEdit(list);
@@ -409,7 +411,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                         </button>
                         <button
                           title="Delete"
-                          className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="propeller-favorite-lists__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteClick(list);
@@ -439,8 +441,8 @@ function FavoriteLists(props: FavoriteListsProps) {
             </div>
           ) : null}
           {displayedLists.length === 0 ? (
-            <div className="border border-gray-200 rounded-lg p-12 text-center space-y-4">
-              <div className="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+            <div className="propeller-favorite-lists__empty border border-border rounded-container p-12 text-center space-y-4">
+              <div className="propeller-favorite-lists__empty-icon-wrapper bg-surface-hover p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="32"
@@ -451,14 +453,14 @@ function FavoriteLists(props: FavoriteListsProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-gray-400"
+                  className="propeller-favorite-lists__empty-icon text-foreground-subtle"
                 >
                   <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3.332.67-4.5 2.17C10.832 3.67 9.26 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                 </svg>
               </div>
               <div>
-                <p className="text-lg font-medium">{getLabel('noLists', 'No favorite lists')}</p>
-                <p className="text-gray-500">
+                <p className="propeller-favorite-lists__empty-title text-lg font-medium">{getLabel('noLists', 'No favorite lists')}</p>
+                <p className="propeller-favorite-lists__empty-message text-muted-foreground">
                   {getLabel(
                     'noListsDescription',
                     'Start by creating a new list to save your items.'
@@ -467,7 +469,7 @@ function FavoriteLists(props: FavoriteListsProps) {
               </div>
               {props.allowFavoriteListCreate !== false ? (
                 <button
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80"
+                  className="propeller-favorite-lists__create-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control text-primary-foreground bg-primary hover:bg-primary/80"
                   onClick={(event) => {
                     setShowCreateModal(true);
                   }}
@@ -480,12 +482,12 @@ function FavoriteLists(props: FavoriteListsProps) {
         </>
       ) : null}
       {showCreateModal ? (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full shadow-lg border">
+        <div className="propeller-favorite-lists__create-modal fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="propeller-favorite-lists__create-modal-content bg-card p-6 rounded-container max-w-md w-full shadow-lg border border-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">{getLabel('createTitle', 'Create New List')}</h3>
+              <h3 className="propeller-favorite-lists__create-modal-title text-xl font-bold">{getLabel('createTitle', 'Create New List')}</h3>
               <button
-                className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                className="propeller-favorite-lists__create-modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                 onClick={(event) => {
                   closeCreateModal();
                 }}
@@ -495,10 +497,10 @@ function FavoriteLists(props: FavoriteListsProps) {
             </div>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name</label>
+                <label className="propeller-favorite-lists__input-label text-sm font-medium">Name</label>
                 <input
                   type="text"
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                  className="propeller-favorite-lists__input block w-full rounded-control border border-input px-3 py-2 text-sm focus:border-primary focus:ring-primary"
                   value={newListName}
                   onChange={(e) => {
                     setNewListName(e.target.value);
@@ -510,19 +512,19 @@ function FavoriteLists(props: FavoriteListsProps) {
                 <input
                   type="checkbox"
                   id="create-set-default"
-                  className="rounded border-gray-300"
+                  className="propeller-favorite-lists__checkbox rounded border-input"
                   checked={newSetAsDefault}
                   onChange={(e) => {
                     setNewSetAsDefault(e.target.checked);
                   }}
                 />
-                <label htmlFor="create-set-default" className="text-sm text-gray-500">
+                <label htmlFor="create-set-default" className="propeller-favorite-lists__checkbox-label text-sm text-muted-foreground">
                   {getLabel('setAsDefault', 'Set as default favorite list')}
                 </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                  className="propeller-favorite-lists__cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control border border-input text-foreground bg-card hover:bg-surface-hover"
                   onClick={(event) => {
                     closeCreateModal();
                   }}
@@ -530,7 +532,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                   {getLabel('cancelButton', 'Cancel')}
                 </button>
                 <button
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
+                  className="propeller-favorite-lists__save-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control text-primary-foreground bg-primary hover:bg-primary/80 disabled:opacity-50"
                   onClick={(event) => handleCreateList()}
                   disabled={!newListName.trim()}
                 >
@@ -542,37 +544,37 @@ function FavoriteLists(props: FavoriteListsProps) {
         </div>
       ) : null}
       {showDeleteModal && listToDelete ? (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full shadow-lg border">
+        <div className="propeller-favorite-lists__delete-modal fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="propeller-favorite-lists__delete-modal-content bg-card p-6 rounded-container max-w-md w-full shadow-lg border border-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">
+              <h3 className="propeller-favorite-lists__delete-modal-title text-xl font-bold">
                 {getLabel('deleteTitle', 'Delete Favorite List')}
               </h3>
               <button
-                className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                className="propeller-favorite-lists__delete-modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                 onClick={(event) => handleCancelDelete()}
               >
                 ×
               </button>
             </div>
             <div className="space-y-4">
-              <p>
+              <p className="propeller-favorite-lists__delete-prompt">
                 {getLabel('deleteConfirm', 'Are you sure you want to delete')}
                 <strong>&quot;{listToDelete?.name}&quot;</strong>?
               </p>
-              <p className="text-sm text-red-600">
+              <p className="propeller-favorite-lists__delete-warning text-sm text-destructive">
                 {getLabel('deleteWarning', 'This action cannot be undone.')}
               </p>
             </div>
             <div className="flex justify-end gap-3 pt-6">
               <button
-                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                className="propeller-favorite-lists__cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control border border-input text-foreground bg-card hover:bg-surface-hover"
                 onClick={(event) => handleCancelDelete()}
               >
                 {getLabel('cancelButton', 'Cancel')}
               </button>
               <button
-                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                className="propeller-favorite-lists__confirm-delete-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control text-destructive-foreground bg-destructive hover:bg-destructive/90"
                 onClick={(event) => handleConfirmDelete()}
               >
                 {getLabel('deleteButton', 'Delete')}

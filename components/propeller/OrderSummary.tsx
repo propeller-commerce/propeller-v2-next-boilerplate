@@ -183,40 +183,40 @@ function OrderSummary(props: OrderSummaryProps) {
     }
   }
   return (
-    <div className={containerClass()}>
-      {props.title ? <h2 className="text-xl font-bold mb-4">{props.title}</h2> : null}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-5 border-b border-gray-200 mb-5">
+    <div className={`propeller-order-summary ${containerClass()}`}>
+      {props.title ? <h2 className="propeller-order-summary__title text-xl font-bold mb-4">{props.title}</h2> : null}
+      <div className="propeller-order-summary__meta grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-5 border-b border-border mb-5">
         {showOrderNumber() && orderNumber() ? (
-          <div>
-            <p className="text-sm text-gray-500 mb-1">{getLabel('orderNumber', 'Order Number')}</p>
-            <p className="font-semibold">{orderNumber()}</p>
+          <div className="propeller-order-summary__meta-item" data-meta="order-number">
+            <p className="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1">{getLabel('orderNumber', 'Order Number')}</p>
+            <p className="propeller-order-summary__meta-value font-semibold">{orderNumber()}</p>
           </div>
         ) : null}
         {showOrderDate() && orderDate() ? (
-          <div>
-            <p className="text-sm text-gray-500 mb-1">{getLabel('orderDate', 'Order Date')}</p>
-            <p className="font-semibold">{formatOrderDate(orderDate())}</p>
+          <div className="propeller-order-summary__meta-item" data-meta="order-date">
+            <p className="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1">{getLabel('orderDate', 'Order Date')}</p>
+            <p className="propeller-order-summary__meta-value font-semibold">{formatOrderDate(orderDate())}</p>
           </div>
         ) : null}
         {showOrderStatus() && orderStatus() ? (
-          <div>
-            <p className="text-sm text-gray-500 mb-1">{getLabel('status', 'Status')}</p>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
+          <div className="propeller-order-summary__meta-item" data-meta="status">
+            <p className="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1">{getLabel('status', 'Status')}</p>
+            <span className="propeller-order-summary__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
               {orderStatus()}
             </span>
           </div>
         ) : null}
         {showOrderTotal() ? (
-          <div>
-            <p className="text-sm text-gray-500 mb-1">{getLabel('total', 'Total')}</p>
-            <p className="font-bold text-lg">{formatItemPrice(orderTotal())}</p>
+          <div className="propeller-order-summary__meta-item" data-meta="total">
+            <p className="propeller-order-summary__meta-label text-sm text-muted-foreground mb-1">{getLabel('total', 'Total')}</p>
+            <p className="propeller-order-summary__total font-bold text-lg">{formatItemPrice(orderTotal())}</p>
           </div>
         ) : null}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
+      <div className="propeller-order-summary__addresses grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
         {showInvoiceAddress() ? (
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+          <div className="propeller-order-summary__address space-y-2" data-address="invoice">
+            <h3 className="propeller-order-summary__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {getLabel('invoiceAddress', 'Invoice Address')}
             </h3>
             {invoiceAddress() && invoiceAddress().street ? (
@@ -249,15 +249,15 @@ function OrderSummary(props: OrderSummaryProps) {
                   <p>{getCountryName(invoiceAddress().country)}</p>
                 ) : null}
                 {invoiceAddress().email ? (
-                  <p className="text-gray-500">{invoiceAddress().email}</p>
+                  <p className="propeller-order-summary__address-email text-muted-foreground">{invoiceAddress().email}</p>
                 ) : null}
               </div>
             ) : null}
           </div>
         ) : null}
         {showDeliveryAddress() ? (
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+          <div className="propeller-order-summary__address space-y-2" data-address="delivery">
+            <h3 className="propeller-order-summary__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {getLabel('deliveryAddress', 'Delivery Address')}
             </h3>
             {deliveryAddress() && deliveryAddress().street ? (
@@ -290,7 +290,7 @@ function OrderSummary(props: OrderSummaryProps) {
                   <p>{getCountryName(deliveryAddress().country)}</p>
                 ) : null}
                 {deliveryAddress().email ? (
-                  <p className="text-gray-500">{deliveryAddress().email}</p>
+                  <p className="propeller-order-summary__address-email text-muted-foreground">{deliveryAddress().email}</p>
                 ) : null}
               </div>
             ) : null}
@@ -298,7 +298,7 @@ function OrderSummary(props: OrderSummaryProps) {
         ) : null}
       </div>
       {showDeliveryInfo() && (paymentMethod() || carrierName() || requestDate()) ? (
-        <div className="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
+        <div className="propeller-order-summary__info-panel bg-surface-hover p-4 rounded-control border border-border space-y-2 text-sm">
           {paymentMethod() ? (
             <div className="flex justify-between">
               <span className="font-medium">{getLabel('payment', 'Payment:')}</span>
@@ -320,7 +320,7 @@ function OrderSummary(props: OrderSummaryProps) {
         </div>
       ) : null}
       {showRemarks() && (orderReference() || orderRemarks()) ? (
-        <div className="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm mt-4">
+        <div className="propeller-order-summary__remarks-panel bg-surface-hover p-4 rounded-control border border-border space-y-2 text-sm mt-4">
           {orderReference() ? (
             <div className="flex justify-between">
               <span className="font-medium">{getLabel('reference', 'Reference:')}</span>

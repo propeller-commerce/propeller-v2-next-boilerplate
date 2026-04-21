@@ -92,10 +92,10 @@ function AddressSelector(props: AddressSelectorProps) {
     }
   }
   return (
-    <div className={(props.className as string) || ''}>
+    <div className={`propeller-address-selector ${(props.className as string) || ''}`}>
       <button
         type="button"
-        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+        className="propeller-address-selector__trigger inline-flex items-center gap-2 px-4 py-2 border border-input rounded-control text-sm font-medium text-foreground bg-card hover:bg-surface-hover transition-colors"
         onClick={(event) => {
           setShowModal(true);
         }}
@@ -117,13 +117,13 @@ function AddressSelector(props: AddressSelectorProps) {
         {getLabel('chooseAddress', 'Choose address')}
       </button>
       {showModal ? (
-        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-10">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">{getLabel('modalTitle', 'Choose an address')}</h3>
+        <div className="propeller-address-selector__modal fixed inset-0 bg-foreground/50 flex items-start justify-center z-50 overflow-y-auto py-10">
+          <div className="propeller-address-selector__modal-content bg-card p-6 rounded-container max-w-2xl w-full mx-4 shadow-xl">
+            <div className="propeller-address-selector__modal-header flex justify-between items-center mb-6">
+              <h3 className="propeller-address-selector__modal-title text-xl font-bold">{getLabel('modalTitle', 'Choose an address')}</h3>
               <button
                 type="button"
-                className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                className="propeller-address-selector__modal-close text-muted-foreground hover:text-foreground text-xl leading-none"
                 onClick={(event) => {
                   setShowModal(false);
                 }}
@@ -133,18 +133,19 @@ function AddressSelector(props: AddressSelectorProps) {
               </button>
             </div>
             {getAddresses().length === 0 ? (
-              <p className="text-gray-500 italic">
+              <p className="propeller-address-selector__empty text-muted-foreground italic">
                 {getLabel('noAddresses', 'No addresses found.')}
               </p>
             ) : null}
             {getAddresses().length > 0 ? (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="propeller-address-selector__list grid grid-cols-2 gap-4">
                   {getAddresses()?.map((address) => (
                     <div
                       key={(address as any).id}
                       onClick={(event) => handleTileClick(address)}
-                      className={`cursor-pointer rounded-lg transition-all ring-2 ${(selectedAddress as any)?.id === (address as any).id ? 'ring-primary' : 'ring-transparent hover:ring-primary/40'}`}
+                      data-selected={(selectedAddress as any)?.id === (address as any).id ? 'true' : 'false'}
+                      className={`propeller-address-selector__option cursor-pointer rounded-container transition-all ring-2 ${(selectedAddress as any)?.id === (address as any).id ? 'ring-primary' : 'ring-transparent hover:ring-primary/40'}`}
                     >
                       <AddressCard
                         address={address}
@@ -154,10 +155,10 @@ function AddressSelector(props: AddressSelectorProps) {
                     </div>
                   ))}
                 </div>{' '}
-                <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
+                <div className="propeller-address-selector__modal-actions flex justify-end mt-6 pt-4 border-t border-border-subtle">
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="propeller-address-selector__confirm-btn inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-control text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     disabled={!selectedAddress || isLoading}
                     onClick={(event) => handleConfirm()}
                   >

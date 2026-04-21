@@ -129,9 +129,9 @@ function OrderList(props: OrderListProps) {
         return 'bg-secondary/10 text-secondary';
       case 'CANCELLED':
       case 'QUOTE_REJECTED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning';
     }
   }
 
@@ -156,18 +156,18 @@ function OrderList(props: OrderListProps) {
   }
 
   return (
-    <div className={props.className}>
+    <div className={`propeller-order-list ${props.className || ''}`} data-loading={loading ? 'true' : 'false'}>
       {props.enableSearch && searchFields().length > 0 ? (
-        <div className="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
+        <div className="propeller-order-list__filters mb-6 bg-card p-4 rounded-container shadow space-y-4">
           {searchFields().includes('term') ? (
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 capitalize mb-1">
+            <div className="propeller-order-list__search-field w-full">
+              <label className="propeller-order-list__filter-label block text-sm font-medium text-muted-foreground capitalize mb-1">
                 {getColumnLabel('term')}
               </label>
               <input
                 type="text"
                 placeholder="Search..."
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                className="propeller-order-list__search-input block w-full rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                 value={searchForm.term || ''}
                 onChange={(e) => {
                   setSearchForm({
@@ -188,7 +188,7 @@ function OrderList(props: OrderListProps) {
               .filter((f: string) => f !== 'term')
               ?.map((field) => (
                 <div className="space-y-1" key={field}>
-                  <label className="block text-sm font-medium text-gray-700 capitalize">
+                  <label className="propeller-order-list__filter-label block text-sm font-medium text-muted-foreground capitalize">
                     {getColumnLabel(field)}
                   </label>
                   {field === 'createdAt' ? (
@@ -196,7 +196,7 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="From"
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.createdAt?.greaterThan
                             ? (searchForm.createdAt.greaterThan as string).split('T')[0]
@@ -217,7 +217,7 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="To"
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.createdAt?.lessThan
                             ? (searchForm.createdAt.lessThan as string).split('T')[0]
@@ -242,7 +242,7 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="From"
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.lastModifiedAt?.greaterThan
                             ? (searchForm.lastModifiedAt.greaterThan as string).split('T')[0]
@@ -263,7 +263,7 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="To"
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.lastModifiedAt?.lessThan
                             ? (searchForm.lastModifiedAt.lessThan as string).split('T')[0]
@@ -288,7 +288,7 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="number"
                         placeholder="Min"
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={searchForm.price?.greaterThan || ''}
                         onChange={(e) => {
                           const current = searchForm.price || {};
@@ -304,7 +304,7 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="number"
                         placeholder="Max"
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={searchForm.price?.lessThan || ''}
                         onChange={(e) => {
                           const current = searchForm.price || {};
@@ -322,7 +322,7 @@ function OrderList(props: OrderListProps) {
                   {field === 'sortInput' ? (
                     <div className="flex space-x-2 w-full">
                       <select
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={searchForm.sortInput?.field || ''}
                         onChange={(e) => {
                           const current = searchForm.sortInput || {};
@@ -343,7 +343,7 @@ function OrderList(props: OrderListProps) {
                         ))}
                       </select>
                       <select
-                        className="block w-0 flex-1 min-w-0 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={searchForm.sortInput?.order || ''}
                         onChange={(e) => {
                           const current = searchForm.sortInput || {};
@@ -368,7 +368,7 @@ function OrderList(props: OrderListProps) {
                   {field === 'type' ? (
                     <div className="flex space-x-2">
                       <select
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
+                        className="propeller-order-list__filter-input block w-full rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={searchForm.type || ''}
                         onChange={(e) => {
                           setSearchForm({
@@ -389,9 +389,9 @@ function OrderList(props: OrderListProps) {
                 </div>
               ))}
           </div>
-          <div className="flex justify-end space-x-2">
+          <div className="propeller-order-list__filter-actions flex justify-end space-x-2">
             <button
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="propeller-order-list__clear-btn inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-control shadow-sm text-foreground bg-card hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               onClick={(event) => {
                 setSearchForm({});
                 fetchOrders(1);
@@ -400,7 +400,7 @@ function OrderList(props: OrderListProps) {
               Clear
             </button>
             <button
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="propeller-order-list__search-btn inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-control shadow-sm text-primary-foreground bg-primary hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               onClick={(event) => fetchOrders(1)}
             >
               Search
@@ -411,42 +411,46 @@ function OrderList(props: OrderListProps) {
       {!loading || orders.length > 0 ? (
         <>
           {orders.length > 0 ? (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="propeller-order-list__results bg-card rounded-container shadow overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="propeller-order-list__table min-w-full divide-y divide-border">
+                  <thead className="propeller-order-list__thead bg-surface-hover">
                     <tr>
                       {columns?.map((col) => (
                         <th
                           key={col}
-                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
+                          data-column={col}
+                          className={`propeller-order-list__th px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
                         >
                           {getColumnLabel(col)}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="propeller-order-list__tbody bg-card divide-y divide-border">
                     {orders?.map((order) => (
                       <tr
-                        className="hover:bg-gray-50"
+                        className="propeller-order-list__row hover:bg-surface-hover"
                         key={order.id}
+                        data-clickable={rowsClickable ? 'true' : 'false'}
                         onClick={(event) => rowsClickable && props.onOrderClick(order.id)}
                       >
                         {columns?.map((col) => (
                           <td
                             key={col}
-                            className={`px-6 py-4 whitespace-nowrap text-sm ${col === 'id' || col === 'action' ? 'font-medium' : 'text-gray-500'} ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
+                            data-column={col}
+                            className={`propeller-order-list__cell px-6 py-4 whitespace-nowrap text-sm ${col === 'id' || col === 'action' ? 'font-medium' : 'text-muted-foreground'} ${col === 'action' || col === 'total' ? 'text-right' : ''}`}
                           >
                             {col === 'id' ? (
-                              <span className="text-gray-900">{order.id}</span>
+                              <span className="propeller-order-list__order-id text-foreground">{order.id}</span>
                             ) : null}
                             {col === 'date' ? (
                               <>{formatDate(order.date || order.createdAt || '')}</>
                             ) : null}
                             {col === 'status' ? (
                               <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
+                                className={`propeller-order-list__status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
+                                data-status={order.status}
                               >
                                 {order.status}
                               </span>
@@ -454,7 +458,7 @@ function OrderList(props: OrderListProps) {
                             {col === 'total' ? <>{formatPrice(order.total?.net)}</> : null}
                             {col === 'action' && !rowsClickable ? (
                               <button
-                                className="text-primary hover:text-primary/70 cursor-pointer"
+                                className="propeller-order-list__action-btn text-primary hover:text-primary/70 cursor-pointer"
                                 onClick={(event) => {
                                   event.preventDefault();
                                   props.onOrderClick(order.id);
@@ -479,26 +483,26 @@ function OrderList(props: OrderListProps) {
                 </table>
               </div>
               {!props.hidePagination && totalPages > 1 ? (
-                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                  <div className="flex-1 flex justify-between sm:hidden">
+                <div className="propeller-order-list__pagination bg-card px-4 py-3 flex items-center justify-between border-t border-border sm:px-6">
+                  <div className="propeller-order-list__pagination-mobile flex-1 flex justify-between sm:hidden">
                     <button
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      className="propeller-order-list__pagination-btn relative inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-control text-foreground bg-card hover:bg-surface-hover disabled:opacity-50"
                       onClick={(event) => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
                     >
                       {getLabel('previous', 'Previous')}
                     </button>
                     <button
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      className="propeller-order-list__pagination-btn ml-3 relative inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-control text-foreground bg-card hover:bg-surface-hover disabled:opacity-50"
                       onClick={(event) => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
                     >
                       {getLabel('next', 'Next')}
                     </button>
                   </div>
-                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div className="propeller-order-list__pagination-desktop hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm text-gray-700">
+                      <p className="propeller-order-list__pagination-summary text-sm text-muted-foreground">
                         {getLabel('showingPage', 'Showing page')}&nbsp;
                         <span className="font-medium">{currentPage}</span>&nbsp;
                         {getLabel('of', 'of')}&nbsp;
@@ -508,17 +512,17 @@ function OrderList(props: OrderListProps) {
                     <div>
                       <nav
                         aria-label="Pagination"
-                        className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                        className="propeller-order-list__pagination-nav relative z-0 inline-flex rounded-control shadow-sm -space-x-px"
                       >
                         <button
-                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                          className="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-l-control border border-input bg-card text-sm font-medium text-muted-foreground hover:bg-surface-hover disabled:opacity-50"
                           onClick={(event) => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 1}
                         >
                           {getLabel('previous', 'Previous')}
                         </button>
                         <button
-                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                          className="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-r-control border border-input bg-card text-sm font-medium text-muted-foreground hover:bg-surface-hover disabled:opacity-50"
                           onClick={(event) => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}
                         >
@@ -531,13 +535,13 @@ function OrderList(props: OrderListProps) {
               ) : null}
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500 mb-4">{getLabel('noOrders', 'No orders found.')}</p>
+            <div className="propeller-order-list__empty bg-card rounded-container shadow p-8 text-center">
+              <p className="text-muted-foreground mb-4">{getLabel('noOrders', 'No orders found.')}</p>
             </div>
           )}
         </>
       ) : (
-        <div className="p-8 text-center text-gray-500">
+        <div className="propeller-order-list__loading p-8 text-center text-muted-foreground">
           {getLabel('loading', 'Loading orders...')}
         </div>
       )}

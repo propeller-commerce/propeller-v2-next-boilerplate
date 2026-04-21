@@ -193,7 +193,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
     <>
       {props.user ? (
         <>
-          <div className="relative inline-block">
+          <div className="propeller-add-to-favorite relative inline-block" data-favorited={isFavorited() ? 'true' : 'false'}>
             <button
               type="button"
               onClick={(event) => toggleModal()}
@@ -202,7 +202,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                   ? getLabel('removeFromFavorites', 'Remove from favorites')
                   : getLabel('addToFavorites', 'Add to favorites')
               }
-              className={`inline-flex items-center justify-center rounded-md border p-2.5 transition-colors ${isFavorited() ? 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10' : 'border-gray-200 bg-white text-gray-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5'} ${props.className || ''}`}
+              className={`propeller-add-to-favorite__btn inline-flex items-center justify-center rounded-control border p-2.5 transition-colors ${isFavorited() ? 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10' : 'border-border bg-card text-foreground-subtle hover:text-primary hover:border-primary/30 hover:bg-primary/5'} ${props.className || ''}`}
             >
               {isFavorited() ? (
                 <svg
@@ -236,15 +236,15 @@ function AddToFavorite(props: AddToFavoriteProps) {
               ) : null}
             </button>
             {isOpen && _isMounted ? (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg max-w-md w-full shadow-lg border">
-                  <div className="flex justify-between items-center p-6 pb-4">
-                    <h3 className="text-xl font-bold">
+              <div className="propeller-add-to-favorite__modal fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="propeller-add-to-favorite__modal-content bg-card rounded-container max-w-md w-full shadow-lg border border-border">
+                  <div className="propeller-add-to-favorite__modal-header flex justify-between items-center p-6 pb-4">
+                    <h3 className="propeller-add-to-favorite__modal-title text-xl font-bold">
                       {getLabel('modalTitle', 'Favorite product?')}
                     </h3>
                     <button
                       type="button"
-                      className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      className="propeller-add-to-favorite__modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                       onClick={(event) => closeModal()}
                     >
                       <svg
@@ -263,14 +263,14 @@ function AddToFavorite(props: AddToFavoriteProps) {
                       </svg>
                     </button>
                   </div>
-                  <div className="px-6 pb-6 space-y-4">
+                  <div className="propeller-add-to-favorite__modal-body px-6 pb-6 space-y-4">
                     {getMemberLists().length > 0 ? (
                       <>
-                        <div className="space-y-2">
+                        <div className="propeller-add-to-favorite__member-lists space-y-2">
                           {getMemberLists()?.map((list) => (
                             <button
                               type="button"
-                              className="flex items-center gap-2 py-2 w-full text-left hover:bg-gray-50 rounded-md px-1 transition-colors disabled:opacity-50"
+                              className="propeller-add-to-favorite__member-list-item flex items-center gap-2 py-2 w-full text-left hover:bg-surface-hover rounded-control px-1 transition-colors disabled:opacity-50"
                               key={list.id}
                               onClick={(event) => handleRemoveFromList(String(list.id))}
                               disabled={loading}
@@ -295,7 +295,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                           ))}
                           <button
                             type="button"
-                            className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                            className="propeller-add-to-favorite__submit-btn w-full py-2.5 px-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/80 rounded-control transition-colors disabled:opacity-50"
                             onClick={(event) => {
                               const memberLists = getMemberLists();
                               if (memberLists.length > 0) {
@@ -311,17 +311,17 @@ function AddToFavorite(props: AddToFavoriteProps) {
                             )}
                           </button>
                         </div>
-                        <div className="border-t border-gray-200" />
+                        <div className="propeller-add-to-favorite__divider border-t border-border" />
                       </>
                     ) : null}
                     {getNonMemberLists().length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="propeller-add-to-favorite__add-form space-y-3">
                         <div className="space-y-1">
-                          <label className="text-xs text-gray-500">
+                          <label className="propeller-add-to-favorite__select-label text-xs text-muted-foreground">
                             {getLabel('chooseList', 'Choose a favorites list*')}
                           </label>
                           <select
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
+                            className="propeller-add-to-favorite__select block w-full rounded-control border border-input px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
                             value={selectedListId}
                             onChange={(e) => {
                               setSelectedListId(e.target.value);
@@ -336,7 +336,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                         </div>
                         <button
                           type="button"
-                          className="w-full py-2.5 px-4 text-sm font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors disabled:opacity-50"
+                          className="propeller-add-to-favorite__submit-btn w-full py-2.5 px-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/80 rounded-control transition-colors disabled:opacity-50"
                           onClick={(event) => handleAddToList()}
                           disabled={!selectedListId || loading}
                         >
@@ -349,7 +349,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                       </div>
                     ) : null}
                     {getMemberLists().length === 0 && getNonMemberLists().length === 0 ? (
-                      <div className="py-4 text-center text-gray-500 text-sm">
+                      <div className="propeller-add-to-favorite__empty py-4 text-center text-muted-foreground text-sm">
                         {getLabel(
                           'noLists',
                           'You have no favorite lists. Create one in your account first.'

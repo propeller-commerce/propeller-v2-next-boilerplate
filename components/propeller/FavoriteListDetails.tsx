@@ -276,21 +276,21 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
   }, [props.favoriteListId]);
 
   return (
-    <div className={props.className || ''}>
+    <div className={`propeller-favorite-list-details ${props.className || ''}`} data-loading={loading ? 'true' : 'false'}>
       {loading ? (
-        <div className="space-y-4">
+        <div className="propeller-favorite-list-details__skeleton space-y-4">
           {[1, 2, 3]?.map((i) => (
             <div
-              className="flex items-center gap-4 p-4 border-b border-gray-200 animate-pulse"
+              className="propeller-favorite-list-details__skeleton-row flex items-center gap-4 p-4 border-b border-border animate-pulse"
               key={i}
             >
-              <div className="w-20 h-20 bg-gray-100 rounded-md flex-shrink-0" />
+              <div className="w-20 h-20 bg-surface-hover rounded-control flex-shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-1/4 bg-gray-100 rounded" />
-                <div className="h-5 w-1/2 bg-gray-100 rounded" />
-                <div className="h-4 w-1/6 bg-gray-100 rounded" />
+                <div className="h-4 w-1/4 bg-surface-hover rounded" />
+                <div className="h-5 w-1/2 bg-surface-hover rounded" />
+                <div className="h-4 w-1/6 bg-surface-hover rounded" />
               </div>
-              <div className="h-10 w-28 bg-gray-100 rounded" />
+              <div className="h-10 w-28 bg-surface-hover rounded" />
             </div>
           ))}
         </div>
@@ -298,7 +298,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
       {!loading && isMounted ? (
         <>
           {allItems.length > 0 ? (
-            <div className="space-y-3">
+            <div className="propeller-favorite-list-details__list space-y-3">
               {getPagedItems()?.map((item) => (
                 <div
                   key={
@@ -340,7 +340,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                 </div>
               ))}
               {props.showPagination !== false && getTotalPages() > 1 ? (
-                <div className="mt-6">
+                <div className="propeller-favorite-list-details__pagination mt-6">
                   <GridPagination
                     products={getPaginationData() as unknown as ProductsResponse}
                     onPageChange={(page) => handlePageChange(page)}
@@ -351,8 +351,8 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
             </div>
           ) : null}{' '}
           {allItems.length === 0 ? (
-            <div className="border border-gray-200 rounded-lg p-12 text-center space-y-4">
-              <div className="bg-gray-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+            <div className="propeller-favorite-list-details__empty border border-border rounded-container p-12 text-center space-y-4">
+              <div className="propeller-favorite-list-details__empty-icon-wrapper bg-surface-hover p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="32"
@@ -363,14 +363,14 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-gray-400"
+                  className="propeller-favorite-list-details__empty-icon text-foreground-subtle"
                 >
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
               </div>
               <div>
-                <p className="text-lg font-medium">{getLabel('emptyTitle', 'List is empty')}</p>
-                <p className="text-gray-500">
+                <p className="propeller-favorite-list-details__empty-title text-lg font-medium">{getLabel('emptyTitle', 'List is empty')}</p>
+                <p className="propeller-favorite-list-details__empty-message text-muted-foreground">
                   {getLabel(
                     'emptyDescription',
                     "You haven't added any products or clusters to this list yet."

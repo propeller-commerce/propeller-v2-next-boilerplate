@@ -314,12 +314,14 @@ function CartItem(props: CartItemProps) {
   }, [props.cartItem]);
   return (
     <div
-      className={`flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${props.className || ''}`}
+      className={`propeller-cart-item flex flex-wrap md:flex-nowrap items-center gap-4 bg-card p-4 rounded-container shadow-sm border border-border ${props.className || ''}`}
+      data-bundle={isBundleItem() ? 'true' : 'false'}
+      data-loading={loading ? 'true' : 'false'}
     >
-      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-50 flex items-center justify-center overflow-hidden relative">
+      <div className="propeller-cart-item__media w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-surface-hover flex items-center justify-center overflow-hidden relative">
         {!!getProductImageUrl() ? (
           <img
-            className="w-full h-full object-contain p-1"
+            className="propeller-cart-item__image w-full h-full object-contain p-1"
             src={getProductImageUrl()}
             alt={getProductName()}
           />
@@ -329,7 +331,7 @@ function CartItem(props: CartItemProps) {
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            className="w-8 h-8 text-gray-300"
+            className="propeller-cart-item__image-placeholder w-8 h-8 text-foreground-subtle"
             strokeWidth={1.5}
           >
             <path
@@ -340,12 +342,12 @@ function CartItem(props: CartItemProps) {
           </svg>
         ) : null}
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="propeller-cart-item__body flex-1 min-w-0">
         {!isBundleItem() && props.showSku !== false && !!getProductSku() ? (
-          <p className="font-mono text-xs text-gray-400">{getProductSku()}</p>
+          <p className="propeller-cart-item__sku font-mono text-xs text-foreground-subtle">{getProductSku()}</p>
         ) : null}
         {isBundleItem() ? (
-          <span className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">
+          <span className="propeller-cart-item__title font-semibold text-sm md:text-base text-foreground line-clamp-2">
             {getBundleName()}
           </span>
         ) : null}
@@ -353,14 +355,14 @@ function CartItem(props: CartItemProps) {
           <>
             {props.titleLinkable !== false ? (
               <a
-                className="font-semibold text-sm md:text-base text-gray-900 hover:text-foreground transition-colors line-clamp-2"
+                className="propeller-cart-item__title font-semibold text-sm md:text-base text-foreground hover:text-primary transition-colors line-clamp-2"
                 href={getProductUrl()}
               >
                 {getProductName()}
               </a>
             ) : null}
             {props.titleLinkable === false ? (
-              <span className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2">
+              <span className="propeller-cart-item__title font-semibold text-sm md:text-base text-foreground line-clamp-2">
                 {getProductName()}
               </span>
             ) : null}
@@ -372,24 +374,24 @@ function CartItem(props: CartItemProps) {
           </div>
         ) : null}
         {isBundleItem() ? (
-          <div className="mt-3 space-y-1.5 border-l-2 border-border pl-3">
+          <div className="propeller-cart-item__bundle mt-3 space-y-1.5 border-l-2 border-border pl-3">
             {!!getBundleLeaderName() ? (
-              <div className="flex flex-wrap gap-x-2 text-sm text-gray-700">
+              <div className="propeller-cart-item__bundle-leader flex flex-wrap gap-x-2 text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground">{getBundleLeaderName()}</span>
                 {!!getBundleLeaderPrice() ? (
                   <>
-                    <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
+                    <div className="flex-1 border-b border-dotted border-border mx-1 mb-1" />
                     <span className="font-semibold text-foreground">{getBundleLeaderPrice()}</span>
                   </>
                 ) : null}
               </div>
             ) : null}
             {getBundleNonLeaders()?.map((bundleItem, idx) => (
-              <div className="flex flex-wrap gap-x-2 text-sm text-gray-700" key={idx}>
+              <div className="propeller-cart-item__bundle-item flex flex-wrap gap-x-2 text-sm text-muted-foreground" key={idx}>
                 <span className="font-medium">{getBundleItemName(bundleItem)}</span>
                 {!!getBundleItemPrice(bundleItem) ? (
                   <>
-                    <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
+                    <div className="flex-1 border-b border-dotted border-border mx-1 mb-1" />
                     <span className="font-semibold text-foreground">
                       {getBundleItemPrice(bundleItem)}
                     </span>
@@ -402,28 +404,28 @@ function CartItem(props: CartItemProps) {
         {!!props.cartItem.clusterId &&
           !!props.cartItem.childItems &&
           props.cartItem.childItems.length > 0 ? (
-          <div className="mt-3 space-y-1.5 border-l-2 border-gray-200 pl-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+          <div className="propeller-cart-item__options mt-3 space-y-1.5 border-l-2 border-border pl-3">
+            <p className="propeller-cart-item__options-label text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
               {getLabel('includedOptions', 'Included Options:')}
             </p>
             {(props.cartItem.childItems || []).map((child, idx) => (
-              <div className="flex flex-wrap gap-x-2 text-sm text-gray-700" key={idx}>
+              <div className="propeller-cart-item__option flex flex-wrap gap-x-2 text-sm text-muted-foreground" key={idx}>
                 <span className="font-medium">{child.product.names?.[0]?.value || 'Option'}</span>
-                <span className="text-gray-400 hidden sm:inline">-</span>
-                <span className="text-gray-400 text-xs self-center">{child.product.sku}</span>
-                <div className="flex-1 border-b border-dotted border-gray-300 mx-1 mb-1" />
+                <span className="text-foreground-subtle hidden sm:inline">-</span>
+                <span className="text-foreground-subtle text-xs self-center">{child.product.sku}</span>
+                <div className="flex-1 border-b border-dotted border-border mx-1 mb-1" />
                 <span className="font-semibold text-foreground">€{child.totalSum.toFixed(2)}</span>
               </div>
             ))}
           </div>
         ) : null}
         {props.showCartItemNotesField === true ? (
-          <div className="mt-3">
-            <label className="text-xs font-medium text-gray-500 block mb-1">
+          <div className="propeller-cart-item__notes mt-3">
+            <label className="propeller-cart-item__notes-label text-xs font-medium text-muted-foreground block mb-1">
               {getLabel('notes', 'Notes')}
             </label>
             <textarea
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
+              className="propeller-cart-item__notes-input w-full text-sm border border-input rounded-control px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
               value={notes}
               onChange={(e) => handleNoteChange(e.target.value)}
               placeholder={getLabel('notesPlaceholder', 'Add a note for this item...')}
@@ -432,18 +434,18 @@ function CartItem(props: CartItemProps) {
           </div>
         ) : null}
         {getVisibleCrossupsells().length > 0 ? (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <div className="propeller-cart-item__crossupsells mt-3 pt-3 border-t border-border">
+            <p className="propeller-cart-item__crossupsells-label text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               {getLabel('crossupsellTitle', 'You might also like')}
             </p>
             <div className="flex flex-col gap-2">
               {getVisibleCrossupsells()?.map((item, idx) => (
                 <div
-                  className="flex items-center gap-2 p-2 rounded-md border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                  className="propeller-cart-item__crossupsell flex items-center gap-2 p-2 rounded-control border border-border hover:border-primary/30 hover:bg-surface-hover transition-colors"
                   key={idx}
                 >
                   <a
-                    className="flex items-center gap-2 flex-1 min-w-0"
+                    className="propeller-cart-item__crossupsell-link flex items-center gap-2 flex-1 min-w-0"
                     href={getCrossupsellUrl(item)}
                     onClick={(e) => {
                       if (props.onCrossupsellClick) {
@@ -456,17 +458,17 @@ function CartItem(props: CartItemProps) {
                   >
                     {!!getCrossupsellImageUrl(item) ? (
                       <img
-                        className="w-10 h-10 object-contain rounded flex-shrink-0"
+                        className="propeller-cart-item__crossupsell-image w-10 h-10 object-contain rounded flex-shrink-0"
                         src={getCrossupsellImageUrl(item)}
                         alt={getCrossupsellName(item)}
                       />
                     ) : null}
                     <div className="min-w-0">
-                      <span className="text-xs font-medium text-gray-700 line-clamp-2">
+                      <span className="propeller-cart-item__crossupsell-title text-xs font-medium text-muted-foreground line-clamp-2">
                         {getCrossupsellName(item)}
                       </span>
                       {!!getCrossupsellPrice(item) ? (
-                        <span className="text-xs font-bold text-foreground block">
+                        <span className="propeller-cart-item__crossupsell-price text-xs font-bold text-foreground block">
                           {getCrossupsellPrice(item)}
                         </span>
                       ) : null}
@@ -474,7 +476,7 @@ function CartItem(props: CartItemProps) {
                   </a>
                   <button
                     type="button"
-                    className="flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50"
+                    className="propeller-cart-item__crossupsell-btn flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-control bg-primary text-primary-foreground hover:bg-primary/80 transition-colors disabled:opacity-50"
                     title={getLabel('addToCart', 'Add to cart')}
                     disabled={addingCrossupsellId === getCrossupsellProductId(item)}
                     onClick={(e) => {
@@ -483,7 +485,7 @@ function CartItem(props: CartItemProps) {
                     }}
                   >
                     {addingCrossupsellId === getCrossupsellProductId(item) ? (
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                     ) : null}
                     {addingCrossupsellId !== getCrossupsellProductId(item) ? (
                       <svg
@@ -509,22 +511,22 @@ function CartItem(props: CartItemProps) {
           </div>
         ) : null}
       </div>
-      <div className="w-full md:w-auto flex items-center gap-3 md:gap-4 border-t md:border-t-0 border-gray-100 pt-2 md:pt-0 flex-shrink-0">
+      <div className="propeller-cart-item__footer w-full md:w-auto flex items-center gap-3 md:gap-4 border-t md:border-t-0 border-border-subtle pt-2 md:pt-0 flex-shrink-0">
         {isBundleItem() && !!getBundlePrice() ? (
-          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">
+          <p className="propeller-cart-item__price text-sm md:text-base font-bold text-foreground whitespace-nowrap">
             {getBundlePrice()}
           </p>
         ) : null}
         {!isBundleItem() ? (
-          <p className="text-sm md:text-base font-bold text-foreground whitespace-nowrap">
+          <p className="propeller-cart-item__price text-sm md:text-base font-bold text-foreground whitespace-nowrap">
             {getFormattedPrice()}
           </p>
         ) : null}
         {props.enableIncrementDecrement !== false ? (
-          <div className="flex items-center border border-gray-300 rounded-md bg-white h-9">
+          <div className="propeller-cart-item__stepper flex items-center border border-input rounded-control bg-card h-9">
             <button
               type="button"
-              className="px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
+              className="propeller-cart-item__decrement px-2.5 h-full text-muted-foreground hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-control select-none"
               onClick={(event) => handleQuantityChange(quantity - 1)}
               disabled={quantity <= 1 || loading}
             >
@@ -532,7 +534,7 @@ function CartItem(props: CartItemProps) {
             </button>
             <input
               type="number"
-              className="w-10 text-center text-sm bg-transparent border-x border-gray-300 h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="propeller-cart-item__quantity w-10 text-center text-sm bg-transparent border-x border-input h-full focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               min={1}
               value={quantity}
               onChange={(e) => {
@@ -542,7 +544,7 @@ function CartItem(props: CartItemProps) {
             />
             <button
               type="button"
-              className="px-2.5 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
+              className="propeller-cart-item__increment px-2.5 h-full text-muted-foreground hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-control select-none"
               onClick={(event) => handleQuantityChange(quantity + 1)}
               disabled={loading}
             >
@@ -553,7 +555,7 @@ function CartItem(props: CartItemProps) {
         {props.enableIncrementDecrement === false ? (
           <input
             type="number"
-            className="w-14 h-9 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="propeller-cart-item__quantity w-14 h-9 text-center text-sm border border-input rounded-control focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             min={1}
             value={quantity}
             onChange={(e) => {
@@ -563,16 +565,16 @@ function CartItem(props: CartItemProps) {
           />
         ) : null}
         {loading ? (
-          <span className="text-xs text-gray-400">{getLabel('updating', 'Updating...')}</span>
+          <span className="propeller-cart-item__updating text-xs text-foreground-subtle">{getLabel('updating', 'Updating...')}</span>
         ) : null}
         <button
           type="button"
-          className="h-8 w-8 p-0 ml-auto inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+          className="propeller-cart-item__delete h-8 w-8 p-0 ml-auto inline-flex items-center justify-center rounded-control text-foreground-subtle hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
           onClick={(event) => handleDelete()}
           disabled={deleting}
         >
           {deleting ? (
-            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-foreground-subtle border-t-transparent rounded-full animate-spin" />
           ) : null}
           {!deleting ? (
             <svg

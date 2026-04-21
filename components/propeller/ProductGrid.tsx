@@ -260,28 +260,31 @@ function ProductGrid(props: ProductGridProps) {
   }
 
   return (
-    <div className={`w-full ${(props.className as string) || ''}`}>
+    <div
+      className={`propeller-product-grid w-full ${(props.className as string) || ''}`}
+      data-loading={getIsLoading() ? 'true' : 'false'}
+    >
       {getIsLoading() ? (
-        <div className={getGridColsClass()}>
+        <div className={`propeller-product-grid__skeleton-grid ${getGridColsClass()}`}>
           {getSkeletonItems()?.map((_, idx) => (
             <div
-              className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+              className="propeller-product-grid__skeleton-card flex flex-col overflow-hidden rounded-container border border-border bg-card shadow-sm"
               key={idx}
             >
-              <div className="aspect-square bg-slate-100 animate-pulse" />
+              <div className="propeller-product-grid__skeleton-image aspect-square bg-surface-hover animate-pulse" />
               <div className="p-4 flex flex-col gap-2 flex-1">
-                <div className="h-3 bg-slate-100 animate-pulse rounded w-1/4" />
-                <div className="h-4 bg-slate-100 animate-pulse rounded w-3/4" />
-                <div className="h-4 bg-slate-100 animate-pulse rounded w-1/2" />
+                <div className="propeller-product-grid__skeleton-line h-3 bg-surface-hover animate-pulse rounded w-1/4" />
+                <div className="propeller-product-grid__skeleton-line h-4 bg-surface-hover animate-pulse rounded w-3/4" />
+                <div className="propeller-product-grid__skeleton-line h-4 bg-surface-hover animate-pulse rounded w-1/2" />
                 <div className="mt-auto pt-2">
-                  <div className="h-5 bg-slate-100 animate-pulse rounded w-1/3" />
+                  <div className="propeller-product-grid__skeleton-line h-5 bg-surface-hover animate-pulse rounded w-1/3" />
                 </div>
               </div>
               {showAddToCart() ? (
                 <div className="p-4 pt-0">
                   <div className="flex items-center gap-2">
-                    <div className="h-9 flex-1 bg-slate-100 animate-pulse rounded" />
-                    <div className="h-9 flex-1 bg-slate-100 animate-pulse rounded" />
+                    <div className="propeller-product-grid__skeleton-line h-9 flex-1 bg-surface-hover animate-pulse rounded" />
+                    <div className="propeller-product-grid__skeleton-line h-9 flex-1 bg-surface-hover animate-pulse rounded" />
                   </div>
                 </div>
               ) : null}
@@ -292,12 +295,12 @@ function ProductGrid(props: ProductGridProps) {
       {!getIsLoading() ? (
         <>
           {displayProducts.length === 0 ? (
-            <div className="text-center py-24 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <div className="propeller-product-grid__empty text-center py-24 bg-surface-hover rounded-container border border-dashed border-border">
               <svg
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                className="mx-auto h-12 w-12 text-gray-300"
+                className="propeller-product-grid__empty-icon mx-auto h-12 w-12 text-foreground-subtle"
               >
                 <path
                   strokeLinecap="round"
@@ -306,15 +309,15 @@ function ProductGrid(props: ProductGridProps) {
                   strokeWidth={1}
                 />
               </svg>
-              <h3 className="mt-4 text-lg font-semibold text-gray-900"> No products found </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="propeller-product-grid__empty-title mt-4 text-lg font-semibold text-foreground"> No products found </h3>
+              <p className="propeller-product-grid__empty-message mt-1 text-sm text-muted-foreground">
                 {' '}
                 Try adjusting your filters or search term.{' '}
               </p>
             </div>
           ) : null}{' '}
           {displayProducts.length > 0 ? (
-            <div className={getGridColsClass()}>
+            <div className={`propeller-product-grid__grid ${getGridColsClass()}`}>
               {displayProducts?.map((item, idx) => (
                 <div key={(item as Product).productId || (item as Cluster).clusterId || idx}>
                   {isClusterItem(item) ? (

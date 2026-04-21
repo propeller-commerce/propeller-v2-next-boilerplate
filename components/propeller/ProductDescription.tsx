@@ -84,22 +84,26 @@ function ProductDescription(props: ProductDescriptionProps) {
     <>
       {!!html ? (
         <>
-          <div className={`product-description ${(props.className as string) || ''}`}>
+          <div
+            className={`propeller-product-description ${(props.className as string) || ''}`}
+            data-expanded={expanded ? 'true' : 'false'}
+            data-truncatable={shouldTruncate() ? 'true' : 'false'}
+          >
             {!shouldTruncate() || expanded ? (
               <div
-                className="prose prose-slate max-w-none text-muted-foreground"
+                className="propeller-product-description__content prose prose-slate max-w-none text-muted-foreground"
                 dangerouslySetInnerHTML={{
                   __html: html,
                 }}
               />
             ) : null}
             {shouldTruncate() && !expanded ? (
-              <p className="text-muted-foreground">{getTruncated()}</p>
+              <p className="propeller-product-description__truncated text-muted-foreground">{getTruncated()}</p>
             ) : null}
             {shouldTruncate() ? (
               <button
                 type="button"
-                className="mt-2 text-sm font-medium text-primary hover:underline"
+                className="propeller-product-description__toggle mt-2 text-sm font-medium text-primary hover:underline"
                 onClick={(event) => toggle()}
               >
                 {expanded ? <>Read less</> : null}

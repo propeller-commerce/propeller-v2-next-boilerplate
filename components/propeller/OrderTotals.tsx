@@ -143,64 +143,64 @@ function OrderTotals(props: OrderTotalsProps) {
     return sum;
   }
   return (
-    <div className="w-full md:w-80 bg-white p-6 rounded-lg shadow space-y-3">
+    <div className="propeller-order-totals w-full md:w-80 bg-card p-6 rounded-container shadow space-y-3">
       {showSubtotal() ? (
-        <div className="flex justify-between text-gray-600">
-          <span>{getLabel('subtotal', 'Subtotal:')}</span>
-          <span>{formatItemPrice(subtotal())}</span>
+        <div className="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="subtotal">
+          <span className="propeller-order-totals__label">{getLabel('subtotal', 'Subtotal:')}</span>
+          <span className="propeller-order-totals__value">{formatItemPrice(subtotal())}</span>
         </div>
       ) : null}
       {showDiscount() && hasDiscount() ? (
         <>
-          <div className="flex justify-between text-secondary">
-            <span>{getLabel('discount', 'Discount:')}</span>
-            <span>{discountDisplay()}</span>
+          <div className="propeller-order-totals__row flex justify-between text-secondary" data-row="discount">
+            <span className="propeller-order-totals__label">{getLabel('discount', 'Discount:')}</span>
+            <span className="propeller-order-totals__value">{discountDisplay()}</span>
           </div>
-          <div className="flex justify-between text-gray-600 border-t pt-2 border-dashed">
-            <span>{getLabel('subtotalWithDiscount', 'Subtotal with discount:')}</span>
-            <span>{formatItemPrice(subtotalWithDiscount())}</span>
+          <div className="propeller-order-totals__row flex justify-between text-muted-foreground border-t pt-2 border-dashed" data-row="subtotal-with-discount">
+            <span className="propeller-order-totals__label">{getLabel('subtotalWithDiscount', 'Subtotal with discount:')}</span>
+            <span className="propeller-order-totals__value">{formatItemPrice(subtotalWithDiscount())}</span>
           </div>
         </>
       ) : null}
       {hasTransactionCosts() ? (
-        <div className="flex justify-between text-gray-600">
-          <span>{getLabel('transactionCosts', 'Transaction costs:')}</span>
-          <span>{formatItemPrice(transactionCosts())}</span>
+        <div className="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="transaction-costs">
+          <span className="propeller-order-totals__label">{getLabel('transactionCosts', 'Transaction costs:')}</span>
+          <span className="propeller-order-totals__value">{formatItemPrice(transactionCosts())}</span>
         </div>
       ) : null}
       {showShippingCosts() && hasShippingCosts() ? (
-        <div className="flex justify-between text-gray-600">
-          <span>{getLabel('shippingCosts', 'Shipping costs:')}</span>
-          <span>{formatItemPrice(shippingCosts())}</span>
+        <div className="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="shipping-costs">
+          <span className="propeller-order-totals__label">{getLabel('shippingCosts', 'Shipping costs:')}</span>
+          <span className="propeller-order-totals__value">{formatItemPrice(shippingCosts())}</span>
         </div>
       ) : null}
       {showTotalExclVat() ? (
-        <div className="flex justify-between text-gray-600 pt-2 border-t">
-          <span>{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
-          <span>{formatItemPrice(totalExclVat())}</span>
+        <div className="propeller-order-totals__row flex justify-between text-muted-foreground pt-2 border-t" data-row="total-excl-vat">
+          <span className="propeller-order-totals__label">{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
+          <span className="propeller-order-totals__value">{formatItemPrice(totalExclVat())}</span>
         </div>
       ) : null}
       {showVATs() && taxPercentages().length > 0 ? (
         <>
           {taxPercentages()?.map((tax, index) => (
-            <div className="flex justify-between text-gray-600 text-sm" key={index}>
-              <span>
+            <div className="propeller-order-totals__row flex justify-between text-muted-foreground text-sm" key={index} data-row="vat-line">
+              <span className="propeller-order-totals__label">
                 {tax.percentage}% {getLabel('vat', 'VAT')}:
               </span>
-              <span>{formatItemPrice(Number(tax.total))}</span>
+              <span className="propeller-order-totals__value">{formatItemPrice(Number(tax.total))}</span>
             </div>
           ))}
         </>
       ) : null}
       {showTotalVat() ? (
-        <div className="flex justify-between text-gray-600 text-sm">
-          <span>{getLabel('totalVat', 'Total VAT:')}</span>
-          <span>{formatItemPrice(totalVat())}</span>
+        <div className="propeller-order-totals__row flex justify-between text-muted-foreground text-sm" data-row="total-vat">
+          <span className="propeller-order-totals__label">{getLabel('totalVat', 'Total VAT:')}</span>
+          <span className="propeller-order-totals__value">{formatItemPrice(totalVat())}</span>
         </div>
       ) : null}
-      <div className="flex justify-between text-xl font-bold pt-4 border-t text-gray-900 mt-2">
-        <span>{getLabel('total', 'Total:')}</span>
-        <span>{formatItemPrice(totalInclVat())}</span>
+      <div className="propeller-order-totals__row propeller-order-totals__row--total flex justify-between text-xl font-bold pt-4 border-t text-foreground mt-2" data-row="total">
+        <span className="propeller-order-totals__label">{getLabel('total', 'Total:')}</span>
+        <span className="propeller-order-totals__value">{formatItemPrice(totalInclVat())}</span>
       </div>
     </div>
   );

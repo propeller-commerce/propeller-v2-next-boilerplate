@@ -85,7 +85,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
   }
 
   return (
-    <div className={`purchase-authorization-configurator ${props.className || ''}`}>
+    <div className={`propeller-purchase-authorization-configurator ${props.className || ''}`}>
       {isAuthManager ? (
         <>
           <div className="space-y-4">
@@ -96,7 +96,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
               {props.allowContactCreate !== false ? (
                 <button
                   type="button"
-                  className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition text-sm font-medium"
+                  className="propeller-purchase-authorization-configurator__add-btn flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-container hover:bg-primary/80 transition text-sm font-medium"
                   onClick={() => openAddContactModal()}
                 >
                   {getLabel('addContact', 'Add contact')}
@@ -141,7 +141,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                 .filter(Boolean)
                                 .join(' ')}
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">{contact.email}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{contact.email}</div>
                           </td>
                           <td className="px-4 py-3">
                             <select
@@ -178,12 +178,12 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {hasPac(contact.contactId) && isRowDirty(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-control hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={isRowLoading(contact.contactId)}
                                   onClick={() => handleSave(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
-                                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                                    <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel('save', 'Save')}
                                 </button>
@@ -191,12 +191,12 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {!hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs bg-success text-success-foreground px-3 py-1.5 rounded-control hover:bg-success/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={isRowLoading(contact.contactId) || !getRowRole(contact.contactId)}
                                   onClick={() => handleCreate(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
-                                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                                    <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel('create', 'Create')}
                                 </button>
@@ -204,12 +204,12 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs bg-destructive text-destructive-foreground px-3 py-1.5 rounded-control hover:bg-destructive/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={isRowLoading(contact.contactId) || isCurrentUser(contact.contactId)}
                                   onClick={() => handleDelete(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
-                                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                                    <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel('delete', 'Delete')}
                                 </button>
@@ -249,7 +249,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
           </div>
           {showAddContactModal ? (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50"
               onClick={() => closeAddContactModal()}
             >
               <div
@@ -336,7 +336,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   />
                 </div>
                 {addContactError ? (
-                  <p className="text-sm text-red-600">{addContactError}</p>
+                  <p className="text-sm text-destructive">{addContactError}</p>
                 ) : null}
                 <div className="flex justify-end gap-3 pt-2">
                   <button
@@ -348,12 +348,12 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   </button>
                   <button
                     type="button"
-                    className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-control hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     disabled={addContactLoading || !addContactForm.email}
                     onClick={() => handleAddContactSubmit()}
                   >
                     {addContactLoading ? (
-                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span className="inline-block w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                     ) : null}
                     {getLabel('addContactSubmit', 'Add Contact')}
                   </button>

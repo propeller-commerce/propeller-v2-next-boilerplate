@@ -45,7 +45,7 @@ function ProductShortDescription(props: ProductShortDescriptionProps) {
             dangerouslySetInnerHTML={{
               __html: html,
             }}
-            className={`product-short-description prose prose-slate max-w-none text-muted-foreground ${(props.className as string) || ''}`}
+            className={`propeller-product-short-description prose prose-slate max-w-none text-muted-foreground ${(props.className as string) || ''}`}
           />
         </>
       ) : null}

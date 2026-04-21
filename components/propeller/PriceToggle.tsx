@@ -57,12 +57,15 @@ function PriceToggle(props: PriceToggleProps) {
     }
   }, []);
   return (
-    <div className={`price-toggle flex items-center gap-2 ${(props.className as string) || ''}`}>
-      <span className="hidden sm:inline text-xs">{getLabel()}</span>
+    <div
+      className={`propeller-price-toggle flex items-center gap-2 ${(props.className as string) || ''}`}
+      data-state={isOn ? 'on' : 'off'}
+    >
+      <span className="propeller-price-toggle__label hidden sm:inline text-xs">{getLabel()}</span>
       <button
         type="button"
         role="switch"
-        className="hover:opacity-80 transition-opacity text-xs font-medium"
+        className="propeller-price-toggle__switch hover:opacity-80 transition-opacity text-xs font-medium"
         aria-checked={isOn}
         onClick={(event) => handleToggle()}
       >

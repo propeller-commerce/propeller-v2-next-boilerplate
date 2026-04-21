@@ -156,11 +156,11 @@ function CartOverview(props: CartOverviewProps) {
     }
   }
   return (
-    <div className={containerClass()}>
-      {props.title ? <h2 className="text-xl font-bold mb-4">{props.title}</h2> : null}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+    <div className={`propeller-cart-overview ${containerClass()}`}>
+      {props.title ? <h2 className="propeller-cart-overview__title text-xl font-bold mb-4">{props.title}</h2> : null}
+      <div className="propeller-cart-overview__addresses grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
+        <div className="propeller-cart-overview__address space-y-2" data-address="invoice">
+          <h3 className="propeller-cart-overview__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             {getLabel('invoiceAddress', 'Invoice Address')}
           </h3>
           {invoiceAddress() && invoiceAddress().street ? (
@@ -191,13 +191,13 @@ function CartOverview(props: CartOverviewProps) {
               </p>
               {invoiceAddress().country ? <p>{invoiceAddress().country}</p> : null}
               {invoiceAddress().email ? (
-                <p className="text-gray-500">{invoiceAddress().email}</p>
+                <p className="propeller-cart-overview__address-email text-muted-foreground">{invoiceAddress().email}</p>
               ) : null}
             </div>
           ) : null}
         </div>
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+        <div className="propeller-cart-overview__address space-y-2" data-address="delivery">
+          <h3 className="propeller-cart-overview__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             {getLabel('deliveryAddress', 'Delivery Address')}
           </h3>
           {deliveryAddress() && deliveryAddress().street ? (
@@ -228,13 +228,13 @@ function CartOverview(props: CartOverviewProps) {
               </p>
               {deliveryAddress().country ? <p>{deliveryAddress().country}</p> : null}
               {deliveryAddress().email ? (
-                <p className="text-gray-500">{deliveryAddress().email}</p>
+                <p className="propeller-cart-overview__address-email text-muted-foreground">{deliveryAddress().email}</p>
               ) : null}
             </div>
           ) : null}
         </div>
       </div>
-      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-2 text-sm">
+      <div className="propeller-cart-overview__info-panel bg-surface-hover p-4 rounded-control border border-border space-y-2 text-sm">
         {paymentMethod() ? (
           <div className="flex justify-between">
             <span className="font-medium">{getLabel('payment', 'Payment:')}</span>
@@ -262,7 +262,7 @@ function CartOverview(props: CartOverviewProps) {
             </label>
             <input
               type="text"
-              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary"
+              className="propeller-cart-overview__input flex w-full rounded-control border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
               value={reference}
               onChange={(event) => handleReferenceChange(event.target.value)}
               placeholder={getLabel('referencePlaceholder', 'Your reference number')}
@@ -276,7 +276,7 @@ function CartOverview(props: CartOverviewProps) {
               {getLabel('notesLabel', 'Order Notes (Optional)')}
             </label>
             <textarea
-              className="flex w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
+              className="propeller-cart-overview__textarea flex w-full rounded-control border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
               value={notes}
               onChange={(event) => handleNotesChange(event.target.value)}
               placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}
@@ -289,7 +289,7 @@ function CartOverview(props: CartOverviewProps) {
             <input
               type="checkbox"
               id="cart-overview-terms"
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              className="propeller-cart-overview__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
               checked={termsAccepted}
               onChange={(event) => handleTermsChange(event.target.checked)}
             />
@@ -308,12 +308,12 @@ function CartOverview(props: CartOverviewProps) {
         {showPurchaseButton() ? (
           <button
             type="button"
-            className="flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="propeller-cart-overview__submit flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground text-center py-3 rounded-container hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             onClick={(event) => handlePurchaseClick()}
             disabled={isPurchaseDisabled()}
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="propeller-cart-overview__spinner w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
             ) : null}
             {loading ? <>{getLabel('processing', 'Processing...')}</> : null}
             {!loading ? <>{getLabel('purchaseButton', 'Place Order')}</> : null}

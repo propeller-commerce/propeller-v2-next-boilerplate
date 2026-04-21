@@ -91,25 +91,29 @@ function CompanySwitcher(props: CompanySwitcherProps) {
   }, [isOpen]);
 
   return (
-    <div className="company-switcher relative inline-block" ref={containerRef as any}>
+    <div
+      className="propeller-company-switcher relative inline-block"
+      ref={containerRef as any}
+      data-open={isOpen ? 'true' : 'false'}
+    >
       <button
         type="button"
         aria-haspopup="listbox"
         aria-label="Switch company"
-        className="company-switcher__trigger flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
+        className="propeller-company-switcher__trigger flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
         onClick={(event) => toggleDropdown()}
         aria-expanded={isOpen}
       >
         <span
           aria-hidden="true"
-          className={`company-switcher__icon icon-${getIcon()} flex-shrink-0`}
+          className={`propeller-company-switcher__icon icon-${getIcon()} flex-shrink-0`}
         />
-        <span className="company-switcher__label truncate max-w-[160px]">
+        <span className="propeller-company-switcher__label truncate max-w-[160px]">
           {getActiveCompanyName()}
         </span>
         <span
           aria-hidden="true"
-          className={`company-switcher__chevron flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+          className={`propeller-company-switcher__chevron flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         >
           <svg
             width="12"
@@ -129,7 +133,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
         <ul
           role="listbox"
           aria-label="Companies"
-          className="company-switcher__dropdown absolute left-0 top-full z-[60] mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
+          className="propeller-company-switcher__dropdown absolute left-0 top-full z-[60] mt-1 min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150"
         >
           {getCompanies()?.map((company) => (
             <li
@@ -137,9 +141,9 @@ function CompanySwitcher(props: CompanySwitcherProps) {
               key={String(company.companyId)}
               aria-selected={isActive(company)}
               onClick={(event) => selectCompany(company)}
-              className={`company-switcher__option flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground ${isActive(company) ? 'font-semibold text-primary' : 'font-normal text-foreground'}`}
+              className={`propeller-company-switcher__option flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground ${isActive(company) ? 'font-semibold text-primary' : 'font-normal text-foreground'}`}
             >
-              <span className="company-switcher__option-name flex-1 truncate">{company.name}</span>
+              <span className="propeller-company-switcher__option-name flex-1 truncate">{company.name}</span>
               {isActive(company) ? (
                 <svg
                   viewBox="0 0 16 16"
@@ -149,7 +153,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   aria-hidden="true"
-                  className="company-switcher__option-check flex-shrink-0 w-4 h-4 text-primary"
+                  className="propeller-company-switcher__option-check flex-shrink-0 w-4 h-4 text-primary"
                 >
                   <path d="M2.5 8l4 4 7-7" />
                 </svg>

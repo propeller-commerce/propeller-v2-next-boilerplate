@@ -285,27 +285,28 @@ function ProductBundles(props: ProductBundlesProps) {
     <>
       {isMounted && !isLoading && bundles.length > 0 ? (
         <>
-          <div className={props.className || 'mb-12'}>
+          <div className={`propeller-product-bundles ${props.className || 'mb-12'}`}>
             {bundles?.map((bundle, bundleIdx) => (
               <div
-                className="border border-gray-200 rounded-xl bg-white shadow-sm mb-6 p-6"
+                className="propeller-product-bundles__bundle border border-border rounded-container bg-card shadow-sm mb-6 p-6"
                 key={bundle.id || bundleIdx}
+                data-layout={getLayout()}
               >
                 <div className="flex flex-col lg:flex-row items-center gap-6">
                   {getShowItems() &&
                   getLayout() !== 'compact' &&
                   bundle.items &&
                   bundle.items.length > 0 ? (
-                    <div className="flex flex-wrap items-center justify-center gap-2 flex-1">
+                    <div className="propeller-product-bundles__items flex flex-wrap items-center justify-center gap-2 flex-1">
                       {bundle.items?.map((item, idx) => (
-                        <div className="flex items-center gap-2" key={item.productId + '-' + idx}>
+                        <div className="propeller-product-bundles__item flex items-center gap-2" key={item.productId + '-' + idx}>
                           {idx > 0 ? (
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                            <div className="propeller-product-bundles__plus flex-shrink-0 w-8 h-8 rounded-full bg-success flex items-center justify-center">
                               <svg
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
-                                className="w-5 h-5 text-white"
+                                className="w-5 h-5 text-success-foreground"
                                 strokeWidth={2.5}
                               >
                                 <path
@@ -317,22 +318,22 @@ function ProductBundles(props: ProductBundlesProps) {
                             </div>
                           ) : null}
                           <div className="flex flex-col items-center text-center w-40">
-                            <div className="w-32 h-32 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 mb-2">
+                            <div className="propeller-product-bundles__item-media w-32 h-32 bg-surface-hover rounded-container overflow-hidden flex-shrink-0 mb-2">
                               {getProductImage(item.product) ? (
                                 <img
-                                  className="w-full h-full object-contain p-2"
+                                  className="propeller-product-bundles__item-image w-full h-full object-contain p-2"
                                   src={getProductImage(item.product)}
                                   alt={getProductName(item.product)}
                                 />
                               ) : null}
                             </div>
-                            <div className="text-sm font-medium text-gray-600 leading-tight mb-1">
+                            <div className="propeller-product-bundles__item-name text-sm font-medium text-muted-foreground leading-tight mb-1">
                               {getProductName(item.product) || 'Product ' + item.productId}
                             </div>
                             {!getHidePrices() && item.price ? (
-                              <div className="text-sm font-semibold text-gray-900">
+                              <div className="propeller-product-bundles__item-price text-sm font-semibold text-foreground">
                                 {formatPrice(getItemPrice(item))}
-                                <span className="text-xs font-normal text-gray-500 ml-1">
+                                <span className="text-xs font-normal text-muted-foreground ml-1">
                                   {getIncludeTax() ? (
                                     <>{getLabel('inclTax', 'incl. VAT')}</>
                                   ) : (
@@ -346,12 +347,12 @@ function ProductBundles(props: ProductBundlesProps) {
                       ))}
                     </div>
                   ) : null}
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                  <div className="propeller-product-bundles__equals flex-shrink-0 w-8 h-8 rounded-full bg-success flex items-center justify-center">
                     <svg
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
-                      className="w-5 h-5 text-white"
+                      className="w-5 h-5 text-success-foreground"
                       strokeWidth={2.5}
                     >
                       <path
@@ -361,15 +362,15 @@ function ProductBundles(props: ProductBundlesProps) {
                       />
                     </svg>
                   </div>
-                  <div className="flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
-                    <h3 className="text-xl font-bold text-gray-700 mb-1">
+                  <div className="propeller-product-bundles__summary flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
+                    <h3 className="propeller-product-bundles__title text-xl font-bold text-foreground mb-1">
                       {bundle.name || getLabel('title', 'Combo deal')}
                     </h3>
                     {bundle.description ? (
-                      <p className="text-sm text-gray-600 mb-3">{bundle.description}</p>
+                      <p className="propeller-product-bundles__description text-sm text-muted-foreground mb-3">{bundle.description}</p>
                     ) : null}
                     {bundle.condition ? (
-                      <p className="text-xs text-gray-500 mb-3">
+                      <p className="propeller-product-bundles__condition text-xs text-muted-foreground mb-3">
                         {bundle.condition === Enums.BundleCondition.ALL ? (
                           <>{getLabel('condition_ALL', 'Discount on all items')}</>
                         ) : (
@@ -379,17 +380,17 @@ function ProductBundles(props: ProductBundlesProps) {
                     ) : null}
                     {!getHidePrices() ? (
                       <>
-                        <div className="mb-3">
+                        <div className="propeller-product-bundles__pricing mb-3">
                           {hasDiscount(bundle) ? (
-                            <span className="text-gray-400 line-through text-sm">
+                            <span className="propeller-product-bundles__original-price text-foreground-subtle line-through text-sm">
                               {formatPrice(getOriginalPrice(bundle))}
                             </span>
                           ) : null}
                           <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-gray-900">
+                            <span className="propeller-product-bundles__price text-2xl font-bold text-foreground">
                               {formatPrice(getBundlePrice(bundle))}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               {getIncludeTax() ? (
                                 <>{getLabel('inclTax', 'incl. VAT')}</>
                               ) : (
@@ -398,16 +399,17 @@ function ProductBundles(props: ProductBundlesProps) {
                             </span>
                           </div>
                           {hasDiscount(bundle) ? (
-                            <div className="mt-2 inline-block bg-green-100 text-green-700 text-sm font-medium px-3 py-1 rounded-md">
+                            <div className="propeller-product-bundles__savings mt-2 inline-block bg-success/10 text-success text-sm font-medium px-3 py-1 rounded-control">
                               {getLabel('youSave', 'Your savings:')}
                               {formatPrice(getOriginalPrice(bundle) - getBundlePrice(bundle))}
                             </div>
                           ) : null}
                         </div>
                         <button
-                          className="w-full px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                          className="propeller-product-bundles__submit w-full px-6 py-3 bg-primary text-primary-foreground rounded-container font-semibold hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
                           onClick={(event) => handleAddToCart(bundle)}
                           disabled={addingBundleId === bundle.id}
+                          data-loading={addingBundleId === bundle.id ? 'true' : 'false'}
                         >
                           {addingBundleId === bundle.id ? (
                             <>{getLabel('adding', 'Adding...')}</>
@@ -418,7 +420,7 @@ function ProductBundles(props: ProductBundlesProps) {
                       </>
                     ) : null}
                     {getHidePrices() ? (
-                      <div className="text-center text-sm text-gray-500 py-2">
+                      <div className="propeller-product-bundles__login-prompt text-center text-sm text-muted-foreground py-2">
                         {getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
                       </div>
                     ) : null}
@@ -428,10 +430,11 @@ function ProductBundles(props: ProductBundlesProps) {
             ))}
             {toastVisible ? (
               <div
-                className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+                className={`propeller-product-bundles__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${toastType === 'success' ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}
+                data-toast-type={toastType}
               >
                 <div
-                  className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}
+                  className={`propeller-product-bundles__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
                 >
                   {toastType === 'success' ? (
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -449,14 +452,14 @@ function ProductBundles(props: ProductBundlesProps) {
                   ) : null}
                 </div>
                 <p
-                  className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}
+                  className={`propeller-product-bundles__toast-message flex-1 text-sm font-medium ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
                 >
                   {toastMessage}
                 </p>
                 <button
                   type="button"
                   onClick={(event) => dismissToast()}
-                  className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+                  className={`propeller-product-bundles__toast-close flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-success/70 hover:text-success' : 'text-destructive/70 hover:text-destructive'}`}
                 >
                   <svg
                     fill="none"
@@ -471,25 +474,28 @@ function ProductBundles(props: ProductBundlesProps) {
               </div>
             ) : null}
             {modalVisible ? (
-              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-                <div className="fixed inset-0 bg-gray-500/20" onClick={(event) => closeModal()} />
-                <div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
-                  <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+              <div className="propeller-product-bundles__modal fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div
+                  className="propeller-product-bundles__modal-backdrop fixed inset-0 bg-foreground/20"
+                  onClick={(event) => closeModal()}
+                />
+                <div className="propeller-product-bundles__modal-content relative w-full max-w-lg bg-card rounded-container shadow-2xl overflow-hidden">
+                  <div className="propeller-product-bundles__modal-header flex items-center gap-3 px-6 py-4 border-b border-border-subtle">
                     <svg
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
-                      className="h-5 w-5 flex-shrink-0 text-green-500"
+                      className="propeller-product-bundles__modal-success-icon h-5 w-5 flex-shrink-0 text-success"
                       strokeWidth={2}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <h3 className="flex-1 text-base font-semibold text-gray-900">
+                    <h3 className="propeller-product-bundles__modal-title flex-1 text-base font-semibold text-foreground">
                       {getLabel('modalTitle', 'Added to cart')}
                     </h3>
                     <button
                       type="button"
-                      className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      className="propeller-product-bundles__modal-close flex-shrink-0 text-foreground-subtle hover:text-foreground focus:outline-none"
                       onClick={(event) => closeModal()}
                     >
                       <svg
@@ -507,14 +513,14 @@ function ProductBundles(props: ProductBundlesProps) {
                       </svg>
                     </button>
                   </div>
-                  <div className="px-6 py-5">
-                    <div className="flex items-start gap-4">
+                  <div className="propeller-product-bundles__modal-body px-6 py-5">
+                    <div className="propeller-product-bundles__modal-product flex items-start gap-4">
                       {lastAddedBundle &&
                       lastAddedBundle.items &&
                       lastAddedBundle.items.length > 0 &&
                       getProductImage(lastAddedBundle.items[0].product) ? (
                         <img
-                          className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                          className="propeller-product-bundles__modal-image w-16 h-16 object-contain rounded border border-border-subtle flex-shrink-0"
                           src={
                             lastAddedBundle?.items?.[0]
                               ? getProductImage(lastAddedBundle.items[0].product)
@@ -527,12 +533,12 @@ function ProductBundles(props: ProductBundlesProps) {
                       !lastAddedBundle.items ||
                       lastAddedBundle.items.length === 0 ||
                       !getProductImage(lastAddedBundle.items[0].product) ? (
-                        <div className="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50">
+                        <div className="propeller-product-bundles__modal-image-placeholder w-16 h-16 flex items-center justify-center rounded border border-border-subtle flex-shrink-0 bg-surface-hover">
                           <svg
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
-                            className="w-8 h-8 text-gray-300"
+                            className="w-8 h-8 text-foreground-subtle"
                             strokeWidth={1.5}
                           >
                             <path
@@ -544,16 +550,16 @@ function ProductBundles(props: ProductBundlesProps) {
                         </div>
                       ) : null}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="propeller-product-bundles__modal-name text-sm font-medium text-foreground">
                           {lastAddedBundle?.name || getLabel('title', 'Bundle')}
                         </p>
                       </div>
                       <div className="flex-shrink-0 text-right">
-                        <p className="text-xs text-gray-500">
+                        <p className="propeller-product-bundles__modal-quantity text-xs text-muted-foreground">
                           {getLabel('quantity', 'Quantity')}: 1
                         </p>
                         {!getHidePrices() && lastAddedBundle ? (
-                          <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                          <p className="propeller-product-bundles__modal-price text-sm font-semibold text-foreground mt-0.5">
                             {formatPrice(getBundlePrice(lastAddedBundle!))}
                           </p>
                         ) : null}
@@ -562,17 +568,17 @@ function ProductBundles(props: ProductBundlesProps) {
                     {lastAddedBundle &&
                     lastAddedBundle.items &&
                     lastAddedBundle.items.length > 0 ? (
-                      <div className="mt-3 ml-20 space-y-1 border-l-2 border-secondary/10 pl-2">
+                      <div className="propeller-product-bundles__modal-children mt-3 ml-20 space-y-1 border-l-2 border-secondary/10 pl-2">
                         {lastAddedBundle?.items?.map((item, idx) => (
                           <div
-                            className="flex justify-between items-center text-xs text-gray-600"
+                            className="propeller-product-bundles__modal-child flex justify-between items-center text-xs text-muted-foreground"
                             key={item.productId + '-' + idx}
                           >
                             <span className="line-clamp-1">
                               {getProductName(item.product) || 'Product'}
                             </span>
                             {!getHidePrices() && item.price ? (
-                              <span className="text-gray-400 whitespace-nowrap ml-2">
+                              <span className="text-foreground-subtle whitespace-nowrap ml-2">
                                 {formatPrice(getItemPrice(item))}
                               </span>
                             ) : null}
@@ -581,17 +587,17 @@ function ProductBundles(props: ProductBundlesProps) {
                       </div>
                     ) : null}
                   </div>
-                  <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+                  <div className="propeller-product-bundles__modal-actions flex gap-3 px-6 py-4 border-t border-border-subtle">
                     <button
                       type="button"
-                      className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      className="propeller-product-bundles__modal-continue flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       onClick={(event) => closeModal()}
                     >
                       {getLabel('continueShopping', 'Continue shopping')}
                     </button>
                     <button
                       type="button"
-                      className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      className="propeller-product-bundles__modal-checkout flex-1 inline-flex justify-center rounded-control border border-transparent bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       onClick={(event) => {
                         closeModal();
                         if (props.onProceedToCheckout) props.onProceedToCheckout();

@@ -49,9 +49,15 @@ function ItemStock(props: ItemStockProps) {
   }
   function getStockStatusClass(): string {
     const qty = getTotalQuantity();
-    if (qty <= 0) return 'text-red-600 bg-red-50 border-red-100';
-    if (qty <= 5) return 'text-amber-600 bg-amber-50 border-amber-100';
-    return 'text-green-600 bg-green-50 border-green-100';
+    if (qty <= 0) return 'text-destructive bg-destructive/10 border-destructive/20';
+    if (qty <= 5) return 'text-warning bg-warning/10 border-warning/20';
+    return 'text-success bg-success/10 border-success/20';
+  }
+  function getStockStatusData(): string {
+    const qty = getTotalQuantity();
+    if (qty <= 0) return 'out';
+    if (qty <= 5) return 'low';
+    return 'in';
   }
   function getAvailabilityLabel(): string {
     return isAvailable()
@@ -60,11 +66,11 @@ function ItemStock(props: ItemStockProps) {
   }
   function getAvailabilityClass(): string {
     return isAvailable()
-      ? 'text-green-600 bg-green-50 border-green-100'
-      : 'text-red-600 bg-red-50 border-red-100';
+      ? 'text-success bg-success/10 border-success/20'
+      : 'text-destructive bg-destructive/10 border-destructive/20';
   }
   function getAvailabilityDotClass(): string {
-    return isAvailable() ? 'bg-green-500' : 'bg-red-500';
+    return isAvailable() ? 'bg-success' : 'bg-destructive';
   }
   function hasInventory(): boolean {
     return !!(props.inventory as ProductInventory) && getTotalQuantity() >= 0;
@@ -74,25 +80,27 @@ function ItemStock(props: ItemStockProps) {
       {hasInventory() ? (
         <>
           <div
-            className={`flex flex-wrap items-center gap-1.5 ${(props.className as string) || ''}`}
+            className={`propeller-item-stock flex flex-wrap items-center gap-1.5 ${(props.className as string) || ''}`}
+            data-available={isAvailable() ? 'true' : 'false'}
+            data-stock={getStockStatusData()}
           >
             {props.showAvailability !== false ? (
               <span
-                className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityClass()}`}
+                className={`propeller-item-stock__availability inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getAvailabilityClass()}`}
               >
                 <span
-                  className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${getAvailabilityDotClass()}`}
+                  className={`propeller-item-stock__availability-dot h-1.5 w-1.5 flex-shrink-0 rounded-full ${getAvailabilityDotClass()}`}
                 />
                 {getAvailabilityLabel()}
               </span>
             ) : null}
             {props.showStock !== false && !!getStockStatusLabel() ? (
               <span
-                className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getStockStatusClass()}`}
+                className={`propeller-item-stock__status inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium ${getStockStatusClass()}`}
               >
                 {getStockStatusLabel()}
                 {getTotalQuantity() > 0 ? (
-                  <span className="opacity-70">
+                  <span className="propeller-item-stock__count opacity-70">
                     ({getTotalQuantity()}
                     {getLabel('pieces', 'pcs')})
                   </span>

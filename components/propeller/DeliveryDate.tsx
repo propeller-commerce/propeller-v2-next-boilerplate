@@ -166,44 +166,47 @@ function DeliveryDate(props: DeliveryDateProps) {
     }
   }, [props.initialDate, props.cart]);
   return (
-    <div className={containerClass()}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+    <div className={`propeller-delivery-date ${containerClass()}`}>
+      <div className="propeller-delivery-date__grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {upcomingDates()?.map((dateStr, index) => (
           <div
             key={index}
             onClick={(event) => handleSelect(dateStr)}
-            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${selectedDate === dateStr ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
+            data-selected={selectedDate === dateStr ? 'true' : 'false'}
+            className={`propeller-delivery-date__option cursor-pointer border border-border rounded-container p-3 text-center transition-all ${selectedDate === dateStr ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
           >
-            <div className="font-semibold">{formatDisplay(dateStr)}</div>
+            <div className="propeller-delivery-date__option-label font-semibold">{formatDisplay(dateStr)}</div>
           </div>
         ))}
         {showDatePicker() ? (
           <div
             onClick={(event) => openModal()}
-            className={`cursor-pointer border border-gray-200 rounded-lg p-3 text-center transition-all ${isCustomDateSelected() ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
+            data-selected={isCustomDateSelected() ? 'true' : 'false'}
+            data-custom="true"
+            className={`propeller-delivery-date__option propeller-delivery-date__option--custom cursor-pointer border border-border rounded-container p-3 text-center transition-all ${isCustomDateSelected() ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
           >
             {isCustomDateSelected() ? (
-              <div className="font-semibold">{formatDisplay(selectedDate)}</div>
+              <div className="propeller-delivery-date__option-label font-semibold">{formatDisplay(selectedDate)}</div>
             ) : null}
             {!isCustomDateSelected() ? (
-              <div className="font-semibold">{getLabel('pickDate', 'Other date...')}</div>
+              <div className="propeller-delivery-date__option-label font-semibold">{getLabel('pickDate', 'Other date...')}</div>
             ) : null}
           </div>
         ) : null}
       </div>
       {modalOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="propeller-delivery-date__modal fixed inset-0 z-50 flex items-center justify-center bg-foreground/50"
           onClick={(event) => handleBackdropClick(event as unknown as Event)}
         >
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">
+          <div className="propeller-delivery-date__modal-content bg-card rounded-container shadow-xl p-6 w-full max-w-sm mx-4">
+            <div className="propeller-delivery-date__modal-header flex justify-between items-center mb-4">
+              <h3 className="propeller-delivery-date__modal-title text-lg font-semibold">
                 {getLabel('modalTitle', 'Select a delivery date')}
               </h3>
               <button
                 type="button"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="propeller-delivery-date__modal-close text-foreground-subtle hover:text-foreground transition-colors"
                 onClick={(event) => closeModal()}
               >
                 <svg
@@ -219,15 +222,15 @@ function DeliveryDate(props: DeliveryDateProps) {
             </div>
             <input
               type="date"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
+              className="propeller-delivery-date__input w-full border border-input rounded-control px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
               min={minDate()}
               value={customDateValue}
               onChange={(event) => handleCustomDateChange(event.target.value)}
             />
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="propeller-delivery-date__modal-actions flex justify-end gap-3 mt-4">
               <button
                 type="button"
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="propeller-delivery-date__cancel-btn px-4 py-2 text-sm font-medium text-foreground bg-surface-hover rounded-control hover:bg-muted transition-colors"
                 onClick={(event) => closeModal()}
               >
                 {getLabel('cancel', 'Cancel')}

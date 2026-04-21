@@ -105,12 +105,12 @@ function Breadcrumbs(props: BreadcrumbsProps) {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
   return (
-    <nav aria-label="Breadcrumb" className={`breadcrumbs ${(props.className as string) || ''}`}>
-      <ol className="flex flex-wrap items-center text-sm text-muted-foreground">
+    <nav aria-label="Breadcrumb" className={`propeller-breadcrumbs ${(props.className as string) || ''}`}>
+      <ol className="propeller-breadcrumbs__list flex flex-wrap items-center text-sm text-muted-foreground">
         {props.showHome !== false ? (
-          <li className="flex items-center">
+          <li className="propeller-breadcrumbs__item flex items-center" data-home="true">
             <a
-              className="hover:text-foreground transition-colors"
+              className="propeller-breadcrumbs__link hover:text-foreground transition-colors"
               href={(props.homeUrl as string) || '/'}
             >
               {getLabel('home', 'Home')}
@@ -118,15 +118,19 @@ function Breadcrumbs(props: BreadcrumbsProps) {
           </li>
         ) : null}
         {getDisplayItems()?.map((cat, index) => (
-          <li className="flex items-center" key={cat.categoryId || index}>
+          <li
+            className="propeller-breadcrumbs__item flex items-center"
+            key={cat.categoryId || index}
+            data-current={isCurrentItem(index) ? 'true' : 'false'}
+          >
             {showSeparatorBefore(index) ? (
-              <span aria-hidden="true" className="mx-2 select-none text-muted-foreground/40">
+              <span aria-hidden="true" className="propeller-breadcrumbs__separator mx-2 select-none text-muted-foreground/40">
                 {getLabel('separator', '/')}
               </span>
             ) : null}
             {isCurrentItem(index) ? (
               <a
-                className="hover:text-foreground transition-colors"
+                className="propeller-breadcrumbs__link propeller-breadcrumbs__link--current hover:text-foreground transition-colors"
                 href={getCategoryUrl(cat, index)}
               >
                 {getCategoryName(cat)}
@@ -134,7 +138,7 @@ function Breadcrumbs(props: BreadcrumbsProps) {
             ) : null}
             {!isCurrentItem(index) ? (
               <a
-                className="hover:text-foreground transition-colors"
+                className="propeller-breadcrumbs__link hover:text-foreground transition-colors"
                 href={getCategoryUrl(cat, index)}
               >
                 {getCategoryName(cat)}

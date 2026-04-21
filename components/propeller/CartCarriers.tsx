@@ -76,30 +76,31 @@ function CartCarriers(props: CartCarriersProps) {
     }
   }, [props.cart]);
   return (
-    <div className={containerClass()}>
+    <div className={`propeller-cart-carriers ${containerClass()}`}>
       {carriers().length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="propeller-cart-carriers__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {carriers()?.map((carrier, index) => (
             <div
               key={`${carrier.name}-${index}`}
               onClick={(event) => handleSelect(carrier)}
-              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${selectedName === carrier.name ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
+              data-selected={selectedName === carrier.name ? 'true' : 'false'}
+              className={`propeller-cart-carriers__carrier cursor-pointer border border-border rounded-container p-4 flex flex-col gap-2 transition-all ${selectedName === carrier.name ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
             >
-              <div className="flex justify-between items-center">
+              <div className="propeller-cart-carriers__carrier-row flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   {showLogo() && getLogoUrl(carrier) ? (
-                    <img className="h-6 w-auto" src={getLogoUrl(carrier)} alt={carrier.name} />
+                    <img className="propeller-cart-carriers__carrier-logo h-6 w-auto" src={getLogoUrl(carrier)} alt={carrier.name} />
                   ) : null}
-                  <span className="font-medium">{carrier.name}</span>
+                  <span className="propeller-cart-carriers__carrier-name font-medium">{carrier.name}</span>
                 </div>
                 {props.showPrice !== false ? (
-                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                  <span className="propeller-cart-carriers__carrier-price text-xs bg-surface-hover text-muted-foreground px-2 py-1 rounded-full">
                     {formatCarrierPrice(carrier.price)}
                   </span>
                 ) : null}
               </div>
               {carrier.deliveryDeadline ? (
-                <p className="text-xs text-gray-500">
+                <p className="propeller-cart-carriers__carrier-deadline text-xs text-muted-foreground">
                   {getLabel('deliveryDeadline', 'Delivery deadline:')}
                   {carrier.deliveryDeadline}
                 </p>
@@ -109,7 +110,7 @@ function CartCarriers(props: CartCarriersProps) {
         </div>
       ) : null}
       {carriers().length === 0 ? (
-        <p className="text-gray-500 italic">{getLabel('noCarriers', 'No carriers available.')}</p>
+        <p className="propeller-cart-carriers__empty text-muted-foreground italic">{getLabel('noCarriers', 'No carriers available.')}</p>
       ) : null}
     </div>
   );

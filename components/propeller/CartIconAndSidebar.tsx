@@ -362,9 +362,9 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     setIsMounted(true);
   }, []);
   return (
-    <div className="relative">
+    <div className="propeller-cart-icon relative" data-sidebar-open={sidebarOpen ? 'true' : 'false'}>
       <div
-        className="relative"
+        className="propeller-cart-icon__trigger-wrapper relative"
         onMouseEnter={(event) => {
           setIsHovered(true);
         }}
@@ -376,13 +376,13 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
           type="button"
           onClick={(event) => handleIconClick()}
           aria-label={getLabel('cartIconLabel', 'Shopping cart')}
-          className={`relative inline-flex items-center justify-center p-2 rounded-md transition-colors text-gray-900${props.iconClassName ? ' ' + props.iconClassName : ''}`}
+          className={`propeller-cart-icon__trigger relative inline-flex items-center justify-center p-2 rounded-control transition-colors text-foreground${props.iconClassName ? ' ' + props.iconClassName : ''}`}
         >
           <svg
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            className="w-6 h-6"
+            className="propeller-cart-icon__icon w-6 h-6"
             strokeWidth={1.5}
           >
             <path
@@ -392,18 +392,18 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
             />
           </svg>
           {isMounted && props.showBadge !== false && getTotalItems() > 0 ? (
-            <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold pointer-events-none">
+            <span className="propeller-cart-icon__badge absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold pointer-events-none">
               {getTotalItems()}
             </span>
           ) : null}
         </button>
         {props.showTotals && isHovered ? (
-          <div className="absolute top-full right-0 mt-1 z-40 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap">
+          <div className="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-popover border border-border rounded-container shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap">
             <div className="flex justify-between gap-4">
-              <span className="text-gray-500">{getLabel('totalLabel', 'Total')}</span>
-              <span className="font-semibold text-gray-900">{getTotalPrice()}</span>
+              <span className="propeller-cart-icon__popover-label text-muted-foreground">{getLabel('totalLabel', 'Total')}</span>
+              <span className="propeller-cart-icon__popover-total font-semibold text-foreground">{getTotalPrice()}</span>
             </div>
-            <div className="text-xs text-gray-400 mt-0.5">
+            <div className="propeller-cart-icon__popover-count text-xs text-foreground-subtle mt-0.5">
               {getTotalItems()}
               {getLabel('itemsLabel', 'item(s)')}
             </div>
@@ -413,7 +413,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
       {sidebarOpen ? (
         <div
           aria-hidden="true"
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70]"
+          className="propeller-cart-icon__backdrop fixed inset-0 bg-foreground/80 backdrop-blur-sm z-[70]"
           onClick={(event) => closeSidebar()}
         />
       ) : null}
@@ -421,18 +421,19 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         role="dialog"
         aria-modal="true"
         aria-label={getSidebarTitle()}
-        className={`fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
+        data-open={sidebarOpen ? 'true' : 'false'}
+        className={`propeller-cart-icon__sidebar fixed inset-y-0 right-0 z-[70] w-full max-w-md bg-card shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-border${sidebarOpen ? ' translate-x-0' : ' translate-x-full'}${props.sidebarClassName ? ' ' + props.sidebarClassName : ''}`}
       >
         <div className="flex flex-col h-full">
           {isMounted ? (
             <>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div className="propeller-cart-icon__sidebar-header flex items-center justify-between px-5 py-4 border-b border-border">
                 <div className="flex items-center gap-2">
                   <svg
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    className="w-5 h-5 text-gray-700"
+                    className="w-5 h-5 text-muted-foreground"
                     strokeWidth={1.5}
                   >
                     <path
@@ -441,14 +442,14 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                     />
                   </svg>
-                  <h2 className="text-base font-semibold text-gray-900">{getSidebarTitle()}</h2>
-                  <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-secondary/10 text-secondary text-xs font-bold">
+                  <h2 className="propeller-cart-icon__sidebar-title text-base font-semibold text-foreground">{getSidebarTitle()}</h2>
+                  <span className="propeller-cart-icon__sidebar-count inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-secondary/10 text-secondary text-xs font-bold">
                     {getTotalItems()}
                   </span>
                 </div>
                 <button
                   type="button"
-                  className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="propeller-cart-icon__sidebar-close p-1 rounded-control text-foreground-subtle hover:text-foreground hover:bg-surface-hover transition-colors"
                   onClick={(event) => closeSidebar()}
                   aria-label={getLabel('closeLabel', 'Close')}
                 >
@@ -463,14 +464,14 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                   </svg>
                 </button>
               </div>{' '}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              <div className="propeller-cart-icon__sidebar-body flex-1 overflow-y-auto px-5 py-4 space-y-4">
                 {getItems().length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-16">
+                  <div className="propeller-cart-icon__empty flex flex-col items-center justify-center h-full text-center space-y-4 py-16">
                     <svg
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
-                      className="w-12 h-12 text-gray-200"
+                      className="propeller-cart-icon__empty-icon w-12 h-12 text-foreground-subtle"
                       strokeWidth={1.5}
                     >
                       <path
@@ -479,12 +480,12 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                         d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"
                       />
                     </svg>
-                    <p className="text-sm text-gray-500">
+                    <p className="propeller-cart-icon__empty-message text-sm text-muted-foreground">
                       {getLabel('emptyCart', 'Your cart is empty.')}
                     </p>
                     <button
                       type="button"
-                      className="text-sm text-secondary hover:underline"
+                      className="propeller-cart-icon__empty-action text-sm text-secondary hover:underline"
                       onClick={(event) => closeSidebar()}
                     >
                       {getLabel('continueShopping', 'Continue Shopping')}
@@ -494,11 +495,11 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                 {getItems().length > 0 ? (
                   <>
                     {getItems()?.map((item) => (
-                      <div className="flex gap-3" key={item.itemId}>
-                        <div className="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">
+                      <div className="propeller-cart-icon__item flex gap-3" key={item.itemId} data-bundle={isBundleItem(item) ? 'true' : 'false'}>
+                        <div className="propeller-cart-icon__item-media w-20 h-20 flex-shrink-0 bg-surface-hover rounded-control overflow-hidden border border-border-subtle flex items-center justify-center">
                           {!!getItemImageUrl(item) ? (
                             <img
-                              className="w-full h-full object-contain p-2"
+                              className="propeller-cart-icon__item-image w-full h-full object-contain p-2"
                               src={getItemImageUrl(item)}
                               alt={getItemName(item)}
                             />
@@ -508,7 +509,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
-                              className="w-8 h-8 text-gray-300"
+                              className="w-8 h-8 text-foreground-subtle"
                               strokeWidth={1.5}
                             >
                               <path
@@ -519,28 +520,28 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                             </svg>
                           ) : null}
                         </div>
-                        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                        <div className="propeller-cart-icon__item-body flex-1 min-w-0 flex flex-col justify-between py-1">
                           {isBundleItem(item) ? (
                             <>
                               <div>
                                 <div className="flex justify-between items-start gap-2">
-                                  <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">
+                                  <span className="propeller-cart-icon__item-title text-sm font-medium leading-tight text-foreground line-clamp-2">
                                     {getBundleName(item)}
                                   </span>
                                   {!!getBundlePrice(item) ? (
-                                    <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                    <span className="propeller-cart-icon__item-price font-semibold text-sm text-foreground whitespace-nowrap">
                                       {getBundlePrice(item)}
                                     </span>
                                   ) : null}
                                 </div>
-                                <div className="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
+                                <div className="propeller-cart-icon__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                                   {!!getBundleLeaderName(item) ? (
-                                    <div className="flex justify-between items-center text-xs">
-                                      <span className="font-medium text-gray-800">
+                                    <div className="propeller-cart-icon__item-bundle-leader flex justify-between items-center text-xs">
+                                      <span className="font-medium text-foreground">
                                         {getBundleLeaderName(item)}
                                       </span>
                                       {!!getBundleLeaderPrice(item) ? (
-                                        <span className="text-gray-500 whitespace-nowrap ml-2">
+                                        <span className="text-muted-foreground whitespace-nowrap ml-2">
                                           {getBundleLeaderPrice(item)}
                                         </span>
                                       ) : null}
@@ -548,14 +549,14 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                   ) : null}
                                   {getBundleNonLeaders(item)?.map((bundleItem, idx) => (
                                     <div
-                                      className="flex justify-between items-center text-xs text-gray-600"
+                                      className="propeller-cart-icon__item-bundle-item flex justify-between items-center text-xs text-muted-foreground"
                                       key={idx}
                                     >
                                       <span className="line-clamp-1">
                                         {getBundleItemName(bundleItem)}
                                       </span>
                                       {!!getBundleItemPrice(bundleItem) ? (
-                                        <span className="text-gray-400 whitespace-nowrap ml-2">
+                                        <span className="text-foreground-subtle whitespace-nowrap ml-2">
                                           {getBundleItemPrice(bundleItem)}
                                         </span>
                                       ) : null}
@@ -563,7 +564,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                   ))}
                                 </div>
                               </div>{' '}
-                              <div className="flex items-center text-xs text-gray-400 mt-1">
+                              <div className="propeller-cart-icon__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                                 <span>
                                   {getLabel('qty', 'Qty')}: {item.quantity}
                                 </span>
@@ -575,32 +576,32 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                               <div>
                                 <div className="flex justify-between items-start gap-2">
                                   <a
-                                    className="text-sm font-medium leading-tight text-gray-900 hover:text-secondary transition-colors line-clamp-2"
+                                    className="propeller-cart-icon__item-title text-sm font-medium leading-tight text-foreground hover:text-secondary transition-colors line-clamp-2"
                                     href={getItemProductUrl(item)}
                                     onClick={(event) => closeSidebar()}
                                   >
                                     {getItemName(item)}
                                   </a>
-                                  <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                                  <span className="propeller-cart-icon__item-price font-semibold text-sm text-foreground whitespace-nowrap">
                                     {' '}
                                     &euro;{item.totalSumNet.toFixed(2)}
                                   </span>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-0.5">
+                                <p className="propeller-cart-icon__item-sku text-xs text-foreground-subtle mt-0.5">
                                   {' '}
                                   SKU: {item.product?.sku || 'N/A'}
                                 </p>
                                 {getItemChildItems(item).length > 0 ? (
-                                  <div className="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
+                                  <div className="propeller-cart-icon__item-options mt-1.5 space-y-1 border-l-2 border-border-subtle pl-2">
                                     {getItemChildItems(item)?.map((child, idx) => (
                                       <div
-                                        className="flex justify-between items-center text-xs text-gray-600"
+                                        className="propeller-cart-icon__item-option flex justify-between items-center text-xs text-muted-foreground"
                                         key={idx}
                                       >
                                         <span className="line-clamp-1">
                                           {child.product.names?.[0]?.value || 'Option'}
                                         </span>
-                                        <span className="text-gray-400 whitespace-nowrap ml-2">
+                                        <span className="text-foreground-subtle whitespace-nowrap ml-2">
                                           &euro;{child.totalSum.toFixed(2)}
                                         </span>
                                       </div>
@@ -608,7 +609,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                                   </div>
                                 ) : null}
                               </div>{' '}
-                              <div className="flex items-center text-xs text-gray-400">
+                              <div className="propeller-cart-icon__item-qty flex items-center text-xs text-foreground-subtle">
                                 <span>
                                   {getLabel('qty', 'Qty')}: {item.quantity}
                                 </span>
@@ -622,17 +623,17 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                 ) : null}
               </div>{' '}
               {getItems().length > 0 ? (
-                <div className="px-5 py-4 border-t border-gray-200 space-y-3 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
+                <div className="propeller-cart-icon__sidebar-footer px-5 py-4 border-t border-border space-y-3 bg-surface-hover">
+                  <div className="propeller-cart-icon__total-row flex justify-between items-center">
+                    <span className="propeller-cart-icon__total-label text-sm font-medium text-muted-foreground">
                       {getLabel('total', 'Total')}
                     </span>
-                    <span className="text-base font-bold text-gray-900">{getTotalPrice()}</span>
+                    <span className="propeller-cart-icon__total-value text-base font-bold text-foreground">{getTotalPrice()}</span>
                   </div>
                   {showCheckoutButton() && !showRequestAuthorizationButton() ? (
                     <button
                       type="button"
-                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                      className="propeller-cart-icon__checkout-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-control bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors"
                       onClick={(event) => handleCheckoutClick()}
                     >
                       {getLabel('checkoutButton', 'Checkout')}
@@ -641,7 +642,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                   {showRequestAuthorizationButton() ? (
                     <button
                       type="button"
-                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="propeller-cart-icon__authorization-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-control bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={(event) => handleRequestAuthorizationClick()}
                       disabled={requestLoading}
                     >
@@ -659,7 +660,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                   'contactId' in props.user ? (
                     <button
                       type="button"
-                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-secondary bg-white text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
+                      className="propeller-cart-icon__quote-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-control border border-secondary bg-card text-secondary text-sm font-medium hover:bg-secondary/5 transition-colors"
                       onClick={(event) => {
                         closeSidebar();
                         props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart);
@@ -671,7 +672,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                   {props.cartPageButton !== false ? (
                     <button
                       type="button"
-                      className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                      className="propeller-cart-icon__view-cart-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-control border border-input bg-card text-foreground text-sm font-medium hover:bg-surface-hover transition-colors"
                       onClick={(event) => handleCartPageClick()}
                     >
                       {getLabel('cartPageButton', 'View Cart Details')}

@@ -325,25 +325,31 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     }
   }, [props.user]);
   return (
-    <div className="relative" data-account-menu>
+    <div
+      className="propeller-account-menu relative"
+      data-account-menu
+      data-variant={isSidebar() ? 'sidebar' : 'dropdown'}
+      data-authenticated={props.user ? 'true' : 'false'}
+    >
       {isSidebar() ? (
-        <div className="flex flex-col">
+        <div className="propeller-account-menu__sidebar flex flex-col">
           {!!props.user ? (
             <>
-              <div className="px-4 py-3 border-b border-gray-200">
-                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+              <div className="propeller-account-menu__user px-4 py-3 border-b border-border">
+                <p className="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
                   {getLabel('signedInAs', 'Signed in as')}
                 </p>
-                <p className="font-medium text-gray-900 truncate">{getUserName()}</p>
+                <p className="propeller-account-menu__user-name font-medium text-foreground truncate">{getUserName()}</p>
               </div>
-              <nav className="py-2">
-                <ul className="space-y-0.5">
+              <nav className="propeller-account-menu__nav py-2">
+                <ul className="propeller-account-menu__list space-y-0.5">
                   {getMenuLinks()?.map((link) => (
-                    <li key={link.href}>
+                    <li key={link.href} className="propeller-account-menu__item">
                       <button
                         type="button"
                         onClick={(event) => handleMenuItemClick(link.href)}
-                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${isActiveLink(link.href) ? 'bg-secondary/5 text-secondary border-l-2 border-secondary' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+                        data-active={isActiveLink(link.href) ? 'true' : 'false'}
+                        className={`propeller-account-menu__link flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${isActiveLink(link.href) ? 'bg-secondary/5 text-secondary border-l-2 border-secondary' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'}`}
                       >
                         {link.label}
                       </button>
@@ -351,10 +357,10 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                   ))}
                 </ul>
               </nav>
-              <div className="px-4 py-3 border-t border-gray-200">
+              <div className="propeller-account-menu__logout-wrapper px-4 py-3 border-t border-border">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
+                  className="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-control transition-colors"
                   onClick={(event) => handleLogoutClick()}
                 >
                   {getLabel('logoutLabel', 'Log Out')}
@@ -370,13 +376,14 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             type="button"
             onClick={(event) => handleIconClick()}
             aria-label={getLabel('accountLabel', 'Account')}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}
+            data-open={menuOpen ? 'true' : 'false'}
+            className={`propeller-account-menu__trigger inline-flex items-center gap-2 px-3 py-2 rounded-control text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}
           >
             <svg
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              className="w-5 h-5"
+              className="propeller-account-menu__icon w-5 h-5"
               strokeWidth={1.5}
             >
               <path
@@ -388,10 +395,10 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             {isMounted ? (
               <>
                 {props.user ? (
-                  <span className="hidden md:block font-normal">Hi, {getUserName()}</span>
+                  <span className="propeller-account-menu__greeting hidden md:block font-normal">Hi, {getUserName()}</span>
                 ) : null}
                 {!props.user ? (
-                  <span className="hidden md:block font-normal">
+                  <span className="propeller-account-menu__greeting hidden md:block font-normal">
                     {getLabel('accountLabel', 'Account')}
                   </span>
                 ) : null}
@@ -400,25 +407,25 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
           </button>
           {menuOpen ? (
             <div
-              className={`absolute right-0 mt-2 w-80 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}
+              className={`propeller-account-menu__popover absolute right-0 mt-2 w-80 bg-popover text-foreground rounded-container shadow-lg border border-border py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}
             >
               {isMounted ? (
                 <>
                   {!!props.user ? (
                     <>
-                      <div className="pb-3 mb-3 border-b border-gray-200">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">
+                      <div className="propeller-account-menu__user pb-3 mb-3 border-b border-border">
+                        <p className="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
                           {getLabel('signedInAs', 'Signed in as')}
                         </p>
-                        <p className="font-medium text-gray-900 truncate">{getUserName()}</p>
+                        <p className="propeller-account-menu__user-name font-medium text-foreground truncate">{getUserName()}</p>
                       </div>
-                      <nav>
-                        <ul className="space-y-0.5">
+                      <nav className="propeller-account-menu__nav">
+                        <ul className="propeller-account-menu__list space-y-0.5">
                           {getMenuLinks()?.map((link) => (
-                            <li key={link.href}>
+                            <li key={link.href} className="propeller-account-menu__item">
                               <button
                                 type="button"
-                                className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                                className="propeller-account-menu__link flex w-full items-center gap-3 px-3 py-2 text-sm font-medium rounded-control text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-colors"
                                 onClick={(event) => handleMenuItemClick(link.href)}
                               >
                                 {link.label}
@@ -427,10 +434,10 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                           ))}
                         </ul>
                       </nav>
-                      <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="propeller-account-menu__logout-wrapper mt-3 pt-3 border-t border-border">
                         <button
                           type="button"
-                          className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-md transition-colors"
+                          className="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-control transition-colors"
                           onClick={(event) => handleLogoutClick()}
                         >
                           {getLabel('logoutLabel', 'Log Out')}
@@ -462,14 +469,14 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                         />
                       ) : null}
                       {props.accountHeaderLoginForm === false ? (
-                        <div className="text-center py-4">
-                          <h4 className="text-lg font-semibold mb-2">{getMenuTitle()}</h4>
-                          <p className="text-sm text-gray-500 mb-4">
+                        <div className="propeller-account-menu__login-cta text-center py-4">
+                          <h4 className="propeller-account-menu__login-title text-lg font-semibold mb-2">{getMenuTitle()}</h4>
+                          <p className="propeller-account-menu__login-subtitle text-sm text-muted-foreground mb-4">
                             {getLabel('loginSubtitle', 'Login to access your account')}
                           </p>
                           <button
                             type="button"
-                            className="w-full inline-flex justify-center items-center px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-secondary/90 transition-colors"
+                            className="propeller-account-menu__login-btn w-full inline-flex justify-center items-center px-4 py-2 rounded-control bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors"
                             onClick={(event) => {
                               closeMenu();
                               if (props.onAccountIconClick) props.onAccountIconClick();

@@ -90,7 +90,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                   <tr className="hover:bg-muted/30 transition-colors" key={index}>
                     <td className="px-4 py-3">
                       {!!shipment.status ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="propeller-order-shipments__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
                           {shipment.status}
                         </span>
                       ) : null}
@@ -129,9 +129,9 @@ function OrderShipments(props: OrderShipmentsProps) {
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={(event) => closeModal()}
         >
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="propeller-order-shipments__modal-backdrop absolute inset-0 bg-foreground/50" />
           <div
-            className="relative z-10 w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-xl"
+            className="propeller-order-shipments__modal-content relative z-10 w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-card rounded-container shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -162,7 +162,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                   </span>
                   <p className="mt-0.5">
                     {!!activeShipment?.status ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="propeller-order-shipments__status inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
                         {activeShipment?.status}
                       </span>
                     ) : null}

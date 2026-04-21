@@ -158,23 +158,26 @@ function OrderItemCard(props: OrderItemCardProps) {
     return discountStr;
   }
   return (
-    <tbody>
-      <tr className={isChildItem() ? 'border-0' : 'hover:bg-gray-50 transition'}>
-        <td className={isChildItem() ? 'px-6 py-2 pl-28' : 'px-6 py-4'}>
+    <tbody className="propeller-order-item-card">
+      <tr
+        className={`propeller-order-item-card__row ${isChildItem() ? 'border-0' : 'hover:bg-surface-hover transition'}`}
+        data-child={isChildItem() ? 'true' : 'false'}
+      >
+        <td className={`propeller-order-item-card__cell propeller-order-item-card__cell--product ${isChildItem() ? 'px-6 py-2 pl-28' : 'px-6 py-4'}`}>
           <div className="flex items-center gap-4">
             {showImage() ? (
               <>
                 {productImage() ? (
-                  <div className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
+                  <div className="propeller-order-item-card__media relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
                     <img
-                      className="object-cover w-full h-full"
+                      className="propeller-order-item-card__image object-cover w-full h-full"
                       src={productImage()}
                       alt={productName()}
                     />
                   </div>
                 ) : null}
                 {!productImage() ? (
-                  <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
+                  <div className="propeller-order-item-card__image-placeholder w-16 h-16 bg-surface-hover rounded flex items-center justify-center text-foreground-subtle text-xs">
                     No Img
                   </div>
                 ) : null}
@@ -183,25 +186,25 @@ function OrderItemCard(props: OrderItemCardProps) {
             <div>
               {titleLinkable() && productUrl() && !isChildItem() ? (
                 <a
-                  className="font-medium text-foreground hover:text-primary hover:underline"
+                  className="propeller-order-item-card__title font-medium text-foreground hover:text-primary hover:underline"
                   href={productUrl()}
                 >
                   {productName()}
                 </a>
               ) : null}
               {!titleLinkable() || !productUrl() || isChildItem() ? (
-                <span className={isChildItem() ? 'text-sm text-gray-700' : 'font-medium'}>
+                <span className={`propeller-order-item-card__title ${isChildItem() ? 'text-sm text-muted-foreground' : 'font-medium'}`}>
                   {productName()}
                 </span>
               ) : null}
               {showSku() && productSku() ? (
-                <p className="text-sm text-gray-500 mt-1">SKU: {productSku()}</p>
+                <p className="propeller-order-item-card__sku text-sm text-muted-foreground mt-1">SKU: {productSku()}</p>
               ) : null}
               {showItemNotes() && notes() ? (
-                <p className="text-sm text-gray-400 mt-1 italic">{notes()}</p>
+                <p className="propeller-order-item-card__notes text-sm text-foreground-subtle mt-1 italic">{notes()}</p>
               ) : null}
               {showStockComponent() ? (
-                <p className="text-xs text-gray-400 mt-1">Stock info</p>
+                <p className="propeller-order-item-card__stock text-xs text-foreground-subtle mt-1">Stock info</p>
               ) : null}
             </div>
           </div>
@@ -210,8 +213,8 @@ function OrderItemCard(props: OrderItemCardProps) {
           <td
             className={
               isChildItem()
-                ? 'px-6 py-2 text-center text-sm text-gray-600'
-                : 'px-6 py-4 text-center'
+                ? 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-muted-foreground'
+                : 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-4 text-center'
             }
           >
             {quantity()}
@@ -221,8 +224,8 @@ function OrderItemCard(props: OrderItemCardProps) {
           <td
             className={
               isChildItem()
-                ? 'px-6 py-2 text-right text-sm text-gray-600'
-                : 'px-6 py-4 text-right whitespace-nowrap text-orange-600'
+                ? 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-muted-foreground'
+                : 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-4 text-right whitespace-nowrap text-warning'
             }
           >
             {discount() > 0 ? <>{formatDiscountDisplay()}</> : null}
@@ -232,8 +235,8 @@ function OrderItemCard(props: OrderItemCardProps) {
           <td
             className={
               isChildItem()
-                ? 'px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600'
-                : 'px-6 py-4 text-right whitespace-nowrap'
+                ? 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-muted-foreground'
+                : 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-4 text-right whitespace-nowrap'
             }
           >
             {formatItemPrice(priceTotal())}
@@ -243,22 +246,22 @@ function OrderItemCard(props: OrderItemCardProps) {
       {hasChildren() ? (
         <>
           {(props.childItems || []).map((child) => (
-            <tr className="border-0" key={child.id || child.uuid}>
-              <td className="px-6 py-2 pl-28">
-                <span className="text-sm text-gray-700">
+            <tr className="propeller-order-item-card__child-row border-0" key={child.id || child.uuid} data-child="true">
+              <td className="propeller-order-item-card__cell propeller-order-item-card__cell--product px-6 py-2 pl-28">
+                <span className="propeller-order-item-card__child-title text-sm text-muted-foreground">
                   {child.product?.names?.[0]?.value || child.name || 'Unknown'}
                 </span>
               </td>
               {showQuantity() ? (
-                <td className="px-6 py-2 text-center text-sm text-gray-600">
+                <td className="propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-muted-foreground">
                   {child.quantity || 0}
                 </td>
               ) : null}
               {showDiscount() ? (
-                <td className="px-6 py-2 text-right text-sm text-gray-600" />
+                <td className="propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-muted-foreground" />
               ) : null}
               {showPrice() ? (
-                <td className="px-6 py-2 text-right whitespace-nowrap text-sm text-gray-600">
+                <td className="propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-muted-foreground">
                   {formatItemPrice(child.priceTotal || 0)}
                 </td>
               ) : null}

@@ -315,42 +315,46 @@ function AddressCard(props: AddressCardProps) {
   }, [props.address]);
 
   return (
-    <div>
+    <div className="propeller-address-card">
       {showCard() ? (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
-          <div className="flex-grow">
+        <div
+          className="propeller-address-card__card bg-card p-4 rounded-container shadow-sm border border-border h-full flex flex-col"
+          data-default={addr?.()?.isDefault === 'Y' ? 'true' : 'false'}
+          data-type={addr?.()?.type || ''}
+        >
+          <div className="propeller-address-card__body flex-grow">
             {props.showCompanyName !== false && addr?.()?.company ? (
-              <div className="font-bold text-lg mb-1">{addr?.()?.company}</div>
+              <div className="propeller-address-card__company font-bold text-lg mb-1">{addr?.()?.company}</div>
             ) : null}
             {props.showFullName !== false && fullName() ? (
-              <div className="font-medium mb-1">{fullName()}</div>
+              <div className="propeller-address-card__name font-medium mb-1">{fullName()}</div>
             ) : null}
             {props.showStreet !== false && streetLine() ? (
-              <div className="text-gray-600">{streetLine()}</div>
+              <div className="propeller-address-card__street text-muted-foreground">{streetLine()}</div>
             ) : null}
-            {cityLine() ? <div className="text-gray-600">{cityLine()}</div> : null}
+            {cityLine() ? <div className="propeller-address-card__city text-muted-foreground">{cityLine()}</div> : null}
             {props.showCountry !== false && addr?.()?.country ? (
-              <div className="text-gray-600">{getCountryName(addr?.()?.country)}</div>
+              <div className="propeller-address-card__country text-muted-foreground">{getCountryName(addr?.()?.country)}</div>
             ) : null}
             {!!props.showEmail && addr?.()?.email ? (
-              <div className="text-gray-600">{addr?.()?.email}</div>
+              <div className="propeller-address-card__email text-muted-foreground">{addr?.()?.email}</div>
             ) : null}
             {!!props.showPhone && addr?.()?.phone ? (
-              <div className="text-gray-600">{addr?.()?.phone}</div>
+              <div className="propeller-address-card__phone text-muted-foreground">{addr?.()?.phone}</div>
             ) : null}
             {props.showDefaultBadge === true && addr?.()?.isDefault === 'Y' ? (
               <div className="mt-2">
-                <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
+                <span className="propeller-address-card__default-badge bg-secondary/10 text-secondary text-xs px-2 py-1 rounded-full">
                   Default {addr?.()?.type} Address
                 </span>
               </div>
             ) : null}
           </div>
           {props.enableActions !== false ? (
-            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+            <div className="propeller-address-card__actions mt-4 pt-4 border-t border-border-subtle flex flex-wrap gap-2">
               {props.enableEdit !== false ? (
                 <button
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
+                  className="propeller-address-card__edit-btn text-primary hover:text-primary/80 text-sm font-medium"
                   onClick={(event) => openEditModal()}
                 >
                   {getLabel('edit', 'Edit')}
@@ -358,7 +362,7 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               {props.enableDelete !== false ? (
                 <button
-                  className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                  className="propeller-address-card__delete-btn text-muted-foreground hover:text-foreground text-sm font-medium"
                   onClick={(event) => {
                     setShowDeleteConfirm(true);
                   }}
@@ -368,7 +372,7 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               {props.enableSetDefault !== false && addr?.()?.isDefault !== 'Y' ? (
                 <button
-                  className="text-primary hover:text-primary/80 text-sm font-medium ml-auto"
+                  className="propeller-address-card__default-btn text-primary hover:text-primary/80 text-sm font-medium ml-auto"
                   onClick={(event) => handleSetDefault()}
                 >
                   {getLabel('setDefault', 'Set Default')}
@@ -379,7 +383,7 @@ function AddressCard(props: AddressCardProps) {
         </div>
       ) : null}
       {props.inline && showEditModal ? (
-        <div className="bg-white p-6 rounded-lg border">
+        <div className="propeller-address-card__form bg-card p-6 rounded-container border border-border">
           <form onSubmit={(e) => handleSaveEdit(e)}>
             {!!formTitle() ? <h3 className="text-xl font-bold mb-4">{formTitle()}</h3> : null}
             <div className="space-y-4">
@@ -389,7 +393,7 @@ function AddressCard(props: AddressCardProps) {
                     {getLabel('gender', 'Gender')}
                   </label>
                   <select
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
                     value={editGender}
                     onChange={(e) => {
                       setEditGender(e.target.value as Enums.Gender);
@@ -406,7 +410,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editCompany}
                     onChange={(e) => {
                       setEditCompany(e.target.value);
@@ -421,7 +425,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editFirstName}
                     onChange={(e) => {
                       setEditFirstName(e.target.value);
@@ -435,7 +439,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editMiddleName}
                     onChange={(e) => {
                       setEditMiddleName(e.target.value);
@@ -448,7 +452,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editLastName}
                     onChange={(e) => {
                       setEditLastName(e.target.value);
@@ -464,7 +468,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editStreet}
                     onChange={(e) => {
                       setEditStreet(e.target.value);
@@ -478,7 +482,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editNumber}
                     onChange={(e) => {
                       setEditNumber(e.target.value);
@@ -492,7 +496,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editNumberExtension}
                     onChange={(e) => {
                       setEditNumberExtension(e.target.value);
@@ -507,7 +511,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editPostalCode}
                     onChange={(e) => {
                       setEditPostalCode(e.target.value);
@@ -521,7 +525,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="text"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editCity}
                     onChange={(e) => {
                       setEditCity(e.target.value);
@@ -535,7 +539,7 @@ function AddressCard(props: AddressCardProps) {
                   {getLabel('country', 'Country')} *
                 </label>
                 <select
-                  className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                  className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
                   value={editCountry}
                   onChange={(e) => {
                     setEditCountry(e.target.value);
@@ -557,7 +561,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="email"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editEmail}
                     onChange={(e) => {
                       setEditEmail(e.target.value);
@@ -571,7 +575,7 @@ function AddressCard(props: AddressCardProps) {
                   </label>
                   <input
                     type="tel"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                     value={editPhone}
                     onChange={(e) => {
                       setEditPhone(e.target.value);
@@ -584,7 +588,7 @@ function AddressCard(props: AddressCardProps) {
                   <input
                     type="checkbox"
                     id="icp-inline"
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
                     checked={editIcp === Enums.YesNo.Y}
                     onChange={(e) => {
                       setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
@@ -600,7 +604,7 @@ function AddressCard(props: AddressCardProps) {
               {!props.isNew ? (
                 <button
                   type="button"
-                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                  className="propeller-address-card__cancel-btn px-4 py-2 border border-border rounded-control hover:bg-surface-hover disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
                   disabled={isSaving}
                 >
@@ -610,7 +614,7 @@ function AddressCard(props: AddressCardProps) {
               {props.isNew && !!props.onCancel ? (
                 <button
                   type="button"
-                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                  className="propeller-address-card__cancel-btn px-4 py-2 border border-border rounded-control hover:bg-surface-hover disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
                   disabled={isSaving}
                 >
@@ -619,7 +623,7 @@ function AddressCard(props: AddressCardProps) {
               ) : null}
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+                className="propeller-address-card__submit-btn px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary/90 disabled:opacity-50"
                 disabled={isSaving}
               >
                 {isSaving ? <>{getLabel('saving', 'Saving...')}</> : <>{getLabel('save', 'Save')}</>}
@@ -629,14 +633,14 @@ function AddressCard(props: AddressCardProps) {
         </div>
       ) : null}
       {!props.inline && showEditModal ? (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto py-10">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 shadow-xl">
+        <div className="propeller-address-card__modal fixed inset-0 bg-foreground/50 flex items-center justify-center z-50 overflow-y-auto py-10">
+          <div className="propeller-address-card__modal-content bg-card p-6 rounded-container max-w-2xl w-full mx-4 shadow-xl">
             <form onSubmit={(e) => handleSaveEdit(e)}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">{formTitle()}</h3>
                 <button
                   type="button"
-                  className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                  className="propeller-address-card__modal-close text-muted-foreground hover:text-foreground text-xl leading-none"
                   onClick={(event) => closeEditModal()}
                 >
                   &times;
@@ -649,7 +653,7 @@ function AddressCard(props: AddressCardProps) {
                       {getLabel('gender', 'Gender')}
                     </label>
                     <select
-                      className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
                       value={editGender}
                       onChange={(e) => {
                         setEditGender(e.target.value as Enums.Gender);
@@ -666,7 +670,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editCompany}
                       onChange={(e) => {
                         setEditCompany(e.target.value);
@@ -681,7 +685,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editFirstName}
                       onChange={(e) => {
                         setEditFirstName(e.target.value);
@@ -695,7 +699,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editMiddleName}
                       onChange={(e) => {
                         setEditMiddleName(e.target.value);
@@ -708,7 +712,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editLastName}
                       onChange={(e) => {
                         setEditLastName(e.target.value);
@@ -724,7 +728,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editStreet}
                       onChange={(e) => {
                         setEditStreet(e.target.value);
@@ -738,7 +742,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editNumber}
                       onChange={(e) => {
                         setEditNumber(e.target.value);
@@ -752,7 +756,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editNumberExtension}
                       onChange={(e) => {
                         setEditNumberExtension(e.target.value);
@@ -767,7 +771,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editPostalCode}
                       onChange={(e) => {
                         setEditPostalCode(e.target.value);
@@ -781,7 +785,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="text"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editCity}
                       onChange={(e) => {
                         setEditCity(e.target.value);
@@ -795,7 +799,7 @@ function AddressCard(props: AddressCardProps) {
                     {getLabel('country', 'Country')} *
                   </label>
                   <select
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                    className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
                     value={editCountry}
                     onChange={(e) => {
                       setEditCountry(e.target.value);
@@ -817,7 +821,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="email"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editEmail}
                       onChange={(e) => {
                         setEditEmail(e.target.value);
@@ -831,7 +835,7 @@ function AddressCard(props: AddressCardProps) {
                     </label>
                     <input
                       type="tel"
-                      className="w-full h-10 px-3 rounded-md border border-gray-300"
+                      className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input"
                       value={editPhone}
                       onChange={(e) => {
                         setEditPhone(e.target.value);
@@ -844,7 +848,7 @@ function AddressCard(props: AddressCardProps) {
                     <input
                       type="checkbox"
                       id="icp-modal"
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      className="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
                       checked={editIcp === Enums.YesNo.Y}
                       onChange={(e) => {
                         setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
@@ -859,7 +863,7 @@ function AddressCard(props: AddressCardProps) {
               <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
                 <button
                   type="button"
-                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                  className="propeller-address-card__cancel-btn px-4 py-2 border border-border rounded-control hover:bg-surface-hover disabled:opacity-50"
                   onClick={(event) => closeEditModal()}
                   disabled={isSaving}
                 >
@@ -867,7 +871,7 @@ function AddressCard(props: AddressCardProps) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+                  className="propeller-address-card__submit-btn px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary/90 disabled:opacity-50"
                   disabled={isSaving}
                 >
                   {isSaving ? (
@@ -882,17 +886,17 @@ function AddressCard(props: AddressCardProps) {
         </div>
       ) : null}
       {showDeleteConfirm ? (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+        <div className="propeller-address-card__delete-modal fixed inset-0 bg-foreground/50 flex items-center justify-center z-50">
+          <div className="propeller-address-card__delete-modal-content bg-card p-6 rounded-container max-w-sm w-full mx-4">
             <h3 className="text-xl font-bold mb-4">
               {getLabel('confirmDeleteTitle', 'Confirm Delete')}
             </h3>
-            <p className="mb-6 text-gray-600">
+            <p className="propeller-address-card__delete-message mb-6 text-muted-foreground">
               {getLabel('confirmDeleteMessage', 'Are you sure you want to delete this address?')}
             </p>
             <div className="flex justify-end gap-4">
               <button
-                className="px-4 py-2 border rounded hover:bg-gray-100"
+                className="propeller-address-card__cancel-btn px-4 py-2 border border-border rounded-control hover:bg-surface-hover"
                 onClick={(event) => {
                   setShowDeleteConfirm(false);
                 }}
@@ -900,7 +904,7 @@ function AddressCard(props: AddressCardProps) {
                 {getLabel('cancel', 'Cancel')}
               </button>
               <button
-                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
+                className="propeller-address-card__confirm-btn px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary/80"
                 onClick={(event) => confirmDelete()}
               >
                 {getLabel('delete', 'Delete')}

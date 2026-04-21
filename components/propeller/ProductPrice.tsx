@@ -124,24 +124,24 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
   return (
-    <div className={`product-price ${(props.className as string) || ''}`}>
+    <div className={`propeller-product-price ${(props.className as string) || ''}`} data-hidden={isHidden() ? 'true' : 'false'}>
       {isHidden() ? (
-        <p className="text-sm text-muted-foreground italic">
+        <p className="propeller-product-price__login-prompt text-sm text-muted-foreground italic">
           {getLabel('loginToSeePrices', 'Log in to see prices')}
         </p>
       ) : null}
       {!isHidden() && !!getLeadingPrice() ? (
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-baseline gap-2">
+        <div className="propeller-product-price__content flex flex-col gap-0.5">
+          <div className="propeller-product-price__primary flex items-baseline gap-2">
             <span
-              className={`${(props.priceSize as string) || 'text-3xl'} font-bold text-foreground`}
+              className={`propeller-product-price__amount ${(props.priceSize as string) || 'text-3xl'} font-bold text-foreground`}
             >
               {getLeadingPrice()}
             </span>
-            <span className="text-sm text-muted-foreground">{getTaxLabel()}</span>
+            <span className="propeller-product-price__tax-label text-sm text-muted-foreground">{getTaxLabel()}</span>
           </div>
           {!!getSecondaryPrice() ? (
-            <div className="text-sm text-muted-foreground">
+            <div className="propeller-product-price__secondary text-sm text-muted-foreground">
               {getSecondaryPrice()}
               {getSecondaryTaxLabel()}
             </div>

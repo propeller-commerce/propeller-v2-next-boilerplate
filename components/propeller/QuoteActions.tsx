@@ -87,7 +87,7 @@ function QuoteActions(props: QuoteActionsProps) {
           <input
             type="checkbox"
             id="quote-actions-terms"
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            className="propeller-quote-actions__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
             checked={termsAccepted}
             onChange={(event) => handleTermsChange(event.target.checked)}
           />
@@ -105,12 +105,12 @@ function QuoteActions(props: QuoteActionsProps) {
       ) : null}
       <button
         type="button"
-        className="flex items-center justify-center gap-2 w-full bg-primary text-white text-center py-3 rounded-lg hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+        className="propeller-quote-actions__submit flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground text-center py-3 rounded-container hover:bg-primary/80 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
         onClick={(event) => handleAcceptClick()}
         disabled={isAcceptDisabled()}
       >
         {loading ? (
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <div className="propeller-quote-actions__spinner w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
         ) : null}
         {loading ? <>{getLabel('processing', 'Processing...')}</> : null}
         {!loading ? <>{getLabel('acceptButton', 'Accept Quotation')}</> : null}

@@ -196,15 +196,20 @@ function ClusterOptions(props: ClusterOptionsProps) {
     }
   }
   return (
-    <div className={`cluster-options ${props.className || ''}`}>
+    <div className={`propeller-cluster-options ${props.className || ''}`}>
       {getOptionsForRender().length > 0 ? (
-        <div className="cluster-options-content flex flex-col gap-6">
+        <div className="propeller-cluster-options__content flex flex-col gap-6">
           {getOptionsForRender()?.map((option) => (
-            <div className="option-group" key={option.id}>
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="font-semibold text-sm text-gray-700">{option.name}</h4>
+            <div
+              className="propeller-cluster-options__group"
+              key={option.id}
+              data-required={option.isRequired ? 'true' : 'false'}
+              data-error={option.hasError ? 'true' : 'false'}
+            >
+              <div className="propeller-cluster-options__label-row flex items-center gap-2 mb-2">
+                <h4 className="propeller-cluster-options__label font-semibold text-sm text-muted-foreground">{option.name}</h4>
                 {option.isRequired ? (
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-500/10">
+                  <span className="propeller-cluster-options__required-badge inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/10">
                     {getLabel('required', 'Required')}
                   </span>
                 ) : null}
@@ -212,7 +217,7 @@ function ClusterOptions(props: ClusterOptionsProps) {
               <select
                 value={option.selectedProductId}
                 onChange={(e) => handleOptionChange(option.idStr, e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${option.hasError ? 'border-red-400 focus:ring-red-500' : option.isRequired ? 'border-gray-300 focus:ring-secondary' : 'border-gray-200 focus:ring-secondary'}`}
+                className={`propeller-cluster-options__select w-full rounded-control border px-3 py-2 text-sm focus:outline-none focus:ring-2 cursor-pointer ${option.hasError ? 'border-destructive focus:ring-destructive' : option.isRequired ? 'border-input focus:ring-secondary' : 'border-border focus:ring-secondary'}`}
               >
                 <option value="">
                   {option.isRequired ? (
@@ -228,26 +233,26 @@ function ClusterOptions(props: ClusterOptionsProps) {
                 ))}
               </select>
               {option.hasError ? (
-                <p className="mt-1 text-xs text-red-500">
+                <p className="propeller-cluster-options__error mt-1 text-xs text-destructive">
                   {getLabel('requiredError', 'This option is required')}
                 </p>
               ) : null}
               {option.hasSelection ? (
-                <div className="mt-3 flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <div className="propeller-cluster-options__preview mt-3 flex items-center gap-3 rounded-container border border-border-subtle bg-surface-hover p-3">
                   {!!option.previewImageUrl ? (
                     <img
-                      className="h-12 w-12 flex-shrink-0 rounded border border-gray-100 bg-white object-contain"
+                      className="propeller-cluster-options__preview-image h-12 w-12 flex-shrink-0 rounded border border-border-subtle bg-card object-contain"
                       src={option.previewImageUrl}
                       alt={option.previewName}
                     />
                   ) : null}
                   {!option.previewImageUrl ? (
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded border border-gray-200 bg-gray-100">
+                    <div className="propeller-cluster-options__preview-image-placeholder flex h-12 w-12 flex-shrink-0 items-center justify-center rounded border border-border bg-surface-hover">
                       <svg
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
-                        className="h-5 w-5 text-gray-300"
+                        className="h-5 w-5 text-foreground-subtle"
                       >
                         <path
                           strokeLinecap="round"
@@ -259,10 +264,10 @@ function ClusterOptions(props: ClusterOptionsProps) {
                     </div>
                   ) : null}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-900">
+                    <p className="propeller-cluster-options__preview-name truncate text-sm font-medium text-foreground">
                       {option.previewName}
                     </p>
-                    <p className="text-sm font-semibold text-secondary">{option.previewPrice}</p>
+                    <p className="propeller-cluster-options__preview-price text-sm font-semibold text-secondary">{option.previewPrice}</p>
                   </div>
                 </div>
               ) : null}

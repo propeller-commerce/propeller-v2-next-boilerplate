@@ -264,14 +264,14 @@ function ProductSlider(props: ProductSliderProps) {
       {' '}
       {!(isCrossUpsellMode() && !isLoading && items().length === 0) ? (
         <>
-          <div className={props.containerClassName || 'mb-12'}>
+          <div className={`propeller-product-slider ${props.containerClassName || 'mb-12'}`} data-loading={isLoading ? 'true' : 'false'}>
             {sliderTitle() || items().length > 0 ? (
-              <div className="flex items-center justify-between mb-6">
-                {sliderTitle() ? <h2 className="text-2xl font-bold">{sliderTitle()}</h2> : null}
+              <div className="propeller-product-slider__header flex items-center justify-between mb-6">
+                {sliderTitle() ? <h2 className="propeller-product-slider__title text-2xl font-bold">{sliderTitle()}</h2> : null}
                 {items().length > desktopCount() ? (
-                  <div className="flex gap-2">
+                  <div className="propeller-product-slider__nav flex gap-2">
                     <button
-                      className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--prev p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={(event) => handleScrollLeft()}
                       disabled={!canScrollLeft}
                       aria-label={getLabel('scrollLeft', 'Scroll left')}
@@ -289,7 +289,7 @@ function ProductSlider(props: ProductSliderProps) {
                       </svg>
                     </button>
                     <button
-                      className="p-2 rounded-full bg-white shadow hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--next p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={(event) => handleScrollRight()}
                       disabled={!canScrollRight}
                       aria-label={getLabel('scrollRight', 'Scroll right')}
@@ -311,24 +311,24 @@ function ProductSlider(props: ProductSliderProps) {
               </div>
             ) : null}
             {isLoading ? (
-              <div className="flex gap-6 overflow-hidden">
-                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
-                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
-                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
-                <div className="flex-shrink-0 w-72 h-80 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="propeller-product-slider__skeleton flex gap-6 overflow-hidden">
+                <div className="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-container animate-pulse" />
+                <div className="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-container animate-pulse" />
+                <div className="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-container animate-pulse" />
+                <div className="propeller-product-slider__skeleton-card flex-shrink-0 w-72 h-80 bg-surface-hover rounded-container animate-pulse" />
               </div>
             ) : null}
             {!isLoading && items().length > 0 ? (
               <div
                 ref={trackRef}
-                className="flex gap-6 overflow-x-auto scroll-smooth pb-4"
+                className="propeller-product-slider__track flex gap-6 overflow-x-auto scroll-smooth pb-4"
                 data-slider-id={sliderId}
                 onScroll={(e) => handleScroll(e)}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {items()?.map((item, index) => (
                   <div
-                    className="flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
+                    className="propeller-product-slider__slide flex-shrink-0 w-[calc((100%_-_1.5rem)_/_1.5)] md:w-[calc((100%_-_3rem)_/_2.5)] lg:w-[calc((100%_-_4.5rem)_/_4)]"
                     key={getItemId(item) + '-' + index}
                   >
                     {isCluster(item) ? (
@@ -412,7 +412,7 @@ function ProductSlider(props: ProductSliderProps) {
               </div>
             ) : null}
             {!isLoading && items().length === 0 && !props.products && !isCrossUpsellMode() ? (
-              <div className="text-center text-gray-500 py-8">
+              <div className="propeller-product-slider__empty text-center text-muted-foreground py-8">
                 {getLabel('noProducts', 'No products found')}
               </div>
             ) : null}

@@ -29,13 +29,13 @@ export interface GridTitleProps {
 }
 function GridTitle(props: GridTitleProps) {
   return (
-    <div className={`mb-8 ${(props.className as string) || ''}`}>
-      <div className="flex items-baseline gap-3 mb-3">
+    <div className={`propeller-grid-title mb-8 ${(props.className as string) || ''}`}>
+      <div className="propeller-grid-title__row flex items-baseline gap-3 mb-3">
         {(props.headingLevel as string) === 'h2' ? (
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">{props.title}</h2>
+          <h2 className="propeller-grid-title__heading text-3xl sm:text-4xl font-bold tracking-tight">{props.title}</h2>
         ) : null}
         {(props.headingLevel as string) !== 'h2' ? (
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{props.title}</h1>
+          <h1 className="propeller-grid-title__heading text-3xl sm:text-4xl font-bold tracking-tight">{props.title}</h1>
         ) : null}
       </div>
     </div>

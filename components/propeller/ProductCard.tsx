@@ -327,11 +327,12 @@ function ProductCard(props: ProductCardProps) {
   }
   return (
     <div
-      className={`group relative flex h-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+      className={`propeller-product-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+      data-layout={isRow() ? 'row' : 'grid'}
     >
       {props.showImage !== false ? (
         <div
-          className={`relative overflow-hidden bg-gray-50 ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
+          className={`propeller-product-card__media relative overflow-hidden bg-surface-hover ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
         >
           <a
             className="block h-full w-full"
@@ -340,13 +341,13 @@ function ProductCard(props: ProductCardProps) {
           >
             {!!getProductImageUrl() ? (
               <img
-                className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                className="propeller-product-card__image h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                 src={getProductImageUrl()}
                 alt={getProductName()}
               />
             ) : null}
             {!getProductImageUrl() ? (
-              <div className="flex h-full w-full items-center justify-center text-gray-200">
+              <div className="propeller-product-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-16 w-16">
                   <path
                     strokeLinecap="round"
@@ -361,9 +362,9 @@ function ProductCard(props: ProductCardProps) {
           {!!props.imageLabels &&
           props.imageLabels.length > 0 &&
           computedImageLabels().length > 0 ? (
-            <div className="pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
+            <div className="propeller-product-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
               {computedImageLabels()?.map((label) => (
-                <span className="inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-white shadow-sm">
+                <span className="propeller-product-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm">
                   {label}
                 </span>
               ))}
@@ -378,7 +379,8 @@ function ProductCard(props: ProductCardProps) {
                   ? getLabel('removeFromFavorites', 'Remove from favourites')
                   : getLabel('addToFavorites', 'Add to favourites')
               }
-              className={`absolute right-2 top-2 rounded-full border bg-white p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-red-200 text-red-500' : 'border-gray-100 text-gray-300 hover:text-red-400'}`}
+              data-favorite={isFavorite ? 'true' : 'false'}
+              className={`propeller-product-card__favorite-btn absolute right-2 top-2 rounded-full border bg-card p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-destructive/30 text-destructive' : 'border-border-subtle text-foreground-subtle hover:text-destructive'}`}
             >
               <svg
                 stroke="currentColor"
@@ -399,14 +401,14 @@ function ProductCard(props: ProductCardProps) {
       ) : null}
       {isRow() ? (
         <>
-          <div className="flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+          <div className="propeller-product-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               {props.showSku !== false && !!getProductSku() ? (
-                <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
+                <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">{getProductSku()}</div>
               ) : null}
               {props.showName !== false ? (
                 <a
-                  className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-1"
+                  className="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-1"
                   href={getProductUrl()}
                   onClick={(e) => handleProductClick(e)}
                 >
@@ -416,21 +418,21 @@ function ProductCard(props: ProductCardProps) {
               {!!props.textLabels &&
               props.textLabels.length > 0 &&
               computedTextLabels().length > 0 ? (
-                <div className="flex flex-col gap-0.5">
+                <div className="propeller-product-card__labels flex flex-col gap-0.5">
                   {computedTextLabels()?.map((item) => (
-                    <div className="text-xs text-gray-500">{item.value}</div>
+                    <div className="propeller-product-card__label text-xs text-muted-foreground">{item.value}</div>
                   ))}
                 </div>
               ) : null}
               {props.showManufacturer && !!getProductManufacturer() ? (
-                <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
+                <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">{getProductManufacturer()}</div>
               ) : null}
               {props.showShortDescription && !!getProductShortDescription() ? (
-                <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
+                <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">{getProductShortDescription()}</p>
               ) : null}
             </div>
           </div>{' '}
-          <div className="w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-gray-100">
+          <div className="propeller-product-card__footer w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-border-subtle">
             {props.showStock && !!props.product.inventory ? (
               <ItemStock
                 inventory={props.product.inventory!}
@@ -440,14 +442,16 @@ function ProductCard(props: ProductCardProps) {
               />
             ) : null}
             {props.showPrice !== false && !!props.product?.price ? (
-              <ProductPriceDisplay
-                price={props.product.price}
-                includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
-                priceSize="text-sm"
-              />
+              <div className="propeller-product-card__price">
+                <ProductPriceDisplay
+                  price={props.product.price}
+                  includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
+                  priceSize="text-sm"
+                />
+              </div>
             ) : null}
             {props.allowAddToCart !== false ? (
-              <div className="flex-shrink-0 ml-auto">
+              <div className="propeller-product-card__cta flex-shrink-0 ml-auto">
                 <AddToCart
                   className="flex w-full items-center gap-2"
                   graphqlClient={props.graphqlClient}
@@ -478,13 +482,13 @@ function ProductCard(props: ProductCardProps) {
       ) : null}
       {!isRow() ? (
         <>
-          <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+          <div className="propeller-product-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
             {props.showSku !== false && !!getProductSku() ? (
-              <div className="font-mono text-xs text-gray-400">{getProductSku()}</div>
+              <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">{getProductSku()}</div>
             ) : null}
             {props.showName !== false ? (
               <a
-                className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-primary line-clamp-2"
+                className="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-2"
                 href={getProductUrl()}
                 onClick={(e) => handleProductClick(e)}
               >
@@ -494,9 +498,9 @@ function ProductCard(props: ProductCardProps) {
             {!!props.textLabels &&
             props.textLabels.length > 0 &&
             computedTextLabels().length > 0 ? (
-              <div className="flex flex-col gap-0.5">
+              <div className="propeller-product-card__labels flex flex-col gap-0.5">
                 {computedTextLabels()?.map((item) => (
-                  <div className="text-xs text-gray-500">{item.value}</div>
+                  <div className="propeller-product-card__label text-xs text-muted-foreground">{item.value}</div>
                 ))}
               </div>
             ) : null}
@@ -509,13 +513,13 @@ function ProductCard(props: ProductCardProps) {
               />
             ) : null}
             {props.showManufacturer && !!getProductManufacturer() ? (
-              <div className="text-xs text-gray-500">{getProductManufacturer()}</div>
+              <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">{getProductManufacturer()}</div>
             ) : null}
             {props.showShortDescription && !!getProductShortDescription() ? (
-              <p className="line-clamp-2 text-xs text-gray-500">{getProductShortDescription()}</p>
+              <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">{getProductShortDescription()}</p>
             ) : null}
             {props.showPrice !== false && !!props.product?.price ? (
-              <div className="mt-auto pt-1">
+              <div className="propeller-product-card__price mt-auto pt-1">
                 <ProductPriceDisplay
                   price={props.product.price}
                   includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
@@ -525,7 +529,7 @@ function ProductCard(props: ProductCardProps) {
             ) : null}
           </div>{' '}
           {props.allowAddToCart !== false ? (
-            <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+            <div className="propeller-product-card__cta px-3 pb-3 sm:px-4 sm:pb-4">
               <AddToCart
                 className="flex w-full items-center gap-2"
                 graphqlClient={props.graphqlClient}

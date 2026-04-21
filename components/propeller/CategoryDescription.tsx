@@ -81,21 +81,25 @@ function CategoryDescription(props: CategoryDescriptionProps) {
     <>
       {!!html ? (
         <>
-          <div className={`mb-6 ${(props.className as string) || ''}`}>
+          <div
+            className={`propeller-category-description mb-6 ${(props.className as string) || ''}`}
+            data-expanded={expanded ? 'true' : 'false'}
+            data-truncatable={shouldTruncate() ? 'true' : 'false'}
+          >
             {!shouldTruncate() || expanded ? (
               <div
-                className="prose prose-slate max-w-none text-muted-foreground"
+                className="propeller-category-description__content prose prose-slate max-w-none text-muted-foreground"
                 dangerouslySetInnerHTML={{
                   __html: html,
                 }}
               />
             ) : null}
             {shouldTruncate() && !expanded ? (
-              <p className="text-muted-foreground">{getTruncated()}</p>
+              <p className="propeller-category-description__truncated text-muted-foreground">{getTruncated()}</p>
             ) : null}
             {shouldTruncate() ? (
               <button
-                className="mt-2 text-sm font-medium text-primary hover:underline"
+                className="propeller-category-description__toggle mt-2 text-sm font-medium text-primary hover:underline"
                 onClick={(event) => toggle()}
               >
                 {expanded ? <>Read less</> : null}

@@ -135,11 +135,11 @@ function ClusterInfo(props: ClusterInfoProps) {
   }, [fetchedCluster]);
 
   return (
-    <div className={`cluster-info ${(props.className as string) || ''}`}>
+    <div className={`propeller-cluster-info ${(props.className as string) || ''}`} data-loading={loading ? 'true' : 'false'}>
       {loading && !props.cluster ? (
-        <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-slate-100 rounded w-1/4" />
-          <div className="h-8 bg-slate-100 rounded w-3/4" />
+        <div className="propeller-cluster-info__skeleton animate-pulse space-y-3">
+          <div className="propeller-cluster-info__skeleton-line h-4 bg-surface-hover rounded w-1/4" />
+          <div className="propeller-cluster-info__skeleton-line h-8 bg-surface-hover rounded w-3/4" />
         </div>
       ) : null}
       {!loading || !!props.cluster ? (

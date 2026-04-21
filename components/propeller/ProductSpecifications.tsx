@@ -141,7 +141,11 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     <>
       {!loading && hasPublicAttributes() ? (
         <>
-          <div className={`product-specifications ${(props.className as string) || ''}`}>
+          <div
+            className={`propeller-product-specifications ${(props.className as string) || ''}`}
+            data-layout={(props.layout as string) === 'list' ? 'list' : 'table'}
+            data-grouped={props.grouping ? 'true' : 'false'}
+          >
             {!props.grouping ? (
               <>
                 {(props.layout as string) !== 'list' ? (
@@ -149,7 +153,7 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
                     <table className="w-full text-sm">
                       <tbody className="divide-y divide-border">
                         {getAttributes()?.map((attr, i) => (
-                          <tr className="odd:bg-white even:bg-muted/20" key={i}>
+                          <tr className="propeller-product-specifications__row odd:bg-card even:bg-muted/20" key={i}>
                             <td className="px-4 py-2 font-medium text-foreground w-1/2">
                               {getAttributeLabel(attr)}
                             </td>
@@ -190,7 +194,7 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
                         <table className="w-full text-sm">
                           <tbody className="divide-y divide-border">
                             {getAttributesByGroup(group)?.map((attr, i) => (
-                              <tr className="odd:bg-white even:bg-muted/20" key={i}>
+                              <tr className="propeller-product-specifications__row odd:bg-card even:bg-muted/20" key={i}>
                                 <td className="px-4 py-2 font-medium text-foreground w-1/2">
                                   {getAttributeLabel(attr)}
                                 </td>

@@ -88,17 +88,22 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
   }, []);
 
   return (
-    <div className={`cluster-configurator ${props.className || ''}`}>
+    <div className={`propeller-cluster-configurator ${props.className || ''}`}>
       {!!(props.config as ClusterConfig)?.settings?.length ? (
-        <div className="configurator-content flex flex-col gap-6">
+        <div className="propeller-cluster-configurator__content flex flex-col gap-6">
           {settingsWithValues?.map((setting) => (
-            <div className="attribute-group" key={setting.id}>
-              <h4 className="font-semibold text-sm text-gray-700 mb-3">
+            <div
+              className="propeller-cluster-configurator__group"
+              key={setting.id}
+              data-display-type={setting.displayType}
+              data-disabled={setting.disabled ? 'true' : 'false'}
+            >
+              <h4 className="propeller-cluster-configurator__label font-semibold text-sm text-muted-foreground mb-3">
                 {setting.displayName || setting.name}
               </h4>
               {setting.displayType === 'DROPDOWN' ? (
                 <select
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer"
+                  className="propeller-cluster-configurator__select w-full border border-border rounded-control px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary disabled:bg-surface-hover disabled:text-foreground-subtle cursor-pointer"
                   value={setting.selectedValue}
                   disabled={setting.disabled}
                   onChange={(e) => handleAttributeSelect(setting.name, e.target.value)}
@@ -112,11 +117,12 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                 </select>
               ) : null}
               {setting.displayType === 'RADIO' ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="propeller-cluster-configurator__options flex flex-wrap gap-2">
                   {setting.availableValues?.map((val) => (
                     <label
                       key={val}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors select-none ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'}`}
+                      data-selected={setting.selectedValue === val ? 'true' : 'false'}
+                      className={`propeller-cluster-configurator__radio flex items-center gap-2 px-3 py-1.5 rounded-control border text-sm font-medium transition-colors select-none ${setting.disabled ? 'opacity-50 cursor-not-allowed border-border text-foreground-subtle' : setting.selectedValue === val ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer' : 'border-border text-muted-foreground hover:border-secondary/30 cursor-pointer'}`}
                     >
                       <input
                         type="radio"
@@ -133,7 +139,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                 </div>
               ) : null}
               {setting.displayType === 'COLOR' ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="propeller-cluster-configurator__options flex flex-wrap gap-2">
                   {setting.availableValues?.map((val) => (
                     <button
                       type="button"
@@ -141,27 +147,29 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                       title={val}
                       disabled={setting.disabled}
                       onClick={(event) => handleAttributeSelect(setting.name, val)}
+                      data-selected={setting.selectedValue === val ? 'true' : 'false'}
                       style={{
                         backgroundColor: val,
                       }}
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1 scale-110' : 'border-gray-300 hover:scale-105'}`}
+                      className={`propeller-cluster-configurator__color w-8 h-8 rounded-full border-2 transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1 scale-110' : 'border-input hover:scale-105'}`}
                     />
                   ))}
                 </div>
               ) : null}
               {setting.displayType === 'IMAGE' ? (
-                <div className="flex flex-wrap gap-3">
+                <div className="propeller-cluster-configurator__options flex flex-wrap gap-3">
                   {setting.availableValues?.map((val) => (
                     <button
                       type="button"
                       key={val}
                       disabled={setting.disabled}
                       onClick={(event) => handleAttributeSelect(setting.name, val)}
-                      className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1' : 'border-gray-200 hover:border-secondary/30'}`}
+                      data-selected={setting.selectedValue === val ? 'true' : 'false'}
+                      className={`propeller-cluster-configurator__image-swatch relative w-16 h-16 rounded-control border-2 overflow-hidden transition-all ${setting.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${setting.selectedValue === val ? 'border-secondary ring-2 ring-secondary/30 ring-offset-1' : 'border-border hover:border-secondary/30'}`}
                     >
-                      <img className="w-full h-full object-cover" src={val} alt={val} />
+                      <img className="propeller-cluster-configurator__image w-full h-full object-cover" src={val} alt={val} />
                       {setting.selectedValue === val ? (
-                        <div className="absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center">
+                        <div className="propeller-cluster-configurator__image-check absolute inset-0 bg-secondary bg-opacity-20 flex items-center justify-center">
                           <svg
                             fill="currentColor"
                             viewBox="0 0 20 20"
@@ -183,14 +191,15 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
               setting.displayType !== 'RADIO' &&
               setting.displayType !== 'COLOR' &&
               setting.displayType !== 'IMAGE' ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="propeller-cluster-configurator__options flex flex-wrap gap-2">
                   {setting.availableValues?.map((val) => (
                     <button
                       type="button"
                       key={val}
                       disabled={setting.disabled}
                       onClick={(event) => handleAttributeSelect(setting.name, val)}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${setting.disabled ? 'opacity-50 cursor-not-allowed border-gray-200 text-gray-400' : setting.selectedValue === val ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer' : 'border-gray-200 text-gray-700 hover:border-secondary/30 cursor-pointer'}`}
+                      data-selected={setting.selectedValue === val ? 'true' : 'false'}
+                      className={`propeller-cluster-configurator__chip px-3 py-1.5 rounded-control border text-sm font-medium transition-colors ${setting.disabled ? 'opacity-50 cursor-not-allowed border-border text-foreground-subtle' : setting.selectedValue === val ? 'border-secondary bg-secondary/5 text-secondary cursor-pointer' : 'border-border text-muted-foreground hover:border-secondary/30 cursor-pointer'}`}
                     >
                       {val}
                     </button>

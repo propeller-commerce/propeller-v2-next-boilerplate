@@ -202,9 +202,10 @@ function FavoriteListItem(props: FavoriteListItemProps) {
   return (
     <div
       onClick={(e) => handleItemClick(e)}
-      className={`flex flex-row items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${props.className || ''}`}
+      data-type={isProduct() ? 'product' : 'cluster'}
+      className={`propeller-favorite-list-item flex flex-row items-center gap-4 rounded-container border border-border bg-card p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${props.className || ''}`}
     >
-      <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-50 p-1">
+      <div className="propeller-favorite-list-item__media relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-control bg-surface-hover p-1">
         {props.titleLinkable !== false ? (
           <a
             className="block h-full w-full"
@@ -212,10 +213,10 @@ function FavoriteListItem(props: FavoriteListItemProps) {
             onClick={(e) => handleItemClick(e)}
           >
             {!!getImageUrl() ? (
-              <img className="h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
+              <img className="propeller-favorite-list-item__image h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
             ) : null}
             {!getImageUrl() ? (
-              <div className="flex h-full w-full items-center justify-center text-gray-200">
+              <div className="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-8 w-8">
                   <path
                     strokeLinecap="round"
@@ -231,10 +232,10 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         {props.titleLinkable === false ? (
           <div className="block h-full w-full">
             {!!getImageUrl() ? (
-              <img className="h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
+              <img className="propeller-favorite-list-item__image h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
             ) : null}
             {!getImageUrl() ? (
-              <div className="flex h-full w-full items-center justify-center text-gray-200">
+              <div className="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-8 w-8">
                   <path
                     strokeLinecap="round"
@@ -248,13 +249,13 @@ function FavoriteListItem(props: FavoriteListItemProps) {
           </div>
         ) : null}
       </div>
-      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+      <div className="propeller-favorite-list-item__body flex flex-col gap-0.5 min-w-0 flex-1">
         {props.showSku !== false && !!getSku() ? (
-          <span className="font-mono text-xs text-gray-400">{getSku()}</span>
+          <span className="propeller-favorite-list-item__sku font-mono text-xs text-foreground-subtle">{getSku()}</span>
         ) : null}
         {props.titleLinkable !== false ? (
           <a
-            className="text-sm font-medium leading-tight text-gray-900 transition-colors hover:text-secondary line-clamp-1"
+            className="propeller-favorite-list-item__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-secondary line-clamp-1"
             href={getItemUrl()}
             onClick={(e) => handleItemClick(e)}
           >
@@ -262,7 +263,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
           </a>
         ) : null}
         {props.titleLinkable === false ? (
-          <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-1">
+          <span className="propeller-favorite-list-item__title text-sm font-medium leading-tight text-foreground line-clamp-1">
             {getName()}
           </span>
         ) : null}
@@ -280,20 +281,20 @@ function FavoriteListItem(props: FavoriteListItemProps) {
       {props.showStockComponent && !isProduct() ? (
         <>
           {getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined ? (
-            <div className="flex-shrink-0">
+            <div className="propeller-favorite-list-item__stock flex-shrink-0">
               {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5 ? (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-green-600 bg-green-50">
+                <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-success bg-success/10" data-stock="in">
                   {getLabel('inStock', 'In stock')}
                 </span>
               ) : null}
               {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
               (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) <= 5 ? (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-amber-600 bg-amber-50">
+                <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-warning bg-warning/10" data-stock="low">
                   {getLabel('lowStock', 'Low stock')}
                 </span>
               ) : null}
               {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0 ? (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-red-600 bg-red-50">
+                <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-destructive bg-destructive/10" data-stock="out">
                   {getLabel('outOfStock', 'Out of stock')}
                 </span>
               ) : null}
@@ -302,11 +303,11 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         </>
       ) : null}
       {!!getItemPrice() ? (
-        <span className="text-base font-bold text-gray-900 whitespace-nowrap flex-shrink-0">
+        <span className="propeller-favorite-list-item__price text-base font-bold text-foreground whitespace-nowrap flex-shrink-0">
           {getItemPrice()}
         </span>
       ) : null}
-      <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="propeller-favorite-list-item__actions flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         {props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
           <AddToCart
             className="flex items-center gap-2"
@@ -330,7 +331,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         ) : null}
         {!isProduct() ? (
           <a
-            className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-secondary/90 whitespace-nowrap"
+            className="propeller-favorite-list-item__view-cluster inline-flex items-center justify-center rounded-control bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90 whitespace-nowrap"
             href={getItemUrl()}
             onClick={(e) => handleItemClick(e)}
           >
@@ -340,7 +341,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         {props.showDelete !== false ? (
           <button
             type="button"
-            className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="propeller-favorite-list-item__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-foreground-subtle hover:text-destructive hover:bg-destructive/10 transition-colors"
             onClick={(event) => handleDelete()}
             title={getLabel('delete', 'Remove from list')}
           >

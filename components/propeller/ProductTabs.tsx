@@ -192,14 +192,19 @@ function ProductTabs(props: ProductTabsProps) {
     <>
       {props.product ? (
         <>
-          <div className={`product-tabs ${(props.className as string) || ''}`}>
-            <div className="hidden md:block">
-              <div className="flex border-b border-border">
+          <div
+            className={`propeller-product-tabs ${(props.className as string) || ''}`}
+            data-active-tab={activeTab}
+          >
+            <div className="propeller-product-tabs__desktop hidden md:block">
+              <div className="propeller-product-tabs__tablist flex border-b border-border">
                 {isTabVisible('description') ? (
                   <button
                     type="button"
                     onClick={(event) => selectTab('description')}
-                    className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    className={`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('description') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    data-tab="description"
+                    data-active={isActive('description') ? 'true' : 'false'}
                   >
                     {getLabel('description', 'Description')}
                   </button>
@@ -208,7 +213,9 @@ function ProductTabs(props: ProductTabsProps) {
                   <button
                     type="button"
                     onClick={(event) => selectTab('specifications')}
-                    className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    className={`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('specifications') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    data-tab="specifications"
+                    data-active={isActive('specifications') ? 'true' : 'false'}
                   >
                     {getLabel('specifications', 'Specifications')}
                   </button>
@@ -217,7 +224,9 @@ function ProductTabs(props: ProductTabsProps) {
                   <button
                     type="button"
                     onClick={(event) => selectTab('downloads')}
-                    className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    className={`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('downloads') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    data-tab="downloads"
+                    data-active={isActive('downloads') ? 'true' : 'false'}
                   >
                     {getLabel('downloads', 'Downloads')}
                   </button>
@@ -226,13 +235,15 @@ function ProductTabs(props: ProductTabsProps) {
                   <button
                     type="button"
                     onClick={(event) => selectTab('videos')}
-                    className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    className={`propeller-product-tabs__tab px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${isActive('videos') ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
+                    data-tab="videos"
+                    data-active={isActive('videos') ? 'true' : 'false'}
                   >
                     {getLabel('videos', 'Videos')}
                   </button>
                 ) : null}
               </div>
-              <div className="pt-6">
+              <div className="propeller-product-tabs__panel pt-6">
                 {isActive('description') && isTabVisible('description') ? (
                   <ProductDescription
                     product={props.product}
@@ -269,12 +280,12 @@ function ProductTabs(props: ProductTabsProps) {
                 ) : null}
               </div>
             </div>
-            <div className="md:hidden divide-y divide-border border border-border rounded-lg">
+            <div className="propeller-product-tabs__mobile md:hidden divide-y divide-border border border-border rounded-container">
               {isTabVisible('description') ? (
                 <div>
                   <button
                     type="button"
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                    className="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
                     onClick={(event) => {
                       setActiveTab(activeTab === 'description' ? '' : 'description');
                     }}
@@ -296,7 +307,7 @@ function ProductTabs(props: ProductTabsProps) {
                     </svg>
                   </button>
                   {isActive('description') ? (
-                    <div className="px-4 pb-4">
+                    <div className="propeller-product-tabs__accordion-panel px-4 pb-4">
                       <ProductDescription
                         product={props.product}
                         language={props.language}
@@ -311,7 +322,7 @@ function ProductTabs(props: ProductTabsProps) {
                 <div>
                   <button
                     type="button"
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                    className="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
                     onClick={(event) => {
                       if (activeTab !== 'specifications') {
                         setSpecsVisited(true);
@@ -338,7 +349,7 @@ function ProductTabs(props: ProductTabsProps) {
                     </svg>
                   </button>
                   {specsVisited && isActive('specifications') ? (
-                    <div className="px-4 pb-4">
+                    <div className="propeller-product-tabs__accordion-panel px-4 pb-4">
                       <ProductSpecifications
                         attributes={getSpecsAttributes()}
                         language={props.language}
@@ -353,7 +364,7 @@ function ProductTabs(props: ProductTabsProps) {
                 <div>
                   <button
                     type="button"
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                    className="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
                     onClick={(event) => {
                       setActiveTab(activeTab === 'downloads' ? '' : 'downloads');
                     }}
@@ -375,7 +386,7 @@ function ProductTabs(props: ProductTabsProps) {
                     </svg>
                   </button>
                   {isActive('downloads') ? (
-                    <div className="px-4 pb-4">
+                    <div className="propeller-product-tabs__accordion-panel px-4 pb-4">
                       <ProductDownloads
                         downloads={
                           (props.product as Product).media
@@ -392,7 +403,7 @@ function ProductTabs(props: ProductTabsProps) {
                 <div>
                   <button
                     type="button"
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
+                    className="propeller-product-tabs__accordion-trigger flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left"
                     onClick={(event) => {
                       setActiveTab(activeTab === 'videos' ? '' : 'videos');
                     }}
@@ -414,7 +425,7 @@ function ProductTabs(props: ProductTabsProps) {
                     </svg>
                   </button>
                   {isActive('videos') ? (
-                    <div className="px-4 pb-4">
+                    <div className="propeller-product-tabs__accordion-panel px-4 pb-4">
                       <ProductVideos
                         videos={
                           (props.product as Product).media?.videos as PaginatedMediaVideoResponse

@@ -80,10 +80,10 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
   }
 
   return (
-    <div className={`purchase-authorization-requests ${props.className || ''}`}>
+    <div className={`propeller-purchase-authorization-requests ${props.className || ''}`}>
       {isAuthManager ? (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">{getLabel('title', 'Authorization Requests')}</h2>
+        <div className="propeller-purchase-authorization-requests__content space-y-4">
+          <h2 className="propeller-purchase-authorization-requests__title text-xl font-semibold">{getLabel('title', 'Authorization Requests')}</h2>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -154,16 +154,16 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
             </>
           ) : null}
           {selectedCart ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-              <div className="fixed inset-0 bg-gray-500/20" onClick={() => closeModal()} />
-              <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-                  <h3 className="text-base font-semibold text-gray-900">
+            <div className="propeller-purchase-authorization-requests__modal fixed inset-0 z-50 flex items-center justify-center px-4">
+              <div className="propeller-purchase-authorization-requests__modal-backdrop fixed inset-0 bg-foreground/20" onClick={() => closeModal()} />
+              <div className="propeller-purchase-authorization-requests__modal-content relative w-full max-w-2xl bg-card rounded-container shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="propeller-purchase-authorization-requests__modal-header flex items-center justify-between px-6 py-4 border-b border-border-subtle flex-shrink-0">
+                  <h3 className="propeller-purchase-authorization-requests__modal-title text-base font-semibold text-foreground">
                     {getLabel('modalTitle', 'Authorization Request')}
                   </h3>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className="propeller-purchase-authorization-requests__modal-close text-foreground-subtle hover:text-foreground focus:outline-none"
                     onClick={() => closeModal()}
                   >
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5" strokeWidth={2}>
@@ -180,7 +180,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                   <>
                     <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        <h4 className="propeller-purchase-authorization-requests__modal-section-title text-sm font-semibold text-muted-foreground mb-2">
                           {getLabel('requesterInfo', 'Requester')}
                         </h4>
                         <p className="text-sm font-medium">
@@ -191,7 +191,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        <h4 className="propeller-purchase-authorization-requests__modal-section-title text-sm font-semibold text-muted-foreground mb-2">
                           {getLabel('itemsTitle', 'Items')}
                         </h4>
                         <div className="overflow-x-auto rounded border border-border">
@@ -250,17 +250,17 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+                    <div className="propeller-purchase-authorization-requests__modal-actions flex gap-3 px-6 py-4 border-t border-border-subtle flex-shrink-0">
                       <button
                         type="button"
-                        className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        className="propeller-purchase-authorization-requests__modal-cancel flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                         onClick={() => closeModal()}
                       >
                         {getLabel('cancel', 'Cancel')}
                       </button>
                       <button
                         type="button"
-                        className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="propeller-purchase-authorization-requests__modal-accept flex-1 inline-flex justify-center rounded-control border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleAcceptRequest()}
                         disabled={acceptLoading}
                       >

@@ -170,19 +170,20 @@ function ItemsOverview(props: ItemsOverviewProps) {
     return `\u20AC${Number(price).toFixed(2)}`;
   }
   return (
-    <div className={containerClass()}>
-      {props.title ? <h2 className="text-lg font-bold mb-4">{props.title}</h2> : null}
-      <div className="space-y-4">
+    <div className={`propeller-items-overview ${containerClass()}`}>
+      {props.title ? <h2 className="propeller-items-overview__title text-lg font-bold mb-4">{props.title}</h2> : null}
+      <div className="propeller-items-overview__list space-y-4">
         {items()?.map((item, index) => (
           <div
-            className="flex gap-3 pb-3 border-b border-gray-200 last:border-b-0 last:pb-0"
+            className="propeller-items-overview__item flex gap-3 pb-3 border-b border-border last:border-b-0 last:pb-0"
             key={item.itemId || index}
+            data-bundle={isBundleItem(item) ? 'true' : 'false'}
           >
             {showImage() ? (
-              <div className="w-16 h-16 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border border-gray-100 flex items-center justify-center">
+              <div className="propeller-items-overview__item-media w-16 h-16 flex-shrink-0 bg-surface-hover rounded-control overflow-hidden border border-border-subtle flex items-center justify-center">
                 {getItemImageUrl(item) ? (
                   <img
-                    className="w-full h-full object-contain p-1.5"
+                    className="propeller-items-overview__item-image w-full h-full object-contain p-1.5"
                     src={getItemImageUrl(item)}
                     alt={getItemName(item)}
                   />
@@ -193,7 +194,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth="1.5"
-                    className="w-6 h-6 text-gray-300"
+                    className="propeller-items-overview__item-image-placeholder w-6 h-6 text-foreground-subtle"
                   >
                     <path
                       strokeLinecap="round"
@@ -204,28 +205,28 @@ function ItemsOverview(props: ItemsOverviewProps) {
                 ) : null}
               </div>
             ) : null}
-            <div className="flex-1 min-w-0">
+            <div className="propeller-items-overview__item-body flex-1 min-w-0">
               {isBundleItem(item) ? (
                 <>
                   <div>
                     <div className="flex justify-between items-start gap-2">
-                      <span className="text-sm font-medium leading-tight text-gray-900 line-clamp-2">
+                      <span className="propeller-items-overview__item-title text-sm font-medium leading-tight text-foreground line-clamp-2">
                         {getBundleName(item)}
                       </span>
                       {showPrice() && !!getBundlePrice(item) ? (
-                        <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                        <span className="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap">
                           {getBundlePrice(item)}
                         </span>
                       ) : null}
                     </div>
-                    <div className="mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
+                    <div className="propeller-items-overview__item-bundle mt-1.5 space-y-1 border-l-2 border-secondary/10 pl-2">
                       {!!getBundleLeaderName(item) ? (
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-medium text-gray-800">
+                        <div className="propeller-items-overview__item-bundle-leader flex justify-between items-center text-xs">
+                          <span className="font-medium text-foreground">
                             {getBundleLeaderName(item)}
                           </span>
                           {!!getBundleLeaderPrice(item) ? (
-                            <span className="text-gray-500 whitespace-nowrap ml-2">
+                            <span className="text-muted-foreground whitespace-nowrap ml-2">
                               {getBundleLeaderPrice(item)}
                             </span>
                           ) : null}
@@ -233,12 +234,12 @@ function ItemsOverview(props: ItemsOverviewProps) {
                       ) : null}
                       {getBundleNonLeaders(item)?.map((bundleItem, idx) => (
                         <div
-                          className="flex justify-between items-center text-xs text-gray-600"
+                          className="propeller-items-overview__item-bundle-item flex justify-between items-center text-xs text-muted-foreground"
                           key={idx}
                         >
                           <span className="line-clamp-1">{getBundleItemName(bundleItem)}</span>
                           {!!getBundleItemPrice(bundleItem) ? (
-                            <span className="text-gray-400 whitespace-nowrap ml-2">
+                            <span className="text-foreground-subtle whitespace-nowrap ml-2">
                               {getBundleItemPrice(bundleItem)}
                             </span>
                           ) : null}
@@ -246,7 +247,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
                       ))}
                     </div>
                   </div>{' '}
-                  <div className="flex items-center text-xs text-gray-400 mt-1">
+                  <div className="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                     <span>
                       {getLabel('quantity', 'Qty:')}
                       {item.quantity}
@@ -260,37 +261,37 @@ function ItemsOverview(props: ItemsOverviewProps) {
                     <div className="flex justify-between items-start gap-2">
                       {itemNameClickable() ? (
                         <p
-                          className="font-medium text-sm leading-tight cursor-pointer hover:text-secondary transition-colors line-clamp-2"
+                          className="propeller-items-overview__item-title font-medium text-sm leading-tight cursor-pointer hover:text-secondary transition-colors line-clamp-2"
                           onClick={(event) => handleItemNameClick(item)}
                         >
                           {getItemName(item)}
                         </p>
                       ) : null}
                       {!itemNameClickable() ? (
-                        <p className="font-medium text-sm leading-tight line-clamp-2">
+                        <p className="propeller-items-overview__item-title font-medium text-sm leading-tight line-clamp-2">
                           {getItemName(item)}
                         </p>
                       ) : null}
                       {showPrice() ? (
-                        <span className="font-semibold text-sm text-gray-900 whitespace-nowrap">
+                        <span className="propeller-items-overview__item-price font-semibold text-sm text-foreground whitespace-nowrap">
                           {formatItemPrice(getItemTotalPrice(item))}
                         </span>
                       ) : null}
                     </div>
                     {showSku() && getItemSku(item) ? (
-                      <p className="text-xs text-gray-500 mt-0.5">SKU: {getItemSku(item)}</p>
+                      <p className="propeller-items-overview__item-sku text-xs text-muted-foreground mt-0.5">SKU: {getItemSku(item)}</p>
                     ) : null}
                     {getItemChildItems(item).length > 0 ? (
-                      <div className="mt-1.5 space-y-1 border-l-2 border-gray-100 pl-2">
+                      <div className="propeller-items-overview__item-options mt-1.5 space-y-1 border-l-2 border-border-subtle pl-2">
                         {getItemChildItems(item)?.map((child, idx) => (
                           <div
-                            className="flex justify-between items-center text-xs text-gray-600"
+                            className="propeller-items-overview__item-option flex justify-between items-center text-xs text-muted-foreground"
                             key={idx}
                           >
                             <span className="line-clamp-1">
                               {child.product?.names?.[0]?.value || 'Option'}
                             </span>
-                            <span className="text-gray-400 whitespace-nowrap ml-2">
+                            <span className="text-foreground-subtle whitespace-nowrap ml-2">
                               {formatItemPrice(child.totalSum || 0)}
                             </span>
                           </div>
@@ -298,14 +299,15 @@ function ItemsOverview(props: ItemsOverviewProps) {
                       </div>
                     ) : null}
                   </div>{' '}
-                  <div className="flex items-center text-xs text-gray-400 mt-1">
+                  <div className="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                     <span>
                       {getLabel('quantity', 'Qty:')}
                       {item.quantity}
                     </span>
                     {showAvailability() && getItemAvailability(item) ? (
                       <span
-                        className={`ml-2 ${isInStock(item) ? 'text-green-600' : 'text-red-500'}`}
+                        className={`propeller-items-overview__item-availability ml-2 ${isInStock(item) ? 'text-success' : 'text-destructive'}`}
+                        data-in-stock={isInStock(item) ? 'true' : 'false'}
                       >
                         {getItemAvailability(item)}
                       </span>
@@ -318,7 +320,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
         ))}
       </div>
       {items().length === 0 ? (
-        <p className="text-gray-500 italic text-sm">{getLabel('noItems', 'No items in cart.')}</p>
+        <p className="propeller-items-overview__empty text-muted-foreground italic text-sm">{getLabel('noItems', 'No items in cart.')}</p>
       ) : null}
     </div>
   );

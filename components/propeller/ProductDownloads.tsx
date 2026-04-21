@@ -70,20 +70,20 @@ function ProductDownloads(props: ProductDownloadsProps) {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
   return (
-    <div className={`product-downloads ${(props.className as string) || ''}`}>
+    <div className={`propeller-product-downloads ${(props.className as string) || ''}`}>
       {hasItems() ? (
-        <h3 className="text-base font-semibold text-foreground mb-3">
+        <h3 className="propeller-product-downloads__title text-base font-semibold text-foreground mb-3">
           {getLabel('title', 'Downloads')}
         </h3>
       ) : null}
       {hasItems() ? (
-        <ul className="space-y-2">
+        <ul className="propeller-product-downloads__list space-y-2">
           {getDownloadItems()?.map((doc, index) => (
-            <li key={index}>
+            <li className="propeller-product-downloads__item" key={index}>
               {!!getDocumentUrl(doc) ? (
                 <a
                   target="_blank"
-                  className="flex items-center gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground hover:bg-muted/30 hover:border-primary/40 transition-colors group"
+                  className="propeller-product-downloads__link flex items-center gap-3 rounded-container border border-border bg-card px-4 py-3 text-sm text-foreground hover:bg-muted/30 hover:border-primary/40 transition-colors group"
                   href={getDocumentUrl(doc)}
                   download
                 >
@@ -121,7 +121,7 @@ function ProductDownloads(props: ProductDownloadsProps) {
         </ul>
       ) : null}
       {!hasItems() ? (
-        <p className="text-sm text-muted-foreground">{getLabel('empty', 'No downloads')}</p>
+        <p className="propeller-product-downloads__empty text-sm text-muted-foreground">{getLabel('empty', 'No downloads')}</p>
       ) : null}
     </div>
   );

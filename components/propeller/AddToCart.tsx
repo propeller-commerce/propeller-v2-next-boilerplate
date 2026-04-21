@@ -303,13 +303,16 @@ function AddToCart(props: AddToCartProps) {
   }, []);
 
   return (
-    <div className={props.className}>
-      <div className="flex items-center gap-2 w-full">
+    <div
+      className={`propeller-add-to-cart ${props.className || ''}`}
+      data-loading={loading ? 'true' : 'false'}
+    >
+      <div className="propeller-add-to-cart__controls flex items-center gap-2 w-full">
         {props.allowIncrDecr !== false ? (
-          <div className="flex items-center border border-gray-300 rounded-md bg-white h-10">
+          <div className="propeller-add-to-cart__stepper flex items-center border border-input rounded-control bg-card h-10">
             <button
               type="button"
-              className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-md select-none"
+              className="propeller-add-to-cart__decrement px-3 h-full text-muted-foreground hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-l-control select-none"
               onClick={() => decrement()}
               disabled={quantity <= getMinQuantity(props.product) || loading}
             >
@@ -318,7 +321,7 @@ function AddToCart(props: AddToCartProps) {
             </button>
             <input
               type="number"
-              className="w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="propeller-add-to-cart__quantity w-12 text-center text-sm bg-transparent border-none focus:ring-0 focus:outline-none h-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               min={getMinQuantity(props.product)}
               step={getStep(props.product)}
               value={quantity}
@@ -333,7 +336,7 @@ function AddToCart(props: AddToCartProps) {
             />
             <button
               type="button"
-              className="px-3 h-full text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-md select-none"
+              className="propeller-add-to-cart__increment px-3 h-full text-muted-foreground hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-r-control select-none"
               onClick={() => increment()}
               disabled={loading}
             >
@@ -345,7 +348,7 @@ function AddToCart(props: AddToCartProps) {
         {props.allowIncrDecr === false ? (
           <input
             type="number"
-            className="w-16 h-10 text-center text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="propeller-add-to-cart__quantity w-16 h-10 text-center text-sm border border-input rounded-control focus:ring-2 focus:ring-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             min={getMinQuantity(props.product)}
             step={getStep(props.product)}
             value={quantity}
@@ -361,7 +364,7 @@ function AddToCart(props: AddToCartProps) {
         ) : null}
         <button
           type="button"
-          className="flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="propeller-add-to-cart__submit flex-1 inline-flex justify-center items-center h-10 px-6 border border-transparent text-sm font-medium rounded-control text-secondary-foreground bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           onClick={() => handleAddToCart()}
           disabled={loading}
         >
@@ -371,10 +374,11 @@ function AddToCart(props: AddToCartProps) {
       </div>
       {toastVisible ? (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+          className={`propeller-add-to-cart__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${toastType === 'success' ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}
+          data-toast-type={toastType}
         >
           <div
-            className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}
+            className={`propeller-add-to-cart__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
           >
             {toastType === 'success' ? (
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -392,14 +396,14 @@ function AddToCart(props: AddToCartProps) {
             ) : null}
           </div>
           <p
-            className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}
+            className={`propeller-add-to-cart__toast-message flex-1 text-sm font-medium ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
           >
             {toastMessage}
           </p>
           <button
             type="button"
             onClick={() => dismissToast()}
-            className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+            className={`propeller-add-to-cart__toast-close flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-success/70 hover:text-success' : 'text-destructive/70 hover:text-destructive'}`}
           >
             <svg
               fill="none"
@@ -414,25 +418,28 @@ function AddToCart(props: AddToCartProps) {
         </div>
       ) : null}
       {modalVisible ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="fixed inset-0 bg-gray-500/20" onClick={() => closeModal()} />
-          <div className="relative w-full max-w-lg bg-white rounded-lg shadow-2xl overflow-hidden">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+        <div className="propeller-add-to-cart__modal fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="propeller-add-to-cart__modal-backdrop fixed inset-0 bg-foreground/20"
+            onClick={() => closeModal()}
+          />
+          <div className="propeller-add-to-cart__modal-content relative w-full max-w-lg bg-card rounded-container shadow-2xl overflow-hidden">
+            <div className="propeller-add-to-cart__modal-header flex items-center gap-3 px-6 py-4 border-b border-border-subtle">
               <svg
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                className="h-5 w-5 flex-shrink-0 text-green-500"
+                className="propeller-add-to-cart__modal-success-icon h-5 w-5 flex-shrink-0 text-success"
                 strokeWidth={2}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              <h3 className="flex-1 text-base font-semibold text-gray-900">
+              <h3 className="propeller-add-to-cart__modal-title flex-1 text-base font-semibold text-foreground">
                 {getLabel('modalTitle', 'Added to cart')}
               </h3>
               <button
                 type="button"
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none"
+                className="propeller-add-to-cart__modal-close flex-shrink-0 text-foreground-subtle hover:text-foreground focus:outline-none"
                 onClick={() => closeModal()}
               >
                 <svg
@@ -446,22 +453,22 @@ function AddToCart(props: AddToCartProps) {
                 </svg>
               </button>
             </div>
-            <div className="px-6 py-5">
-              <div className="flex items-start gap-4">
+            <div className="propeller-add-to-cart__modal-body px-6 py-5">
+              <div className="propeller-add-to-cart__modal-product flex items-start gap-4">
                 {!!getModalImageUrl() ? (
                   <img
-                    className="w-16 h-16 object-contain rounded border border-gray-100 flex-shrink-0"
+                    className="propeller-add-to-cart__modal-image w-16 h-16 object-contain rounded border border-border-subtle flex-shrink-0"
                     src={getModalImageUrl()}
                     alt={getModalName()}
                   />
                 ) : null}
                 {!getModalImageUrl() ? (
-                  <div className="w-16 h-16 flex items-center justify-center rounded border border-gray-100 flex-shrink-0 bg-gray-50">
+                  <div className="propeller-add-to-cart__modal-image-placeholder w-16 h-16 flex items-center justify-center rounded border border-border-subtle flex-shrink-0 bg-surface-hover">
                     <svg
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
-                      className="w-8 h-8 text-gray-300"
+                      className="w-8 h-8 text-foreground-subtle"
                       strokeWidth={1.5}
                     >
                       <path
@@ -474,35 +481,35 @@ function AddToCart(props: AddToCartProps) {
                 ) : null}
                 <div className="flex-1 min-w-0">
                   <a
-                    className="text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
+                    className="propeller-add-to-cart__modal-product-title text-sm font-medium text-secondary leading-tight hover:underline line-clamp-2"
                     href={getProductUrl()}
                   >
                     {getModalName()}
                   </a>
                   {!!getModalSku() ? (
-                    <p className="text-xs text-gray-400 mt-0.5">SKU: {getModalSku()}</p>
+                    <p className="propeller-add-to-cart__modal-sku text-xs text-foreground-subtle mt-0.5">SKU: {getModalSku()}</p>
                   ) : null}
                 </div>
                 <div className="flex-shrink-0 text-right">
-                  <p className="text-xs text-gray-500">
+                  <p className="propeller-add-to-cart__modal-quantity text-xs text-muted-foreground">
                     {getLabel('quantity', 'Quantity')}: {quantity}
                   </p>
                   {!!getModalPrice() ? (
-                    <p className="text-sm font-semibold text-gray-900 mt-0.5">{getModalPrice()}</p>
+                    <p className="propeller-add-to-cart__modal-price text-sm font-semibold text-foreground mt-0.5">{getModalPrice()}</p>
                   ) : null}
                 </div>
               </div>
               {getChildItems().length > 0 ? (
-                <div className="mt-3 ml-20 space-y-1 border-l-2 border-gray-100 pl-2">
+                <div className="propeller-add-to-cart__modal-children mt-3 ml-20 space-y-1 border-l-2 border-border-subtle pl-2">
                   {getChildItems()?.map((child, idx) => (
                     <div
-                      className="flex justify-between items-center text-xs text-gray-600"
+                      className="propeller-add-to-cart__modal-child flex justify-between items-center text-xs text-muted-foreground"
                       key={idx}
                     >
                       <span className="line-clamp-1">
                         {child.product?.names?.[0]?.value || 'Option'}
                       </span>
-                      <span className="text-gray-400 whitespace-nowrap ml-2">
+                      <span className="text-foreground-subtle whitespace-nowrap ml-2">
                         {'\u20AC' +
                           (((props.includeTax !== undefined ? !!props.includeTax : includeTax)
                             ? child.totalSumNet
@@ -514,10 +521,10 @@ function AddToCart(props: AddToCartProps) {
                 </div>
               ) : null}
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+            <div className="propeller-add-to-cart__modal-actions flex gap-3 px-6 py-4 border-t border-border-subtle">
               <button
                 type="button"
-                className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                className="propeller-add-to-cart__modal-continue flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                 onClick={() => closeModal()}
               >
                 {getLabel('continueShopping', 'Continue shopping')}
@@ -525,7 +532,7 @@ function AddToCart(props: AddToCartProps) {
               {checkoutAllowed && props.onRequestQuoteClick && props.user && 'contactId' in props.user ? (
                 <button
                   type="button"
-                  className="flex-1 inline-flex justify-center rounded-md border border-secondary bg-white px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  className="propeller-add-to-cart__modal-quote flex-1 inline-flex justify-center rounded-control border border-secondary bg-card px-4 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                   onClick={() => {
                     closeModal();
                     if (cart) props.onRequestQuoteClick!(cart);
@@ -537,7 +544,7 @@ function AddToCart(props: AddToCartProps) {
               {checkoutAllowed ? (
                 <button
                   type="button"
-                  className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-white hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                  className="propeller-add-to-cart__modal-checkout flex-1 inline-flex justify-center rounded-control border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                   onClick={() => {
                     closeModal();
                     if (props.onProceedToCheckout) props.onProceedToCheckout();

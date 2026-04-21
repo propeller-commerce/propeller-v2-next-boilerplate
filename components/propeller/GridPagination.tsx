@@ -156,26 +156,29 @@ function GridPagination(props: GridPaginationProps) {
     if (props.onPageChange) props.onPageChange(page);
   }
   return (
-    <div className={`${(props.className as string) || ''}`}>
+    <div
+      className={`propeller-grid-pagination ${(props.className as string) || ''}`}
+      data-variant={((props.variant as string) || 'compact')}
+    >
       {showPagination() ? (
         <>
           {((props.variant as string) || 'compact') === 'compact' ? (
-            <div className="flex justify-center items-center gap-2">
+            <div className="propeller-grid-pagination__compact flex justify-center items-center gap-2">
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="propeller-grid-pagination__btn propeller-grid-pagination__btn--prev inline-flex items-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled={getCurrentPage() === 1}
                 onClick={(event) => handlePageChange(getCurrentPage() - 1)}
               >
                 {getLabel('previous')}
               </button>
-              <span className="px-2 text-sm font-medium text-gray-700">
+              <span className="propeller-grid-pagination__info px-2 text-sm font-medium text-muted-foreground">
                 {getLabel('page')}&nbsp;{getCurrentPage()}&nbsp;{getLabel('of')}&nbsp;
                 {getTotalPages()}
               </span>
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="propeller-grid-pagination__btn propeller-grid-pagination__btn--next inline-flex items-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled={getCurrentPage() === getTotalPages()}
                 onClick={(event) => handlePageChange(getCurrentPage() + 1)}
               >
@@ -184,10 +187,10 @@ function GridPagination(props: GridPaginationProps) {
             </div>
           ) : null}
           {((props.variant as string) || 'compact') === 'full' ? (
-            <div className="flex justify-center items-center gap-1 flex-wrap">
+            <div className="propeller-grid-pagination__full flex justify-center items-center gap-1 flex-wrap">
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="propeller-grid-pagination__btn propeller-grid-pagination__btn--prev inline-flex items-center rounded-control border border-input bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled={getCurrentPage() === 1}
                 onClick={(event) => handlePageChange(getCurrentPage() - 1)}
               >
@@ -195,11 +198,11 @@ function GridPagination(props: GridPaginationProps) {
               </button>
               {getFullPages()?.map((item, idx) => (
                 <div
-                  className="inline-flex"
+                  className="propeller-grid-pagination__page-wrapper inline-flex"
                   key={item.type === 'dots' ? `dots-${idx}` : `page-${item.value}`}
                 >
                   {item.type === 'dots' ? (
-                    <span className="inline-flex items-center justify-center min-w-[2rem] px-1 py-2 text-sm text-gray-500 select-none">
+                    <span className="propeller-grid-pagination__dots inline-flex items-center justify-center min-w-[2rem] px-1 py-2 text-sm text-muted-foreground select-none">
                       ...
                     </span>
                   ) : null}
@@ -207,10 +210,11 @@ function GridPagination(props: GridPaginationProps) {
                     <button
                       type="button"
                       onClick={(event) => handlePageChange(item.value)}
+                      data-active={item.value === getCurrentPage() ? 'true' : 'false'}
                       className={
                         item.value === getCurrentPage()
-                          ? 'inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-primary bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm'
-                          : 'inline-flex items-center justify-center min-w-[2.25rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50'
+                          ? 'propeller-grid-pagination__page inline-flex items-center justify-center min-w-[2.25rem] rounded-control border border-primary bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm'
+                          : 'propeller-grid-pagination__page inline-flex items-center justify-center min-w-[2.25rem] rounded-control border border-input bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-surface-hover'
                       }
                     >
                       {item.value}
@@ -220,7 +224,7 @@ function GridPagination(props: GridPaginationProps) {
               ))}
               <button
                 type="button"
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="propeller-grid-pagination__btn propeller-grid-pagination__btn--next inline-flex items-center rounded-control border border-input bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled={getCurrentPage() === getTotalPages()}
                 onClick={(event) => handlePageChange(getCurrentPage() + 1)}
               >

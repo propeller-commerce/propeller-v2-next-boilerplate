@@ -175,22 +175,25 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
     <>
       {!isHidden() && hasItems() ? (
         <>
-          <div className={`product-bulk-prices ${(props.className as string) || ''}`}>
+          <div
+            className={`propeller-product-bulk-prices ${(props.className as string) || ''}`}
+            data-include-tax={getIncludeTax() ? 'true' : 'false'}
+          >
             {getLabel('title', 'Volume pricing') ? (
-              <h3 className="text-base font-semibold text-foreground mb-3">
+              <h3 className="propeller-product-bulk-prices__title text-base font-semibold text-foreground mb-3">
                 {getLabel('title', 'Volume pricing')}
               </h3>
             ) : null}
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
+            <div className="propeller-product-bulk-prices__table-wrapper overflow-hidden rounded-container border border-border">
+              <table className="propeller-product-bulk-prices__table w-full text-sm">
+                <thead className="propeller-product-bulk-prices__thead bg-muted/50">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">
+                    <th className="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--quantity px-4 py-2 text-left font-medium text-muted-foreground">
                       {getLabel('quantityFrom', 'Qty from')}
                     </th>
-                    <th className="px-4 py-2 text-right font-medium text-muted-foreground">
+                    <th className="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--price px-4 py-2 text-right font-medium text-muted-foreground">
                       {getLabel('price', 'Price')}
-                      <span className="font-normal text-xs">
+                      <span className="propeller-product-bulk-prices__tax-label font-normal text-xs">
                         (
                         {getIncludeTax() ? (
                           <>{getLabel('inclTax', 'incl. VAT')}</>
@@ -202,13 +205,13 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="propeller-product-bulk-prices__tbody divide-y divide-border">
                   {getBulkPrices()?.map((tier, index) => (
-                    <tr className="bg-white hover:bg-muted/20 transition-colors" key={index}>
-                      <td className="px-4 py-2 text-foreground font-medium">
+                    <tr className="propeller-product-bulk-prices__row bg-card hover:bg-muted/20 transition-colors" key={index}>
+                      <td className="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--quantity px-4 py-2 text-foreground font-medium">
                         {getQuantityLabel(tier, index)}
                       </td>
-                      <td className="px-4 py-2 text-right text-foreground font-semibold">
+                      <td className="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--price px-4 py-2 text-right text-foreground font-semibold">
                         {getPrice(tier)}
                       </td>
                     </tr>

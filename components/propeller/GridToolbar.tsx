@@ -300,9 +300,12 @@ function GridToolbar(props: GridToolbarProps) {
     }
   }, [props.viewMode]);
   return (
-    <div className={`${(props.className as string) || ''}`}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <div className="text-sm text-muted-foreground font-medium">
+    <div
+      className={`propeller-grid-toolbar ${(props.className as string) || ''}`}
+      data-view-mode={currentViewMode}
+    >
+      <div className="propeller-grid-toolbar__bar flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+        <div className="propeller-grid-toolbar__count text-sm text-muted-foreground font-medium">
           {(props.itemsFound as number) > 0 ? (
             <span>
               {props.itemsFound as number}
@@ -310,9 +313,9 @@ function GridToolbar(props: GridToolbarProps) {
             </span>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="propeller-grid-toolbar__controls flex flex-wrap items-center gap-3">
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="propeller-grid-toolbar__select propeller-grid-toolbar__select--offset h-9 rounded-control border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             value={currentOffset}
             onChange={(e) => handleOffsetChange(parseInt((e.target as HTMLSelectElement).value))}
           >
@@ -323,9 +326,9 @@ function GridToolbar(props: GridToolbarProps) {
               </option>
             ))}
           </select>
-          <div className="h-4 w-px bg-border hidden sm:block" />
+          <div className="propeller-grid-toolbar__divider h-4 w-px bg-border hidden sm:block" />
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-field h-9 rounded-control border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             value={currentSortField}
             onChange={(e) => handleSortFieldChange((e.target as HTMLSelectElement).value)}
           >
@@ -340,7 +343,7 @@ function GridToolbar(props: GridToolbarProps) {
             ))}
           </select>
           <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="propeller-grid-toolbar__select propeller-grid-toolbar__select--sort-order h-9 rounded-control border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             value={currentSortOrder}
             onChange={(e) => handleSortOrderChange((e.target as HTMLSelectElement).value)}
           >
@@ -349,7 +352,7 @@ function GridToolbar(props: GridToolbarProps) {
           </select>
           <button
             type="button"
-            className="h-9 w-9 flex items-center justify-center rounded-md border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="propeller-grid-toolbar__view-toggle h-9 w-9 flex items-center justify-center rounded-control border border-input bg-transparent hover:bg-accent hover:text-accent-foreground transition-colors"
             onClick={(event) => handleViewChange()}
             title={currentViewMode === 'grid' ? getLabel('switchToList') : getLabel('switchToGrid')}
           >
@@ -395,10 +398,10 @@ function GridToolbar(props: GridToolbarProps) {
         </div>
       </div>
       {hasActiveFilters() ? (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="propeller-grid-toolbar__active-filters flex flex-wrap gap-2 mb-4">
           <button
             type="button"
-            className="h-7 px-2 text-xs rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="propeller-grid-toolbar__clear-all h-7 px-2 text-xs rounded-control hover:bg-accent hover:text-accent-foreground transition-colors"
             onClick={(event) => {
               if (props.onClearFilters) props.onClearFilters();
             }}
@@ -407,26 +410,27 @@ function GridToolbar(props: GridToolbarProps) {
           </button>
           {props.priceFilterMin !== undefined || props.priceFilterMax !== undefined ? (
             <span
-              className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
+              className="propeller-grid-toolbar__filter-badge propeller-grid-toolbar__filter-badge--price inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
               onClick={(event) => {
                 if (props.onPriceFilterRemove) props.onPriceFilterRemove();
               }}
             >
               {getLabel('price')}: €{(props.priceFilterMin as number) ?? 0} – €
               {(props.priceFilterMax as number) ?? '∞'}
-              <span>×</span>
+              <span className="propeller-grid-toolbar__filter-badge-remove">×</span>
             </span>
           ) : null}
           {getActiveFilterBadges()?.map((badge) => (
             <span
-              className="inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-destructive-foreground hover:border-primary transition-colors"
+              className="propeller-grid-toolbar__filter-badge inline-flex items-center gap-1 cursor-pointer px-2.5 py-0.5 rounded-full text-xs font-semibold border border-input bg-background hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
               key={`${badge.key}-${badge.value}`}
+              data-filter-key={badge.key}
               onClick={(event) => {
                 if (props.onFilterRemove) props.onFilterRemove(badge.key, badge.value);
               }}
             >
               {badge.value}
-              <span>×</span>
+              <span className="propeller-grid-toolbar__filter-badge-remove">×</span>
             </span>
           ))}
         </div>

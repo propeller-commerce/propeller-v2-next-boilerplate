@@ -90,21 +90,22 @@ function CartPaymethods(props: CartPaymethodsProps) {
     }
   }, [props.cart]);
   return (
-    <div className={containerClass()}>
+    <div className={`propeller-cart-paymethods ${containerClass()}`}>
       {payMethods().length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="propeller-cart-paymethods__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {payMethods()?.map((method, index) => (
             <div
               key={method.code}
               onClick={(event) => handleSelect(method)}
-              className={`cursor-pointer border border-gray-200 rounded-lg p-4 flex flex-col gap-2 transition-all ${selectedCode === method.code ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
+              data-selected={selectedCode === method.code ? 'true' : 'false'}
+              className={`propeller-cart-paymethods__method cursor-pointer border border-border rounded-container p-4 flex flex-col gap-2 transition-all ${selectedCode === method.code ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
             >
-              <div className="flex justify-between items-center">
+              <div className="propeller-cart-paymethods__method-row flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{method.name || method.code}</span>
+                  <span className="propeller-cart-paymethods__method-name font-medium">{method.name || method.code}</span>
                 </div>
                 {method.price > 0 ? (
-                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                  <span className="propeller-cart-paymethods__method-price text-xs bg-surface-hover text-muted-foreground px-2 py-1 rounded-full">
                     {formatMethodPrice(method.price)}
                   </span>
                 ) : null}
@@ -114,7 +115,7 @@ function CartPaymethods(props: CartPaymethodsProps) {
         </div>
       ) : null}
       {payMethods().length === 0 ? (
-        <p className="text-gray-500 italic">
+        <p className="propeller-cart-paymethods__empty text-muted-foreground italic">
           {getLabel('noMethods', 'No payment methods available.')}
         </p>
       ) : null}

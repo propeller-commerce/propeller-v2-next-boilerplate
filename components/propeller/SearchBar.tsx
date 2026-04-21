@@ -191,19 +191,20 @@ function SearchBar(props: SearchBarProps) {
     <div
       ref={containerRef}
       data-search-bar
-      className={props.containerClassName || 'relative flex-1 max-w-2xl mx-8'}
+      className={`propeller-search-bar ${props.containerClassName || 'relative flex-1 max-w-2xl mx-8'}`}
+      data-open={showDropdown ? 'true' : 'false'}
     >
-      <form onSubmit={(e) => handleSubmit(e)}>
-        <div className="relative">
+      <form className="propeller-search-bar__form" onSubmit={(e) => handleSubmit(e)}>
+        <div className="propeller-search-bar__input-wrapper relative">
           <button
             type="submit"
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer"
+            className="propeller-search-bar__submit absolute left-3 top-1/2 transform -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer"
           >
             <svg
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              className="w-5 h-5 text-gray-400 hover:text-gray-600"
+              className="propeller-search-bar__submit-icon w-5 h-5 text-foreground-subtle hover:text-foreground"
             >
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
@@ -212,45 +213,45 @@ function SearchBar(props: SearchBarProps) {
           <input
             type="search"
             autoComplete="off"
-            className="w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-gray-500"
+            className="propeller-search-bar__input w-full pl-10 pr-10 py-2 bg-white/95 border border-white/20 rounded-container focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-muted-foreground"
             placeholder={props.placeholder || 'Search products...'}
             value={localTerm}
             onChange={(e) => handleInputChange((e.target as HTMLInputElement).value)}
           />
           {searchLoading ? (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+            <div className="propeller-search-bar__spinner-wrapper absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="propeller-search-bar__spinner animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
             </div>
           ) : null}
         </div>
       </form>
       {showDropdown ? (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border max-h-96 overflow-y-auto z-50">
+        <div className="propeller-search-bar__dropdown absolute top-full left-0 right-0 mt-2 bg-card rounded-container shadow-xl border border-border max-h-96 overflow-y-auto z-50">
           {results.length > 0 ? (
             <>
               {results?.map((result, index) => (
                 <div
-                  className="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
+                  className="propeller-search-bar__result flex items-center gap-4 p-3 hover:bg-surface-hover cursor-pointer border-b border-border-subtle last:border-b-0"
                   key={result.id + '-' + index}
                   onClick={(event) => handleResultClick(result)}
                 >
                   {result.imageUrl || noImageUrl() ? (
-                    <div className="relative w-16 h-16 flex-shrink-0">
+                    <div className="propeller-search-bar__result-media relative w-16 h-16 flex-shrink-0">
                       <img
-                        className="w-full h-full object-contain"
+                        className="propeller-search-bar__result-image w-full h-full object-contain"
                         src={result.imageUrl || noImageUrl()}
                         alt={result.name}
                       />
                     </div>
                   ) : null}
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{result.name}</div>
+                    <div className="propeller-search-bar__result-name font-semibold truncate">{result.name}</div>
                     {result.sku ? (
-                      <div className="text-sm text-gray-500">SKU: {result.sku}</div>
+                      <div className="propeller-search-bar__result-sku text-sm text-muted-foreground">SKU: {result.sku}</div>
                     ) : null}
                   </div>
                   {result.price !== undefined && result.price !== null ? (
-                    <div className="text-sm font-semibold text-foreground flex-shrink-0">
+                    <div className="propeller-search-bar__result-price text-sm font-semibold text-foreground flex-shrink-0">
                       {formatItemPrice(result.price!)}
                     </div>
                   ) : null}
@@ -258,7 +259,7 @@ function SearchBar(props: SearchBarProps) {
               ))}
               {itemsFound > maxResults ? (
                 <div
-                  className="p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
+                  className="propeller-search-bar__view-all p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
                   onClick={(event) => handleViewAllClick()}
                 >
                   {getLabel('viewAll', 'View all results')} ({itemsFound})
@@ -267,7 +268,7 @@ function SearchBar(props: SearchBarProps) {
             </>
           ) : null}
           {results.length === 0 && localTerm.length >= minLength && !searchLoading ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="propeller-search-bar__empty p-4 text-center text-muted-foreground">
               {getLabel('noResults', 'No products found for')} &quot;{localTerm}&quot;
             </div>
           ) : null}

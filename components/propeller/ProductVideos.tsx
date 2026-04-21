@@ -91,21 +91,25 @@ function ProductVideos(props: ProductVideosProps) {
     return (props.labels as Record<string, string>)?.[key] || fallback;
   }
   return (
-    <div className={`product-videos ${(props.className as string) || ''}`}>
+    <div className={`propeller-product-videos ${(props.className as string) || ''}`}>
       {hasItems() ? (
-        <h3 className="text-base font-semibold text-foreground mb-3">
+        <h3 className="propeller-product-videos__title text-base font-semibold text-foreground mb-3">
           {getLabel('title', 'Videos')}
         </h3>
       ) : null}
       {hasItems() ? (
-        <div className="space-y-4">
+        <div className="propeller-product-videos__list space-y-4">
           {getVideoItems()?.map((video, index) => (
-            <div className="rounded-lg overflow-hidden border border-border bg-black" key={index}>
+            <div
+              className="propeller-product-videos__item rounded-container overflow-hidden border border-border bg-foreground"
+              key={index}
+              data-embedded={!!getVideoUri(video) && isEmbeddable(getVideoUri(video)) ? 'true' : 'false'}
+            >
               {!!getVideoUri(video) ? (
                 <>
                   {isEmbeddable(getVideoUri(video)) ? (
                     <div
-                      className="relative w-full"
+                      className="propeller-product-videos__embed relative w-full"
                       style={{
                         paddingBottom: '56.25%',
                       }}
@@ -113,7 +117,7 @@ function ProductVideos(props: ProductVideosProps) {
                       <iframe
                         loading="lazy"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        className="absolute inset-0 w-full h-full"
+                        className="propeller-product-videos__iframe absolute inset-0 w-full h-full"
                         src={getEmbedUrl(getVideoUri(video))}
                         title={getVideoTitle(video)}
                         allowFullScreen
@@ -121,7 +125,7 @@ function ProductVideos(props: ProductVideosProps) {
                     </div>
                   ) : null}
                   {!isEmbeddable(getVideoUri(video)) ? (
-                    <video preload="metadata" className="w-full" controls>
+                    <video preload="metadata" className="propeller-product-videos__video w-full" controls>
                       <source src={getVideoUri(video)} />
                     </video>
                   ) : null}
@@ -132,7 +136,7 @@ function ProductVideos(props: ProductVideosProps) {
         </div>
       ) : null}
       {!hasItems() ? (
-        <p className="text-sm text-muted-foreground">{getLabel('empty', 'No videos')}</p>
+        <p className="propeller-product-videos__empty text-sm text-muted-foreground">{getLabel('empty', 'No videos')}</p>
       ) : null}
     </div>
   );

@@ -18,9 +18,14 @@ import type { GraphQLClient } from 'propeller-sdk-v2';
 /** Raw category shape returned by the recursive GraphQL query */
 interface MenuCategoryRaw {
   categoryId: number;
+  hidden?: boolean | 'Y' | 'N' | string | null;
   name: Array<{ value: string; language: string }>;
   slug: Array<{ value: string }>;
   categories?: MenuCategoryRaw[];
+}
+
+function isHidden(raw: MenuCategoryRaw): boolean {
+  return raw.hidden === true || raw.hidden === 'Y';
 }
 
 export interface MenuCategory {
@@ -67,6 +72,7 @@ function buildCategoriesQuery(depth: number): string {
   return `
     categories {
       categoryId
+      hidden
       name(language: $language) { value language }
       slug(language: $language) { value }
       ${buildCategoriesQuery(depth - 1)}
@@ -85,7 +91,9 @@ function mapCategory(raw: MenuCategoryRaw, language: string): MenuCategory {
     categoryId: raw.categoryId,
     name: nameEntry?.value ?? '',
     slug: slugEntry?.value ?? '',
-    children: (raw.categories ?? []).map(child => mapCategory(child, language)),
+    children: (raw.categories ?? [])
+      .filter(child => !isHidden(child))
+      .map(child => mapCategory(child, language)),
   };
 }
 
@@ -163,6 +171,7 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
         query Menu($categoryId: Float, $language: String) {
           category(categoryId: $categoryId) {
             categoryId
+            hidden
             name(language: $language) { value language }
             slug(language: $language) { value }
             ${buildCategoriesQuery(depth)}
@@ -177,7 +186,9 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
 
       // Return subcategories of root (L1 items) — same as Menu.lite.tsx getSubCategories(rootCategory)
       const items: MenuCategory[] = root
-        ? (root.categories ?? []).map(cat => mapCategory(cat, language))
+        ? (root.categories ?? [])
+            .filter(cat => !isHidden(cat))
+            .map(cat => mapCategory(cat, language))
         : [];
 
       setCategories(items);

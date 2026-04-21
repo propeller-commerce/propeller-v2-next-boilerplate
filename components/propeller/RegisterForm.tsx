@@ -331,11 +331,11 @@ function RegisterForm(props: RegisterFormProps) {
     }
   }
   return (
-    <div className="register-form">
+    <div className="propeller-register-form" data-loading={loading ? 'true' : 'false'} data-user-type={selectedUserType}>
       {resolvedTitle() ? (
-        <div className="space-y-1 text-center mb-6">
-          <h2 className="text-2xl font-bold">{resolvedTitle()}</h2>
-          {props.subtitle ? <p className="text-sm text-gray-500">{props.subtitle}</p> : null}
+        <div className="propeller-register-form__header space-y-1 text-center mb-6">
+          <h2 className="propeller-register-form__title text-2xl font-bold">{resolvedTitle()}</h2>
+          {props.subtitle ? <p className="propeller-register-form__subtitle text-sm text-muted-foreground">{props.subtitle}</p> : null}
         </div>
       ) : null}
       {!submitted ? (
@@ -355,7 +355,7 @@ function RegisterForm(props: RegisterFormProps) {
                       'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
                       (selectedUserType === 'Contact'
                         ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-gray-300 hover:bg-gray-50')
+                        : 'border-input hover:bg-surface-hover')
                     }
                   >
                     {contactLabel()}
@@ -369,7 +369,7 @@ function RegisterForm(props: RegisterFormProps) {
                       'flex-1 h-10 px-4 py-2 text-sm font-medium rounded-md border transition-colors ' +
                       (selectedUserType === 'Customer'
                         ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-gray-300 hover:bg-gray-50')
+                        : 'border-input hover:bg-surface-hover')
                     }
                   >
                     {customerLabel()}
@@ -385,7 +385,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="radio"
                     name="gender"
                     value="M"
-                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                    className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
                     checked={gender === Enums.Gender.M}
                     onChange={(event) => {
                       setGender(Enums.Gender.M);
@@ -399,7 +399,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="radio"
                     name="gender"
                     value="F"
-                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                    className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
                     checked={gender === Enums.Gender.F}
                     onChange={(event) => {
                       setGender(Enums.Gender.F);
@@ -413,7 +413,7 @@ function RegisterForm(props: RegisterFormProps) {
                     type="radio"
                     name="gender"
                     value="U"
-                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                    className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
                     checked={gender === Enums.Gender.U}
                     onChange={(event) => {
                       setGender(Enums.Gender.U);
@@ -427,13 +427,13 @@ function RegisterForm(props: RegisterFormProps) {
             <div className="space-y-2">
               <label htmlFor="register-email" className="text-sm font-medium leading-none">
                 {emailLabel()}
-                <span className="text-red-500 ml-1">*</span>
+                <span className="propeller-register-form__required text-destructive ml-1">*</span>
               </label>
               <input
                 type="email"
                 id="register-email"
                 name="email"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={email}
                 onChange={(e) => {
                   setEmail((e.target as HTMLInputElement).value);
@@ -453,14 +453,14 @@ function RegisterForm(props: RegisterFormProps) {
                     >
                       {vatNumberLabel()}
                       {isFieldRequired('vatNumber') ? (
-                        <span className="text-red-500 ml-1">*</span>
+                        <span className="propeller-register-form__required text-destructive ml-1">*</span>
                       ) : null}
                     </label>
                     <input
                       type="text"
                       id="register-vatNumber"
                       name="vatNumber"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={vatNumber}
                       onChange={(e) => {
                         setVatNumber((e.target as HTMLInputElement).value);
@@ -476,14 +476,14 @@ function RegisterForm(props: RegisterFormProps) {
                     >
                       {cocNumberLabel()}
                       {isFieldRequired('cocNumber') ? (
-                        <span className="text-red-500 ml-1">*</span>
+                        <span className="propeller-register-form__required text-destructive ml-1">*</span>
                       ) : null}
                     </label>
                     <input
                       type="text"
                       id="register-cocNumber"
                       name="cocNumber"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={cocNumber}
                       onChange={(e) => {
                         setCocNumber((e.target as HTMLInputElement).value);
@@ -500,14 +500,14 @@ function RegisterForm(props: RegisterFormProps) {
                   >
                     {companyNameLabel()}
                     {isFieldRequired('companyName') ? (
-                      <span className="text-red-500 ml-1">*</span>
+                      <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     ) : null}
                   </label>
                   <input
                     type="text"
                     id="register-companyName"
                     name="companyName"
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                    className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     value={companyName}
                     onChange={(e) => {
                       setCompanyName((e.target as HTMLInputElement).value);
@@ -522,13 +522,13 @@ function RegisterForm(props: RegisterFormProps) {
               <div className="space-y-2">
                 <label htmlFor="register-firstName" className="text-sm font-medium leading-none">
                   {firstNameLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   id="register-firstName"
                   name="firstName"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={firstName}
                   onChange={(e) => {
                     setFirstName((e.target as HTMLInputElement).value);
@@ -545,7 +545,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-middleName"
                   name="middleName"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={middleName}
                   onChange={(e) => {
                     setMiddleName((e.target as HTMLInputElement).value);
@@ -558,13 +558,13 @@ function RegisterForm(props: RegisterFormProps) {
               <div className="space-y-2">
                 <label htmlFor="register-lastName" className="text-sm font-medium leading-none">
                   {lastNameLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   id="register-lastName"
                   name="lastName"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={lastName}
                   onChange={(e) => {
                     setLastName((e.target as HTMLInputElement).value);
@@ -576,13 +576,13 @@ function RegisterForm(props: RegisterFormProps) {
               <div className="space-y-2">
                 <label htmlFor="register-phone" className="text-sm font-medium leading-none">
                   {phoneLabel()}
-                  {isFieldRequired('phone') ? <span className="text-red-500 ml-1">*</span> : null}
+                  {isFieldRequired('phone') ? <span className="propeller-register-form__required text-destructive ml-1">*</span> : null}
                 </label>
                 <input
                   type="tel"
                   id="register-phone"
                   name="phone"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={phone}
                   onChange={(e) => {
                     setPhone((e.target as HTMLInputElement).value);
@@ -602,13 +602,13 @@ function RegisterForm(props: RegisterFormProps) {
                   className="text-sm font-medium leading-none"
                 >
                   {postalCodeLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   id="register-billingPostalCode"
                   name="billingPostalCode"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingPostalCode}
                   onChange={(e) => {
                     setBillingPostalCode((e.target as HTMLInputElement).value);
@@ -623,13 +623,13 @@ function RegisterForm(props: RegisterFormProps) {
                   className="text-sm font-medium leading-none"
                 >
                   {streetLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   id="register-billingStreet"
                   name="billingStreet"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingStreet}
                   onChange={(e) => {
                     setBillingStreet((e.target as HTMLInputElement).value);
@@ -646,13 +646,13 @@ function RegisterForm(props: RegisterFormProps) {
                   className="text-sm font-medium leading-none"
                 >
                   {numberLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   id="register-billingNumber"
                   name="billingNumber"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingNumber}
                   onChange={(e) => {
                     setBillingNumber((e.target as HTMLInputElement).value);
@@ -672,7 +672,7 @@ function RegisterForm(props: RegisterFormProps) {
                   type="text"
                   id="register-billingNumberExtension"
                   name="billingNumberExtension"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingNumberExtension}
                   onChange={(e) => {
                     setBillingNumberExtension((e.target as HTMLInputElement).value);
@@ -685,13 +685,13 @@ function RegisterForm(props: RegisterFormProps) {
               <div className="space-y-2">
                 <label htmlFor="register-billingCity" className="text-sm font-medium leading-none">
                   {cityLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   id="register-billingCity"
                   name="billingCity"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingCity}
                   onChange={(e) => {
                     setBillingCity((e.target as HTMLInputElement).value);
@@ -706,12 +706,12 @@ function RegisterForm(props: RegisterFormProps) {
                   className="text-sm font-medium leading-none"
                 >
                   {countryLabel()}
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <select
                   id="register-billingCountry"
                   name="billingCountry"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                   value={billingCountry}
                   onChange={(e) => {
                     setBillingCountry((e.target as HTMLSelectElement).value);
@@ -736,7 +736,7 @@ function RegisterForm(props: RegisterFormProps) {
                 type="checkbox"
                 id="register-sameAsDelivery"
                 name="sameAsDelivery"
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="propeller-register-form__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
                 checked={sameAsDelivery}
                 onChange={(e) => {
                   setSameAsDelivery((e.target as HTMLInputElement).checked);
@@ -756,13 +756,13 @@ function RegisterForm(props: RegisterFormProps) {
                       className="text-sm font-medium leading-none"
                     >
                       {postalCodeLabel()}
-                      <span className="text-red-500 ml-1">*</span>
+                      <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
                       type="text"
                       id="register-deliveryPostalCode"
                       name="deliveryPostalCode"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryPostalCode}
                       onChange={(e) => {
                         setDeliveryPostalCode((e.target as HTMLInputElement).value);
@@ -777,13 +777,13 @@ function RegisterForm(props: RegisterFormProps) {
                       className="text-sm font-medium leading-none"
                     >
                       {streetLabel()}
-                      <span className="text-red-500 ml-1">*</span>
+                      <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
                       type="text"
                       id="register-deliveryStreet"
                       name="deliveryStreet"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryStreet}
                       onChange={(e) => {
                         setDeliveryStreet((e.target as HTMLInputElement).value);
@@ -800,13 +800,13 @@ function RegisterForm(props: RegisterFormProps) {
                       className="text-sm font-medium leading-none"
                     >
                       {numberLabel()}
-                      <span className="text-red-500 ml-1">*</span>
+                      <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
                       type="text"
                       id="register-deliveryNumber"
                       name="deliveryNumber"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryNumber}
                       onChange={(e) => {
                         setDeliveryNumber((e.target as HTMLInputElement).value);
@@ -826,7 +826,7 @@ function RegisterForm(props: RegisterFormProps) {
                       type="text"
                       id="register-deliveryNumberExtension"
                       name="deliveryNumberExtension"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryNumberExtension}
                       onChange={(e) => {
                         setDeliveryNumberExtension((e.target as HTMLInputElement).value);
@@ -842,13 +842,13 @@ function RegisterForm(props: RegisterFormProps) {
                       className="text-sm font-medium leading-none"
                     >
                       {cityLabel()}
-                      <span className="text-red-500 ml-1">*</span>
+                      <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
                       type="text"
                       id="register-deliveryCity"
                       name="deliveryCity"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryCity}
                       onChange={(e) => {
                         setDeliveryCity((e.target as HTMLInputElement).value);
@@ -863,12 +863,12 @@ function RegisterForm(props: RegisterFormProps) {
                       className="text-sm font-medium leading-none"
                     >
                       {countryLabel()}
-                      <span className="text-red-500 ml-1">*</span>
+                      <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <select
                       id="register-deliveryCountry"
                       name="deliveryCountry"
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                       value={deliveryCountry}
                       onChange={(e) => {
                         setDeliveryCountry((e.target as HTMLSelectElement).value);
@@ -893,13 +893,13 @@ function RegisterForm(props: RegisterFormProps) {
             <div className="space-y-2">
               <label htmlFor="register-password" className="text-sm font-medium leading-none">
                 {passwordLabel()}
-                <span className="text-red-500 ml-1">*</span>
+                <span className="propeller-register-form__required text-destructive ml-1">*</span>
               </label>
               <input
                 type="password"
                 id="register-password"
                 name="password"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={password}
                 onChange={(e) => {
                   setPassword((e.target as HTMLInputElement).value);
@@ -915,13 +915,13 @@ function RegisterForm(props: RegisterFormProps) {
                 className="text-sm font-medium leading-none"
               >
                 {confirmPasswordLabel()}
-                <span className="text-red-500 ml-1">*</span>
+                <span className="propeller-register-form__required text-destructive ml-1">*</span>
               </label>
               <input
                 type="password"
                 id="register-confirmPassword"
                 name="confirmPassword"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                className="propeller-register-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword((e.target as HTMLInputElement).value);
@@ -933,11 +933,11 @@ function RegisterForm(props: RegisterFormProps) {
             </div>
           </div>
           {error ? (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>
+            <div className="propeller-register-form__error text-sm text-destructive bg-destructive/10 p-3 rounded-control">{error}</div>
           ) : null}
           <button
             type="submit"
-            className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="propeller-register-form__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-control hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
             {loading ? (
@@ -945,7 +945,7 @@ function RegisterForm(props: RegisterFormProps) {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                className="propeller-register-form__spinner animate-spin -ml-1 mr-2 h-4 w-4 text-primary-foreground"
               >
                 <circle
                   cx="12"
@@ -975,7 +975,7 @@ function RegisterForm(props: RegisterFormProps) {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth="2"
-              className="h-12 w-12 text-green-500"
+              className="propeller-register-form__success-icon h-12 w-12 text-success"
             >
               <path
                 strokeLinecap="round"
@@ -984,13 +984,13 @@ function RegisterForm(props: RegisterFormProps) {
               />
             </svg>
           </div>
-          <p className="text-sm text-gray-600">Your account has been created successfully.</p>
+          <p className="propeller-register-form__success-message text-sm text-muted-foreground">Your account has been created successfully.</p>
         </div>
       ) : null}
       {showLoginLink() && !submitted ? (
         <div className="mt-6 border-t pt-6">
           <div className="text-center">
-            <p className="text-sm text-gray-500 mb-2">{loginText()}</p>
+            <p className="propeller-register-form__login-prompt text-sm text-muted-foreground mb-2">{loginText()}</p>
             <button
               type="button"
               className="text-sm text-primary hover:underline"

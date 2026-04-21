@@ -138,74 +138,75 @@ function UserDetails(props: UserDetailsProps) {
     setIsMounted(true);
   }, []);
   return (
-    <div className="user-details space-y-6">
+    <div className="propeller-user-details space-y-6">
       {isMounted ? (
         <>
-          <div className="user-details__personal rounded-lg bg-card text-card-foreground shadow-sm">
-            <div className="p-6 pb-2">
-              <h3 className="text-lg font-semibold">Personal Information</h3>
+          <div className="propeller-user-details__section propeller-user-details__section--personal rounded-container bg-card text-card-foreground shadow-sm">
+            <div className="propeller-user-details__section-header p-6 pb-2">
+              <h3 className="propeller-user-details__section-title text-lg font-semibold">Personal Information</h3>
             </div>
-            <div className="p-6 pt-2 space-y-4">
-              <div className="grid grid-cols-1 gap-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="propeller-user-details__section-body p-6 pt-2 space-y-4">
+              <div className="propeller-user-details__field grid grid-cols-1 gap-1">
+                <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Name
                 </label>
-                <div className="font-medium">{getName()}</div>
+                <div className="propeller-user-details__field-value font-medium">{getName()}</div>
               </div>
-              <div className="grid grid-cols-1 gap-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <div className="propeller-user-details__field grid grid-cols-1 gap-1">
+                <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Email
                 </label>
-                <div className="font-medium">{props.user.email}</div>
+                <div className="propeller-user-details__field-value font-medium">{props.user.email}</div>
               </div>
             </div>
           </div>
           {shouldShowCompanyInfo() && getActiveCompany() ? (
-            <div className="user-details__company rounded-lg bg-card text-card-foreground shadow-sm">
-              <div className="p-6 pb-2">
-                <h3 className="text-lg font-semibold">Company Information</h3>
+            <div className="propeller-user-details__section propeller-user-details__section--company rounded-container bg-card text-card-foreground shadow-sm">
+              <div className="propeller-user-details__section-header p-6 pb-2">
+                <h3 className="propeller-user-details__section-title text-lg font-semibold">Company Information</h3>
               </div>
-              <div className="p-6 pt-2 space-y-4">
-                <div className="grid grid-cols-1 gap-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <div className="propeller-user-details__section-body p-6 pt-2 space-y-4">
+                <div className="propeller-user-details__field grid grid-cols-1 gap-1">
+                  <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Company Name
                   </label>
-                  <div className="font-medium">{getActiveCompany()?.name}</div>
+                  <div className="propeller-user-details__field-value font-medium">{getActiveCompany()?.name}</div>
                 </div>
                 {getActiveCompany()?.taxNumber ? (
-                  <div className="grid grid-cols-1 gap-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <div className="propeller-user-details__field grid grid-cols-1 gap-1">
+                    <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       Tax Number
                     </label>
-                    <div className="font-medium">{getActiveCompany()?.taxNumber}</div>
+                    <div className="propeller-user-details__field-value font-medium">{getActiveCompany()?.taxNumber}</div>
                   </div>
                 ) : null}
                 {getActiveCompany()?.cocNumber ? (
-                  <div className="grid grid-cols-1 gap-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <div className="propeller-user-details__field grid grid-cols-1 gap-1">
+                    <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       CoC Number
                     </label>
-                    <div className="font-medium">{getActiveCompany()?.cocNumber}</div>
+                    <div className="propeller-user-details__field-value font-medium">{getActiveCompany()?.cocNumber}</div>
                   </div>
                 ) : null}
               </div>
             </div>
           ) : null}
           {shouldListCompanies() && getCompanies().length > 0 ? (
-            <div className="user-details__companies rounded-lg bg-card text-card-foreground shadow-sm">
-              <div className="p-6 pb-2">
-                <h3 className="text-lg font-semibold">Companies</h3>
+            <div className="propeller-user-details__section propeller-user-details__section--companies rounded-container bg-card text-card-foreground shadow-sm">
+              <div className="propeller-user-details__section-header p-6 pb-2">
+                <h3 className="propeller-user-details__section-title text-lg font-semibold">Companies</h3>
               </div>
-              <div className="p-6 pt-2">
-                <ul className="space-y-2">
+              <div className="propeller-user-details__section-body p-6 pt-2">
+                <ul className="propeller-user-details__companies space-y-2">
                   {getCompanies()?.map((company) => (
                     <li
                       key={String(company.companyId)}
-                      className={`flex items-center gap-2 py-2 px-3 rounded-md ${getActiveCompany()?.companyId === company.companyId ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground'}`}
+                      data-active={getActiveCompany()?.companyId === company.companyId ? 'true' : 'false'}
+                      className={`propeller-user-details__company flex items-center gap-2 py-2 px-3 rounded-control ${getActiveCompany()?.companyId === company.companyId ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground'}`}
                     >
-                      <span className="truncate">{company.name}</span>
+                      <span className="propeller-user-details__company-name truncate">{company.name}</span>
                       {getActiveCompany()?.companyId === company.companyId ? (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                        <span className="propeller-user-details__company-badge text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
                           Active
                         </span>
                       ) : null}
@@ -216,75 +217,75 @@ function UserDetails(props: UserDetailsProps) {
             </div>
           ) : null}
           {shouldShowInvoiceAddress() || shouldShowDeliveryAddress() ? (
-            <div className="user-details__addresses rounded-lg bg-card text-card-foreground shadow-sm">
-              <div className="p-6 pb-2">
-                <h3 className="text-lg font-semibold">Default Addresses</h3>
+            <div className="propeller-user-details__section propeller-user-details__section--addresses rounded-container bg-card text-card-foreground shadow-sm">
+              <div className="propeller-user-details__section-header p-6 pb-2">
+                <h3 className="propeller-user-details__section-title text-lg font-semibold">Default Addresses</h3>
               </div>
-              <div className="p-6 pt-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="propeller-user-details__section-body p-6 pt-2">
+                <div className="propeller-user-details__addresses grid grid-cols-1 md:grid-cols-2 gap-6">
                   {shouldShowInvoiceAddress() ? (
-                    <div className="space-y-3">
-                      <h4 className="text-base font-bold">Invoice Address</h4>
+                    <div className="propeller-user-details__address-group space-y-3" data-address="invoice">
+                      <h4 className="propeller-user-details__address-title text-base font-bold">Invoice Address</h4>
                       {getDefaultInvoiceAddress() ? (
-                        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <div className="propeller-user-details__address-card bg-card p-4 rounded-container shadow-sm border border-border">
                           {getDefaultInvoiceAddress()?.company ? (
-                            <div className="font-bold text-lg mb-1">
+                            <div className="propeller-user-details__address-company font-bold text-lg mb-1">
                               {getDefaultInvoiceAddress()?.company}
                             </div>
                           ) : null}
                           {getAddressName(getDefaultInvoiceAddress()!) ? (
-                            <div className="font-medium mb-1">
+                            <div className="propeller-user-details__address-name font-medium mb-1">
                               {getAddressName(getDefaultInvoiceAddress()!)}
                             </div>
                           ) : null}
-                          <div className="text-gray-600">
+                          <div className="propeller-user-details__address-line text-muted-foreground">
                             {getAddressLine1(getDefaultInvoiceAddress()!)}
                           </div>
-                          <div className="text-gray-600">
+                          <div className="propeller-user-details__address-line text-muted-foreground">
                             {getAddressLine2(getDefaultInvoiceAddress()!)}
                           </div>
                           {getDefaultInvoiceAddress()?.country ? (
-                            <div className="text-gray-600">
+                            <div className="propeller-user-details__address-country text-muted-foreground">
                               {getCountryName(getDefaultInvoiceAddress()?.country || '')}
                             </div>
                           ) : null}
                         </div>
                       ) : null}
                       {!getDefaultInvoiceAddress() ? (
-                        <p className="text-gray-500 italic">No invoice address found</p>
+                        <p className="propeller-user-details__address-empty text-muted-foreground italic">No invoice address found</p>
                       ) : null}
                     </div>
                   ) : null}
                   {shouldShowDeliveryAddress() ? (
-                    <div className="space-y-3">
-                      <h4 className="text-base font-bold">Delivery Address</h4>
+                    <div className="propeller-user-details__address-group space-y-3" data-address="delivery">
+                      <h4 className="propeller-user-details__address-title text-base font-bold">Delivery Address</h4>
                       {getDefaultDeliveryAddress() ? (
-                        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <div className="propeller-user-details__address-card bg-card p-4 rounded-container shadow-sm border border-border">
                           {getDefaultDeliveryAddress()?.company ? (
-                            <div className="font-bold text-lg mb-1">
+                            <div className="propeller-user-details__address-company font-bold text-lg mb-1">
                               {getDefaultDeliveryAddress()?.company}
                             </div>
                           ) : null}
                           {getAddressName(getDefaultDeliveryAddress()!) ? (
-                            <div className="font-medium mb-1">
+                            <div className="propeller-user-details__address-name font-medium mb-1">
                               {getAddressName(getDefaultDeliveryAddress()!)}
                             </div>
                           ) : null}
-                          <div className="text-gray-600">
+                          <div className="propeller-user-details__address-line text-muted-foreground">
                             {getAddressLine1(getDefaultDeliveryAddress()!)}
                           </div>
-                          <div className="text-gray-600">
+                          <div className="propeller-user-details__address-line text-muted-foreground">
                             {getAddressLine2(getDefaultDeliveryAddress()!)}
                           </div>
                           {getDefaultDeliveryAddress()?.country ? (
-                            <div className="text-gray-600">
+                            <div className="propeller-user-details__address-country text-muted-foreground">
                               {getCountryName(getDefaultDeliveryAddress()?.country || '')}
                             </div>
                           ) : null}
                         </div>
                       ) : null}
                       {!getDefaultDeliveryAddress() ? (
-                        <p className="text-gray-500 italic">No delivery address found</p>
+                        <p className="propeller-user-details__address-empty text-muted-foreground italic">No delivery address found</p>
                       ) : null}
                     </div>
                   ) : null}

@@ -199,23 +199,27 @@ function LoginForm(props: LoginFormProps) {
     }
   }
   return (
-    <div className="login-form">
+    <div
+      className="propeller-login-form"
+      data-loading={isLoading() ? 'true' : 'false'}
+      data-variant={props.accountHeaderLoginForm ? 'compact' : 'full'}
+    >
       {resolvedTitle() ? (
-        <div className="space-y-1 text-center mb-6">
-          <h2 className="text-2xl font-bold">{resolvedTitle()}</h2>
-          {props.subtitle ? <p className="text-sm text-gray-500">{props.subtitle}</p> : null}
+        <div className="propeller-login-form__header space-y-1 text-center mb-6">
+          <h2 className="propeller-login-form__title text-2xl font-bold">{resolvedTitle()}</h2>
+          {props.subtitle ? <p className="propeller-login-form__subtitle text-sm text-muted-foreground">{props.subtitle}</p> : null}
         </div>
       ) : null}
-      <form className="space-y-4" onSubmit={(e) => handleSubmit(e)}>
-        <div className="space-y-2">
-          <label htmlFor="login-email" className="text-sm font-medium leading-none">
+      <form className="propeller-login-form__form space-y-4" onSubmit={(e) => handleSubmit(e)}>
+        <div className="propeller-login-form__field space-y-2">
+          <label htmlFor="login-email" className="propeller-login-form__label text-sm font-medium leading-none">
             {emailLabel()}
           </label>
           <input
             type="email"
             id="login-email"
             name="email"
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+            className="propeller-login-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
             value={email}
             onChange={(e) => {
               setEmail((e.target as HTMLInputElement).value);
@@ -225,15 +229,15 @@ function LoginForm(props: LoginFormProps) {
             disabled={isLoading()}
           />
         </div>
-        <div className="space-y-2">
+        <div className="propeller-login-form__field space-y-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="login-password" className="text-sm font-medium leading-none">
+            <label htmlFor="login-password" className="propeller-login-form__label text-sm font-medium leading-none">
               {passwordLabel()}
             </label>
             {showForgotPassword() && !props.accountHeaderLoginForm ? (
               <button
                 type="button"
-                className="text-sm text-primary hover:underline"
+                className="propeller-login-form__forgot-link text-sm text-primary hover:underline"
                 onClick={(event) => {
                   if (props.onForgotPasswordClick) props.onForgotPasswordClick();
                 }}
@@ -246,7 +250,7 @@ function LoginForm(props: LoginFormProps) {
             type="password"
             id="login-password"
             name="password"
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+            className="propeller-login-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
             value={password}
             onChange={(e) => {
               setPassword((e.target as HTMLInputElement).value);
@@ -257,11 +261,11 @@ function LoginForm(props: LoginFormProps) {
           />
         </div>
         {errorMessage() ? (
-          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{errorMessage()}</div>
+          <div className="propeller-login-form__error text-sm text-destructive bg-destructive/10 p-3 rounded-control">{errorMessage()}</div>
         ) : null}
         <button
           type="submit"
-          className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="propeller-login-form__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-control hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading()}
         >
           {isLoading() ? (
@@ -269,7 +273,7 @@ function LoginForm(props: LoginFormProps) {
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              className="propeller-login-form__spinner animate-spin -ml-1 mr-2 h-4 w-4 text-primary-foreground"
             >
               <circle
                 cx="12"
@@ -290,13 +294,13 @@ function LoginForm(props: LoginFormProps) {
         </button>
       </form>
       {(showRegister() || showGuestCheckout()) && !props.accountHeaderLoginForm ? (
-        <div className="mt-6 border-t pt-6 space-y-3">
+        <div className="propeller-login-form__footer mt-6 border-t border-border pt-6 space-y-3">
           {showRegister() ? (
-            <div className="text-center">
-              <p className="text-sm text-gray-500 mb-2">{registerText()}</p>
+            <div className="propeller-login-form__register text-center">
+              <p className="propeller-login-form__register-prompt text-sm text-muted-foreground mb-2">{registerText()}</p>
               <button
                 type="button"
-                className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="propeller-login-form__register-btn inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-border rounded-control hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 onClick={(event) => {
                   if (props.onRegisterClick) props.onRegisterClick();
                 }}
@@ -306,10 +310,10 @@ function LoginForm(props: LoginFormProps) {
             </div>
           ) : null}
           {showGuestCheckout() ? (
-            <div className="text-center">
+            <div className="propeller-login-form__guest text-center">
               <button
                 type="button"
-                className="text-sm text-primary hover:underline"
+                className="propeller-login-form__guest-btn text-sm text-primary hover:underline"
                 onClick={(event) => {
                   if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
                 }}
@@ -321,21 +325,21 @@ function LoginForm(props: LoginFormProps) {
         </div>
       ) : null}
       {props.accountHeaderLoginForm ? (
-        <div className="flex flex-col gap-2 text-sm pt-3 text-center">
+        <div className="propeller-login-form__footer flex flex-col gap-2 text-sm pt-3 text-center">
           <button
             type="button"
-            className="text-secondary hover:underline text-xs"
+            className="propeller-login-form__forgot-link text-secondary hover:underline text-xs"
             onClick={(event) => {
               if (props.onForgotPasswordClick) props.onForgotPasswordClick();
             }}
           >
             {getLabel('forgotPassword', 'Forgot Password?')}
           </button>
-          <div className="text-xs text-gray-500">
+          <div className="propeller-login-form__register text-xs text-muted-foreground">
             {getLabel('noAccount', "Don't have an account?")}
             <button
               type="button"
-              className="text-secondary hover:underline font-medium"
+              className="propeller-login-form__register-btn text-secondary hover:underline font-medium"
               onClick={(event) => {
                 if (props.onRegisterClick) props.onRegisterClick();
               }}

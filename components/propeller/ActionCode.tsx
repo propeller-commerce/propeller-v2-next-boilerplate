@@ -118,7 +118,7 @@ function ActionCode(props: ActionCodeProps) {
   }, []);
 
   return (
-    <div className="w-full bg-white p-6 rounded-lg shadow space-y-3">
+    <div className="propeller-action-code w-full bg-card p-6 rounded-container shadow space-y-3">
       <h2 className="text-lg font-bold">{title()}</h2>
       {isMounted ? (
         <>
@@ -156,7 +156,7 @@ function ActionCode(props: ActionCodeProps) {
             <div className="flex gap-2">
               <input
                 type="text"
-                className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent disabled:opacity-50"
+                className="propeller-action-code__input flex-1 text-sm border border-input rounded-control px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent disabled:opacity-50"
                 value={code}
                 onChange={(e) => {
                   setCode(e.target.value);
@@ -167,7 +167,7 @@ function ActionCode(props: ActionCodeProps) {
               />
               <button
                 type="button"
-                className="bg-secondary text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="propeller-action-code__submit bg-secondary text-secondary-foreground text-sm font-medium px-4 py-2 rounded-control hover:bg-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 onClick={(event) => handleApply()}
                 disabled={loading || !code.trim()}
               >
@@ -176,7 +176,7 @@ function ActionCode(props: ActionCodeProps) {
               </button>
             </div>
           ) : null}
-          {!!error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {!!error ? <p className="propeller-action-code__error text-sm text-destructive">{error}</p> : null}
         </>
       ) : null}
     </div>

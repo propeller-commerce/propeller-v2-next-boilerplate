@@ -265,23 +265,25 @@ function GridFilters(props: GridFiltersProps) {
   }, [props.isLoading]);
   return (
     <div
-      className={`space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${isPending ? 'opacity-50 pointer-events-none' : ''} ${(props.className as string) || ''}`}
+      className={`propeller-grid-filters space-y-4 ${(props.isMobile as boolean) ? 'pb-8' : 'sticky top-24'} ${isPending ? 'opacity-50 pointer-events-none' : ''} ${(props.className as string) || ''}`}
+      data-mobile={props.isMobile ? 'true' : 'false'}
+      data-pending={isPending ? 'true' : 'false'}
     >
       {showPriceFilter() && (props.priceMin !== undefined || props.priceMax !== undefined) ? (
         <>
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div className="propeller-grid-filters__price space-y-3">
+            <h3 className="propeller-grid-filters__price-title text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {' '}
               Price Range{' '}
             </h3>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                <span className="propeller-grid-filters__price-currency absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground-subtle pointer-events-none">
                   €
                 </span>
                 <input
                   type="number"
-                  className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="propeller-grid-filters__price-input w-full pl-6 pr-2 h-8 rounded-control border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
                   value={currentMin}
                   min={getMinBound()}
                   max={getMaxBound()}
@@ -289,14 +291,14 @@ function GridFilters(props: GridFiltersProps) {
                   onBlur={(event) => applyPrice()}
                 />
               </div>
-              <span className="text-gray-400 text-sm select-none">–</span>
+              <span className="propeller-grid-filters__price-separator text-foreground-subtle text-sm select-none">–</span>
               <div className="relative flex-1">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                <span className="propeller-grid-filters__price-currency absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground-subtle pointer-events-none">
                   €
                 </span>
                 <input
                   type="number"
-                  className="w-full pl-6 pr-2 h-8 rounded-md border border-gray-200 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="propeller-grid-filters__price-input w-full pl-6 pr-2 h-8 rounded-control border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-secondary"
                   value={currentMax}
                   min={getMinBound()}
                   max={getMaxBound()}
@@ -305,10 +307,10 @@ function GridFilters(props: GridFiltersProps) {
                 />
               </div>
             </div>
-            <div className="relative h-4 pt-1">
+            <div className="propeller-grid-filters__price-slider relative h-4 pt-1">
               <input
                 type="range"
-                className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
+                className="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
                 min={getMinBound()}
                 max={getMaxBound()}
                 value={currentMin}
@@ -318,7 +320,7 @@ function GridFilters(props: GridFiltersProps) {
               />
               <input
                 type="range"
-                className="absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
+                className="propeller-grid-filters__price-slider-thumb absolute w-full h-1.5 bg-transparent appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-secondary [&::-webkit-slider-thumb]:cursor-pointer z-20"
                 min={getMinBound()}
                 max={getMaxBound()}
                 value={currentMax}
@@ -326,30 +328,30 @@ function GridFilters(props: GridFiltersProps) {
                 onPointerUp={() => applyPrice()}
                 onTouchEnd={() => applyPrice()}
               />
-              <div className="absolute top-1.5 left-0 right-0 h-1.5 bg-gray-200 rounded z-10" />
+              <div className="propeller-grid-filters__price-slider-track absolute top-1.5 left-0 right-0 h-1.5 bg-border rounded z-10" />
             </div>
           </div>{' '}
-          <div className="h-px bg-gray-100" />
+          <div className="propeller-grid-filters__divider h-px bg-border-subtle" />
         </>
       ) : null}
       {(props.filters as AttributeFilter[]).length === 0 ? (
-        <p className="text-sm text-gray-400 italic">No filters available</p>
+        <p className="propeller-grid-filters__empty text-sm text-foreground-subtle italic">No filters available</p>
       ) : null}
       {getFilteredFilters()?.map((filter) => (
-        <div className="border-b border-gray-100 pb-3 last:border-b-0" key={getFilterName(filter)}>
+        <div className="propeller-grid-filters__group border-b border-border-subtle pb-3 last:border-b-0" key={getFilterName(filter)} data-expanded={isExpanded(getFilterName(filter)) ? 'true' : 'false'}>
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
+            className="propeller-grid-filters__group-toggle w-full flex items-center justify-between gap-2 text-left py-1 hover:text-secondary transition-colors"
             onClick={(event) => toggleAccordion(getFilterName(filter))}
           >
-            <span className="text-sm font-semibold text-gray-700 truncate">
+            <span className="propeller-grid-filters__group-title text-sm font-semibold text-muted-foreground truncate">
               {getFilterTitle(filter)}
             </span>
             <svg
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-200 ${isExpanded(getFilterName(filter)) ? 'rotate-180' : ''}`}
+              className={`propeller-grid-filters__chevron h-4 w-4 flex-shrink-0 text-foreground-subtle transition-transform duration-200 ${isExpanded(getFilterName(filter)) ? 'rotate-180' : ''}`}
             >
               <path
                 strokeLinecap="round"
@@ -360,18 +362,18 @@ function GridFilters(props: GridFiltersProps) {
             </svg>
           </button>
           {isExpanded(getFilterName(filter)) ? (
-            <div className="pt-2 space-y-1.5">
+            <div className="propeller-grid-filters__options pt-2 space-y-1.5">
               {getValidOptions(filter)?.map((option) => (
-                <label className="flex items-center gap-2 cursor-pointer group" key={option.value}>
+                <label className="propeller-grid-filters__option flex items-center gap-2 cursor-pointer group" key={option.value}>
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
+                    className="propeller-grid-filters__checkbox h-4 w-4 rounded border-input text-secondary focus:ring-secondary cursor-pointer flex-shrink-0"
                     checked={isSelected(getFilterName(filter), option.value)}
                     onChange={(e) => handleCheckbox(filter, option.value, e.target.checked)}
                   />
-                  <span className="flex-1 text-sm text-gray-600 leading-none select-none group-hover:text-gray-900">
+                  <span className="propeller-grid-filters__option-label flex-1 text-sm text-muted-foreground leading-none select-none group-hover:text-foreground">
                     {option.value}
-                    <span className="ml-1 text-xs text-gray-400"> ({getCount(option)}) </span>
+                    <span className="propeller-grid-filters__option-count ml-1 text-xs text-foreground-subtle"> ({getCount(option)}) </span>
                   </span>
                 </label>
               ))}

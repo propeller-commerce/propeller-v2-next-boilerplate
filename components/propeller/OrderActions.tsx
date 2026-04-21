@@ -113,11 +113,11 @@ function OrderActions(props: OrderActionsProps) {
   }
 
   return (
-    <div className={props.className}>
-      <div className="flex flex-row items-center gap-3 flex-shrink-0">
+    <div className={`propeller-order-actions ${props.className || ''}`}>
+      <div className="propeller-order-actions__actions flex flex-row items-center gap-3 flex-shrink-0">
         <button
           type="button"
-          className="text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+          className="propeller-order-actions__pdf-btn text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={(event) => handleDownloadPDF()}
           disabled={downloading}
         >
@@ -126,7 +126,7 @@ function OrderActions(props: OrderActionsProps) {
         </button>
         <button
           type="button"
-          className="text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+          className="propeller-order-actions__reorder-btn text-primary hover:text-primary/80 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={(event) => handleReorder()}
           disabled={reordering}
         >
@@ -136,10 +136,11 @@ function OrderActions(props: OrderActionsProps) {
       </div>
       {toastVisible ? (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-lg shadow-lg p-4 ${toastType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+          className={`propeller-order-actions__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${toastType === 'success' ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}
+          data-toast-type={toastType}
         >
           <div
-            className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-green-500' : 'text-red-500'}`}
+            className={`propeller-order-actions__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
           >
             {toastType === 'success' ? (
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -157,14 +158,14 @@ function OrderActions(props: OrderActionsProps) {
             ) : null}
           </div>
           <p
-            className={`flex-1 text-sm font-medium ${toastType === 'success' ? 'text-green-800' : 'text-red-800'}`}
+            className={`propeller-order-actions__toast-message flex-1 text-sm font-medium ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
           >
             {toastMessage}
           </p>
           <button
             type="button"
             onClick={(event) => dismissToast()}
-            className={`flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+            className={`propeller-order-actions__toast-close flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-success/70 hover:text-success' : 'text-destructive/70 hover:text-destructive'}`}
           >
             <svg
               fill="none"

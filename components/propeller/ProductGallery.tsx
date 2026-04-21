@@ -77,15 +77,15 @@ function ProductGallery(props: ProductGalleryProps) {
     setSelectedIndex((selectedIndex + 1) % len);
   }
   return (
-    <div className={`product-gallery ${(props.className as string) || ''}`}>
-      <div className="relative aspect-square bg-white overflow-hidden">
+    <div className={`propeller-product-gallery ${(props.className as string) || ''}`}>
+      <div className="propeller-product-gallery__stage relative aspect-square bg-card overflow-hidden">
         {getImages().length === 0 ? (
-          <div className="flex h-full w-full items-center justify-center bg-slate-50">
+          <div className="propeller-product-gallery__empty flex h-full w-full items-center justify-center bg-surface-hover">
             <svg
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              className="h-24 w-24 text-slate-200"
+              className="propeller-product-gallery__empty-icon h-24 w-24 text-foreground-subtle"
             >
               <path
                 strokeLinecap="round"
@@ -112,7 +112,7 @@ function ProductGallery(props: ProductGalleryProps) {
               type="button"
               key={index}
               onClick={(event) => selectImage(index)}
-              className={`relative flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all bg-white ${selectedIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-border'}`}
+              className={`propeller-product-gallery__thumbnail relative flex-shrink-0 w-20 h-20 rounded-container border-2 overflow-hidden transition-all bg-card ${selectedIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-border'}`}
             >
               <img
                 className="w-full h-full object-contain p-1"

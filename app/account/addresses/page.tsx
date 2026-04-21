@@ -5,13 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
 import AddressCard from '@/components/propeller/AddressCard';
-import { Address, AddressService, Contact, Customer, Company, CompanyAddressCreateInput, CustomerAddressCreateInput } from 'propeller-sdk-v2';
+import { Address, Contact, Customer, Company } from 'propeller-sdk-v2';
 import { Enums } from 'propeller-sdk-v2';
-import { CompanyAddressUpdateInput } from 'propeller-sdk-v2';
-import { CustomerAddressUpdateInput } from 'propeller-sdk-v2';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { ShieldCheck, Truck, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { useAddress, type AddressInput } from '@/composables/react/useAddress';
 
 const COUNTRIES = [
   { code: 'NL', name: 'Netherlands' },
@@ -28,24 +27,15 @@ export default function AddressesPage() {
   const [addModalType, setAddModalType] = useState<Enums.AddressType>(Enums.AddressType.invoice);
   const { selectedCompany } = useCompany();
 
-  // Use authState.user directly instead of storing in local state
   const user = authState.user;
-  // Type guards
-  const isContact = (u: Contact | Customer | null): u is Contact => {
-    return u !== null && 'company' in u;
-  };
 
-  const isCustomer = (u: Contact | Customer | null): u is Customer => {
-    return u !== null && 'customerId' in u;
-  };
+  const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
+  const isCustomer = (u: Contact | Customer | null): u is Customer => u !== null && 'customerId' in u;
 
-  /** Resolve the active company for a Contact user (respects company switcher).
-   *  Always reads from authState.user (source of truth) using selectedCompany only for the ID. */
   const getActiveCompany = (): Company | null => {
     if (!user || !isContact(user)) return null;
     const targetId = selectedCompany?.companyId;
     if (targetId) {
-      // Look up company from user data by ID — authState.user is refreshed after edits
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const companiesRaw = (user as any).companies;
       const items = (companiesRaw?.items ?? companiesRaw) as Company[] | undefined;
@@ -53,23 +43,23 @@ export default function AddressesPage() {
         const found = items.find((c: Company) => c.companyId === targetId);
         if (found) return found;
       }
-      // Check primary company
-      if (user.company?.companyId === targetId) {
-        return user.company as Company;
-      }
+      if (user.company?.companyId === targetId) return user.company as Company;
     }
     return (user.company as Company | undefined) ?? null;
   };
 
+  const resolvedCompanyId = getActiveCompany()?.companyId;
+
+  const { createAddress, updateAddress, deleteAddress, setDefaultAddress } = useAddress({
+    graphqlClient,
+    user,
+    companyId: resolvedCompanyId,
+  });
+
   const getAllAddresses = (): Address[] => {
     if (!user) return [];
-    if (isContact(user)) {
-      const company = getActiveCompany();
-      return company?.addresses || [];
-    }
-    if (isCustomer(user)) {
-      return user.addresses || [];
-    }
+    if (isContact(user)) return getActiveCompany()?.addresses || [];
+    if (isCustomer(user)) return user.addresses || [];
     return [];
   };
 
@@ -77,179 +67,77 @@ export default function AddressesPage() {
     const addresses = getAllAddresses();
     return {
       invoice: addresses.find((addr: Address) => addr.type === Enums.AddressType.invoice && addr.isDefault === Enums.YesNo.Y),
-      delivery: addresses.find((addr: Address) => addr.type === Enums.AddressType.delivery && addr.isDefault === Enums.YesNo.Y)
+      delivery: addresses.find((addr: Address) => addr.type === Enums.AddressType.delivery && addr.isDefault === Enums.YesNo.Y),
     };
   };
 
-  const getBillingAddresses = () => {
-    const addresses = getAllAddresses();
-    return addresses.filter((addr: Address) => addr.type === Enums.AddressType.invoice && addr.isDefault === Enums.YesNo.N);
-  };
+  const getBillingAddresses = () =>
+    getAllAddresses().filter((addr: Address) => addr.type === Enums.AddressType.invoice && addr.isDefault === Enums.YesNo.N);
 
-  const getDeliveryAddresses = () => {
-    const addresses = getAllAddresses();
-    return addresses.filter((addr: Address) => addr.type === Enums.AddressType.delivery && addr.isDefault === Enums.YesNo.N);
-  };
+  const getDeliveryAddresses = () =>
+    getAllAddresses().filter((addr: Address) => addr.type === Enums.AddressType.delivery && addr.isDefault === Enums.YesNo.N);
 
   const handleAddAddress = (type: Enums.AddressType) => {
     setAddModalType(type);
     setShowAddModal(true);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditAddress = async (address: Address) => {
-    if (!user) return;
-
-    try {
-      const addressService = new AddressService(graphqlClient);
-
-      if (isContact(user) && getActiveCompany()) {
-        const updateInput: CompanyAddressUpdateInput = {
-          id: Number(address.id),
-          companyId: getActiveCompany()!.companyId,
-          company: address.company,
-          gender: address.gender,
-          firstName: address.firstName,
-          middleName: address.middleName,
-          lastName: address.lastName,
-          email: address.email,
-          street: address.street,
-          number: address.number,
-          numberExtension: address.numberExtension,
-          postalCode: address.postalCode,
-          city: address.city,
-          country: address.country,
-          notes: address.notes,
-          isDefault: address.isDefault as Enums.YesNo
-        };
-        await addressService.updateCompanyAddress(updateInput);
-      } else if (isCustomer(user)) {
-        const updateInput: CustomerAddressUpdateInput = {
-          id: Number(address.id),
-          customerId: user.customerId,
-          company: address.company,
-          gender: address.gender,
-          firstName: address.firstName,
-          middleName: address.middleName,
-          lastName: address.lastName,
-          email: address.email,
-          street: address.street,
-          number: address.number,
-          numberExtension: address.numberExtension,
-          postalCode: address.postalCode,
-          city: address.city,
-          country: address.country,
-          notes: address.notes,
-          isDefault: address.isDefault as Enums.YesNo
-        };
-        await addressService.updateCustomerAddress(updateInput);
-      }
-
+    const result = await updateAddress(Number(address.id), address as Partial<AddressInput>);
+    if (result.success) {
       await refreshUser();
       toast.success('Address updated successfully');
-    } catch (error) {
-      console.error('Error updating address:', error);
+    } else {
       toast.error('Failed to update address');
     }
   };
 
   const handleDeleteAddress = async (address: Address) => {
-    if (!user) return;
-
-    const addressId = address.id;
-    try {
-      const addressService = new AddressService(graphqlClient);
-
-      if (isContact(user) && getActiveCompany()) {
-        await addressService.deleteCompanyAddress({
-          id: Number(addressId),
-          companyId: getActiveCompany()!.companyId
-        });
-      } else if (isCustomer(user)) {
-        await addressService.deleteCustomerAddress({
-          id: Number(addressId),
-          customerId: user.customerId
-        });
-      }
-
+    const result = await deleteAddress(Number(address.id));
+    if (result.success) {
       await refreshUser();
       toast.success('Address deleted successfully');
-    } catch (error) {
-      console.error('Error deleting address:', error);
+    } else {
       toast.error('Failed to delete address');
     }
   };
 
   const handleSetDefault = async (address: Address) => {
-    if (!user || !address.id) return;
-
-    try {
-      const addressService = new AddressService(graphqlClient);
-      if (isContact(user) && getActiveCompany()) {
-        await addressService.updateCompanyAddress({
-          id: Number(address.id),
-          companyId: getActiveCompany()!.companyId,
-          isDefault: Enums.YesNo.Y
-        });
-      } else if (isCustomer(user)) {
-        await addressService.updateCustomerAddress({
-          id: Number(address.id),
-          customerId: user.customerId,
-          isDefault: Enums.YesNo.Y
-        });
-      }
+    const result = await setDefaultAddress(Number(address.id));
+    if (result.success) {
       await refreshUser();
       toast.success('Address set as default');
-    } catch (error) {
-      console.error('Error setting default address:', error);
+    } else {
       toast.error('Failed to set default address');
     }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSaveNewAddress = async (address: any) => {
-    if (!user) return;
+    const input: AddressInput = {
+      company: address.company || undefined,
+      gender: address.gender || undefined,
+      firstName: address.firstName || undefined,
+      middleName: address.middleName || undefined,
+      lastName: address.lastName || undefined,
+      email: address.email || undefined,
+      street: address.street || '',
+      number: address.number || undefined,
+      numberExtension: address.numberExtension || undefined,
+      postalCode: address.postalCode || '',
+      city: address.city || '',
+      country: address.country || 'NL',
+      notes: address.notes || undefined,
+      isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
+      type: addModalType,
+    };
 
-    try {
-      const addressService = new AddressService(graphqlClient);
-
-      const commonData = {
-        company: address.company || undefined,
-        gender: address.gender || undefined,
-        firstName: address.firstName || undefined,
-        middleName: address.middleName || undefined,
-        lastName: address.lastName || undefined,
-        email: address.email || undefined,
-        street: address.street || '',
-        number: address.number || undefined,
-        numberExtension: address.numberExtension || undefined,
-        postalCode: address.postalCode || '',
-        city: address.city || '',
-        country: address.country || 'NL',
-        notes: address.notes || undefined,
-        isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
-        type: addModalType
-      };
-
-      if (isContact(user) && getActiveCompany()) {
-        const input: CompanyAddressCreateInput = {
-          ...commonData,
-          companyId: getActiveCompany()!.companyId
-        };
-        await addressService.createCompanyAddress(input);
-      } else if (isCustomer(user)) {
-        const input: CustomerAddressCreateInput = {
-          ...commonData,
-          customerId: user.customerId
-        };
-        await addressService.createCustomerAddress(input);
-      }
-
+    const result = await createAddress(input);
+    if (result.success) {
       await refreshUser();
       toast.success('Address created successfully');
       setShowAddModal(false);
-    } catch (error) {
-      console.error('Error creating address:', error);
+    } else {
       toast.error('Failed to create address');
     }
   };
@@ -268,9 +156,7 @@ export default function AddressesPage() {
 
       {/* Default Addresses */}
       <div className="space-y-4 pb-10">
-        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-md">Default Billing Address</h2>
@@ -303,7 +189,6 @@ export default function AddressesPage() {
                 graphqlClient={graphqlClient}
                 address={defaultAddresses.delivery}
                 enableDelete={false}
-
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}

@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
-import { Base64File, Order, OrderItem, OrderService, OrderQueryVariables } from 'propeller-sdk-v2';
+import { Order, OrderItem } from 'propeller-sdk-v2';
+import { useOrders } from '@/composables/react/useOrders';
 import OrderSummary from '@/components/propeller/OrderSummary';
 import QuoteActions from '@/components/propeller/QuoteActions';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
@@ -29,7 +29,6 @@ const COUNTRIES = [
 export default function QuoteDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
-    const { cart: contextCart, getCart } = useCart();
     const { language } = useLanguage();
     const params = useParams();
     const quoteId = params.id as string;
@@ -37,34 +36,23 @@ export default function QuoteDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const { getOrderById, downloadQuotePdf } = useOrders({
+        graphqlClient,
+        user: state.user,
+        language,
+        configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+    });
+
     useEffect(() => {
         const fetchQuoteDetails = async () => {
-            try {
-                setLoading(true);
-                const orderService = new OrderService(graphqlClient);
-
-                const variables: OrderQueryVariables = {
-                    orderId: Number(quoteId),
-                    imageSearchFilters: imageSearchFiltersGrid,
-                    imageVariantFilters: imageVariantFiltersSmall,
-                    language: 'NL'
-                };
-
-                const quoteResponse = await orderService.getOrder(variables);
-
-                if (quoteResponse) {
-                    setQuote(quoteResponse);
-                } else {
-                    console.error('No quote data found in response');
-                    setError('Quote not found');
-                }
-
-            } catch (err) {
-                console.error('Error fetching quote details:', err);
-                setError('Failed to load quote details');
-            } finally {
-                setLoading(false);
+            setLoading(true);
+            const result = await getOrderById(Number(quoteId));
+            if (result.success && result.order) {
+                setQuote(result.order);
+            } else {
+                setError(result.error ?? 'Quote not found');
             }
+            setLoading(false);
         };
 
         if (quoteId) {
@@ -77,69 +65,7 @@ export default function QuoteDetailPage() {
     };
 
     const handleDownloadPDF = async () => {
-        if (!quoteId) {
-            console.error('No quote ID available for PDF download');
-            return;
-        }
-
-        try {
-            const orderService = new OrderService(graphqlClient);
-            const pdfResponse = await orderService.getQuotePDF(Number(quoteId));
-
-            if (pdfResponse) {
-                if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
-                    const response = pdfResponse as Base64File;
-                    const byteCharacters = atob(response.base64);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-
-                    const contentType = response.contentType || 'application/pdf';
-                    const fileName = response.fileName || `quote-${quoteId}.pdf`;
-                    const blob = new Blob([byteArray], { type: contentType });
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
-                } else if (typeof pdfResponse === 'string') {
-                    const byteCharacters = atob(pdfResponse);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-
-                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                    const fileName = `quote-${quoteId}.pdf`;
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                }
-                console.log('PDF download initiated successfully');
-            } else {
-                console.error('Invalid PDF response:', pdfResponse);
-                alert('Failed to download PDF: Invalid response from server');
-            }
-        } catch (error) {
-            console.error('Error downloading PDF:', error);
-            alert('Failed to download PDF. Please try again.');
-        }
+        await downloadQuotePdf(Number(quoteId));
     };
 
     if (!state.isAuthenticated) return null;
@@ -316,4 +242,3 @@ export default function QuoteDetailPage() {
         </div>
     );
 }
-

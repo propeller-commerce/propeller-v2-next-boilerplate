@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
@@ -8,10 +8,10 @@ import { useCart } from '@/context/CartContext';
 import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
-import { OrderService, Order, OrderItem, Company } from 'propeller-sdk-v2';
+import { Order, OrderItem, Company } from 'propeller-sdk-v2';
+import { useOrders } from '@/composables/react/useOrders';
 import OrderSummary from '@/components/propeller/OrderSummary';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import { OrderQueryVariables } from 'propeller-sdk-v2/dist/service/OrderService';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -43,34 +43,24 @@ export default function OrderDetailPage() {
 
     const companyId = (selectedCompany as Company | null)?.companyId;
 
+    const { getOrderById } = useOrders({
+        graphqlClient,
+        user: state.user,
+        companyId,
+        language,
+        configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+    });
+
     useEffect(() => {
         const fetchOrderDetails = async () => {
-            try {
-                setLoading(true);
-                const orderService = new OrderService(graphqlClient);
-
-                const variables: OrderQueryVariables = {
-                    orderId: Number(orderId),
-                    imageSearchFilters: imageSearchFiltersGrid,
-                    imageVariantFilters: imageVariantFiltersSmall,
-                    language: 'NL'
-                };
-
-                const orderResponse = await orderService.getOrder(variables);
-
-                if (orderResponse) {
-                    setOrder(orderResponse);
-                } else {
-                    console.error('No order data found in response');
-                    setError('Order not found');
-                }
-
-            } catch (err) {
-                console.error('Error fetching order details:', err);
-                setError('Failed to load order details');
-            } finally {
-                setLoading(false);
+            setLoading(true);
+            const result = await getOrderById(Number(orderId));
+            if (result.success && result.order) {
+                setOrder(result.order);
+            } else {
+                setError(result.error ?? 'Order not found');
             }
+            setLoading(false);
         };
 
         if (orderId) {
@@ -264,4 +254,3 @@ export default function OrderDetailPage() {
         </div>
     );
 }
-

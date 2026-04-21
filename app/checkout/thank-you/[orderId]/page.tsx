@@ -7,19 +7,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
-import { orderService } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useOrders } from '@/composables/react/useOrders';
+import { graphqlClient } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import OrderSummary from '@/components/propeller/OrderSummary';
-import { OrderItem } from 'propeller-sdk-v2';
+import { Order, OrderItem } from 'propeller-sdk-v2';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
-import OrderTotals from '@/components/propeller/OrderTotals';
-
-interface OrderDetails {
-  orderId: string;
-  order: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  items?: OrderItem[];
-}
 
 function ThankYouPageInner() {
   const params = useParams();
@@ -28,36 +22,27 @@ function ThankYouPageInner() {
   const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
   const { state: authState } = useAuth();
-  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { getOrderById } = useOrders({
+    graphqlClient,
+    user: authState.user,
+    language,
+    configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+  });
+
   const fetchOrderDetails = useCallback(async () => {
     if (!orderId) return;
-
-    try {
-      setLoading(true);
-
-      const variables = {
-        orderId: Number(orderId),
-        imageSearchFilters: imageSearchFiltersGrid,
-        imageVariantFilters: imageVariantFiltersSmall,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-      };
-
-      const order = await orderService.getOrder(variables);
-
-      setOrderDetails({
-        orderId: orderId,
-        order: order,
-        items: order.items || [],
-      });
-    } catch (err) {
-      console.error('Failed to fetch order details:', err);
-      setError('Failed to load order details');
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const result = await getOrderById(Number(orderId));
+    if (result.success && result.order) {
+      setOrder(result.order);
+    } else {
+      setError(result.error ?? 'Failed to load order details');
     }
+    setLoading(false);
   }, [orderId]);
 
   useEffect(() => {
@@ -115,12 +100,12 @@ function ThankYouPageInner() {
             </p>
           </div>
 
-          {orderDetails && (
+          {order && (
             <div className="space-y-8">
               {/* Order Summary */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <OrderSummary
-                  order={orderDetails.order}
+                  order={order}
                   title="Order Summary"
                 />
               </div>
@@ -131,7 +116,7 @@ function ThankYouPageInner() {
 
                   {/* Regular Products (grouped parent/child) */}
                   {(() => {
-                      const allProducts = orderDetails.order.items?.filter((item: OrderItem) =>
+                      const allProducts = order.items?.filter((item: OrderItem) =>
                           item.class === "product" && item.isBonus === "N"
                       ) || [];
                       const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
@@ -169,7 +154,7 @@ function ThankYouPageInner() {
 
                   {/* Bonus Items */}
                   {(() => {
-                      const bonusItems = orderDetails.order.items?.filter((item: OrderItem) =>
+                      const bonusItems = order.items?.filter((item: OrderItem) =>
                           item.class === "product" && item.isBonus === "Y"
                       );
 
@@ -203,7 +188,7 @@ function ThankYouPageInner() {
 
                   {/* Surcharges */}
                   {(() => {
-                      const surcharges = orderDetails.order.items?.filter((item: OrderItem) => item.class === "surcharge");
+                      const surcharges = order.items?.filter((item: OrderItem) => item.class === "surcharge");
 
                       if (surcharges?.length > 0) {
                           return (
@@ -227,7 +212,7 @@ function ThankYouPageInner() {
                       }
                       return null;
                   })()}
-              </div>  
+              </div>
 
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">

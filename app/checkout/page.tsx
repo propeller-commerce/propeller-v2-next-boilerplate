@@ -10,10 +10,11 @@ import Footer from '@/components/layout/Footer';
 import CartSummary from '@/components/propeller/CartSummary';
 import AddressCard from '@/components/propeller/AddressCard';
 
-import { cartService, orderService, graphqlClient } from '@/lib/api';
+import { cartService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { Cart, CartUpdateAddressInput, CartUpdateInput, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { useCheckout } from '@/composables/react/useCheckout';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
 import AddressSelector from '@/components/propeller/AddressSelector';
@@ -83,29 +84,6 @@ function CheckoutPageInner() {
     // This prevents the flash where addresses aren't loaded yet
     if (authState.isLoading) return;
 
-    /** Get the user's default address of a given type */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getUserDefaultAddress = (type: 'invoice' | 'delivery'): any | null => {
-      const user = authState.user;
-      if (!user) return null;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let addresses: any[] = [];
-      if (isContact(user)) {
-        const company = getActiveCompany();
-        if (company) addresses = company.addresses || [];
-      } else if (isCustomer(user)) {
-        addresses = user.addresses || [];
-      }
-
-      const addressType = type === 'invoice' ? Enums.AddressType.invoice : Enums.AddressType.delivery;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        || addresses.find((a: any) => a.type === addressType)
-        || null;
-    };
-
     const initializeCheckout = async () => {
       let cartToUse = contextCart;
       if (!cartToUse) {
@@ -127,70 +105,8 @@ function CheckoutPageInner() {
         // If user is logged in and cart is missing addresses, pre-populate from user's defaults
         if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
           try {
-            // Ensure CartService mutations are loaded before calling updateCartAddress
             await cartService.initializeService();
-            let updatedCart = cartToUse;
-
-            if (!hasInvoiceAddress) {
-              const defaultInvoice = getUserDefaultAddress('invoice');
-              if (defaultInvoice) {
-                const input: CartUpdateAddressInput = {
-                  type: Enums.CartAddressType.INVOICE,
-                  firstName: defaultInvoice.firstName || '',
-                  lastName: defaultInvoice.lastName || '',
-                  street: defaultInvoice.street || '',
-                  postalCode: defaultInvoice.postalCode || '',
-                  city: defaultInvoice.city || '',
-                  company: defaultInvoice.company,
-                  gender: defaultInvoice.gender,
-                  middleName: defaultInvoice.middleName,
-                  number: defaultInvoice.number,
-                  numberExtension: defaultInvoice.numberExtension,
-                  country: defaultInvoice.country,
-                  email: defaultInvoice.email,
-                  mobile: defaultInvoice.mobile,
-                  phone: defaultInvoice.phone,
-                };
-                updatedCart = await cartService.updateCartAddress({
-                  id: updatedCart.cartId,
-                  input,
-                  imageVariantFilters: imageVariantFiltersSmall,
-                  imageSearchFilters: imageSearchFiltersGrid,
-                  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-                });
-              }
-            }
-
-            if (!hasDeliveryAddress) {
-              const defaultDelivery = getUserDefaultAddress('delivery');
-              if (defaultDelivery) {
-                const input: CartUpdateAddressInput = {
-                  type: Enums.CartAddressType.DELIVERY,
-                  firstName: defaultDelivery.firstName || '',
-                  lastName: defaultDelivery.lastName || '',
-                  street: defaultDelivery.street || '',
-                  postalCode: defaultDelivery.postalCode || '',
-                  city: defaultDelivery.city || '',
-                  company: defaultDelivery.company,
-                  gender: defaultDelivery.gender,
-                  middleName: defaultDelivery.middleName,
-                  number: defaultDelivery.number,
-                  numberExtension: defaultDelivery.numberExtension,
-                  country: defaultDelivery.country,
-                  email: defaultDelivery.email,
-                  mobile: defaultDelivery.mobile,
-                  phone: defaultDelivery.phone,
-                };
-                updatedCart = await cartService.updateCartAddress({
-                  id: updatedCart.cartId,
-                  input,
-                  imageVariantFilters: imageVariantFiltersSmall,
-                  imageSearchFilters: imageSearchFiltersGrid,
-                  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-                });
-              }
-            }
-
+            const updatedCart = await populateCartAddresses(cartToUse);
             saveCart(updatedCart);
             cartToUse = updatedCart;
           } catch (error) {
@@ -233,7 +149,6 @@ function CheckoutPageInner() {
   }, [state.currentStep]);
 
   const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
-  const isCustomer = (u: Contact | Customer | null): u is Customer => u !== null && 'customerId' in u;
 
   const getActiveCompany = (): Company | null => {
     const user = authState.user;
@@ -251,67 +166,13 @@ function CheckoutPageInner() {
     return (user.company as Company | undefined) ?? null;
   };
 
-  /** Update the user's account address and refresh user data from API */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateUserAddress = async (addressData: any, type: string) => {
-    const user = authState.user;
-    if (!user) return;
-
-    const addressService = new AddressService(graphqlClient);
-    const addressType = type === CartAddressType.INVOICE ? Enums.AddressType.invoice : Enums.AddressType.delivery;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let addresses: any[] = [];
-    const company = isContact(user) ? getActiveCompany() : null;
-    if (isContact(user)) {
-      if (!company) return;
-      addresses = company.addresses || [];
-    } else if (isCustomer(user)) {
-      addresses = user.addresses || [];
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const matchedAddr = addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      || addresses.find((a: any) => a.type === addressType);
-
-    if (!matchedAddr?.id) return;
-
-    try {
-      const commonFields = {
-        id: Number(matchedAddr.id),
-        company: addressData.company,
-        gender: addressData.gender,
-        firstName: addressData.firstName,
-        middleName: addressData.middleName,
-        lastName: addressData.lastName,
-        email: addressData.email,
-        street: addressData.street,
-        number: addressData.number,
-        numberExtension: addressData.numberExtension,
-        postalCode: addressData.postalCode,
-        city: addressData.city,
-        country: addressData.country,
-        isDefault: matchedAddr.isDefault,
-      };
-
-      if (isContact(user) && company) {
-        await addressService.updateCompanyAddress({
-          ...commonFields,
-          companyId: company.companyId,
-        });
-      } else if (isCustomer(user)) {
-        await addressService.updateCustomerAddress({
-          ...commonFields,
-          customerId: user.customerId,
-        });
-      }
-
-      await refreshUser();
-    } catch (error) {
-      console.error('Error updating user address:', error);
-    }
-  };
+  const { populateCartAddresses, updateCartAddress, updateCartShipping, placeOrder } = useCheckout({
+    graphqlClient,
+    user: authState.user,
+    companyId: getActiveCompany()?.companyId,
+    language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+    configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddressSubmit = async (addressData: any, type: string, advance = true) => {
@@ -338,42 +199,17 @@ function CheckoutPageInner() {
         icp: d.icp as Enums.YesNo | undefined,
       };
 
-      const variables = {
-        id: state.cart!.cartId,
-        input: input,
-        imageVariantFilters: imageVariantFiltersSmall,
-        imageSearchFilters: imageSearchFiltersGrid,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-      };
-
-      const updatedCart = await cartService.updateCartAddress(variables);
+      const updatedCart = await updateCartAddress(state.cart!.cartId, input);
       saveCart(updatedCart);
-
-      // When editing an existing address and user is logged in, also update user's account address
-      // if (!advance && authState.isAuthenticated) {
-      //   await updateUserAddress(addressData, type);
-      // }
 
       // Anonymous user: if "same as invoice" is checked, also save as delivery address
       if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && sameAsInvoiceRef.current) {
-        const deliveryInput: CartUpdateAddressInput = {
+        const cartWithDelivery = await updateCartAddress(updatedCart.cartId, {
           ...input,
           type: Enums.CartAddressType.DELIVERY,
-        };
-        const cartWithDelivery = await cartService.updateCartAddress({
-          id: updatedCart.cartId,
-          input: deliveryInput,
-          imageVariantFilters: imageVariantFiltersSmall,
-          imageSearchFilters: imageSearchFiltersGrid,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
         });
         saveCart(cartWithDelivery);
-        setState(prev => ({
-          ...prev,
-          cart: cartWithDelivery,
-          currentStep: 3, // Skip delivery step
-          loading: false
-        }));
+        setState(prev => ({ ...prev, cart: cartWithDelivery, currentStep: 3, loading: false }));
         return;
       }
 
@@ -416,14 +252,7 @@ function CheckoutPageInner() {
         postageData: { carrier: state.selectedCarrier, requestDate: state.selectedDeliveryDate }
       };
 
-      const updatedCart = await cartService.updateCart({
-        id: state.cart!.cartId,
-        input: input,
-        imageVariantFilters: imageVariantFiltersSmall,
-        imageSearchFilters: imageSearchFiltersGrid,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-      });
-
+      const updatedCart = await updateCartShipping(state.cart!.cartId, input);
       saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
     } catch (error) {
@@ -433,63 +262,30 @@ function CheckoutPageInner() {
   };
 
   const handlePlaceOrder = async (reference?: string, notes?: string) => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      orderPlacedRef.current = true;
-      if (reference || notes) {
-        await cartService.updateCart({
-          id: state.cart!.cartId,
-          input: { reference: reference || undefined, notes: notes || undefined },
-          imageVariantFilters: imageVariantFiltersSmall,
-          imageSearchFilters: imageSearchFiltersGrid,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-        });
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    orderPlacedRef.current = true;
+
+    const result = await placeOrder({
+      cartId: state.cart!.cartId,
+      orderStatus: isQuoteMode ? 'REQUEST' : 'NEW',
+      reference,
+      notes,
+      isQuoteMode,
+    });
+
+    if (result.success && result.orderId) {
+      clearCart();
+      const managerCart = localStorage.getItem('manager_cart');
+      if (managerCart) {
+        saveCart(deserializeCart(managerCart) as Cart);
+        localStorage.removeItem('manager_cart');
       }
-
-      const orderStatus = isQuoteMode ? 'REQUEST' : 'NEW';
-      const response = await cartService.processCart({
-        id: state.cart!.cartId,
-        input: { orderStatus: orderStatus as string, language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL' }
-      });
-
-      if (response?.cartOrderId) {
-        const orderId = response.cartOrderId;
-        const orderServiceResponse = await orderService.setOrderStatus({
-          orderId: orderId,
-          status: orderStatus as string,
-          payStatus: Enums.PaymentStatuses.OPEN,
-          sendOrderConfirmationEmail: isQuoteMode ? false : true,
-          addPDFAttachment: isQuoteMode ? false : true,
-          triggerOrderSendConfirmEvent: isQuoteMode ? false : true,
-          deleteCart: true
-        });
-
-        if (orderServiceResponse?.id === orderId) {
-          if (isQuoteMode) {
-            await orderService.triggerQuoteSendRequest({
-              orderId: orderId,
-              language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-            });
-          }
-
-          clearCart();
-          const managerCart = localStorage.getItem('manager_cart');
-          if (managerCart) {
-            saveCart(deserializeCart(managerCart) as Cart);
-            localStorage.removeItem('manager_cart');
-          }
-          if (getCart) await getCart();
-        }
-        const thankYouUrl = isQuoteMode
-          ? localizeHref(`/checkout/thank-you/${orderId}`, language) + '?mode=quote'
-          : localizeHref(`/checkout/thank-you/${orderId}`, language);
-        router.push(thankYouUrl);
-      } else {
-        throw new Error("No Order ID returned");
-      }
-
-    } catch (error) {
-      console.error(error);
+      if (getCart) await getCart();
+      const thankYouUrl = isQuoteMode
+        ? localizeHref(`/checkout/thank-you/${result.orderId}`, language) + '?mode=quote'
+        : localizeHref(`/checkout/thank-you/${result.orderId}`, language);
+      router.push(thankYouUrl);
+    } else {
       orderPlacedRef.current = false;
       setState(prev => ({ ...prev, error: isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order', loading: false }));
     }

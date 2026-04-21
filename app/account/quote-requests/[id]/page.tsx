@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
-import { Base64File, Order, OrderItem, OrderService, OrderQueryVariables } from 'propeller-sdk-v2';
+import { Order, OrderItem } from 'propeller-sdk-v2';
+import { useOrders } from '@/composables/react/useOrders';
 import OrderSummary from '@/components/propeller/OrderSummary';
-import QuoteActions from '@/components/propeller/QuoteActions';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -29,7 +28,6 @@ const COUNTRIES = [
 export default function QuoteDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
-    const { cart: contextCart, getCart } = useCart();
     const { language } = useLanguage();
     const params = useParams();
     const quoteId = params.id as string;
@@ -37,34 +35,23 @@ export default function QuoteDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const { getOrderById } = useOrders({
+        graphqlClient,
+        user: state.user,
+        language,
+        configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+    });
+
     useEffect(() => {
         const fetchQuoteDetails = async () => {
-            try {
-                setLoading(true);
-                const orderService = new OrderService(graphqlClient);
-
-                const variables: OrderQueryVariables = {
-                    orderId: Number(quoteId),
-                    imageSearchFilters: imageSearchFiltersGrid,
-                    imageVariantFilters: imageVariantFiltersSmall,
-                    language: 'NL'
-                };
-
-                const quoteResponse = await orderService.getOrder(variables);
-
-                if (quoteResponse) {
-                    setQuote(quoteResponse);
-                } else {
-                    console.error('No quote request data found in response');
-                    setError('Quote request not found');
-                }
-
-            } catch (err) {
-                console.error('Error fetching quote request details:', err);
-                setError('Failed to load quote request details');
-            } finally {
-                setLoading(false);
+            setLoading(true);
+            const result = await getOrderById(Number(quoteId));
+            if (result.success && result.order) {
+                setQuote(result.order);
+            } else {
+                setError(result.error ?? 'Quote request not found');
             }
+            setLoading(false);
         };
 
         if (quoteId) {
@@ -234,4 +221,3 @@ export default function QuoteDetailPage() {
         </div>
     );
 }
-

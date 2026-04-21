@@ -23,6 +23,7 @@ import type {
   CartAddItemVariables,
   MediaImageProductSearchInput,
   TransformationsInput,
+  OrderQueryVariables,
 } from 'propeller-sdk-v2';
 import { usePagination } from './shared/usePagination';
 import { initCart } from '../shared/utils/cartInit';
@@ -82,6 +83,8 @@ export interface UseOrdersReturn {
       isConfirmed?: boolean;
     }
   ) => Promise<{ success: boolean; error?: string }>;
+  getOrderById: (orderId: number) => Promise<{ success: boolean; order?: Order; error?: string }>;
+  downloadQuotePdf: (orderId: number) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
@@ -309,6 +312,73 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     [graphqlClient]
   );
 
+  // ── Get single order by ID ────────────────────────────────────────────────
+
+  const getOrderById = useCallback(
+    async (orderId: number): Promise<{ success: boolean; order?: Order; error?: string }> => {
+      try {
+        const service = new OrderService(graphqlClient);
+        const variables: OrderQueryVariables = {
+          orderId,
+          imageSearchFilters: configuration.imageSearchFiltersGrid,
+          imageVariantFilters: configuration.imageVariantFiltersSmall,
+          language,
+        };
+        const order = await service.getOrder(variables);
+        if (!order) return { success: false, error: 'Order not found' };
+        return { success: true, order };
+      } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : 'Failed to fetch order' };
+      }
+    },
+    [graphqlClient, language, configuration]
+  );
+
+  // ── Download quote PDF ────────────────────────────────────────────────────
+
+  const downloadQuotePdf = useCallback(
+    async (orderId: number): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const service = new OrderService(graphqlClient);
+        const pdfResponse = await service.getQuotePDF(orderId);
+        if (!pdfResponse) return { success: false, error: 'No PDF response' };
+
+        let byteArray: Uint8Array;
+        let contentType = 'application/pdf';
+        let fileName = `quote-${orderId}.pdf`;
+
+        if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
+          const r = pdfResponse as Base64File;
+          const chars = atob(r.base64);
+          byteArray = new Uint8Array(chars.length);
+          for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i);
+          contentType = r.contentType || contentType;
+          fileName = r.fileName || fileName;
+        } else if (typeof pdfResponse === 'string') {
+          const chars = atob(pdfResponse);
+          byteArray = new Uint8Array(chars.length);
+          for (let i = 0; i < chars.length; i++) byteArray[i] = chars.charCodeAt(i);
+        } else {
+          return { success: false, error: 'Unrecognised PDF format' };
+        }
+
+        const blob = new Blob([byteArray.buffer as ArrayBuffer], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+      } catch (e: unknown) {
+        return { success: false, error: e instanceof Error ? e.message : 'Failed to download quote PDF' };
+      }
+    },
+    [graphqlClient]
+  );
+
   return {
     orders,
     loading,
@@ -325,5 +395,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     downloadPdf,
     reorder,
     setQuoteStatus,
+    getOrderById,
+    downloadQuotePdf,
   };
 }

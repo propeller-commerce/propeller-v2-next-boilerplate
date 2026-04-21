@@ -15,6 +15,7 @@ import {
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
 import ProductPriceDisplay from './ProductPrice';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ProductCardProps {
   // === Core ===
@@ -283,9 +284,6 @@ function ProductCard(props: ProductCardProps) {
   function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {
     return (props.product as Product)?.manufacturer || '';
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductCardState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   function getAttributeValue(code: string): ReturnType<ProductCardState['getAttributeValue']> {
     const attrs = (props.product as Product)?.attributes?.items || [];
     const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
@@ -376,8 +374,8 @@ function ProductCard(props: ProductCardProps) {
               onClick={(e) => handleToggleFavorite(e)}
               aria-label={
                 isFavorite
-                  ? getLabel('removeFromFavorites', 'Remove from favourites')
-                  : getLabel('addToFavorites', 'Add to favourites')
+                  ? getLabel(props.labels, 'removeFromFavorites', 'Remove from favourites')
+                  : getLabel(props.labels, 'addToFavorites', 'Add to favourites')
               }
               data-favorite={isFavorite ? 'true' : 'false'}
               className={`propeller-product-card__favorite-btn absolute right-2 top-2 rounded-full border bg-card p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-destructive/30 text-destructive' : 'border-border-subtle text-foreground-subtle hover:text-destructive'}`}

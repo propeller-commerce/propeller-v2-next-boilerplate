@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cluster, AttributeResult } from 'propeller-sdk-v2';
 import ItemStock from './ItemStock';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ClusterCardProps {
   // === Core ===
@@ -188,9 +189,9 @@ function ClusterCard(props: ClusterCardProps) {
   function getStockStatusLabel(): ReturnType<ClusterCardState['getStockStatusLabel']> {
     const qty = getStockQuantity();
     if (qty < 0) return '';
-    if (qty === 0) return getLabel('outOfStock', 'Out of stock');
-    if (qty <= 5) return getLabel('lowStock', 'Low stock');
-    return getLabel('inStock', 'In stock');
+    if (qty === 0) return getLabel(props.labels, 'outOfStock', 'Out of stock');
+    if (qty <= 5) return getLabel(props.labels, 'lowStock', 'Low stock');
+    return getLabel(props.labels, 'inStock', 'In stock');
   }
   function getStockStatusClass(): ReturnType<ClusterCardState['getStockStatusClass']> {
     const qty = getStockQuantity();
@@ -205,9 +206,6 @@ function ClusterCard(props: ClusterCardProps) {
     const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
     if (!value && value !== 0) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
-  }
-  function getLabel(key: string, fallback: string): ReturnType<ClusterCardState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
   }
   function handleClusterClick(e: any): ReturnType<ClusterCardState['handleClusterClick']> {
     if (props.onClusterClick) {
@@ -297,8 +295,8 @@ function ClusterCard(props: ClusterCardProps) {
               onClick={(e) => handleToggleFavorite(e)}
               aria-label={
                 isFavorite
-                  ? getLabel('removeFromFavorites', 'Remove from favourites')
-                  : getLabel('addToFavorites', 'Add to favourites')
+                  ? getLabel(props.labels, 'removeFromFavorites', 'Remove from favourites')
+                  : getLabel(props.labels, 'addToFavorites', 'Add to favourites')
               }
               data-favorite={isFavorite ? 'true' : 'false'}
               className={`propeller-cluster-card__favorite-btn absolute right-2 top-2 rounded-full border bg-card p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-destructive/30 text-destructive' : 'border-border-subtle text-foreground-subtle hover:text-destructive'}`}
@@ -373,7 +371,7 @@ function ClusterCard(props: ClusterCardProps) {
                 href={getClusterUrl()}
                 onClick={(e) => handleClusterClick(e)}
               >
-                {getLabel('viewCluster', 'View cluster')}
+                {getLabel(props.labels, 'viewCluster', 'View cluster')}
               </a>
             </div>
           </div>
@@ -431,7 +429,7 @@ function ClusterCard(props: ClusterCardProps) {
               href={getClusterUrl()}
               onClick={(e) => handleClusterClick(e)}
             >
-              {getLabel('viewCluster', 'View cluster')}
+              {getLabel(props.labels, 'viewCluster', 'View cluster')}
             </a>
           </div>
         </>

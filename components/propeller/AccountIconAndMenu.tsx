@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import LoginForm from './LoginForm';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface AccountMenuLink {
   /** Display label for the link */
@@ -215,12 +216,6 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
     if (user.email) return user.email;
     return 'User';
   }
-  function getLabel(
-    key: string,
-    fallback: string
-  ): ReturnType<AccountIconAndMenuState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   function getMenuTitle(): ReturnType<AccountIconAndMenuState['getMenuTitle']> {
     return (
       props.accountMenuTitle ||
@@ -337,7 +332,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
             <>
               <div className="propeller-account-menu__user px-4 py-3 border-b border-border">
                 <p className="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
-                  {getLabel('signedInAs', 'Signed in as')}
+                  {getLabel(props.labels, 'signedInAs', 'Signed in as')}
                 </p>
                 <p className="propeller-account-menu__user-name font-medium text-foreground truncate">{getUserName()}</p>
               </div>
@@ -363,7 +358,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                   className="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-control transition-colors"
                   onClick={(event) => handleLogoutClick()}
                 >
-                  {getLabel('logoutLabel', 'Log Out')}
+                  {getLabel(props.labels, 'logoutLabel', 'Log Out')}
                 </button>
               </div>
             </>
@@ -375,7 +370,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
           <button
             type="button"
             onClick={(event) => handleIconClick()}
-            aria-label={getLabel('accountLabel', 'Account')}
+            aria-label={getLabel(props.labels, 'accountLabel', 'Account')}
             data-open={menuOpen ? 'true' : 'false'}
             className={`propeller-account-menu__trigger inline-flex items-center gap-2 px-3 py-2 rounded-control text-sm font-medium transition-colors text-white hover:bg-white/10${props.iconClassName ? ' ' + props.iconClassName : ''}`}
           >
@@ -399,7 +394,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                 ) : null}
                 {!props.user ? (
                   <span className="propeller-account-menu__greeting hidden md:block font-normal">
-                    {getLabel('accountLabel', 'Account')}
+                    {getLabel(props.labels, 'accountLabel', 'Account')}
                   </span>
                 ) : null}
               </>
@@ -415,7 +410,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                     <>
                       <div className="propeller-account-menu__user pb-3 mb-3 border-b border-border">
                         <p className="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
-                          {getLabel('signedInAs', 'Signed in as')}
+                          {getLabel(props.labels, 'signedInAs', 'Signed in as')}
                         </p>
                         <p className="propeller-account-menu__user-name font-medium text-foreground truncate">{getUserName()}</p>
                       </div>
@@ -440,7 +435,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                           className="propeller-account-menu__logout-btn flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-primary hover:bg-secondary/5 rounded-control transition-colors"
                           onClick={(event) => handleLogoutClick()}
                         >
-                          {getLabel('logoutLabel', 'Log Out')}
+                          {getLabel(props.labels, 'logoutLabel', 'Log Out')}
                         </button>
                       </div>
                     </>
@@ -450,9 +445,9 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                       {props.accountHeaderLoginForm !== false ? (
                         <LoginForm
                           graphqlClient={props.graphqlClient}
-                          title={props.loginFormTitle ?? getLabel('loginTitle', 'Welcome Back')}
-                          subtitle={props.loginFormSubtitle ?? getLabel('loginSubtitle', '')}
-                          buttonText={props.loginButtonText ?? getLabel('loginButton', 'Log In')}
+                          title={props.loginFormTitle ?? getLabel(props.labels, 'loginTitle', 'Welcome Back')}
+                          subtitle={props.loginFormSubtitle ?? getLabel(props.labels, 'loginSubtitle', '')}
+                          buttonText={props.loginButtonText ?? getLabel(props.labels, 'loginButton', 'Log In')}
                           displayForgotPasswordLink={props.displayForgotPasswordLink}
                           displayRegisterLink={props.displayRegisterLink}
                           displayGuestCheckoutLink={props.displayGuestCheckoutLink}
@@ -472,7 +467,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                         <div className="propeller-account-menu__login-cta text-center py-4">
                           <h4 className="propeller-account-menu__login-title text-lg font-semibold mb-2">{getMenuTitle()}</h4>
                           <p className="propeller-account-menu__login-subtitle text-sm text-muted-foreground mb-4">
-                            {getLabel('loginSubtitle', 'Login to access your account')}
+                            {getLabel(props.labels, 'loginSubtitle', 'Login to access your account')}
                           </p>
                           <button
                             type="button"
@@ -482,7 +477,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                               if (props.onAccountIconClick) props.onAccountIconClick();
                             }}
                           >
-                            {getLabel('loginButton', 'Log In')}
+                            {getLabel(props.labels, 'loginButton', 'Log In')}
                           </button>
                         </div>
                       ) : null}

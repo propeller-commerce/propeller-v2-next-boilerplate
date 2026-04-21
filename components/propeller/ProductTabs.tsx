@@ -14,6 +14,7 @@ import ProductDescription from './ProductDescription';
 import ProductSpecifications from './ProductSpecifications';
 import ProductDownloads from './ProductDownloads';
 import ProductVideos from './ProductVideos';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ProductTabsProps {
   /** Product for which to display the information. */
@@ -162,9 +163,6 @@ function ProductTabs(props: ProductTabsProps) {
     }
     setActiveTab(tab);
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductTabsState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   useEffect(() => {
     // Set the first visible tab as active
     if (props.showDescription !== false && hasDescription()) {
@@ -206,7 +204,7 @@ function ProductTabs(props: ProductTabsProps) {
                     data-tab="description"
                     data-active={isActive('description') ? 'true' : 'false'}
                   >
-                    {getLabel('description', 'Description')}
+                    {getLabel(props.labels, 'description', 'Description')}
                   </button>
                 ) : null}
                 {isTabVisible('specifications') ? (
@@ -217,7 +215,7 @@ function ProductTabs(props: ProductTabsProps) {
                     data-tab="specifications"
                     data-active={isActive('specifications') ? 'true' : 'false'}
                   >
-                    {getLabel('specifications', 'Specifications')}
+                    {getLabel(props.labels, 'specifications', 'Specifications')}
                   </button>
                 ) : null}
                 {isTabVisible('downloads') ? (
@@ -228,7 +226,7 @@ function ProductTabs(props: ProductTabsProps) {
                     data-tab="downloads"
                     data-active={isActive('downloads') ? 'true' : 'false'}
                   >
-                    {getLabel('downloads', 'Downloads')}
+                    {getLabel(props.labels, 'downloads', 'Downloads')}
                   </button>
                 ) : null}
                 {isTabVisible('videos') ? (
@@ -239,7 +237,7 @@ function ProductTabs(props: ProductTabsProps) {
                     data-tab="videos"
                     data-active={isActive('videos') ? 'true' : 'false'}
                   >
-                    {getLabel('videos', 'Videos')}
+                    {getLabel(props.labels, 'videos', 'Videos')}
                   </button>
                 ) : null}
               </div>
@@ -290,7 +288,7 @@ function ProductTabs(props: ProductTabsProps) {
                       setActiveTab(activeTab === 'description' ? '' : 'description');
                     }}
                   >
-                    {getLabel('description', 'Description')}
+                    {getLabel(props.labels, 'description', 'Description')}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"
@@ -332,7 +330,7 @@ function ProductTabs(props: ProductTabsProps) {
                       }
                     }}
                   >
-                    {getLabel('specifications', 'Specifications')}
+                    {getLabel(props.labels, 'specifications', 'Specifications')}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"
@@ -369,7 +367,7 @@ function ProductTabs(props: ProductTabsProps) {
                       setActiveTab(activeTab === 'downloads' ? '' : 'downloads');
                     }}
                   >
-                    {getLabel('downloads', 'Downloads')}
+                    {getLabel(props.labels, 'downloads', 'Downloads')}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"
@@ -408,7 +406,7 @@ function ProductTabs(props: ProductTabsProps) {
                       setActiveTab(activeTab === 'videos' ? '' : 'videos');
                     }}
                   >
-                    {getLabel('videos', 'Videos')}
+                    {getLabel(props.labels, 'videos', 'Videos')}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"

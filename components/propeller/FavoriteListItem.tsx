@@ -12,6 +12,7 @@ import {
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */
@@ -182,9 +183,6 @@ function FavoriteListItem(props: FavoriteListItemProps) {
     if (!value && value !== 0) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
   }
-  function getLabel(key: string, fallback: string): ReturnType<FavoriteListItemState['getLabel']> {
-    return props.labels?.[key] || fallback;
-  }
   function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemClick']> {
     if (props.onItemClick) {
       e.preventDefault();
@@ -284,18 +282,18 @@ function FavoriteListItem(props: FavoriteListItemProps) {
             <div className="propeller-favorite-list-item__stock flex-shrink-0">
               {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5 ? (
                 <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-success bg-success/10" data-stock="in">
-                  {getLabel('inStock', 'In stock')}
+                  {getLabel(props.labels, 'inStock', 'In stock')}
                 </span>
               ) : null}
               {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
               (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) <= 5 ? (
                 <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-warning bg-warning/10" data-stock="low">
-                  {getLabel('lowStock', 'Low stock')}
+                  {getLabel(props.labels, 'lowStock', 'Low stock')}
                 </span>
               ) : null}
               {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0 ? (
                 <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-destructive bg-destructive/10" data-stock="out">
-                  {getLabel('outOfStock', 'Out of stock')}
+                  {getLabel(props.labels, 'outOfStock', 'Out of stock')}
                 </span>
               ) : null}
             </div>
@@ -335,7 +333,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
             href={getItemUrl()}
             onClick={(e) => handleItemClick(e)}
           >
-            {getLabel('viewCluster', 'View cluster')}
+            {getLabel(props.labels, 'viewCluster', 'View cluster')}
           </a>
         ) : null}
         {props.showDelete !== false ? (
@@ -343,7 +341,7 @@ function FavoriteListItem(props: FavoriteListItemProps) {
             type="button"
             className="propeller-favorite-list-item__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-foreground-subtle hover:text-destructive hover:bg-destructive/10 transition-colors"
             onClick={(event) => handleDelete()}
-            title={getLabel('delete', 'Remove from list')}
+            title={getLabel(props.labels, 'delete', 'Remove from list')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

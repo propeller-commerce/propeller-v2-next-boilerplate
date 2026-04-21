@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
 import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
+import { getLabel } from '@/lib/helpers/labelHelpers';
+import { isContentHidden } from '@/lib/helpers/visibilityHelpers';
 
 export interface ProductBulkPricesProps {
   /**
@@ -50,7 +52,7 @@ interface ProductBulkPricesState {
 }
 function ProductBulkPrices(props: ProductBulkPricesProps) {
   function isHidden(): ReturnType<ProductBulkPricesState['isHidden']> {
-    return (props.portalMode as string) === 'semi-closed' && !props.user;
+    return isContentHidden(props.portalMode as string | undefined, props.user);
   }
   function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
     return props.includeTax !== undefined ? !!props.includeTax : false;
@@ -167,10 +169,6 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
     }
     return `${qty}+`;
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductBulkPricesState['getLabel']> {
-    const val = (props.labels as Record<string, string>)?.[key];
-    return val !== undefined ? val : fallback;
-  }
   return (
     <>
       {!isHidden() && hasItems() ? (
@@ -179,9 +177,9 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
             className={`propeller-product-bulk-prices ${(props.className as string) || ''}`}
             data-include-tax={getIncludeTax() ? 'true' : 'false'}
           >
-            {getLabel('title', 'Volume pricing') ? (
+            {getLabel(props.labels, 'title', 'Volume pricing') ? (
               <h3 className="propeller-product-bulk-prices__title text-base font-semibold text-foreground mb-3">
-                {getLabel('title', 'Volume pricing')}
+                {getLabel(props.labels, 'title', 'Volume pricing')}
               </h3>
             ) : null}
             <div className="propeller-product-bulk-prices__table-wrapper overflow-hidden rounded-container border border-border">
@@ -189,16 +187,16 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
                 <thead className="propeller-product-bulk-prices__thead bg-muted/50">
                   <tr>
                     <th className="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--quantity px-4 py-2 text-left font-medium text-muted-foreground">
-                      {getLabel('quantityFrom', 'Qty from')}
+                      {getLabel(props.labels, 'quantityFrom', 'Qty from')}
                     </th>
                     <th className="propeller-product-bulk-prices__th propeller-product-bulk-prices__th--price px-4 py-2 text-right font-medium text-muted-foreground">
-                      {getLabel('price', 'Price')}
+                      {getLabel(props.labels, 'price', 'Price')}
                       <span className="propeller-product-bulk-prices__tax-label font-normal text-xs">
                         (
                         {getIncludeTax() ? (
-                          <>{getLabel('inclTax', 'incl. VAT')}</>
+                          <>{getLabel(props.labels, 'inclTax', 'incl. VAT')}</>
                         ) : (
-                          <>{getLabel('exclTax', 'excl. VAT')}</>
+                          <>{getLabel(props.labels, 'exclTax', 'excl. VAT')}</>
                         )}
                         )
                       </span>

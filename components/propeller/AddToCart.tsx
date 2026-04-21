@@ -16,6 +16,10 @@ import {
   Cluster,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getProductImageUrl, getProductSku, getLocalizedValue } from '@/lib/helpers/productHelpers';
+import { formatPrice } from '@/lib/helpers/priceHelpers';
+import { config } from '@/data/config';
 
 export interface AddToCartProps {
   /** GraphQL client for the Propeller SDK */
@@ -171,26 +175,9 @@ function AddToCart(props: AddToCartProps) {
   const [includeTax] = useState<boolean>(() => false);
 
   // --- display helpers ---
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as any)?.[key] || fallback;
-  }
-  function getProductName(): string {
-    return (props.product as Product)?.names?.[0]?.value || 'Product';
-  }
+  
   function getProductUrl(): string {
     return props.configuration?.urls?.getProductUrl(props.product, props.language) ?? '#';
-  }
-  function getProductImageUrl(): string {
-    return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-  }
-  function getProductSku(): string {
-    return (props.product as Product)?.sku || '';
-  }
-  function getProductPrice(): string {
-    const price =
-      props.price !== undefined ? props.price : (props.product as Product)?.price?.gross;
-    if (!price && price !== 0) return '';
-    return `\u20AC${Number(price).toFixed(2)}`;
   }
   function showToast(message: string, type: string): void {
     setToastMessage(message);
@@ -218,25 +205,25 @@ function AddToCart(props: AddToCartProps) {
       const img = addedCartItem.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
       if (img) return img;
     }
-    return getProductImageUrl();
+    return getProductImageUrl(props.product as Product);
   }
   function getModalName(): string {
     if (addedCartItem) {
-      return addedCartItem.product?.names?.[0]?.value || getProductName();
+      return addedCartItem.product?.names?.[0]?.value || getLocalizedValue((props.product as Product)?.names, props.language as string, 'Product');
     }
-    return getProductName();
+    return getLocalizedValue((props.product as Product)?.names, props.language as string, 'Product');
   }
   function getModalPrice(): string {
     if (addedCartItem) {
       const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
       const price = useTax ? addedCartItem.totalSumNet : addedCartItem.totalSum;
-      return '\u20AC' + Number(price).toFixed(2);
+      return formatPrice(price, config.currency);
     }
-    return getProductPrice();
+    return formatPrice(props.price !== undefined ? props.price : (props.product as Product)?.price?.gross, config.currency);
   }
   function getModalSku(): string {
     if (addedCartItem) return addedCartItem.product?.sku || '';
-    return getProductSku();
+    return getProductSku(props.product as Product);
   }
   function getChildItems(): CartBaseItem[] {
     const children = addedCartItem?.childItems;
@@ -277,10 +264,10 @@ function AddToCart(props: AddToCartProps) {
     if (!result.success) {
       showToast(
         result.error === 'Insufficient stock available'
-          ? getLabel('outOfStock', 'Insufficient stock available')
+          ? getLabel(props.labels, 'outOfStock', 'Insufficient stock available')
           : result.error === 'No cart ID provided'
-          ? getLabel('noCartId', 'No cart ID provided')
-          : getLabel('errorAdding', 'Failed to add item to cart'),
+          ? getLabel(props.labels, 'noCartId', 'No cart ID provided')
+          : getLabel(props.labels, 'errorAdding', 'Failed to add item to cart'),
         'error'
       );
       return;
@@ -294,7 +281,7 @@ function AddToCart(props: AddToCartProps) {
     if (props.showModal) {
       setModalVisible(true);
     } else {
-      showToast(`${getProductName()} ${getLabel('addedToCart', 'added to cart')}`, 'success');
+      showToast(`${getLocalizedValue((props.product as Product)?.names, props.language as string, 'Product')} ${getLabel(props.labels, 'addedToCart', 'added to cart')}`, 'success');
     }
   }
 
@@ -368,8 +355,8 @@ function AddToCart(props: AddToCartProps) {
           onClick={() => handleAddToCart()}
           disabled={loading}
         >
-          {loading ? <>{getLabel('adding', 'Adding...')}</> : null}
-          {!loading ? <>{getLabel('add', 'Add')}</> : null}
+          {loading ? <>{getLabel(props.labels, 'adding', 'Adding...')}</> : null}
+          {!loading ? <>{getLabel(props.labels, 'add', 'Add')}</> : null}
         </button>
       </div>
       {toastVisible ? (
@@ -435,7 +422,7 @@ function AddToCart(props: AddToCartProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
               <h3 className="propeller-add-to-cart__modal-title flex-1 text-base font-semibold text-foreground">
-                {getLabel('modalTitle', 'Added to cart')}
+                {getLabel(props.labels, 'modalTitle', 'Added to cart')}
               </h3>
               <button
                 type="button"
@@ -492,7 +479,7 @@ function AddToCart(props: AddToCartProps) {
                 </div>
                 <div className="flex-shrink-0 text-right">
                   <p className="propeller-add-to-cart__modal-quantity text-xs text-muted-foreground">
-                    {getLabel('quantity', 'Quantity')}: {quantity}
+                    {getLabel(props.labels, 'quantity', 'Quantity')}: {quantity}
                   </p>
                   {!!getModalPrice() ? (
                     <p className="propeller-add-to-cart__modal-price text-sm font-semibold text-foreground mt-0.5">{getModalPrice()}</p>
@@ -527,7 +514,7 @@ function AddToCart(props: AddToCartProps) {
                 className="propeller-add-to-cart__modal-continue flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2"
                 onClick={() => closeModal()}
               >
-                {getLabel('continueShopping', 'Continue shopping')}
+                {getLabel(props.labels, 'continueShopping', 'Continue shopping')}
               </button>
               {checkoutAllowed && props.onRequestQuoteClick && props.user && 'contactId' in props.user ? (
                 <button
@@ -538,7 +525,7 @@ function AddToCart(props: AddToCartProps) {
                     if (cart) props.onRequestQuoteClick!(cart);
                   }}
                 >
-                  {getLabel('requestQuoteButton', 'Request a Quote')}
+                  {getLabel(props.labels, 'requestQuoteButton', 'Request a Quote')}
                 </button>
               ) : null}
               {checkoutAllowed ? (
@@ -550,7 +537,7 @@ function AddToCart(props: AddToCartProps) {
                     if (props.onProceedToCheckout) props.onProceedToCheckout();
                   }}
                 >
-                  {getLabel('proceedToCheckout', 'Proceed to checkout')}
+                  {getLabel(props.labels, 'proceedToCheckout', 'Proceed to checkout')}
                 </button>
               ) : null}
             </div>

@@ -15,6 +15,7 @@ import {
 import { useFavorites } from '@/composables/react/useFavorites';
 import FavoriteListItem from './FavoriteListItem';
 import GridPagination from './GridPagination';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */
@@ -144,9 +145,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
   const [isMounted, setIsMounted] = useState(() => false);
   const [prevListId, setPrevListId] = useState(() => '');
 
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
+  
 
   function getItemsPerPage(): number {
     return props.itemsPerPage || 12;
@@ -369,12 +368,9 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                 </svg>
               </div>
               <div>
-                <p className="propeller-favorite-list-details__empty-title text-lg font-medium">{getLabel('emptyTitle', 'List is empty')}</p>
+                <p className="propeller-favorite-list-details__empty-title text-lg font-medium">{getLabel(props.labels, 'emptyTitle', 'List is empty')}</p>
                 <p className="propeller-favorite-list-details__empty-message text-muted-foreground">
-                  {getLabel(
-                    'emptyDescription',
-                    "You haven't added any products or clusters to this list yet."
-                  )}
+                  {getLabel(props.labels, 'emptyDescription', "You haven't added any products or clusters to this list yet.")}
                 </p>
               </div>
             </div>

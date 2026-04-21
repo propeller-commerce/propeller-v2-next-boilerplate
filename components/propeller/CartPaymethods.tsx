@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Cart, CartPaymethod, Contact, Customer } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface CartPaymethodsProps {
   /** Shopping cart object from which the payment methods will be displayed */
@@ -64,9 +65,6 @@ function CartPaymethods(props: CartPaymethodsProps) {
     const code = (method.code || '').toLowerCase();
     return code === 'on_account' || code === 'onaccount' || code === 'on-account';
   }
-  function getLabel(key: string, fallback: string): ReturnType<CartPaymethodsState['getLabel']> {
-    return props.labels?.[key] || fallback;
-  }
   function formatMethodPrice(price: number): ReturnType<CartPaymethodsState['formatMethodPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
@@ -116,7 +114,7 @@ function CartPaymethods(props: CartPaymethodsProps) {
       ) : null}
       {payMethods().length === 0 ? (
         <p className="propeller-cart-paymethods__empty text-muted-foreground italic">
-          {getLabel('noMethods', 'No payment methods available.')}
+          {getLabel(props.labels, 'noMethods', 'No payment methods available.')}
         </p>
       ) : null}
     </div>

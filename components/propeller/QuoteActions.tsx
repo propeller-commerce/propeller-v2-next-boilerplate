@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Order, GraphQLClient } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface QuoteActionsProps {
   /** GraphQL client for the Propeller SDK */
@@ -48,9 +49,7 @@ function QuoteActions(props: QuoteActionsProps) {
     return false;
   }
 
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
 
   function handleTermsChange(checked: boolean) {
     setTermsAccepted(checked);
@@ -92,13 +91,13 @@ function QuoteActions(props: QuoteActionsProps) {
             onChange={(event) => handleTermsChange(event.target.checked)}
           />
           <label htmlFor="quote-actions-terms" className="text-sm leading-none">
-            {getLabel('termsPrefix', 'I agree to the')}
+            {getLabel(props.labels, 'termsPrefix', 'I agree to the')}
             <a
               href="#"
               className="text-primary hover:underline font-medium"
               onClick={(event) => handleTermsLinkClick(event as unknown as Event)}
             >
-              {getLabel('termsLink', 'Terms and Conditions')}
+              {getLabel(props.labels, 'termsLink', 'Terms and Conditions')}
             </a>
           </label>
         </div>
@@ -112,8 +111,8 @@ function QuoteActions(props: QuoteActionsProps) {
         {loading ? (
           <div className="propeller-quote-actions__spinner w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
         ) : null}
-        {loading ? <>{getLabel('processing', 'Processing...')}</> : null}
-        {!loading ? <>{getLabel('acceptButton', 'Accept Quotation')}</> : null}
+        {loading ? <>{getLabel(props.labels, 'processing', 'Processing...')}</> : null}
+        {!loading ? <>{getLabel(props.labels, 'acceptButton', 'Accept Quotation')}</> : null}
       </button>
     </div>
   );

@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
+import { isContentHidden } from '@/lib/helpers/visibilityHelpers';
 
 export interface ProductPriceProps {
   /**
@@ -62,7 +64,7 @@ interface ProductPriceState {
 }
 function ProductPriceDisplay(props: ProductPriceProps) {
   function isHidden(): ReturnType<ProductPriceState['isHidden']> {
-    return (props.portalMode as string) === 'semi-closed' && !props.user;
+    return isContentHidden(props.portalMode as string | undefined, props.user);
   }
   function formatPrice(
     value: number | null | undefined
@@ -115,19 +117,16 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     return formatPrice(base + getOptionsTotal(useNet));
   }
   function getTaxLabel(): ReturnType<ProductPriceState['getTaxLabel']> {
-    return props.includeTax ? getLabel('inclTax', 'incl. VAT') : getLabel('exclTax', 'excl. VAT');
+    return props.includeTax ? getLabel(props.labels, 'inclTax', 'incl. VAT') : getLabel(props.labels, 'exclTax', 'excl. VAT');
   }
   function getSecondaryTaxLabel(): ReturnType<ProductPriceState['getSecondaryTaxLabel']> {
-    return props.includeTax ? getLabel('exclTax', 'excl. VAT') : getLabel('inclTax', 'incl. VAT');
-  }
-  function getLabel(key: string, fallback: string): ReturnType<ProductPriceState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
+    return props.includeTax ? getLabel(props.labels, 'exclTax', 'excl. VAT') : getLabel(props.labels, 'inclTax', 'incl. VAT');
   }
   return (
     <div className={`propeller-product-price ${(props.className as string) || ''}`} data-hidden={isHidden() ? 'true' : 'false'}>
       {isHidden() ? (
         <p className="propeller-product-price__login-prompt text-sm text-muted-foreground italic">
-          {getLabel('loginToSeePrices', 'Log in to see prices')}
+          {getLabel(props.labels, 'loginToSeePrices', 'Log in to see prices')}
         </p>
       ) : null}
       {!isHidden() && !!getLeadingPrice() ? (

@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { formatPrice } from '@/lib/helpers/priceHelpers';
+import { config } from '@/data/config';
 
 export interface OrderItemCardProps {
   /** The order item to display */
@@ -148,7 +150,7 @@ function OrderItemCard(props: OrderItemCardProps) {
       return props.formatPrice(price);
     }
     if (!price && price !== 0) return '-';
-    return '€' + Number(price).toFixed(2);
+    return formatPrice(price, config.currency);
   }
   function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
     const discountStr = formatItemPrice(discount());

@@ -1,5 +1,8 @@
 import * as React from 'react';
 import { Order, Enums } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
+import { formatPrice } from '@/lib/helpers/priceHelpers';
+import { config } from '@/data/config';
 
 export interface OrderTotalsProps {
   /** The order/quote used to populate the summary data */
@@ -77,14 +80,11 @@ function OrderTotals(props: OrderTotalsProps) {
   function showTotalVat(): ReturnType<OrderTotalsState['showTotalVat']> {
     return props.showTotalVat !== undefined ? props.showTotalVat : true;
   }
-  function getLabel(key: string, fallback: string): ReturnType<OrderTotalsState['getLabel']> {
-    return props.labels?.[key] || fallback;
-  }
   function formatItemPrice(price: number): ReturnType<OrderTotalsState['formatItemPrice']> {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
-    return '€' + Number(price || 0).toFixed(2);
+    return formatPrice(price || 0, config.currency);
   }
   function subtotal(): ReturnType<OrderTotalsState['subtotal']> {
     return (props.order as any)?.total?.gross || 0;
@@ -146,37 +146,37 @@ function OrderTotals(props: OrderTotalsProps) {
     <div className="propeller-order-totals w-full md:w-80 bg-card p-6 rounded-container shadow space-y-3">
       {showSubtotal() ? (
         <div className="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="subtotal">
-          <span className="propeller-order-totals__label">{getLabel('subtotal', 'Subtotal:')}</span>
+          <span className="propeller-order-totals__label">{getLabel(props.labels, 'subtotal', 'Subtotal:')}</span>
           <span className="propeller-order-totals__value">{formatItemPrice(subtotal())}</span>
         </div>
       ) : null}
       {showDiscount() && hasDiscount() ? (
         <>
           <div className="propeller-order-totals__row flex justify-between text-secondary" data-row="discount">
-            <span className="propeller-order-totals__label">{getLabel('discount', 'Discount:')}</span>
+            <span className="propeller-order-totals__label">{getLabel(props.labels, 'discount', 'Discount:')}</span>
             <span className="propeller-order-totals__value">{discountDisplay()}</span>
           </div>
           <div className="propeller-order-totals__row flex justify-between text-muted-foreground border-t pt-2 border-dashed" data-row="subtotal-with-discount">
-            <span className="propeller-order-totals__label">{getLabel('subtotalWithDiscount', 'Subtotal with discount:')}</span>
+            <span className="propeller-order-totals__label">{getLabel(props.labels, 'subtotalWithDiscount', 'Subtotal with discount:')}</span>
             <span className="propeller-order-totals__value">{formatItemPrice(subtotalWithDiscount())}</span>
           </div>
         </>
       ) : null}
       {hasTransactionCosts() ? (
         <div className="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="transaction-costs">
-          <span className="propeller-order-totals__label">{getLabel('transactionCosts', 'Transaction costs:')}</span>
+          <span className="propeller-order-totals__label">{getLabel(props.labels, 'transactionCosts', 'Transaction costs:')}</span>
           <span className="propeller-order-totals__value">{formatItemPrice(transactionCosts())}</span>
         </div>
       ) : null}
       {showShippingCosts() && hasShippingCosts() ? (
         <div className="propeller-order-totals__row flex justify-between text-muted-foreground" data-row="shipping-costs">
-          <span className="propeller-order-totals__label">{getLabel('shippingCosts', 'Shipping costs:')}</span>
+          <span className="propeller-order-totals__label">{getLabel(props.labels, 'shippingCosts', 'Shipping costs:')}</span>
           <span className="propeller-order-totals__value">{formatItemPrice(shippingCosts())}</span>
         </div>
       ) : null}
       {showTotalExclVat() ? (
         <div className="propeller-order-totals__row flex justify-between text-muted-foreground pt-2 border-t" data-row="total-excl-vat">
-          <span className="propeller-order-totals__label">{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
+          <span className="propeller-order-totals__label">{getLabel(props.labels, 'totalExclVat', 'Total excl. VAT:')}</span>
           <span className="propeller-order-totals__value">{formatItemPrice(totalExclVat())}</span>
         </div>
       ) : null}
@@ -185,7 +185,7 @@ function OrderTotals(props: OrderTotalsProps) {
           {taxPercentages()?.map((tax, index) => (
             <div className="propeller-order-totals__row flex justify-between text-muted-foreground text-sm" key={index} data-row="vat-line">
               <span className="propeller-order-totals__label">
-                {tax.percentage}% {getLabel('vat', 'VAT')}:
+                {tax.percentage}% {getLabel(props.labels, 'vat', 'VAT')}:
               </span>
               <span className="propeller-order-totals__value">{formatItemPrice(Number(tax.total))}</span>
             </div>
@@ -194,12 +194,12 @@ function OrderTotals(props: OrderTotalsProps) {
       ) : null}
       {showTotalVat() ? (
         <div className="propeller-order-totals__row flex justify-between text-muted-foreground text-sm" data-row="total-vat">
-          <span className="propeller-order-totals__label">{getLabel('totalVat', 'Total VAT:')}</span>
+          <span className="propeller-order-totals__label">{getLabel(props.labels, 'totalVat', 'Total VAT:')}</span>
           <span className="propeller-order-totals__value">{formatItemPrice(totalVat())}</span>
         </div>
       ) : null}
       <div className="propeller-order-totals__row propeller-order-totals__row--total flex justify-between text-xl font-bold pt-4 border-t text-foreground mt-2" data-row="total">
-        <span className="propeller-order-totals__label">{getLabel('total', 'Total:')}</span>
+        <span className="propeller-order-totals__label">{getLabel(props.labels, 'total', 'Total:')}</span>
         <span className="propeller-order-totals__value">{formatItemPrice(totalInclVat())}</span>
       </div>
     </div>

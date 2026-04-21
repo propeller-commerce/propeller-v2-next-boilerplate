@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ProductInventory } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ItemStockProps {
   /**
@@ -30,9 +31,7 @@ export interface ItemStockProps {
   className?: string;
 }
 function ItemStock(props: ItemStockProps) {
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
+  
   function getTotalQuantity(): number {
     const qty = (props.inventory as ProductInventory)?.totalQuantity;
     return qty !== undefined && qty !== null ? qty : -1;
@@ -43,9 +42,9 @@ function ItemStock(props: ItemStockProps) {
   function getStockStatusLabel(): string {
     const qty = getTotalQuantity();
     if (qty < 0) return '';
-    if (qty === 0) return getLabel('outOfStock', 'Out of stock');
-    if (qty <= 5) return getLabel('lowStock', 'Low stock');
-    return getLabel('inStock', 'In stock');
+    if (qty === 0) return getLabel(props.labels, 'outOfStock', 'Out of stock');
+    if (qty <= 5) return getLabel(props.labels, 'lowStock', 'Low stock');
+    return getLabel(props.labels, 'inStock', 'In stock');
   }
   function getStockStatusClass(): string {
     const qty = getTotalQuantity();
@@ -61,8 +60,8 @@ function ItemStock(props: ItemStockProps) {
   }
   function getAvailabilityLabel(): string {
     return isAvailable()
-      ? getLabel('available', 'Available')
-      : getLabel('notAvailable', 'Not available');
+      ? getLabel(props.labels, 'available', 'Available')
+      : getLabel(props.labels, 'notAvailable', 'Not available');
   }
   function getAvailabilityClass(): string {
     return isAvailable()
@@ -102,7 +101,7 @@ function ItemStock(props: ItemStockProps) {
                 {getTotalQuantity() > 0 ? (
                   <span className="propeller-item-stock__count opacity-70">
                     ({getTotalQuantity()}
-                    {getLabel('pieces', 'pcs')})
+                    {getLabel(props.labels, 'pieces', 'pcs')})
                   </span>
                 ) : null}
               </span>

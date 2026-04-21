@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ItemsOverviewProps {
   /** Shopping cart object from which the cart items overview will be displayed */
@@ -75,9 +76,6 @@ function ItemsOverview(props: ItemsOverviewProps) {
   }
   function showPrice(): ReturnType<ItemsOverviewState['showPrice']> {
     return props.showPrice !== undefined ? props.showPrice : true;
-  }
-  function getLabel(key: string, fallback: string): ReturnType<ItemsOverviewState['getLabel']> {
-    return props.labels?.[key] || fallback;
   }
   function formatItemPrice(price: number): ReturnType<ItemsOverviewState['formatItemPrice']> {
     if (props.formatPrice) {
@@ -249,7 +247,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
                   </div>{' '}
                   <div className="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                     <span>
-                      {getLabel('quantity', 'Qty:')}
+                      {getLabel(props.labels, 'quantity', 'Qty:')}
                       {item.quantity}
                     </span>
                   </div>
@@ -301,7 +299,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
                   </div>{' '}
                   <div className="propeller-items-overview__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                     <span>
-                      {getLabel('quantity', 'Qty:')}
+                      {getLabel(props.labels, 'quantity', 'Qty:')}
                       {item.quantity}
                     </span>
                     {showAvailability() && getItemAvailability(item) ? (
@@ -320,7 +318,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
         ))}
       </div>
       {items().length === 0 ? (
-        <p className="propeller-items-overview__empty text-muted-foreground italic text-sm">{getLabel('noItems', 'No items in cart.')}</p>
+        <p className="propeller-items-overview__empty text-muted-foreground italic text-sm">{getLabel(props.labels, 'noItems', 'No items in cart.')}</p>
       ) : null}
     </div>
   );

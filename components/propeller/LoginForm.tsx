@@ -8,6 +8,7 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface LoginFormProps {
   /**
@@ -118,9 +119,7 @@ function LoginForm(props: LoginFormProps) {
     graphqlClient: props.graphqlClient as GraphQLClient,
   });
 
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as any)?.[key] || fallback;
-  }
+  
   function emailLabel(): string {
     return props.labels?.email || 'Email';
   }
@@ -333,10 +332,10 @@ function LoginForm(props: LoginFormProps) {
               if (props.onForgotPasswordClick) props.onForgotPasswordClick();
             }}
           >
-            {getLabel('forgotPassword', 'Forgot Password?')}
+            {getLabel(props.labels, 'forgotPassword', 'Forgot Password?')}
           </button>
           <div className="propeller-login-form__register text-xs text-muted-foreground">
-            {getLabel('noAccount', "Don't have an account?")}
+            {getLabel(props.labels, 'noAccount', "Don't have an account?")}
             <button
               type="button"
               className="propeller-login-form__register-btn text-secondary hover:underline font-medium"
@@ -344,7 +343,7 @@ function LoginForm(props: LoginFormProps) {
                 if (props.onRegisterClick) props.onRegisterClick();
               }}
             >
-              {getLabel('registerLink', 'Register')}
+              {getLabel(props.labels, 'registerLink', 'Register')}
             </button>
           </div>
         </div>

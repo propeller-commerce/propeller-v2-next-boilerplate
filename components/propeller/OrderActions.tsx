@@ -13,6 +13,7 @@ import {
   Company,
 } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface OrderActionsProps {
   /** GraphQL client for the Propeller SDK */
@@ -72,9 +73,7 @@ function OrderActions(props: OrderActionsProps) {
     setToastVisible(false);
   }
 
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as any)?.[key] || fallback;
-  }
+  
 
   async function handleDownloadPDF() {
     if (!props.order?.id) return;
@@ -82,13 +81,13 @@ function OrderActions(props: OrderActionsProps) {
     try {
       const result = await downloadPdf(props.order);
       if (result.success) {
-        showToast(getLabel('pdfSuccess', 'PDF downloaded successfully'), 'success');
+        showToast(getLabel(props.labels, 'pdfSuccess', 'PDF downloaded successfully'), 'success');
       } else {
-        showToast(getLabel('pdfError', 'Failed to download PDF'), 'error');
+        showToast(getLabel(props.labels, 'pdfError', 'Failed to download PDF'), 'error');
       }
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      showToast(getLabel('pdfError', 'Failed to download PDF'), 'error');
+      showToast(getLabel(props.labels, 'pdfError', 'Failed to download PDF'), 'error');
     } finally {
       setDownloading(false);
     }
@@ -100,13 +99,13 @@ function OrderActions(props: OrderActionsProps) {
     try {
       const result = await reorder(props.order, props.cartId);
       if (result.success) {
-        showToast(getLabel('reorderSuccess', 'All items added to cart'), 'success');
+        showToast(getLabel(props.labels, 'reorderSuccess', 'All items added to cart'), 'success');
       } else {
-        showToast(getLabel('reorderError', 'Failed to add items to cart'), 'error');
+        showToast(getLabel(props.labels, 'reorderError', 'Failed to add items to cart'), 'error');
       }
     } catch (error) {
       console.error('Error during re-order:', error);
-      showToast(getLabel('reorderError', 'Failed to add items to cart'), 'error');
+      showToast(getLabel(props.labels, 'reorderError', 'Failed to add items to cart'), 'error');
     } finally {
       setReordering(false);
     }
@@ -121,8 +120,8 @@ function OrderActions(props: OrderActionsProps) {
           onClick={(event) => handleDownloadPDF()}
           disabled={downloading}
         >
-          {downloading ? <>{getLabel('downloadingPdf', 'Downloading...')}</> : null}
-          {!downloading ? <>{getLabel('downloadPdf', 'Order confirmation (PDF)')}</> : null}
+          {downloading ? <>{getLabel(props.labels, 'downloadingPdf', 'Downloading...')}</> : null}
+          {!downloading ? <>{getLabel(props.labels, 'downloadPdf', 'Order confirmation (PDF)')}</> : null}
         </button>
         <button
           type="button"
@@ -130,8 +129,8 @@ function OrderActions(props: OrderActionsProps) {
           onClick={(event) => handleReorder()}
           disabled={reordering}
         >
-          {reordering ? <>{getLabel('reordering', 'Adding items...')}</> : null}
-          {!reordering ? <>{getLabel('reorder', 'Order again')}</> : null}
+          {reordering ? <>{getLabel(props.labels, 'reordering', 'Adding items...')}</> : null}
+          {!reordering ? <>{getLabel(props.labels, 'reorder', 'Order again')}</> : null}
         </button>
       </div>
       {toastVisible ? (

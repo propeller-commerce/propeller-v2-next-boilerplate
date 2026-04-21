@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Contact, Customer, Enums } from 'propeller-sdk-v2';
+import { isContentHidden } from '@/lib/helpers/visibilityHelpers';
 
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
 
@@ -253,7 +254,7 @@ function GridToolbar(props: GridToolbarProps) {
     return badges;
   }
   function isPriceSortDisabled(): ReturnType<GridToolbarState['isPriceSortDisabled']> {
-    return (props.portalMode as string) === 'semi-closed' && !props.user;
+    return isContentHidden(props.portalMode as string | undefined, props.user);
   }
   function handleSortFieldChange(
     field: string

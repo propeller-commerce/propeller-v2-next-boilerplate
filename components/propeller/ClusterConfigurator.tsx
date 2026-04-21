@@ -7,6 +7,7 @@ import {
   ClusterConfig,
 } from 'propeller-sdk-v2';
 import { useClusterConfigurator } from '@/composables/react/useClusterConfigurator';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 /**
  * A computed object containing a cluster config setting enriched with
@@ -77,9 +78,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
     onConfigurationChange: props.onConfigurationChange,
   });
 
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
+  
 
   useEffect(() => {
     if (props.defaultProduct) {
@@ -108,7 +107,7 @@ function ClusterConfigurator(props: ClusterConfiguratorProps) {
                   disabled={setting.disabled}
                   onChange={(e) => handleAttributeSelect(setting.name, e.target.value)}
                 >
-                  <option value="">{getLabel('selectOption', '— Select —')}</option>
+                  <option value="">{getLabel(props.labels, 'selectOption', '— Select —')}</option>
                   {setting.availableValues?.map((val) => (
                     <option key={val} value={val}>
                       {val}

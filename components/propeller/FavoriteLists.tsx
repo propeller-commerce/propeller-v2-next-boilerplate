@@ -9,6 +9,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 export type { FavoriteListFormData } from '@/composables/react/useFavorites';
 
 export interface FavoriteListsProps {
@@ -149,10 +150,6 @@ function FavoriteLists(props: FavoriteListsProps) {
     return getProductCount(list) + getClusterCount(list);
   }
 
-  function getLabel(key: string, fallback: string): string {
-    const labels = props.labels as Record<string, string> | undefined;
-    return labels?.[key] || fallback;
-  }
 
   const displayedLists = useMemo((): FavoriteList[] => {
     if (props.limit && props.limit > 0) {
@@ -230,7 +227,7 @@ function FavoriteLists(props: FavoriteListsProps) {
               <path d="M5 12h14" />
               <path d="M12 5v14" />
             </svg>
-            {getLabel('createButton', 'Create New List')}
+            {getLabel(props.labels, 'createButton', 'Create New List')}
           </button>
         </div>
       ) : null}
@@ -306,7 +303,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                               className="propeller-favorite-lists__checkbox-label text-sm text-muted-foreground"
                               htmlFor={`default-edit-${list.id}`}
                             >
-                              {getLabel('makeDefault', 'Make default')}
+                              {getLabel(props.labels, 'makeDefault', 'Make default')}
                             </label>
                           </div>
                           <div className="flex gap-2">
@@ -315,13 +312,13 @@ function FavoriteLists(props: FavoriteListsProps) {
                               onClick={(event) => updateList(String(list.id))}
                               disabled={!editListName.trim()}
                             >
-                              {getLabel('editSave', 'Save')}
+                              {getLabel(props.labels, 'editSave', 'Save')}
                             </button>
                             <button
                               className="propeller-favorite-lists__cancel-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-control border border-input text-foreground bg-card hover:bg-surface-hover"
                               onClick={(event) => cancelEdit()}
                             >
-                              {getLabel('editCancel', 'Cancel')}
+                              {getLabel(props.labels, 'editCancel', 'Cancel')}
                             </button>
                           </div>
                         </div>
@@ -332,7 +329,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                             <span className="propeller-favorite-lists__name text-xl font-semibold">{list.name}</span>
                             {props.showDefaultIndicator !== false && list.isDefault ? (
                               <span className="propeller-favorite-lists__default-badge inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                {getLabel('defaultBadge', 'Default')}
+                                {getLabel(props.labels, 'defaultBadge', 'Default')}
                               </span>
                             ) : null}
                           </div>
@@ -355,7 +352,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                                   <line x1="8" x2="8" y1="2" y2="6" />
                                   <line x1="3" x2="21" y1="10" y2="10" />
                                 </svg>
-                                {getLabel('lastModified', 'Last modified')}:{' '}
+                                {getLabel(props.labels, 'lastModified', 'Last modified')}:{' '}
                                 {formatDate(list.updatedAt)}
                               </div>
                             ) : null}
@@ -377,7 +374,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                                   <polyline points="3.29 7 12 12 20.71 7" />
                                   <line x1="12" x2="12" y1="22" y2="12" />
                                 </svg>
-                                {getTotalCount(list)}&nbsp;{getLabel('items', 'items')}
+                                {getTotalCount(list)}&nbsp;{getLabel(props.labels, 'items', 'items')}
                               </div>
                             ) : null}
                           </div>
@@ -459,12 +456,9 @@ function FavoriteLists(props: FavoriteListsProps) {
                 </svg>
               </div>
               <div>
-                <p className="propeller-favorite-lists__empty-title text-lg font-medium">{getLabel('noLists', 'No favorite lists')}</p>
+                <p className="propeller-favorite-lists__empty-title text-lg font-medium">{getLabel(props.labels, 'noLists', 'No favorite lists')}</p>
                 <p className="propeller-favorite-lists__empty-message text-muted-foreground">
-                  {getLabel(
-                    'noListsDescription',
-                    'Start by creating a new list to save your items.'
-                  )}
+                  {getLabel(props.labels, 'noListsDescription', 'Start by creating a new list to save your items.')}
                 </p>
               </div>
               {props.allowFavoriteListCreate !== false ? (
@@ -474,7 +468,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                     setShowCreateModal(true);
                   }}
                 >
-                  {getLabel('createFirstList', 'Create your first list')}
+                  {getLabel(props.labels, 'createFirstList', 'Create your first list')}
                 </button>
               ) : null}
             </div>
@@ -485,7 +479,7 @@ function FavoriteLists(props: FavoriteListsProps) {
         <div className="propeller-favorite-lists__create-modal fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="propeller-favorite-lists__create-modal-content bg-card p-6 rounded-container max-w-md w-full shadow-lg border border-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="propeller-favorite-lists__create-modal-title text-xl font-bold">{getLabel('createTitle', 'Create New List')}</h3>
+              <h3 className="propeller-favorite-lists__create-modal-title text-xl font-bold">{getLabel(props.labels, 'createTitle', 'Create New List')}</h3>
               <button
                 className="propeller-favorite-lists__create-modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                 onClick={(event) => {
@@ -505,7 +499,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                   onChange={(e) => {
                     setNewListName(e.target.value);
                   }}
-                  placeholder={getLabel('createPlaceholder', 'Enter list name')}
+                  placeholder={getLabel(props.labels, 'createPlaceholder', 'Enter list name')}
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -519,7 +513,7 @@ function FavoriteLists(props: FavoriteListsProps) {
                   }}
                 />
                 <label htmlFor="create-set-default" className="propeller-favorite-lists__checkbox-label text-sm text-muted-foreground">
-                  {getLabel('setAsDefault', 'Set as default favorite list')}
+                  {getLabel(props.labels, 'setAsDefault', 'Set as default favorite list')}
                 </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
@@ -529,14 +523,14 @@ function FavoriteLists(props: FavoriteListsProps) {
                     closeCreateModal();
                   }}
                 >
-                  {getLabel('cancelButton', 'Cancel')}
+                  {getLabel(props.labels, 'cancelButton', 'Cancel')}
                 </button>
                 <button
                   className="propeller-favorite-lists__save-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control text-primary-foreground bg-primary hover:bg-primary/80 disabled:opacity-50"
                   onClick={(event) => handleCreateList()}
                   disabled={!newListName.trim()}
                 >
-                  {getLabel('saveButton', 'Save')}
+                  {getLabel(props.labels, 'saveButton', 'Save')}
                 </button>
               </div>
             </div>
@@ -548,7 +542,7 @@ function FavoriteLists(props: FavoriteListsProps) {
           <div className="propeller-favorite-lists__delete-modal-content bg-card p-6 rounded-container max-w-md w-full shadow-lg border border-border">
             <div className="flex justify-between items-center mb-4">
               <h3 className="propeller-favorite-lists__delete-modal-title text-xl font-bold">
-                {getLabel('deleteTitle', 'Delete Favorite List')}
+                {getLabel(props.labels, 'deleteTitle', 'Delete Favorite List')}
               </h3>
               <button
                 className="propeller-favorite-lists__delete-modal-close h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-muted-foreground hover:text-foreground hover:bg-surface-hover"
@@ -559,11 +553,11 @@ function FavoriteLists(props: FavoriteListsProps) {
             </div>
             <div className="space-y-4">
               <p className="propeller-favorite-lists__delete-prompt">
-                {getLabel('deleteConfirm', 'Are you sure you want to delete')}
+                {getLabel(props.labels, 'deleteConfirm', 'Are you sure you want to delete')}
                 <strong>&quot;{listToDelete?.name}&quot;</strong>?
               </p>
               <p className="propeller-favorite-lists__delete-warning text-sm text-destructive">
-                {getLabel('deleteWarning', 'This action cannot be undone.')}
+                {getLabel(props.labels, 'deleteWarning', 'This action cannot be undone.')}
               </p>
             </div>
             <div className="flex justify-end gap-3 pt-6">
@@ -571,13 +565,13 @@ function FavoriteLists(props: FavoriteListsProps) {
                 className="propeller-favorite-lists__cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control border border-input text-foreground bg-card hover:bg-surface-hover"
                 onClick={(event) => handleCancelDelete()}
               >
-                {getLabel('cancelButton', 'Cancel')}
+                {getLabel(props.labels, 'cancelButton', 'Cancel')}
               </button>
               <button
                 className="propeller-favorite-lists__confirm-delete-btn inline-flex items-center px-4 py-2 text-sm font-medium rounded-control text-destructive-foreground bg-destructive hover:bg-destructive/90"
                 onClick={(event) => handleConfirmDelete()}
               >
-                {getLabel('deleteButton', 'Delete')}
+                {getLabel(props.labels, 'deleteButton', 'Delete')}
               </button>
             </div>
           </div>

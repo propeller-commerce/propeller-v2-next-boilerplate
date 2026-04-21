@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { Enums, GraphQLClient, Contact, Customer, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, RegisterContactInput } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationConfigurator } from '@/composables/react/usePurchaseAuthorization';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface PurchaseAuthorizationConfiguratorProps {
   /** GraphQL client for the Propeller SDK */
@@ -80,9 +81,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
     afterPurchaseAuthorizationDelete: props.afterPurchaseAuthorizationDelete,
   });
 
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
 
   return (
     <div className={`propeller-purchase-authorization-configurator ${props.className || ''}`}>
@@ -91,7 +90,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">
-                {getLabel('title', 'Purchase Authorization Settings')}
+                {getLabel(props.labels, 'title', 'Purchase Authorization Settings')}
               </h2>
               {props.allowContactCreate !== false ? (
                 <button
@@ -99,7 +98,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   className="propeller-purchase-authorization-configurator__add-btn flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-container hover:bg-primary/80 transition text-sm font-medium"
                   onClick={() => openAddContactModal()}
                 >
-                  {getLabel('addContact', 'Add contact')}
+                  {getLabel(props.labels, 'addContact', 'Add contact')}
                 </button>
               ) : null}
             </div>
@@ -115,19 +114,19 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colId', 'ID')}
+                          {getLabel(props.labels, 'colId', 'ID')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colName', 'Name')}
+                          {getLabel(props.labels, 'colName', 'Name')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colRole', 'Role')}
+                          {getLabel(props.labels, 'colRole', 'Role')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colLimit', 'Limit')}
+                          {getLabel(props.labels, 'colLimit', 'Limit')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colActions', 'Actions')}
+                          {getLabel(props.labels, 'colActions', 'Actions')}
                         </th>
                       </tr>
                     </thead>
@@ -150,12 +149,12 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               disabled={isCurrentUser(contact.contactId)}
                               onChange={(e) => handleRoleChange(contact.contactId, e.target.value)}
                             >
-                              <option value="">{getLabel('selectRole', '— Select role —')}</option>
+                              <option value="">{getLabel(props.labels, 'selectRole', '— Select role —')}</option>
                               <option value={Enums.PurchaseRole.PURCHASER}>
-                                {getLabel('rolePurchaser', 'Purchaser')}
+                                {getLabel(props.labels, 'rolePurchaser', 'Purchaser')}
                               </option>
                               <option value={Enums.PurchaseRole.AUTHORIZATION_MANAGER}>
-                                {getLabel('roleManager', 'Authorization Manager')}
+                                {getLabel(props.labels, 'roleManager', 'Authorization Manager')}
                               </option>
                             </select>
                           </td>
@@ -169,7 +168,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                 value={getRowLimit(contact.contactId) ?? ''}
                                 disabled={isCurrentUser(contact.contactId)}
                                 onChange={(e) => handleLimitChange(contact.contactId, e.target.value)}
-                                placeholder={getLabel('limitPlaceholder', '0.00')}
+                                placeholder={getLabel(props.labels, 'limitPlaceholder', '0.00')}
                               />
                             ) : null}
                           </td>
@@ -185,7 +184,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                   {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
-                                  {getLabel('save', 'Save')}
+                                  {getLabel(props.labels, 'save', 'Save')}
                                 </button>
                               ) : null}
                               {!hasPac(contact.contactId) ? (
@@ -198,7 +197,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                   {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
-                                  {getLabel('create', 'Create')}
+                                  {getLabel(props.labels, 'create', 'Create')}
                                 </button>
                               ) : null}
                               {hasPac(contact.contactId) ? (
@@ -211,7 +210,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                                   {isRowLoading(contact.contactId) ? (
                                     <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
-                                  {getLabel('delete', 'Delete')}
+                                  {getLabel(props.labels, 'delete', 'Delete')}
                                 </button>
                               ) : null}
                             </div>
@@ -229,10 +228,10 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                       disabled={currentPage <= 1}
                       onClick={() => handlePageChange(currentPage - 1)}
                     >
-                      {getLabel('previous', 'Previous')}
+                      {getLabel(props.labels, 'previous', 'Previous')}
                     </button>
                     <span className="text-sm text-muted-foreground">
-                      {getLabel('page', 'Page')} {currentPage} {getLabel('of', 'of')} {totalPages}
+                      {getLabel(props.labels, 'page', 'Page')} {currentPage} {getLabel(props.labels, 'of', 'of')} {totalPages}
                     </span>
                     <button
                       type="button"
@@ -240,7 +239,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                       disabled={currentPage >= totalPages}
                       onClick={() => handlePageChange(currentPage + 1)}
                     >
-                      {getLabel('next', 'Next')}
+                      {getLabel(props.labels, 'next', 'Next')}
                     </button>
                   </div>
                 ) : null}
@@ -257,7 +256,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{getLabel('addContactTitle', 'Add Contact')}</h3>
+                  <h3 className="text-lg font-semibold">{getLabel(props.labels, 'addContactTitle', 'Add Contact')}</h3>
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground transition"
@@ -267,7 +266,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">{getLabel('companyName', 'Company')}</label>
+                  <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'companyName', 'Company')}</label>
                   <input
                     type="text"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-muted cursor-not-allowed"
@@ -276,20 +275,20 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">{getLabel('gender', 'Gender')}</label>
+                  <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'gender', 'Gender')}</label>
                   <select
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     value={addContactForm.gender}
                     onChange={(e) => setAddContactForm({ ...addContactForm, gender: e.target.value })}
                   >
-                    <option value="">{getLabel('selectGender', '— Select —')}</option>
-                    <option value={Enums.Gender.M}>{getLabel('genderM', 'Male')}</option>
-                    <option value={Enums.Gender.F}>{getLabel('genderF', 'Female')}</option>
-                    <option value={Enums.Gender.U}>{getLabel('genderU', 'Unspecified')}</option>
+                    <option value="">{getLabel(props.labels, 'selectGender', '— Select —')}</option>
+                    <option value={Enums.Gender.M}>{getLabel(props.labels, 'genderM', 'Male')}</option>
+                    <option value={Enums.Gender.F}>{getLabel(props.labels, 'genderF', 'Female')}</option>
+                    <option value={Enums.Gender.U}>{getLabel(props.labels, 'genderU', 'Unspecified')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">{getLabel('email', 'Email')} *</label>
+                  <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'email', 'Email')} *</label>
                   <input
                     type="email"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -299,7 +298,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">{getLabel('firstName', 'First name')}</label>
+                    <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'firstName', 'First name')}</label>
                     <input
                       type="text"
                       className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -308,7 +307,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">{getLabel('middleName', 'Middle')}</label>
+                    <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'middleName', 'Middle')}</label>
                     <input
                       type="text"
                       className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -317,7 +316,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">{getLabel('lastName', 'Last name')}</label>
+                    <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'lastName', 'Last name')}</label>
                     <input
                       type="text"
                       className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -327,7 +326,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">{getLabel('phone', 'Phone')}</label>
+                  <label className="block text-sm font-medium mb-1">{getLabel(props.labels, 'phone', 'Phone')}</label>
                   <input
                     type="tel"
                     className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -344,7 +343,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     className="px-4 py-2 text-sm border border-border rounded-md hover:bg-muted transition"
                     onClick={() => closeAddContactModal()}
                   >
-                    {getLabel('cancel', 'Cancel')}
+                    {getLabel(props.labels, 'cancel', 'Cancel')}
                   </button>
                   <button
                     type="button"
@@ -355,7 +354,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     {addContactLoading ? (
                       <span className="inline-block w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                     ) : null}
-                    {getLabel('addContactSubmit', 'Add Contact')}
+                    {getLabel(props.labels, 'addContactSubmit', 'Add Contact')}
                   </button>
                 </div>
               </div>

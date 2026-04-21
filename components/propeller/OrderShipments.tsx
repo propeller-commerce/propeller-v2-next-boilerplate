@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import { Order, Shipment, ShipmentItem, TrackAndTrace, OrderItem } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface OrderShipmentsProps {
   /** The current order the user is viewing */
@@ -28,9 +29,6 @@ function OrderShipments(props: OrderShipmentsProps) {
     () => null
   );
   const shipments: Shipment[] = (props.order?.shipments as Shipment[]) || [];
-  function getLabel(key: string, fallback: string): ReturnType<OrderShipmentsState['getLabel']> {
-    return (props.labels as any)?.[key] || fallback;
-  }
   function openModal(shipment: Shipment): ReturnType<OrderShipmentsState['openModal']> {
     setActiveShipment(shipment);
   }
@@ -63,25 +61,25 @@ function OrderShipments(props: OrderShipmentsProps) {
     <div className={`order-shipments ${props.className || ''}`}>
       {shipments.length > 0 ? (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">{getLabel('title', 'Shipping details')}</h2>
+          <h2 className="text-xl font-semibold">{getLabel(props.labels, 'title', 'Shipping details')}</h2>
           <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {getLabel('colStatus', 'Status')}
+                    {getLabel(props.labels, 'colStatus', 'Status')}
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {getLabel('colCreatedAt', 'Date')}
+                    {getLabel(props.labels, 'colCreatedAt', 'Date')}
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {getLabel('colExpectedDelivery', 'Expected delivery')}
+                    {getLabel(props.labels, 'colExpectedDelivery', 'Expected delivery')}
                   </th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                    {getLabel('colItems', 'Items')}
+                    {getLabel(props.labels, 'colItems', 'Items')}
                   </th>
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">
-                    {getLabel('colActions', 'Actions')}
+                    {getLabel(props.labels, 'colActions', 'Actions')}
                   </th>
                 </tr>
               </thead>
@@ -114,7 +112,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                         className="text-primary hover:text-primary/80 text-sm font-medium hover:underline"
                         onClick={(event) => openModal(shipment)}
                       >
-                        {getLabel('details', 'Details')}
+                        {getLabel(props.labels, 'details', 'Details')}
                       </button>
                     </td>
                   </tr>
@@ -136,7 +134,7 @@ function OrderShipments(props: OrderShipmentsProps) {
           >
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h3 className="text-lg font-semibold">
-                {getLabel('modalTitle', 'Shipment details')}
+                {getLabel(props.labels, 'modalTitle', 'Shipment details')}
               </h3>
               <button
                 type="button"
@@ -158,7 +156,7 @@ function OrderShipments(props: OrderShipmentsProps) {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    {getLabel('labelStatus', 'Status')}
+                    {getLabel(props.labels, 'labelStatus', 'Status')}
                   </span>
                   <p className="mt-0.5">
                     {!!activeShipment?.status ? (
@@ -171,7 +169,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">
-                    {getLabel('labelExpectedDelivery', 'Expected delivery')}
+                    {getLabel(props.labels, 'labelExpectedDelivery', 'Expected delivery')}
                   </span>
                   <p className="mt-0.5">
                     {!!activeShipment?.expectedDeliveryAt ? (
@@ -182,20 +180,20 @@ function OrderShipments(props: OrderShipmentsProps) {
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-semibold mb-2">{getLabel('itemsTitle', 'Items')}</h4>
+                <h4 className="text-sm font-semibold mb-2">{getLabel(props.labels, 'itemsTitle', 'Items')}</h4>
                 {(activeShipment?.items || []).length > 0 ? (
                   <div className="rounded-lg border border-border overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 border-b border-border">
                         <tr>
                           <th className="text-left px-4 py-2 font-medium text-muted-foreground">
-                            {getLabel('colProduct', 'Product')}
+                            {getLabel(props.labels, 'colProduct', 'Product')}
                           </th>
                           <th className="text-left px-4 py-2 font-medium text-muted-foreground">
-                            {getLabel('colSku', 'SKU')}
+                            {getLabel(props.labels, 'colSku', 'SKU')}
                           </th>
                           <th className="text-center px-4 py-2 font-medium text-muted-foreground">
-                            {getLabel('colQuantity', 'Qty')}
+                            {getLabel(props.labels, 'colQuantity', 'Qty')}
                           </th>
                         </tr>
                       </thead>
@@ -241,14 +239,14 @@ function OrderShipments(props: OrderShipmentsProps) {
                 ) : null}
                 {(activeShipment?.items || []).length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    {getLabel('noItems', 'No items in this shipment')}
+                    {getLabel(props.labels, 'noItems', 'No items in this shipment')}
                   </p>
                 ) : null}
               </div>
               {(activeShipment?.trackAndTraces || []).length > 0 ? (
                 <div>
                   <h4 className="text-sm font-semibold mb-2">
-                    {getLabel('trackAndTraceTitle', 'Track & Trace')}
+                    {getLabel(props.labels, 'trackAndTraceTitle', 'Track & Trace')}
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {((activeShipment?.trackAndTraces as TrackAndTrace[]) || []).map((tat: TrackAndTrace, tatIdx: number) =>
@@ -274,12 +272,12 @@ function OrderShipments(props: OrderShipmentsProps) {
                             </svg>
                             {!!tat.carrier?.name ? (
                               <>
-                                {getLabel('trackAndTrace', 'Track & Trace')}-{tat.carrier?.name}
+                                {getLabel(props.labels, 'trackAndTrace', 'Track & Trace')}-{tat.carrier?.name}
                               </>
                             ) : null}
                             {!tat.carrier?.name ? (
                               <>
-                                {getLabel('trackAndTrace', 'Track & Trace')}({tat.code})
+                                {getLabel(props.labels, 'trackAndTrace', 'Track & Trace')}({tat.code})
                               </>
                             ) : null}
                           </a>
@@ -295,7 +293,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                 className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:bg-muted transition-colors"
                 onClick={(event) => closeModal()}
               >
-                {getLabel('close', 'Close')}
+                {getLabel(props.labels, 'close', 'Close')}
               </button>
             </div>
           </div>

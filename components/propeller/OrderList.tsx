@@ -13,6 +13,9 @@ import {
   OrderSortInput,
 } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
+import { getLabel } from '@/lib/helpers/labelHelpers';
+import { formatPrice as formatPriceHelper } from '@/lib/helpers/priceHelpers';
+import { config } from '@/data/config';
 
 export interface OrderListProps {
   /** The authenticated user (Contact or Customer) */
@@ -118,7 +121,7 @@ function OrderList(props: OrderListProps) {
   function formatPrice(price: number): string {
     if (props.formatPrice) return props.formatPrice(price);
     if (!price) return '-';
-    return `€${Number(price).toFixed(2)}`;
+    return formatPriceHelper(price, config.currency);
   }
 
   function getStatusColor(status: string): string {
@@ -143,9 +146,7 @@ function OrderList(props: OrderListProps) {
     return col.charAt(0).toUpperCase() + col.slice(1);
   }
 
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as any)?.[key] || fallback;
-  }
+  
 
   function searchFields(): string[] {
     const fields = props.searchFields || [];
@@ -464,7 +465,7 @@ function OrderList(props: OrderListProps) {
                                   props.onOrderClick(order.id);
                                 }}
                               >
-                                {getLabel('view', 'View')}
+                                {getLabel(props.labels, 'view', 'View')}
                               </button>
                             ) : null}
                             {col === 'validUntil' ? (
@@ -490,22 +491,22 @@ function OrderList(props: OrderListProps) {
                       onClick={(event) => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
                     >
-                      {getLabel('previous', 'Previous')}
+                      {getLabel(props.labels, 'previous', 'Previous')}
                     </button>
                     <button
                       className="propeller-order-list__pagination-btn ml-3 relative inline-flex items-center px-4 py-2 border border-input text-sm font-medium rounded-control text-foreground bg-card hover:bg-surface-hover disabled:opacity-50"
                       onClick={(event) => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
                     >
-                      {getLabel('next', 'Next')}
+                      {getLabel(props.labels, 'next', 'Next')}
                     </button>
                   </div>
                   <div className="propeller-order-list__pagination-desktop hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                       <p className="propeller-order-list__pagination-summary text-sm text-muted-foreground">
-                        {getLabel('showingPage', 'Showing page')}&nbsp;
+                        {getLabel(props.labels, 'showingPage', 'Showing page')}&nbsp;
                         <span className="font-medium">{currentPage}</span>&nbsp;
-                        {getLabel('of', 'of')}&nbsp;
+                        {getLabel(props.labels, 'of', 'of')}&nbsp;
                         <span className="font-medium">{totalPages}</span>
                       </p>
                     </div>
@@ -519,14 +520,14 @@ function OrderList(props: OrderListProps) {
                           onClick={(event) => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 1}
                         >
-                          {getLabel('previous', 'Previous')}
+                          {getLabel(props.labels, 'previous', 'Previous')}
                         </button>
                         <button
                           className="propeller-order-list__pagination-btn relative inline-flex items-center px-2 py-2 rounded-r-control border border-input bg-card text-sm font-medium text-muted-foreground hover:bg-surface-hover disabled:opacity-50"
                           onClick={(event) => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}
                         >
-                          {getLabel('next', 'Next')}
+                          {getLabel(props.labels, 'next', 'Next')}
                         </button>
                       </nav>
                     </div>
@@ -536,13 +537,13 @@ function OrderList(props: OrderListProps) {
             </div>
           ) : (
             <div className="propeller-order-list__empty bg-card rounded-container shadow p-8 text-center">
-              <p className="text-muted-foreground mb-4">{getLabel('noOrders', 'No orders found.')}</p>
+              <p className="text-muted-foreground mb-4">{getLabel(props.labels, 'noOrders', 'No orders found.')}</p>
             </div>
           )}
         </>
       ) : (
         <div className="propeller-order-list__loading p-8 text-center text-muted-foreground">
-          {getLabel('loading', 'Loading orders...')}
+          {getLabel(props.labels, 'loading', 'Loading orders...')}
         </div>
       )}
     </div>

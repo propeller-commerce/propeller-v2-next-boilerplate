@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ActionCodeProps {
   /** GraphQL client for the Propeller SDK */
@@ -55,9 +56,7 @@ function ActionCode(props: ActionCodeProps) {
   const [isMounted, setIsMounted] = useState<boolean>(() => false);
 
   // --- display helpers ---
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
   function title(): string {
     return props.title || 'Action code';
   }
@@ -85,7 +84,7 @@ function ActionCode(props: ActionCodeProps) {
       setCode('');
       if (updatedCart && props.afterActionCodeApply) props.afterActionCodeApply(updatedCart);
     } catch (err: any) {
-      setError(getLabel('errorApply', 'Failed to apply action code. Please try again.'));
+      setError(getLabel(props.labels, 'errorApply', 'Failed to apply action code. Please try again.'));
       console.error('Failed to apply action code:', err);
     }
   }
@@ -102,7 +101,7 @@ function ActionCode(props: ActionCodeProps) {
       const updatedCart = await removeActionCode(currentCode);
       if (updatedCart && props.afterActionCodeRemove) props.afterActionCodeRemove(updatedCart);
     } catch (err: any) {
-      setError(getLabel('errorRemove', 'Failed to remove action code. Please try again.'));
+      setError(getLabel(props.labels, 'errorRemove', 'Failed to remove action code. Please try again.'));
       console.error('Failed to remove action code:', err);
     }
   }
@@ -147,7 +146,7 @@ function ActionCode(props: ActionCodeProps) {
                   onClick={(event) => handleRemove()}
                   disabled={loading}
                 >
-                  {getLabel('remove', 'Remove')}
+                  {getLabel(props.labels, 'remove', 'Remove')}
                 </button>
               ) : null}
             </div>
@@ -162,7 +161,7 @@ function ActionCode(props: ActionCodeProps) {
                   setCode(e.target.value);
                 }}
                 onKeyDown={(e) => handleKeyDown(e)}
-                placeholder={getLabel('placeholder', 'Enter action code')}
+                placeholder={getLabel(props.labels, 'placeholder', 'Enter action code')}
                 disabled={loading}
               />
               <button
@@ -171,8 +170,8 @@ function ActionCode(props: ActionCodeProps) {
                 onClick={(event) => handleApply()}
                 disabled={loading || !code.trim()}
               >
-                {loading ? <>{getLabel('applying', 'Applying...')}</> : null}
-                {!loading ? <>{getLabel('apply', 'Apply')}</> : null}
+                {loading ? <>{getLabel(props.labels, 'applying', 'Applying...')}</> : null}
+                {!loading ? <>{getLabel(props.labels, 'apply', 'Apply')}</> : null}
               </button>
             </div>
           ) : null}

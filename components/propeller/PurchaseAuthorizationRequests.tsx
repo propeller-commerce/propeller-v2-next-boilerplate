@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { Contact, Customer, GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationRequests } from '@/composables/react/usePurchaseAuthorization';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface PurchaseAuthorizationRequestsProps {
   /** GraphQL client for the Propeller SDK */
@@ -62,9 +63,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     onError: props.onError,
   });
 
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
 
   function formatDate(dateStr: string): string {
     if (props.formatDate) return props.formatDate(dateStr);
@@ -83,7 +82,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     <div className={`propeller-purchase-authorization-requests ${props.className || ''}`}>
       {isAuthManager ? (
         <div className="propeller-purchase-authorization-requests__content space-y-4">
-          <h2 className="propeller-purchase-authorization-requests__title text-xl font-semibold">{getLabel('title', 'Authorization Requests')}</h2>
+          <h2 className="propeller-purchase-authorization-requests__title text-xl font-semibold">{getLabel(props.labels, 'title', 'Authorization Requests')}</h2>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -93,7 +92,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
             <>
               {carts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  {getLabel('empty', 'No pending authorization requests')}
+                  {getLabel(props.labels, 'empty', 'No pending authorization requests')}
                 </div>
               ) : null}
               {carts.length > 0 ? (
@@ -102,19 +101,19 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colDate', 'Date')}
+                          {getLabel(props.labels, 'colDate', 'Date')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colQuantity', 'Quantity')}
+                          {getLabel(props.labels, 'colQuantity', 'Quantity')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colTotal', 'Total')}
+                          {getLabel(props.labels, 'colTotal', 'Total')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colRequestedBy', 'Requested by')}
+                          {getLabel(props.labels, 'colRequestedBy', 'Requested by')}
                         </th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                          {getLabel('colActions', 'Actions')}
+                          {getLabel(props.labels, 'colActions', 'Actions')}
                         </th>
                       </tr>
                     </thead>
@@ -142,7 +141,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                               className="px-3 py-1.5 text-sm border border-input rounded-md bg-background hover:bg-muted/50 transition-colors"
                               onClick={() => handleViewCart(cart)}
                             >
-                              {getLabel('view', 'View')}
+                              {getLabel(props.labels, 'view', 'View')}
                             </button>
                           </td>
                         </tr>
@@ -159,7 +158,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
               <div className="propeller-purchase-authorization-requests__modal-content relative w-full max-w-2xl bg-card rounded-container shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="propeller-purchase-authorization-requests__modal-header flex items-center justify-between px-6 py-4 border-b border-border-subtle flex-shrink-0">
                   <h3 className="propeller-purchase-authorization-requests__modal-title text-base font-semibold text-foreground">
-                    {getLabel('modalTitle', 'Authorization Request')}
+                    {getLabel(props.labels, 'modalTitle', 'Authorization Request')}
                   </h3>
                   <button
                     type="button"
@@ -181,7 +180,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                     <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
                       <div>
                         <h4 className="propeller-purchase-authorization-requests__modal-section-title text-sm font-semibold text-muted-foreground mb-2">
-                          {getLabel('requesterInfo', 'Requester')}
+                          {getLabel(props.labels, 'requesterInfo', 'Requester')}
                         </h4>
                         <p className="text-sm font-medium">
                           {getContactName(selectedCart?.contact as Contact)}
@@ -192,23 +191,23 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       </div>
                       <div>
                         <h4 className="propeller-purchase-authorization-requests__modal-section-title text-sm font-semibold text-muted-foreground mb-2">
-                          {getLabel('itemsTitle', 'Items')}
+                          {getLabel(props.labels, 'itemsTitle', 'Items')}
                         </h4>
                         <div className="overflow-x-auto rounded border border-border">
                           <table className="w-full text-sm">
                             <thead className="bg-muted/50 border-b border-border">
                               <tr>
                                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                                  {getLabel('itemProduct', 'Product')}
+                                  {getLabel(props.labels, 'itemProduct', 'Product')}
                                 </th>
                                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">
-                                  {getLabel('itemQty', 'Qty')}
+                                  {getLabel(props.labels, 'itemQty', 'Qty')}
                                 </th>
                                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">
-                                  {getLabel('itemUnitPrice', 'Unit price')}
+                                  {getLabel(props.labels, 'itemUnitPrice', 'Unit price')}
                                 </th>
                                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">
-                                  {getLabel('itemTotal', 'Total')}
+                                  {getLabel(props.labels, 'itemTotal', 'Total')}
                                 </th>
                               </tr>
                             </thead>
@@ -235,17 +234,17 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                       </div>
                       <div className="border-t border-border pt-4 space-y-2 text-sm">
                         <div className="flex justify-between text-muted-foreground">
-                          <span>{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
+                          <span>{getLabel(props.labels, 'totalExclVat', 'Total excl. VAT:')}</span>
                           <span>{formatPrice(selectedCart?.total?.totalGross ?? 0)}</span>
                         </div>
                         <div className="flex justify-between text-muted-foreground">
-                          <span>{getLabel('totalVat', 'VAT:')}</span>
+                          <span>{getLabel(props.labels, 'totalVat', 'VAT:')}</span>
                           <span>
                             {formatPrice((selectedCart?.total?.totalNet ?? 0) - (selectedCart?.total?.totalGross ?? 0))}
                           </span>
                         </div>
                         <div className="flex justify-between font-bold text-base border-t border-border pt-2">
-                          <span>{getLabel('total', 'Total:')}</span>
+                          <span>{getLabel(props.labels, 'total', 'Total:')}</span>
                           <span>{formatPrice(selectedCart?.total?.totalNet ?? 0)}</span>
                         </div>
                       </div>
@@ -256,7 +255,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                         className="propeller-purchase-authorization-requests__modal-cancel flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                         onClick={() => closeModal()}
                       >
-                        {getLabel('cancel', 'Cancel')}
+                        {getLabel(props.labels, 'cancel', 'Cancel')}
                       </button>
                       <button
                         type="button"
@@ -264,8 +263,8 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                         onClick={() => handleAcceptRequest()}
                         disabled={acceptLoading}
                       >
-                        {acceptLoading ? <>{getLabel('accepting', 'Accepting...')}</> : null}
-                        {!acceptLoading ? <>{getLabel('acceptRequest', 'Accept request')}</> : null}
+                        {acceptLoading ? <>{getLabel(props.labels, 'accepting', 'Accepting...')}</> : null}
+                        {!acceptLoading ? <>{getLabel(props.labels, 'acceptRequest', 'Accept request')}</> : null}
                       </button>
                     </div>
                   </>

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Category, Contact, Customer } from 'propeller-sdk-v2';
 import { useMenu, MenuCategory } from '@/composables/react/useMenu';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface MenuProps {
   /**
@@ -125,9 +126,7 @@ function Menu(props: MenuProps) {
   function setHoveredL2(id: number | null): void {
     setHoveredL2Id(id);
   }
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
+  
   function getMenuStyle(): string {
     return (props.menuStyle as string) || 'dropdown-vertical';
   }
@@ -146,17 +145,17 @@ function Menu(props: MenuProps) {
       {isLoading ? (
         <div className="propeller-menu__loading flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          <span>{getLabel('loading', 'Loading menu...')}</span>
+          <span>{getLabel(props.labels, 'loading', 'Loading menu...')}</span>
         </div>
       ) : null}
       {!isLoading && hasError ? (
         <div className="propeller-menu__error px-4 py-3 text-sm text-destructive">
-          {getLabel('error', 'Failed to load menu')}
+          {getLabel(props.labels, 'error', 'Failed to load menu')}
         </div>
       ) : null}
       {!isLoading && !hasError && menuCategories.length === 0 ? (
         <div className="propeller-menu__empty px-4 py-3 text-sm text-muted-foreground">
-          {getLabel('empty', 'No categories found')}
+          {getLabel(props.labels, 'empty', 'No categories found')}
         </div>
       ) : null}
       {!isLoading &&

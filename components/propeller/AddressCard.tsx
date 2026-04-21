@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Address, CartAddress, WarehouseAddress, OrderAddress, Enums } from 'propeller-sdk-v2';
 import { useAddress } from '@/composables/react/useAddress';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */
@@ -138,9 +139,7 @@ function AddressCard(props: AddressCardProps) {
 
   const isSaving = addressHook ? addressHook.loading : saving;
 
-  function getLabel(key: string, fallback: string): string {
-    return (props.labels as any)?.[key] || fallback;
-  }
+  
 
   function getCountryName(code: string): string {
     if (!code) return '';
@@ -202,8 +201,8 @@ function AddressCard(props: AddressCardProps) {
 
   function formTitle(): string {
     if (props.title) return props.title;
-    if (props.isNew) return getLabel('newTitle', 'New Address');
-    return getLabel('editTitle', 'Edit Address');
+    if (props.isNew) return getLabel(props.labels, 'newTitle', 'New Address');
+    return getLabel(props.labels, 'editTitle', 'Edit Address');
   }
 
   function openEditModal() {
@@ -357,7 +356,7 @@ function AddressCard(props: AddressCardProps) {
                   className="propeller-address-card__edit-btn text-primary hover:text-primary/80 text-sm font-medium"
                   onClick={(event) => openEditModal()}
                 >
-                  {getLabel('edit', 'Edit')}
+                  {getLabel(props.labels, 'edit', 'Edit')}
                 </button>
               ) : null}
               {props.enableDelete !== false ? (
@@ -367,7 +366,7 @@ function AddressCard(props: AddressCardProps) {
                     setShowDeleteConfirm(true);
                   }}
                 >
-                  {getLabel('delete', 'Delete')}
+                  {getLabel(props.labels, 'delete', 'Delete')}
                 </button>
               ) : null}
               {props.enableSetDefault !== false && addr?.()?.isDefault !== 'Y' ? (
@@ -375,7 +374,7 @@ function AddressCard(props: AddressCardProps) {
                   className="propeller-address-card__default-btn text-primary hover:text-primary/80 text-sm font-medium ml-auto"
                   onClick={(event) => handleSetDefault()}
                 >
-                  {getLabel('setDefault', 'Set Default')}
+                  {getLabel(props.labels, 'setDefault', 'Set Default')}
                 </button>
               ) : null}
             </div>
@@ -390,7 +389,7 @@ function AddressCard(props: AddressCardProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('gender', 'Gender')}
+                    {getLabel(props.labels, 'gender', 'Gender')}
                   </label>
                   <select
                     className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
@@ -399,14 +398,14 @@ function AddressCard(props: AddressCardProps) {
                       setEditGender(e.target.value as Enums.Gender);
                     }}
                   >
-                    <option value="M">{getLabel('genderMale', 'Male')}</option>
-                    <option value="F">{getLabel('genderFemale', 'Female')}</option>
-                    <option value="U">{getLabel('genderOther', 'Other')}</option>
+                    <option value="M">{getLabel(props.labels, 'genderMale', 'Male')}</option>
+                    <option value="F">{getLabel(props.labels, 'genderFemale', 'Female')}</option>
+                    <option value="U">{getLabel(props.labels, 'genderOther', 'Other')}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('company', 'Company')}
+                    {getLabel(props.labels, 'company', 'Company')}
                   </label>
                   <input
                     type="text"
@@ -421,7 +420,7 @@ function AddressCard(props: AddressCardProps) {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('firstName', 'First Name')} *
+                    {getLabel(props.labels, 'firstName', 'First Name')} *
                   </label>
                   <input
                     type="text"
@@ -435,7 +434,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('middleName', 'Middle Name')}
+                    {getLabel(props.labels, 'middleName', 'Middle Name')}
                   </label>
                   <input
                     type="text"
@@ -448,7 +447,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('lastName', 'Last Name')} *
+                    {getLabel(props.labels, 'lastName', 'Last Name')} *
                   </label>
                   <input
                     type="text"
@@ -464,7 +463,7 @@ function AddressCard(props: AddressCardProps) {
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-8">
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('street', 'Street')} *
+                    {getLabel(props.labels, 'street', 'Street')} *
                   </label>
                   <input
                     type="text"
@@ -478,7 +477,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('number', 'Number')} *
+                    {getLabel(props.labels, 'number', 'Number')} *
                   </label>
                   <input
                     type="text"
@@ -492,7 +491,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('numberExtension', 'Ext')}
+                    {getLabel(props.labels, 'numberExtension', 'Ext')}
                   </label>
                   <input
                     type="text"
@@ -507,7 +506,7 @@ function AddressCard(props: AddressCardProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('postalCode', 'Postal Code')} *
+                    {getLabel(props.labels, 'postalCode', 'Postal Code')} *
                   </label>
                   <input
                     type="text"
@@ -521,7 +520,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('city', 'City')} *
+                    {getLabel(props.labels, 'city', 'City')} *
                   </label>
                   <input
                     type="text"
@@ -536,7 +535,7 @@ function AddressCard(props: AddressCardProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  {getLabel('country', 'Country')} *
+                  {getLabel(props.labels, 'country', 'Country')} *
                 </label>
                 <select
                   className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
@@ -546,7 +545,7 @@ function AddressCard(props: AddressCardProps) {
                   }}
                   required
                 >
-                  <option value="">{getLabel('selectCountry', 'Select country')}</option>
+                  <option value="">{getLabel(props.labels, 'selectCountry', 'Select country')}</option>
                   {(props.countries || []).map((c) => (
                     <option key={c.code} value={c.code}>
                       {c.name}
@@ -557,7 +556,7 @@ function AddressCard(props: AddressCardProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('email', 'Email')} *
+                    {getLabel(props.labels, 'email', 'Email')} *
                   </label>
                   <input
                     type="email"
@@ -571,7 +570,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('phone', 'Phone')}
+                    {getLabel(props.labels, 'phone', 'Phone')}
                   </label>
                   <input
                     type="tel"
@@ -595,7 +594,7 @@ function AddressCard(props: AddressCardProps) {
                     }}
                   />
                   <label htmlFor="icp-inline" className="text-sm font-medium">
-                    {getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}
+                    {getLabel(props.labels, 'icp', 'ICP/ICS (Intra-Community Supply)')}
                   </label>
                 </div>
               ) : null}
@@ -608,7 +607,7 @@ function AddressCard(props: AddressCardProps) {
                   onClick={(event) => closeEditModal()}
                   disabled={isSaving}
                 >
-                  {getLabel('cancel', 'Cancel')}
+                  {getLabel(props.labels, 'cancel', 'Cancel')}
                 </button>
               ) : null}
               {props.isNew && !!props.onCancel ? (
@@ -618,7 +617,7 @@ function AddressCard(props: AddressCardProps) {
                   onClick={(event) => closeEditModal()}
                   disabled={isSaving}
                 >
-                  {getLabel('cancel', 'Cancel')}
+                  {getLabel(props.labels, 'cancel', 'Cancel')}
                 </button>
               ) : null}
               <button
@@ -626,7 +625,7 @@ function AddressCard(props: AddressCardProps) {
                 className="propeller-address-card__submit-btn px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary/90 disabled:opacity-50"
                 disabled={isSaving}
               >
-                {isSaving ? <>{getLabel('saving', 'Saving...')}</> : <>{getLabel('save', 'Save')}</>}
+                {isSaving ? <>{getLabel(props.labels, 'saving', 'Saving...')}</> : <>{getLabel(props.labels, 'save', 'Save')}</>}
               </button>
             </div>
           </form>
@@ -650,7 +649,7 @@ function AddressCard(props: AddressCardProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('gender', 'Gender')}
+                      {getLabel(props.labels, 'gender', 'Gender')}
                     </label>
                     <select
                       className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
@@ -659,14 +658,14 @@ function AddressCard(props: AddressCardProps) {
                         setEditGender(e.target.value as Enums.Gender);
                       }}
                     >
-                      <option value="M">{getLabel('genderMale', 'Male')}</option>
-                      <option value="F">{getLabel('genderFemale', 'Female')}</option>
-                      <option value="U">{getLabel('genderOther', 'Other')}</option>
+                      <option value="M">{getLabel(props.labels, 'genderMale', 'Male')}</option>
+                      <option value="F">{getLabel(props.labels, 'genderFemale', 'Female')}</option>
+                      <option value="U">{getLabel(props.labels, 'genderOther', 'Other')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('company', 'Company')}
+                      {getLabel(props.labels, 'company', 'Company')}
                     </label>
                     <input
                       type="text"
@@ -681,7 +680,7 @@ function AddressCard(props: AddressCardProps) {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('firstName', 'First Name')} *
+                      {getLabel(props.labels, 'firstName', 'First Name')} *
                     </label>
                     <input
                       type="text"
@@ -695,7 +694,7 @@ function AddressCard(props: AddressCardProps) {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('middleName', 'Middle Name')}
+                      {getLabel(props.labels, 'middleName', 'Middle Name')}
                     </label>
                     <input
                       type="text"
@@ -708,7 +707,7 @@ function AddressCard(props: AddressCardProps) {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('lastName', 'Last Name')} *
+                      {getLabel(props.labels, 'lastName', 'Last Name')} *
                     </label>
                     <input
                       type="text"
@@ -724,7 +723,7 @@ function AddressCard(props: AddressCardProps) {
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-8">
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('street', 'Street')} *
+                      {getLabel(props.labels, 'street', 'Street')} *
                     </label>
                     <input
                       type="text"
@@ -738,7 +737,7 @@ function AddressCard(props: AddressCardProps) {
                   </div>
                   <div className="col-span-2">
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('number', 'Number')} *
+                      {getLabel(props.labels, 'number', 'Number')} *
                     </label>
                     <input
                       type="text"
@@ -752,7 +751,7 @@ function AddressCard(props: AddressCardProps) {
                   </div>
                   <div className="col-span-2">
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('numberExtension', 'Ext')}
+                      {getLabel(props.labels, 'numberExtension', 'Ext')}
                     </label>
                     <input
                       type="text"
@@ -767,7 +766,7 @@ function AddressCard(props: AddressCardProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('postalCode', 'Postal Code')} *
+                      {getLabel(props.labels, 'postalCode', 'Postal Code')} *
                     </label>
                     <input
                       type="text"
@@ -781,7 +780,7 @@ function AddressCard(props: AddressCardProps) {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('city', 'City')} *
+                      {getLabel(props.labels, 'city', 'City')} *
                     </label>
                     <input
                       type="text"
@@ -796,7 +795,7 @@ function AddressCard(props: AddressCardProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {getLabel('country', 'Country')} *
+                    {getLabel(props.labels, 'country', 'Country')} *
                   </label>
                   <select
                     className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
@@ -806,7 +805,7 @@ function AddressCard(props: AddressCardProps) {
                     }}
                     required
                   >
-                    <option value="">{getLabel('selectCountry', 'Select country')}</option>
+                    <option value="">{getLabel(props.labels, 'selectCountry', 'Select country')}</option>
                     {(props.countries || []).map((c) => (
                       <option key={c.code} value={c.code}>
                         {c.name}
@@ -817,7 +816,7 @@ function AddressCard(props: AddressCardProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('email', 'Email')} *
+                      {getLabel(props.labels, 'email', 'Email')} *
                     </label>
                     <input
                       type="email"
@@ -831,7 +830,7 @@ function AddressCard(props: AddressCardProps) {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {getLabel('phone', 'Phone')}
+                      {getLabel(props.labels, 'phone', 'Phone')}
                     </label>
                     <input
                       type="tel"
@@ -855,7 +854,7 @@ function AddressCard(props: AddressCardProps) {
                       }}
                     />
                     <label htmlFor="icp-modal" className="text-sm font-medium">
-                      {getLabel('icp', 'ICP/ICS (Intra-Community Supply)')}
+                      {getLabel(props.labels, 'icp', 'ICP/ICS (Intra-Community Supply)')}
                     </label>
                   </div>
                 ) : null}
@@ -867,7 +866,7 @@ function AddressCard(props: AddressCardProps) {
                   onClick={(event) => closeEditModal()}
                   disabled={isSaving}
                 >
-                  {getLabel('cancel', 'Cancel')}
+                  {getLabel(props.labels, 'cancel', 'Cancel')}
                 </button>
                 <button
                   type="submit"
@@ -875,9 +874,9 @@ function AddressCard(props: AddressCardProps) {
                   disabled={isSaving}
                 >
                   {isSaving ? (
-                    <>{getLabel('saving', 'Saving...')}</>
+                    <>{getLabel(props.labels, 'saving', 'Saving...')}</>
                   ) : (
-                    <>{getLabel('save', 'Save')}</>
+                    <>{getLabel(props.labels, 'save', 'Save')}</>
                   )}
                 </button>
               </div>
@@ -889,10 +888,10 @@ function AddressCard(props: AddressCardProps) {
         <div className="propeller-address-card__delete-modal fixed inset-0 bg-foreground/50 flex items-center justify-center z-50">
           <div className="propeller-address-card__delete-modal-content bg-card p-6 rounded-container max-w-sm w-full mx-4">
             <h3 className="text-xl font-bold mb-4">
-              {getLabel('confirmDeleteTitle', 'Confirm Delete')}
+              {getLabel(props.labels, 'confirmDeleteTitle', 'Confirm Delete')}
             </h3>
             <p className="propeller-address-card__delete-message mb-6 text-muted-foreground">
-              {getLabel('confirmDeleteMessage', 'Are you sure you want to delete this address?')}
+              {getLabel(props.labels, 'confirmDeleteMessage', 'Are you sure you want to delete this address?')}
             </p>
             <div className="flex justify-end gap-4">
               <button
@@ -901,13 +900,13 @@ function AddressCard(props: AddressCardProps) {
                   setShowDeleteConfirm(false);
                 }}
               >
-                {getLabel('cancel', 'Cancel')}
+                {getLabel(props.labels, 'cancel', 'Cancel')}
               </button>
               <button
                 className="propeller-address-card__confirm-btn px-4 py-2 bg-primary text-primary-foreground rounded-control hover:bg-primary/80"
                 onClick={(event) => confirmDelete()}
               >
-                {getLabel('delete', 'Delete')}
+                {getLabel(props.labels, 'delete', 'Delete')}
               </button>
             </div>
           </div>

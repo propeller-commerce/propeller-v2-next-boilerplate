@@ -14,6 +14,7 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface CartIconAndSidebarProps {
   /**
@@ -226,12 +227,6 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     setSidebarOpen(false);
     if (props.onCartPageButtonClick) props.onCartPageButtonClick(props.cart);
   }
-  function getLabel(
-    key: string,
-    fallback: string
-  ): ReturnType<CartIconAndSidebarState['getLabel']> {
-    return props.labels?.[key] || fallback;
-  }
   function getSidebarTitle(): ReturnType<CartIconAndSidebarState['getSidebarTitle']> {
     return props.cartSidebarTitle || props.labels?.['cartSidebarTitle'] || 'Shopping cart';
   }
@@ -375,7 +370,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         <button
           type="button"
           onClick={(event) => handleIconClick()}
-          aria-label={getLabel('cartIconLabel', 'Shopping cart')}
+          aria-label={getLabel(props.labels, 'cartIconLabel', 'Shopping cart')}
           className={`propeller-cart-icon__trigger relative inline-flex items-center justify-center p-2 rounded-control transition-colors text-foreground${props.iconClassName ? ' ' + props.iconClassName : ''}`}
         >
           <svg
@@ -400,12 +395,12 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         {props.showTotals && isHovered ? (
           <div className="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-popover border border-border rounded-container shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap">
             <div className="flex justify-between gap-4">
-              <span className="propeller-cart-icon__popover-label text-muted-foreground">{getLabel('totalLabel', 'Total')}</span>
+              <span className="propeller-cart-icon__popover-label text-muted-foreground">{getLabel(props.labels, 'totalLabel', 'Total')}</span>
               <span className="propeller-cart-icon__popover-total font-semibold text-foreground">{getTotalPrice()}</span>
             </div>
             <div className="propeller-cart-icon__popover-count text-xs text-foreground-subtle mt-0.5">
               {getTotalItems()}
-              {getLabel('itemsLabel', 'item(s)')}
+              {getLabel(props.labels, 'itemsLabel', 'item(s)')}
             </div>
           </div>
         ) : null}
@@ -451,7 +446,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                   type="button"
                   className="propeller-cart-icon__sidebar-close p-1 rounded-control text-foreground-subtle hover:text-foreground hover:bg-surface-hover transition-colors"
                   onClick={(event) => closeSidebar()}
-                  aria-label={getLabel('closeLabel', 'Close')}
+                  aria-label={getLabel(props.labels, 'closeLabel', 'Close')}
                 >
                   <svg
                     fill="none"
@@ -481,14 +476,14 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       />
                     </svg>
                     <p className="propeller-cart-icon__empty-message text-sm text-muted-foreground">
-                      {getLabel('emptyCart', 'Your cart is empty.')}
+                      {getLabel(props.labels, 'emptyCart', 'Your cart is empty.')}
                     </p>
                     <button
                       type="button"
                       className="propeller-cart-icon__empty-action text-sm text-secondary hover:underline"
                       onClick={(event) => closeSidebar()}
                     >
-                      {getLabel('continueShopping', 'Continue Shopping')}
+                      {getLabel(props.labels, 'continueShopping', 'Continue Shopping')}
                     </button>
                   </div>
                 ) : null}
@@ -566,7 +561,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                               </div>{' '}
                               <div className="propeller-cart-icon__item-qty flex items-center text-xs text-foreground-subtle mt-1">
                                 <span>
-                                  {getLabel('qty', 'Qty')}: {item.quantity}
+                                  {getLabel(props.labels, 'qty', 'Qty')}: {item.quantity}
                                 </span>
                               </div>
                             </>
@@ -611,7 +606,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                               </div>{' '}
                               <div className="propeller-cart-icon__item-qty flex items-center text-xs text-foreground-subtle">
                                 <span>
-                                  {getLabel('qty', 'Qty')}: {item.quantity}
+                                  {getLabel(props.labels, 'qty', 'Qty')}: {item.quantity}
                                 </span>
                               </div>
                             </>
@@ -626,7 +621,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                 <div className="propeller-cart-icon__sidebar-footer px-5 py-4 border-t border-border space-y-3 bg-surface-hover">
                   <div className="propeller-cart-icon__total-row flex justify-between items-center">
                     <span className="propeller-cart-icon__total-label text-sm font-medium text-muted-foreground">
-                      {getLabel('total', 'Total')}
+                      {getLabel(props.labels, 'total', 'Total')}
                     </span>
                     <span className="propeller-cart-icon__total-value text-base font-bold text-foreground">{getTotalPrice()}</span>
                   </div>
@@ -636,7 +631,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       className="propeller-cart-icon__checkout-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-control bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/90 transition-colors"
                       onClick={(event) => handleCheckoutClick()}
                     >
-                      {getLabel('checkoutButton', 'Checkout')}
+                      {getLabel(props.labels, 'checkoutButton', 'Checkout')}
                     </button>
                   ) : null}
                   {showRequestAuthorizationButton() ? (
@@ -647,10 +642,10 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       disabled={requestLoading}
                     >
                       {requestLoading ? (
-                        <>{getLabel('requestingAuthorization', 'Requesting...')}</>
+                        <>{getLabel(props.labels, 'requestingAuthorization', 'Requesting...')}</>
                       ) : null}
                       {!requestLoading ? (
-                        <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
+                        <>{getLabel(props.labels, 'requestAuthorizationButton', 'Request Authorization')}</>
                       ) : null}
                     </button>
                   ) : null}
@@ -666,7 +661,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                         props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart);
                       }}
                     >
-                      {getLabel('requestQuoteButton', 'Request a Quote')}
+                      {getLabel(props.labels, 'requestQuoteButton', 'Request a Quote')}
                     </button>
                   ) : null}
                   {props.cartPageButton !== false ? (
@@ -675,7 +670,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
                       className="propeller-cart-icon__view-cart-btn w-full inline-flex justify-center items-center px-4 py-2.5 rounded-control border border-input bg-card text-foreground text-sm font-medium hover:bg-surface-hover transition-colors"
                       onClick={(event) => handleCartPageClick()}
                     >
-                      {getLabel('cartPageButton', 'View Cart Details')}
+                      {getLabel(props.labels, 'cartPageButton', 'View Cart Details')}
                     </button>
                   ) : null}
                 </div>

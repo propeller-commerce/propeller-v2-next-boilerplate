@@ -8,6 +8,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface AddToFavoriteProps {
   /** The initialized GraphQL Client instance */
@@ -44,10 +45,6 @@ function AddToFavorite(props: AddToFavoriteProps) {
   const [selectedListId, setSelectedListId] = useState(() => '');
   const [memberListIds, setMemberListIds] = useState<Set<string>>(() => new Set<string>());
 
-  function getLabel(key: string, fallback: string): string {
-    const labels = props.labels as Record<string, string> | undefined;
-    return labels?.[key] || fallback;
-  }
 
   function isProduct(): boolean {
     return !!props.productId;
@@ -199,8 +196,8 @@ function AddToFavorite(props: AddToFavoriteProps) {
               onClick={(event) => toggleModal()}
               title={
                 isFavorited()
-                  ? getLabel('removeFromFavorites', 'Remove from favorites')
-                  : getLabel('addToFavorites', 'Add to favorites')
+                  ? getLabel(props.labels, 'removeFromFavorites', 'Remove from favorites')
+                  : getLabel(props.labels, 'addToFavorites', 'Add to favorites')
               }
               className={`propeller-add-to-favorite__btn inline-flex items-center justify-center rounded-control border p-2.5 transition-colors ${isFavorited() ? 'border-primary/30 bg-primary/5 text-primary hover:bg-primary/10' : 'border-border bg-card text-foreground-subtle hover:text-primary hover:border-primary/30 hover:bg-primary/5'} ${props.className || ''}`}
             >
@@ -240,7 +237,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                 <div className="propeller-add-to-favorite__modal-content bg-card rounded-container max-w-md w-full shadow-lg border border-border">
                   <div className="propeller-add-to-favorite__modal-header flex justify-between items-center p-6 pb-4">
                     <h3 className="propeller-add-to-favorite__modal-title text-xl font-bold">
-                      {getLabel('modalTitle', 'Favorite product?')}
+                      {getLabel(props.labels, 'modalTitle', 'Favorite product?')}
                     </h3>
                     <button
                       type="button"
@@ -305,9 +302,9 @@ function AddToFavorite(props: AddToFavoriteProps) {
                             disabled={loading}
                           >
                             {loading ? (
-                              <>{getLabel('removing', 'Removing...')}</>
+                              <>{getLabel(props.labels, 'removing', 'Removing...')}</>
                             ) : (
-                              <>{getLabel('removeFromFavorites', 'Remove from favorites')}</>
+                              <>{getLabel(props.labels, 'removeFromFavorites', 'Remove from favorites')}</>
                             )}
                           </button>
                         </div>
@@ -318,7 +315,7 @@ function AddToFavorite(props: AddToFavoriteProps) {
                       <div className="propeller-add-to-favorite__add-form space-y-3">
                         <div className="space-y-1">
                           <label className="propeller-add-to-favorite__select-label text-xs text-muted-foreground">
-                            {getLabel('chooseList', 'Choose a favorites list*')}
+                            {getLabel(props.labels, 'chooseList', 'Choose a favorites list*')}
                           </label>
                           <select
                             className="propeller-add-to-favorite__select block w-full rounded-control border border-input px-3 py-2.5 text-sm focus:border-primary focus:ring-primary"
@@ -341,19 +338,16 @@ function AddToFavorite(props: AddToFavoriteProps) {
                           disabled={!selectedListId || loading}
                         >
                           {loading ? (
-                            <>{getLabel('adding', 'Adding...')}</>
+                            <>{getLabel(props.labels, 'adding', 'Adding...')}</>
                           ) : (
-                            <>{getLabel('addToFavorites', 'Add to favorites')}</>
+                            <>{getLabel(props.labels, 'addToFavorites', 'Add to favorites')}</>
                           )}
                         </button>
                       </div>
                     ) : null}
                     {getMemberLists().length === 0 && getNonMemberLists().length === 0 ? (
                       <div className="propeller-add-to-favorite__empty py-4 text-center text-muted-foreground text-sm">
-                        {getLabel(
-                          'noLists',
-                          'You have no favorite lists. Create one in your account first.'
-                        )}
+                        {getLabel(props.labels, 'noLists', 'You have no favorite lists. Create one in your account first.')}
                       </div>
                     ) : null}
                   </div>

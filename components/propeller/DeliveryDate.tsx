@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Cart } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface DeliveryDateProps {
   /** The cart to use for the delivery date */
@@ -72,9 +73,6 @@ function DeliveryDate(props: DeliveryDateProps) {
   }
   function containerClass(): ReturnType<DeliveryDateState['containerClass']> {
     return props.containerClass || 'delivery-date';
-  }
-  function getLabel(key: string, fallback: string): ReturnType<DeliveryDateState['getLabel']> {
-    return props.labels?.[key] || fallback;
   }
   function upcomingDates(): ReturnType<DeliveryDateState['upcomingDates']> {
     const days: string[] = [];
@@ -189,7 +187,7 @@ function DeliveryDate(props: DeliveryDateProps) {
               <div className="propeller-delivery-date__option-label font-semibold">{formatDisplay(selectedDate)}</div>
             ) : null}
             {!isCustomDateSelected() ? (
-              <div className="propeller-delivery-date__option-label font-semibold">{getLabel('pickDate', 'Other date...')}</div>
+              <div className="propeller-delivery-date__option-label font-semibold">{getLabel(props.labels, 'pickDate', 'Other date...')}</div>
             ) : null}
           </div>
         ) : null}
@@ -202,7 +200,7 @@ function DeliveryDate(props: DeliveryDateProps) {
           <div className="propeller-delivery-date__modal-content bg-card rounded-container shadow-xl p-6 w-full max-w-sm mx-4">
             <div className="propeller-delivery-date__modal-header flex justify-between items-center mb-4">
               <h3 className="propeller-delivery-date__modal-title text-lg font-semibold">
-                {getLabel('modalTitle', 'Select a delivery date')}
+                {getLabel(props.labels, 'modalTitle', 'Select a delivery date')}
               </h3>
               <button
                 type="button"
@@ -233,7 +231,7 @@ function DeliveryDate(props: DeliveryDateProps) {
                 className="propeller-delivery-date__cancel-btn px-4 py-2 text-sm font-medium text-foreground bg-surface-hover rounded-control hover:bg-muted transition-colors"
                 onClick={(event) => closeModal()}
               >
-                {getLabel('cancel', 'Cancel')}
+                {getLabel(props.labels, 'cancel', 'Cancel')}
               </button>
             </div>
           </div>

@@ -110,6 +110,7 @@ export const config = {
   channelId: 1,
   anonymousId: 14551,
   language: DEFAULT_LANG,
+  currency: '€',
   imageSearchFilters: imageSearchFilters,
   imageSearchFiltersGrid: imageSearchFiltersGrid,
   imageVariantFiltersSmall: imageVariantFiltersSmall,

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cart, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface CartSummaryProps {
   /** The shopping cart used to populate the cart summary data */
@@ -99,9 +100,7 @@ function CartSummary(props: CartSummaryProps) {
   function showCheckoutButton(): boolean {
     return props.showCheckoutButton !== undefined ? props.showCheckoutButton : true;
   }
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
   function formatItemPrice(price: number): string {
     if (props.formatPrice) {
       return props.formatPrice(price);
@@ -191,25 +190,25 @@ function CartSummary(props: CartSummaryProps) {
       <h2 className="propeller-cart-summary__title text-xl font-bold mb-4">{title()}</h2>
       {showSubtotal() ? (
         <div className="propeller-cart-summary__row flex justify-between text-muted-foreground" data-row="subtotal">
-          <span className="propeller-cart-summary__label">{getLabel('subtotal', 'Subtotal:')}</span>
+          <span className="propeller-cart-summary__label">{getLabel(props.labels, 'subtotal', 'Subtotal:')}</span>
           <span className="propeller-cart-summary__value">{formatItemPrice(subtotal())}</span>
         </div>
       ) : null}
       {showDiscount() && hasDiscount() ? (
         <div className="propeller-cart-summary__row flex justify-between text-success" data-row="discount">
-          <span className="propeller-cart-summary__label">{getLabel('discount', 'Discount:')}</span>
+          <span className="propeller-cart-summary__label">{getLabel(props.labels, 'discount', 'Discount:')}</span>
           <span className="propeller-cart-summary__value">-{formatItemPrice(discountAmount())}</span>
         </div>
       ) : null}
       {showShippingCosts() && hasShippingCosts() ? (
         <div className="propeller-cart-summary__row flex justify-between text-muted-foreground" data-row="shipping-costs">
-          <span className="propeller-cart-summary__label">{getLabel('shippingCosts', 'Shipping costs:')}</span>
+          <span className="propeller-cart-summary__label">{getLabel(props.labels, 'shippingCosts', 'Shipping costs:')}</span>
           <span className="propeller-cart-summary__value">{formatItemPrice(shippingCosts())}</span>
         </div>
       ) : null}
       {showTotalExclVat() ? (
         <div className="propeller-cart-summary__row flex justify-between text-muted-foreground pt-2 border-t" data-row="total-excl-vat">
-          <span className="propeller-cart-summary__label">{getLabel('totalExclVat', 'Total excl. VAT:')}</span>
+          <span className="propeller-cart-summary__label">{getLabel(props.labels, 'totalExclVat', 'Total excl. VAT:')}</span>
           <span className="propeller-cart-summary__value">{formatItemPrice(totalExclVat())}</span>
         </div>
       ) : null}
@@ -218,7 +217,7 @@ function CartSummary(props: CartSummaryProps) {
           {taxLevels()?.map((tax, index) => (
             <div className="propeller-cart-summary__row flex justify-between text-muted-foreground text-sm" key={index} data-row="vat-line">
               <span className="propeller-cart-summary__label">
-                {tax.taxPercentage}% {getLabel('vat', 'VAT')}:
+                {tax.taxPercentage}% {getLabel(props.labels, 'vat', 'VAT')}:
               </span>
               <span className="propeller-cart-summary__value">{formatItemPrice(Number(tax.price))}</span>
             </div>
@@ -227,12 +226,12 @@ function CartSummary(props: CartSummaryProps) {
       ) : null}
       {showTotalVat() && totalVat() > 0 ? (
         <div className="propeller-cart-summary__row flex justify-between text-muted-foreground text-sm" data-row="total-vat">
-          <span className="propeller-cart-summary__label">{getLabel('totalVat', 'Total VAT:')}</span>
+          <span className="propeller-cart-summary__label">{getLabel(props.labels, 'totalVat', 'Total VAT:')}</span>
           <span className="propeller-cart-summary__value">{formatItemPrice(totalVat())}</span>
         </div>
       ) : null}
       <div className="propeller-cart-summary__row propeller-cart-summary__row--total flex justify-between text-xl font-bold pt-4 border-t text-foreground mt-2" data-row="total">
-        <span className="propeller-cart-summary__label">{getLabel('total', 'Total:')}</span>
+        <span className="propeller-cart-summary__label">{getLabel(props.labels, 'total', 'Total:')}</span>
         <span className="propeller-cart-summary__value">{formatItemPrice(totalInclVat())}</span>
       </div>
       {showCheckoutButton() && !showRequestAuthorizationButton() ? (
@@ -242,7 +241,7 @@ function CartSummary(props: CartSummaryProps) {
             className="propeller-cart-summary__checkout-btn block w-full bg-secondary text-secondary-foreground text-center py-3 rounded-container hover:bg-secondary/90 transition font-semibold mt-4"
             onClick={(event) => handleCheckoutClick()}
           >
-            {getLabel('checkoutButton', 'Continue to Checkout')}
+            {getLabel(props.labels, 'checkoutButton', 'Continue to Checkout')}
           </button>{' '}
           {!!props.onRequestQuoteClick && showRequestQuoteButton() ? (
             <button
@@ -252,7 +251,7 @@ function CartSummary(props: CartSummaryProps) {
                 props.onRequestQuoteClick && props.onRequestQuoteClick(props.cart)
               }
             >
-              {getLabel('requestQuoteButton', 'Request a Quote')}
+              {getLabel(props.labels, 'requestQuoteButton', 'Request a Quote')}
             </button>
           ) : null}
         </>
@@ -264,9 +263,9 @@ function CartSummary(props: CartSummaryProps) {
           onClick={(event) => handleRequestAuthorizationClick()}
           disabled={requestLoading}
         >
-          {requestLoading ? <>{getLabel('requestingAuthorization', 'Requesting...')}</> : null}
+          {requestLoading ? <>{getLabel(props.labels, 'requestingAuthorization', 'Requesting...')}</> : null}
           {!requestLoading ? (
-            <>{getLabel('requestAuthorizationButton', 'Request Authorization')}</>
+            <>{getLabel(props.labels, 'requestAuthorizationButton', 'Request Authorization')}</>
           ) : null}
         </button>
       ) : null}

@@ -13,6 +13,7 @@ import {
   Product,
 } from 'propeller-sdk-v2';
 import { useProductBundles } from '@/composables/react/useProductBundles';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ProductBundlesProps {
   // === Core ===
@@ -175,10 +176,6 @@ function ProductBundles(props: ProductBundlesProps) {
     return (props.portalMode as string) === 'semi-closed' && getIsAnonymous();
   }
 
-  function getLabel(key: string, fallback: string): string {
-    const val = (props.labels as Record<string, string>)?.[key];
-    return val !== undefined ? val : fallback;
-  }
 
   function formatPrice(value: number): string {
     return '\u20AC' + Number(value).toFixed(2);
@@ -250,7 +247,7 @@ function ProductBundles(props: ProductBundlesProps) {
         const result = await composableAddBundleToCart(bundle.id as unknown as number, existingCartId || undefined);
 
         if (!result.success) {
-          showToast(result.error || getLabel('noCartId', 'No cart ID provided'), 'error');
+          showToast(result.error || getLabel(props.labels, 'noCartId', 'No cart ID provided'), 'error');
           return;
         }
 
@@ -262,12 +259,12 @@ function ProductBundles(props: ProductBundlesProps) {
         setLastAddedBundle(bundle);
         setModalVisible(true);
       } else {
-        const bundleName = bundle.name || getLabel('title', 'Bundle');
-        showToast(`${bundleName} ${getLabel('addedToCart', 'added to cart')}`, 'success');
+        const bundleName = bundle.name || getLabel(props.labels, 'title', 'Bundle');
+        showToast(`${bundleName} ${getLabel(props.labels, 'addedToCart', 'added to cart')}`, 'success');
       }
     } catch (error) {
       console.error('Error adding bundle to cart:', error);
-      showToast(getLabel('errorAdding', 'Failed to add bundle to cart'), 'error');
+      showToast(getLabel(props.labels, 'errorAdding', 'Failed to add bundle to cart'), 'error');
     } finally {
       setAddingBundleId(null);
     }
@@ -335,9 +332,9 @@ function ProductBundles(props: ProductBundlesProps) {
                                 {formatPrice(getItemPrice(item))}
                                 <span className="text-xs font-normal text-muted-foreground ml-1">
                                   {getIncludeTax() ? (
-                                    <>{getLabel('inclTax', 'incl. VAT')}</>
+                                    <>{getLabel(props.labels, 'inclTax', 'incl. VAT')}</>
                                   ) : (
-                                    <>{getLabel('exclTax', 'excl. VAT')}</>
+                                    <>{getLabel(props.labels, 'exclTax', 'excl. VAT')}</>
                                   )}
                                 </span>
                               </div>
@@ -364,7 +361,7 @@ function ProductBundles(props: ProductBundlesProps) {
                   </div>
                   <div className="propeller-product-bundles__summary flex-shrink-0 w-full lg:w-72 pl-0 lg:pl-6">
                     <h3 className="propeller-product-bundles__title text-xl font-bold text-foreground mb-1">
-                      {bundle.name || getLabel('title', 'Combo deal')}
+                      {bundle.name || getLabel(props.labels, 'title', 'Combo deal')}
                     </h3>
                     {bundle.description ? (
                       <p className="propeller-product-bundles__description text-sm text-muted-foreground mb-3">{bundle.description}</p>
@@ -372,9 +369,9 @@ function ProductBundles(props: ProductBundlesProps) {
                     {bundle.condition ? (
                       <p className="propeller-product-bundles__condition text-xs text-muted-foreground mb-3">
                         {bundle.condition === Enums.BundleCondition.ALL ? (
-                          <>{getLabel('condition_ALL', 'Discount on all items')}</>
+                          <>{getLabel(props.labels, 'condition_ALL', 'Discount on all items')}</>
                         ) : (
-                          <>{getLabel('condition_EP', 'Discount on extra items')}</>
+                          <>{getLabel(props.labels, 'condition_EP', 'Discount on extra items')}</>
                         )}
                       </p>
                     ) : null}
@@ -392,15 +389,15 @@ function ProductBundles(props: ProductBundlesProps) {
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {getIncludeTax() ? (
-                                <>{getLabel('inclTax', 'incl. VAT')}</>
+                                <>{getLabel(props.labels, 'inclTax', 'incl. VAT')}</>
                               ) : (
-                                <>{getLabel('exclTax', 'excl. VAT')}</>
+                                <>{getLabel(props.labels, 'exclTax', 'excl. VAT')}</>
                               )}
                             </span>
                           </div>
                           {hasDiscount(bundle) ? (
                             <div className="propeller-product-bundles__savings mt-2 inline-block bg-success/10 text-success text-sm font-medium px-3 py-1 rounded-control">
-                              {getLabel('youSave', 'Your savings:')}
+                              {getLabel(props.labels, 'youSave', 'Your savings:')}
                               {formatPrice(getOriginalPrice(bundle) - getBundlePrice(bundle))}
                             </div>
                           ) : null}
@@ -412,16 +409,16 @@ function ProductBundles(props: ProductBundlesProps) {
                           data-loading={addingBundleId === bundle.id ? 'true' : 'false'}
                         >
                           {addingBundleId === bundle.id ? (
-                            <>{getLabel('adding', 'Adding...')}</>
+                            <>{getLabel(props.labels, 'adding', 'Adding...')}</>
                           ) : (
-                            <>{getLabel('addToCart', 'In cart')}</>
+                            <>{getLabel(props.labels, 'addToCart', 'In cart')}</>
                           )}
                         </button>
                       </>
                     ) : null}
                     {getHidePrices() ? (
                       <div className="propeller-product-bundles__login-prompt text-center text-sm text-muted-foreground py-2">
-                        {getLabel('loginToSeePrices', 'Log in to see prices and add to cart')}
+                        {getLabel(props.labels, 'loginToSeePrices', 'Log in to see prices and add to cart')}
                       </div>
                     ) : null}
                   </div>
@@ -491,7 +488,7 @@ function ProductBundles(props: ProductBundlesProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <h3 className="propeller-product-bundles__modal-title flex-1 text-base font-semibold text-foreground">
-                      {getLabel('modalTitle', 'Added to cart')}
+                      {getLabel(props.labels, 'modalTitle', 'Added to cart')}
                     </h3>
                     <button
                       type="button"
@@ -551,12 +548,12 @@ function ProductBundles(props: ProductBundlesProps) {
                       ) : null}
                       <div className="flex-1 min-w-0">
                         <p className="propeller-product-bundles__modal-name text-sm font-medium text-foreground">
-                          {lastAddedBundle?.name || getLabel('title', 'Bundle')}
+                          {lastAddedBundle?.name || getLabel(props.labels, 'title', 'Bundle')}
                         </p>
                       </div>
                       <div className="flex-shrink-0 text-right">
                         <p className="propeller-product-bundles__modal-quantity text-xs text-muted-foreground">
-                          {getLabel('quantity', 'Quantity')}: 1
+                          {getLabel(props.labels, 'quantity', 'Quantity')}: 1
                         </p>
                         {!getHidePrices() && lastAddedBundle ? (
                           <p className="propeller-product-bundles__modal-price text-sm font-semibold text-foreground mt-0.5">
@@ -593,7 +590,7 @@ function ProductBundles(props: ProductBundlesProps) {
                       className="propeller-product-bundles__modal-continue flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       onClick={(event) => closeModal()}
                     >
-                      {getLabel('continueShopping', 'Continue shopping')}
+                      {getLabel(props.labels, 'continueShopping', 'Continue shopping')}
                     </button>
                     <button
                       type="button"
@@ -603,7 +600,7 @@ function ProductBundles(props: ProductBundlesProps) {
                         if (props.onProceedToCheckout) props.onProceedToCheckout();
                       }}
                     >
-                      {getLabel('proceedToCheckout', 'Proceed to checkout')}
+                      {getLabel(props.labels, 'proceedToCheckout', 'Proceed to checkout')}
                     </button>
                   </div>
                 </div>

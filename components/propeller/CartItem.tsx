@@ -19,6 +19,7 @@ import {
   TransformationsInput,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface CartItemProps {
   /** GraphQL client for the Propeller SDK */
@@ -123,9 +124,7 @@ function CartItem(props: CartItemProps) {
   const [addingCrossupsellId, setAddingCrossupsellId] = useState<number | null>(() => null);
 
   // --- display helpers ---
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
   function getProductName(): string {
     return props.cartItem.product?.names?.[0]?.value || 'Product';
   }
@@ -406,7 +405,7 @@ function CartItem(props: CartItemProps) {
           props.cartItem.childItems.length > 0 ? (
           <div className="propeller-cart-item__options mt-3 space-y-1.5 border-l-2 border-border pl-3">
             <p className="propeller-cart-item__options-label text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-              {getLabel('includedOptions', 'Included Options:')}
+              {getLabel(props.labels, 'includedOptions', 'Included Options:')}
             </p>
             {(props.cartItem.childItems || []).map((child, idx) => (
               <div className="propeller-cart-item__option flex flex-wrap gap-x-2 text-sm text-muted-foreground" key={idx}>
@@ -422,13 +421,13 @@ function CartItem(props: CartItemProps) {
         {props.showCartItemNotesField === true ? (
           <div className="propeller-cart-item__notes mt-3">
             <label className="propeller-cart-item__notes-label text-xs font-medium text-muted-foreground block mb-1">
-              {getLabel('notes', 'Notes')}
+              {getLabel(props.labels, 'notes', 'Notes')}
             </label>
             <textarea
               className="propeller-cart-item__notes-input w-full text-sm border border-input rounded-control px-3 py-2 focus:ring-2 focus:ring-secondary focus:border-transparent resize-none"
               value={notes}
               onChange={(e) => handleNoteChange(e.target.value)}
-              placeholder={getLabel('notesPlaceholder', 'Add a note for this item...')}
+              placeholder={getLabel(props.labels, 'notesPlaceholder', 'Add a note for this item...')}
               rows={2}
             />
           </div>
@@ -436,7 +435,7 @@ function CartItem(props: CartItemProps) {
         {getVisibleCrossupsells().length > 0 ? (
           <div className="propeller-cart-item__crossupsells mt-3 pt-3 border-t border-border">
             <p className="propeller-cart-item__crossupsells-label text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              {getLabel('crossupsellTitle', 'You might also like')}
+              {getLabel(props.labels, 'crossupsellTitle', 'You might also like')}
             </p>
             <div className="flex flex-col gap-2">
               {getVisibleCrossupsells()?.map((item, idx) => (
@@ -477,7 +476,7 @@ function CartItem(props: CartItemProps) {
                   <button
                     type="button"
                     className="propeller-cart-item__crossupsell-btn flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-control bg-primary text-primary-foreground hover:bg-primary/80 transition-colors disabled:opacity-50"
-                    title={getLabel('addToCart', 'Add to cart')}
+                    title={getLabel(props.labels, 'addToCart', 'Add to cart')}
                     disabled={addingCrossupsellId === getCrossupsellProductId(item)}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -565,7 +564,7 @@ function CartItem(props: CartItemProps) {
           />
         ) : null}
         {loading ? (
-          <span className="propeller-cart-item__updating text-xs text-foreground-subtle">{getLabel('updating', 'Updating...')}</span>
+          <span className="propeller-cart-item__updating text-xs text-foreground-subtle">{getLabel(props.labels, 'updating', 'Updating...')}</span>
         ) : null}
         <button
           type="button"

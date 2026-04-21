@@ -15,6 +15,7 @@ import {
 import { useProductSlider } from '@/composables/react/useProductSlider';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ProductSliderProps {
   // === Data source ===
@@ -182,10 +183,6 @@ function ProductSlider(props: ProductSliderProps) {
     return (props.portalMode as string) || 'open';
   }
 
-  function getLabel(key: string, fallback: string): string {
-    const val = (props.labels as Record<string, string>)?.[key];
-    return val !== undefined ? val : fallback;
-  }
 
   function isCluster(item: any): boolean {
     return 'clusterId' in item && !('productId' in item);
@@ -274,7 +271,7 @@ function ProductSlider(props: ProductSliderProps) {
                       className="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--prev p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={(event) => handleScrollLeft()}
                       disabled={!canScrollLeft}
-                      aria-label={getLabel('scrollLeft', 'Scroll left')}
+                      aria-label={getLabel(props.labels, 'scrollLeft', 'Scroll left')}
                     >
                       <svg
                         fill="none"
@@ -292,7 +289,7 @@ function ProductSlider(props: ProductSliderProps) {
                       className="propeller-product-slider__nav-btn propeller-product-slider__nav-btn--next p-2 rounded-full bg-card shadow hover:bg-surface-hover transition disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={(event) => handleScrollRight()}
                       disabled={!canScrollRight}
-                      aria-label={getLabel('scrollRight', 'Scroll right')}
+                      aria-label={getLabel(props.labels, 'scrollRight', 'Scroll right')}
                     >
                       <svg
                         fill="none"
@@ -413,7 +410,7 @@ function ProductSlider(props: ProductSliderProps) {
             ) : null}
             {!isLoading && items().length === 0 && !props.products && !isCrossUpsellMode() ? (
               <div className="propeller-product-slider__empty text-center text-muted-foreground py-8">
-                {getLabel('noProducts', 'No products found')}
+                {getLabel(props.labels, 'noProducts', 'No products found')}
               </div>
             ) : null}
           </div>

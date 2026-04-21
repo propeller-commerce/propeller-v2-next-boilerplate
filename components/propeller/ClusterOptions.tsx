@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 /**
  * Flattened render model for one product inside an option dropdown.
@@ -101,9 +102,6 @@ function ClusterOptions(props: ClusterOptionsProps) {
   const [selectedProductIds, setSelectedProductIds] = useState<
     ClusterOptionsState['selectedProductIds']
   >(() => ({}));
-  function getLabel(key: string, fallback: string): ReturnType<ClusterOptionsState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   function formatPrice(price: number): ReturnType<ClusterOptionsState['formatPrice']> {
     return `\u20AC${Number(price).toFixed(2)}`;
   }
@@ -210,7 +208,7 @@ function ClusterOptions(props: ClusterOptionsProps) {
                 <h4 className="propeller-cluster-options__label font-semibold text-sm text-muted-foreground">{option.name}</h4>
                 {option.isRequired ? (
                   <span className="propeller-cluster-options__required-badge inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/10">
-                    {getLabel('required', 'Required')}
+                    {getLabel(props.labels, 'required', 'Required')}
                   </span>
                 ) : null}
               </div>
@@ -221,9 +219,9 @@ function ClusterOptions(props: ClusterOptionsProps) {
               >
                 <option value="">
                   {option.isRequired ? (
-                    <>{getLabel('selectRequired', '— Select an option —')}</>
+                    <>{getLabel(props.labels, 'selectRequired', '— Select an option —')}</>
                   ) : (
-                    <>{getLabel('selectOptional', '— None (Optional) —')}</>
+                    <>{getLabel(props.labels, 'selectOptional', '— None (Optional) —')}</>
                   )}
                 </option>
                 {option.products?.map((product) => (
@@ -234,7 +232,7 @@ function ClusterOptions(props: ClusterOptionsProps) {
               </select>
               {option.hasError ? (
                 <p className="propeller-cluster-options__error mt-1 text-xs text-destructive">
-                  {getLabel('requiredError', 'This option is required')}
+                  {getLabel(props.labels, 'requiredError', 'This option is required')}
                 </p>
               ) : null}
               {option.hasSelection ? (

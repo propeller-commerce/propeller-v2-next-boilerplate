@@ -5,6 +5,7 @@ import {
   LocalizedVideo,
   LocalizedString,
 } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ProductVideosProps {
   /**
@@ -87,14 +88,11 @@ function ProductVideos(props: ProductVideosProps) {
     }
     return uri;
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductVideosState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   return (
     <div className={`propeller-product-videos ${(props.className as string) || ''}`}>
       {hasItems() ? (
         <h3 className="propeller-product-videos__title text-base font-semibold text-foreground mb-3">
-          {getLabel('title', 'Videos')}
+          {getLabel(props.labels, 'title', 'Videos')}
         </h3>
       ) : null}
       {hasItems() ? (
@@ -136,7 +134,7 @@ function ProductVideos(props: ProductVideosProps) {
         </div>
       ) : null}
       {!hasItems() ? (
-        <p className="propeller-product-videos__empty text-sm text-muted-foreground">{getLabel('empty', 'No videos')}</p>
+        <p className="propeller-product-videos__empty text-sm text-muted-foreground">{getLabel(props.labels, 'empty', 'No videos')}</p>
       ) : null}
     </div>
   );

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Category, LocalizedString } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface BreadcrumbsProps {
   /**
@@ -101,9 +102,6 @@ function Breadcrumbs(props: BreadcrumbsProps) {
     // Show separator when Home precedes this item, or when a previous category item exists.
     return props.showHome !== false || index > 0;
   }
-  function getLabel(key: string, fallback: string): ReturnType<BreadcrumbsState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   return (
     <nav aria-label="Breadcrumb" className={`propeller-breadcrumbs ${(props.className as string) || ''}`}>
       <ol className="propeller-breadcrumbs__list flex flex-wrap items-center text-sm text-muted-foreground">
@@ -113,7 +111,7 @@ function Breadcrumbs(props: BreadcrumbsProps) {
               className="propeller-breadcrumbs__link hover:text-foreground transition-colors"
               href={(props.homeUrl as string) || '/'}
             >
-              {getLabel('home', 'Home')}
+              {getLabel(props.labels, 'home', 'Home')}
             </a>
           </li>
         ) : null}
@@ -125,7 +123,7 @@ function Breadcrumbs(props: BreadcrumbsProps) {
           >
             {showSeparatorBefore(index) ? (
               <span aria-hidden="true" className="propeller-breadcrumbs__separator mx-2 select-none text-muted-foreground/40">
-                {getLabel('separator', '/')}
+                {getLabel(props.labels, 'separator', '/')}
               </span>
             ) : null}
             {isCurrentItem(index) ? (

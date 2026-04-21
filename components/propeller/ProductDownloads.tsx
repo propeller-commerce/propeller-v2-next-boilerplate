@@ -5,6 +5,7 @@ import {
   LocalizedDocument,
   LocalizedString,
 } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface ProductDownloadsProps {
   /**
@@ -66,14 +67,11 @@ function ProductDownloads(props: ProductDownloadsProps) {
     const match = docs.find((d: LocalizedDocument) => d.language === lang);
     return match?.mimeType || docs?.[0]?.mimeType || '';
   }
-  function getLabel(key: string, fallback: string): ReturnType<ProductDownloadsState['getLabel']> {
-    return (props.labels as Record<string, string>)?.[key] || fallback;
-  }
   return (
     <div className={`propeller-product-downloads ${(props.className as string) || ''}`}>
       {hasItems() ? (
         <h3 className="propeller-product-downloads__title text-base font-semibold text-foreground mb-3">
-          {getLabel('title', 'Downloads')}
+          {getLabel(props.labels, 'title', 'Downloads')}
         </h3>
       ) : null}
       {hasItems() ? (
@@ -121,7 +119,7 @@ function ProductDownloads(props: ProductDownloadsProps) {
         </ul>
       ) : null}
       {!hasItems() ? (
-        <p className="propeller-product-downloads__empty text-sm text-muted-foreground">{getLabel('empty', 'No downloads')}</p>
+        <p className="propeller-product-downloads__empty text-sm text-muted-foreground">{getLabel(props.labels, 'empty', 'No downloads')}</p>
       ) : null}
     </div>
   );

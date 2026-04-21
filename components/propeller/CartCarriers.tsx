@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Cart, CartCarrier } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface CartCarriersProps {
   /** Shopping cart object from which the carriers will be displayed */
@@ -46,9 +47,6 @@ function CartCarriers(props: CartCarriersProps) {
   }
   function carriers(): ReturnType<CartCarriersState['carriers']> {
     return props.cart?.carriers || [];
-  }
-  function getLabel(key: string, fallback: string): ReturnType<CartCarriersState['getLabel']> {
-    return props.labels?.[key] || fallback;
   }
   function formatCarrierPrice(price: number): ReturnType<CartCarriersState['formatCarrierPrice']> {
     if (props.formatPrice) {
@@ -101,7 +99,7 @@ function CartCarriers(props: CartCarriersProps) {
               </div>
               {carrier.deliveryDeadline ? (
                 <p className="propeller-cart-carriers__carrier-deadline text-xs text-muted-foreground">
-                  {getLabel('deliveryDeadline', 'Delivery deadline:')}
+                  {getLabel(props.labels, 'deliveryDeadline', 'Delivery deadline:')}
                   {carrier.deliveryDeadline}
                 </p>
               ) : null}
@@ -110,7 +108,7 @@ function CartCarriers(props: CartCarriersProps) {
         </div>
       ) : null}
       {carriers().length === 0 ? (
-        <p className="propeller-cart-carriers__empty text-muted-foreground italic">{getLabel('noCarriers', 'No carriers available.')}</p>
+        <p className="propeller-cart-carriers__empty text-muted-foreground italic">{getLabel(props.labels, 'noCarriers', 'No carriers available.')}</p>
       ) : null}
     </div>
   );

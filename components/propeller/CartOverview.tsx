@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */
@@ -84,9 +85,6 @@ function CartOverview(props: CartOverviewProps) {
   function showPurchaseButton(): ReturnType<CartOverviewState['showPurchaseButton']> {
     return props.showPurchaseButton !== undefined ? props.showPurchaseButton : true;
   }
-  function getLabel(key: string, fallback: string): ReturnType<CartOverviewState['getLabel']> {
-    return props.labels?.[key] || fallback;
-  }
   function invoiceAddress(): ReturnType<CartOverviewState['invoiceAddress']> {
     return props.cart?.invoiceAddress;
   }
@@ -161,7 +159,7 @@ function CartOverview(props: CartOverviewProps) {
       <div className="propeller-cart-overview__addresses grid grid-cols-1 md:grid-cols-2 gap-6 pb-5">
         <div className="propeller-cart-overview__address space-y-2" data-address="invoice">
           <h3 className="propeller-cart-overview__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            {getLabel('invoiceAddress', 'Invoice Address')}
+            {getLabel(props.labels, 'invoiceAddress', 'Invoice Address')}
           </h3>
           {invoiceAddress() && invoiceAddress().street ? (
             <div className="text-sm space-y-1">
@@ -198,7 +196,7 @@ function CartOverview(props: CartOverviewProps) {
         </div>
         <div className="propeller-cart-overview__address space-y-2" data-address="delivery">
           <h3 className="propeller-cart-overview__address-title text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            {getLabel('deliveryAddress', 'Delivery Address')}
+            {getLabel(props.labels, 'deliveryAddress', 'Delivery Address')}
           </h3>
           {deliveryAddress() && deliveryAddress().street ? (
             <div className="text-sm space-y-1">
@@ -237,19 +235,19 @@ function CartOverview(props: CartOverviewProps) {
       <div className="propeller-cart-overview__info-panel bg-surface-hover p-4 rounded-control border border-border space-y-2 text-sm">
         {paymentMethod() ? (
           <div className="flex justify-between">
-            <span className="font-medium">{getLabel('payment', 'Payment:')}</span>
+            <span className="font-medium">{getLabel(props.labels, 'payment', 'Payment:')}</span>
             <span>{paymentMethod()}</span>
           </div>
         ) : null}
         {carrierName() ? (
           <div className="flex justify-between">
-            <span className="font-medium">{getLabel('carrier', 'Carrier:')}</span>
+            <span className="font-medium">{getLabel(props.labels, 'carrier', 'Carrier:')}</span>
             <span>{carrierName()}</span>
           </div>
         ) : null}
         {requestDate() ? (
           <div className="flex justify-between">
-            <span className="font-medium">{getLabel('deliveryDate', 'Delivery Date:')}</span>
+            <span className="font-medium">{getLabel(props.labels, 'deliveryDate', 'Delivery Date:')}</span>
             <span>{requestDate()}</span>
           </div>
         ) : null}
@@ -258,14 +256,14 @@ function CartOverview(props: CartOverviewProps) {
         {showReference() ? (
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              {getLabel('referenceLabel', 'Reference (Optional)')}
+              {getLabel(props.labels, 'referenceLabel', 'Reference (Optional)')}
             </label>
             <input
               type="text"
               className="propeller-cart-overview__input flex w-full rounded-control border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
               value={reference}
               onChange={(event) => handleReferenceChange(event.target.value)}
-              placeholder={getLabel('referencePlaceholder', 'Your reference number')}
+              placeholder={getLabel(props.labels, 'referencePlaceholder', 'Your reference number')}
               maxLength={255}
             />
           </div>
@@ -273,13 +271,13 @@ function CartOverview(props: CartOverviewProps) {
         {showNotes() ? (
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              {getLabel('notesLabel', 'Order Notes (Optional)')}
+              {getLabel(props.labels, 'notesLabel', 'Order Notes (Optional)')}
             </label>
             <textarea
               className="propeller-cart-overview__textarea flex w-full rounded-control border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-1 focus:ring-secondary min-h-[80px]"
               value={notes}
               onChange={(event) => handleNotesChange(event.target.value)}
-              placeholder={getLabel('notesPlaceholder', 'Special instructions or comments')}
+              placeholder={getLabel(props.labels, 'notesPlaceholder', 'Special instructions or comments')}
               maxLength={255}
             />
           </div>
@@ -294,13 +292,13 @@ function CartOverview(props: CartOverviewProps) {
               onChange={(event) => handleTermsChange(event.target.checked)}
             />
             <label htmlFor="cart-overview-terms" className="text-sm leading-none">
-              {getLabel('termsPrefix', 'I agree to the')}
+              {getLabel(props.labels, 'termsPrefix', 'I agree to the')}
               <a
                 href="#"
                 className="text-primary hover:underline font-medium"
                 onClick={(event) => handleTermsLinkClick(event as unknown as Event)}
               >
-                {getLabel('termsLink', 'Terms and Conditions')}
+                {getLabel(props.labels, 'termsLink', 'Terms and Conditions')}
               </a>
             </label>
           </div>
@@ -315,8 +313,8 @@ function CartOverview(props: CartOverviewProps) {
             {loading ? (
               <div className="propeller-cart-overview__spinner w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
             ) : null}
-            {loading ? <>{getLabel('processing', 'Processing...')}</> : null}
-            {!loading ? <>{getLabel('purchaseButton', 'Place Order')}</> : null}
+            {loading ? <>{getLabel(props.labels, 'processing', 'Processing...')}</> : null}
+            {!loading ? <>{getLabel(props.labels, 'purchaseButton', 'Place Order')}</> : null}
           </button>
         ) : null}
       </div>

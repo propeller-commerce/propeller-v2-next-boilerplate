@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { GraphQLClient, Product, Cluster, Contact, Customer } from 'propeller-sdk-v2';
 import { useProductSearch } from '@/composables/react/useProductSearch';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface SearchBarResult {
   /** Unique identifier */
@@ -120,9 +121,7 @@ function SearchBar(props: SearchBarProps) {
 
   const itemsFound = searchResults.length;
 
-  function getLabel(key: string, fallback: string): string {
-    return props.labels?.[key] || fallback;
-  }
+  
 
   function formatItemPrice(price: number): string {
     if (props.formatPrice) {
@@ -262,14 +261,14 @@ function SearchBar(props: SearchBarProps) {
                   className="propeller-search-bar__view-all p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
                   onClick={(event) => handleViewAllClick()}
                 >
-                  {getLabel('viewAll', 'View all results')} ({itemsFound})
+                  {getLabel(props.labels, 'viewAll', 'View all results')} ({itemsFound})
                 </div>
               ) : null}
             </>
           ) : null}
           {results.length === 0 && localTerm.length >= minLength && !searchLoading ? (
             <div className="propeller-search-bar__empty p-4 text-center text-muted-foreground">
-              {getLabel('noResults', 'No products found for')} &quot;{localTerm}&quot;
+              {getLabel(props.labels, 'noResults', 'No products found for')} &quot;{localTerm}&quot;
             </div>
           ) : null}
         </div>

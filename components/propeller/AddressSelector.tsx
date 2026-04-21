@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Contact, Customer, Address, Company, Enums } from 'propeller-sdk-v2';
 import AddressCard from './AddressCard';
+import { getLabel } from '@/lib/helpers/labelHelpers';
 
 export interface AddressSelectorProps {
   /** Authenticated user — addresses are derived from their profile. */
@@ -42,9 +43,6 @@ function AddressSelector(props: AddressSelectorProps) {
     () => null
   );
   const [isLoading, setIsLoading] = useState<AddressSelectorState['isLoading']>(() => false);
-  function getLabel(key: string, fallback: string): ReturnType<AddressSelectorState['getLabel']> {
-    return (props.labels as any)?.[key] || fallback;
-  }
   function getActiveCompany(): ReturnType<AddressSelectorState['getActiveCompany']> {
     const user = props.user as Contact | Customer | null;
     if (!user || !('contactId' in user)) return null;
@@ -114,13 +112,13 @@ function AddressSelector(props: AddressSelectorProps) {
             strokeWidth={2}
           />
         </svg>
-        {getLabel('chooseAddress', 'Choose address')}
+        {getLabel(props.labels, 'chooseAddress', 'Choose address')}
       </button>
       {showModal ? (
         <div className="propeller-address-selector__modal fixed inset-0 bg-foreground/50 flex items-start justify-center z-50 overflow-y-auto py-10">
           <div className="propeller-address-selector__modal-content bg-card p-6 rounded-container max-w-2xl w-full mx-4 shadow-xl">
             <div className="propeller-address-selector__modal-header flex justify-between items-center mb-6">
-              <h3 className="propeller-address-selector__modal-title text-xl font-bold">{getLabel('modalTitle', 'Choose an address')}</h3>
+              <h3 className="propeller-address-selector__modal-title text-xl font-bold">{getLabel(props.labels, 'modalTitle', 'Choose an address')}</h3>
               <button
                 type="button"
                 className="propeller-address-selector__modal-close text-muted-foreground hover:text-foreground text-xl leading-none"
@@ -134,7 +132,7 @@ function AddressSelector(props: AddressSelectorProps) {
             </div>
             {getAddresses().length === 0 ? (
               <p className="propeller-address-selector__empty text-muted-foreground italic">
-                {getLabel('noAddresses', 'No addresses found.')}
+                {getLabel(props.labels, 'noAddresses', 'No addresses found.')}
               </p>
             ) : null}
             {getAddresses().length > 0 ? (
@@ -180,9 +178,9 @@ function AddressSelector(props: AddressSelectorProps) {
                       </svg>
                     ) : null}
                     {isLoading ? (
-                      <>{getLabel('updating', 'Updating...')}</>
+                      <>{getLabel(props.labels, 'updating', 'Updating...')}</>
                     ) : (
-                      <>{getLabel('useThisAddress', 'Use this address')}</>
+                      <>{getLabel(props.labels, 'useThisAddress', 'Use this address')}</>
                     )}
                   </button>
                 </div>

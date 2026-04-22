@@ -13,7 +13,7 @@ import {
   Product,
 } from 'propeller-sdk-v2';
 import { useProductBundles } from '@/composables/react/useProductBundles';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ProductBundlesProps {
   // === Core ===

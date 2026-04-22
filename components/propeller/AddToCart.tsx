@@ -16,9 +16,9 @@ import {
   Cluster,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
-import { getLabel } from '@/lib/helpers/labelHelpers';
-import { getProductImageUrl, getProductSku, getLocalizedValue } from '@/lib/helpers/productHelpers';
-import { formatPrice } from '@/lib/helpers/priceHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { getProductImageUrl, getProductSku, getLocalizedValue } from '@/composables/shared/utils/productHelpers';
+import { formatPrice } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface AddToCartProps {
@@ -217,9 +217,9 @@ function AddToCart(props: AddToCartProps) {
     if (addedCartItem) {
       const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
       const price = useTax ? addedCartItem.totalSumNet : addedCartItem.totalSum;
-      return formatPrice(price, config.currency);
+      return formatPrice(price, { symbol: config.currency });
     }
-    return formatPrice(props.price !== undefined ? props.price : (props.product as Product)?.price?.gross, config.currency);
+    return formatPrice(props.price !== undefined ? props.price : (props.product as Product)?.price?.gross, { symbol: config.currency });
   }
   function getModalSku(): string {
     if (addedCartItem) return addedCartItem.product?.sku || '';

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Address, CartAddress, WarehouseAddress, OrderAddress, Enums } from 'propeller-sdk-v2';
 import { useAddress } from '@/composables/react/useAddress';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */

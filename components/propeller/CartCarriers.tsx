@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Cart, CartCarrier } from 'propeller-sdk-v2';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface CartCarriersProps {
   /** Shopping cart object from which the carriers will be displayed */

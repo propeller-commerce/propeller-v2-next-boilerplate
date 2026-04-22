@@ -15,7 +15,7 @@ import {
 import { useProductSlider } from '@/composables/react/useProductSlider';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ProductSliderProps {
   // === Data source ===

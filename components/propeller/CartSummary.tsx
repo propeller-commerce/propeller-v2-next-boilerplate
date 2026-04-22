@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cart, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface CartSummaryProps {
   /** The shopping cart used to populate the cart summary data */

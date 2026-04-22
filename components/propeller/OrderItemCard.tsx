@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { formatPrice } from '@/lib/helpers/priceHelpers';
+import { formatPrice } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface OrderItemCardProps {
@@ -150,7 +150,7 @@ function OrderItemCard(props: OrderItemCardProps) {
       return props.formatPrice(price);
     }
     if (!price && price !== 0) return '-';
-    return formatPrice(price, config.currency);
+    return formatPrice(price, { symbol: config.currency });
   }
   function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
     const discountStr = formatItemPrice(discount());

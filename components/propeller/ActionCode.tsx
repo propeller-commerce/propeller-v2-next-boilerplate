@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ActionCodeProps {
   /** GraphQL client for the Propeller SDK */

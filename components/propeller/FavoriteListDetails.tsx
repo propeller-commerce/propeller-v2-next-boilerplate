@@ -15,7 +15,7 @@ import {
 import { useFavorites } from '@/composables/react/useFavorites';
 import FavoriteListItem from './FavoriteListItem';
 import GridPagination from './GridPagination';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */

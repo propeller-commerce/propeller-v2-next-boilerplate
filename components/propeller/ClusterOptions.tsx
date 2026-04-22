@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import { Product, ClusterOption, Enums } from 'propeller-sdk-v2';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 /**
  * Flattened render model for one product inside an option dropdown.

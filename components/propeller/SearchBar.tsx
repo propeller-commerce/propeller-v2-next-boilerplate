@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { GraphQLClient, Product, Cluster, Contact, Customer } from 'propeller-sdk-v2';
 import { useProductSearch } from '@/composables/react/useProductSearch';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface SearchBarResult {
   /** Unique identifier */

@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Contact, Customer, Enums } from 'propeller-sdk-v2';
-import { isContentHidden } from '@/lib/helpers/visibilityHelpers';
+import { isContentHidden } from '@/composables/shared/utils/visibilityHelpers';
 
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
 

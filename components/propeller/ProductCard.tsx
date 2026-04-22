@@ -15,7 +15,7 @@ import {
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
 import ProductPriceDisplay from './ProductPrice';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ProductCardProps {
   // === Core ===

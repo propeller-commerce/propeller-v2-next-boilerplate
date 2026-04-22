@@ -8,7 +8,7 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface LoginFormProps {
   /**

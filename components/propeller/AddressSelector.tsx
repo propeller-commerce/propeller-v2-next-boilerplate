@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Contact, Customer, Address, Company, Enums } from 'propeller-sdk-v2';
 import AddressCard from './AddressCard';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface AddressSelectorProps {
   /** Authenticated user — addresses are derived from their profile. */

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cluster, AttributeResult } from 'propeller-sdk-v2';
 import ItemStock from './ItemStock';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ClusterCardProps {
   // === Core ===

@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import { Order, Shipment, ShipmentItem, TrackAndTrace, OrderItem } from 'propeller-sdk-v2';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface OrderShipmentsProps {
   /** The current order the user is viewing */

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */

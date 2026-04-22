@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { Contact, Customer, GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationRequests } from '@/composables/react/usePurchaseAuthorization';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface PurchaseAuthorizationRequestsProps {
   /** GraphQL client for the Propeller SDK */

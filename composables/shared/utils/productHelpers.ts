@@ -16,10 +16,6 @@ export function getClusterSku(cluster: Cluster | null | undefined): string {
   return cluster?.sku || cluster?.defaultProduct?.sku || '';
 }
 
-/**
- * Finds the best localized string value from an array of {language, value} items.
- * Falls back to first item's value, then to the provided fallback.
- */
 export function getLocalizedValue(
   items: Array<{ language?: string | null; value?: string | null }> | null | undefined,
   language?: string | null,

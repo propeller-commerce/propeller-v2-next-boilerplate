@@ -7,7 +7,7 @@ import {
   ClusterConfig,
 } from 'propeller-sdk-v2';
 import { useClusterConfigurator } from '@/composables/react/useClusterConfigurator';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 /**
  * A computed object containing a cluster config setting enriched with

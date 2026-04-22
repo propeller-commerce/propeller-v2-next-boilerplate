@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import LoginForm from './LoginForm';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface AccountMenuLink {
   /** Display label for the link */

@@ -13,8 +13,8 @@ import {
   OrderSortInput,
 } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
-import { getLabel } from '@/lib/helpers/labelHelpers';
-import { formatPrice as formatPriceHelper } from '@/lib/helpers/priceHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { formatPrice as formatPriceHelper } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface OrderListProps {
@@ -121,7 +121,7 @@ function OrderList(props: OrderListProps) {
   function formatPrice(price: number): string {
     if (props.formatPrice) return props.formatPrice(price);
     if (!price) return '-';
-    return formatPriceHelper(price, config.currency);
+    return formatPriceHelper(price, { symbol: config.currency });
   }
 
   function getStatusColor(status: string): string {

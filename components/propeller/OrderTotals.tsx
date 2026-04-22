@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Order, Enums } from 'propeller-sdk-v2';
-import { getLabel } from '@/lib/helpers/labelHelpers';
-import { formatPrice } from '@/lib/helpers/priceHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { formatPrice } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface OrderTotalsProps {
@@ -84,7 +84,7 @@ function OrderTotals(props: OrderTotalsProps) {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
-    return formatPrice(price || 0, config.currency);
+    return formatPrice(price || 0, { symbol: config.currency });
   }
   function subtotal(): ReturnType<OrderTotalsState['subtotal']> {
     return (props.order as any)?.total?.gross || 0;

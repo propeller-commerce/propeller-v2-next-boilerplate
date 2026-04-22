@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */

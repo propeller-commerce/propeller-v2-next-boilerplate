@@ -9,7 +9,7 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 export type { FavoriteListFormData } from '@/composables/react/useFavorites';
 
 export interface FavoriteListsProps {

@@ -13,7 +13,7 @@ import {
   Company,
 } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface OrderActionsProps {
   /** GraphQL client for the Propeller SDK */

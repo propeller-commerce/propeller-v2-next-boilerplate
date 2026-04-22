@@ -12,7 +12,7 @@ import {
 } from 'propeller-sdk-v2';
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */

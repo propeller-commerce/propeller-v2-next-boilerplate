@@ -14,7 +14,7 @@ import ProductDescription from './ProductDescription';
 import ProductSpecifications from './ProductSpecifications';
 import ProductDownloads from './ProductDownloads';
 import ProductVideos from './ProductVideos';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ProductTabsProps {
   /** Product for which to display the information. */

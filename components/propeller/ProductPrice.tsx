@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ProductPrice, Product, ClusterOption, Contact, Customer, Enums } from 'propeller-sdk-v2';
-import { getLabel } from '@/lib/helpers/labelHelpers';
-import { isContentHidden } from '@/lib/helpers/visibilityHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { isContentHidden } from '@/composables/shared/utils/visibilityHelpers';
 
 export interface ProductPriceProps {
   /**

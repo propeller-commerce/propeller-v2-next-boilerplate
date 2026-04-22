@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { Enums, GraphQLClient, Contact, Customer, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, RegisterContactInput } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationConfigurator } from '@/composables/react/usePurchaseAuthorization';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface PurchaseAuthorizationConfiguratorProps {
   /** GraphQL client for the Propeller SDK */

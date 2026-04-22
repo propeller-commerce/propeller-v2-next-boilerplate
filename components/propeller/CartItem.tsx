@@ -19,7 +19,7 @@ import {
   TransformationsInput,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
-import { getLabel } from '@/lib/helpers/labelHelpers';
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface CartItemProps {
   /** GraphQL client for the Propeller SDK */

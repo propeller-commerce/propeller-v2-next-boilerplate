@@ -64,7 +64,7 @@ export default function CartPage() {
                     cartId={cart!.cartId}
                     cartItem={item}
                     configuration={config}
-                    enableIncrementDecrement={false}
+                    enableIncrementDecrement={true}
                     showCrossupsells={true}
                     crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}

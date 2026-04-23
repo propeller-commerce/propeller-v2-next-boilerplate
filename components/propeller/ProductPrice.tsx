@@ -140,9 +140,9 @@ function ProductPriceDisplay(props: ProductPriceProps) {
             <span className="propeller-product-price__tax-label text-sm text-muted-foreground">{getTaxLabel()}</span>
           </div>
           {!!getSecondaryPrice() ? (
-            <div className="propeller-product-price__secondary text-sm text-muted-foreground">
-              {getSecondaryPrice()}
-              {getSecondaryTaxLabel()}
+            <div className="propeller-product-price__secondary text-sm text-muted-foreground flex items-baseline gap-1">
+              <span className="propeller-product-price-secondary__amount">{getSecondaryPrice()}</span>
+              <span className="propeller-product-price-secondary__tax-label">{getSecondaryTaxLabel()}</span>
             </div>
           ) : null}
         </div>

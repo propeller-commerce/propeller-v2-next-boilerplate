@@ -27,6 +27,7 @@ import ProductBundles from '@/components/propeller/ProductBundles';
 import AddToFavorite from '@/components/propeller/AddToFavorite';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
+import { getLanguageString } from '@/composables/shared/utils/languageResolver';
 
 
 export default function ProductPage() {
@@ -63,7 +64,13 @@ export default function ProductPage() {
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs categoryPath={product?.categoryPath || []} language={language} configuration={config} showCurrent={true} />
+            <Breadcrumbs
+              categoryPath={product?.categoryPath || []}
+              currentCategory={product?.category || undefined}
+              language={language}
+              configuration={config}
+              currentLabel={product ? getLanguageString(product.names, language, '') : undefined}
+            />
           </div>
 
           {/* Main Content */}

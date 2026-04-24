@@ -13,8 +13,33 @@ export interface BreadcrumbsProps {
    * When true (default), the last item in the path is displayed as the
    * current page (non-clickable, aria-current="page").
    * When false, the last item is omitted.
+   * Ignored when `currentLabel` is provided — the extra crumb becomes
+   * the current page instead.
    */
   showCurrent?: boolean;
+
+  /**
+   * The category of the current page. When provided and not already
+   * the last item in `categoryPath`, it is appended automatically so
+   * the trail always ends at the current category. This makes the
+   * component correct whether the API's categoryPath includes the
+   * current category or only its ancestors.
+   */
+  currentCategory?: Category;
+
+  /**
+   * Optional trailing crumb appended after the category path — typically
+   * the name of the current product or cluster on a detail page.
+   * When provided, this crumb is marked as the current page and the
+   * last category becomes a normal link.
+   */
+  currentLabel?: string;
+
+  /**
+   * Optional URL for the trailing `currentLabel` crumb. When omitted,
+   * the crumb is rendered as a non-link `<span>`.
+   */
+  currentUrl?: string;
 
   /**
    * When true (default), a "Home" link is prepended to the trail.
@@ -65,8 +90,17 @@ function Breadcrumbs(props: BreadcrumbsProps) {
   function getItems(): ReturnType<BreadcrumbsState['getItems']> {
     const path = (props.categoryPath as Category[]) || [];
     const baseId = props.configuration?.baseCategoryId;
-    if (!baseId) return path;
-    return path.filter((cat: Category) => cat.categoryId !== baseId);
+    const filtered = baseId
+      ? path.filter((cat: Category) => cat.categoryId !== baseId)
+      : path;
+    const current = props.currentCategory;
+    if (current) {
+      const last = filtered[filtered.length - 1];
+      if (!last || last.categoryId !== current.categoryId) {
+        return [...filtered, current];
+      }
+    }
+    return filtered;
   }
   function getDisplayItems(): ReturnType<BreadcrumbsState['getDisplayItems']> {
     const items = getItems();
@@ -96,6 +130,7 @@ function Breadcrumbs(props: BreadcrumbsProps) {
   }
   function isCurrentItem(index: number): ReturnType<BreadcrumbsState['isCurrentItem']> {
     if (props.showCurrent === false) return false;
+    if (props.currentLabel) return false;
     return index === getDisplayItems().length - 1;
   }
   function showSeparatorBefore(index: number): ReturnType<BreadcrumbsState['showSeparatorBefore']> {
@@ -127,12 +162,12 @@ function Breadcrumbs(props: BreadcrumbsProps) {
               </span>
             ) : null}
             {isCurrentItem(index) ? (
-              <a
-                className="propeller-breadcrumbs__link propeller-breadcrumbs__link--current hover:text-foreground transition-colors"
-                href={getCategoryUrl(cat, index)}
+              <span
+                aria-current="page"
+                className="propeller-breadcrumbs__link propeller-breadcrumbs__link--current text-foreground"
               >
                 {getCategoryName(cat)}
-              </a>
+              </span>
             ) : null}
             {!isCurrentItem(index) ? (
               <a
@@ -144,6 +179,32 @@ function Breadcrumbs(props: BreadcrumbsProps) {
             ) : null}
           </li>
         ))}
+        {props.currentLabel ? (
+          <li
+            className="propeller-breadcrumbs__item flex items-center"
+            data-current="true"
+          >
+            <span aria-hidden="true" className="propeller-breadcrumbs__separator mx-2 select-none text-muted-foreground/40">
+              {getLabel(props.labels, 'separator', '/')}
+            </span>
+            {props.currentUrl ? (
+              <a
+                aria-current="page"
+                className="propeller-breadcrumbs__link propeller-breadcrumbs__link--current text-foreground"
+                href={props.currentUrl}
+              >
+                {props.currentLabel}
+              </a>
+            ) : (
+              <span
+                aria-current="page"
+                className="propeller-breadcrumbs__link propeller-breadcrumbs__link--current text-foreground"
+              >
+                {props.currentLabel}
+              </span>
+            )}
+          </li>
+        ) : null}
       </ol>
     </nav>
   );

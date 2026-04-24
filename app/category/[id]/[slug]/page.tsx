@@ -230,7 +230,13 @@ export default function CategoryPage() {
       <main className="flex-1 py-8">
         <div className="container-width">
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs categoryPath={category?.categoryPath || []} language={language} showCurrent={true} configuration={config} />
+            <Breadcrumbs
+              categoryPath={category?.categoryPath || []}
+              currentCategory={category || undefined}
+              language={language}
+              showCurrent={true}
+              configuration={config}
+            />
           </div>
           {/* CMS Category Banner */}
           {banner && <CategoryBanner banner={banner} />}

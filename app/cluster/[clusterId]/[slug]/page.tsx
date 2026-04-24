@@ -143,7 +143,13 @@ export default function ClusterPage() {
       <main className="flex-1 py-12">
         <div className="container-width">
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs categoryPath={selectedProduct?.categoryPath || []} language={language} configuration={config} showCurrent={true} />
+            <Breadcrumbs
+              categoryPath={selectedProduct?.categoryPath || []}
+              currentCategory={selectedProduct?.category || undefined}
+              language={language}
+              configuration={config}
+              showCurrent={true}
+            />
           </div>
 
           {/* Main Content */}

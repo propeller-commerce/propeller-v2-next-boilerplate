@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import {
+  Cart,
   Contact,
   Customer,
   GraphQLClient,
@@ -93,13 +94,20 @@ export interface LoginFormProps {
   /** Callback before the login process starts */
   beforeLogin?: () => void;
 
-  /** Callback after successful login with user data */
+  /** Callback after successful login with user data.
+   * `anonymousCart` is the cart held in the parent's state at the moment of submission,
+   * forwarded so the parent can merge it into the authenticated user's cart.
+   */
   afterLogin?: (
     user: Contact | Customer,
     accessToken?: string,
     refreshToken?: string,
-    expiresAt?: string
+    expiresAt?: string,
+    anonymousCart?: Cart | null
   ) => void;
+
+  /** Anonymous cart snapshot from the parent's state — forwarded to `afterLogin`. */
+  cart?: Cart | null;
 
   /**
    * Show login form in dropdown for immediate login when user is not logged in.
@@ -193,7 +201,7 @@ function LoginForm(props: LoginFormProps) {
       setEmail('');
       setPassword('');
       if (props.afterLogin) {
-        props.afterLogin(result.user as Contact | Customer, result.accessToken, result.refreshToken, result.expiresAt);
+        props.afterLogin(result.user as Contact | Customer, result.accessToken, result.refreshToken, result.expiresAt, props.cart ?? null);
       }
     }
   }

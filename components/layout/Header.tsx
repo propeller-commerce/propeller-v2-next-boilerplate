@@ -20,9 +20,11 @@ import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, CartService, CartSearchInput, Company, Contact, Customer, Enums } from 'propeller-sdk-v2';
-import type { CartQueryVariables } from 'propeller-sdk-v2/dist/service/CartService';
+import { Cart, CartService, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
+import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart';
+import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
+import { useCart as useCartHook } from '@/composables/react/useCart';
 
 export default function Header() {
   const router = useRouter();
@@ -37,42 +39,35 @@ export default function Header() {
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
-  // Fetch the user's active cart from the server for a given user/company
-  const fetchActiveCart = async (user: Contact | Customer, companyId?: number) => {
-    const cartService = new CartService(graphqlClient);
-    try {
-      const searchInput: CartSearchInput = {
-        offset: 100,
-        statuses: [Enums.CartStatus.OPEN]
-      };
-      if ('contactId' in user && user.contactId) {
-        searchInput.contactIds = [user.contactId];
-        if (companyId) {
-          searchInput.companyIds = [companyId];
-        }
-      } else if ('customerId' in user && user.customerId) {
-        searchInput.customerIds = [user.customerId];
-      }
-      const carts = await cartService.getCarts(searchInput);
-      if (carts?.items?.length) {
-        const existingCartId = carts.items[carts.items.length - 1].cartId;
-        const cartVars: CartQueryVariables = {
-          cartId: existingCartId,
-          imageSearchFilters: config.imageSearchFiltersGrid,
-          imageVariantFilters: config.imageVariantFiltersSmall,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-        };
-        const activeCart = await cartService.getCart(cartVars);
-        if (activeCart) {
-          saveCart(activeCart);
-          return;
-        }
-      }
-      // No active cart found — clear any stale cart from previous session/company
-      clearCart();
-    } catch (e) {
-      console.error('Failed to fetch active cart:', e);
+  // Build a useCart instance for the resolveCart primitive (creates a cart with default addresses).
+  const { resolveCart } = useCartHook({
+    graphqlClient,
+    user: state.isAuthenticated ? (state.user as Contact | Customer) : null,
+    companyId: selectedCompany?.companyId,
+    language,
+    configuration: config,
+  });
+
+  // Fetch the user's active cart from the server for a given user/company,
+  // saving it to the cart context. Returns the cart for further work (merge, etc).
+  const fetchActiveCart = async (
+    user: Contact | Customer,
+    companyId?: number,
+  ): Promise<Cart | null> => {
+    const activeCart = await fetchActiveCartShared({
+      graphqlClient,
+      user,
+      companyId,
+      language,
+      imageSearchFilters: config.imageSearchFiltersGrid,
+      imageVariantFilters: config.imageVariantFiltersSmall,
+    });
+    if (activeCart) {
+      saveCart(activeCart);
+      return activeCart;
     }
+    clearCart();
+    return null;
   };
 
   // CMS settings with defaults
@@ -243,7 +238,8 @@ export default function Header() {
                   <AccountIconAndMenu
                     user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
                     graphqlClient={graphqlClient}
-                    afterLogin={(user, accessToken, refreshToken, expiresAt) => {
+                    cart={cart as Cart | null}
+                    afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
                       const loggedInUser = stripLeadingUnderscores(user);
                       localStorage.setItem('user', JSON.stringify(loggedInUser));
                       updateUser(loggedInUser);
@@ -269,11 +265,34 @@ export default function Header() {
                         setLanguage(userLang);
                       }
 
-                      // Fetch the user's active cart from the server
                       const company = (loggedInUser as Contact).company;
-                      fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
+                      let targetCart = await fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
 
-                      router.push(localizeHref('/account', userLang || language))
+                      if (anonymousCart?.items?.length) {
+                        if (!targetCart) {
+                          targetCart = await resolveCart();
+                        }
+                        await mergeAnonymousCart({
+                          graphqlClient,
+                          targetCartId: targetCart.cartId,
+                          anonymousCart,
+                          language,
+                          imageSearchFilters: config.imageSearchFiltersGrid,
+                          imageVariantFilters: config.imageVariantFiltersSmall,
+                        });
+
+                        if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+                          try {
+                            await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId });
+                          } catch (e) {
+                            console.error('[auth] Failed to delete anonymous cart', e);
+                          }
+                        }
+
+                        await fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
+                      }
+
+                      router.push(localizeHref('/account', userLang || language));
                     }}
                     onMenuItemClick={(href) => router.push(href)}
                     onLogoutClick={async () => {

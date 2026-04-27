@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState } from 'react';
 import {
+  Cart,
   Contact,
   Customer,
   GraphQLClient,
@@ -71,13 +72,20 @@ export interface RegisterFormProps {
   /** Callback before the registration process starts */
   beforeRegistration?: () => void;
 
-  /** Callback after the user is registered */
+  /** Callback after the user is registered.
+   * `anonymousCart` is the cart held in the parent's state at the moment of submission,
+   * forwarded so the parent can merge it into the new user's cart.
+   */
   afterRegistration?: (
     user: Contact | Customer,
     accessToken?: string,
     refreshToken?: string,
-    expiresAt?: string
+    expiresAt?: string,
+    anonymousCart?: Cart | null
   ) => void;
+
+  /** Anonymous cart snapshot from the parent's state — forwarded to `afterRegistration`. */
+  cart?: Cart | null;
 
   /** Action for the login link click */
   onLoginClick?: () => void;
@@ -324,7 +332,13 @@ function RegisterForm(props: RegisterFormProps) {
         }
       }
       if (props.afterRegistration) {
-        props.afterRegistration(result.user as Contact | Customer);
+        props.afterRegistration(
+          result.user as Contact | Customer,
+          result.accessToken,
+          result.refreshToken,
+          result.expiresAt,
+          props.cart ?? null
+        );
       }
     } else if (result.error) {
       setError(result.error);

@@ -6,19 +6,32 @@ import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCart } from '@/context/CartContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import RegisterForm from '@/components/propeller/RegisterForm';
 import { graphqlClient } from '@/lib/api';
-import { Company, Contact } from 'propeller-sdk-v2';
+import { Cart, CartService, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
-import { localizeHref } from '@/data/config';
+import { localizeHref, config } from '@/data/config';
+import { fetchActiveCart } from '@/composables/shared/utils/fetchActiveCart';
+import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
+import { useCart as useCartHook } from '@/composables/react/useCart';
 
 export default function RegisterPage() {
   const { state, updateUser } = useAuth();
-  const { setSelectedCompany } = useCompany();
+  const { selectedCompany, setSelectedCompany } = useCompany();
   const { language } = useLanguage();
+  const { cart, saveCart, clearCart } = useCart();
   const router = useRouter();
+
+  const { resolveCart } = useCartHook({
+    graphqlClient,
+    user: state.isAuthenticated ? (state.user as Contact | Customer) : null,
+    companyId: selectedCompany?.companyId,
+    language,
+    configuration: config,
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -58,6 +71,7 @@ export default function RegisterPage() {
                   requiredFields={['firstName', 'lastName']}
                   onLoginClick={() => router.push(localizeHref('/login', language))}
                   automaticLogin={true}
+                  cart={cart as Cart | null}
                   countries={{
                     'NL': 'Netherlands',
                     'BE': 'Belgium',
@@ -66,14 +80,15 @@ export default function RegisterPage() {
                     'UK': 'United Kingdom',
                     'US': 'United States'
                   }}
-                  afterRegistration={(user, accessToken, refreshToken, expiresAt) => {
+                  afterRegistration={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
                     const registeredUser = stripLeadingUnderscores(user);
 
                     localStorage.setItem('user', JSON.stringify(registeredUser));
                     updateUser(registeredUser);
 
-                    if ((registeredUser as Contact).company) {
-                      setSelectedCompany((registeredUser as Contact).company as Company);
+                    const company = (registeredUser as Contact).company;
+                    if (company) {
+                      setSelectedCompany(company as Company);
                     }
 
                     if (accessToken && refreshToken && expiresAt) {
@@ -86,7 +101,50 @@ export default function RegisterPage() {
                       window.dispatchEvent(new CustomEvent('userLoggedIn'));
                     }
 
-                    router.push(localizeHref('/account', language))
+                    let targetCart = await fetchActiveCart({
+                      graphqlClient,
+                      user: registeredUser as Contact | Customer,
+                      companyId: company?.companyId,
+                      language,
+                      imageSearchFilters: config.imageSearchFiltersGrid,
+                      imageVariantFilters: config.imageVariantFiltersSmall,
+                    });
+
+                    if (anonymousCart?.items?.length) {
+                      if (!targetCart) {
+                        targetCart = await resolveCart();
+                      }
+                      await mergeAnonymousCart({
+                        graphqlClient,
+                        targetCartId: targetCart.cartId,
+                        anonymousCart,
+                        language,
+                        imageSearchFilters: config.imageSearchFiltersGrid,
+                        imageVariantFilters: config.imageVariantFiltersSmall,
+                      });
+
+                      if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+                        try {
+                          await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId });
+                        } catch (e) {
+                          console.error('[auth] Failed to delete anonymous cart', e);
+                        }
+                      }
+
+                      targetCart = await fetchActiveCart({
+                        graphqlClient,
+                        user: registeredUser as Contact | Customer,
+                        companyId: company?.companyId,
+                        language,
+                        imageSearchFilters: config.imageSearchFiltersGrid,
+                        imageVariantFilters: config.imageVariantFiltersSmall,
+                      });
+                    }
+
+                    if (targetCart) saveCart(targetCart);
+                    else clearCart();
+
+                    router.push(localizeHref('/account', language));
                   }}
                 />
               </CardContent>

@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
+import { Cart, Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import LoginForm from './LoginForm';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -107,8 +107,12 @@ export interface AccountIconAndMenuProps {
     user: Contact | Customer,
     accessToken?: string,
     refreshToken?: string,
-    expiresAt?: string
+    expiresAt?: string,
+    anonymousCart?: Cart | null
   ) => void;
+
+  /** Anonymous cart snapshot — forwarded to the embedded `LoginForm` so its `afterLogin` receives it. */
+  cart?: Cart | null;
 
   // ── Existing callbacks ──────────────────────────────────────────────────
 
@@ -445,6 +449,7 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                       {props.accountHeaderLoginForm !== false ? (
                         <LoginForm
                           graphqlClient={props.graphqlClient}
+                          cart={props.cart}
                           title={props.loginFormTitle ?? getLabel(props.labels, 'loginTitle', 'Welcome Back')}
                           subtitle={props.loginFormSubtitle ?? getLabel(props.labels, 'loginSubtitle', '')}
                           buttonText={props.loginButtonText ?? getLabel(props.labels, 'loginButton', 'Log In')}

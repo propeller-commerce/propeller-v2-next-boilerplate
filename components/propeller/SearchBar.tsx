@@ -81,6 +81,12 @@ export interface SearchBarProps {
    * Active company ID from the company switcher.
    */
   companyId?: number;
+
+  /**
+   * Bump this counter to clear the search input from outside (e.g. on route
+   * change). Each unique value triggers a one-time reset of the local term.
+   */
+  clearSignal?: number;
 }
 
 function mapToSearchBarResult(item: Product | Cluster): SearchBarResult {
@@ -108,7 +114,7 @@ function SearchBar(props: SearchBarProps) {
   const minLength = props.minSearchLength !== undefined ? props.minSearchLength : 3;
   const maxResults = props.maxResults !== undefined ? props.maxResults : 8;
 
-  const { search, searchResults, searchLoading } = useProductSearch({
+  const { search, searchResults, searchItemsFound, searchLoading } = useProductSearch({
     graphqlClient: props.graphqlClient,
     language: props.language,
     configuration: props.configuration || {},
@@ -119,7 +125,7 @@ function SearchBar(props: SearchBarProps) {
     .slice(0, maxResults)
     .map((item) => mapToSearchBarResult(item as Product | Cluster));
 
-  const itemsFound = searchResults.length;
+  const itemsFound = searchItemsFound;
 
   
 
@@ -150,6 +156,16 @@ function SearchBar(props: SearchBarProps) {
       setShowDropdown(true);
     }
   }, [searchResults]);
+
+  // Parents bump `clearSignal` (e.g. on route change) to reset the input. We
+  // also stop any in-flight search and close the dropdown.
+  useEffect(() => {
+    if (props.clearSignal === undefined) return;
+    setLocalTerm('');
+    setShowDropdown(false);
+    search('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.clearSignal]);
 
   function handleSubmit(e: any) {
     e.preventDefault();
@@ -225,40 +241,42 @@ function SearchBar(props: SearchBarProps) {
         </div>
       </form>
       {showDropdown ? (
-        <div className="propeller-search-bar__dropdown absolute top-full left-0 right-0 mt-2 bg-card rounded-container shadow-xl border border-border max-h-96 overflow-y-auto z-50">
+        <div className="propeller-search-bar__dropdown absolute top-full left-0 right-0 mt-2 bg-card rounded-container shadow-xl border border-border z-50 flex flex-col max-h-96">
           {results.length > 0 ? (
             <>
-              {results?.map((result, index) => (
-                <div
-                  className="propeller-search-bar__result flex items-center gap-4 p-3 hover:bg-surface-hover cursor-pointer border-b border-border-subtle last:border-b-0"
-                  key={result.id + '-' + index}
-                  onClick={(event) => handleResultClick(result)}
-                >
-                  {result.imageUrl || noImageUrl() ? (
-                    <div className="propeller-search-bar__result-media relative w-16 h-16 flex-shrink-0">
-                      <img
-                        className="propeller-search-bar__result-image w-full h-full object-contain"
-                        src={result.imageUrl || noImageUrl()}
-                        alt={result.name}
-                      />
+              <div className="propeller-search-bar__results flex-1 overflow-y-auto">
+                {results?.map((result, index) => (
+                  <div
+                    className="propeller-search-bar__result flex items-center gap-4 p-3 hover:bg-surface-hover cursor-pointer border-b border-border-subtle last:border-b-0"
+                    key={result.id + '-' + index}
+                    onClick={(event) => handleResultClick(result)}
+                  >
+                    {result.imageUrl || noImageUrl() ? (
+                      <div className="propeller-search-bar__result-media relative w-16 h-16 flex-shrink-0">
+                        <img
+                          className="propeller-search-bar__result-image w-full h-full object-contain"
+                          src={result.imageUrl || noImageUrl()}
+                          alt={result.name}
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex-1 min-w-0">
+                      <div className="propeller-search-bar__result-name font-semibold truncate">{result.name}</div>
+                      {result.sku ? (
+                        <div className="propeller-search-bar__result-sku text-sm text-muted-foreground">SKU: {result.sku}</div>
+                      ) : null}
                     </div>
-                  ) : null}
-                  <div className="flex-1 min-w-0">
-                    <div className="propeller-search-bar__result-name font-semibold truncate">{result.name}</div>
-                    {result.sku ? (
-                      <div className="propeller-search-bar__result-sku text-sm text-muted-foreground">SKU: {result.sku}</div>
+                    {result.price !== undefined && result.price !== null ? (
+                      <div className="propeller-search-bar__result-price text-sm font-semibold text-foreground flex-shrink-0">
+                        {formatItemPrice(result.price!)}
+                      </div>
                     ) : null}
                   </div>
-                  {result.price !== undefined && result.price !== null ? (
-                    <div className="propeller-search-bar__result-price text-sm font-semibold text-foreground flex-shrink-0">
-                      {formatItemPrice(result.price!)}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-              {itemsFound > maxResults ? (
+                ))}
+              </div>
+              {itemsFound > results.length ? (
                 <div
-                  className="propeller-search-bar__view-all p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold"
+                  className="propeller-search-bar__view-all flex-shrink-0 p-3 text-center text-primary hover:bg-primary/5 cursor-pointer font-semibold border-t border-border bg-card rounded-b-container"
                   onClick={(event) => handleViewAllClick()}
                 >
                   {getLabel(props.labels, 'viewAll', 'View all results')} ({itemsFound})

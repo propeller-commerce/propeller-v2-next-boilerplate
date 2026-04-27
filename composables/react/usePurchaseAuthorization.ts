@@ -345,6 +345,13 @@ export interface UsePurchaseAuthorizationRequestsOptions {
   };
   onAcceptRequest?: (cartId: string) => void;
   afterAcceptRequest?: (cart: Cart) => void;
+  /**
+   * Override: fires instead of the default CartService.deleteCart() call.
+   * Receives the cartId string.
+   */
+  onDeleteRequest?: (cartId: string) => void;
+  /** Called AFTER a successful delete. Receives the deleted cart's id. */
+  afterDeleteRequest?: (cartId: string) => void;
   onError?: (err: Error) => void;
 }
 
@@ -354,6 +361,7 @@ export interface UsePurchaseAuthorizationRequestsReturn {
   selectedCart: Cart | null;
   modalLoading: boolean;
   acceptLoading: boolean;
+  deleteLoading: boolean;
   isAuthManager: boolean;
   getTotalQuantity: (cart: Cart) => number;
   getContactName: (contact: Contact | null | undefined) => string;
@@ -361,6 +369,7 @@ export interface UsePurchaseAuthorizationRequestsReturn {
   loadCarts: () => Promise<void>;
   handleViewCart: (cart: Cart) => Promise<void>;
   handleAcceptRequest: () => Promise<void>;
+  handleDeleteRequest: () => Promise<void>;
   closeModal: () => void;
 }
 
@@ -376,6 +385,7 @@ export function usePurchaseAuthorizationRequests(
   const [selectedCart, setSelectedCart] = useState<Cart | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [acceptLoading, setAcceptLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const isAuthManager = useMemo(() => checkIsAuthManager(user, companyId), [user, companyId]);
 
@@ -456,6 +466,27 @@ export function usePurchaseAuthorizationRequests(
     }
   }, [graphqlClient, user, selectedCart, configuration, loadCarts]);
 
+  const handleDeleteRequest = useCallback(async (): Promise<void> => {
+    if (!selectedCart) return;
+    setDeleteLoading(true);
+    const cartId = selectedCart.cartId;
+    try {
+      if (cbRef.current.onDeleteRequest) {
+        cbRef.current.onDeleteRequest(cartId);
+      } else {
+        const service = new CartService(graphqlClient);
+        await service.deleteCart({ id: cartId });
+      }
+      cbRef.current.afterDeleteRequest?.(cartId);
+      setSelectedCart(null);
+      await loadCarts();
+    } catch (err: any) {
+      cbRef.current.onError?.(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [graphqlClient, selectedCart, loadCarts]);
+
   const closeModal = useCallback((): void => {
     setSelectedCart(null);
   }, []);
@@ -468,8 +499,8 @@ export function usePurchaseAuthorizationRequests(
   }, [companyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
-    carts, loading, selectedCart, modalLoading, acceptLoading, isAuthManager,
+    carts, loading, selectedCart, modalLoading, acceptLoading, deleteLoading, isAuthManager,
     getTotalQuantity, getContactName, getModalItems,
-    loadCarts, handleViewCart, handleAcceptRequest, closeModal,
+    loadCarts, handleViewCart, handleAcceptRequest, handleDeleteRequest, closeModal,
   };
 }

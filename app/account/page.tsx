@@ -4,16 +4,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { Contact, Customer } from 'propeller-sdk-v2';
 import UserDetails from '@/components/propeller/UserDetails';
+import { COUNTRIES } from '@/composables/shared/utils/countries';
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 export default function AccountPage() {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();

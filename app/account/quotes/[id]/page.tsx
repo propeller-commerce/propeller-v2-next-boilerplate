@@ -16,16 +16,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
 import OrderTotals from '@/components/propeller/OrderTotals';
+import { COUNTRIES } from '@/composables/shared/utils/countries';
 
-const COUNTRIES = [
-    { code: 'NL', name: 'Netherlands' },
-    { code: 'BE', name: 'Belgium' },
-    { code: 'DE', name: 'Germany' },
-    { code: 'FR', name: 'France' },
-    { code: 'UK', name: 'United Kingdom' },
-    { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
@@ -64,8 +57,37 @@ export default function QuoteDetailPage() {
         router.push(localizeHref(`/checkout/thank-you/${acceptedQuote.id}`, language));
     };
 
+    // PDF download UX state — shows "Downloading..." while the request is in
+    // flight, then a success or error toast based on the result. Mirrors the
+    // pattern OrderActions uses for the order-confirmation PDF.
+    const [downloading, setDownloading] = useState(false);
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    const showDownloadToast = (message: string, type: 'success' | 'error') => {
+        setToastMessage(message);
+        setToastType(type);
+        setToastVisible(true);
+        setTimeout(() => setToastVisible(false), 4000);
+    };
+
     const handleDownloadPDF = async () => {
-        await downloadQuotePdf(Number(quoteId));
+        if (downloading) return;
+        setDownloading(true);
+        try {
+            const result = await downloadQuotePdf(Number(quoteId));
+            if (result?.success) {
+                showDownloadToast('PDF downloaded successfully', 'success');
+            } else {
+                showDownloadToast(result?.error || 'Failed to download PDF', 'error');
+            }
+        } catch (e) {
+            console.error('Error downloading quote PDF:', e);
+            showDownloadToast('Failed to download PDF', 'error');
+        } finally {
+            setDownloading(false);
+        }
     };
 
     if (!state.isAuthenticated) return null;
@@ -121,8 +143,8 @@ export default function QuoteDetailPage() {
                                 showTermsAndConditions={true}
                                 onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                             />
-                            <Button variant="link" size="sm" onClick={handleDownloadPDF}>
-                                Download Quote (PDF)
+                            <Button variant="link" size="sm" onClick={handleDownloadPDF} disabled={downloading}>
+                                {downloading ? 'Downloading...' : 'Download Quote (PDF)'}
                             </Button>
                         </div>
                     </Card>
@@ -239,6 +261,44 @@ export default function QuoteDetailPage() {
                     </div>
                 </div>
             )}
+
+            {/* PDF download toast (success / error feedback) */}
+            {toastVisible ? (
+                <div
+                    className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${
+                        toastType === 'success'
+                            ? 'bg-success border border-success text-success-foreground'
+                            : 'bg-destructive border border-destructive text-destructive-foreground'
+                    }`}
+                    data-toast-type={toastType}
+                >
+                    <div className="flex-shrink-0 w-5 h-5 mt-0.5">
+                        {toastType === 'success' ? (
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        ) : (
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                                />
+                            </svg>
+                        )}
+                    </div>
+                    <p className="flex-1 text-sm font-medium">{toastMessage}</p>
+                    <button
+                        type="button"
+                        className="flex-shrink-0 rounded focus:outline-none hover:opacity-80"
+                        onClick={() => setToastVisible(false)}
+                    >
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-4 w-4" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            ) : null}
         </div>
     );
 }

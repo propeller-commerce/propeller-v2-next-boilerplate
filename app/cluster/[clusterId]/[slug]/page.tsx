@@ -116,6 +116,15 @@ export default function ClusterPage() {
     }
   };
 
+  const handleOptionClear = (optionId: number) => {
+    setSelectedOptionProducts(prev => {
+      if (!(optionId in prev)) return prev;
+      const next = { ...prev };
+      delete next[optionId];
+      return next;
+    });
+  };
+
   // Update URL slug when language or cluster changes — use history.replaceState
   // to avoid a Next.js re-render cascade that would trigger a second API fetch.
   useEffect(() => {
@@ -132,9 +141,9 @@ export default function ClusterPage() {
   // ── Derived display values ─────────────────────────────────────────────────
 
   const displayProduct = selectedProduct || cluster?.defaultProduct;
-  const images: string[] = displayProduct?.media?.images?.items?.flatMap(
-    image => image.imageVariants?.map(variant => variant.url).filter((url): url is string => !!url) ?? []
-  ) ?? [];
+  const images: string[] = displayProduct?.media?.images?.items
+    ?.map(image => image.imageVariants?.[0]?.url)
+    .filter((url): url is string => !!url) ?? [];
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -216,6 +225,7 @@ export default function ClusterPage() {
                           clusterId={clusterId}
                           options={cluster.options}
                           onOptionSelect={handleOptionSelect}
+                          onOptionClear={handleOptionClear}
                           showErrors={showClusterErrors}
                         />
                       </div>

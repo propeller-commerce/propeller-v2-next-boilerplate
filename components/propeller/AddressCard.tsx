@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { GraphQLClient, Address, CartAddress, WarehouseAddress, OrderAddress, Enums } from 'propeller-sdk-v2';
 import { useAddress } from '@/composables/react/useAddress';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
 export interface AddressCardProps {
   /** GraphQL client for the Propeller SDK (only needed when editing) */
@@ -142,12 +143,7 @@ function AddressCard(props: AddressCardProps) {
   
 
   function getCountryName(code: string): string {
-    if (!code) return '';
-    const list = props.countries || [];
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].code === code) return list[i].name;
-    }
-    return code;
+    return _getCountryName(code, props.countries);
   }
 
   function addr(): any {

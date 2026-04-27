@@ -134,7 +134,7 @@ function ProductInfo(props: ProductInfoProps) {
       return;
     }
     if (!props.productId || !props.graphqlClient) return;
-    fetchProduct(props.productId);
+    fetchProduct(props.productId, props.imageSearchFilters, props.imageVariantFilters);
   }, [props.productId, props.product, props.language, props.user, props.companyId]);
 
   useEffect(() => {

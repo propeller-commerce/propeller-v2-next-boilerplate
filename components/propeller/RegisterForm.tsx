@@ -49,7 +49,12 @@ export interface RegisterFormProps {
   requiredFields?: string[];
 
   /**
-   * Contact or Customer is automatically logged in upon registration.
+   * When true (default) the new contact/customer is automatically logged in
+   * after registration: the SDK access token is set on the GraphQL client and
+   * forwarded to `afterRegistration` so the parent can populate auth state.
+   * When false, registration completes server-side but no session is kept;
+   * `afterRegistration` is called without tokens so the parent can redirect
+   * the user to the login page.
    * @default true
    */
   automaticLogin?: boolean;
@@ -281,6 +286,7 @@ function RegisterForm(props: RegisterFormProps) {
     }
     setError('');
 
+    const autoLogin = props.automaticLogin !== false;
     let result;
     if (isContact()) {
       result = await registerContact({
@@ -306,7 +312,7 @@ function RegisterForm(props: RegisterFormProps) {
         deliveryCity: sameAsDelivery ? billingCity : deliveryCity,
         deliveryCountry: sameAsDelivery ? billingCountry : deliveryCountry,
         sameDeliveryAsBilling: sameAsDelivery,
-      }, props.preferredLanguage || 'NL');
+      }, props.preferredLanguage || 'NL', autoLogin);
     } else {
       result = await registerCustomer({
         email,
@@ -321,22 +327,26 @@ function RegisterForm(props: RegisterFormProps) {
         postalCode: billingPostalCode,
         city: billingCity,
         country: billingCountry,
-      }, props.preferredLanguage || 'NL');
+        deliveryStreet: sameAsDelivery ? billingStreet : deliveryStreet,
+        deliveryNumber: sameAsDelivery ? billingNumber : deliveryNumber,
+        deliveryPostalCode: sameAsDelivery ? billingPostalCode : deliveryPostalCode,
+        deliveryCity: sameAsDelivery ? billingCity : deliveryCity,
+        deliveryCountry: sameAsDelivery ? billingCountry : deliveryCountry,
+        sameDeliveryAsBilling: sameAsDelivery,
+      }, props.preferredLanguage || 'NL', autoLogin);
     }
 
-    if (result.success && result.user) {
+    if (result.success) {
       setSubmitted(true);
-      if (props.automaticLogin !== false) {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('userLoggedIn'));
-        }
+      if (autoLogin && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
       }
       if (props.afterRegistration) {
         props.afterRegistration(
-          result.user as Contact | Customer,
-          result.accessToken,
-          result.refreshToken,
-          result.expiresAt,
+          (result.user ?? null) as Contact | Customer,
+          autoLogin ? result.accessToken : undefined,
+          autoLogin ? result.refreshToken : undefined,
+          autoLogin ? result.expiresAt : undefined,
           props.cart ?? null
         );
       }

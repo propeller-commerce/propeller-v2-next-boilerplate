@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cart, CartAddress, GraphQLClient } from 'propeller-sdk-v2';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
 export interface CartOverviewProps {
   /** GraphQL client for the Propeller SDK */
@@ -38,6 +39,13 @@ export interface CartOverviewProps {
 
   /** Action when the purchase button is clicked. Receives cart, reference, and notes */
   onPurchaseButtonClick?: (cart: Cart, reference: string, notes: string) => void;
+
+  /**
+   * Optional list of countries used to resolve ISO codes (e.g. 'NL') to display
+   * names (e.g. 'Netherlands') in the address blocks. When omitted, the shared
+   * built-in COUNTRIES list is used as a fallback.
+   */
+  countries?: { code: string; name: string }[];
 }
 interface CartOverviewState {
   reference: string;
@@ -91,6 +99,9 @@ function CartOverview(props: CartOverviewProps) {
   function deliveryAddress(): ReturnType<CartOverviewState['deliveryAddress']> {
     return props.cart?.deliveryAddress;
   }
+  function getCountryName(code: string): string {
+    return _getCountryName(code, props.countries);
+  }
   function formatAddress(addr: CartAddress): ReturnType<CartOverviewState['formatAddress']> {
     if (!addr || !addr.street) return '';
     const parts: string[] = [];
@@ -104,7 +115,7 @@ function CartOverview(props: CartOverviewProps) {
     if (streetLine) parts.push(streetLine);
     const cityLine = [addr.postalCode, addr.city].filter(Boolean).join(' ');
     if (cityLine) parts.push(cityLine);
-    if (addr.country) parts.push(addr.country);
+    if (addr.country) parts.push(getCountryName(addr.country));
     return parts.join(', ');
   }
   function paymentMethod(): ReturnType<CartOverviewState['paymentMethod']> {
@@ -187,7 +198,7 @@ function CartOverview(props: CartOverviewProps) {
               <p>
                 {[invoiceAddress().postalCode, invoiceAddress().city].filter(Boolean).join(' ')}
               </p>
-              {invoiceAddress().country ? <p>{invoiceAddress().country}</p> : null}
+              {invoiceAddress().country ? <p>{getCountryName(invoiceAddress().country!)}</p> : null}
               {invoiceAddress().email ? (
                 <p className="propeller-cart-overview__address-email text-muted-foreground">{invoiceAddress().email}</p>
               ) : null}
@@ -224,7 +235,7 @@ function CartOverview(props: CartOverviewProps) {
               <p>
                 {[deliveryAddress().postalCode, deliveryAddress().city].filter(Boolean).join(' ')}
               </p>
-              {deliveryAddress().country ? <p>{deliveryAddress().country}</p> : null}
+              {deliveryAddress().country ? <p>{getCountryName(deliveryAddress().country!)}</p> : null}
               {deliveryAddress().email ? (
                 <p className="propeller-cart-overview__address-email text-muted-foreground">{deliveryAddress().email}</p>
               ) : null}

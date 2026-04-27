@@ -125,7 +125,7 @@ function ClusterInfo(props: ClusterInfoProps) {
       return;
     }
     if (!props.clusterId || !props.graphqlClient) return;
-    fetchCluster(props.clusterId);
+    fetchCluster(props.clusterId, props.imageSearchFilters, props.imageVariantFilters);
   }, [props.clusterId]);
 
   useEffect(() => {

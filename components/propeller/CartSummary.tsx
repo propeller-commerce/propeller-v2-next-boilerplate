@@ -65,7 +65,14 @@ export interface CartSummaryProps {
 
 function CartSummary(props: CartSummaryProps) {
   // --- composable ---
-  const { checkoutAllowed, requestAuthorization } = useCart({
+  // Note: useCart's `checkoutAllowed` is intentionally NOT used here. That
+  // composable has its own internal cart ref that stays null when the consumer
+  // (this component) doesn't call addItem/resolveCart, which would falsely
+  // report "checkout allowed" for users over their authorization limit.
+  // showRequestAuthorizationButton below computes against props.cart directly,
+  // matching CartIconAndSidebar's pattern so the cart page and the header
+  // sidebar always agree.
+  const { requestAuthorization } = useCart({
     graphqlClient: props.graphqlClient!,
     user: props.user ?? null,
     cartId: props.cart?.cartId,
@@ -144,20 +151,19 @@ function CartSummary(props: CartSummaryProps) {
     }
   }
   function showRequestAuthorizationButton(): boolean {
-    if (!props.user || !('contactId' in props.user)) { console.log('[PAC] no user or not contact'); return false; }
-    if (!props.companyId) { console.log('[PAC] no companyId prop'); return false; }
+    if (!props.user || !('contactId' in props.user)) return false;
+    if (!props.companyId) return false;
+    if (!props.cart) return false;
     const pacData = (props.user as any).purchaseAuthorizationConfigs ?? (props.user as any)._purchaseAuthorizationConfigs;
     const items: any[] = pacData?.items ?? pacData?._items ?? [];
-    console.log('[PAC] companyId:', props.companyId, typeof props.companyId, '| pacItems:', items.length, items);
     const purchaserPAC = items.find((pac: any) => {
       const role = pac.purchaseRole ?? pac._purchaseRole;
       const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-      console.log('[PAC] checking pac — role:', role, '| pacCompanyId:', pacCompanyId, typeof pacCompanyId);
       return role === Enums.PurchaseRole.PURCHASER && Number(pacCompanyId) === Number(props.companyId);
     });
-    if (!purchaserPAC) { console.log('[PAC] no PURCHASER PAC found for companyId', props.companyId); return false; }
+    if (!purchaserPAC) return false;
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
-    const totalGross = props.cart?.total?.totalGross ?? 0;
+    const totalGross = (props.cart as any)?.total?.totalGross ?? (props.cart as any)?._total?._totalGross ?? 0;
     return totalGross > limit;
   }
 

@@ -227,8 +227,15 @@ function ProductSlider(props: ProductSliderProps) {
   useEffect(() => {
     if (props.products && props.products.length > 0) return;
     if (isCrossUpsellMode()) {
-      if (props.productId) {
-        fetchCrossupsells({ productId: props.productId });
+      // Cluster pages pass clusterId (not productId), so guard on having
+      // either source — without this, sliders mounted on a cluster page
+      // silently never fire and render empty.
+      if (props.productId || props.clusterId) {
+        fetchCrossupsells({
+          productId: props.productId,
+          clusterId: props.clusterId,
+          types: props.crossUpsellTypes,
+        });
       }
     } else if (props.productIds && props.productIds.length > 0) {
       fetchProducts(props.productIds);

@@ -40,9 +40,9 @@ export default function ProductPage() {
   const router = useRouter();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
-  const images: string[] = product?.media?.images?.items?.flatMap(
-    image => image.imageVariants?.map(variant => variant.url).filter((url): url is string => !!url) ?? []
-  ) ?? [];
+  const images: string[] = product?.media?.images?.items
+    ?.map(image => image.imageVariants?.[0]?.url)
+    .filter((url): url is string => !!url) ?? [];
 
   const price = product?.price as ProductPriceSDK;
 

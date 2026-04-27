@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
 export interface OrderSummaryProps {
   /** The order object from propeller-sdk-v2 */
@@ -117,23 +118,16 @@ function OrderSummary(props: OrderSummaryProps) {
     return props.order?.remarks || '';
   }
   function getCountryName(code: string): ReturnType<OrderSummaryState['getCountryName']> {
-    if (!code) return '';
-    const list = props.countries || [];
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].code === code) return list[i].name;
-    }
-    return code;
+    return _getCountryName(code, props.countries);
   }
   function formatOrderDate(dateString: string): ReturnType<OrderSummaryState['formatOrderDate']> {
     if (props.formatDate) {
       return props.formatDate(dateString);
     }
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      // Short locale format (e.g. 4/27/2026 in en-US) for visual consistency
+      // with the delivery-date row directly above. Override via `formatDate`.
+      return new Date(dateString).toLocaleDateString('en-US');
     } catch {
       return dateString;
     }
@@ -171,11 +165,10 @@ function OrderSummary(props: OrderSummaryProps) {
       return props.formatDate(date);
     }
     try {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      // Short locale format (e.g. 4/27/2026 in en-US) — matches CartOverview's
+      // delivery-date rendering so checkout review and order confirmation stay
+      // consistent. Override via the `formatDate` prop if a longer layout is needed.
+      return new Date(date).toLocaleDateString('en-US');
     } catch {
       return date;
     }

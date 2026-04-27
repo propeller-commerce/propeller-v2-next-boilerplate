@@ -11,16 +11,9 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { useAddress, type AddressInput } from '@/composables/react/useAddress';
+import { COUNTRIES } from '@/composables/shared/utils/countries';
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 export default function AddressesPage() {
   const { state: authState, refreshUser } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);

@@ -33,9 +33,7 @@ export function getLanguagePrefix(language?: string): string {
 export function localizeHref(path: string, language?: string): string {
   const prefix = getLanguagePrefix(language);
   if (!prefix) return path;
-  // Don't double-prefix
   if (path.startsWith(prefix + '/') || path === prefix) return path;
-  // '/' becomes '/en', '/foo' becomes '/en/foo'
   return path === '/' ? prefix : prefix + path;
 }
 

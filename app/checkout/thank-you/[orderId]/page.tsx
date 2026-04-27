@@ -14,6 +14,7 @@ import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/default
 import OrderSummary from '@/components/propeller/OrderSummary';
 import { Order, OrderItem } from 'propeller-sdk-v2';
 import OrderItemCard from '@/components/propeller/OrderItemCard';
+import { COUNTRIES } from '@/composables/shared/utils/countries';
 
 function ThankYouPageInner() {
   const params = useParams();
@@ -106,6 +107,7 @@ function ThankYouPageInner() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <OrderSummary
                   order={order}
+                  countries={COUNTRIES}
                   title="Order Summary"
                 />
               </div>

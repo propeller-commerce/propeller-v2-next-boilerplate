@@ -81,6 +81,14 @@ export default function RegisterPage() {
                     'US': 'United States'
                   }}
                   afterRegistration={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
+                    // No token means the form was used with `automaticLogin: false`.
+                    // The user exists server-side but isn't signed in here — send
+                    // them to the login page.
+                    if (!accessToken) {
+                      router.push(localizeHref('/login', language));
+                      return;
+                    }
+
                     const registeredUser = stripLeadingUnderscores(user);
 
                     localStorage.setItem('user', JSON.stringify(registeredUser));
@@ -91,11 +99,9 @@ export default function RegisterPage() {
                       setSelectedCompany(company as Company);
                     }
 
-                    if (accessToken && refreshToken && expiresAt) {
-                      localStorage.setItem('accessToken', accessToken);
-                      localStorage.setItem('refreshToken', refreshToken);
-                      localStorage.setItem('expiresAt', expiresAt);
-                    }
+                    localStorage.setItem('accessToken', accessToken);
+                    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+                    if (expiresAt) localStorage.setItem('expiresAt', expiresAt);
 
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(new CustomEvent('userLoggedIn'));

@@ -1,9 +1,11 @@
 'use client';
 import * as React from 'react';
 
+import { useState } from 'react';
 import { Contact, Customer, GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationRequests } from '@/composables/react/usePurchaseAuthorization';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { getLanguageString } from '@/composables/shared/utils/languageResolver';
 
 export interface PurchaseAuthorizationRequestsProps {
   /** GraphQL client for the Propeller SDK */
@@ -27,6 +29,18 @@ export interface PurchaseAuthorizationRequestsProps {
    */
   afterAcceptRequest?: (cart: Cart) => void;
 
+  /**
+   * Override: fires instead of the default CartService.deleteCart() call.
+   * Receives the cartId string.
+   */
+  onDeleteRequest?: (cartId: string) => void;
+
+  /**
+   * Fires after a purchase authorization request has been deleted (cart removed).
+   * Receives the deleted cart's id.
+   */
+  afterDeleteRequest?: (cartId: string) => void;
+
   /** Format date */
   formatDate?: (dateString: string) => string;
 
@@ -35,6 +49,9 @@ export interface PurchaseAuthorizationRequestsProps {
 
   /** Labels for the component */
   labels?: Record<string, string>;
+
+  /** Language used to resolve localized product names in the items table. Defaults to 'NL'. */
+  language?: string;
 
   /** Additional CSS class for the root element */
   className?: string;
@@ -50,9 +67,9 @@ export interface PurchaseAuthorizationRequestsProps {
 }
 function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps) {
   const {
-    carts, loading, selectedCart, modalLoading, acceptLoading, isAuthManager,
+    carts, loading, selectedCart, modalLoading, acceptLoading, deleteLoading, isAuthManager,
     getTotalQuantity, getContactName, getModalItems,
-    handleViewCart, handleAcceptRequest, closeModal,
+    handleViewCart, handleAcceptRequest, handleDeleteRequest, closeModal,
   } = usePurchaseAuthorizationRequests({
     graphqlClient: props.graphqlClient,
     user: props.user,
@@ -60,8 +77,21 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     configuration: props.configuration,
     onAcceptRequest: props.onAcceptRequest,
     afterAcceptRequest: props.afterAcceptRequest,
+    onDeleteRequest: props.onDeleteRequest,
+    afterDeleteRequest: props.afterDeleteRequest,
     onError: props.onError,
   });
+
+  // Two-step delete UX: clicking Delete in the preview modal opens a small
+  // confirmation overlay. Mirrors playground-v2's `delete_purchase_authorization`
+  // modal so the destructive action requires explicit user confirmation.
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const openDeleteConfirm = () => setShowDeleteConfirm(true);
+  const closeDeleteConfirm = () => setShowDeleteConfirm(false);
+  const confirmDelete = async () => {
+    await handleDeleteRequest();
+    setShowDeleteConfirm(false);
+  };
 
   
 
@@ -76,6 +106,18 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
     if (props.formatPrice) return props.formatPrice(price);
     if (!price) return '-';
     return `€${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function getProductName(item: any): string {
+    // First-class lookup: localized names array on the line item's product.
+    // Falls back to bundle name (bundle items) and finally to the SKU so the
+    // cell never renders empty for an item that does have data.
+    const lang = props.language || 'NL';
+    const fromNames = getLanguageString(item?.product?.names, lang, '');
+    if (fromNames) return fromNames;
+    const fromBundle = getLanguageString(item?.bundle?.names, lang, '');
+    if (fromBundle) return fromBundle;
+    return item?.product?.sku || '';
   }
 
   return (
@@ -214,7 +256,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                             <tbody className="divide-y divide-border">
                               {getModalItems().map((item, idx) => (
                                 <tr key={idx}>
-                                  <td className="px-3 py-2">{item.product?.names?.[0]?.value ?? ''}</td>
+                                  <td className="px-3 py-2">{getProductName(item)}</td>
                                   <td className="px-3 py-2 text-right">{item.quantity ?? 0}</td>
                                   <td className="px-3 py-2 text-right">
                                     {formatPrice(
@@ -252,21 +294,74 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
                     <div className="propeller-purchase-authorization-requests__modal-actions flex gap-3 px-6 py-4 border-t border-border-subtle flex-shrink-0">
                       <button
                         type="button"
-                        className="propeller-purchase-authorization-requests__modal-cancel flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                        onClick={() => closeModal()}
+                        className="propeller-purchase-authorization-requests__modal-delete flex-1 inline-flex justify-center rounded-control border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-hover/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={() => openDeleteConfirm()}
+                        disabled={deleteLoading || acceptLoading}
                       >
-                        {getLabel(props.labels, 'cancel', 'Cancel')}
+                        {getLabel(props.labels, 'delete', 'Delete')}
                       </button>
                       <button
                         type="button"
                         className="propeller-purchase-authorization-requests__modal-accept flex-1 inline-flex justify-center rounded-control border border-transparent bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleAcceptRequest()}
-                        disabled={acceptLoading}
+                        disabled={acceptLoading || deleteLoading}
                       >
                         {acceptLoading ? <>{getLabel(props.labels, 'accepting', 'Accepting...')}</> : null}
                         {!acceptLoading ? <>{getLabel(props.labels, 'acceptRequest', 'Accept request')}</> : null}
                       </button>
                     </div>
+
+                    {/*
+                      Delete confirmation overlay. Shown on top of the preview
+                      modal when the user clicks Delete; matches the two-step
+                      flow in playground-v2's `delete_purchase_authorization`
+                      Bootstrap modal so destructive action requires explicit
+                      consent before the cart is removed.
+                    */}
+                    {showDeleteConfirm ? (
+                      <div className="propeller-purchase-authorization-requests__delete-confirm fixed inset-0 z-[60] flex items-center justify-center px-4">
+                        <div
+                          className="propeller-purchase-authorization-requests__delete-confirm-backdrop fixed inset-0 bg-foreground/40"
+                          onClick={() => closeDeleteConfirm()}
+                        />
+                        <div className="propeller-purchase-authorization-requests__delete-confirm-content relative w-full max-w-md bg-card rounded-container shadow-2xl overflow-hidden">
+                          <div className="px-6 py-4 border-b border-border-subtle">
+                            <h4 className="propeller-purchase-authorization-requests__delete-confirm-title text-base font-semibold text-foreground">
+                              {getLabel(props.labels, 'deleteConfirmTitle', 'Delete authorization request?')}
+                            </h4>
+                          </div>
+                          <div className="px-6 py-4">
+                            <p className="text-sm text-muted-foreground">
+                              {getLabel(
+                                props.labels,
+                                'deleteConfirmBody',
+                                'Are you sure you want to delete this authorization request? The cart will be permanently removed.',
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex gap-3 px-6 py-4 border-t border-border-subtle">
+                            <button
+                              type="button"
+                              className="flex-1 inline-flex justify-center rounded-control border border-input bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                              onClick={() => closeDeleteConfirm()}
+                              disabled={deleteLoading}
+                            >
+                              {getLabel(props.labels, 'deleteConfirmNo', 'No')}
+                            </button>
+                            <button
+                              type="button"
+                              className="flex-1 inline-flex justify-center rounded-control border border-transparent bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => confirmDelete()}
+                              disabled={deleteLoading}
+                            >
+                              {deleteLoading
+                                ? getLabel(props.labels, 'deleting', 'Deleting...')
+                                : getLabel(props.labels, 'deleteConfirmYes', 'Yes, delete')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </>
                 ) : null}
               </div>

@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
@@ -14,6 +15,7 @@ export default function AuthorizationRequestsPage() {
     const { state } = useAuth();
     const { selectedCompany } = useCompany();
     const { cart, saveCart } = useCart();
+    const { language } = useLanguage();
     const router = useRouter();
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
@@ -36,6 +38,7 @@ export default function AuthorizationRequestsPage() {
                 user={state.user}
                 companyId={companyId}
                 configuration={config}
+                language={language}
                 afterAcceptRequest={(acceptedCart: Cart) => {
                     if (cart) {
                         localStorage.setItem('manager_cart', serializeCart(cart));
@@ -62,9 +65,14 @@ export default function AuthorizationRequestsPage() {
                     totalExclVat: 'Total excl. VAT:',
                     totalVat: 'VAT:',
                     total: 'Total:',
-                    cancel: 'Cancel',
                     acceptRequest: 'Accept request',
                     accepting: 'Accepting...',
+                    delete: 'Delete',
+                    deleting: 'Deleting...',
+                    deleteConfirmTitle: 'Delete authorization request?',
+                    deleteConfirmBody: 'Are you sure you want to delete this authorization request? The cart will be permanently removed.',
+                    deleteConfirmYes: 'Yes, delete',
+                    deleteConfirmNo: 'No',
                     empty: 'No pending authorization requests',
                 }}
             />

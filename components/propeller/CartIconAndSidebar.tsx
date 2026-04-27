@@ -392,7 +392,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
             </span>
           ) : null}
         </button>
-        {props.showTotals && isHovered ? (
+        {props.showTotals && isHovered && getTotalItems() > 0 ? (
           <div className="propeller-cart-icon__popover absolute top-full right-0 mt-1 z-40 bg-popover border border-border rounded-container shadow-lg px-3 py-2 min-w-[140px] text-sm whitespace-nowrap">
             <div className="flex justify-between gap-4">
               <span className="propeller-cart-icon__popover-label text-muted-foreground">{getLabel(props.labels, 'totalLabel', 'Total')}</span>

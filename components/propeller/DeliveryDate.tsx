@@ -59,6 +59,7 @@ function DeliveryDate(props: DeliveryDateProps) {
   const [customDateValue, setCustomDateValue] = useState<DeliveryDateState['customDateValue']>(
     () => ''
   );
+  const [customDateError, setCustomDateError] = useState<string>(() => '');
   function upcomingDays(): ReturnType<DeliveryDateState['upcomingDays']> {
     return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
   }
@@ -98,7 +99,12 @@ function DeliveryDate(props: DeliveryDateProps) {
     if (props.formatDateDisplay) {
       return props.formatDateDisplay(isoDate);
     }
+    // Guard against bad input: invalid dates produce NaN/undefined and render
+    // as "undefined, undefined NaN". Return an empty string so the caller can
+    // decide what to show.
+    if (!isoDate) return '';
     const date = new Date(isoDate);
+    if (isNaN(date.getTime())) return '';
     const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
     const months = [
       'Jan',
@@ -134,21 +140,44 @@ function DeliveryDate(props: DeliveryDateProps) {
   function handleCustomDateChange(
     value: string
   ): ReturnType<DeliveryDateState['handleCustomDateChange']> {
+    // Validate before committing. The native date input doesn't reliably enforce
+    // the `min` attribute on typed input across browsers, and historical or
+    // out-of-range dates parse to a real Date that crashes downstream rendering
+    // ("undefined, undefined NaN"). On any failure we keep the typed value in
+    // the input so the user can fix it, and surface a single error message.
     setCustomDateValue(value);
-    if (value) {
-      const date = new Date(value + 'T00:00:00');
-      const isoDate = toApiDate(date);
-      handleSelect(isoDate);
+    if (!value) {
+      setCustomDateError('');
+      return;
     }
+    const parsed = new Date(value + 'T00:00:00');
+    const year = parsed.getFullYear();
+    const isParseable = !isNaN(parsed.getTime()) && year >= 1900 && year <= 9999;
+    if (!isParseable) {
+      setCustomDateError(getLabel(props.labels, 'invalidDate', 'Please enter a valid date.'));
+      return;
+    }
+    // Reject anything earlier than minDate (tomorrow). String comparison works
+    // because both sides are ISO-formatted YYYY-MM-DD.
+    if (value < minDate()) {
+      setCustomDateError(getLabel(props.labels, 'pastDate', 'Please select a date in the future.'));
+      return;
+    }
+    setCustomDateError('');
+    const isoDate = toApiDate(parsed);
+    handleSelect(isoDate);
   }
   function openModal(): ReturnType<DeliveryDateState['openModal']> {
+    setCustomDateError('');
     setModalOpen(true);
   }
   function closeModal(): ReturnType<DeliveryDateState['closeModal']> {
+    setCustomDateError('');
     setModalOpen(false);
   }
   function handleBackdropClick(event: Event): ReturnType<DeliveryDateState['handleBackdropClick']> {
     if (event.target === event.currentTarget) {
+      setCustomDateError('');
       setModalOpen(false);
     }
   }
@@ -220,11 +249,19 @@ function DeliveryDate(props: DeliveryDateProps) {
             </div>
             <input
               type="date"
-              className="propeller-delivery-date__input w-full border border-input rounded-control px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary"
+              className={`propeller-delivery-date__input w-full border rounded-control px-3 py-2 text-sm focus:outline-none focus:ring-2 ${customDateError ? 'border-destructive focus:ring-destructive focus:border-destructive' : 'border-input focus:ring-secondary focus:border-secondary'}`}
               min={minDate()}
               value={customDateValue}
               onChange={(event) => handleCustomDateChange(event.target.value)}
             />
+            {customDateError ? (
+              <p
+                className="propeller-delivery-date__input-error text-sm text-destructive mt-2"
+                role="alert"
+              >
+                {customDateError}
+              </p>
+            ) : null}
             <div className="propeller-delivery-date__modal-actions flex justify-end gap-3 mt-4">
               <button
                 type="button"

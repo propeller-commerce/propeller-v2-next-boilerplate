@@ -146,7 +146,23 @@ function OrderList(props: OrderListProps) {
     return col.charAt(0).toUpperCase() + col.slice(1);
   }
 
-  
+  const dateMin = '1970-01-01';
+  const dateMax = new Date().toISOString().split('T')[0];
+
+  // Returns a YYYY-MM-DD string only when the input value is a valid date in
+  // the allowed range; otherwise returns null. Native <input type="date">
+  // happily accepts year-6 inputs ("0006-05-04") via keyboard, so we guard at
+  // the model layer.
+  function sanitizeDateInput(value: string): string | null {
+    if (!value) return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return null;
+    const year = Number(match[1]);
+    if (year < 1970 || year > new Date().getFullYear()) return null;
+    const date = new Date(`${value}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return null;
+    return value;
+  }
 
   function searchFields(): string[] {
     const fields = props.searchFields || [];
@@ -178,6 +194,11 @@ function OrderList(props: OrderListProps) {
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setSearchForm({
+                      ...searchForm,
+                      term: (e.target as HTMLInputElement).value,
+                    });
                     fetchOrders(1);
                   }
                 }}
@@ -197,6 +218,8 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="From"
+                        min={dateMin}
+                        max={dateMax}
                         className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.createdAt?.greaterThan
@@ -205,12 +228,18 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.createdAt || {};
-                          const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                          const sanitized = sanitizeDateInput(e.target.value);
+                          if (e.target.value && !sanitized) {
+                            e.target.value = current.greaterThan
+                              ? (current.greaterThan as string).split('T')[0]
+                              : '';
+                            return;
+                          }
                           setSearchForm({
                             ...searchForm,
                             createdAt: {
                               ...current,
-                              greaterThan: val ?? undefined,
+                              greaterThan: sanitized ? `${sanitized}T00:00:00Z` : undefined,
                             },
                           });
                         }}
@@ -218,6 +247,8 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="To"
+                        min={dateMin}
+                        max={dateMax}
                         className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.createdAt?.lessThan
@@ -226,12 +257,18 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.createdAt || {};
-                          const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                          const sanitized = sanitizeDateInput(e.target.value);
+                          if (e.target.value && !sanitized) {
+                            e.target.value = current.lessThan
+                              ? (current.lessThan as string).split('T')[0]
+                              : '';
+                            return;
+                          }
                           setSearchForm({
                             ...searchForm,
                             createdAt: {
                               ...current,
-                              lessThan: val ?? undefined,
+                              lessThan: sanitized ? `${sanitized}T23:59:59Z` : undefined,
                             },
                           });
                         }}
@@ -243,6 +280,8 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="From"
+                        min={dateMin}
+                        max={dateMax}
                         className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.lastModifiedAt?.greaterThan
@@ -251,12 +290,18 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.lastModifiedAt || {};
-                          const val = e.target.value ? `${e.target.value}T00:00:00Z` : undefined;
+                          const sanitized = sanitizeDateInput(e.target.value);
+                          if (e.target.value && !sanitized) {
+                            e.target.value = current.greaterThan
+                              ? (current.greaterThan as string).split('T')[0]
+                              : '';
+                            return;
+                          }
                           setSearchForm({
                             ...searchForm,
                             lastModifiedAt: {
                               ...current,
-                              greaterThan: val ?? undefined,
+                              greaterThan: sanitized ? `${sanitized}T00:00:00Z` : undefined,
                             },
                           });
                         }}
@@ -264,6 +309,8 @@ function OrderList(props: OrderListProps) {
                       <input
                         type="date"
                         placeholder="To"
+                        min={dateMin}
+                        max={dateMax}
                         className="propeller-order-list__filter-input block w-0 flex-1 min-w-0 rounded-control border-input shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border"
                         value={
                           searchForm.lastModifiedAt?.lessThan
@@ -272,12 +319,18 @@ function OrderList(props: OrderListProps) {
                         }
                         onChange={(e) => {
                           const current = searchForm.lastModifiedAt || {};
-                          const val = e.target.value ? `${e.target.value}T23:59:59Z` : undefined;
+                          const sanitized = sanitizeDateInput(e.target.value);
+                          if (e.target.value && !sanitized) {
+                            e.target.value = current.lessThan
+                              ? (current.lessThan as string).split('T')[0]
+                              : '';
+                            return;
+                          }
                           setSearchForm({
                             ...searchForm,
                             lastModifiedAt: {
                               ...current,
-                              lessThan: val ?? undefined,
+                              lessThan: sanitized ? `${sanitized}T23:59:59Z` : undefined,
                             },
                           });
                         }}

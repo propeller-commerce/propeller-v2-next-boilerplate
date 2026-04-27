@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
+import { COUNTRIES } from '@/composables/shared/utils/countries';
 
 const CartAddressType = {
   INVOICE: Enums.CartAddressType.INVOICE,
@@ -46,15 +47,7 @@ interface CheckoutState {
   step3Submitted: boolean;
 }
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 function CheckoutPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();

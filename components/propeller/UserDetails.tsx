@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { useState, useEffect } from 'react';
 import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
+import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
 export interface UserDetailsProps {
   /** The currently logged in user (Contact or Customer) */
@@ -115,12 +116,7 @@ function UserDetails(props: UserDetailsProps) {
     return parts.join(' ');
   }
   function getCountryName(code: string): ReturnType<UserDetailsState['getCountryName']> {
-    if (!code) return '';
-    const list = props.countries || [];
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].code === code) return list[i].name;
-    }
-    return code;
+    return _getCountryName(code, props.countries);
   }
   function shouldShowCompanyInfo(): ReturnType<UserDetailsState['shouldShowCompanyInfo']> {
     return props.showCompanyInfo !== false && isContact();

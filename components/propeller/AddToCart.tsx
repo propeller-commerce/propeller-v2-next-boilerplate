@@ -361,11 +361,11 @@ function AddToCart(props: AddToCartProps) {
       </div>
       {toastVisible ? (
         <div
-          className={`propeller-add-to-cart__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${toastType === 'success' ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}
+          className={`propeller-add-to-cart__toast fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${toastType === 'success' ? 'bg-success border border-success text-success-foreground' : 'bg-destructive border border-destructive text-destructive-foreground'}`}
           data-toast-type={toastType}
         >
           <div
-            className={`propeller-add-to-cart__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
+            className={`propeller-add-to-cart__toast-icon flex-shrink-0 w-5 h-5 mt-0.5 ${toastType === 'success' ? 'text-success-foreground' : 'text-destructive-foreground'}`}
           >
             {toastType === 'success' ? (
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -383,14 +383,14 @@ function AddToCart(props: AddToCartProps) {
             ) : null}
           </div>
           <p
-            className={`propeller-add-to-cart__toast-message flex-1 text-sm font-medium ${toastType === 'success' ? 'text-success' : 'text-destructive'}`}
+            className={`propeller-add-to-cart__toast-message flex-1 text-sm font-medium ${toastType === 'success' ? 'text-success-foreground' : 'text-destructive-foreground'}`}
           >
             {toastMessage}
           </p>
           <button
             type="button"
             onClick={() => dismissToast()}
-            className={`propeller-add-to-cart__toast-close flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-success/70 hover:text-success' : 'text-destructive/70 hover:text-destructive'}`}
+            className={`propeller-add-to-cart__toast-close flex-shrink-0 rounded focus:outline-none ${toastType === 'success' ? 'text-success-foreground hover:text-success-foreground/80' : 'text-destructive-foreground hover:text-destructive-foreground/80'}`}
           >
             <svg
               fill="none"

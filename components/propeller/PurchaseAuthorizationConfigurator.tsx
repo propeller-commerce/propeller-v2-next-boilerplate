@@ -190,7 +190,7 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {!hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-success text-success-foreground px-3 py-1.5 rounded-control hover:bg-success/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-control hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={isRowLoading(contact.contactId) || !getRowRole(contact.contactId)}
                                   onClick={() => handleCreate(contact.contactId)}
                                 >
@@ -203,12 +203,12 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               {hasPac(contact.contactId) ? (
                                 <button
                                   type="button"
-                                  className="text-xs bg-destructive text-destructive-foreground px-3 py-1.5 rounded-control hover:bg-destructive/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-xs border border-border px-3 py-1.5 rounded-control hover:bg-surface-hover transition disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={isRowLoading(contact.contactId) || isCurrentUser(contact.contactId)}
                                   onClick={() => handleDelete(contact.contactId)}
                                 >
                                   {isRowLoading(contact.contactId) ? (
-                                    <span className="inline-block w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-1" />
+                                    <span className="inline-block w-3 h-3 border-2 border-foreground border-t-transparent rounded-full animate-spin mr-1" />
                                   ) : null}
                                   {getLabel(props.labels, 'delete', 'Delete')}
                                 </button>

@@ -8,14 +8,14 @@ import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import SearchBar from '@/components/propeller/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon } from 'lucide-react';
-import { config, localizeHref } from '@/data/config';
+import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
@@ -28,6 +28,7 @@ import { useCart as useCartHook } from '@/composables/react/useCart';
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { cart, saveCart, clearCart } = useCart();
   const { state, logout, updateUser, isAuthManagerForCompany } = useAuth();
   const { selectedCompany, setSelectedCompany } = useCompany();
@@ -38,6 +39,21 @@ export default function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+
+  // Bumped on every route change away from the search results page so the
+  // SearchBar(s) reset their input. This is what gives users an empty search
+  // box when they navigate via product clicks, the homepage logo, the menu, etc.
+  const [searchClearSignal, setSearchClearSignal] = useState(0);
+  const lastPathnameRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (pathname === null) return;
+    if (lastPathnameRef.current === pathname) return;
+    const previous = lastPathnameRef.current;
+    lastPathnameRef.current = pathname;
+    if (previous === null) return; // first render — no navigation happened
+    const onSearchRoute = stripLanguagePrefix(pathname).startsWith('/search');
+    if (!onSearchRoute) setSearchClearSignal((s) => s + 1);
+  }, [pathname]);
 
   // Build a useCart instance for the resolveCart primitive (creates a cart with default addresses).
   const { resolveCart } = useCartHook({
@@ -222,6 +238,7 @@ export default function Header() {
                     companyId={selectedCompany?.companyId}
                     configuration={config}
                     language={language}
+                    clearSignal={searchClearSignal}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
@@ -434,6 +451,7 @@ export default function Header() {
                 <SearchBar
                   graphqlClient={graphqlClient}
                   language={language}
+                  clearSignal={searchClearSignal}
                   onSubmit={(term) => {
                     setShowMobileMenu(false);
                     router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language));

@@ -112,7 +112,17 @@ function OrderItemCard(props: OrderItemCardProps) {
   function productSlug(): ReturnType<OrderItemCardState['productSlug']> {
     return props.orderItem?.product?.slugs?.[0]?.value || '';
   }
+  function clusterUrl(): string {
+    const cluster = (props.orderItem?.product as any)?.cluster;
+    if (!cluster) return '';
+    const id = cluster.clusterId ?? cluster.urlId;
+    const slug = cluster.slugs?.[0]?.value || cluster.slug?.[0]?.value || '';
+    if (!id || !slug) return '';
+    return '/cluster/' + id + '/' + slug;
+  }
   function productUrl(): ReturnType<OrderItemCardState['productUrl']> {
+    const cu = clusterUrl();
+    if (cu) return cu;
     if (productId() && productSlug()) {
       return '/product/' + productId() + '/' + productSlug();
     }

@@ -173,11 +173,18 @@ function LoginForm(props: LoginFormProps) {
     }
     return loading;
   }
+  // Surface a friendly fixed message for any login failure — server-side error
+  // strings can be cryptic ("HTTP 401", GraphQL "Unauthorized", etc.) and
+  // aren't safe to show to end users. Override via `labels.invalidCredentials`
+  // if a specific copy is needed.
   function errorMessage(): string {
-    if (props.onLoginSubmit) {
-      return props.loginError || '';
-    }
-    return authError || '';
+    const raw = props.onLoginSubmit ? props.loginError : authError;
+    if (!raw) return '';
+    return getLabel(
+      props.labels,
+      'invalidCredentials',
+      "The credentials you entered don't match our records. Please try again.",
+    );
   }
   async function handleSubmit(e: any): Promise<void> {
     e.preventDefault();

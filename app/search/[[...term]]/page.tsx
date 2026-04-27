@@ -77,6 +77,13 @@ export default function SearchPage() {
   const { language } = useLanguage();
   const { includeTax } = usePrice();
 
+  // True when a search term is present, the grid has finished loading, and
+  // the server returned zero matches. Drives the simplified empty-state UI
+  // that hides the filter sidebar / toolbar / pagination and offers a
+  // homepage link.
+  const hasNoResults =
+    !!term && !filtersLoading && itemsFound === 0 && productsResponse !== null;
+
   const updateURL = (
     newFilters: Record<string, string[]>,
     newPage: number = 1,
@@ -161,53 +168,97 @@ export default function SearchPage() {
           />
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filters Sidebar */}
-            <aside className="w-full lg:w-64 flex-shrink-0">
-              <GridFilters
-                filters={gridFilters}
-                priceMin={priceBoundsMin}
-                priceMax={priceBoundsMax}
-                language={language}
-                onFilterChange={handleFilterChange}
-                onPriceChange={handlePriceRangeChange}
-                onClearFilters={clearAllFilters}
-                isMobile={false}
-                portalMode="open"
-                user={state.user}
-                collapsed={true}
-                clearSignal={clearSignal}
-                activeTextFilters={filters}
-                activePriceMin={minPrice}
-                activePriceMax={maxPrice}
-                isLoading={filtersLoading}
-                className=""
-              />
-            </aside>
+            {/* Filters Sidebar — hidden when search returned no results so
+                the user isn't presented with a price-range slider that has
+                nothing to filter (and the price bounds default to 0–9999,
+                which is misleading when the result set is empty). */}
+            {!hasNoResults ? (
+              <aside className="w-full lg:w-64 flex-shrink-0">
+                <GridFilters
+                  filters={gridFilters}
+                  priceMin={priceBoundsMin}
+                  priceMax={priceBoundsMax}
+                  language={language}
+                  onFilterChange={handleFilterChange}
+                  onPriceChange={handlePriceRangeChange}
+                  onClearFilters={clearAllFilters}
+                  isMobile={false}
+                  portalMode="open"
+                  user={state.user}
+                  collapsed={true}
+                  clearSignal={clearSignal}
+                  activeTextFilters={filters}
+                  activePriceMin={minPrice}
+                  activePriceMax={maxPrice}
+                  isLoading={filtersLoading}
+                  className=""
+                />
+              </aside>
+            ) : null}
 
             {/* Products Grid */}
             <div className="flex-1 w-full">
               {/* Toolbar — sticky on mobile, static on lg+ */}
-              <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
-                <GridToolbar
-                  itemsFound={itemsFound}
-                  page={currentPage}
-                  pageSize={offset}
-                  pageItemCount={pageItemCount}
-                  activeTextFilters={filters}
-                  priceFilterMin={minPrice}
-                  priceFilterMax={maxPrice}
-                  user={state.user}
-                  onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
-                  onOffsetChange={handleOffsetChange}
-                  viewMode={viewMode}
-                  onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
-                  onFilterRemove={handleFilterRemove}
-                  onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
-                  onClearFilters={clearAllFilters}
-                />
-              </div>
+              {!hasNoResults ? (
+                <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
+                  <GridToolbar
+                    itemsFound={itemsFound}
+                    page={currentPage}
+                    pageSize={offset}
+                    pageItemCount={pageItemCount}
+                    activeTextFilters={filters}
+                    priceFilterMin={minPrice}
+                    priceFilterMax={maxPrice}
+                    user={state.user}
+                    onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
+                    onOffsetChange={handleOffsetChange}
+                    viewMode={viewMode}
+                    onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
+                    onFilterRemove={handleFilterRemove}
+                    onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+                    onClearFilters={clearAllFilters}
+                  />
+                </div>
+              ) : null}
 
-              {/* Grid */}
+              {/* Custom empty state (replaces the ProductGrid fallback) so
+                  we can offer a "Go to homepage" action and reference the
+                  search term. */}
+              {hasNoResults ? (
+                <div className="propeller-search-empty flex flex-col items-center justify-center text-center py-16 px-4 bg-card rounded-container border border-border">
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    className="h-12 w-12 text-foreground-subtle mb-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                    />
+                  </svg>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">
+                    No products found for &quot;{term}&quot;
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-6 max-w-md">
+                    Try adjusting your search term, or browse our products from the homepage.
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-control bg-primary text-primary-foreground hover:bg-primary/90 transition font-medium text-sm"
+                    onClick={() => router.push(localizeHref('/', language))}
+                  >
+                    Go to homepage
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Grid — kept mounted via display-toggle so it owns the fetch
+                  cycle and reports itemsFound back; React has no v-show, so
+                  use a wrapper div with `hidden`. */}
+              <div className={hasNoResults ? 'hidden' : ''}>
               <ProductGrid
                 graphqlClient={graphqlClient}
                 term={isAllProducts ? undefined : term}
@@ -258,17 +309,20 @@ export default function SearchPage() {
                   router.push(config.urls.getClusterUrl(cluster, language));
                 }}
               />
+              </div>
 
               {/* Pagination */}
-              <div className="flex justify-center gap-2 mt-12">
-                {productsResponse && (
-                  <GridPagination
-                    products={productsResponse}
-                    onPageChange={handlePageChange}
-                    variant='full'
-                  />
-                )}
-              </div>
+              {!hasNoResults ? (
+                <div className="flex justify-center gap-2 mt-12">
+                  {productsResponse && (
+                    <GridPagination
+                      products={productsResponse}
+                      onPageChange={handlePageChange}
+                      variant='full'
+                    />
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

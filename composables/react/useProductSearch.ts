@@ -79,6 +79,7 @@ export interface UseProductSearchReturn {
   totalPages: number;
   searchTerm: string;
   searchResults: (Product | Cluster)[];
+  searchItemsFound: number;
   searchLoading: boolean;
   fetchProducts: () => Promise<void>;
   search: (term: string) => void;
@@ -102,6 +103,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
   const [currentSortOrder, setCurrentSortOrder] = useState(options.sortOrder ?? 'DESC');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<(Product | Cluster)[]>([]);
+  const [searchItemsFound, setSearchItemsFound] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
 
   const fetchIdRef = useRef(0);
@@ -357,6 +359,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
       if (!term.trim()) {
         setSearchResults([]);
+        setSearchItemsFound(0);
         return;
       }
       searchTimerRef.current = setTimeout(async () => {
@@ -410,9 +413,12 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
             imageVariantFilters: configuration?.imageVariantFiltersMedium as TransformationsInput,
           };
           const result = await service.getProducts(variables);
-          setSearchResults((result?.items ?? []) as (Product | Cluster)[]);
+          const items = (result?.items ?? []) as (Product | Cluster)[];
+          setSearchResults(items);
+          setSearchItemsFound((result as any)?.itemsFound ?? items.length);
         } catch {
           setSearchResults([]);
+          setSearchItemsFound(0);
         } finally {
           setSearchLoading(false);
         }
@@ -452,6 +458,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     totalPages: pagination.totalPages,
     searchTerm,
     searchResults,
+    searchItemsFound,
     searchLoading,
     fetchProducts,
     search,

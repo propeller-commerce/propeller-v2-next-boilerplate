@@ -43,7 +43,7 @@ export interface ActionCodeProps {
 
 function ActionCode(props: ActionCodeProps) {
   // --- composable ---
-  const { addActionCode, removeActionCode, loading } = useCart({
+  const { addActionCode, removeActionCode, loading, error } = useCart({
     graphqlClient: props.graphqlClient,
     user: null,
     cartId: props.cart?.cartId,
@@ -52,11 +52,23 @@ function ActionCode(props: ActionCodeProps) {
 
   // --- local UI state ---
   const [code, setCode] = useState<string>(() => '');
-  const [error, setError] = useState<string>(() => '');
+  const [fallbackError, setFallbackError] = useState<string>(() => '');
   const [isMounted, setIsMounted] = useState<boolean>(() => false);
 
   // --- display helpers ---
-  
+
+  // Surface a friendly fixed message for any action-code failure — server-side
+  // error strings can be cryptic ("Code not found", GraphQL "Bad Request", etc.)
+  // and aren't safe to show to end users. Override via `labels.invalidActionCode`
+  // if a specific copy is needed.
+  function errorMessage(): string {
+    if (!error && !fallbackError) return '';
+    return getLabel(
+      props.labels,
+      'invalidActionCode',
+      'This action code is not found. Please add a valid action code.',
+    );
+  }
   function title(): string {
     return props.title || 'Action code';
   }
@@ -73,36 +85,34 @@ function ActionCode(props: ActionCodeProps) {
   // --- actions via composable ---
   async function handleApply(): Promise<void> {
     if (!code.trim() || loading) return;
-    setError('');
+    setFallbackError('');
     if (props.onActionCodeApply) {
       props.onActionCodeApply(code.trim(), props.cart);
       setCode('');
       return;
     }
-    try {
-      const updatedCart = await addActionCode(code.trim());
+    const updatedCart = await addActionCode(code.trim());
+    if (updatedCart) {
       setCode('');
-      if (updatedCart && props.afterActionCodeApply) props.afterActionCodeApply(updatedCart);
-    } catch (err: any) {
-      setError(getLabel(props.labels, 'errorApply', 'Failed to apply action code. Please try again.'));
-      console.error('Failed to apply action code:', err);
+      if (props.afterActionCodeApply) props.afterActionCodeApply(updatedCart);
+    } else if (!error) {
+      setFallbackError(getLabel(props.labels, 'errorApply', 'Failed to apply action code. Please try again.'));
     }
   }
 
   async function handleRemove(): Promise<void> {
     if (loading || !hasAppliedCode()) return;
-    setError('');
+    setFallbackError('');
     const currentCode = appliedCode();
     if (props.onActionCodeRemove) {
       props.onActionCodeRemove(currentCode, props.cart);
       return;
     }
-    try {
-      const updatedCart = await removeActionCode(currentCode);
-      if (updatedCart && props.afterActionCodeRemove) props.afterActionCodeRemove(updatedCart);
-    } catch (err: any) {
-      setError(getLabel(props.labels, 'errorRemove', 'Failed to remove action code. Please try again.'));
-      console.error('Failed to remove action code:', err);
+    const updatedCart = await removeActionCode(currentCode);
+    if (updatedCart) {
+      if (props.afterActionCodeRemove) props.afterActionCodeRemove(updatedCart);
+    } else if (!error) {
+      setFallbackError(getLabel(props.labels, 'errorRemove', 'Failed to remove action code. Please try again.'));
     }
   }
 
@@ -175,7 +185,7 @@ function ActionCode(props: ActionCodeProps) {
               </button>
             </div>
           ) : null}
-          {!!error ? <p className="propeller-action-code__error text-sm text-destructive">{error}</p> : null}
+          {(!!error || !!fallbackError) ? <p className="propeller-action-code__error text-sm text-destructive">{errorMessage()}</p> : null}
         </>
       ) : null}
     </div>

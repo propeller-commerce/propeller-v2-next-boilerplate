@@ -231,7 +231,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       let registeredContactId: number | undefined;
       try {
         const registerResult = await userService.registerContact(contactInput);
-        registeredContactId = (registerResult?.contact as Contact | undefined)?.contactId;
+        registeredContactId = (registerResult?.contact as unknown as Contact | undefined)?.contactId;
       } catch {
         // Swallow: contact creation succeeded server-side; the only failing
         // sub-selection is the favoriteLists field, which is empty for new users.

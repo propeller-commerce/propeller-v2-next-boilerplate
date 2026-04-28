@@ -14,7 +14,7 @@ import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
 import { graphqlClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Menu as MenuIcon } from 'lucide-react';
+import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
 import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
@@ -37,8 +37,10 @@ export default function Header() {
   const globalData = useGlobal();
   const [showMainMenu, setShowMainMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
   // Bumped on every route change away from the search results page so the
   // SearchBar(s) reset their input. This is what gives users an empty search
@@ -118,6 +120,25 @@ export default function Header() {
     };
   }, [showMainMenu]);
 
+  // Close language dropdown on outside click or Escape
+  useEffect(() => {
+    if (!showLangMenu) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setShowLangMenu(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowLangMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showLangMenu]);
+
   // Logo: CMS image or fallback
   const logoSrc = globalData?.logo?.url || '/propeller_logo.webp';
   const logoAlt = globalData?.logoAlt || globalData?.siteName || 'Logo';
@@ -173,21 +194,54 @@ export default function Header() {
                 )}
 
                 {showLanguageSwitcher && availableLanguages.length > 1 && (
-                  <div className="flex items-center gap-1.5 hover:text-white/80 transition-colors cursor-pointer">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                    </svg>
-                    <select
-                      value={language}
-                      onChange={(e) => {
-                        setLanguage(e.target.value);
-                      }}
-                      className="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
+                  <div ref={langMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowLangMenu((s) => !s)}
+                      aria-haspopup="listbox"
+                      aria-expanded={showLangMenu}
+                      aria-label="Select language"
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-control text-xs font-medium hover:bg-white/10 transition-colors"
                     >
-                      {availableLanguages.map((lang) => (
-                        <option key={lang} value={lang}>{lang}</option>
-                      ))}
-                    </select>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>{(language || '').toUpperCase()}</span>
+                      <ChevronDown
+                        className={cn(
+                          'w-3 h-3 transition-transform',
+                          showLangMenu && 'rotate-180',
+                        )}
+                      />
+                    </button>
+                    {showLangMenu && (
+                      <div
+                        role="listbox"
+                        className="absolute right-0 top-full mt-2 z-[60] min-w-[10rem] rounded-container border border-border bg-card text-foreground shadow-lg overflow-hidden"
+                      >
+                        {availableLanguages.map((lang) => {
+                          const code = lang.toUpperCase();
+                          const isActive = (language || '').toUpperCase() === code;
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              role="option"
+                              aria-selected={isActive}
+                              onClick={() => {
+                                setLanguage(code);
+                                setShowLangMenu(false);
+                              }}
+                              className={cn(
+                                'w-full flex items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-left transition-colors',
+                                isActive ? 'bg-primary/5 text-primary' : 'hover:bg-surface-hover',
+                              )}
+                            >
+                              <span>{code}</span>
+                              {isActive && <Check className="w-4 h-4 text-primary" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

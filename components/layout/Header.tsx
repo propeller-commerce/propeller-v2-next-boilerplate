@@ -24,7 +24,7 @@ import { Cart, CartService, Company, Contact, Customer } from 'propeller-sdk-v2'
 import { stripLeadingUnderscores } from '@/data/defaults';
 import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart';
 import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
-import { useCart as useCartHook } from '@/composables/react/useCart';
+import { initCart } from '@/composables/shared/utils/cartInit';
 
 export default function Header() {
   const router = useRouter();
@@ -56,15 +56,6 @@ export default function Header() {
     const onSearchRoute = stripLanguagePrefix(pathname).startsWith('/search');
     if (!onSearchRoute) setSearchClearSignal((s) => s + 1);
   }, [pathname]);
-
-  // Build a useCart instance for the resolveCart primitive (creates a cart with default addresses).
-  const { resolveCart } = useCartHook({
-    graphqlClient,
-    user: state.isAuthenticated ? (state.user as Contact | Customer) : null,
-    companyId: selectedCompany?.companyId,
-    language,
-    configuration: config,
-  });
 
   // Fetch the user's active cart from the server for a given user/company,
   // saving it to the cart context. Returns the cart for further work (merge, etc).
@@ -341,9 +332,16 @@ export default function Header() {
 
                       if (anonymousCart?.items?.length) {
                         if (!targetCart) {
-                          targetCart = await resolveCart();
+                          targetCart = await initCart({
+                            graphqlClient,
+                            user: loggedInUser as Contact | Customer,
+                            companyId: company?.companyId,
+                            language,
+                            imageSearchFilters: config.imageSearchFiltersGrid,
+                            imageVariantFilters: config.imageVariantFiltersSmall,
+                          });
                         }
-                        await mergeAnonymousCart({
+                        const merged = await mergeAnonymousCart({
                           graphqlClient,
                           targetCartId: targetCart.cartId,
                           anonymousCart,
@@ -351,6 +349,7 @@ export default function Header() {
                           imageSearchFilters: config.imageSearchFiltersGrid,
                           imageVariantFilters: config.imageVariantFiltersSmall,
                         });
+                        if (merged) targetCart = merged;
 
                         if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
                           try {
@@ -360,7 +359,7 @@ export default function Header() {
                           }
                         }
 
-                        await fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
+                        saveCart(targetCart);
                       }
 
                       router.push(localizeHref('/account', userLang || language));

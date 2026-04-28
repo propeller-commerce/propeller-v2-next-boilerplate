@@ -17,6 +17,7 @@ import type {
   CartSearchInput,
   CartStartInput,
   CartStartVariables,
+  CartUpdateAddressInput,
   Address,
   GraphQLClient,
   MediaImageProductSearchInput,
@@ -125,42 +126,55 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
       (addr: Address) => addr.isDefault === 'Y' && addr.type === 'delivery'
     );
 
-    const addressBase = (addr: Address) => ({
-      firstName: addr.firstName || '',
-      lastName: addr.lastName || '',
-      street: addr.street || '',
-      postalCode: addr.postalCode || '',
-      city: addr.city || '',
-      country: addr.country || 'NL',
-      company: addr.company || '',
-      gender: addr.gender || Enums.Gender.U,
-      middleName: addr.middleName || '',
-      number: addr.number || '',
-      numberExtension: addr.numberExtension || '',
-      email: addr.email || '',
-      mobile: addr.mobile || '',
-      phone: addr.phone || '',
-      notes: addr.notes || '',
-    });
+    const addressBase = (addr: Address): Omit<CartUpdateAddressInput, 'type'> => {
+      const base: Omit<CartUpdateAddressInput, 'type'> = {
+        firstName: addr.firstName || '',
+        lastName: addr.lastName || '',
+        street: addr.street || '',
+        postalCode: addr.postalCode || '',
+        city: addr.city || '',
+        country: addr.country || 'NL',
+        gender: addr.gender || Enums.Gender.U,
+      };
+      if (addr.middleName) base.middleName = addr.middleName;
+      if (addr.number) base.number = String(addr.number);
+      if (addr.numberExtension) base.numberExtension = String(addr.numberExtension);
+      if (addr.company) base.company = addr.company;
+      if (addr.email) base.email = addr.email;
+      if (addr.mobile) base.mobile = addr.mobile;
+      if (addr.phone) base.phone = addr.phone;
+      if (addr.notes) base.notes = addr.notes;
+      return base;
+    };
 
     if (defaultInvoice) {
-      cart = await cartService.updateCartAddress({
-        id: cart.cartId,
-        input: { type: Enums.CartAddressType.INVOICE, ...addressBase(defaultInvoice) },
-        imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
-        imageVariantFilters: imageVariantFilters as TransformationsInput,
-        language,
-      });
+      try {
+        cart = await cartService.updateCartAddress({
+          id: cart.cartId,
+          input: { type: Enums.CartAddressType.INVOICE, ...addressBase(defaultInvoice) },
+          imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
+          imageVariantFilters: imageVariantFilters as TransformationsInput,
+          language,
+        });
+      } catch {
+        // Address update is best-effort; cart still works without it
+        // and the user can set the address at checkout.
+      }
     }
 
     if (defaultDelivery) {
-      cart = await cartService.updateCartAddress({
-        id: cart.cartId,
-        input: { type: Enums.CartAddressType.DELIVERY, ...addressBase(defaultDelivery) },
-        imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
-        imageVariantFilters: imageVariantFilters as TransformationsInput,
-        language,
-      });
+      try {
+        cart = await cartService.updateCartAddress({
+          id: cart.cartId,
+          input: { type: Enums.CartAddressType.DELIVERY, ...addressBase(defaultDelivery) },
+          imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
+          imageVariantFilters: imageVariantFilters as TransformationsInput,
+          language,
+        });
+      } catch {
+        // Address update is best-effort; cart still works without it
+        // and the user can set the address at checkout.
+      }
     }
   }
 

@@ -16,22 +16,14 @@ import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref, config } from '@/data/config';
 import { fetchActiveCart } from '@/composables/shared/utils/fetchActiveCart';
 import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
-import { useCart as useCartHook } from '@/composables/react/useCart';
+import { initCart } from '@/composables/shared/utils/cartInit';
 
 export default function RegisterPage() {
   const { state, updateUser } = useAuth();
-  const { selectedCompany, setSelectedCompany } = useCompany();
+  const { setSelectedCompany } = useCompany();
   const { language } = useLanguage();
   const { cart, saveCart, clearCart } = useCart();
   const router = useRouter();
-
-  const { resolveCart } = useCartHook({
-    graphqlClient,
-    user: state.isAuthenticated ? (state.user as Contact | Customer) : null,
-    companyId: selectedCompany?.companyId,
-    language,
-    configuration: config,
-  });
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -118,9 +110,16 @@ export default function RegisterPage() {
 
                     if (anonymousCart?.items?.length) {
                       if (!targetCart) {
-                        targetCart = await resolveCart();
+                        targetCart = await initCart({
+                          graphqlClient,
+                          user: registeredUser as Contact | Customer,
+                          companyId: company?.companyId,
+                          language,
+                          imageSearchFilters: config.imageSearchFiltersGrid,
+                          imageVariantFilters: config.imageVariantFiltersSmall,
+                        });
                       }
-                      await mergeAnonymousCart({
+                      const merged = await mergeAnonymousCart({
                         graphqlClient,
                         targetCartId: targetCart.cartId,
                         anonymousCart,
@@ -128,6 +127,7 @@ export default function RegisterPage() {
                         imageSearchFilters: config.imageSearchFiltersGrid,
                         imageVariantFilters: config.imageVariantFiltersSmall,
                       });
+                      if (merged) targetCart = merged;
 
                       if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
                         try {
@@ -136,15 +136,6 @@ export default function RegisterPage() {
                           console.error('[auth] Failed to delete anonymous cart', e);
                         }
                       }
-
-                      targetCart = await fetchActiveCart({
-                        graphqlClient,
-                        user: registeredUser as Contact | Customer,
-                        companyId: company?.companyId,
-                        language,
-                        imageSearchFilters: config.imageSearchFiltersGrid,
-                        imageVariantFilters: config.imageVariantFiltersSmall,
-                      });
                     }
 
                     if (targetCart) saveCart(targetCart);

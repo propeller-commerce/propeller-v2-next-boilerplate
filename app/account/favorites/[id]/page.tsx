@@ -43,6 +43,19 @@ export default function FavoriteListPage() {
     refreshUser();
   }
 
+  async function handleItemsDelete(items: { id: string; type: 'product' | 'cluster' }[]) {
+    if (items.length === 0) return;
+    const productIds = items.filter((i) => i.type === 'product').map((i) => Number(i.id));
+    const clusterIds = items.filter((i) => i.type === 'cluster').map((i) => Number(i.id));
+    await removeFromList(
+      listId,
+      productIds.length ? productIds : undefined,
+      clusterIds.length ? clusterIds : undefined,
+    );
+    toast.success(items.length === 1 ? 'Item removed from list' : `${items.length} items removed from list`);
+    refreshUser();
+  }
+
   if (!authState.isAuthenticated) return null;
 
   return (
@@ -61,6 +74,7 @@ export default function FavoriteListPage() {
         user={authState.user as Contact | Customer}
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
+        onItemsDelete={handleItemsDelete}
         onListLoaded={handleListLoaded}
         configuration={config}
         cartId={cart?.cartId}

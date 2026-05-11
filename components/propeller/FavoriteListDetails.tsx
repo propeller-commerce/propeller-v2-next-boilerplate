@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Product,
   Cluster,
@@ -13,9 +13,12 @@ import {
   ProductsResponse,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
+import { useProductSearch } from '@/composables/react/useProductSearch';
+import { useCart } from '@/composables/react/useCart';
 import FavoriteListItem from './FavoriteListItem';
 import GridPagination from './GridPagination';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { getProductImageUrl, getClusterImageUrl } from '@/composables/shared/utils/productHelpers';
 
 export interface FavoriteListDetailsProps {
   /** GraphQL client for the Propeller SDK */
@@ -27,8 +30,11 @@ export interface FavoriteListDetailsProps {
   /** The favorite list ID to display */
   favoriteListId: string;
 
-  /** Action method for deleting a favorite list item. If not provided, delete button is hidden */
+  /** Action method for deleting a single favorite list item. If not provided, delete button is hidden */
   onItemDelete?: (itemId: string, itemType?: string) => void;
+
+  /** Batched delete callback for the floating bar "Remove" action. When provided, it is called once with all selected items; otherwise the component falls back to calling `onItemDelete` per item */
+  onItemsDelete?: (items: { id: string; type: 'product' | 'cluster' }[]) => void;
 
   /** Called after the favorite list is fetched, with the full list object */
   onListLoaded?: (list: FavoriteList) => void;
@@ -133,9 +139,30 @@ export interface FavoriteListDetailsProps {
 }
 
 function FavoriteListDetails(props: FavoriteListDetailsProps) {
-  useFavorites({
+  const { addToList } = useFavorites({
     graphqlClient: props.graphqlClient,
     user: props.user,
+  });
+
+  const { addItem } = useCart({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+    cartId: props.cartId,
+    language: props.language,
+    configuration: props.configuration,
+    onCartCreated: props.onCartCreated,
+  });
+
+  const {
+    searchTerm,
+    searchResults,
+    searchLoading,
+    search,
+  } = useProductSearch({
+    graphqlClient: props.graphqlClient,
+    language: props.language,
+    user: props.user,
+    configuration: props.configuration || {},
   });
 
   const [loading, setLoading] = useState(() => true);
@@ -144,8 +171,162 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
   const [currentPage, setCurrentPage] = useState(() => 1);
   const [isMounted, setIsMounted] = useState(() => false);
   const [prevListId, setPrevListId] = useState(() => '');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingItemKey, setAddingItemKey] = useState<string>('');
 
-  
+  function getRowKey(item: Product | Cluster): string {
+    if ('productId' in item) return 'p-' + String((item as Product).productId);
+    return 'c-' + String((item as Cluster).clusterId);
+  }
+
+  function isRowSelected(item: Product | Cluster): boolean {
+    return selectedIds.has(getRowKey(item));
+  }
+
+  function toggleRow(item: Product | Cluster) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const key = getRowKey(item);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const pageRowKeys = useMemo(
+    () => getPagedItems().map((i) => getRowKey(i)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allItems, currentPage, props.itemsPerPage]
+  );
+
+  function isAllPageSelected(): boolean {
+    if (pageRowKeys.length === 0) return false;
+    return pageRowKeys.every((k) => selectedIds.has(k));
+  }
+
+  function togglePageSelectAll() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = pageRowKeys.every((k) => next.has(k));
+      if (allSelected) pageRowKeys.forEach((k) => next.delete(k));
+      else pageRowKeys.forEach((k) => next.add(k));
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function getSelectedItems(): (Product | Cluster)[] {
+    return allItems.filter((i) => selectedIds.has(getRowKey(i)));
+  }
+
+  function getSelectedProducts(): Product[] {
+    return getSelectedItems().filter((i) => 'productId' in i) as Product[];
+  }
+
+  async function handleBulkRemove() {
+    if (bulkBusy) return;
+    const items = getSelectedItems();
+    if (items.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const entries: { id: string; type: 'product' | 'cluster' }[] = items.map((it) => ({
+        id: 'productId' in it ? String((it as Product).productId) : String((it as Cluster).clusterId),
+        type: 'productId' in it ? 'product' : 'cluster',
+      }));
+      const remaining = allItems.filter((p) => !selectedIds.has(getRowKey(p)));
+      setAllItems(remaining);
+      clearSelection();
+      const newTotalPages = Math.max(1, Math.ceil(remaining.length / getItemsPerPage()));
+      if (currentPage > newTotalPages) {
+        setCurrentPage(newTotalPages);
+      }
+      if (props.onItemsDelete) {
+        props.onItemsDelete(entries);
+      } else if (props.onItemDelete) {
+        entries.forEach((entry) => props.onItemDelete!(entry.id, entry.type));
+      }
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleBulkAddToCart() {
+    if (bulkBusy) return;
+    const products = getSelectedProducts();
+    if (products.length === 0) return;
+    setBulkBusy(true);
+    try {
+      for (const product of products) {
+        await addItem({
+          product,
+          quantity: product.minimumQuantity && product.minimumQuantity > 0 ? product.minimumQuantity : 1,
+          cartId: props.cartId,
+          createCart: props.createCart !== false,
+          enableStockValidation: props.enableStockValidation,
+          afterAddToCart: (resultCart, addedItem) => {
+            props.afterAddToCart?.(resultCart, addedItem || undefined);
+          },
+        });
+      }
+      clearSelection();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleAddItemFromSearch(item: Product | Cluster) {
+    const key = getRowKey(item);
+    if (addingItemKey) return;
+    setAddingItemKey(key);
+    try {
+      const productId = 'productId' in item ? (item as Product).productId : undefined;
+      const clusterId = 'clusterId' in item ? (item as Cluster).clusterId : undefined;
+      await addToList(props.favoriteListId, productId, clusterId);
+      await fetchList();
+    } finally {
+      setAddingItemKey('');
+    }
+  }
+
+  function getSearchItemName(item: Product | Cluster): string {
+    if ('productId' in item) return (item as Product).names?.[0]?.value || 'Product';
+    const cluster = item as Cluster;
+    return cluster.names?.[0]?.value || cluster.defaultProduct?.names?.[0]?.value || 'Cluster';
+  }
+
+  function getSearchItemSku(item: Product | Cluster): string {
+    if ('productId' in item) return (item as Product).sku || '';
+    const cluster = item as Cluster;
+    return cluster.sku || cluster.defaultProduct?.sku || '';
+  }
+
+  function getSearchItemImage(item: Product | Cluster): string {
+    if ('productId' in item) return getProductImageUrl(item as Product);
+    return getClusterImageUrl(item as Cluster);
+  }
+
+  function getSearchItemStockLabel(item: Product | Cluster): string {
+    const qty =
+      'productId' in item
+        ? (item as Product).inventory?.totalQuantity
+        : (item as Cluster).defaultProduct?.inventory?.totalQuantity;
+    if (qty === undefined || qty === null) return '';
+    if (qty <= 0) return getLabel(props.labels, 'outOfStock', 'Out of stock');
+    if (qty <= 5) return getLabel(props.labels, 'lowStock', 'Low stock');
+    return getLabel(props.labels, 'inStock', 'In stock');
+  }
+
+  function closeAddModal() {
+    setShowAddModal(false);
+    search('');
+  }
+
+
 
   function getItemsPerPage(): number {
     return props.itemsPerPage || 12;
@@ -298,6 +479,21 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
         <>
           {allItems.length > 0 ? (
             <div className="propeller-favorite-list-details__list space-y-3">
+              <div className="propeller-favorite-list-details__select-all flex items-center gap-2 pb-2">
+                <input
+                  id="favorite-list-select-all-top"
+                  type="checkbox"
+                  className="propeller-favorite-list-details__select-all-checkbox h-4 w-4 rounded border-border accent-secondary cursor-pointer"
+                  checked={isAllPageSelected()}
+                  onChange={() => togglePageSelectAll()}
+                />
+                <label
+                  htmlFor="favorite-list-select-all-top"
+                  className="propeller-favorite-list-details__select-all-label text-sm font-medium cursor-pointer select-none"
+                >
+                  {getLabel(props.labels, 'selectAll', 'Select all')}
+                </label>
+              </div>
               {getPagedItems()?.map((item) => (
                 <div
                   key={
@@ -305,7 +501,17 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                       ? 'p-' + (item as Product).productId
                       : 'c-' + (item as Cluster).clusterId
                   }
+                  className="propeller-favorite-list-details__row flex items-center gap-3"
+                  data-selected={isRowSelected(item) ? 'true' : 'false'}
                 >
+                  <input
+                    type="checkbox"
+                    className="propeller-favorite-list-details__row-checkbox h-4 w-4 flex-shrink-0 rounded border-border accent-secondary cursor-pointer"
+                    checked={isRowSelected(item)}
+                    onChange={() => toggleRow(item)}
+                    aria-label={getLabel(props.labels, 'selectItem', 'Select item')}
+                  />
+                  <div className="propeller-favorite-list-details__row-item flex-1 min-w-0">
                   <FavoriteListItem
                     item={item}
                     graphqlClient={props.graphqlClient}
@@ -336,6 +542,7 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                     onItemClick={props.onItemClick}
                     includeTax={props.includeTax}
                   />
+                  </div>
                 </div>
               ))}
               {props.showPagination !== false && getTotalPages() > 1 ? (
@@ -348,7 +555,16 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                 </div>
               ) : null}
             </div>
-          ) : null}{' '}
+          ) : null}
+          <div className="propeller-favorite-list-details__add-wrapper mt-6">
+            <button
+              type="button"
+              className="propeller-favorite-list-details__add-btn inline-flex items-center justify-center rounded-control bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90"
+              onClick={() => setShowAddModal(true)}
+            >
+              {getLabel(props.labels, 'addProductDirectly', 'Add product directly to this wishlist')}
+            </button>
+          </div>
           {allItems.length === 0 ? (
             <div className="propeller-favorite-list-details__empty border border-border rounded-container p-12 text-center space-y-4">
               <div className="propeller-favorite-list-details__empty-icon-wrapper bg-surface-hover p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
@@ -376,6 +592,214 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
             </div>
           ) : null}
         </>
+      ) : null}
+      {selectedIds.size > 0 ? (
+        <div className="propeller-favorite-list-details__floating-bar fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card shadow-lg">
+          <div className="propeller-favorite-list-details__floating-bar-inner flex items-center justify-between gap-4 px-6 py-4">
+            <div className="propeller-favorite-list-details__floating-bar-status flex items-center gap-2">
+              <input
+                id="favorite-list-select-all-floating"
+                type="checkbox"
+                className="h-4 w-4 rounded border-border accent-secondary cursor-pointer"
+                checked={isAllPageSelected()}
+                onChange={() => togglePageSelectAll()}
+              />
+              <label
+                htmlFor="favorite-list-select-all-floating"
+                className="text-sm font-medium cursor-pointer select-none"
+              >
+                {getLabel(props.labels, 'selectAll', 'Select all')}
+              </label>
+              <span className="propeller-favorite-list-details__floating-bar-count text-sm text-foreground-subtle ml-3">
+                {selectedIds.size} {getLabel(props.labels, 'ofWord', 'of')} {allItems.length} {getLabel(props.labels, 'itemsSelected', 'items selected')}
+              </span>
+            </div>
+            <div className="propeller-favorite-list-details__floating-bar-actions flex items-center gap-3">
+              <button
+                type="button"
+                className="propeller-favorite-list-details__bulk-remove-btn inline-flex items-center justify-center rounded-control border border-border bg-transparent px-4 py-2 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
+                disabled={bulkBusy}
+                onClick={() => handleBulkRemove()}
+              >
+                {getLabel(props.labels, 'removeFromList', 'Remove from this list')}
+              </button>
+              <button
+                type="button"
+                className="propeller-favorite-list-details__bulk-add-btn inline-flex items-center justify-center gap-2 rounded-control bg-secondary px-6 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90 disabled:opacity-50"
+                disabled={bulkBusy || getSelectedProducts().length === 0}
+                onClick={() => handleBulkAddToCart()}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+                {getLabel(props.labels, 'addToCart', 'Add to cart')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {showAddModal ? (
+        <div
+          className="propeller-favorite-list-details__modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => closeAddModal()}
+        >
+          <div
+            className="propeller-favorite-list-details__modal w-full max-w-xl rounded-container bg-card shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="propeller-favorite-list-details__modal-header border-b border-border px-6 py-4">
+              <h2 className="propeller-favorite-list-details__modal-title text-lg font-bold">
+                {getLabel(props.labels, 'addProductModalTitle', 'Add product to list')}
+              </h2>
+            </div>
+            <div className="propeller-favorite-list-details__modal-body px-6 py-4 space-y-4">
+              <div className="propeller-favorite-list-details__search-input-wrapper relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-subtle"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  className="propeller-favorite-list-details__search-input w-full rounded-control border border-border bg-card px-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary"
+                  placeholder={getLabel(props.labels, 'searchPlaceholder', 'Search for products...')}
+                  value={searchTerm}
+                  onChange={(e) => search(e.target.value)}
+                  autoFocus
+                />
+                {searchTerm ? (
+                  <button
+                    type="button"
+                    className="propeller-favorite-list-details__search-clear absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground"
+                    onClick={() => search('')}
+                    aria-label="Clear search"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
+              <div className="propeller-favorite-list-details__search-results max-h-80 overflow-y-auto">
+                {searchLoading ? (
+                  <div className="propeller-favorite-list-details__search-loading py-6 text-center text-sm text-foreground-subtle">
+                    {getLabel(props.labels, 'searching', 'Searching...')}
+                  </div>
+                ) : null}
+                {!searchLoading && searchTerm && searchResults.length === 0 ? (
+                  <div className="propeller-favorite-list-details__search-empty py-6 text-center text-sm text-foreground-subtle">
+                    {getLabel(props.labels, 'noResults', 'No results')}
+                  </div>
+                ) : null}
+                {!searchLoading && searchResults.length > 0 ? (
+                  <ul className="propeller-favorite-list-details__search-list divide-y divide-border">
+                    {searchResults.map((item) => {
+                      const key = getRowKey(item);
+                      const isAdding = addingItemKey === key;
+                      return (
+                        <li
+                          key={key}
+                          className="propeller-favorite-list-details__search-item flex items-center gap-3 py-3 cursor-pointer hover:bg-surface-hover transition-colors px-2 rounded-control"
+                          onClick={() => handleAddItemFromSearch(item)}
+                          data-adding={isAdding ? 'true' : 'false'}
+                        >
+                          <div className="propeller-favorite-list-details__search-item-media h-14 w-14 flex-shrink-0 rounded-control bg-surface-hover overflow-hidden flex items-center justify-center">
+                            {getSearchItemImage(item) ? (
+                              <img
+                                src={getSearchItemImage(item)}
+                                alt={getSearchItemName(item)}
+                                className="h-full w-full object-contain"
+                              />
+                            ) : (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-foreground-subtle"
+                              >
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="propeller-favorite-list-details__search-item-body flex-1 min-w-0">
+                            <p className="propeller-favorite-list-details__search-item-name text-sm font-medium line-clamp-2">
+                              {getSearchItemName(item)}
+                            </p>
+                            {getSearchItemSku(item) ? (
+                              <p className="propeller-favorite-list-details__search-item-sku font-mono text-xs text-foreground-subtle mt-0.5">
+                                SKU: {getSearchItemSku(item)}
+                              </p>
+                            ) : null}
+                            {getSearchItemStockLabel(item) ? (
+                              <p className="propeller-favorite-list-details__search-item-stock text-xs text-foreground-subtle mt-0.5">
+                                {getSearchItemStockLabel(item)}
+                              </p>
+                            ) : null}
+                          </div>
+                          {isAdding ? (
+                            <span className="propeller-favorite-list-details__search-item-spinner text-xs text-foreground-subtle">
+                              {getLabel(props.labels, 'adding', 'Adding...')}
+                            </span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </div>
+            </div>
+            <div className="propeller-favorite-list-details__modal-footer border-t border-border px-6 py-4 flex justify-end">
+              <button
+                type="button"
+                className="propeller-favorite-list-details__modal-close inline-flex items-center justify-center rounded-control border border-border px-6 py-2 text-sm font-medium text-secondary transition-colors hover:bg-surface-hover"
+                onClick={() => closeAddModal()}
+              >
+                {getLabel(props.labels, 'close', 'Close')}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

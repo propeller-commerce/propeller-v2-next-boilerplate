@@ -18,7 +18,7 @@ export class MenuService {
     if (cached) return cached;
 
     const depth = parseInt(process.env.NEXT_PUBLIC_MENU_DEPTH || '3', 10);
-    const categoryId = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10);
+    const categoryId = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10);
     const language = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
 
     // Build nested categories query

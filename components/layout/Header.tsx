@@ -451,7 +451,7 @@ export default function Header() {
                     {!state.isLoading && (
                       <PropellerMenu
                         graphqlClient={graphqlClient}
-                        categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
+                        categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
                         language={language}
                         menuStyle="dropdown-vertical"
                         user={state.user}
@@ -525,7 +525,7 @@ export default function Header() {
             {showCategoriesMenu && !state.isLoading && (
               <PropellerMenu
                 graphqlClient={graphqlClient}
-                categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
+                categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
                 language={language}
                 menuStyle="dropdown-vertical"
                 user={state.user}

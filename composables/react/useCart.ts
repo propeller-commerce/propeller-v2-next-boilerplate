@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { CartService, CrossupsellService, Enums } from 'propeller-sdk-v2';
+import { CartService, CrossupsellService, CrossupsellType, PurchaseRole } from 'propeller-sdk-v2';
 import type { GraphQLClient, Cart, CartMainItem, Product, Cluster, Contact, Customer, MediaImageProductSearchInput, TransformationsInput, PurchaseAuthorizationConfig, Crossupsell, CrossupsellsQueryVariables, CrossupsellSearchInput, CartProcessResponse } from 'propeller-sdk-v2';
 import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
@@ -68,7 +68,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     const pacData = (user as Contact).purchaseAuthorizationConfigs;
     const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
     const purchaserPac = items.find((pac: PurchaseAuthorizationConfig) =>
-      pac.purchaseRole === Enums.PurchaseRole.PURCHASER && pac.company?.companyId === companyId
+      pac.purchaseRole === PurchaseRole.PURCHASER && pac.company?.companyId === companyId
     );
     if (!purchaserPac) return true;
     const limit = purchaserPac.authorizationLimit ?? 0;
@@ -155,11 +155,10 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       const service = new CartService(graphqlClient);
       const updated = await service.deleteCartItem({
         id: cartId,
-        itemId: cartItemId,
         input: { itemId: cartItemId },
         language,
         imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,
-        imageVariantFilters: configuration?.imageVariantFiltersSmall
+        imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput
       });
       setCart(updated);
       return updated;
@@ -211,7 +210,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       const service = new CrossupsellService(graphqlClient);
       const variables: CrossupsellsQueryVariables = {
         input: {
-          types: (types ?? [Enums.CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
+          types: (types ?? [CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],
           page: 1,
           offset: 50,
           ...(productId && !clusterId && { productIdsFrom: [productId] }),

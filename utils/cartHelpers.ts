@@ -26,7 +26,6 @@ export const serializeCart = (cart: Cart): string => {
   const cleanCart = {
     cartId: cart.cartId,
     channelId: cart.channelId,
-    shopId: cart.shopId,
     contactId: cart.contactId,
     customerId: cart.customerId,
     companyId: cart.companyId,
@@ -58,7 +57,7 @@ export const serializeCart = (cart: Cart): string => {
 export const deserializeCart = (cartJson: string): Cart | null => {
   try {
     const cartData = JSON.parse(cartJson);
-    return new Cart(cartData);
+    return cartData as Cart;
   } catch (error) {
     console.error('Failed to deserialize cart:', error);
     return null;

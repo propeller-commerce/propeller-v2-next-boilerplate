@@ -1,6 +1,6 @@
+import { Fit, Format } from 'propeller-sdk-v2';
 // Default values and constants for the application
 // These will be used with propeller-sdk-v2 package when available
-import { Enums } from 'propeller-sdk-v2';
 
 // Image search filters for different use cases
 export const imageSearchFilters = {
@@ -19,10 +19,10 @@ export const imageVariantFiltersSmall = {
     {
       name: 'thumb',
       transformation: {
-        format: Enums.Format.WEBP,
+        format: Format.WEBP,
         height: 100,
         width: 100,
-        fit: Enums.Fit.BOUNDS,
+        fit: Fit.BOUNDS,
       },
     },
   ],
@@ -33,10 +33,10 @@ export const imageVariantFiltersMedium = {
     {
       name: 'grid',
       transformation: {
-        format: Enums.Format.WEBP,
+        format: Format.WEBP,
         height: 300,
         width: 300,
-        fit: Enums.Fit.BOUNDS,
+        fit: Fit.BOUNDS,
       },
     },
   ],
@@ -47,10 +47,10 @@ export const imageVariantFiltersLarge = {
     {
       name: 'large',
       transformation: {
-        format: Enums.Format.WEBP,
+        format: Format.WEBP,
         height: 800,
         width: 800,
-        fit: Enums.Fit.BOUNDS,
+        fit: Fit.BOUNDS,
       },
     },
   ],

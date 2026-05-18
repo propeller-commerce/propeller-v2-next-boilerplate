@@ -6,6 +6,7 @@ import { Contact, Customer, GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationRequests } from '@/composables/react/usePurchaseAuthorization';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getLanguageString } from '@/composables/shared/utils/languageResolver';
+import { formatPrice as _formatPrice } from '@/composables/shared/utils/formatting';
 
 export interface PurchaseAuthorizationRequestsProps {
   /** GraphQL client for the Propeller SDK */
@@ -104,8 +105,7 @@ function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps
 
   function formatPrice(price: number): string {
     if (props.formatPrice) return props.formatPrice(price);
-    if (!price) return '-';
-    return `€${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return _formatPrice(price, { symbol: '€' });
   }
 
   function getProductName(item: any): string {

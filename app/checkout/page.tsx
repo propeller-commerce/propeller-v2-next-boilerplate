@@ -13,7 +13,7 @@ import AddressCard from '@/components/propeller/AddressCard';
 import { cartService, graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, CartUpdateAddressInput, CartUpdateInput, Contact, Customer, Company } from 'propeller-sdk-v2';
+import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from 'propeller-sdk-v2';
 import { useCheckout } from '@/composables/react/useCheckout';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
 import CartPaymethods from '@/components/propeller/CartPaymethods';
@@ -23,17 +23,11 @@ import DeliveryDate from '@/components/propeller/DeliveryDate';
 import CartOverview from '@/components/propeller/CartOverview';
 import ItemsOverview from '@/components/propeller/ItemsOverview';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import { Enums } from 'propeller-sdk-v2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
 import { COUNTRIES } from '@/composables/shared/utils/countries';
-
-const CartAddressType = {
-  INVOICE: Enums.CartAddressType.INVOICE,
-  DELIVERY: Enums.CartAddressType.DELIVERY
-}
 
 interface CheckoutState {
   currentStep: number;
@@ -97,9 +91,7 @@ function CheckoutPageInner() {
 
         // If user is logged in and cart is missing addresses, pre-populate from user's defaults
         if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
-          try {
-            await cartService.initializeService();
-            const updatedCart = await populateCartAddresses(cartToUse);
+          try {            const updatedCart = await populateCartAddresses(cartToUse);
             saveCart(updatedCart);
             cartToUse = updatedCart;
           } catch (error) {
@@ -173,14 +165,14 @@ function CheckoutPageInner() {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const d = addressData as Record<string, string | boolean | undefined>;
       const input: CartUpdateAddressInput = {
-        type: type as Enums.CartAddressType,
+        type: type as CartAddressType,
         firstName: (d.firstName as string) || '',
         lastName: (d.lastName as string) || '',
         street: (d.street as string) || '',
         postalCode: (d.postalCode as string) || '',
         city: (d.city as string) || '',
         company: d.company as string | undefined,
-        gender: d.gender as Enums.Gender | undefined,
+        gender: d.gender as Gender | undefined,
         middleName: d.middleName as string | undefined,
         number: d.number as string | undefined,
         numberExtension: d.numberExtension as string | undefined,
@@ -189,7 +181,7 @@ function CheckoutPageInner() {
         mobile: d.mobile as string | undefined,
         phone: d.phone as string | undefined,
         notes: d.notes as string | undefined,
-        icp: d.icp as Enums.YesNo | undefined,
+        icp: d.icp as YesNo | undefined,
       };
 
       const updatedCart = await updateCartAddress(state.cart!.cartId, input);
@@ -199,7 +191,7 @@ function CheckoutPageInner() {
       if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && sameAsInvoiceRef.current) {
         const cartWithDelivery = await updateCartAddress(updatedCart.cartId, {
           ...input,
-          type: Enums.CartAddressType.DELIVERY,
+          type: CartAddressType.DELIVERY,
         });
         saveCart(cartWithDelivery);
         setState(prev => ({ ...prev, cart: cartWithDelivery, currentStep: 3, loading: false }));
@@ -503,7 +495,7 @@ function CheckoutPageInner() {
                             <AddressSelector
                               user={authState.user}
                               companyId={getActiveCompany()?.companyId}
-                              addressType={Enums.AddressType.delivery}
+                              addressType={AddressType.delivery}
                               onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
                               countries={COUNTRIES}
                               className="ml-auto"

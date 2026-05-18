@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import ClusterConfigurator from '@/components/propeller/ClusterConfigurator';
 import ClusterOptions from '@/components/propeller/ClusterOptions';
 import ClusterInfo from '@/components/propeller/ClusterInfo';
-import { Cluster, Enums, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { Cluster, CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import ProductGallery from '@/components/propeller/ProductGallery';
@@ -272,7 +272,7 @@ export default function ClusterPage() {
 
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+            crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
             clusterId={clusterId}
             language={language}
             taxZone="NL"
@@ -294,7 +294,7 @@ export default function ClusterPage() {
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.ALTERNATIVES]}
+            crossUpsellTypes={[CrossupsellType.ALTERNATIVES]}
             clusterId={clusterId}
             language={language}
             taxZone="NL"
@@ -316,7 +316,7 @@ export default function ClusterPage() {
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.RELATED]}
+            crossUpsellTypes={[CrossupsellType.RELATED]}
             clusterId={clusterId}
             language={language}
             taxZone="NL"
@@ -338,7 +338,7 @@ export default function ClusterPage() {
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.OPTIONS]}
+            crossUpsellTypes={[CrossupsellType.OPTIONS]}
             clusterId={clusterId}
             language={language}
             taxZone="NL"
@@ -360,7 +360,7 @@ export default function ClusterPage() {
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.PARTS]}
+            crossUpsellTypes={[CrossupsellType.PARTS]}
             clusterId={clusterId}
             language={language}
             taxZone="NL"

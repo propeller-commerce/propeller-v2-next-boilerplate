@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { Cart, CartMainItem, CartBaseItem, BundleItem, Enums } from 'propeller-sdk-v2';
+import { BundleItem, Cart, CartBaseItem, CartMainItem, YesNo } from 'propeller-sdk-v2';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ItemsOverviewProps {
@@ -139,14 +139,14 @@ function ItemsOverview(props: ItemsOverviewProps) {
   function getBundleLeaderName(item: any): ReturnType<ItemsOverviewState['getBundleLeaderName']> {
     const items = item.bundle?.items;
     if (!items) return '';
-    const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+    const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
     if (!leader) return '';
     return leader.product.names?.[0]?.value || 'Product';
   }
   function getBundleLeaderPrice(item: any): ReturnType<ItemsOverviewState['getBundleLeaderPrice']> {
     const items = item.bundle?.items;
     if (!items) return '';
-    const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+    const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
     if (!leader) return '';
     const price = leader.price?.net;
     if (price === undefined || price === null) return '';
@@ -155,7 +155,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
   function getBundleNonLeaders(item: any): ReturnType<ItemsOverviewState['getBundleNonLeaders']> {
     const items = item.bundle?.items;
     if (!items) return [];
-    return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+    return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
   }
   function getBundleItemName(bundleItem: any): ReturnType<ItemsOverviewState['getBundleItemName']> {
     return bundleItem.product?.names?.[0]?.value || 'Product';

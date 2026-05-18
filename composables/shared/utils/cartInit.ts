@@ -8,10 +8,7 @@
  * Framework-agnostic async function.
  */
 
-import {
-  CartService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { CartAddressType, CartService, CartStatus, Gender } from 'propeller-sdk-v2';
 import type {
   Cart,
   CartSearchInput,
@@ -60,7 +57,7 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
     try {
       const searchInput: CartSearchInput = {
         offset: 100,
-        statuses: [Enums.CartStatus.OPEN],
+        statuses: [CartStatus.OPEN],
       };
 
       if (isContact(user) && user.contactId) {
@@ -134,7 +131,7 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
         postalCode: addr.postalCode || '',
         city: addr.city || '',
         country: addr.country || 'NL',
-        gender: addr.gender || Enums.Gender.U,
+        gender: addr.gender || Gender.U,
       };
       if (addr.middleName) base.middleName = addr.middleName;
       if (addr.number) base.number = String(addr.number);
@@ -151,7 +148,7 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
       try {
         cart = await cartService.updateCartAddress({
           id: cart.cartId,
-          input: { type: Enums.CartAddressType.INVOICE, ...addressBase(defaultInvoice) },
+          input: { type: CartAddressType.INVOICE, ...addressBase(defaultInvoice) },
           imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
           imageVariantFilters: imageVariantFilters as TransformationsInput,
           language,
@@ -166,7 +163,7 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
       try {
         cart = await cartService.updateCartAddress({
           id: cart.cartId,
-          input: { type: Enums.CartAddressType.DELIVERY, ...addressBase(defaultDelivery) },
+          input: { type: CartAddressType.DELIVERY, ...addressBase(defaultDelivery) },
           imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,
           imageVariantFilters: imageVariantFilters as TransformationsInput,
           language,

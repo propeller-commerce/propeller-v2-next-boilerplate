@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { AddressService, Enums } from 'propeller-sdk-v2';
+import { AddressService, AddressType, Gender, YesNo } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Address,
@@ -26,7 +26,7 @@ import { isContact, isCustomer } from '../shared/utils/userIdentity';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface AddressInput {
-  type?: Enums.AddressType;
+  type?: AddressType;
   firstName?: string;
   lastName?: string;
   middleName?: string;
@@ -40,8 +40,8 @@ export interface AddressInput {
   email?: string;
   phone?: string;
   mobile?: string;
-  gender?: Enums.Gender;
-  isDefault?: Enums.YesNo;
+  gender?: Gender;
+  isDefault?: YesNo;
   notes?: string;
 }
 
@@ -92,7 +92,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
             postalCode: input.postalCode,
             city: input.city,
             country: input.country,
-            type: input.type ?? Enums.AddressType.invoice,
+            type: input.type ?? AddressType.invoice,
             companyId: ids.companyId,
             ...(input.firstName && { firstName: input.firstName }),
             ...(input.lastName && { lastName: input.lastName }),
@@ -114,7 +114,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
             postalCode: input.postalCode,
             city: input.city,
             country: input.country,
-            type: input.type ?? Enums.AddressType.delivery,
+            type: input.type ?? AddressType.delivery,
             customerId: ids.customerId,
             ...(input.firstName && { firstName: input.firstName }),
             ...(input.lastName && { lastName: input.lastName }),
@@ -246,7 +246,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
 
   const setDefaultAddress = useCallback(
     async (addressId: number): Promise<{ success: boolean; error?: string }> =>
-      updateAddress(addressId, { isDefault: Enums.YesNo.Y }),
+      updateAddress(addressId, { isDefault: YesNo.Y }),
     [updateAddress]
   );
 

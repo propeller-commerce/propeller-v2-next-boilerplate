@@ -2,16 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import {
-  GraphQLClient,
-  Contact,
-  Customer,
-  Cart,
-  Enums,
-  Bundle,
-  BundleItem,
-  Product,
-} from 'propeller-sdk-v2';
+import { Bundle, BundleCondition, BundleItem, Cart, Contact, Customer, GraphQLClient, Product } from 'propeller-sdk-v2';
 import { useProductBundles } from '@/composables/react/useProductBundles';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -368,7 +359,7 @@ function ProductBundles(props: ProductBundlesProps) {
                     ) : null}
                     {bundle.condition ? (
                       <p className="propeller-product-bundles__condition text-xs text-muted-foreground mb-3">
-                        {bundle.condition === Enums.BundleCondition.ALL ? (
+                        {bundle.condition === BundleCondition.ALL ? (
                           <>{getLabel(props.labels, 'condition_ALL', 'Discount on all items')}</>
                         ) : (
                           <>{getLabel(props.labels, 'condition_EP', 'Discount on extra items')}</>

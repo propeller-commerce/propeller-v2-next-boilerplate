@@ -2,17 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import {
-  Cart,
-  CartMainItem,
-  CartBaseItem,
-  BundleItem,
-  Contact,
-  Customer,
-  Enums,
-  PurchaseAuthorizationConfig,
-  GraphQLClient,
-} from 'propeller-sdk-v2';
+import { BundleItem, Cart, CartBaseItem, CartMainItem, Contact, Customer, GraphQLClient, ProductClass, PurchaseAuthorizationConfig, PurchaseRole, YesNo } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -199,9 +189,9 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   ): ReturnType<CartIconAndSidebarState['getItemProductUrl']> {
     const product = item.product;
     if (!product) return '#';
-    if (product.class === Enums.ProductClass.PRODUCT) {
+    if (product.class === ProductClass.PRODUCT) {
       return props.configuration.urls.getProductUrl(product, props.language);
-    } else if (product.class === Enums.ProductClass.CLUSTER) {
+    } else if (product.class === ProductClass.CLUSTER) {
       return props.configuration.urls.getClusterUrl(product, props.language);
     }
     return '#';
@@ -255,7 +245,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   ): ReturnType<CartIconAndSidebarState['getBundleLeaderName']> {
     const items = item.bundle?.items;
     if (!items) return '';
-    const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+    const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
     if (!leader) return '';
     return leader.product.names?.[0]?.value || 'Product';
   }
@@ -264,7 +254,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   ): ReturnType<CartIconAndSidebarState['getBundleLeaderPrice']> {
     const items = item.bundle?.items;
     if (!items) return '';
-    const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+    const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
     if (!leader) return '';
     const price = leader.price?.net;
     if (price === undefined || price === null) return '';
@@ -275,7 +265,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
   ): ReturnType<CartIconAndSidebarState['getBundleNonLeaders']> {
     const items = item.bundle?.items;
     if (!items) return [];
-    return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+    return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
   }
   function getBundleItemName(
     bundleItem: BundleItem
@@ -298,7 +288,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
     const purchaserPAC = items.find((pac: PurchaseAuthorizationConfig) => {
       const role = pac.purchaseRole;
       const pacCompanyId = pac.company?.companyId;
-      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+      return role === PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
     });
     if (!purchaserPAC) return true;
     const limit = purchaserPAC.authorizationLimit ?? 0;
@@ -319,7 +309,7 @@ function CartIconAndSidebar(props: CartIconAndSidebarProps) {
         pac.company?._companyId ??
         pac._company?.companyId ??
         pac._company?._companyId;
-      return role === Enums.PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
+      return role === PurchaseRole.PURCHASER && pacCompanyId === props.companyId;
     });
     if (!purchaserPAC) return false;
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;

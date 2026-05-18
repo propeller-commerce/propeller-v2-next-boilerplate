@@ -2,22 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import {
-  GraphQLClient,
-  CartMainItem,
-  CartBaseItem,
-  BundleItem,
-  Cart,
-  ProductInventory,
-  Crossupsell,
-  Product,
-  Cluster,
-  Enums,
-  Contact,
-  Customer,
-  MediaImageProductSearchInput,
-  TransformationsInput,
-} from 'propeller-sdk-v2';
+import { BundleItem, Cart, CartBaseItem, CartMainItem, Cluster, Contact, Crossupsell, Customer, GraphQLClient, MediaImageProductSearchInput, Product, ProductInventory, TransformationsInput, YesNo } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -163,14 +148,14 @@ function CartItem(props: CartItemProps) {
   function getBundleLeaderName(): string {
     const items = props.cartItem.bundle?.items;
     if (!items) return '';
-    const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+    const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
     if (!leader) return '';
     return leader.product.names?.[0]?.value || 'Product';
   }
   function getBundleLeaderPrice(): string {
     const items = props.cartItem.bundle?.items;
     if (!items) return '';
-    const leader = items.find((bi: BundleItem) => bi.isLeader === Enums.YesNo.Y);
+    const leader = items.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
     if (!leader) return '';
     const price = leader.price?.net;
     if (price === undefined || price === null) return '';
@@ -179,7 +164,7 @@ function CartItem(props: CartItemProps) {
   function getBundleNonLeaders(): BundleItem[] {
     const items = props.cartItem.bundle?.items;
     if (!items) return [];
-    return items.filter((bi: BundleItem) => bi.isLeader !== Enums.YesNo.Y);
+    return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
   }
   function getBundleItemName(bundleItem: BundleItem): string {
     return bundleItem.product.names?.[0]?.value || 'Product';

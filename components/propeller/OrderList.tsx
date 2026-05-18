@@ -2,16 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react';
-import {
-  Order,
-  Contact,
-  Customer,
-  GraphQLClient,
-  Enums,
-  DateSearchInput,
-  DecimalSearchInput,
-  OrderSortInput,
-} from 'propeller-sdk-v2';
+import { Contact, Customer, DateSearchInput, DecimalSearchInput, GraphQLClient, Order, OrderSortField, OrderSortInput, OrderType, SortOrder } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { formatPrice as formatPriceHelper } from '@/composables/shared/utils/formatting';
@@ -384,13 +375,13 @@ function OrderList(props: OrderListProps) {
                             ...searchForm,
                             sortInput: {
                               ...current,
-                              field: e.target.value as Enums.OrderSortField,
+                              field: e.target.value as OrderSortField,
                             },
                           });
                         }}
                       >
                         <option value="">Sort Field</option>
-                        {Object.values(Enums.OrderSortField)?.map((sortField) => (
+                        {Object.values(OrderSortField)?.map((sortField) => (
                           <option key={sortField} value={sortField}>
                             {sortField}
                           </option>
@@ -405,13 +396,13 @@ function OrderList(props: OrderListProps) {
                             ...searchForm,
                             sortInput: {
                               ...current,
-                              order: e.target.value as Enums.SortOrder,
+                              order: e.target.value as SortOrder,
                             },
                           });
                         }}
                       >
                         <option value="">Order</option>
-                        {Object.values(Enums.SortOrder)?.map((order) => (
+                        {Object.values(SortOrder)?.map((order) => (
                           <option key={order} value={order}>
                             {order}
                           </option>
@@ -427,12 +418,12 @@ function OrderList(props: OrderListProps) {
                         onChange={(e) => {
                           setSearchForm({
                             ...searchForm,
-                            type: e.target.value as Enums.OrderType,
+                            type: e.target.value as OrderType,
                           });
                         }}
                       >
                         <option value="">Type</option>
-                        {Object.values(Enums.OrderType)?.map((type) => (
+                        {Object.values(OrderType)?.map((type) => (
                           <option key={type} value={type}>
                             {type}
                           </option>
@@ -499,7 +490,7 @@ function OrderList(props: OrderListProps) {
                               <span className="propeller-order-list__order-id text-foreground">{order.id}</span>
                             ) : null}
                             {col === 'date' ? (
-                              <>{formatDate(order.date || order.createdAt || '')}</>
+                              <>{formatDate(order.createdAt || '')}</>
                             ) : null}
                             {col === 'status' ? (
                               <span

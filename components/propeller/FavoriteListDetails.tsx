@@ -11,6 +11,7 @@ import {
   CartMainItem,
   CartChildItemInput,
   ProductsResponse,
+  FavoriteListVariables,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
 import { useProductSearch } from '@/composables/react/useProductSearch';
@@ -395,7 +396,9 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
     try {
       const { FavoriteListService } = await import('propeller-sdk-v2');
       const service = new FavoriteListService(props.graphqlClient);
-      const list = await service.getFavoriteList(buildFetchVariables());
+      const list = await service.getFavoriteList(
+        buildFetchVariables() as unknown as FavoriteListVariables
+      );
       setFavoriteList(list);
       if (props.onListLoaded) {
         props.onListLoaded(list);

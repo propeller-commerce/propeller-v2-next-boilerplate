@@ -2,12 +2,7 @@
 import * as React from 'react';
 
 import { useEffect } from 'react';
-import {
-  GraphQLClient,
-  AttributeResult,
-  LocalizedString,
-  Enums,
-} from 'propeller-sdk-v2';
+import { AttributeResult, AttributeType, GraphQLClient, LocalizedString } from 'propeller-sdk-v2';
 import { useProductSpecs } from '@/composables/react/useProductSpecs';
 
 export interface ProductSpecificationsProps {
@@ -99,27 +94,27 @@ function ProductSpecifications(props: ProductSpecificationsProps) {
     const v = attr.value;
     if (!v) return '';
     const lang = (props.language as string) || 'NL';
-    if (v.type === Enums.AttributeType.TEXT) {
+    if (v.type === AttributeType.TEXT) {
       const entry = (v as any).textValues?.find((tv: any) => tv.language === lang);
       const vals = (entry?.values || []).filter(Boolean);
       return vals.join(', ');
     }
-    if (v.type === Enums.AttributeType.ENUM) {
+    if (v.type === AttributeType.ENUM) {
       const vals = ((v as any).enumValues || []).filter(Boolean);
       return vals.join(', ');
     }
-    if (v.type === Enums.AttributeType.INT) {
+    if (v.type === AttributeType.INT) {
       const val = (v as any).intValue;
       return val !== null && val !== undefined ? String(val) : '';
     }
-    if (v.type === Enums.AttributeType.DECIMAL) {
+    if (v.type === AttributeType.DECIMAL) {
       const val = (v as any).decimalValue;
       return val !== null && val !== undefined ? String(val) : '';
     }
-    if (v.type === Enums.AttributeType.DATETIME) {
+    if (v.type === AttributeType.DATETIME) {
       return (v as any).dateTimeValue || '';
     }
-    if (v.type === Enums.AttributeType.COLOR) {
+    if (v.type === AttributeType.COLOR) {
       return (v as any).colorValue || '';
     }
     const fallback = v.value;

@@ -5,11 +5,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import {
-  CategoryService,
-  ProductService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { CategoryService, ProductSearchableField, ProductService, ProductSortField, ProductStatus, SortOrder } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Product,
@@ -98,7 +94,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
   const [itemsFound, setItemsFound] = useState(0);
   const [internalLoading, setInternalLoading] = useState(false);
   const [currentSortField, setCurrentSortField] = useState(
-    options.sortField ?? Enums.ProductSortField.RELEVANCE
+    options.sortField ?? ProductSortField.RELEVANCE
   );
   const [currentSortOrder, setCurrentSortOrder] = useState(options.sortOrder ?? 'DESC');
   const [searchTerm, setSearchTerm] = useState('');
@@ -181,8 +177,8 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
       const service = new CategoryService(graphqlClient);
 
       const lang = language;
-      const activeSortField = (options.sortField ?? currentSortField) as Enums.ProductSortField;
-      const activeSortOrder = (options.sortOrder ?? currentSortOrder) as Enums.SortOrder;
+      const activeSortField = (options.sortField ?? currentSortField) as ProductSortField;
+      const activeSortOrder = (options.sortOrder ?? currentSortOrder) as SortOrder;
 
       // Build sort inputs
       const sortInputs: ProductSortInput[] = (activeSortField)
@@ -194,26 +190,26 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         ? [
           {
             fieldNames: [
-              Enums.ProductSearchableField.NAME,
-              Enums.ProductSearchableField.KEYWORDS,
-              Enums.ProductSearchableField.SKU,
-              Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+              ProductSearchableField.NAME,
+              ProductSearchableField.KEYWORDS,
+              ProductSearchableField.SKU,
+              ProductSearchableField.CUSTOM_KEYWORDS,
             ],
             boost: 5,
           },
           {
             fieldNames: [
-              Enums.ProductSearchableField.DESCRIPTION,
-              Enums.ProductSearchableField.MANUFACTURER,
-              Enums.ProductSearchableField.MANUFACTURER_CODE,
-              Enums.ProductSearchableField.EAN_CODE,
-              Enums.ProductSearchableField.BAR_CODE,
-              Enums.ProductSearchableField.CLUSTER_ID,
-              Enums.ProductSearchableField.CUSTOM_KEYWORDS,
-              Enums.ProductSearchableField.PRODUCT_ID,
-              Enums.ProductSearchableField.SHORT_DESCRIPTION,
-              Enums.ProductSearchableField.SUPPLIER,
-              Enums.ProductSearchableField.SUPPLIER_CODE,
+              ProductSearchableField.DESCRIPTION,
+              ProductSearchableField.MANUFACTURER,
+              ProductSearchableField.MANUFACTURER_CODE,
+              ProductSearchableField.EAN_CODE,
+              ProductSearchableField.BAR_CODE,
+              ProductSearchableField.CLUSTER_ID,
+              ProductSearchableField.CUSTOM_KEYWORDS,
+              ProductSearchableField.PRODUCT_ID,
+              ProductSearchableField.SHORT_DESCRIPTION,
+              ProductSearchableField.SUPPLIER,
+              ProductSearchableField.SUPPLIER_CODE,
             ],
             boost: 1,
           },
@@ -249,10 +245,10 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         page: pagination.currentPage,
         offset: pageSize,
         statuses: [
-          Enums.ProductStatus.A,
-          Enums.ProductStatus.P,
-          Enums.ProductStatus.T,
-          Enums.ProductStatus.S,
+          ProductStatus.A,
+          ProductStatus.P,
+          ProductStatus.T,
+          ProductStatus.S,
         ],
         hidden: false,
         ...(options.term && { term: options.term, searchFields }),
@@ -373,35 +369,35 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
             page: 1,
             offset: 10,
             statuses: [
-              Enums.ProductStatus.A,
-              Enums.ProductStatus.P,
-              Enums.ProductStatus.T,
-              Enums.ProductStatus.S,
+              ProductStatus.A,
+              ProductStatus.P,
+              ProductStatus.T,
+              ProductStatus.S,
             ],
-            sortInputs: [{ field: Enums.ProductSortField.RELEVANCE, order: Enums.SortOrder.DESC }],
+            sortInputs: [{ field: ProductSortField.RELEVANCE, order: SortOrder.DESC }],
             searchFields: [
               {
                 fieldNames: [
-                  Enums.ProductSearchableField.NAME,
-                  Enums.ProductSearchableField.KEYWORDS,
-                  Enums.ProductSearchableField.SKU,
-                  Enums.ProductSearchableField.CUSTOM_KEYWORDS,
+                  ProductSearchableField.NAME,
+                  ProductSearchableField.KEYWORDS,
+                  ProductSearchableField.SKU,
+                  ProductSearchableField.CUSTOM_KEYWORDS,
                 ],
                 boost: 5,
               },
               {
                 fieldNames: [
-                  Enums.ProductSearchableField.DESCRIPTION,
-                  Enums.ProductSearchableField.MANUFACTURER,
-                  Enums.ProductSearchableField.MANUFACTURER_CODE,
-                  Enums.ProductSearchableField.EAN_CODE,
-                  Enums.ProductSearchableField.BAR_CODE,
-                  Enums.ProductSearchableField.CLUSTER_ID,
-                  Enums.ProductSearchableField.CUSTOM_KEYWORDS,
-                  Enums.ProductSearchableField.PRODUCT_ID,
-                  Enums.ProductSearchableField.SHORT_DESCRIPTION,
-                  Enums.ProductSearchableField.SUPPLIER,
-                  Enums.ProductSearchableField.SUPPLIER_CODE,
+                  ProductSearchableField.DESCRIPTION,
+                  ProductSearchableField.MANUFACTURER,
+                  ProductSearchableField.MANUFACTURER_CODE,
+                  ProductSearchableField.EAN_CODE,
+                  ProductSearchableField.BAR_CODE,
+                  ProductSearchableField.CLUSTER_ID,
+                  ProductSearchableField.CUSTOM_KEYWORDS,
+                  ProductSearchableField.PRODUCT_ID,
+                  ProductSearchableField.SHORT_DESCRIPTION,
+                  ProductSearchableField.SUPPLIER,
+                  ProductSearchableField.SUPPLIER_CODE,
                 ],
                 boost: 1,
               },

@@ -1,7 +1,7 @@
 import { LoginService, UserService, LoginInput } from 'propeller-sdk-v2';
 import { graphqlClient } from '../api';
 import toast from 'react-hot-toast';
-import { ViewerInput } from 'propeller-sdk-v2/dist/service/UserService';
+import { ViewerInput } from 'propeller-sdk-v2';
 
 /**
  * Recursively converts an SDK class instance (or any nested object/array) to a

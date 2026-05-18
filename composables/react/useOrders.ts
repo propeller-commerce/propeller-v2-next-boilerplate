@@ -5,11 +5,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import {
-  OrderService,
-  CartService,
-  Enums,
-} from 'propeller-sdk-v2';
+import { CartService, OrderItemClass, OrderSearchFields, OrderService, OrderType, YesNo } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Order,
@@ -38,7 +34,7 @@ export interface OrderSearchForm {
   lastModifiedAt?: DateSearchInput;
   price?: DecimalSearchInput;
   sortInput?: Partial<OrderSortInput>;
-  type?: Enums.OrderType;
+  type?: OrderType;
 }
 
 export interface UseOrdersOptions {
@@ -48,7 +44,7 @@ export interface UseOrdersOptions {
   language?: string;
   itemsPerPage?: number;
   orderStatuses?: string[];
-  termFields?: Enums.OrderSearchFields[];
+  termFields?: OrderSearchFields[];
   configuration?: {
     imageSearchFiltersGrid?: MediaImageProductSearchInput;
     imageVariantFiltersSmall?: TransformationsInput;
@@ -94,11 +90,11 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
 
   const language = options.language || 'NL';
   const termFields = options.termFields ?? [
-    Enums.OrderSearchFields.REFERENCE,
-    Enums.OrderSearchFields.ITEM_SKU,
-    Enums.OrderSearchFields.ID,
-    Enums.OrderSearchFields.ITEM_NAME,
-    Enums.OrderSearchFields.REMARKS,
+    OrderSearchFields.REFERENCE,
+    OrderSearchFields.ITEM_SKU,
+    OrderSearchFields.ID,
+    OrderSearchFields.ITEM_NAME,
+    OrderSearchFields.REMARKS,
   ];
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -225,7 +221,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
 
         const cartService = new CartService(graphqlClient);
         const allProducts = order.items.filter(
-          (item: OrderItem) => item.class === Enums.OrderItemClass.product && item.isBonus === Enums.YesNo.N
+          (item: OrderItem) => item.class === OrderItemClass.product && item.isBonus === YesNo.N
         );
         const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
         const childMap = new Map<number, OrderItem[]>();

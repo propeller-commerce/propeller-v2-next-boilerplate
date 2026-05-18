@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ProductPrice, Contact, Customer } from 'propeller-sdk-v2';
-import type { IDiscount } from 'propeller-sdk-v2/dist/type/IDiscount';
+import type { IDiscount } from 'propeller-sdk-v2';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { isContentHidden } from '@/composables/shared/utils/visibilityHelpers';
 

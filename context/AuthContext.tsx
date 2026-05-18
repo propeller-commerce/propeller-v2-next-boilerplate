@@ -1,7 +1,7 @@
 'use client';
 
 // 'use client' is already at the top of the file, this replacement starts after line 1.
-import { Contact, Customer, Enums, UserService } from 'propeller-sdk-v2';
+import { Contact, Customer, PurchaseRole, UserService } from 'propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
@@ -328,7 +328,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return items.some((pac: any) => {
       const role = pac.purchaseRole ?? pac._purchaseRole;
       const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-      return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId;
+      return role === PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId;
     });
   };
 

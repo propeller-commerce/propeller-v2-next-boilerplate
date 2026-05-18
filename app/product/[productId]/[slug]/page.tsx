@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { imageSearchFilters, imageVariantFiltersLarge, imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
-import { Product, ProductPrice as ProductPriceSDK, Enums } from 'propeller-sdk-v2';
+import { CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import AddToCart from '@/components/propeller/AddToCart';
 import ItemStock from '@/components/propeller/ItemStock';
 import ProductInfo from '@/components/propeller/ProductInfo';
@@ -165,7 +165,7 @@ export default function ProductPage() {
           </div>
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+            crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
             productId={productId}
             language={language}
             taxZone="NL"
@@ -187,7 +187,7 @@ export default function ProductPage() {
           />
           <ProductSlider
             graphqlClient={graphqlClient}
-            crossUpsellTypes={[Enums.CrossupsellType.RELATED]}
+            crossUpsellTypes={[CrossupsellType.RELATED]}
             productId={productId}
             language={language}
             taxZone="NL"

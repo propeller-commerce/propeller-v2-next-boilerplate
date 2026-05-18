@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
-import { type CartMainItem, type Cart, type Contact, type Customer, Enums } from 'propeller-sdk-v2';
+import { type Cart, type CartMainItem, type Contact, CrossupsellType, type Customer } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
 
@@ -66,7 +66,7 @@ export default function CartPage() {
                     configuration={config}
                     enableIncrementDecrement={true}
                     showCrossupsells={true}
-                    crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+                    crossupsellTypes={[CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}
                     afterCartUpdate={(cart: Cart) => { saveCart(cart); }}
                   />

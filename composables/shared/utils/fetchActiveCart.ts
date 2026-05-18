@@ -6,7 +6,7 @@
  * behavior on the React side without forcing the Vue Pinia store dependency.
  */
 
-import { CartService, Enums } from 'propeller-sdk-v2';
+import { CartService, CartStatus } from 'propeller-sdk-v2';
 import type {
   Cart,
   CartSearchInput,
@@ -16,7 +16,7 @@ import type {
   MediaImageProductSearchInput,
   TransformationsInput,
 } from 'propeller-sdk-v2';
-import type { CartQueryVariables } from 'propeller-sdk-v2/dist/service/CartService';
+import type { CartQueryVariables } from 'propeller-sdk-v2';
 
 export interface FetchActiveCartConfig {
   graphqlClient: GraphQLClient;
@@ -34,7 +34,7 @@ export async function fetchActiveCart(
   try {
     const searchInput: CartSearchInput = {
       offset: 100,
-      statuses: [Enums.CartStatus.OPEN],
+      statuses: [CartStatus.OPEN],
     };
     if ('contactId' in cfg.user && cfg.user.contactId) {
       searchInput.contactIds = [cfg.user.contactId];

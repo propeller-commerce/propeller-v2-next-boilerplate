@@ -27,7 +27,7 @@ import type {
   LocalizedString,
   ClusterConfigSetting,
   ProductQueryVariables,
-  ClusterQueryVariables,
+  ClusterVariables,
   PriceCalculateProductInput,
   UserBulkPriceProductInput,
   AttributeResultSearchInput,
@@ -173,7 +173,7 @@ export function useProductInfo(options: UseProductInfoOptions): UseProductInfoRe
         );
 
       // Step 2: fetch cluster with full inputs
-      const variables: ClusterQueryVariables = {
+      const variables: ClusterVariables = {
         clusterId,
         language,
         imageSearchFilters: imageSearchFilters ?? configuration.imageSearchFiltersGrid,

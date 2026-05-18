@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Order, Enums } from 'propeller-sdk-v2';
+import { Order, OrderDiscountType } from 'propeller-sdk-v2';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { formatPrice } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
@@ -93,17 +93,17 @@ function OrderTotals(props: OrderTotalsProps) {
     const total = (props.order as any)?.total;
     return (
       total?.discountType &&
-      total.discountType !== Enums.OrderDiscountType.N &&
+      total.discountType !== OrderDiscountType.N &&
       total.discountValue > 0
     );
   }
   function discountDisplay(): ReturnType<OrderTotalsState['discountDisplay']> {
     const total = (props.order as any)?.total;
     if (!total) return '';
-    if (total.discountType === Enums.OrderDiscountType.A) {
+    if (total.discountType === OrderDiscountType.A) {
       return '-' + formatItemPrice(total.discountValue);
     }
-    if (total.discountType === Enums.OrderDiscountType.P) {
+    if (total.discountType === OrderDiscountType.P) {
       return '- ' + total.discountValue + '%';
     }
     return '-' + formatItemPrice(total.discountValue);

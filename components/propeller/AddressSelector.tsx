@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react';
-import { Contact, Customer, Address, Company, Enums } from 'propeller-sdk-v2';
+import { Address, AddressType, Company, Contact, Customer } from 'propeller-sdk-v2';
 import AddressCard from './AddressCard';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -13,7 +13,7 @@ export interface AddressSelectorProps {
   /**
    * Active company ID (for Contact users).
    * Pass the value from the company switcher so the correct company's addresses are listed.  */ companyId?: number;
-  /**  * Filter addresses to this type.  * Defaults to Enums.AddressType.delivery.  */ addressType?: string;
+  /**  * Filter addresses to this type.  * Defaults to AddressType.delivery.  */ addressType?: string;
   /** Called when the user picks an address from the modal. Supports async. */ onAddressSelected?: (
     address: Address
   ) => void | Promise<void>;
@@ -63,7 +63,7 @@ function AddressSelector(props: AddressSelectorProps) {
   function getAddresses(): ReturnType<AddressSelectorState['getAddresses']> {
     const user = props.user as Contact | Customer | null;
     if (!user) return [];
-    const type = (props.addressType as string) || Enums.AddressType.delivery;
+    const type = (props.addressType as string) || AddressType.delivery;
     let all: Address[] = [];
     if ('contactId' in user) {
       const company = getActiveCompany();

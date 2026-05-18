@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react';
-import { Cart, Contact, Customer, GraphQLClient, Enums } from 'propeller-sdk-v2';
+import { Cart, Contact, Customer, GraphQLClient, PurchaseRole } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -159,7 +159,7 @@ function CartSummary(props: CartSummaryProps) {
     const purchaserPAC = items.find((pac: any) => {
       const role = pac.purchaseRole ?? pac._purchaseRole;
       const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-      return role === Enums.PurchaseRole.PURCHASER && Number(pacCompanyId) === Number(props.companyId);
+      return role === PurchaseRole.PURCHASER && Number(pacCompanyId) === Number(props.companyId);
     });
     if (!purchaserPAC) return false;
     const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;

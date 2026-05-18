@@ -8,7 +8,8 @@ import {
     FavoriteListsSearchInput,
     FavoriteListsResponse,
     FavoriteListsUpdateInput,
-    FavoriteList
+    FavoriteList,
+    FavoriteListVariables
 } from 'propeller-sdk-v2';
 
 // User type from AuthContext
@@ -155,7 +156,9 @@ export class FavoriteListService extends BaseApiService {
                 }
             }
 
-            const result = await this.favoriteListService.getFavoriteList(input);
+            const result = await this.favoriteListService.getFavoriteList(
+                input as unknown as FavoriteListVariables
+            );
 
             this.logOperation('Favorite list details fetched successfully', {
                 id: result.id,

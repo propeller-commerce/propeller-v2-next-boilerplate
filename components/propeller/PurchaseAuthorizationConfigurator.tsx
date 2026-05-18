@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { Enums, GraphQLClient, Contact, Customer, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, RegisterContactInput } from 'propeller-sdk-v2';
+import { Contact, Customer, Gender, GraphQLClient, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, PurchaseRole, RegisterContactInput } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationConfigurator } from '@/composables/react/usePurchaseAuthorization';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
@@ -150,16 +150,16 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                               onChange={(e) => handleRoleChange(contact.contactId, e.target.value)}
                             >
                               <option value="">{getLabel(props.labels, 'selectRole', '— Select role —')}</option>
-                              <option value={Enums.PurchaseRole.PURCHASER}>
+                              <option value={PurchaseRole.PURCHASER}>
                                 {getLabel(props.labels, 'rolePurchaser', 'Purchaser')}
                               </option>
-                              <option value={Enums.PurchaseRole.AUTHORIZATION_MANAGER}>
+                              <option value={PurchaseRole.AUTHORIZATION_MANAGER}>
                                 {getLabel(props.labels, 'roleManager', 'Authorization Manager')}
                               </option>
                             </select>
                           </td>
                           <td className="px-4 py-3">
-                            {getRowRole(contact.contactId) === Enums.PurchaseRole.PURCHASER ? (
+                            {getRowRole(contact.contactId) === PurchaseRole.PURCHASER ? (
                               <input
                                 type="number"
                                 min="0"
@@ -282,9 +282,9 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
                     onChange={(e) => setAddContactForm({ ...addContactForm, gender: e.target.value })}
                   >
                     <option value="">{getLabel(props.labels, 'selectGender', '— Select —')}</option>
-                    <option value={Enums.Gender.M}>{getLabel(props.labels, 'genderM', 'Male')}</option>
-                    <option value={Enums.Gender.F}>{getLabel(props.labels, 'genderF', 'Female')}</option>
-                    <option value={Enums.Gender.U}>{getLabel(props.labels, 'genderU', 'Unspecified')}</option>
+                    <option value={Gender.M}>{getLabel(props.labels, 'genderM', 'Male')}</option>
+                    <option value={Gender.F}>{getLabel(props.labels, 'genderF', 'Female')}</option>
+                    <option value={Gender.U}>{getLabel(props.labels, 'genderU', 'Unspecified')}</option>
                   </select>
                 </div>
                 <div>

@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { graphqlClient } from '@/lib/api';
-import { AttributeFilter, Cluster, Enums, Product, ProductsResponse } from 'propeller-sdk-v2';
+import { AttributeFilter, AttributeType, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from 'propeller-sdk-v2';
 import ProductGrid from '@/components/propeller/ProductGrid';
 import GridToolbar from '@/components/propeller/GridToolbar';
 import GridFilters from '@/components/propeller/GridFilters';
@@ -31,8 +31,8 @@ export default function SearchPage() {
   const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined;
   const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
   const offset = parseInt(searchParams.get('offset') || '12');
-  const sortField = (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.RELEVANCE;
-  const sortOrder = (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC;
+  const sortField = (searchParams.get('sortField') as ProductSortField) || ProductSortField.RELEVANCE;
+  const sortOrder = (searchParams.get('sortOrder') as SortOrder) || SortOrder.DESC;
 
   const filters = useMemo(() => {
     const newFilters: Record<string, string[]> = {};
@@ -59,7 +59,7 @@ export default function SearchPage() {
         name,
         values,
         exclude: false,
-        type: filterDef?.type ?? Enums.AttributeType.TEXT,
+        type: filterDef?.type ?? AttributeType.TEXT,
       };
     }), [filters, gridFilters]);
   const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();

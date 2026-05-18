@@ -2,16 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect, useRef } from 'react';
-import {
-  GraphQLClient,
-  Product,
-  Cluster,
-  Contact,
-  Customer,
-  Cart,
-  CartMainItem,
-  Enums,
-} from 'propeller-sdk-v2';
+import { Cart, CartMainItem, Cluster, Contact, CrossupsellType, Customer, GraphQLClient, Product } from 'propeller-sdk-v2';
 import { useProductSlider } from '@/composables/react/useProductSlider';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
@@ -37,7 +28,7 @@ export interface ProductSliderProps {
    * productId/clusterId instead of fetching products by IDs.
    * Values: 'ACCESSORIES' | 'ALTERNATIVES' | 'RELATED' | 'OPTIONS' | 'PARTS'
    */
-  crossUpsellTypes?: Enums.CrossupsellType[];
+  crossUpsellTypes?: CrossupsellType[];
 
   /** Source product ID for cross-upsell lookup. Required when crossUpsellTypes is set. */
   productId?: number;

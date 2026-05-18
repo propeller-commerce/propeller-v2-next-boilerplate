@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { UserService, CartService, Enums } from 'propeller-sdk-v2';
+import { CartService, CartStatus, Gender, PurchaseRole, UserService } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Company,
@@ -50,7 +50,7 @@ function checkIsAuthManager(user: Contact | Customer | null | undefined, company
   return items.some((pac: any) => {
     const role = pac.purchaseRole ?? pac._purchaseRole;
     const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-    return role === Enums.PurchaseRole.AUTHORIZATION_MANAGER && Number(pacCompanyId) === Number(companyId);
+    return role === PurchaseRole.AUTHORIZATION_MANAGER && Number(pacCompanyId) === Number(companyId);
   });
 }
 
@@ -211,11 +211,11 @@ export function usePurchaseAuthorizationConfigurator(
   const handleCreate = useCallback(async (contactId: number): Promise<void> => {
     setActionLoading(prev => ({ ...prev, [contactId]: true }));
     try {
-      const edit = rowEdits[contactId] ?? { role: Enums.PurchaseRole.PURCHASER, limit: undefined, dirty: false };
+      const edit = rowEdits[contactId] ?? { role: PurchaseRole.PURCHASER, limit: undefined, dirty: false };
       const input: PurchaseAuthorizationConfigCreateInput = {
         contactId,
         companyId,
-        purchaseRole: (edit.role || Enums.PurchaseRole.PURCHASER) as Enums.PurchaseRole,
+        purchaseRole: (edit.role || PurchaseRole.PURCHASER) as PurchaseRole,
         authorizationLimit: edit.limit,
       };
       if (cbRef.current.onPurchaseAuthorizationCreate) {
@@ -239,7 +239,7 @@ export function usePurchaseAuthorizationConfigurator(
         cbRef.current.onPurchaseAuthorizationUpdate(pac);
       } else {
         const result = await updatePac(pac.id, {
-          purchaseRole: (edit.role || pac.purchaseRole) as Enums.PurchaseRole,
+          purchaseRole: (edit.role || pac.purchaseRole) as PurchaseRole,
           authorizationLimit: edit.limit,
         });
         if (result.success) await loadCompany(currentPage);
@@ -292,7 +292,7 @@ export function usePurchaseAuthorizationConfigurator(
     try {
       const input: RegisterContactInput = {
         parentId: companyId,
-        gender: addContactForm.gender as Enums.Gender,
+        gender: addContactForm.gender as Gender,
         email: addContactForm.email,
         firstName: addContactForm.firstName,
         middleName: addContactForm.middleName,
@@ -408,7 +408,7 @@ export function usePurchaseAuthorizationRequests(
     try {
       const service = new CartService(graphqlClient);
       const response = await service.getCarts({
-        statuses: [Enums.CartStatus.PENDING_PURCHASE_AUTHORIZATION],
+        statuses: [CartStatus.PENDING_PURCHASE_AUTHORIZATION],
         companyIds: [companyId],
       });
       setCarts(response?.items || []);

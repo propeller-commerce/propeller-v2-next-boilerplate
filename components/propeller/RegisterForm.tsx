@@ -2,13 +2,7 @@
 import * as React from 'react';
 
 import { useState } from 'react';
-import {
-  Cart,
-  Contact,
-  Customer,
-  GraphQLClient,
-  Enums,
-} from 'propeller-sdk-v2';
+import { Cart, Contact, Customer, Gender, GraphQLClient } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
 
 export interface RegisterFormProps {
@@ -122,7 +116,7 @@ function RegisterForm(props: RegisterFormProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [gender, setGender] = useState<Enums.Gender>(Enums.Gender.U);
+  const [gender, setGender] = useState<Gender>(Gender.U);
   // Company fields (Contact only)
   const [companyName, setCompanyName] = useState('');
   const [vatNumber, setVatNumber] = useState('');
@@ -413,9 +407,9 @@ function RegisterForm(props: RegisterFormProps) {
                     name="gender"
                     value="M"
                     className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
-                    checked={gender === Enums.Gender.M}
+                    checked={gender === Gender.M}
                     onChange={(event) => {
-                      setGender(Enums.Gender.M);
+                      setGender(Gender.M);
                     }}
                     disabled={loading}
                   />
@@ -427,9 +421,9 @@ function RegisterForm(props: RegisterFormProps) {
                     name="gender"
                     value="F"
                     className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
-                    checked={gender === Enums.Gender.F}
+                    checked={gender === Gender.F}
                     onChange={(event) => {
-                      setGender(Enums.Gender.F);
+                      setGender(Gender.F);
                     }}
                     disabled={loading}
                   />
@@ -441,9 +435,9 @@ function RegisterForm(props: RegisterFormProps) {
                     name="gender"
                     value="U"
                     className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
-                    checked={gender === Enums.Gender.U}
+                    checked={gender === Gender.U}
                     onChange={(event) => {
-                      setGender(Enums.Gender.U);
+                      setGender(Gender.U);
                     }}
                     disabled={loading}
                   />

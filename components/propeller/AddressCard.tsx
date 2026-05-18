@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { GraphQLClient, Address, CartAddress, WarehouseAddress, OrderAddress, Enums } from 'propeller-sdk-v2';
+import { Address, CartAddress, Gender, GraphQLClient, OrderAddress, WarehouseAddress, YesNo } from 'propeller-sdk-v2';
 import { useAddress } from '@/composables/react/useAddress';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
@@ -123,7 +123,7 @@ function AddressCard(props: AddressCardProps) {
   const [saving, setSaving] = useState(() => false);
   const [localAddress, setLocalAddress] = useState<any>(() => null);
   const [editCompany, setEditCompany] = useState(() => '');
-  const [editGender, setEditGender] = useState<Enums.Gender>(() => Enums.Gender.U);
+  const [editGender, setEditGender] = useState<Gender>(() => Gender.U);
   const [editFirstName, setEditFirstName] = useState(() => '');
   const [editMiddleName, setEditMiddleName] = useState(() => '');
   const [editLastName, setEditLastName] = useState(() => '');
@@ -136,7 +136,7 @@ function AddressCard(props: AddressCardProps) {
   const [editEmail, setEditEmail] = useState(() => '');
   const [editPhone, setEditPhone] = useState(() => '');
   const [editNotes, setEditNotes] = useState(() => '');
-  const [editIcp, setEditIcp] = useState<Enums.YesNo>(() => Enums.YesNo.N);
+  const [editIcp, setEditIcp] = useState<YesNo>(() => YesNo.N);
 
   const isSaving = addressHook ? addressHook.loading : saving;
 
@@ -217,7 +217,7 @@ function AddressCard(props: AddressCardProps) {
     setEditEmail(a?.email || '');
     setEditPhone(a?.phone || '');
     setEditNotes(a?.notes || '');
-    setEditIcp(a?.icp || Enums.YesNo.N);
+    setEditIcp(a?.icp || YesNo.N);
     setShowEditModal(true);
   }
 
@@ -245,7 +245,7 @@ function AddressCard(props: AddressCardProps) {
       email: editEmail,
       phone: editPhone,
       notes: editNotes,
-      icp: editIcp as Enums.YesNo,
+      icp: editIcp as YesNo,
     } as unknown as Address;
     setLocalAddress(editedAddress);
     setSaving(true);
@@ -391,7 +391,7 @@ function AddressCard(props: AddressCardProps) {
                     className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
                     value={editGender}
                     onChange={(e) => {
-                      setEditGender(e.target.value as Enums.Gender);
+                      setEditGender(e.target.value as Gender);
                     }}
                   >
                     <option value="M">{getLabel(props.labels, 'genderMale', 'Male')}</option>
@@ -584,9 +584,9 @@ function AddressCard(props: AddressCardProps) {
                     type="checkbox"
                     id="icp-inline"
                     className="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                    checked={editIcp === Enums.YesNo.Y}
+                    checked={editIcp === YesNo.Y}
                     onChange={(e) => {
-                      setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
+                      setEditIcp(e.target.checked ? YesNo.Y : YesNo.N);
                     }}
                   />
                   <label htmlFor="icp-inline" className="text-sm font-medium">
@@ -651,7 +651,7 @@ function AddressCard(props: AddressCardProps) {
                       className="propeller-address-card__input w-full h-10 px-3 rounded-control border border-input bg-card"
                       value={editGender}
                       onChange={(e) => {
-                        setEditGender(e.target.value as Enums.Gender);
+                        setEditGender(e.target.value as Gender);
                       }}
                     >
                       <option value="M">{getLabel(props.labels, 'genderMale', 'Male')}</option>
@@ -844,9 +844,9 @@ function AddressCard(props: AddressCardProps) {
                       type="checkbox"
                       id="icp-modal"
                       className="propeller-address-card__checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                      checked={editIcp === Enums.YesNo.Y}
+                      checked={editIcp === YesNo.Y}
                       onChange={(e) => {
-                        setEditIcp(e.target.checked ? Enums.YesNo.Y : Enums.YesNo.N);
+                        setEditIcp(e.target.checked ? YesNo.Y : YesNo.N);
                       }}
                     />
                     <label htmlFor="icp-modal" className="text-sm font-medium">

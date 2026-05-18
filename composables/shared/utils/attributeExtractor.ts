@@ -7,8 +7,8 @@
  * Framework-agnostic pure functions.
  */
 
-import { Enums } from 'propeller-sdk-v2';
 import type { AttributeResult } from 'propeller-sdk-v2';
+import { AttributeType } from 'propeller-sdk-v2';
 
 /**
  * Checks whether an AttributeResult matches a given target attribute name,
@@ -73,16 +73,16 @@ export function extractAttributeValues(attr: AttributeResult): string[] {
   }
 
   // ── Current SDK format (type-based) ─────────────────────────────────────
-  else if (v.type === Enums.AttributeType.COLOR) {
+  else if (v.type === AttributeType.COLOR) {
     if (v.value) values.push(v.value);
-  } else if (v.type === Enums.AttributeType.TEXT) {
+  } else if (v.type === AttributeType.TEXT) {
     const textVals: string[] = v.value?.textValues?.[0]?.values ?? [];
     return textVals.filter(Boolean);
-  } else if (v.type === Enums.AttributeType.DECIMAL) {
+  } else if (v.type === AttributeType.DECIMAL) {
     if (v.value !== undefined) values.push(String(v.value));
-  } else if (v.type === Enums.AttributeType.INT) {
+  } else if (v.type === AttributeType.INT) {
     if (v.value !== undefined) values.push(String(v.value));
-  } else if (v.type === Enums.AttributeType.ENUM) {
+  } else if (v.type === AttributeType.ENUM) {
     if (v.value) values.push(v.value);
   }
 

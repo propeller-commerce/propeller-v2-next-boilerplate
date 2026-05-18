@@ -5,8 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
 import AddressCard from '@/components/propeller/AddressCard';
-import { Address, Contact, Customer, Company } from 'propeller-sdk-v2';
-import { Enums } from 'propeller-sdk-v2';
+import { Address, AddressType, Company, Contact, Customer, YesNo } from 'propeller-sdk-v2';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
@@ -17,7 +16,7 @@ import { COUNTRIES } from '@/composables/shared/utils/countries';
 export default function AddressesPage() {
   const { state: authState, refreshUser } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addModalType, setAddModalType] = useState<Enums.AddressType>(Enums.AddressType.invoice);
+  const [addModalType, setAddModalType] = useState<AddressType>(AddressType.invoice);
   const { selectedCompany } = useCompany();
 
   const user = authState.user;
@@ -59,18 +58,18 @@ export default function AddressesPage() {
   const getDefaultAddresses = () => {
     const addresses = getAllAddresses();
     return {
-      invoice: addresses.find((addr: Address) => addr.type === Enums.AddressType.invoice && addr.isDefault === Enums.YesNo.Y),
-      delivery: addresses.find((addr: Address) => addr.type === Enums.AddressType.delivery && addr.isDefault === Enums.YesNo.Y),
+      invoice: addresses.find((addr: Address) => addr.type === AddressType.invoice && addr.isDefault === YesNo.Y),
+      delivery: addresses.find((addr: Address) => addr.type === AddressType.delivery && addr.isDefault === YesNo.Y),
     };
   };
 
   const getBillingAddresses = () =>
-    getAllAddresses().filter((addr: Address) => addr.type === Enums.AddressType.invoice && addr.isDefault === Enums.YesNo.N);
+    getAllAddresses().filter((addr: Address) => addr.type === AddressType.invoice && addr.isDefault === YesNo.N);
 
   const getDeliveryAddresses = () =>
-    getAllAddresses().filter((addr: Address) => addr.type === Enums.AddressType.delivery && addr.isDefault === Enums.YesNo.N);
+    getAllAddresses().filter((addr: Address) => addr.type === AddressType.delivery && addr.isDefault === YesNo.N);
 
-  const handleAddAddress = (type: Enums.AddressType) => {
+  const handleAddAddress = (type: AddressType) => {
     setAddModalType(type);
     setShowAddModal(true);
   };
@@ -121,7 +120,7 @@ export default function AddressesPage() {
       city: address.city || '',
       country: address.country || 'NL',
       notes: address.notes || undefined,
-      isDefault: (address.isDefault as Enums.YesNo) || Enums.YesNo.N,
+      isDefault: (address.isDefault as YesNo) || YesNo.N,
       type: addModalType,
     };
 
@@ -168,7 +167,7 @@ export default function AddressesPage() {
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
                 <p className="text-sm text-muted-foreground">No default invoice address</p>
-                <Button variant="link" onClick={() => handleAddAddress(Enums.AddressType.invoice)}>Add One</Button>
+                <Button variant="link" onClick={() => handleAddAddress(AddressType.invoice)}>Add One</Button>
               </div>
             )}
           </div>
@@ -190,7 +189,7 @@ export default function AddressesPage() {
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
                 <p className="text-sm text-muted-foreground">No default delivery address</p>
-                <Button variant="link" onClick={() => handleAddAddress(Enums.AddressType.delivery)}>Add One</Button>
+                <Button variant="link" onClick={() => handleAddAddress(AddressType.delivery)}>Add One</Button>
               </div>
             )}
           </div>
@@ -201,7 +200,7 @@ export default function AddressesPage() {
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Additional Billing Addresses</h2>
-          <Button size="sm" onClick={() => handleAddAddress(Enums.AddressType.invoice)}>
+          <Button size="sm" onClick={() => handleAddAddress(AddressType.invoice)}>
             <Plus className="w-4 h-4 mr-2" />
             Add New
           </Button>
@@ -229,7 +228,7 @@ export default function AddressesPage() {
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Additional Delivery Addresses</h2>
-          <Button size="sm" onClick={() => handleAddAddress(Enums.AddressType.delivery)}>
+          <Button size="sm" onClick={() => handleAddAddress(AddressType.delivery)}>
             <Plus className="w-4 h-4 mr-2" />
             Add New
           </Button>

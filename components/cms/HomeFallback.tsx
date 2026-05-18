@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { graphqlClient, categoryService } from '@/lib/api';
 import { useMenu } from '@/composables/react/useMenu';
 import type { Cluster, Product } from 'propeller-sdk-v2';
-import { CategoryQueryVariables } from 'propeller-sdk-v2/dist/service/CategoryService';
+import { CategoryQueryVariables } from 'propeller-sdk-v2';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';

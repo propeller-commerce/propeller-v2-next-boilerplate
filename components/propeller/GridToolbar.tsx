@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { Contact, Customer, Enums } from 'propeller-sdk-v2';
+import { Contact, Customer, ProductSortField, SortOrder } from 'propeller-sdk-v2';
 import { isContentHidden } from '@/composables/shared/utils/visibilityHelpers';
 
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
@@ -174,31 +174,31 @@ interface GridToolbarState {
 
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
 const ALL_SORT_FIELDS: string[] = [
-  Enums.ProductSortField.CATEGORY_ORDER,
-  Enums.ProductSortField.NAME,
-  Enums.ProductSortField.PRICE,
-  Enums.ProductSortField.SKU,
-  Enums.ProductSortField.SUPPLIER_CODE,
-  Enums.ProductSortField.CREATED_AT,
-  Enums.ProductSortField.LAST_MODIFIED_AT,
-  Enums.ProductSortField.RELEVANCE,
-  Enums.ProductSortField.PRIORITY,
+  ProductSortField.CATEGORY_ORDER,
+  ProductSortField.NAME,
+  ProductSortField.PRICE,
+  ProductSortField.SKU,
+  ProductSortField.SUPPLIER_CODE,
+  ProductSortField.CREATED_AT,
+  ProductSortField.LAST_MODIFIED_AT,
+  ProductSortField.RELEVANCE,
+  ProductSortField.PRIORITY,
 ];
 
 // Built-in label defaults (can be overridden via the labels prop).
 // Built-in label defaults (can be overridden via the labels prop).
 const DEFAULT_LABELS: Record<string, string> = {
-  [Enums.ProductSortField.CATEGORY_ORDER]: 'Default Sorting',
-  [Enums.ProductSortField.NAME]: 'Name',
-  [Enums.ProductSortField.PRICE]: 'Price',
-  [Enums.ProductSortField.SKU]: 'SKU',
-  [Enums.ProductSortField.SUPPLIER_CODE]: 'Supplier Code',
-  [Enums.ProductSortField.CREATED_AT]: 'Created Date',
-  [Enums.ProductSortField.LAST_MODIFIED_AT]: 'Last Modified Date',
-  [Enums.ProductSortField.RELEVANCE]: 'Relevance',
-  [Enums.ProductSortField.PRIORITY]: 'Priority',
-  [Enums.SortOrder.ASC]: 'Low to High',
-  [Enums.SortOrder.DESC]: 'High to Low',
+  [ProductSortField.CATEGORY_ORDER]: 'Default Sorting',
+  [ProductSortField.NAME]: 'Name',
+  [ProductSortField.PRICE]: 'Price',
+  [ProductSortField.SKU]: 'SKU',
+  [ProductSortField.SUPPLIER_CODE]: 'Supplier Code',
+  [ProductSortField.CREATED_AT]: 'Created Date',
+  [ProductSortField.LAST_MODIFIED_AT]: 'Last Modified Date',
+  [ProductSortField.RELEVANCE]: 'Relevance',
+  [ProductSortField.PRIORITY]: 'Priority',
+  [SortOrder.ASC]: 'Low to High',
+  [SortOrder.DESC]: 'High to Low',
   clearAll: 'Clear All',
   products: ' Products',
   from: 'from',
@@ -211,10 +211,10 @@ const DEFAULT_LABELS: Record<string, string> = {
 
 function GridToolbar(props: GridToolbarProps) {
   const [currentSortField, setCurrentSortField] = useState<GridToolbarState['currentSortField']>(
-    () => Enums.ProductSortField.CATEGORY_ORDER
+    () => ProductSortField.CATEGORY_ORDER
   );
   const [currentSortOrder, setCurrentSortOrder] = useState<GridToolbarState['currentSortOrder']>(
-    () => Enums.SortOrder.DESC
+    () => SortOrder.DESC
   );
   const [currentOffset, setCurrentOffset] = useState<GridToolbarState['currentOffset']>(() => 12);
   const [currentViewMode, setCurrentViewMode] = useState<GridToolbarState['currentViewMode']>(
@@ -285,11 +285,11 @@ function GridToolbar(props: GridToolbarProps) {
       }[]) || [];
     setCurrentSortField(
       sort.length > 0
-        ? sort[0].field || Enums.ProductSortField.CATEGORY_ORDER
-        : Enums.ProductSortField.CATEGORY_ORDER
+        ? sort[0].field || ProductSortField.CATEGORY_ORDER
+        : ProductSortField.CATEGORY_ORDER
     );
     setCurrentSortOrder(
-      sort.length > 0 ? sort[0].order || Enums.SortOrder.DESC : Enums.SortOrder.DESC
+      sort.length > 0 ? sort[0].order || SortOrder.DESC : SortOrder.DESC
     );
   }, [props.defaultSort]);
   useEffect(() => {
@@ -348,8 +348,8 @@ function GridToolbar(props: GridToolbarProps) {
             value={currentSortOrder}
             onChange={(e) => handleSortOrderChange((e.target as HTMLSelectElement).value)}
           >
-            <option value={Enums.SortOrder.ASC}>{getLabel('ASC')}</option>
-            <option value={Enums.SortOrder.DESC}>{getLabel('DESC')}</option>
+            <option value={SortOrder.ASC}>{getLabel('ASC')}</option>
+            <option value={SortOrder.DESC}>{getLabel('DESC')}</option>
           </select>
           <button
             type="button"

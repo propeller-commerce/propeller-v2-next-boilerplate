@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { graphqlClient } from '@/lib/api';
-import { AttributeFilter, Category, Cluster, Enums, Product, ProductsResponse } from 'propeller-sdk-v2';
+import { AttributeFilter, AttributeType, Category, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from 'propeller-sdk-v2';
 import ProductGrid from '@/components/propeller/ProductGrid';
 import GridToolbar from '@/components/propeller/GridToolbar';
 import GridFilters from '@/components/propeller/GridFilters';
@@ -55,11 +55,11 @@ export default function CategoryPage() {
   const [itemsFound, setItemsFound] = useState<number>(0);
   const [pageItemCount, setPageItemCount] = useState<number>(0);
   const [offset, setOffset] = useState(() => parseInt(searchParams.get('offset') || '12'));
-  const [sortField, setSortField] = useState<Enums.ProductSortField>(() =>
-    (searchParams.get('sortField') as Enums.ProductSortField) || Enums.ProductSortField.CATEGORY_ORDER
+  const [sortField, setSortField] = useState<ProductSortField>(() =>
+    (searchParams.get('sortField') as ProductSortField) || ProductSortField.CATEGORY_ORDER
   );
-  const [sortOrder, setSortOrder] = useState<Enums.SortOrder>(() =>
-    (searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
+    (searchParams.get('sortOrder') as SortOrder) || SortOrder.DESC
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filtersLoading, setFiltersLoading] = useState(false);
@@ -97,8 +97,8 @@ export default function CategoryPage() {
     setMinPrice(searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined);
     setMaxPrice(searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined);
     setOffset(parseInt(searchParams.get('offset') || '12'));
-    setSortField(searchParams.get('sortField') as Enums.ProductSortField || Enums.ProductSortField.CATEGORY_ORDER);
-    setSortOrder((searchParams.get('sortOrder') as Enums.SortOrder) || Enums.SortOrder.DESC);
+    setSortField(searchParams.get('sortField') as ProductSortField || ProductSortField.CATEGORY_ORDER);
+    setSortOrder((searchParams.get('sortOrder') as SortOrder) || SortOrder.DESC);
   }, [searchParams]);
 
   // Fetch CMS banner
@@ -218,7 +218,7 @@ export default function CategoryPage() {
         name,
         values,
         exclude: false,
-        type: filterDef?.type ?? Enums.AttributeType.TEXT,
+        type: filterDef?.type ?? AttributeType.TEXT,
       };
     }), [JSON.stringify(filters), gridFilters]);
 

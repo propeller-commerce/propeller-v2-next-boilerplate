@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { CartService, OrderService, AddressService, Enums } from 'propeller-sdk-v2';
+import { AddressService, AddressType, CartAddressType, CartService, Gender, OrderService, PaymentStatuses } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Cart,
@@ -55,7 +55,7 @@ export interface UseCheckoutReturn {
   /** Process cart to order/quote, set status, optionally trigger quote send. Returns orderId on success. */
   placeOrder: (options: PlaceOrderOptions) => Promise<{ success: boolean; orderId?: number; error?: string }>;
   /** Sync a user's stored account address with data entered during checkout. */
-  updateUserAccountAddress: (addressData: Record<string, unknown>, type: Enums.CartAddressType) => Promise<void>;
+  updateUserAccountAddress: (addressData: Record<string, unknown>, type: CartAddressType) => Promise<void>;
 }
 
 // ── Composable ────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
     } else if (isCustomer(user)) {
       addresses = user.addresses || [];
     }
-    const addressType = type === 'invoice' ? Enums.AddressType.invoice : Enums.AddressType.delivery;
+    const addressType = type === 'invoice' ? AddressType.invoice : AddressType.delivery;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -119,7 +119,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
         const defaultInvoice = getUserDefaultAddress('invoice');
         if (defaultInvoice) {
           const input: CartUpdateAddressInput = {
-            type: Enums.CartAddressType.INVOICE,
+            type: CartAddressType.INVOICE,
             firstName: defaultInvoice.firstName || '',
             lastName: defaultInvoice.lastName || '',
             street: defaultInvoice.street || '',
@@ -149,7 +149,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
         const defaultDelivery = getUserDefaultAddress('delivery');
         if (defaultDelivery) {
           const input: CartUpdateAddressInput = {
-            type: Enums.CartAddressType.DELIVERY,
+            type: CartAddressType.DELIVERY,
             firstName: defaultDelivery.firstName || '',
             lastName: defaultDelivery.lastName || '',
             street: defaultDelivery.street || '',
@@ -248,7 +248,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
         await orderService.setOrderStatus({
           orderId,
           status: orderStatus as string,
-          payStatus: Enums.PaymentStatuses.OPEN,
+          payStatus: PaymentStatuses.OPEN,
           sendOrderConfirmationEmail: !isQuoteMode,
           addPDFAttachment: !isQuoteMode,
           triggerOrderSendConfirmEvent: !isQuoteMode,
@@ -274,13 +274,13 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
   // ── Update user account address ───────────────────────────────────────────
 
   const updateUserAccountAddress = useCallback(
-    async (addressData: Record<string, unknown>, type: Enums.CartAddressType): Promise<void> => {
+    async (addressData: Record<string, unknown>, type: CartAddressType): Promise<void> => {
       if (!user) return;
 
       const addressService = new AddressService(graphqlClient);
-      const addressType = type === Enums.CartAddressType.INVOICE
-        ? Enums.AddressType.invoice
-        : Enums.AddressType.delivery;
+      const addressType = type === CartAddressType.INVOICE
+        ? AddressType.invoice
+        : AddressType.delivery;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let addresses: any[] = [];
@@ -303,7 +303,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
         const commonFields = {
           id: Number(matchedAddr.id),
           company: addressData.company as string | undefined,
-          gender: addressData.gender as Enums.Gender | undefined,
+          gender: addressData.gender as Gender | undefined,
           firstName: addressData.firstName as string | undefined,
           middleName: addressData.middleName as string | undefined,
           lastName: addressData.lastName as string | undefined,

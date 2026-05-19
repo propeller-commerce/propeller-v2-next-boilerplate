@@ -1,31 +1,16 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
 import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from '@/lib/api';
 import OrderList from '@/components/propeller/OrderList';
-import { Contact, Customer, Company } from 'propeller-sdk-v2';
 
 
 export default function OrdersPage() {
   const { state } = useAuth();
-  const { selectedCompany } = useCompany();
   const router = useRouter();
   const { language } = useLanguage();
-
-  const isContact = (u: Contact | Customer | null): u is Contact =>
-    u !== null && 'company' in u;
-
-  /** Resolve the active company for a Contact user (respects company switcher) */
-  const getActiveCompany = (): Company | null => {
-    if (!state.user || !isContact(state.user)) return null;
-    return (selectedCompany) ?? null;
-  };
-
-  const companyId = getActiveCompany()?.companyId;
 
   if (!state.isAuthenticated) return null;
 
@@ -60,9 +45,6 @@ export default function OrdersPage() {
       </div>
       <div className="bg-card shadow-sm">
         <OrderList
-          graphqlClient={graphqlClient}
-          user={state.user}
-          companyId={companyId}
           showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/orders/${orderId}`, language))}
           labels={paginationLabels}

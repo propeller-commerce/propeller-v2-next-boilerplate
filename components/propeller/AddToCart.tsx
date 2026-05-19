@@ -16,17 +16,18 @@ import {
   Cluster,
 } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getProductImageUrl, getProductSku, getLocalizedValue } from '@/composables/shared/utils/productHelpers';
 import { formatPrice } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface AddToCartProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
-  /** The authenticated user (Contact or Customer) */
-  user: Contact | Customer | null;
+  /** The authenticated user (Contact or Customer). Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
 
   /** The product to be added to cart */
   product: Product;
@@ -154,11 +155,13 @@ export interface CartQueryVariables {
   /** Image transformation filters */ imageVariantFilters: TransformationsInput;
 }
 
-function AddToCart(props: AddToCartProps) {
+function AddToCart(rawProps: AddToCartProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // --- composable ---
   const { cart, loading, checkoutAllowed, addItem, getMinQuantity, getStep } = useCart({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
     companyId: props.companyId,
     configuration: props.configuration,
     onCartCreated: props.onCartCreated,
@@ -547,4 +550,7 @@ function AddToCart(props: AddToCartProps) {
     </div>
   );
 }
-export default AddToCart;
+// Memoized: rendered inside the memoized ProductCard; ProductCard now passes
+// stable (context-resolved) props so shallow-equal props skip re-render and
+// avoid a redundant useCart pass (rbp §5.2).
+export default React.memo(AddToCart);

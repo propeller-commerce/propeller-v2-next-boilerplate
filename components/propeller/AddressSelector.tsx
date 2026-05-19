@@ -49,7 +49,7 @@ function AddressSelector(props: AddressSelectorProps) {
     const contact = user as Contact;
     const cid = props.companyId as number;
     if (cid) {
-      const companiesRaw = (contact as any).companies;
+      const companiesRaw = (contact as Contact).companies;
       const items = (companiesRaw?.items ?? companiesRaw) as Company[] | undefined;
       if (Array.isArray(items)) {
         for (let i = 0; i < items.length; i++) {
@@ -67,7 +67,7 @@ function AddressSelector(props: AddressSelectorProps) {
     let all: Address[] = [];
     if ('contactId' in user) {
       const company = getActiveCompany();
-      all = ((company as any)?.addresses || []) as Address[];
+      all = ((company as Company)?.addresses || []) as Address[];
     } else if ('customerId' in user) {
       all = ((user as Customer).addresses || []) as Address[];
     }
@@ -84,7 +84,7 @@ function AddressSelector(props: AddressSelectorProps) {
         await props.onAddressSelected(selectedAddress as Address);
       }
       setShowModal(false);
-      setSelectedAddress(null as any);
+      setSelectedAddress(null);
     } finally {
       setIsLoading(false);
     }
@@ -140,10 +140,10 @@ function AddressSelector(props: AddressSelectorProps) {
                 <div className="propeller-address-selector__list grid grid-cols-2 gap-4">
                   {getAddresses()?.map((address) => (
                     <div
-                      key={(address as any).id}
+                      key={(address as Address).id}
                       onClick={(event) => handleTileClick(address)}
-                      data-selected={(selectedAddress as any)?.id === (address as any).id ? 'true' : 'false'}
-                      className={`propeller-address-selector__option cursor-pointer rounded-container transition-all ring-2 ${(selectedAddress as any)?.id === (address as any).id ? 'ring-primary' : 'ring-transparent hover:ring-primary/40'}`}
+                      data-selected={(selectedAddress as Address)?.id === (address as Address).id ? 'true' : 'false'}
+                      className={`propeller-address-selector__option cursor-pointer rounded-container transition-all ring-2 ${(selectedAddress as Address)?.id === (address as Address).id ? 'ring-primary' : 'ring-transparent hover:ring-primary/40'}`}
                     >
                       <AddressCard
                         address={address}

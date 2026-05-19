@@ -2,7 +2,7 @@
  * useFavorites (React) — Favorite list CRUD with optimistic updates.
  *
  * React mirror of vue/useFavorites.ts.
- * Mirrors FavoriteLists.lite.tsx, FavoriteListDetails.lite.tsx, AddToFavorite.lite.tsx.
+ * Mirrors FavoriteLists.tsx, FavoriteListDetails.tsx, AddToFavorite.tsx.
  *
  * Responsibilities:
  * - fetchLists: read favoriteLists from Contact/Customer (no separate SDK call needed)
@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { FavoriteListService } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
 import type { GraphQLClient, FavoriteList, FavoriteListsCreateInput, Product } from 'propeller-sdk-v2';
 import type { AnyUser } from '../shared/utils/userIdentity';
 import { isContact, isCustomer } from '../shared/utils/userIdentity';
@@ -84,7 +84,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
   const [listToDelete, setListToDelete] = useState<FavoriteList | null>(null);
 
   // ── Fetch lists ───────────────────────────────────────────────────────────
-  // Mirrors FavoriteLists.lite.tsx: reads favoriteLists from user object directly.
+  // Mirrors FavoriteLists.tsx: reads favoriteLists from user object directly.
 
   const fetchLists = useCallback(() => {
     if (!user) { setLists([]); return; }
@@ -119,7 +119,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
       if (onEdit) { onEdit(listId, data); cancelEdit(); onListChanged?.(); return; }
       setSaving(true);
       try {
-        const service = new FavoriteListService(graphqlClient);
+        const service = getServices(graphqlClient).favoriteList;
         if (data.isDefault) {
           const currentDefault = lists.find((l) => l.isDefault && String(l.id) !== listId);
           if (currentDefault) {
@@ -152,7 +152,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
     setLists((prev) => prev.filter((l) => String(l.id) !== listId));
     setListToDelete(null);
     try {
-      const service = new FavoriteListService(graphqlClient);
+      const service = getServices(graphqlClient).favoriteList;
       await service.deleteFavoriteList(listId);
       onListChanged?.();
     } catch (e: unknown) {
@@ -164,7 +164,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
   }, [graphqlClient, listToDelete, onDelete, onListChanged]);
 
   // ── Create list ───────────────────────────────────────────────────────────
-  // Mirrors FavoriteLists.lite.tsx: passes contactId/customerId from user.
+  // Mirrors FavoriteLists.tsx: passes contactId/customerId from user.
 
   const createList = useCallback(
     async (name: string, isDefault: boolean): Promise<void> => {
@@ -172,7 +172,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
       if (onCreate) { onCreate(data); onListChanged?.(); return; }
       setSaving(true);
       try {
-        const service = new FavoriteListService(graphqlClient);
+        const service = getServices(graphqlClient).favoriteList;
         if (isDefault) {
           const currentDefault = lists.find((l) => l.isDefault);
           if (currentDefault) {
@@ -199,7 +199,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
   const addToList = useCallback(
     async (listId: string, productId?: number, clusterId?: number): Promise<void> => {
       try {
-        const service = new FavoriteListService(graphqlClient);
+        const service = getServices(graphqlClient).favoriteList;
         const updated = await service.addFavoriteListItems(listId, {
           ...(productId && { productIds: [productId] }),
           ...(clusterId && { clusterIds: [clusterId] }),
@@ -222,7 +222,7 @@ export function useFavorites(options: UseFavoritesOptions): UseFavoritesReturn {
       const clusterIds = clusterId === undefined ? [] : Array.isArray(clusterId) ? clusterId : [clusterId];
       if (productIds.length === 0 && clusterIds.length === 0) return;
       try {
-        const service = new FavoriteListService(graphqlClient);
+        const service = getServices(graphqlClient).favoriteList;
         const updated = await service.removeFavoriteListItems(listId, {
           ...(productIds.length && { productIds }),
           ...(clusterIds.length && { clusterIds }),

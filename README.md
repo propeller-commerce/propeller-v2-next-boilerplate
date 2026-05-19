@@ -13,11 +13,16 @@ A Next.js e-commerce application powered by propeller-sdk-v2, migrated from the 
 
 ## Tech Stack
 
-- **Next.js 15+** with App Router
-- **TypeScript** for type safety
-- **Tailwind CSS** for styling
-- **propeller-sdk-v2** for GraphQL API integration
+- **Next.js 16** with App Router
+- **React 19** (React Compiler enabled — do not hand-write `useMemo`/`useCallback` on props)
+- **TypeScript** (strict) for type safety
+- **Tailwind CSS 4** for styling
+- **propeller-sdk-v2** for GraphQL API integration (proxied via `/api/graphql`)
 - **React Hot Toast** for notifications
+
+> **Architecture note:** Components are hand-maintained React in `components/propeller/`,
+> business logic in `composables/`. There is **no Mitosis and no code generation** — ignore any
+> older reference to `.lite.tsx` or an `output/` directory.
 
 ## Getting Started
 
@@ -54,27 +59,34 @@ npm run dev
 │   ├── product/           # Product detail pages
 │   ├── login/             # Authentication pages
 │   └── layout.tsx         # Root layout with providers
-├── components/            # React components
-│   ├── common/           # Reusable components (ProductCard, etc.)
-│   └── layout/           # Layout components (Header, Footer, CartSidebar)
-├── context/              # React context providers
-│   ├── AuthContext.tsx   # Authentication state
-│   └── CartContext.tsx   # Shopping cart state
-├── lib/                  # Utilities and services
+├── components/            # React components (hand-maintained, no codegen)
+│   ├── propeller/        # Propeller business components (ProductCard, AddToCart, etc.)
+│   ├── layout/           # Layout components (Header, Footer)
+│   ├── cms/              # CMS-driven content blocks
+│   └── ui/               # Basic UI primitives
+├── composables/          # Shared logic
+│   ├── react/            # React hooks (useCart, useAuth, useProductSearch, …)
+│   └── shared/           # Framework-agnostic utils + types
+├── context/              # React context providers (Auth, Cart, Propeller, …)
+├── lib/                  # Services & SDK client
 │   ├── api.ts           # GraphQL client configuration
-│   └── services/        # Service layer (MenuService, etc.)
-└── types/               # TypeScript type definitions
+│   └── services/        # Service layer (AuthService, MenuService, …)
+└── data/                 # config.ts, defaults, countries
 ```
 
 ## Environment Variables
 
-All environment variables are prefixed with `NEXT_PUBLIC_` for client-side access:
+Server-side only (read by the `/api/graphql` proxy and route handlers — **never exposed to the
+client**, so the API key and GraphQL endpoint stay secret):
 
-- `NEXT_PUBLIC_GRAPHQL_ENDPOINT` - GraphQL API endpoint
-- `NEXT_PUBLIC_API_KEY` - API key for authentication
-- `NEXT_PUBLIC_DEFAULT_LANGUAGE` - Default language (NL)
-- `NEXT_PUBLIC_BASE_CATEGORY_ID` - Root category ID
-- `NEXT_PUBLIC_MENU_DEPTH` - Menu nesting depth
+- `BOILERPLATE_GRAPHQL_ENDPOINT` - upstream GraphQL API endpoint
+- `BOILERPLATE_API_KEY` - API key injected server-side by the proxy
+- `BOILERPLATE_ORDER_EDITOR_API_KEY` - order-editor API key
+- `BOILERPLATE_BASE_CATEGORY_ID` - root category ID
+- `BOILERPLATE_MENU_DEPTH` - menu nesting depth
+- `BOILERPLATE_ANONYMOUS_USER_ID` - anonymous user id
+- `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL)
+- `JWT_SECRET` - secret for signing/validating the auth cookie
 
 ## Key Features Implemented
 
@@ -93,9 +105,10 @@ All environment variables are prefixed with `NEXT_PUBLIC_` for client-side acces
 - Responsive grid layouts
 
 ### Authentication
-- Login/Register pages (UI ready, backend integration pending)
-- User context for authentication state
-- Protected routes support
+- Login/Register pages wired to the Propeller SDK via server route handlers
+- Auth token held in an httpOnly cookie (not readable from JS); `/api/graphql` injects the
+  Bearer server-side
+- User context for authentication state, protected routes, inactivity session timeout
 
 ## Migration from React App
 

@@ -8,7 +8,8 @@
  * Framework-agnostic async function.
  */
 
-import { CartAddressType, CartService, CartStatus, Gender } from 'propeller-sdk-v2';
+import { CartAddressType, CartStatus, Gender } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
 import type {
   Cart,
   CartSearchInput,
@@ -50,7 +51,7 @@ export async function initCart(config: CartInitConfig): Promise<Cart> {
     onCartCreated,
   } = config;
 
-  const cartService = new CartService(graphqlClient);
+  const cartService = getServices(graphqlClient).cart;
 
   // ── Step 1: Look for an existing open cart ────────────────────────────────
   if (user) {

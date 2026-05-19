@@ -84,15 +84,20 @@ export class AuthService {
                 };
             }
 
-            // Store tokens and user data
+            // Persist the token in an httpOnly cookie (server-side) instead of
+            // localStorage — JS can no longer read it, closing the XSS
+            // token-theft hole. The in-memory graphqlClient header (set above)
+            // keeps this page session working; the cookie keeps auth alive
+            // across reloads via the /api/graphql proxy.
             if (typeof window !== 'undefined') {
-                localStorage.setItem('accessToken', accessToken);
-                localStorage.setItem('refreshToken', refreshToken);
+                await fetch('/api/auth/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken, refreshToken }),
+                });
+                // `user` is non-sensitive profile data kept only as a render
+                // hint for fast hydration; it is re-validated via the proxy.
                 localStorage.setItem('user', JSON.stringify(deepPlain(user)));
-            }
-
-            // Dispatch event for AuthContext
-            if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('userLoggedIn'));
             }
 
@@ -111,25 +116,19 @@ export class AuthService {
      */
     async logout(): Promise<void> {
         try {
-            // Clear auth header
+            // Clear the in-memory SDK token for this page session.
+            graphqlClient.clearAccessToken();
             const currentConfig = graphqlClient.getConfig();
             const newHeaders = { ...currentConfig.headers };
             delete newHeaders['Authorization'];
+            graphqlClient.updateConfig({ headers: newHeaders });
 
-            graphqlClient.updateConfig({
-                headers: newHeaders
-            });
-
-            // Clear localStorage
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
+                // Clear the httpOnly auth cookie server-side.
+                await fetch('/api/auth/logout', { method: 'POST' });
+                // Only the non-sensitive render hints live in localStorage now.
                 localStorage.removeItem('user');
                 localStorage.removeItem('cart');
-            }
-
-            // Dispatch event for AuthContext
-            if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('userLoggedOut'));
             }
 

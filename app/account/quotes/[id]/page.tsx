@@ -137,7 +137,6 @@ export default function QuoteDetailPage() {
                         </div>
                         <div className="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
                             <QuoteActions
-                                graphqlClient={graphqlClient}
                                 quote={quote}
                                 afterAccept={handleAfterAccept}
                                 showTermsAndConditions={true}

@@ -2,7 +2,7 @@
  * useAddress (React) — Address display and CRUD.
  *
  * React mirror of vue/useAddress.ts.
- * Mirrors AddressCard.lite.tsx.
+ * Mirrors AddressCard.tsx.
  *
  * Uses proper SDK types for all address service calls.
  * CompanyAddressUpdateInput / CustomerAddressUpdateInput do not have a `type` field —
@@ -10,7 +10,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { AddressService, AddressType, Gender, YesNo } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { AddressType, Gender, YesNo } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Address,
@@ -82,7 +83,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
       setLoading(true);
       setError(null);
       try {
-        const service = new AddressService(graphqlClient);
+        const service = getServices(graphqlClient).address;
         const ids = resolveIds();
         let address: Address;
 
@@ -153,7 +154,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
       setLoading(true);
       setError(null);
       try {
-        const service = new AddressService(graphqlClient);
+        const service = getServices(graphqlClient).address;
         const ids = resolveIds();
         let address: Address;
 
@@ -223,7 +224,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
       setLoading(true);
       setError(null);
       try {
-        const service = new AddressService(graphqlClient);
+        const service = getServices(graphqlClient).address;
         const ids = resolveIds();
         if (ids.companyId) {
           await service.deleteCompanyAddress({ id: addressId, companyId: ids.companyId });

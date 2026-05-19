@@ -13,15 +13,16 @@ import {
   Company,
 } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface OrderActionsProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
   /** The order to act upon */
   order: Order;
-  /** The authenticated user */
-  user: Contact | Customer | null;
+  /** The authenticated user. Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
   /** Cart ID — if provided, re-order adds items to this cart */
   cartId?: string;
   /** Active company ID from the company switcher */
@@ -44,7 +45,9 @@ export interface CartQueryVariables {
   imageVariantFilters: TransformationsInput;
 }
 
-function OrderActions(props: OrderActionsProps) {
+function OrderActions(rawProps: OrderActionsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [reordering, setReordering] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -52,7 +55,7 @@ function OrderActions(props: OrderActionsProps) {
   const [toastVisible, setToastVisible] = useState(false);
 
   const { downloadPdf, reorder } = useOrders({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     user: props.user as any,
     companyId: props.companyId,
     configuration: props.configuration,

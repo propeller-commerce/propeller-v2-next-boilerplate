@@ -3,10 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
-import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
-import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
 import PurchaseAuthorizationRequests from '@/components/propeller/PurchaseAuthorizationRequests';
 import { serializeCart } from '@/utils/cartHelpers';
 import { Contact, Customer, Cart } from 'propeller-sdk-v2';
@@ -15,7 +12,6 @@ export default function AuthorizationRequestsPage() {
     const { state } = useAuth();
     const { selectedCompany } = useCompany();
     const { cart, saveCart } = useCart();
-    const { language } = useLanguage();
     const router = useRouter();
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
@@ -34,11 +30,6 @@ export default function AuthorizationRequestsPage() {
                 </h1>
             </div>
             <PurchaseAuthorizationRequests
-                graphqlClient={graphqlClient}
-                user={state.user}
-                companyId={companyId}
-                configuration={config}
-                language={language}
                 afterAcceptRequest={(acceptedCart: Cart) => {
                     if (cart) {
                         localStorage.setItem('manager_cart', serializeCart(cart));

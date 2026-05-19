@@ -10,11 +10,12 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useProductInfo } from '@/composables/react/useProductInfo';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 
 export interface ClusterInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
-  /** The authenticated user (Contact or Customer) */
-  user: Contact | Customer | null;
+  /** The authenticated user (Contact or Customer). Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
   /**
    * Pre-fetched cluster object to display.
    * When provided the component skips internal fetching.
@@ -97,7 +98,9 @@ export interface ClusterInfoProps {
   textLabels?: string[];
 }
 
-function ClusterInfo(props: ClusterInfoProps) {
+function ClusterInfo(rawProps: ClusterInfoProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const { cluster: fetchedCluster, loading, fetchCluster } = useProductInfo(
     props.graphqlClient
       ? { graphqlClient: props.graphqlClient, language: props.language, configuration: props.configuration }

@@ -10,7 +10,7 @@ import Footer from '@/components/layout/Footer';
 import CartSummary from '@/components/propeller/CartSummary';
 import AddressCard from '@/components/propeller/AddressCard';
 
-import { cartService, graphqlClient } from '@/lib/api';
+import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from 'propeller-sdk-v2';
@@ -582,7 +582,6 @@ function CheckoutPageInner() {
                   {state.currentStep === 4 && (
                     <CardContent className="animate-in slide-in-from-top-2">
                       <CartOverview
-                        graphqlClient={graphqlClient}
                         cart={state.cart}
                         onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                         onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
@@ -660,7 +659,6 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         title="Order Summary"
                         showCheckoutButton={false}
-                        graphqlClient={graphqlClient}
                         user={authState.user ?? undefined}
                         companyId={getActiveCompany()?.companyId ?? undefined}
                         afterRequestAuthorization={(updatedCart) => {

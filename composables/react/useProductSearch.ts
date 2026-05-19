@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { CategoryService, ProductSearchableField, ProductService, ProductSortField, ProductStatus, SortOrder } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { ProductSearchableField, ProductSortField, ProductStatus, SortOrder } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Product,
@@ -174,7 +175,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
     setInternalLoading(true);
 
     try {
-      const service = new CategoryService(graphqlClient);
+      const service = getServices(graphqlClient).category;
 
       const lang = language;
       const activeSortField = (options.sortField ?? currentSortField) as ProductSortField;
@@ -362,7 +363,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
         if (!graphqlClient) return;
         setSearchLoading(true);
         try {
-          const service = new ProductService(graphqlClient);
+          const service = getServices(graphqlClient).product;
           const input: ProductSearchInput = {
             term,
             language,
@@ -411,7 +412,7 @@ export function useProductSearch(options: UseProductSearchOptions): UseProductSe
           const result = await service.getProducts(variables);
           const items = (result?.items ?? []) as (Product | Cluster)[];
           setSearchResults(items);
-          setSearchItemsFound((result as any)?.itemsFound ?? items.length);
+          setSearchItemsFound((result as ProductsResponse)?.itemsFound ?? items.length);
         } catch {
           setSearchResults([]);
           setSearchItemsFound(0);

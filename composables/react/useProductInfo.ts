@@ -2,8 +2,8 @@
  * useProductInfo (React) — Sequential product/cluster data fetching.
  *
  * React mirror of vue/useProductInfo.ts.
- * Mirrors the fetch logic of ui-components/ProductInfo.lite.tsx and
- * ui-components/ClusterInfo.lite.tsx exactly.
+ * Mirrors the fetch logic of components/propeller/ProductInfo.tsx and
+ * components/propeller/ClusterInfo.tsx exactly.
  *
  * Responsibilities:
  * - ProductInfo: getOrderlists → getProduct (sequential; orderlists needed for price tier)
@@ -13,11 +13,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import {
-  ProductService,
-  ClusterService,
-  OrderlistService,
-} from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
 import type {
   GraphQLClient,
   Product,
@@ -108,7 +104,7 @@ export function useProductInfo(options: UseProductInfoOptions): UseProductInfoRe
   }
 
   // ── Fetch product ─────────────────────────────────────────────────────────
-  // Mirrors ProductInfo.lite.tsx: getOrderlists first (if user+companyId), then getProduct.
+  // Mirrors ProductInfo.tsx: getOrderlists first (if user+companyId), then getProduct.
 
   const fetchProduct = useCallback(async (
     productId: number,
@@ -118,17 +114,17 @@ export function useProductInfo(options: UseProductInfoOptions): UseProductInfoRe
     setLoading(true);
     setError(null);
     try {
-      // Step 1: resolve orderlist IDs (mirrors ProductInfo.lite.tsx orderListsPromise)
+      // Step 1: resolve orderlist IDs (mirrors ProductInfo.tsx orderListsPromise)
       let orderlistIds: number[] = [];
       if (options.user && options.companyId) {
-        const orderlistService = new OrderlistService(graphqlClient);
+        const orderlistService = getServices(graphqlClient).orderlist;
         const searchInput: OrderlistSearchInput = { companyIds: [options.companyId] };
         const orderlists = await orderlistService.getOrderlists(searchInput);
         orderlistIds = (orderlists?.items ?? []).map((ol) => ol.id);
       }
 
       // Step 2: fetch product with full inputs
-      const service = new ProductService(graphqlClient);
+      const service = getServices(graphqlClient).product;
       const attributeInput = buildAttributeInput();
 
       const variables: ProductQueryVariables = {
@@ -153,7 +149,7 @@ export function useProductInfo(options: UseProductInfoOptions): UseProductInfoRe
   }, [graphqlClient, language, taxZone, options.user, options.companyId, options.productTrackAttributes, configuration]);
 
   // ── Fetch cluster ─────────────────────────────────────────────────────────
-  // Mirrors ClusterInfo.lite.tsx: getClusterConfig first, then getCluster with attributeNames.
+  // Mirrors ClusterInfo.tsx: getClusterConfig first, then getCluster with attributeNames.
 
   const fetchCluster = useCallback(async (
     clusterId: number,
@@ -163,9 +159,9 @@ export function useProductInfo(options: UseProductInfoOptions): UseProductInfoRe
     setLoading(true);
     setError(null);
     try {
-      const service = new ClusterService(graphqlClient);
+      const service = getServices(graphqlClient).cluster;
 
-      // Step 1: get cluster config to extract attribute names (mirrors ClusterInfo.lite.tsx)
+      // Step 1: get cluster config to extract attribute names (mirrors ClusterInfo.tsx)
       const clusterConfig = await service.getClusterConfig(clusterId);
       const attributeNames: string[] =
         (clusterConfig?.config?.settings ?? []).map(

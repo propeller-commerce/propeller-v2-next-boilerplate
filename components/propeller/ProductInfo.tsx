@@ -13,11 +13,12 @@ import {
   Orderlist,
 } from 'propeller-sdk-v2';
 import { useProductInfo } from '@/composables/react/useProductInfo';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 
 export interface ProductInfoProps {
   // ── Data source ──────────────────────────────────────────────────────────
-  /** The authenticated user (Contact or Customer) */
-  user: Contact | Customer | null;
+  /** The authenticated user (Contact or Customer). Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
 
   /** Active company ID from the company switcher.
    * Overrides default company for price calculation.
@@ -106,7 +107,9 @@ export interface ProductInfoProps {
   textLabels?: string[];
 }
 
-function ProductInfo(props: ProductInfoProps) {
+function ProductInfo(rawProps: ProductInfoProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const { product: fetchedProduct, loading, fetchProduct } = useProductInfo(
     props.graphqlClient
       ? { graphqlClient: props.graphqlClient, language: props.language, configuration: props.configuration }

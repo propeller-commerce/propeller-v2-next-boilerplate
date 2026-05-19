@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cart, Contact, Customer, GraphQLClient, PurchaseRole } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface CartSummaryProps {
@@ -63,7 +64,9 @@ export interface CartSummaryProps {
   onRequestQuoteClick?: (cart: Cart) => void;
 }
 
-function CartSummary(props: CartSummaryProps) {
+function CartSummary(rawProps: CartSummaryProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // --- composable ---
   // Note: useCart's `checkoutAllowed` is intentionally NOT used here. That
   // composable has its own internal cart ref that stays null when the consumer

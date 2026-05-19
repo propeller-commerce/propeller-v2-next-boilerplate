@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Category, Contact, Customer } from 'propeller-sdk-v2';
 import { useMenu, MenuCategory } from '@/composables/react/useMenu';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface MenuProps {
@@ -11,7 +12,7 @@ export interface MenuProps {
    * Initialised Propeller SDK GraphQL client.
    * Used internally to fetch the category hierarchy.
    */
-  graphqlClient: GraphQLClient;
+  graphqlClient?: GraphQLClient;
 
   /**
    * Base category ID for fetching all categories.
@@ -21,8 +22,9 @@ export interface MenuProps {
 
   /**
    * Language code for fetching localised category names and slugs.
+   * Resolved from PropellerProvider when omitted.
    */
-  language: string;
+  language?: string;
 
   /**
    * Maximum nesting depth of the menu hierarchy.
@@ -74,7 +76,9 @@ export interface MenuProps {
   configuration?: any;
 }
 
-function Menu(props: MenuProps) {
+function Menu(rawProps: MenuProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [hoveredL1Id, setHoveredL1Id] = useState<number | null>(null);
   const [hoveredL2Id, setHoveredL2Id] = useState<number | null>(null);
   const [expandedL1, setExpandedL1] = useState<number | null>(null);
@@ -89,7 +93,7 @@ function Menu(props: MenuProps) {
     : '';
 
   const { categories: menuCategories, loading: isLoading, error: menuError, fetchMenu } = useMenu({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     language: props.language,
     depth: props.depth,
   });

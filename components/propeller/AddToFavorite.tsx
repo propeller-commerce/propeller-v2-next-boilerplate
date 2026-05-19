@@ -8,14 +8,15 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface AddToFavoriteProps {
-  /** The initialized GraphQL Client instance */
-  graphqlClient: GraphQLClient;
+  /** The initialized GraphQL Client instance. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
-  /** The authenticated user */
-  user: Contact | Customer | null;
+  /** The authenticated user. Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
 
   /** Product ID to add/remove from favorites (for products) */
   productId?: number;
@@ -33,10 +34,12 @@ export interface AddToFavoriteProps {
   onFavoriteChanged?: () => void;
 }
 
-function AddToFavorite(props: AddToFavoriteProps) {
+function AddToFavorite(rawProps: AddToFavoriteProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const { lists, addToList, removeFromList } = useFavorites({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
   });
 
   const [isOpen, setIsOpen] = useState(() => false);

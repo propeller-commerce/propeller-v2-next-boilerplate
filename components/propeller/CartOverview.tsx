@@ -7,8 +7,8 @@ import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
 export interface CartOverviewProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Optional — currently unused internally; kept for API/Vue parity. */
+  graphqlClient?: GraphQLClient;
 
   /** Shopping cart object from which the cart overview will be displayed */
   cart: Cart;

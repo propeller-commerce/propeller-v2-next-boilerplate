@@ -6,7 +6,8 @@
  * behavior on the React side without forcing the Vue Pinia store dependency.
  */
 
-import { CartService, CartStatus } from 'propeller-sdk-v2';
+import { CartStatus } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
 import type {
   Cart,
   CartSearchInput,
@@ -30,7 +31,7 @@ export interface FetchActiveCartConfig {
 export async function fetchActiveCart(
   cfg: FetchActiveCartConfig,
 ): Promise<Cart | null> {
-  const cartService = new CartService(cfg.graphqlClient);
+  const cartService = getServices(cfg.graphqlClient).cart;
   try {
     const searchInput: CartSearchInput = {
       offset: 100,

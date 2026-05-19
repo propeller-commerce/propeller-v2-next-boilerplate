@@ -4,16 +4,17 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Contact, Customer, DateSearchInput, DecimalSearchInput, GraphQLClient, Order, OrderSortField, OrderSortInput, OrderType, SortOrder } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { formatPrice as formatPriceHelper } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface OrderListProps {
-  /** The authenticated user (Contact or Customer) */
-  user: Contact | Customer | null;
+  /** The authenticated user (Contact or Customer). Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
 
-  /** The initialized GraphQL Client instance */
-  graphqlClient: GraphQLClient;
+  /** The initialized GraphQL Client instance. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** Callback when an order is clicked */
   onOrderClick: (orderId: number) => void;
@@ -31,7 +32,7 @@ export interface OrderListProps {
   searchFields?: string[];
 
   /** Term fields configuration (backend) */
-  termFields?: any[]; // Using any[] to avoid strict enum import issues in Mitosis for now, effectively OrderSearchFields[]
+  termFields?: any[]; // effectively OrderSearchFields[] (kept as any[] to avoid strict enum import coupling)
 
   /** Override company ID for order filtering (respects company switcher) */
   companyId?: number;
@@ -83,12 +84,14 @@ export interface OrderListProps {
   };
 }
 
-function OrderList(props: OrderListProps) {
+function OrderList(rawProps: OrderListProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const columns = props.columns || ['id', 'date', 'status', 'total'];
   const rowsClickable = props.rowsClickable || false;
 
   const { orders, loading, searchForm, setSearchForm, currentPage, totalPages, fetchOrders, goToPage } = useOrders({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     user: props.user as any,
     companyId: props.companyId,
     orderStatuses: props.orderStatus,

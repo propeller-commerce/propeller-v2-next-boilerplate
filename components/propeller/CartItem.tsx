@@ -4,11 +4,12 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { BundleItem, Cart, CartBaseItem, CartMainItem, Cluster, Contact, Crossupsell, Customer, GraphQLClient, MediaImageProductSearchInput, Product, ProductInventory, TransformationsInput, YesNo } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface CartItemProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** The shopping cart unique identifier */
   cartId: string;
@@ -89,10 +90,12 @@ export interface CartItemProps {
   companyId?: number;
 }
 
-function CartItem(props: CartItemProps) {
+function CartItem(rawProps: CartItemProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // --- composable ---
   const { updateItemQuantity, updateItemNotes, deleteItem, getCrossupsells, addItem } = useCart({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     user: props.user ?? null,
     cartId: props.cartId,
     configuration: props.configuration,

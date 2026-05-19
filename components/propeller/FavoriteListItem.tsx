@@ -13,6 +13,7 @@ import {
 import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 
 export interface FavoriteListItemProps {
   /** Product or Cluster to be listed as a favorite list item */
@@ -126,7 +127,9 @@ interface FavoriteListItemState {
   handleItemClick: (e: any) => void;
   handleDelete: () => void;
 }
-function FavoriteListItem(props: FavoriteListItemProps) {
+function FavoriteListItem(rawProps: FavoriteListItemProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
     return 'productId' in props.item;
   }
@@ -309,11 +312,8 @@ function FavoriteListItem(props: FavoriteListItemProps) {
         {props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
           <AddToCart
             className="flex items-center gap-2"
-            graphqlClient={props.graphqlClient!}
-            user={props.user || null}
             product={getProduct()}
             cartId={props.cartId}
-            configuration={props.configuration}
             createCart={props.createCart}
             onCartCreated={props.onCartCreated}
             onAddToCart={props.onAddToCart}
@@ -321,7 +321,6 @@ function FavoriteListItem(props: FavoriteListItemProps) {
             showModal={props.showModal}
             allowIncrDecr={props.allowIncrDecr}
             enableStockValidation={props.enableStockValidation}
-            language={props.language}
             onProceedToCheckout={props.onProceedToCheckout}
             onRequestQuoteClick={props.onRequestQuoteClick}
             labels={props.addToCartLabels}

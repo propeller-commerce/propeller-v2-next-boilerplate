@@ -11,11 +11,14 @@ test.describe('Customer — login & auth state', () => {
     await expect(page.locator('main')).toBeVisible({ timeout: 10_000 });
   });
 
-  test('access token is present in localStorage for customer', async ({ page }) => {
+  test('authenticated session established via httpOnly cookie for customer', async ({ page }) => {
     await page.goto('/');
     const token = await getAccessToken(page);
     expect(token).not.toBeNull();
     expect(token!.length).toBeGreaterThan(0);
+    // The JWT must NOT be reachable from client JS — that is the security fix.
+    const lsToken = await page.evaluate(() => localStorage.getItem('accessToken'));
+    expect(lsToken).toBeNull();
   });
 
   test('UserDetails: no company name visible (consumer account)', async ({ page }) => {

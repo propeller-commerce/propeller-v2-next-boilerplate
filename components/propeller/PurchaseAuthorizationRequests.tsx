@@ -4,19 +4,20 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Contact, Customer, GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationRequests } from '@/composables/react/usePurchaseAuthorization';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getLanguageString } from '@/composables/shared/utils/languageResolver';
 import { formatPrice as _formatPrice } from '@/composables/shared/utils/formatting';
 
 export interface PurchaseAuthorizationRequestsProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
-  /** The logged-in user */
-  user: Contact | Customer;
+  /** The logged-in user. Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer;
 
-  /** The companyId of the current selected company */
-  companyId: number;
+  /** The companyId of the current selected company. Resolved from PropellerProvider when omitted. */
+  companyId?: number;
 
   /**
    * Override: fires instead of the default CartService.acceptPurchaseAuthorizationRequest() call.
@@ -66,15 +67,17 @@ export interface PurchaseAuthorizationRequestsProps {
   /** Called when an SDK operation fails; receives the normalized error */
   onError?: (err: Error) => void;
 }
-function PurchaseAuthorizationRequests(props: PurchaseAuthorizationRequestsProps) {
+function PurchaseAuthorizationRequests(rawProps: PurchaseAuthorizationRequestsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const {
     carts, loading, selectedCart, modalLoading, acceptLoading, deleteLoading, isAuthManager,
     getTotalQuantity, getContactName, getModalItems,
     handleViewCart, handleAcceptRequest, handleDeleteRequest, closeModal,
   } = usePurchaseAuthorizationRequests({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
-    companyId: props.companyId,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
+    companyId: props.companyId!,
     configuration: props.configuration,
     onAcceptRequest: props.onAcceptRequest,
     afterAcceptRequest: props.afterAcceptRequest,

@@ -146,7 +146,7 @@
 │  lib/cms/strapi.ts ──────── Strapi fetch helper (getPage, getGlobal, getCategoryBanner)                          │
 │  lib/services/ ──────────── BaseApiService subclasses with retry logic, error handling, caching                  │
 │  context/ ───────────────── AuthContext, CartContext, GlobalContext                                               │
-│  components/propeller/ ──── Active Mitosis-compiled React components (ProductGrid, AddToCart, etc.)               │
+│  components/propeller/ ──── Hand-maintained React components (ProductGrid, AddToCart, etc.) — no codegen         │
 │  components/cms/ ────────── DynamicBlockRenderer + block components for Strapi content                            │
 │  data/config.ts ─────────── Feature flags, URL builders, base category ID                                        │
 │  data/defaults.ts ───────── Pagination, search, cart, validation, timeout, cache defaults                        │

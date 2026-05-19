@@ -7,6 +7,7 @@ import { GlobalProvider } from "@/context/GlobalContext";
 import { CompanyProvider } from "@/context/CompanyContext";
 import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { PropellerProvider } from "@/context/PropellerContext";
 import { Toaster } from "react-hot-toast";
 import { getGlobal } from "@/lib/cms";
 
@@ -36,12 +37,14 @@ export default async function RootLayout({
           <CompanyProvider>
             <PriceProvider>
             <LanguageProvider>
+            <PropellerProvider>
             <CartProvider>
               <GlobalProvider globalData={globalData}>
                 {children}
               </GlobalProvider>
               <Toaster position="top-center" reverseOrder={false} />
             </CartProvider>
+            </PropellerProvider>
             </LanguageProvider>
             </PriceProvider>
           </CompanyProvider>

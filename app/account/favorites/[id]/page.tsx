@@ -6,11 +6,9 @@ import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
-import { Contact, Customer, type FavoriteList } from 'propeller-sdk-v2';
+import { type FavoriteList } from 'propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { useFavorites } from '@/composables/react/useFavorites';
-import { config } from '@/data/config';
-import { usePrice } from '@/context/PriceContext';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +20,6 @@ export default function FavoriteListPage() {
   const params = useParams();
   const listId = params?.id as string;
   const { language } = useLanguage();
-  const { includeTax } = usePrice();
 
   const [listName, setListName] = useState('');
 
@@ -70,13 +67,10 @@ export default function FavoriteListPage() {
       </div>
 
       <FavoriteListDetails
-        graphqlClient={graphqlClient}
-        user={authState.user as Contact | Customer}
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
         onItemsDelete={handleItemsDelete}
         onListLoaded={handleListLoaded}
-        configuration={config}
         cartId={cart?.cartId}
         createCart={true}
         onCartCreated={(newCart) => saveCart(newCart)}
@@ -86,7 +80,6 @@ export default function FavoriteListPage() {
         showStockComponent={true}
         showAvailability={false}
         showStock={true}
-        includeTax={includeTax}
       />
     </div>
   );

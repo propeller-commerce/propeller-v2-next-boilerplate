@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { GraphQLClient, Product, Cluster, Contact, Customer } from 'propeller-sdk-v2';
 import { useProductSearch } from '@/composables/react/useProductSearch';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface SearchBarResult {
@@ -24,8 +25,8 @@ export interface SearchBarResult {
 }
 
 export interface SearchBarProps {
-  /** Propeller SDK GraphQL client */
-  graphqlClient: GraphQLClient;
+  /** Propeller SDK GraphQL client. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** The currently logged in user (Contact or Customer) */
   user?: Contact | Customer | null;
@@ -106,7 +107,9 @@ function mapToSearchBarResult(item: Product | Cluster): SearchBarResult {
   };
 }
 
-function SearchBar(props: SearchBarProps) {
+function SearchBar(rawProps: SearchBarProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [showDropdown, setShowDropdown] = useState(false);
   const [localTerm, setLocalTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);

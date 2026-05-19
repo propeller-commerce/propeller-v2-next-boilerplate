@@ -39,240 +39,188 @@ export interface OrderItemCardProps {
   /** Custom price formatting function */
   formatPrice?: (price: number) => string;
 }
-interface OrderItemCardState {
-  titleLinkable: () => boolean;
-  showImage: () => boolean;
-  showSku: () => boolean;
-  showQuantity: () => boolean;
-  showPrice: () => boolean;
-  showDiscount: () => boolean;
-  showStockComponent: () => boolean;
-  showItemNotes: () => boolean;
-  isChildItem: () => boolean;
-  productName: () => string;
-  productSku: () => string;
-  productImage: () => string;
-  productId: () => number | undefined;
-  productSlug: () => string;
-  productUrl: () => string;
-  quantity: () => number;
-  price: () => number;
-  priceTotal: () => number;
-  discount: () => number;
-  originalPrice: () => number;
-  discountPercentage: () => number;
-  notes: () => string;
-  hasChildren: () => boolean;
-  formatItemPrice: (price: number) => string;
-  formatDiscountDisplay: () => string;
+
+// ── Pure accessors (module scope — created once, not per render) ────────────────
+
+function getProductName(orderItem: any): string {
+  return orderItem?.product?.names?.[0]?.value || orderItem?.name || 'Unknown Product';
 }
+
+function getClusterUrl(orderItem: any): string {
+  const cluster = orderItem?.product?.cluster;
+  if (!cluster) return '';
+  const id = cluster.clusterId ?? cluster.urlId;
+  const slug = cluster.slugs?.[0]?.value || cluster.slug?.[0]?.value || '';
+  if (!id || !slug) return '';
+  return `/cluster/${id}/${slug}`;
+}
+
+function getProductUrl(orderItem: any): string {
+  const cu = getClusterUrl(orderItem);
+  if (cu) return cu;
+  const id = orderItem?.product?.productId;
+  const slug = orderItem?.product?.slugs?.[0]?.value || '';
+  if (id && slug) return `/product/${id}/${slug}`;
+  return '';
+}
+
 function OrderItemCard(props: OrderItemCardProps) {
-  function titleLinkable(): ReturnType<OrderItemCardState['titleLinkable']> {
-    return props.titleLinkable !== undefined ? props.titleLinkable : true;
-  }
-  function showImage(): ReturnType<OrderItemCardState['showImage']> {
-    if (props.isChildItem) return false;
-    return props.showImage !== undefined ? props.showImage : true;
-  }
-  function showSku(): ReturnType<OrderItemCardState['showSku']> {
-    if (props.isChildItem) return false;
-    return props.showSku !== undefined ? props.showSku : true;
-  }
-  function showQuantity(): ReturnType<OrderItemCardState['showQuantity']> {
-    return props.showQuantity !== undefined ? props.showQuantity : true;
-  }
-  function showPrice(): ReturnType<OrderItemCardState['showPrice']> {
-    return props.showPrice !== undefined ? props.showPrice : true;
-  }
-  function showDiscount(): ReturnType<OrderItemCardState['showDiscount']> {
-    return props.showDiscount !== undefined ? props.showDiscount : false;
-  }
-  function showStockComponent(): ReturnType<OrderItemCardState['showStockComponent']> {
-    return props.showStockComponent !== undefined ? props.showStockComponent : false;
-  }
-  function showItemNotes(): ReturnType<OrderItemCardState['showItemNotes']> {
-    return props.showItemNotes !== undefined ? props.showItemNotes : false;
-  }
-  function isChildItem(): ReturnType<OrderItemCardState['isChildItem']> {
-    return props.isChildItem || false;
-  }
-  function productName(): ReturnType<OrderItemCardState['productName']> {
-    const item = props.orderItem;
-    return item?.product?.names?.[0]?.value || item?.name || 'Unknown Product';
-  }
-  function productSku(): ReturnType<OrderItemCardState['productSku']> {
-    return props.orderItem?.product?.sku || props.orderItem?.sku || '';
-  }
-  function productImage(): ReturnType<OrderItemCardState['productImage']> {
-    return props.orderItem?.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-  }
-  function productId(): ReturnType<OrderItemCardState['productId']> {
-    return props.orderItem?.product?.productId;
-  }
-  function productSlug(): ReturnType<OrderItemCardState['productSlug']> {
-    return props.orderItem?.product?.slugs?.[0]?.value || '';
-  }
-  function clusterUrl(): string {
-    const cluster = (props.orderItem?.product as any)?.cluster;
-    if (!cluster) return '';
-    const id = cluster.clusterId ?? cluster.urlId;
-    const slug = cluster.slugs?.[0]?.value || cluster.slug?.[0]?.value || '';
-    if (!id || !slug) return '';
-    return '/cluster/' + id + '/' + slug;
-  }
-  function productUrl(): ReturnType<OrderItemCardState['productUrl']> {
-    const cu = clusterUrl();
-    if (cu) return cu;
-    if (productId() && productSlug()) {
-      return '/product/' + productId() + '/' + productSlug();
-    }
-    return '';
-  }
-  function quantity(): ReturnType<OrderItemCardState['quantity']> {
-    return props.orderItem?.quantity || 0;
-  }
-  function price(): ReturnType<OrderItemCardState['price']> {
-    return props.orderItem?.price || 0;
-  }
-  function priceTotal(): ReturnType<OrderItemCardState['priceTotal']> {
-    return props.orderItem?.priceTotal || 0;
-  }
-  function discount(): ReturnType<OrderItemCardState['discount']> {
-    return props.orderItem?.discount || 0;
-  }
-  function originalPrice(): ReturnType<OrderItemCardState['originalPrice']> {
-    return props.orderItem?.originalPrice || 0;
-  }
-  function discountPercentage(): ReturnType<OrderItemCardState['discountPercentage']> {
-    if (originalPrice() > 0 && discount() > 0) {
-      return (discount() / originalPrice()) * 100;
-    }
-    return 0;
-  }
-  function notes(): ReturnType<OrderItemCardState['notes']> {
-    return props.orderItem?.notes || '';
-  }
-  function hasChildren(): ReturnType<OrderItemCardState['hasChildren']> {
-    return (props.childItems || []).length > 0;
-  }
-  function formatItemPrice(price: number): ReturnType<OrderItemCardState['formatItemPrice']> {
+  const item = props.orderItem;
+  const isChildItem = props.isChildItem || false;
+
+  // Display toggles — resolved once (child items never show image/sku).
+  const titleLinkable = props.titleLinkable !== undefined ? props.titleLinkable : true;
+  const showImage = isChildItem ? false : props.showImage !== undefined ? props.showImage : true;
+  const showSku = isChildItem ? false : props.showSku !== undefined ? props.showSku : true;
+  const showQuantity = props.showQuantity !== undefined ? props.showQuantity : true;
+  const showPrice = props.showPrice !== undefined ? props.showPrice : true;
+  const showDiscount = props.showDiscount !== undefined ? props.showDiscount : false;
+  const showStockComponent =
+    props.showStockComponent !== undefined ? props.showStockComponent : false;
+  const showItemNotes = props.showItemNotes !== undefined ? props.showItemNotes : false;
+
+  // Derived item values — computed once per render (previously each was a
+  // function redefined every render and called multiple times across the JSX).
+  const productName = getProductName(item);
+  const productSku = item?.product?.sku || item?.sku || '';
+  const productImage = item?.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  const productUrl = getProductUrl(item);
+  const quantity = item?.quantity || 0;
+  const priceTotal = item?.priceTotal || 0;
+  const discount = item?.discount || 0;
+  const originalPrice = item?.originalPrice || 0;
+  const discountPercentage =
+    originalPrice > 0 && discount > 0 ? (discount / originalPrice) * 100 : 0;
+  const notes = item?.notes || '';
+  const hasChildren = (props.childItems || []).length > 0;
+
+  function formatItemPrice(price: number): string {
     if (props.formatPrice) {
       return props.formatPrice(price);
     }
     if (!price && price !== 0) return '-';
     return formatPrice(price, { symbol: config.currency });
   }
-  function formatDiscountDisplay(): ReturnType<OrderItemCardState['formatDiscountDisplay']> {
-    const discountStr = formatItemPrice(discount());
-    if (discountPercentage() > 0) {
-      return discountStr + ' (' + discountPercentage().toFixed(2).replace('.', ',') + '%)';
-    }
-    return discountStr;
-  }
+
+  const discountDisplay =
+    discountPercentage > 0
+      ? `${formatItemPrice(discount)} (${discountPercentage.toFixed(2).replace('.', ',')}%)`
+      : formatItemPrice(discount);
+
   return (
     <tbody className="propeller-order-item-card">
       <tr
-        className={`propeller-order-item-card__row ${isChildItem() ? 'border-0' : 'hover:bg-surface-hover transition'}`}
-        data-child={isChildItem() ? 'true' : 'false'}
+        className={`propeller-order-item-card__row ${isChildItem ? 'border-0' : 'hover:bg-surface-hover transition'}`}
+        data-child={isChildItem ? 'true' : 'false'}
       >
-        <td className={`propeller-order-item-card__cell propeller-order-item-card__cell--product ${isChildItem() ? 'px-6 py-2 pl-28' : 'px-6 py-4'}`}>
+        <td
+          className={`propeller-order-item-card__cell propeller-order-item-card__cell--product ${isChildItem ? 'px-6 py-2 pl-28' : 'px-6 py-4'}`}
+        >
           <div className="flex items-center gap-4">
-            {showImage() ? (
-              <>
-                {productImage() ? (
-                  <div className="propeller-order-item-card__media relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                    <img
-                      className="propeller-order-item-card__image object-cover w-full h-full"
-                      src={productImage()}
-                      alt={productName()}
-                    />
-                  </div>
-                ) : null}
-                {!productImage() ? (
-                  <div className="propeller-order-item-card__image-placeholder w-16 h-16 bg-surface-hover rounded flex items-center justify-center text-foreground-subtle text-xs">
-                    No Img
-                  </div>
-                ) : null}
-              </>
+            {showImage ? (
+              productImage ? (
+                <div className="propeller-order-item-card__media relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
+                  <img
+                    className="propeller-order-item-card__image object-cover w-full h-full"
+                    src={productImage}
+                    alt={productName}
+                  />
+                </div>
+              ) : (
+                <div className="propeller-order-item-card__image-placeholder w-16 h-16 bg-surface-hover rounded flex items-center justify-center text-foreground-subtle text-xs">
+                  No Img
+                </div>
+              )
             ) : null}
             <div>
-              {titleLinkable() && productUrl() && !isChildItem() ? (
+              {titleLinkable && productUrl && !isChildItem ? (
                 <a
                   className="propeller-order-item-card__title font-medium text-foreground hover:text-primary hover:underline"
-                  href={productUrl()}
+                  href={productUrl}
                 >
-                  {productName()}
+                  {productName}
                 </a>
-              ) : null}
-              {!titleLinkable() || !productUrl() || isChildItem() ? (
-                <span className={`propeller-order-item-card__title ${isChildItem() ? 'text-sm text-muted-foreground' : 'font-medium'}`}>
-                  {productName()}
+              ) : (
+                <span
+                  className={`propeller-order-item-card__title ${isChildItem ? 'text-sm text-muted-foreground' : 'font-medium'}`}
+                >
+                  {productName}
                 </span>
+              )}
+              {showSku && productSku ? (
+                <p className="propeller-order-item-card__sku text-sm text-muted-foreground mt-1">
+                  SKU: {productSku}
+                </p>
               ) : null}
-              {showSku() && productSku() ? (
-                <p className="propeller-order-item-card__sku text-sm text-muted-foreground mt-1">SKU: {productSku()}</p>
+              {showItemNotes && notes ? (
+                <p className="propeller-order-item-card__notes text-sm text-foreground-subtle mt-1 italic">
+                  {notes}
+                </p>
               ) : null}
-              {showItemNotes() && notes() ? (
-                <p className="propeller-order-item-card__notes text-sm text-foreground-subtle mt-1 italic">{notes()}</p>
-              ) : null}
-              {showStockComponent() ? (
-                <p className="propeller-order-item-card__stock text-xs text-foreground-subtle mt-1">Stock info</p>
+              {showStockComponent ? (
+                <p className="propeller-order-item-card__stock text-xs text-foreground-subtle mt-1">
+                  Stock info
+                </p>
               ) : null}
             </div>
           </div>
         </td>
-        {showQuantity() ? (
+        {showQuantity ? (
           <td
             className={
-              isChildItem()
+              isChildItem
                 ? 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-muted-foreground'
                 : 'propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-4 text-center'
             }
           >
-            {quantity()}
+            {quantity}
           </td>
         ) : null}
-        {showDiscount() ? (
+        {showDiscount ? (
           <td
             className={
-              isChildItem()
+              isChildItem
                 ? 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-muted-foreground'
                 : 'propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-4 text-right whitespace-nowrap text-warning'
             }
           >
-            {discount() > 0 ? <>{formatDiscountDisplay()}</> : null}
+            {discount > 0 ? <>{discountDisplay}</> : null}
           </td>
         ) : null}
-        {showPrice() ? (
+        {showPrice ? (
           <td
             className={
-              isChildItem()
+              isChildItem
                 ? 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-muted-foreground'
                 : 'propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-4 text-right whitespace-nowrap'
             }
           >
-            {formatItemPrice(priceTotal())}
+            {formatItemPrice(priceTotal)}
           </td>
         ) : null}
       </tr>
-      {hasChildren() ? (
+      {hasChildren ? (
         <>
           {(props.childItems || []).map((child) => (
-            <tr className="propeller-order-item-card__child-row border-0" key={child.id || child.uuid} data-child="true">
+            <tr
+              className="propeller-order-item-card__child-row border-0"
+              key={child.id || child.uuid}
+              data-child="true"
+            >
               <td className="propeller-order-item-card__cell propeller-order-item-card__cell--product px-6 py-2 pl-28">
                 <span className="propeller-order-item-card__child-title text-sm text-muted-foreground">
                   {child.product?.names?.[0]?.value || child.name || 'Unknown'}
                 </span>
               </td>
-              {showQuantity() ? (
+              {showQuantity ? (
                 <td className="propeller-order-item-card__cell propeller-order-item-card__cell--quantity px-6 py-2 text-center text-sm text-muted-foreground">
                   {child.quantity || 0}
                 </td>
               ) : null}
-              {showDiscount() ? (
+              {showDiscount ? (
                 <td className="propeller-order-item-card__cell propeller-order-item-card__cell--discount px-6 py-2 text-right text-sm text-muted-foreground" />
               ) : null}
-              {showPrice() ? (
+              {showPrice ? (
                 <td className="propeller-order-item-card__cell propeller-order-item-card__cell--price px-6 py-2 text-right whitespace-nowrap text-sm text-muted-foreground">
                   {formatItemPrice(child.priceTotal || 0)}
                 </td>

@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { graphqlClient } from '@/lib/api';
 import { AttributeFilter, AttributeType, Category, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from 'propeller-sdk-v2';
 import ProductGrid from '@/components/propeller/ProductGrid';
 import GridToolbar from '@/components/propeller/GridToolbar';
@@ -15,9 +14,7 @@ import CategoryDescription from '@/components/propeller/CategoryDescription';
 import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
-import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { useCompany } from '@/context/CompanyContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
@@ -64,10 +61,8 @@ export default function CategoryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filtersLoading, setFiltersLoading] = useState(false);
   const { state } = useAuth();
-  const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
-  const { includeTax } = usePrice();
   const { language } = useLanguage();
 
   // CMS banner
@@ -301,16 +296,10 @@ export default function CategoryPage() {
 
               {/* Grid */}
               <ProductGrid
-                graphqlClient={graphqlClient}
                 categoryId={categoryId}
-                configuration={config}
-                user={state.user}
-                companyId={selectedCompany?.companyId}
                 onProductClick={productClick}
                 allowAddToCart={true}
                 showPrice={true}
-                language={language}
-                includeTax={includeTax}
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}

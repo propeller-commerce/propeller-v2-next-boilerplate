@@ -6,7 +6,7 @@
  * (`propeller-next`).
  */
 
-import { CartService } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
 import type {
   Cart,
   CartMainItem,
@@ -39,7 +39,7 @@ export async function mergeAnonymousCart(
     return null;
   }
 
-  const service = new CartService(cfg.graphqlClient);
+  const service = getServices(cfg.graphqlClient).cart;
   let result: Cart | null = null;
 
   // Serial iteration: each call returns the full cart, so parallel races.

@@ -9,15 +9,16 @@ import {
   Customer,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 export type { FavoriteListFormData } from '@/composables/react/useFavorites';
 
 export interface FavoriteListsProps {
-  /** The authenticated user (Contact or Customer) */
-  user: Contact | Customer | null;
+  /** The authenticated user (Contact or Customer). Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
 
-  /** The initialized GraphQL Client instance */
-  graphqlClient: GraphQLClient;
+  /** The initialized GraphQL Client instance. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** Callback when a list is clicked (navigate to detail) */
   onListClick?: (listId: string | number) => void;
@@ -85,7 +86,9 @@ export interface FavoriteListsProps {
   onListChanged?: () => void;
 }
 
-function FavoriteLists(props: FavoriteListsProps) {
+function FavoriteLists(rawProps: FavoriteListsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const {
     lists,
     loading,
@@ -108,8 +111,8 @@ function FavoriteLists(props: FavoriteListsProps) {
     deleteList,
     createList,
   } = useFavorites({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
     onCreate: props.onCreate,
     onEdit: props.onEdit,
     onDelete: props.onDelete,

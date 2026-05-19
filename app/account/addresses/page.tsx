@@ -156,7 +156,6 @@ export default function AddressesPage() {
             {defaultAddresses.invoice ? (
               <AddressCard
                 key={`inv-${defaultAddresses.invoice.id}-${selectedCompany?.companyId ?? 'default'}`}
-                graphqlClient={graphqlClient}
                 address={defaultAddresses.invoice}
                 enableDelete={false}
                 onEdit={handleEditAddress}
@@ -178,7 +177,6 @@ export default function AddressesPage() {
             {defaultAddresses.delivery ? (
               <AddressCard
                 key={`del-${defaultAddresses.delivery.id}-${selectedCompany?.companyId ?? 'default'}`}
-                graphqlClient={graphqlClient}
                 address={defaultAddresses.delivery}
                 enableDelete={false}
                 onEdit={handleEditAddress}
@@ -210,7 +208,6 @@ export default function AddressesPage() {
             {billingAddresses.map((address: Address) => (
               <AddressCard
                 key={`${address.id}-${selectedCompany?.companyId ?? 'default'}`}
-                graphqlClient={graphqlClient}
                 address={address}
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
@@ -238,7 +235,6 @@ export default function AddressesPage() {
             {deliveryAddresses.map((address: Address) => (
               <AddressCard
                 key={`${address.id}-${selectedCompany?.companyId ?? 'default'}`}
-                graphqlClient={graphqlClient}
                 address={address}
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
@@ -254,7 +250,6 @@ export default function AddressesPage() {
 
       {showAddModal && (
         <AddressCard
-          graphqlClient={graphqlClient}
           addressType={addModalType}
           address={null}
           isNew

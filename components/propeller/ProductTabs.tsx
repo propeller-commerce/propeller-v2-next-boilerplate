@@ -10,6 +10,7 @@ import {
   AttributeResult,
 } from 'propeller-sdk-v2';
 import { useProductSpecs } from '@/composables/react/useProductSpecs';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import ProductDescription from './ProductDescription';
 import ProductSpecifications from './ProductSpecifications';
 import ProductDownloads from './ProductDownloads';
@@ -126,7 +127,9 @@ interface ProductTabsState {
   getLabel: (key: string, fallback: string) => string;
   getSpecsAttributes: () => AttributeResult[];
 }
-function ProductTabs(props: ProductTabsProps) {
+function ProductTabs(rawProps: ProductTabsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // --- composable ---
   const { attributes: fetchedAttributes, fetchSpecs } = useProductSpecs({
     graphqlClient: props.graphqlClient as GraphQLClient,

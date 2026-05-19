@@ -11,17 +11,22 @@ This skill guides you through the Propeller Next.js project's composable archite
 
 ## Architecture Overview
 
+**No Mitosis, no code generation.** Hand-maintained React. There is NO `output/`, NO
+`ui-components/`, NO `composables/vue/` in this project.
+
 ```
 components/propeller/         ← Edit these. Source of truth for features.
 composables/react/            ← React hooks (useCart, useOrders, useAuth, …)
-composables/vue/              ← Vue composables (mirrors of react/)
-composables/shared/           ← Shared types and utilities
-output/react/ui-components/   ← Compiled Mitosis output. Do NOT edit.
-output/vue/ui-components/     ← Compiled Mitosis output. Do NOT edit.
-ui-components/*.lite.tsx      ← Mitosis source. Dropped — do NOT edit.
+composables/shared/           ← Shared (framework-agnostic) types and utilities
 ```
 
-**Rule:** All fixes and features go in `components/propeller/` only. Never touch `output/` files.
+**Rules:**
+- All component fixes and features go in `components/propeller/` only.
+- Vue is a SEPARATE project at `d:/laragon/www/propeller-vue` — never create Vue files here.
+  React changes are mirrored into propeller-vue in a dedicated Vue session.
+- Some legacy components still contain frozen-Mitosis-style artifacts (`interface XxxState`,
+  helpers redefined inside the render body, hardcoded `€`). These are being refactored out —
+  do not add more; prefer module-scope helpers and the shared utils below.
 
 ## Composable Catalog
 
@@ -89,7 +94,7 @@ cancelCart: () => Promise<{ success: boolean; error?: string }>;
 const cancelCart = useCallback(async (): Promise<...> => {
   if (!cartId) return { success: false, error: 'No cart' };
   try {
-    const service = new CartService(graphqlClient);
+    const { cart: service } = getServices(graphqlClient);
     await service.cancelCart({ id: cartId });
     return { success: true };
   } catch (e: unknown) {
@@ -112,19 +117,20 @@ const isContact = props.user && 'contactId' in props.user;
 ```
 
 ### Price formatting
+Use the shared helper — do NOT hardcode `€` or redefine a local formatter:
 ```tsx
-function formatItemPrice(price: number): string {
-  if (props.formatPrice) return props.formatPrice(price);
-  return '€' + Number(price || 0).toFixed(2);
-}
+import { formatPrice } from '@/composables/shared/utils/formatting';
+import { config } from '@/data/config';
+
+formatPrice(value, { symbol: config.currency }); // '' for null/undefined
 ```
 
 ### Labels / i18n
-All user-visible strings go through a `getLabel(key, fallback)` pattern:
+Use the shared helper — do NOT redefine `getLabel` inside the component:
 ```tsx
-function getLabel(key: string, fallback: string): string {
-  return props.labels?.[key] || fallback;
-}
+import { getLabel } from '@/composables/shared/utils/labelHelpers';
+
+getLabel(props.labels, key, fallback);
 ```
 
 ### Cart processCart for quotes
@@ -139,26 +145,31 @@ await processCart('COMPLETE');
 ### PAC / Purchase Authorization
 `checkoutAllowed` (from `useCart`) is `false` when a contact-purchaser's cart total exceeds their authorization limit. When `false`, show "Request Authorization" button instead of checkout.
 
-## Sync Between React and Vue Composables
+## Sync Between React and Vue
 
-When you add a method to `composables/react/useXxx.ts`, always mirror it in `composables/vue/useXxx.ts`:
-- React: `const myMethod = useCallback(async (...) => { ... }, [deps])`
-- Vue: `async function myMethod(...) { ... }` (plain async function, no useCallback)
-- Both: add to `UseXxxReturn` interface and return statement
+The Vue mirror is a SEPARATE project at `d:/laragon/www/propeller-vue` (its own
+`src/composables/`, `src/components/propeller/`, `src/shared/`). **Do not create Vue files in
+this project.** When you change a React composable/component here, record what must be mirrored
+so it can be applied in a dedicated propeller-vue session (see the Vue-sync rule in project
+memory). Mapping when mirroring there:
+- React `const m = useCallback(async (...) => {...}, [deps])` → Vue `async function m(...) {...}`
+- Both: add to the `UseXxxReturn` interface and the return statement
 
-## Composable conversion complete
+## Service instantiation
 
-As of 2026-04-16, **all** `components/propeller/` components use composables — zero inline `new XxxService()` calls remain. When adding new components, always instantiate the relevant composable at the top of the function body.
+Composables call SDK services via the shared accessor in `lib/api.ts`
+(`getServices(graphqlClient)`) rather than `new XxxService(...)` per call. When adding a
+composable method, pull the service from `getServices`. A small number of legacy spots may
+still `new` a service directly — migrate them to `getServices` when you touch them.
 
-## Merging develop → feature/composables
+## Merging develop → feature branch
 
-When new features land in `develop` that need to be brought into `feature/composables`:
-1. Commit any uncommitted composable changes first
+1. Commit any uncommitted changes first
 2. `git merge develop --no-commit --no-ff`
-3. For `output/` conflicts: `git checkout --theirs output/...`
-4. For `components/propeller/` conflicts: keep composable-based structure, integrate new props/fixes from develop
-5. For `package-lock.json`: `git checkout --theirs package-lock.json`
-6. Run `npx tsc --noEmit` — fix any React errors (Vue "Cannot find module 'vue'" is expected/pre-existing)
+3. For `components/propeller/` conflicts: keep the composable-based structure, integrate new
+   props/fixes from develop
+4. For `package-lock.json`: `git checkout --theirs package-lock.json`
+5. Run `npx tsc --noEmit` — fix any React errors
 
 ## File Locations Quick Reference
 
@@ -171,6 +182,6 @@ When new features land in `develop` that need to be brought into `feature/compos
 | Checkout page | `app/checkout/page.tsx` |
 | Cart page | `app/cart/page.tsx` |
 | React useCart | `composables/react/useCart.ts` |
-| Vue useCart | `composables/vue/useCart.ts` |
+| Vue useCart | `propeller-vue/src/composables/useCart.ts` (separate project) |
 | Shared cart types | `composables/shared/types/cart.types.ts` |
 | Cart init utility | `composables/shared/utils/cartInit.ts` |

@@ -15,6 +15,8 @@ import {
   Category,
 } from 'propeller-sdk-v2';
 import { useProductSearch } from '@/composables/react/useProductSearch';
+import { useInfraProps } from '@/composables/react/useInfraProps';
+import { ProductGridConfigProvider, ProductGridConfig } from '@/context/ProductGridContext';
 import ProductCard from './ProductCard';
 import ClusterCard from './ClusterCard';
 
@@ -183,7 +185,9 @@ export interface ProductGridProps {
   /** Extra CSS class applied to the root element. */ className?: string;
 }
 
-function ProductGrid(props: ProductGridProps) {
+function ProductGrid(rawProps: ProductGridProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const {
     displayProducts,
     isLoading,
@@ -259,7 +263,39 @@ function ProductGrid(props: ProductGridProps) {
     return items;
   }
 
+  // Single config object provided to the card subtree, replacing the ~20 props
+  // ProductGrid otherwise cascades to ProductCard/ClusterCard. Resolves the
+  // stockValidation -> enableStockValidation alias. Inline handlers + this
+  // object are auto-memoized by the React Compiler (this project's eslint
+  // config enforces react-hooks/preserve-manual-memoization — manual
+  // useCallback/useMemo here would defeat the Compiler), so the React.memo'd
+  // cards still skip re-render when nothing relevant changed (rbp §5.2/§5.4).
+  const gridConfig: ProductGridConfig = {
+    columns: (props.columns as number) || 3,
+    showPrice: props.showPrice as boolean,
+    showStock: props.showStock as boolean,
+    showAvailability: props.showAvailability as boolean,
+    enableAddFavorite: props.enableAddFavorite as boolean,
+    allowAddToCart: props.allowAddToCart as boolean,
+    createCart: props.createCart as boolean,
+    showModal: props.showModal as boolean,
+    allowIncrDecr: props.allowIncrDecr,
+    enableStockValidation: props.stockValidation as boolean,
+    cartId: props.cartId as string,
+    stockLabels: props.stockLabels,
+    addToCartLabels: props.addToCartLabels,
+    onCartCreated: props.onCartCreated,
+    afterAddToCart: props.afterAddToCart,
+    onProceedToCheckout: props.onProceedToCheckout,
+    onRequestQuoteClick: props.onRequestQuoteClick,
+    onToggleFavorite: (item: Product | Cluster, isFav: boolean) =>
+      props.onToggleFavorite?.(item, isFav),
+    onProductClick: (p: Product) => props.onProductClick?.(p),
+    onClusterClick: (c: Cluster) => props.onClusterClick?.(c),
+  };
+
   return (
+    <ProductGridConfigProvider value={gridConfig}>
     <div
       className={`propeller-product-grid w-full ${(props.className as string) || ''}`}
       data-loading={getIsLoading() ? 'true' : 'false'}
@@ -323,103 +359,17 @@ function ProductGrid(props: ProductGridProps) {
                   {isClusterItem(item) ? (
                     <>
                       {!props.renderClusterCard ? (
-                        <ClusterCard
-                          columns={(props.columns as number) || 3}
-                          cluster={item as Cluster}
-                          configuration={props.configuration}
-                          includeTax={props.includeTax as boolean}
-                          showPrice={props.showPrice as boolean}
-                          language={(props.language as string) || 'NL'}
-                          showStock={props.showStock as boolean}
-                          showAvailability={props.showAvailability as boolean}
-                          stockLabels={props.stockLabels}
-                          enableAddFavorite={props.enableAddFavorite as boolean}
-                          onToggleFavorite={(cluster, isFav) => {
-                            if (props.onToggleFavorite) {
-                              props.onToggleFavorite(cluster, isFav);
-                            }
-                          }}
-                          onClusterClick={(cluster) => {
-                            if (props.onClusterClick) {
-                              props.onClusterClick(cluster);
-                            }
-                          }}
-                        />
+                        <ClusterCard cluster={item as Cluster} />
                       ) : null}
                     </>
                   ) : null}
                   {!isClusterItem(item) ? (
                     <>
                       {!props.renderProductCard ? (
-                        <>
-                          {showAddToCart() ? (
-                            <ProductCard
-                              columns={(props.columns as number) || 3}
-                              product={item as Product}
-                              showPrice={props.showPrice as boolean}
-                              allowAddToCart={props.allowAddToCart as boolean}
-                              graphqlClient={props.graphqlClient as GraphQLClient}
-                              user={(props.user as Contact | Customer | null) || null}
-                              configuration={props.configuration}
-                              includeTax={props.includeTax as boolean}
-                              cartId={props.cartId as string}
-                              createCart={props.createCart as boolean}
-                              onCartCreated={props.onCartCreated}
-                              afterAddToCart={props.afterAddToCart}
-                              showModal={props.showModal as boolean}
-                              allowIncrDecr={props.allowIncrDecr}
-                              enableStockValidation={props.stockValidation as boolean}
-                              language={(props.language as string) || 'NL'}
-                              onProceedToCheckout={props.onProceedToCheckout}
-                              onRequestQuoteClick={props.onRequestQuoteClick}
-                              addToCartLabels={props.addToCartLabels}
-                              enableAddFavorite={props.enableAddFavorite as boolean}
-                              showStock={props.showStock as boolean}
-                              showAvailability={props.showAvailability as boolean}
-                              stockLabels={props.stockLabels}
-                              companyId={props.companyId as number}
-                              onToggleFavorite={(product, isFav) => {
-                                if (props.onToggleFavorite) {
-                                  props.onToggleFavorite(product, isFav);
-                                }
-                              }}
-                              onProductClick={(product) => {
-                                if (props.onProductClick) {
-                                  props.onProductClick(product);
-                                }
-                              }}
-                            />
-                          ) : null}{' '}
-                          {!showAddToCart() ? (
-                            <ProductCard
-                              columns={(props.columns as number) || 3}
-                              product={item as Product}
-                              showPrice={props.showPrice as boolean}
-                              allowAddToCart={props.allowAddToCart as boolean}
-                              graphqlClient={props.graphqlClient as GraphQLClient}
-                              user={(props.user as Contact | Customer | null) || null}
-                              configuration={props.configuration}
-                              language={(props.language as string) || 'NL'}
-                              cartId={props.cartId as string}
-                              enableAddFavorite={props.enableAddFavorite as boolean}
-                              showStock={props.showStock as boolean}
-                              showAvailability={props.showAvailability as boolean}
-                              stockLabels={props.stockLabels}
-                              companyId={props.companyId as number}
-                              onRequestQuoteClick={props.onRequestQuoteClick}
-                              onToggleFavorite={(product, isFav) => {
-                                if (props.onToggleFavorite) {
-                                  props.onToggleFavorite(product, isFav);
-                                }
-                              }}
-                              onProductClick={(product) => {
-                                if (props.onProductClick) {
-                                  props.onProductClick(product);
-                                }
-                              }}
-                            />
-                          ) : null}
-                        </>
+                        <ProductCard
+                          product={item as Product}
+                          allowAddToCart={showAddToCart()}
+                        />
                       ) : null}
                     </>
                   ) : null}
@@ -430,6 +380,7 @@ function ProductGrid(props: ProductGridProps) {
         </>
       ) : null}
     </div>
+    </ProductGridConfigProvider>
   );
 }
 export default ProductGrid;

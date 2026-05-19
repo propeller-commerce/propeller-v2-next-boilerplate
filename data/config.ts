@@ -104,7 +104,7 @@ export const PORTAL_MODE = {
 } as const;
 
 export const config = {
-  baseCategoryId: 1,
+  baseCategoryId: 17,
   channelId: 1,
   anonymousId: 1,
   language: DEFAULT_LANG,

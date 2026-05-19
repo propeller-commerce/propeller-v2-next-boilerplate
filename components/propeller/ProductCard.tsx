@@ -16,6 +16,13 @@ import AddToCart from './AddToCart';
 import ItemStock from './ItemStock';
 import ProductPriceDisplay from './ProductPrice';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import {
+  getProductImageUrl,
+  getProductSku,
+  getLocalizedValue,
+} from '@/composables/shared/utils/productHelpers';
+import { useResolvedProps, ResolveSpec } from '@/composables/react/useResolvedProps';
+import { ProductGridConfig } from '@/context/ProductGridContext';
 
 export interface ProductCardProps {
   // === Core ===
@@ -144,11 +151,11 @@ export interface ProductCardProps {
 
   // === AddToCart pass-through props ===
 
-  /** Initialised Propeller SDK GraphQL client (required by embedded AddToCart). */
-  graphqlClient: GraphQLClient;
+  /** Initialised Propeller SDK GraphQL client. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
-  /** Authenticated user — used for cart creation / lookup. */
-  user: Contact | Customer | null;
+  /** Authenticated user — used for cart creation / lookup. Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer | null;
 
   /** ID of an existing cart to add items to. */
   cartId?: string;
@@ -214,137 +221,178 @@ export interface ProductCardProps {
 
   /**
    * Active company ID from the company switcher.
-   * When provided, overrides the user's default company for cart creation and lookup.  */ companyId?: number;
-  /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */ onProceedToCheckout?: () => void;
-  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */ onRequestQuoteClick?: (
-    cart: Cart
-  ) => void;
-  /** Label overrides for UI strings  *  * available labels:  * - outOfStock  * - noCartId  * - errorAdding  * - addedToCart  * - modalTitle  * - quantity  * - continueShopping  * - proceedToCheckout  * - requestQuoteButton  * - add  * - adding */ addToCartLabels?: Record<
-    string,
-    string
-  >;
+   * When provided, overrides the user's default company for cart creation and lookup.
+   */
+  companyId?: number;
+
+  /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
+  onProceedToCheckout?: () => void;
+
+  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */
+  onRequestQuoteClick?: (cart: Cart) => void;
+
+  /**
+   * Label overrides for UI strings. Available labels: outOfStock, noCartId,
+   * errorAdding, addedToCart, modalTitle, quantity, continueShopping,
+   * proceedToCheckout, requestQuoteButton, add, adding
+   */
+  addToCartLabels?: Record<string, string>;
 }
-interface ProductCardState {
-  isFavorite: boolean;
-  includeTax: boolean;
-  priceListener: any;
-  getProductName: () => string;
-  getProductSku: () => string;
-  getProductImageUrl: () => string;
-  getProductPrice: () => string;
-  getProductUrl: () => string;
-  getProductShortDescription: () => string;
-  getProductManufacturer: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  getAttributeValue: (code: string) => string;
-  handleProductClick: (e: any) => void;
-  handleToggleFavorite: (e: any) => void;
-  isRow: () => boolean;
-  computedImageLabels: () => string[];
-  computedTextLabels: () => { name: string; value: string }[];
+
+// ── Pure helpers (module scope — created once, not per render) ──────────────────
+
+function getProductName(product: Product | undefined, language: string): string {
+  return getLocalizedValue(product?.names, language, 'Product');
 }
-function ProductCard(props: ProductCardProps) {
-  const [isFavorite, setIsFavorite] = useState<ProductCardState['isFavorite']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ProductCardState['includeTax']>(() => false);
-  const [priceListener, setPriceListener] = useState<ProductCardState['priceListener']>(() => null);
-  function isRow(): ReturnType<ProductCardState['isRow']> {
-    return (props.columns as number) === 1;
-  }
-  function getProductName(): ReturnType<ProductCardState['getProductName']> {
-    const lang = (props.language as string) || 'NL';
-    const names = (props.product as Product)?.names;
-    const match = names?.find((n: any) => n.language === lang);
-    return match?.value || names?.[0]?.value || 'Product';
-  }
-  function getProductSku(): ReturnType<ProductCardState['getProductSku']> {
-    return (props.product as Product)?.sku || '';
-  }
-  function getProductImageUrl(): ReturnType<ProductCardState['getProductImageUrl']> {
-    return (props.product as Product)?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-  }
-  function getProductPrice(): ReturnType<ProductCardState['getProductPrice']> {
-    if (!props.showPrice) return '';
-    const priceObj = (props.product as Product)?.price;
-    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
-    const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
-    if (!value && value !== 0) return '';
-    return `\u20AC${Number(value).toFixed(2)}`;
-  }
-  function getProductUrl(): ReturnType<ProductCardState['getProductUrl']> {
-    return props.configuration.urls.getProductUrl(props.product, props.language);
-  }
-  function getProductShortDescription(): ReturnType<
-    ProductCardState['getProductShortDescription']
-  > {
-    const lang = (props.language as string) || 'NL';
-    const descs = (props.product as Product)?.shortDescriptions;
-    const match = descs?.find((d: any) => d.language === lang);
-    return match?.value || descs?.[0]?.value || '';
-  }
-  function getProductManufacturer(): ReturnType<ProductCardState['getProductManufacturer']> {
-    return (props.product as Product)?.manufacturer || '';
-  }
-  function getAttributeValue(code: string): ReturnType<ProductCardState['getAttributeValue']> {
-    const attrs = (props.product as Product)?.attributes?.items || [];
-    const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-    return found?.value?.value || '';
-  }
-  function handleProductClick(e: any): ReturnType<ProductCardState['handleProductClick']> {
+
+function getProductShortDescription(product: Product | undefined, language: string): string {
+  return getLocalizedValue(product?.shortDescriptions, language, '');
+}
+
+function getProductManufacturer(product: Product | undefined): string {
+  return product?.manufacturer || '';
+}
+
+/** Resolves attribute codes to their display values, dropping any with no value. */
+function resolveAttributeValues(product: Product | undefined, codes: string[] | undefined): string[] {
+  if (!codes || codes.length === 0) return [];
+  const attrs = product?.attributes?.items || [];
+  return codes
+    .map((code) => {
+      const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
+      return found?.value?.value || '';
+    })
+    .filter((v: string) => v.length > 0);
+}
+
+// Two-tier precedence (explicit prop > ProductGrid context > Propeller infra >
+// default) for the ~24 props ProductGrid otherwise cascades through here. See
+// useResolvedProps — declarative replacement for the old hand-written block.
+const RESOLVE_SPEC: ResolveSpec<ProductCardProps> = {
+  graphqlClient: { infra: 'graphqlClient' },
+  user: { infra: 'user', default: null },
+  companyId: { infra: 'companyId' },
+  language: { infra: 'language', default: 'NL' },
+  includeTax: { infra: 'includeTax' },
+  configuration: { infra: 'configuration' },
+  columns: { grid: 'columns', default: 3 },
+  showPrice: { grid: 'showPrice' },
+  showStock: { grid: 'showStock' },
+  showAvailability: { grid: 'showAvailability' },
+  allowAddToCart: { grid: 'allowAddToCart' },
+  enableAddFavorite: { grid: 'enableAddFavorite' },
+  stockLabels: { grid: 'stockLabels' },
+  cartId: { grid: 'cartId' },
+  createCart: { grid: 'createCart' },
+  showModal: { grid: 'showModal' },
+  allowIncrDecr: { grid: 'allowIncrDecr' },
+  enableStockValidation: { grid: 'enableStockValidation' },
+  addToCartLabels: { grid: 'addToCartLabels' },
+  childItems: { grid: 'childItems' },
+  notes: { grid: 'notes' },
+  price: { grid: 'price' },
+  onCartCreated: { grid: 'onCartCreated' },
+  afterAddToCart: { grid: 'afterAddToCart' },
+  onProceedToCheckout: { grid: 'onProceedToCheckout' },
+  onRequestQuoteClick: { grid: 'onRequestQuoteClick' },
+  onProductClick: { grid: 'onProductClick' },
+  onToggleFavorite: {
+    grid: 'onToggleFavorite',
+    transform: (fn) => (p: Product, fav: boolean) =>
+      (fn as ProductGridConfig['onToggleFavorite'])!(p, fav),
+  },
+};
+
+function ProductCard(rawProps: ProductCardProps) {
+  // Resolve infra (Tier 1) + grid config (Tier 2) declaratively so this
+  // component no longer needs ~24 cascaded props. Non-throwing — standalone use
+  // (no provider) falls back to explicit props / defaults.
+  const props = useResolvedProps(rawProps, RESOLVE_SPEC);
+
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const language = (props.language as string) || 'NL';
+  const product = props.product;
+  const isRow = props.columns === 1;
+
+  // Derived values — computed once per render (previously these helpers were
+  // redefined every render and called up to 5× across the layout branches).
+  const productName = getProductName(product, language);
+  const productSku = getProductSku(product);
+  const productImageUrl = getProductImageUrl(product);
+  const shortDescription = getProductShortDescription(product, language);
+  const manufacturer = getProductManufacturer(product);
+  const productUrl = props.configuration.urls.getProductUrl(product, props.language);
+  const imageLabelValues = resolveAttributeValues(product, props.imageLabels);
+  const textLabelValues = resolveAttributeValues(product, props.textLabels).map((value) => ({
+    value,
+  }));
+
+  const useTax = props.includeTax !== undefined ? !!props.includeTax : false;
+
+  function handleProductClick(e: React.MouseEvent): void {
     if (props.onProductClick) {
       e.preventDefault();
-      props.onProductClick(props.product);
+      props.onProductClick(product);
     }
   }
-  function handleToggleFavorite(e: any): ReturnType<ProductCardState['handleToggleFavorite']> {
+
+  function handleToggleFavorite(e: React.MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
     setIsFavorite(!isFavorite);
     if (props.onToggleFavorite) {
-      props.onToggleFavorite(props.product, isFavorite);
+      props.onToggleFavorite(product, isFavorite);
     }
   }
-  function computedImageLabels(): ReturnType<ProductCardState['computedImageLabels']> {
-    if (!props.imageLabels || (props.imageLabels as string[]).length === 0) return [];
-    const attrs = (props.product as Product)?.attributes?.items || [];
-    return (props.imageLabels as string[])
-      .map((code: string) => {
-        const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-        return found?.value?.value || '';
-      })
-      .filter((v: string) => v.length > 0);
-  }
-  function computedTextLabels(): ReturnType<ProductCardState['computedTextLabels']> {
-    if (!props.textLabels || (props.textLabels as string[]).length === 0) return [];
-    const attrs = (props.product as Product)?.attributes?.items || [];
-    return (props.textLabels as string[])
-      .map((code: string) => {
-        const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-        return { name: code, value: found?.value?.value || '' };
-      })
-      .filter((item: { name: string; value: string }) => item.value.length > 0);
-  }
+
+  // Single AddToCart prop set — previously this 19-prop block was duplicated
+  // verbatim across the row and grid layout branches.
+  const addToCartProps = {
+    className: 'flex w-full items-center gap-2',
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+    product: product,
+    cartId: props.cartId,
+    configuration: props.configuration,
+    childItems: props.childItems,
+    notes: props.notes,
+    price: props.price,
+    createCart: props.createCart,
+    onCartCreated: props.onCartCreated,
+    onAddToCart: props.onAddToCart,
+    afterAddToCart: props.afterAddToCart,
+    showModal: props.showModal,
+    allowIncrDecr: props.allowIncrDecr,
+    enableStockValidation: props.enableStockValidation,
+    language: props.language,
+    onProceedToCheckout: props.onProceedToCheckout,
+    labels: props.addToCartLabels,
+    companyId: props.companyId,
+    onRequestQuoteClick: props.onRequestQuoteClick,
+  };
+
   return (
     <div
-      className={`propeller-product-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
-      data-layout={isRow() ? 'row' : 'grid'}
+      className={`propeller-product-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+      data-layout={isRow ? 'row' : 'grid'}
     >
       {props.showImage !== false ? (
         <div
-          className={`propeller-product-card__media relative overflow-hidden bg-surface-hover ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
+          className={`propeller-product-card__media relative overflow-hidden bg-surface-hover ${isRow ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
         >
           <a
             className="block h-full w-full"
-            href={getProductUrl()}
+            href={productUrl}
             onClick={(e) => handleProductClick(e)}
           >
-            {!!getProductImageUrl() ? (
+            {productImageUrl ? (
               <img
                 className="propeller-product-card__image h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                src={getProductImageUrl()}
-                alt={getProductName()}
+                src={productImageUrl}
+                alt={productName}
               />
-            ) : null}
-            {!getProductImageUrl() ? (
+            ) : (
               <div className="propeller-product-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-16 w-16">
                   <path
@@ -355,14 +403,15 @@ function ProductCard(props: ProductCardProps) {
                   />
                 </svg>
               </div>
-            ) : null}
+            )}
           </a>
-          {!!props.imageLabels &&
-          props.imageLabels.length > 0 &&
-          computedImageLabels().length > 0 ? (
+          {imageLabelValues.length > 0 ? (
             <div className="propeller-product-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
-              {computedImageLabels()?.map((label) => (
-                <span className="propeller-product-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm">
+              {imageLabelValues.map((label) => (
+                <span
+                  key={label}
+                  className="propeller-product-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm"
+                >
                   {label}
                 </span>
               ))}
@@ -397,130 +446,126 @@ function ProductCard(props: ProductCardProps) {
           ) : null}
         </div>
       ) : null}
-      {isRow() ? (
+
+      {isRow ? (
         <>
           <div className="propeller-product-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              {props.showSku !== false && !!getProductSku() ? (
-                <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">{getProductSku()}</div>
+              {props.showSku !== false && productSku ? (
+                <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">
+                  {productSku}
+                </div>
               ) : null}
               {props.showName !== false ? (
                 <a
                   className="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-1"
-                  href={getProductUrl()}
+                  href={productUrl}
                   onClick={(e) => handleProductClick(e)}
                 >
-                  {getProductName()}
+                  {productName}
                 </a>
               ) : null}
-              {!!props.textLabels &&
-              props.textLabels.length > 0 &&
-              computedTextLabels().length > 0 ? (
+              {textLabelValues.length > 0 ? (
                 <div className="propeller-product-card__labels flex flex-col gap-0.5">
-                  {computedTextLabels()?.map((item) => (
-                    <div className="propeller-product-card__label text-xs text-muted-foreground">{item.value}</div>
+                  {textLabelValues.map((item) => (
+                    <div
+                      key={item.value}
+                      className="propeller-product-card__label text-xs text-muted-foreground"
+                    >
+                      {item.value}
+                    </div>
                   ))}
                 </div>
               ) : null}
-              {props.showManufacturer && !!getProductManufacturer() ? (
-                <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">{getProductManufacturer()}</div>
+              {props.showManufacturer && manufacturer ? (
+                <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">
+                  {manufacturer}
+                </div>
               ) : null}
-              {props.showShortDescription && !!getProductShortDescription() ? (
-                <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">{getProductShortDescription()}</p>
+              {props.showShortDescription && shortDescription ? (
+                <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">
+                  {shortDescription}
+                </p>
               ) : null}
             </div>
           </div>{' '}
           <div className="propeller-product-card__footer w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-border-subtle">
-            {props.showStock && !!props.product.inventory ? (
+            {props.showStock && !!product.inventory ? (
               <ItemStock
-                inventory={props.product.inventory!}
+                inventory={product.inventory!}
                 showAvailability={false}
                 showStock
                 labels={props.stockLabels}
               />
             ) : null}
-            {props.showPrice !== false && !!props.product?.price ? (
+            {props.showPrice !== false && !!product?.price ? (
               <div className="propeller-product-card__price">
                 <ProductPriceDisplay
-                  price={props.product.price}
-                  includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
+                  price={product.price}
+                  includeTax={useTax}
                   priceSize="text-sm"
                 />
               </div>
             ) : null}
             {props.allowAddToCart !== false ? (
               <div className="propeller-product-card__cta flex-shrink-0 ml-auto">
-                <AddToCart
-                  className="flex w-full items-center gap-2"
-                  graphqlClient={props.graphqlClient}
-                  user={props.user}
-                  product={props.product}
-                  cartId={props.cartId}
-                  configuration={props.configuration}
-                  childItems={props.childItems}
-                  notes={props.notes}
-                  price={props.price}
-                  createCart={props.createCart}
-                  onCartCreated={props.onCartCreated}
-                  onAddToCart={props.onAddToCart}
-                  afterAddToCart={props.afterAddToCart}
-                  showModal={props.showModal}
-                  allowIncrDecr={props.allowIncrDecr}
-                  enableStockValidation={props.enableStockValidation}
-                  language={props.language}
-                  onProceedToCheckout={props.onProceedToCheckout}
-                  labels={props.addToCartLabels}
-                  companyId={props.companyId}
-                  onRequestQuoteClick={props.onRequestQuoteClick}
-                />
+                <AddToCart {...addToCartProps} />
               </div>
             ) : null}
           </div>
         </>
-      ) : null}
-      {!isRow() ? (
+      ) : (
         <>
           <div className="propeller-product-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
-            {props.showSku !== false && !!getProductSku() ? (
-              <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">{getProductSku()}</div>
+            {props.showSku !== false && productSku ? (
+              <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">
+                {productSku}
+              </div>
             ) : null}
             {props.showName !== false ? (
               <a
                 className="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-2"
-                href={getProductUrl()}
+                href={productUrl}
                 onClick={(e) => handleProductClick(e)}
               >
-                {getProductName()}
+                {productName}
               </a>
             ) : null}
-            {!!props.textLabels &&
-            props.textLabels.length > 0 &&
-            computedTextLabels().length > 0 ? (
+            {textLabelValues.length > 0 ? (
               <div className="propeller-product-card__labels flex flex-col gap-0.5">
-                {computedTextLabels()?.map((item) => (
-                  <div className="propeller-product-card__label text-xs text-muted-foreground">{item.value}</div>
+                {textLabelValues.map((item) => (
+                  <div
+                    key={item.value}
+                    className="propeller-product-card__label text-xs text-muted-foreground"
+                  >
+                    {item.value}
+                  </div>
                 ))}
               </div>
             ) : null}
-            {props.showStock && !!props.product.inventory ? (
+            {props.showStock && !!product.inventory ? (
               <ItemStock
-                inventory={props.product.inventory!}
+                inventory={product.inventory!}
                 showAvailability={props.showAvailability !== false}
                 showStock
                 labels={props.stockLabels}
               />
             ) : null}
-            {props.showManufacturer && !!getProductManufacturer() ? (
-              <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">{getProductManufacturer()}</div>
+            {props.showManufacturer && manufacturer ? (
+              <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">
+                {manufacturer}
+              </div>
             ) : null}
-            {props.showShortDescription && !!getProductShortDescription() ? (
-              <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">{getProductShortDescription()}</p>
+            {props.showShortDescription && shortDescription ? (
+              <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">
+                {shortDescription}
+              </p>
             ) : null}
-            {props.showPrice !== false && !!props.product?.price ? (
+            {props.showPrice !== false && !!product?.price ? (
               <div className="propeller-product-card__price mt-auto pt-1">
                 <ProductPriceDisplay
-                  price={props.product.price}
-                  includeTax={props.includeTax !== undefined ? !!props.includeTax : includeTax}
+                  price={product.price}
+                  includeTax={useTax}
                   priceSize="text-base sm:text-lg"
                 />
               </div>
@@ -528,34 +573,15 @@ function ProductCard(props: ProductCardProps) {
           </div>{' '}
           {props.allowAddToCart !== false ? (
             <div className="propeller-product-card__cta px-3 pb-3 sm:px-4 sm:pb-4">
-              <AddToCart
-                className="flex w-full items-center gap-2"
-                graphqlClient={props.graphqlClient}
-                user={props.user}
-                product={props.product}
-                cartId={props.cartId}
-                configuration={props.configuration}
-                childItems={props.childItems}
-                notes={props.notes}
-                price={props.price}
-                createCart={props.createCart}
-                onCartCreated={props.onCartCreated}
-                onAddToCart={props.onAddToCart}
-                afterAddToCart={props.afterAddToCart}
-                showModal={props.showModal}
-                allowIncrDecr={props.allowIncrDecr}
-                enableStockValidation={props.enableStockValidation}
-                language={props.language}
-                onProceedToCheckout={props.onProceedToCheckout}
-                labels={props.addToCartLabels}
-                companyId={props.companyId}
-                onRequestQuoteClick={props.onRequestQuoteClick}
-              />
+              <AddToCart {...addToCartProps} />
             </div>
           ) : null}
         </>
-      ) : null}
+      )}
     </div>
   );
 }
-export default ProductCard;
+// Memoized: with ProductGrid passing only stable { product, allowAddToCart }
+// and config flowing via context, shallow-equal props skip re-render of the
+// whole card subtree (rbp §5.2).
+export default React.memo(ProductCard);

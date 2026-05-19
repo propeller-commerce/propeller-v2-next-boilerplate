@@ -2,7 +2,7 @@
  * useCompany (React) — Company switcher and Purchase Authorization Configurator.
  *
  * React mirror of vue/useCompany.ts.
- * Mirrors PurchaseAuthorizationConfigurator.lite.tsx and PurchaseAuthorizationRequests.lite.tsx.
+ * Mirrors PurchaseAuthorizationConfigurator.tsx and PurchaseAuthorizationRequests.tsx.
  *
  * Responsibilities:
  * - fetchCompany: CompanyService.getCompany() with correctly-typed CompanyVariables
@@ -12,7 +12,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { CartService, CartStatus, CompanyService, PurchaseAuthorizationConfigService } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { CartStatus } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Company,
@@ -56,7 +57,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   const [error, setError] = useState<string | null>(null);
 
   // ── Fetch company ─────────────────────────────────────────────────────────
-  // Mirrors PurchaseAuthorizationConfigurator.lite.tsx loadCompany():
+  // Mirrors PurchaseAuthorizationConfigurator.tsx loadCompany():
   // - contactSearchArguments: { page: 1, offset: 50 }
   // - contactPAConfigInput: { companyIds: [companyId], page: 1, offset: 100 }
   // - companyAttributesInput: {}
@@ -65,7 +66,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
     setLoading(true);
     setError(null);
     try {
-      const service = new CompanyService(graphqlClient);
+      const service = getServices(graphqlClient).company;
       const contactSearchArguments: ContactSearchArguments = { page: 1, offset: 50 };
       const contactPAConfigInput: ContactPurchaseAuthorizationConfigSearchInput = {
         companyIds: [companyId],
@@ -89,13 +90,13 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   }, [graphqlClient]);
 
   // ── Fetch pending carts ───────────────────────────────────────────────────
-  // Mirrors PurchaseAuthorizationRequests.lite.tsx:
+  // Mirrors PurchaseAuthorizationRequests.tsx:
   // - statuses: [CartStatus.PENDING_PURCHASE_AUTHORIZATION]
 
   const fetchPendingCarts = useCallback(async (companyId: number): Promise<void> => {
     setLoading(true);
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const result = await service.getCarts({
         companyIds: [companyId],
         statuses: [CartStatus.PENDING_PURCHASE_AUTHORIZATION],
@@ -115,7 +116,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
     input: PurchaseAuthorizationConfigCreateInput,
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const service = new PurchaseAuthorizationConfigService(graphqlClient);
+      const service = getServices(graphqlClient).purchaseAuthConfig;
       await service.createPurchaseAuthorizationConfig(input);
       return { success: true };
     } catch (e: unknown) {
@@ -128,7 +129,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
     input: PurchaseAuthorizationConfigUpdateInput,
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const service = new PurchaseAuthorizationConfigService(graphqlClient);
+      const service = getServices(graphqlClient).purchaseAuthConfig;
       await service.updatePurchaseAuthorizationConfig(pacId, input);
       return { success: true };
     } catch (e: unknown) {
@@ -138,7 +139,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
 
   const deletePac = useCallback(async (pacId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const service = new PurchaseAuthorizationConfigService(graphqlClient);
+      const service = getServices(graphqlClient).purchaseAuthConfig;
       await service.deletePurchaseAuthorizationConfig(pacId);
       return { success: true };
     } catch (e: unknown) {
@@ -148,7 +149,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
 
   const acceptCartRequest = useCallback(async (cartId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       await service.acceptPurchaseAuthorizationRequest({ id: cartId });
       return { success: true };
     } catch (e: unknown) {

@@ -1,31 +1,16 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
 import { config, localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from '@/lib/api';
 import OrderList from '@/components/propeller/OrderList';
-import { Contact, Customer, Company } from 'propeller-sdk-v2';
 
 
 export default function QuotesPage() {
   const { state } = useAuth();
-  const { selectedCompany } = useCompany();
   const router = useRouter();
   const { language } = useLanguage();
-
-  const isContact = (u: Contact | Customer | null): u is Contact =>
-    u !== null && 'company' in u;
-
-  /** Resolve the active company for a Contact user (respects company switcher) */
-  const getActiveCompany = (): Company | null => {
-    if (!state.user || !isContact(state.user)) return null;
-    return (selectedCompany) ?? null;
-  };
-
-  const companyId = getActiveCompany()?.companyId;
 
   if (!state.isAuthenticated) return null;
 
@@ -61,10 +46,7 @@ export default function QuotesPage() {
       </div>
       <div className="bg-card shadow-sm">
         <OrderList
-          graphqlClient={graphqlClient}
           channelIds={[config.channelId]}
-          user={state.user}
-          companyId={companyId}
           showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/quotes/${orderId}`, language))}
           orderStatus={["QUOTATION"]}

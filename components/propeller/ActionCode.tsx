@@ -4,11 +4,12 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface ActionCodeProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** The shopping cart used to populate the cart summary data */
   cart: Cart;
@@ -41,10 +42,12 @@ export interface ActionCodeProps {
   language?: string;
 }
 
-function ActionCode(props: ActionCodeProps) {
+function ActionCode(rawProps: ActionCodeProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // --- composable ---
   const { addActionCode, removeActionCode, loading, error } = useCart({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     user: null,
     cartId: props.cart?.cartId,
     configuration: props.configuration,

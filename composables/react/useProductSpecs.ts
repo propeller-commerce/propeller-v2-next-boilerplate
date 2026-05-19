@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { ProductService } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
 import type { GraphQLClient, AttributeResult, AttributeResultSearchInput } from 'propeller-sdk-v2';
 import { extractAttributeValues, getAttributeDisplayName } from '../shared/utils/attributeExtractor';
 
@@ -43,7 +43,7 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mirrors ProductSpecifications.lite.tsx buildGroups logic.
+  // Mirrors ProductSpecifications.tsx buildGroups logic.
   // React version matches Vue: accepts language param for group-name resolution.
   function buildGroups(attrs: AttributeResult[], lang: string): AttributeGroup[] {
     const ungrouped: AttributeDisplayItem[] = [];
@@ -72,8 +72,8 @@ export function useProductSpecs(options: UseProductSpecsOptions): UseProductSpec
   const fetchSpecs = useCallback(async (productId: number): Promise<void> => {
     setLoading(true); setError(null);
     try {
-      const service = new ProductService(graphqlClient);
-      // Mirrors ProductSpecifications.lite.tsx: isPublic: true, page: 1, offset: 2000
+      const service = getServices(graphqlClient).product;
+      // Mirrors ProductSpecifications.tsx: isPublic: true, page: 1, offset: 2000
       const searchInput: AttributeResultSearchInput = {
         attributeDescription: { isPublic: true },
         page: 1,

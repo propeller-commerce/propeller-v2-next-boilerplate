@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { categoryService } from '@/lib/api';
+import { getServices } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
 import type { CmsProductCarousel } from '@/lib/cms/types';
 import type { Product, Cluster } from 'propeller-sdk-v2';
@@ -13,7 +13,7 @@ export default function ProductCarousel({ block }: { block: CmsProductCarousel }
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const data = await categoryService.getCategory({
+        const data = await getServices().category.getCategory({
           categoryId: parseInt(block.categoryId, 10),
           language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
           imageSearchFilters: imageSearchFiltersGrid,

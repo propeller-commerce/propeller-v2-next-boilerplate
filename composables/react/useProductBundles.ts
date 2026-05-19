@@ -5,15 +5,15 @@
  */
 
 import { useState, useCallback } from 'react';
-import { BundleService, CartService } from 'propeller-sdk-v2';
-import type { GraphQLClient, Cart, MediaImageProductSearchInput, TransformationsInput } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import type { GraphQLClient, Cart, MediaImageProductSearchInput, TransformationsInput, Product } from 'propeller-sdk-v2';
 import { initCart } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
 
 export interface BundleItem {
   id: number;
   name: string;
-  products: any[];
+  products: Product[];
   discount?: number;
   originalTotal?: number;
   bundleTotal?: number;
@@ -56,7 +56,7 @@ export function useProductBundles(options: UseProductBundlesOptions): UseProduct
   const fetchBundles = useCallback(async (productId: number): Promise<void> => {
     setLoading(true); setError(null);
     try {
-      const service = new BundleService(graphqlClient);
+      const service = getServices(graphqlClient).bundle;
       const result = await service.getBundles({ input: { productIds: [productId], page: 1, offset: 100 }, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
       setBundles(((result as any)?.items || []) as BundleItem[]);
     } catch (e: any) { setError(e?.message || 'Failed to fetch bundles'); }
@@ -73,7 +73,7 @@ export function useProductBundles(options: UseProductBundlesOptions): UseProduct
           resolvedCartId = cart.cartId;
           setCartId(resolvedCartId);
         }
-        const cartService = new CartService(graphqlClient);
+        const cartService = getServices(graphqlClient).cart;
         const cart = await cartService.addBundleToCart({ id: resolvedCartId, input: { bundleId: String(bundleId) }, language, imageSearchFilters: configuration.imageSearchFiltersGrid, imageVariantFilters: configuration.imageVariantFiltersSmall });
         return { success: true, cart };
       } catch (e: any) {

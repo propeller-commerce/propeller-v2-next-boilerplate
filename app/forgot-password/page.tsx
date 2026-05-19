@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ForgotPassword from '@/components/propeller/ForgotPassword';
-import { graphqlClient } from '@/lib/api';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -16,9 +15,7 @@ export default function ForgotPasswordPage() {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-          <ForgotPassword
-            graphqlClient={graphqlClient}
-          />
+          <ForgotPassword />
 
           <div className="mt-6 text-center">
             <Link href={localizeHref('/login', language)} className="text-primary hover:underline">

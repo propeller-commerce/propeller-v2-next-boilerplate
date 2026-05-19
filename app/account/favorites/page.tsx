@@ -5,7 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import FavoriteLists from '@/components/propeller/FavoriteLists';
-import { graphqlClient } from '@/lib/api';
 
 export default function FavoritesPage() {
   const { state: authState, refreshUser } = useAuth();
@@ -19,8 +18,6 @@ export default function FavoritesPage() {
       <h1 className="text-3xl font-bold tracking-tight">My Favorites</h1>
 
       <FavoriteLists
-        user={authState.user}
-        graphqlClient={graphqlClient}
         onListClick={(listId) => router.push(localizeHref(`/account/favorites/${listId}`, language))}
         showActions={true}
         allowFavoriteListCreate={true}

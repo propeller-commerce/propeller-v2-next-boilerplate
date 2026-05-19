@@ -2,8 +2,9 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { Address, CartAddress, Gender, GraphQLClient, OrderAddress, WarehouseAddress, YesNo } from 'propeller-sdk-v2';
+import { Address, CartAddress, Contact, Customer, Gender, GraphQLClient, OrderAddress, WarehouseAddress, YesNo } from 'propeller-sdk-v2';
 import { useAddress } from '@/composables/react/useAddress';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
@@ -108,10 +109,12 @@ export interface AddressCardProps {
   beforeSave?: () => void;
 
   /** The authenticated user (needed by useAddress for SDK operations) */
-  user?: any;
+  user?: Contact | Customer | null;
 }
 
-function AddressCard(props: AddressCardProps) {
+function AddressCard(rawProps: AddressCardProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // useAddress is used when graphqlClient + user are available for SDK-backed operations.
   // The component also supports callback-only mode (onEdit/onDelete props).
   const addressHook = props.graphqlClient && props.user

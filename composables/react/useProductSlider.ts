@@ -2,7 +2,7 @@
  * useProductSlider (React) — Crossupsell/product fetch + scroll tracking.
  *
  * React mirror of vue/useProductSlider.ts.
- * Mirrors the fetch logic of ui-components/ProductSlider.lite.tsx exactly.
+ * Mirrors the fetch logic of components/propeller/ProductSlider.tsx exactly.
  *
  * Responsibilities:
  * - fetchCrossupsells: CrossupsellService with priceCalculateProductInput + extract productTo/clusterTo
@@ -12,7 +12,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { CrossupsellService, CrossupsellType, ProductService, ProductStatus } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { CrossupsellType, ProductStatus } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Product,
@@ -86,7 +87,7 @@ export function useProductSlider(options: UseProductSliderOptions): UseProductSl
   }
 
   // ── Fetch crossupsells ────────────────────────────────────────────────────
-  // Mirrors ProductSlider.lite.tsx fetchCrossUpsells():
+  // Mirrors ProductSlider.tsx fetchCrossUpsells():
   // - includes priceCalculateProductInput
   // - extracts productTo / clusterTo from each Crossupsell
 
@@ -94,7 +95,7 @@ export function useProductSlider(options: UseProductSliderOptions): UseProductSl
     setLoading(true);
     setError(null);
     try {
-      const service = new CrossupsellService(graphqlClient);
+      const service = getServices(graphqlClient).crossupsell;
       const variables: CrossupsellsQueryVariables = {
         input: {
           page: 1,
@@ -127,7 +128,7 @@ export function useProductSlider(options: UseProductSliderOptions): UseProductSl
   }, [graphqlClient, language, taxZone, options.user, options.companyId, configuration]);
 
   // ── Fetch products (batch) ────────────────────────────────────────────────
-  // Mirrors ProductSlider.lite.tsx fetchItems():
+  // Mirrors ProductSlider.tsx fetchItems():
   // - uses ProductService.getProducts() (batch), NOT per-item getProduct()
   // - includes statuses filter and filterAvailableAttributeInput
 
@@ -136,7 +137,7 @@ export function useProductSlider(options: UseProductSliderOptions): UseProductSl
     setLoading(true);
     setError(null);
     try {
-      const service = new ProductService(graphqlClient);
+      const service = getServices(graphqlClient).product;
 
       const searchInput: ProductSearchInput = {
         productIds,

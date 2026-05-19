@@ -9,6 +9,7 @@ import {
   GraphQLClient,
 } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface LoginFormProps {
@@ -119,7 +120,9 @@ export interface LoginFormProps {
   configuration?: any;
 }
 
-function LoginForm(props: LoginFormProps) {
+function LoginForm(rawProps: LoginFormProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -127,66 +130,37 @@ function LoginForm(props: LoginFormProps) {
     graphqlClient: props.graphqlClient as GraphQLClient,
   });
 
-  
-  function emailLabel(): string {
-    return props.labels?.email || 'Email';
-  }
-  function passwordLabel(): string {
-    return props.labels?.password || 'Password';
-  }
-  function emailPlaceholder(): string {
-    return props.labels?.emailPlaceholder || 'name@example.com';
-  }
-  function passwordPlaceholder(): string {
-    return props.labels?.passwordPlaceholder || '••••••••';
-  }
-  function forgotPasswordText(): string {
-    return props.labels?.forgotPassword || 'Forgot password?';
-  }
-  function registerText(): string {
-    return props.labels?.registerText || "Don't have an account?";
-  }
-  function registerLinkText(): string {
-    return props.labels?.registerLink || 'Create an Account';
-  }
-  function guestCheckoutLinkText(): string {
-    return props.labels?.guestCheckoutLink || 'Continue as Guest';
-  }
-  function resolvedTitle(): string {
-    return props.title !== undefined ? props.title : 'Log in';
-  }
-  function resolvedButtonText(): string {
-    return props.buttonText || 'Login';
-  }
-  function showForgotPassword(): boolean {
-    return props.displayForgotPasswordLink !== false;
-  }
-  function showRegister(): boolean {
-    return props.displayRegisterLink !== false;
-  }
-  function showGuestCheckout(): boolean {
-    return props.displayGuestCheckoutLink !== false;
-  }
-  function isLoading(): boolean {
-    if (props.onLoginSubmit) {
-      return props.loginLoading === true;
-    }
-    return loading;
-  }
+  // Labels / flags resolved once (previously each was a one-line function
+  // redefined every render and called from the JSX).
+  const emailLabel = getLabel(props.labels, 'email', 'Email');
+  const passwordLabel = getLabel(props.labels, 'password', 'Password');
+  const emailPlaceholder = getLabel(props.labels, 'emailPlaceholder', 'name@example.com');
+  const passwordPlaceholder = getLabel(props.labels, 'passwordPlaceholder', '••••••••');
+  const forgotPasswordText = getLabel(props.labels, 'forgotPassword', 'Forgot password?');
+  const registerText = getLabel(props.labels, 'registerText', "Don't have an account?");
+  const registerLinkText = getLabel(props.labels, 'registerLink', 'Create an Account');
+  const guestCheckoutLinkText = getLabel(props.labels, 'guestCheckoutLink', 'Continue as Guest');
+  const resolvedTitle = props.title !== undefined ? props.title : 'Log in';
+  const resolvedButtonText = props.buttonText || 'Login';
+  const showForgotPassword = props.displayForgotPasswordLink !== false;
+  const showRegister = props.displayRegisterLink !== false;
+  const showGuestCheckout = props.displayGuestCheckoutLink !== false;
+
+  const isLoading = props.onLoginSubmit ? props.loginLoading === true : loading;
+
   // Surface a friendly fixed message for any login failure — server-side error
   // strings can be cryptic ("HTTP 401", GraphQL "Unauthorized", etc.) and
-  // aren't safe to show to end users. Override via `labels.invalidCredentials`
-  // if a specific copy is needed.
-  function errorMessage(): string {
-    const raw = props.onLoginSubmit ? props.loginError : authError;
-    if (!raw) return '';
-    return getLabel(
-      props.labels,
-      'invalidCredentials',
-      "The credentials you entered don't match our records. Please try again.",
-    );
-  }
-  async function handleSubmit(e: any): Promise<void> {
+  // aren't safe to show to end users. Override via `labels.invalidCredentials`.
+  const rawError = props.onLoginSubmit ? props.loginError : authError;
+  const errorMessage = rawError
+    ? getLabel(
+        props.labels,
+        'invalidCredentials',
+        "The credentials you entered don't match our records. Please try again.",
+      )
+    : '';
+
+  async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     if (props.beforeLogin) {
       props.beforeLogin();
@@ -208,26 +182,40 @@ function LoginForm(props: LoginFormProps) {
       setEmail('');
       setPassword('');
       if (props.afterLogin) {
-        props.afterLogin(result.user as Contact | Customer, result.accessToken, result.refreshToken, result.expiresAt, props.cart ?? null);
+        props.afterLogin(
+          result.user as Contact | Customer,
+          result.accessToken,
+          result.refreshToken,
+          result.expiresAt,
+          props.cart ?? null,
+        );
       }
     }
   }
+
   return (
     <div
       className="propeller-login-form"
-      data-loading={isLoading() ? 'true' : 'false'}
+      data-loading={isLoading ? 'true' : 'false'}
       data-variant={props.accountHeaderLoginForm ? 'compact' : 'full'}
     >
-      {resolvedTitle() ? (
+      {resolvedTitle ? (
         <div className="propeller-login-form__header space-y-1 text-center mb-6">
-          <h2 className="propeller-login-form__title text-2xl font-bold">{resolvedTitle()}</h2>
-          {props.subtitle ? <p className="propeller-login-form__subtitle text-sm text-muted-foreground">{props.subtitle}</p> : null}
+          <h2 className="propeller-login-form__title text-2xl font-bold">{resolvedTitle}</h2>
+          {props.subtitle ? (
+            <p className="propeller-login-form__subtitle text-sm text-muted-foreground">
+              {props.subtitle}
+            </p>
+          ) : null}
         </div>
       ) : null}
       <form className="propeller-login-form__form space-y-4" onSubmit={(e) => handleSubmit(e)}>
         <div className="propeller-login-form__field space-y-2">
-          <label htmlFor="login-email" className="propeller-login-form__label text-sm font-medium leading-none">
-            {emailLabel()}
+          <label
+            htmlFor="login-email"
+            className="propeller-login-form__label text-sm font-medium leading-none"
+          >
+            {emailLabel}
           </label>
           <input
             type="email"
@@ -235,28 +223,29 @@ function LoginForm(props: LoginFormProps) {
             name="email"
             className="propeller-login-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
             value={email}
-            onChange={(e) => {
-              setEmail((e.target as HTMLInputElement).value);
-            }}
-            placeholder={emailPlaceholder()}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={emailPlaceholder}
             required
-            disabled={isLoading()}
+            disabled={isLoading}
           />
         </div>
         <div className="propeller-login-form__field space-y-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="login-password" className="propeller-login-form__label text-sm font-medium leading-none">
-              {passwordLabel()}
+            <label
+              htmlFor="login-password"
+              className="propeller-login-form__label text-sm font-medium leading-none"
+            >
+              {passwordLabel}
             </label>
-            {showForgotPassword() && !props.accountHeaderLoginForm ? (
+            {showForgotPassword && !props.accountHeaderLoginForm ? (
               <button
                 type="button"
                 className="propeller-login-form__forgot-link text-sm text-primary hover:underline"
-                onClick={(event) => {
+                onClick={() => {
                   if (props.onForgotPasswordClick) props.onForgotPasswordClick();
                 }}
               >
-                {forgotPasswordText()}
+                {forgotPasswordText}
               </button>
             ) : null}
           </div>
@@ -266,23 +255,23 @@ function LoginForm(props: LoginFormProps) {
             name="password"
             className="propeller-login-form__input flex h-10 w-full rounded-control border border-input bg-card px-3 py-2 text-sm placeholder:text-foreground-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
             value={password}
-            onChange={(e) => {
-              setPassword((e.target as HTMLInputElement).value);
-            }}
-            placeholder={passwordPlaceholder()}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={passwordPlaceholder}
             required
-            disabled={isLoading()}
+            disabled={isLoading}
           />
         </div>
-        {errorMessage() ? (
-          <div className="propeller-login-form__error text-sm text-destructive bg-destructive/10 p-3 rounded-control">{errorMessage()}</div>
+        {errorMessage ? (
+          <div className="propeller-login-form__error text-sm text-destructive bg-destructive/10 p-3 rounded-control">
+            {errorMessage}
+          </div>
         ) : null}
         <button
           type="submit"
           className="propeller-login-form__submit inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-control hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading()}
+          disabled={isLoading}
         >
-          {isLoading() ? (
+          {isLoading ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -304,35 +293,37 @@ function LoginForm(props: LoginFormProps) {
               />
             </svg>
           ) : null}
-          {isLoading() ? <>Logging in...</> : <>{resolvedButtonText()}</>}
+          {isLoading ? <>Logging in...</> : <>{resolvedButtonText}</>}
         </button>
       </form>
-      {(showRegister() || showGuestCheckout()) && !props.accountHeaderLoginForm ? (
+      {(showRegister || showGuestCheckout) && !props.accountHeaderLoginForm ? (
         <div className="propeller-login-form__footer mt-6 border-t border-border pt-6 space-y-3">
-          {showRegister() ? (
+          {showRegister ? (
             <div className="propeller-login-form__register text-center">
-              <p className="propeller-login-form__register-prompt text-sm text-muted-foreground mb-2">{registerText()}</p>
+              <p className="propeller-login-form__register-prompt text-sm text-muted-foreground mb-2">
+                {registerText}
+              </p>
               <button
                 type="button"
                 className="propeller-login-form__register-btn inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-border rounded-control hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                onClick={(event) => {
+                onClick={() => {
                   if (props.onRegisterClick) props.onRegisterClick();
                 }}
               >
-                {registerLinkText()}
+                {registerLinkText}
               </button>
             </div>
           ) : null}
-          {showGuestCheckout() ? (
+          {showGuestCheckout ? (
             <div className="propeller-login-form__guest text-center">
               <button
                 type="button"
                 className="propeller-login-form__guest-btn text-sm text-primary hover:underline"
-                onClick={(event) => {
+                onClick={() => {
                   if (props.onGuestCheckoutClick) props.onGuestCheckoutClick();
                 }}
               >
-                {guestCheckoutLinkText()}
+                {guestCheckoutLinkText}
               </button>
             </div>
           ) : null}
@@ -343,7 +334,7 @@ function LoginForm(props: LoginFormProps) {
           <button
             type="button"
             className="propeller-login-form__forgot-link text-secondary hover:underline text-xs"
-            onClick={(event) => {
+            onClick={() => {
               if (props.onForgotPasswordClick) props.onForgotPasswordClick();
             }}
           >
@@ -354,7 +345,7 @@ function LoginForm(props: LoginFormProps) {
             <button
               type="button"
               className="propeller-login-form__register-btn text-secondary hover:underline font-medium"
-              onClick={(event) => {
+              onClick={() => {
                 if (props.onRegisterClick) props.onRegisterClick();
               }}
             >

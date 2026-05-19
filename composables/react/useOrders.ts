@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { CartService, OrderItemClass, OrderSearchFields, OrderService, OrderType, YesNo } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { OrderItemClass, OrderSearchFields, OrderType, YesNo } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Order,
@@ -111,7 +112,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
       setLoading(true);
       setError(null);
       try {
-        const service = new OrderService(graphqlClient);
+        const service = getServices(graphqlClient).order;
         const userId: number = isContact(user) ? user.contactId : isCustomer(user) ? user.customerId : 0;
         const resolvedCompanyId = companyId ?? (isContact(user) ? user.company?.companyId : null);
 
@@ -159,7 +160,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
     async (order: Order): Promise<{ success: boolean; error?: string }> => {
       if (!order?.id) return { success: false, error: 'No order ID' };
       try {
-        const service = new OrderService(graphqlClient);
+        const service = getServices(graphqlClient).order;
         const pdfResponse = await service.getOrderPDF(order.id);
         if (!pdfResponse) return { success: false, error: 'No PDF response' };
 
@@ -219,7 +220,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
           resolvedCartId = c.cartId;
         }
 
-        const cartService = new CartService(graphqlClient);
+        const cartService = getServices(graphqlClient).cart;
         const allProducts = order.items.filter(
           (item: OrderItem) => item.class === OrderItemClass.product && item.isBonus === YesNo.N
         );
@@ -286,7 +287,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
       flags: { status?: string }
     ): Promise<{ success: boolean; error?: string }> => {
       try {
-        const service = new OrderService(graphqlClient);
+        const service = getServices(graphqlClient).order;
         await service.setOrderStatus({ orderId, ...flags });
         return { success: true };
       } catch (e: unknown) {
@@ -301,7 +302,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
   const getOrderById = useCallback(
     async (orderId: number): Promise<{ success: boolean; order?: Order; error?: string }> => {
       try {
-        const service = new OrderService(graphqlClient);
+        const service = getServices(graphqlClient).order;
         const variables: OrderQueryVariables = {
           orderId,
           imageSearchFilters: configuration.imageSearchFiltersGrid,
@@ -323,7 +324,7 @@ export function useOrders(options: UseOrdersOptions): UseOrdersReturn {
   const downloadQuotePdf = useCallback(
     async (orderId: number): Promise<{ success: boolean; error?: string }> => {
       try {
-        const service = new OrderService(graphqlClient);
+        const service = getServices(graphqlClient).order;
         const pdfResponse = await service.getQuotePDF(orderId);
         if (!pdfResponse) return { success: false, error: 'No PDF response' };
 

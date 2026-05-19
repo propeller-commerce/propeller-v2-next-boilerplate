@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
-import { localizeHref, config } from '@/data/config';
+import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import { Order, OrderItem, Company } from 'propeller-sdk-v2';
@@ -103,12 +103,8 @@ export default function OrderDetailPage() {
                             <OrderSummary order={order} countries={COUNTRIES} />
                         </div>
                         <OrderActions
-                            graphqlClient={graphqlClient}
                             order={order}
-                            user={state.user}
                             cartId={cart?.cartId}
-                            companyId={companyId}
-                            configuration={config}
                             onCartCreated={(newCart) => {
                                 console.log('Cart created:', newCart);
                                 saveCart(newCart)
@@ -230,12 +226,8 @@ export default function OrderDetailPage() {
                     {/* Order Bottom Actions & Totals */}
                     <div className="flex flex-col md:flex-row justify-between gap-8 pt-6 border-t md:border-none">
                         <OrderActions
-                            graphqlClient={graphqlClient}
                             order={order}
-                            user={state.user}
                             cartId={cart?.cartId}
-                            companyId={companyId}
-                            configuration={config}
                             onCartCreated={(newCart) => saveCart(newCart)}
                             afterReorder={(newCart) => saveCart(newCart)}
                         />

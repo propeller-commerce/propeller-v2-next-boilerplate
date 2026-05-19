@@ -124,45 +124,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const logoutTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize auth state on mount
+  // Initialize auth state on mount.
+  //
+  // The JWT now lives only in an httpOnly cookie that JS cannot read. We ask
+  // the server (/api/auth/me) whether that cookie is present, and if so hydrate
+  // the UI from the non-sensitive `user` render hint in localStorage. No token
+  // is read or injected client-side — the /api/graphql proxy attaches it from
+  // the cookie, and the real GraphQL API validates it on the next data call.
   useEffect(() => {
-    const initializeAuth = () => {
+    if (typeof window === 'undefined') return;
+
+    let cancelled = false;
+    const initializeAuth = async () => {
       try {
-        if (typeof window !== 'undefined') {
-          const storedToken = localStorage.getItem('accessToken');
-          const storedUser = localStorage.getItem('user');
+        const res = await fetch('/api/auth/me');
+        const { authenticated } = (await res.json()) as { authenticated: boolean };
+        if (cancelled) return;
 
-          if (storedToken && storedUser) {
-            const rawUser = JSON.parse(storedUser);
-            const user = sanitizeUser(rawUser);
-
-            // Restore auth header
-            const currentConfig = graphqlClient.getConfig();
-            graphqlClient.updateConfig({
-              headers: {
-                ...currentConfig.headers,
-                'Authorization': `Bearer ${storedToken}`
-              }
-            });
-
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: {
-                user,
-                accessToken: storedToken,
-              },
-            });
-          } else {
-            dispatch({ type: 'SET_LOADING', payload: false });
-          }
+        const storedUser = localStorage.getItem('user');
+        if (authenticated && storedUser) {
+          const user = sanitizeUser(JSON.parse(storedUser));
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: { user, accessToken: '' },
+          });
+        } else {
+          // No session cookie (or no cached profile) — stale hint, clear it.
+          if (!authenticated) localStorage.removeItem('user');
+          dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
+        if (cancelled) return;
         console.error('Error initializing auth:', error);
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
     initializeAuth();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Login function
@@ -198,17 +199,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
 
-    // Read language before clearing localStorage
     const lang = typeof window !== 'undefined'
       ? localStorage.getItem('preferred_language') || 'NL'
       : 'NL';
 
-    // Clear local storage except 'menuData'
+    // Remove only auth-related keys. `authService.logout()` already cleared the
+    // httpOnly cookie + `user`/`cart`; a blanket `localStorage.clear()` would
+    // also wipe unrelated keys (menuData, preferred_language, host-app data).
     if (typeof window !== 'undefined') {
-      const menuData = localStorage.getItem('menuData');
-      localStorage.clear();
-      if (menuData) {
-        localStorage.setItem('menuData', menuData);
+      for (const key of ['user', 'cart', 'selected_company', 'accessToken', 'refreshToken', 'expiresAt']) {
+        localStorage.removeItem(key);
       }
     }
 
@@ -309,11 +309,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return obj;
         };
         const plain = strip(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)));
-        const storedToken = localStorage.getItem('accessToken');
         localStorage.setItem('user', JSON.stringify(plain));
+        // accessToken in reducer state is vestigial — the JWT lives only in the
+        // httpOnly cookie and is injected by the /api/graphql proxy.
         dispatch({
           type: 'AUTH_SUCCESS',
-          payload: { user: plain as User, accessToken: storedToken || '' },
+          payload: { user: plain as User, accessToken: '' },
         });
       }
     } catch (e) {
@@ -334,19 +335,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Listen for external auth events (e.g. from other tabs)
   useEffect(() => {
-    const handleUserLoggedIn = () => {
-      const storedToken = localStorage.getItem('accessToken');
-      const storedUser = localStorage.getItem('user');
-      if (storedToken && storedUser) {
-        try {
+    const handleUserLoggedIn = async () => {
+      // Cross-tab / post-login signal. The token is in the httpOnly cookie, so
+      // confirm the session server-side and hydrate from the user hint.
+      try {
+        const res = await fetch('/api/auth/me');
+        const { authenticated } = (await res.json()) as { authenticated: boolean };
+        const storedUser = localStorage.getItem('user');
+        if (authenticated && storedUser) {
           const user = sanitizeUser(JSON.parse(storedUser));
           dispatch({
             type: 'AUTH_SUCCESS',
-            payload: { user, accessToken: storedToken },
+            payload: { user, accessToken: '' },
           });
-        } catch (e) {
-          console.error('Failed to parse stored user on userLoggedIn event:', e);
         }
+      } catch (e) {
+        console.error('Failed to resolve session on userLoggedIn event:', e);
       }
     };
 

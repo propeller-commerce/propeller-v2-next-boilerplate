@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { CartService, CrossupsellService, CrossupsellType, PurchaseRole } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { CrossupsellType, PurchaseRole } from 'propeller-sdk-v2';
 import type { GraphQLClient, Cart, CartMainItem, Product, Cluster, Contact, Customer, MediaImageProductSearchInput, TransformationsInput, PurchaseAuthorizationConfig, Crossupsell, CrossupsellsQueryVariables, CrossupsellSearchInput, CartProcessResponse } from 'propeller-sdk-v2';
 import { initCart, type CartInitConfig } from '../shared/utils/cartInit';
 import type { AnyUser } from '../shared/utils/userIdentity';
@@ -111,7 +112,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
         if (opts.createCart) { const c = await resolveCart(); resolvedCartId = c.cartId; }
         else return { success: false, error: 'No cart ID provided' };
       }
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const resultCart = await service.addItemToCart({
         id: resolvedCartId,
         input: { productId: opts.product.productId, quantity: opts.quantity, ...(opts.cluster?.clusterId !== undefined && { clusterId: opts.cluster.clusterId }), ...(childItemInputs && { childItems: childItemInputs }), ...(opts.notes && { notes: opts.notes }), ...(opts.price !== undefined && { price: opts.price }) },
@@ -128,7 +129,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
   const updateItemQuantity = useCallback(async (cartItemId: string, quantity: number): Promise<Cart | undefined> => {
     if (!cartId) return undefined; setLoading(true);
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const updated = await service.updateCartItem({ id: cartId, itemId: cartItemId, input: { quantity }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
       setCart(updated);
       return updated;
@@ -142,7 +143,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
       delete notesTimers.current[cartItemId];
       if (!cartId) return;
       try {
-        const service = new CartService(graphqlClient);
+        const service = getServices(graphqlClient).cart;
         const updated = await service.updateCartItem({ id: cartId, itemId: cartItemId, input: { notes }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
         setCart(updated);
       } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to update notes'); }
@@ -152,7 +153,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
   const deleteItem = useCallback(async (cartItemId: string): Promise<Cart | undefined> => {
     if (!cartId) return undefined; setLoading(true);
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const updated = await service.deleteCartItem({
         id: cartId,
         input: { itemId: cartItemId },
@@ -169,7 +170,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
   const addActionCode = useCallback(async (code: string): Promise<Cart | undefined> => {
     if (!cartId) return undefined;
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const updated = await service.addActionCodeToCart({ id: cartId, input: { actionCode: code }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
       setCart(updated);
       return updated;
@@ -179,7 +180,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
   const removeActionCode = useCallback(async (code: string): Promise<Cart | undefined> => {
     if (!cartId) return undefined;
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const updated = await service.removeActionCodeFromCart({ id: cartId, input: { actionCode: code }, language, imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput, imageVariantFilters: configuration?.imageVariantFiltersSmall });
       setCart(updated);
       return updated;
@@ -188,14 +189,14 @@ export function useCart(options: UseCartOptions): UseCartReturn {
 
   const requestAuthorization = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
     if (!cartId) return { success: false, error: 'No cart' };
-    try { const service = new CartService(graphqlClient); await service.requestPurchaseAuthorization({ id: cartId }); return { success: true }; }
+    try { const service = getServices(graphqlClient).cart; await service.requestPurchaseAuthorization({ id: cartId }); return { success: true }; }
     catch (e: unknown) { return { success: false, error: e instanceof Error ? e.message : 'Failed to request authorization' }; }
   }, [graphqlClient, cartId]);
 
   const processCart = useCallback(async (orderStatus = 'COMPLETE'): Promise<{ success: boolean; response?: CartProcessResponse; error?: string }> => {
     if (!cartId) return { success: false, error: 'No cart' };
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const response = await service.processCart({ id: cartId, input: { orderStatus, language } });
       return { success: true, response };
     } catch (e: unknown) {
@@ -207,7 +208,7 @@ export function useCart(options: UseCartOptions): UseCartReturn {
     const { productId, clusterId, types, taxZone, imageVariantFilters } = opts;
     if (!productId && !clusterId) return [];
     try {
-      const service = new CrossupsellService(graphqlClient);
+      const service = getServices(graphqlClient).crossupsell;
       const variables: CrossupsellsQueryVariables = {
         input: {
           types: (types ?? [CrossupsellType.ACCESSORIES]) as CrossupsellSearchInput['types'],

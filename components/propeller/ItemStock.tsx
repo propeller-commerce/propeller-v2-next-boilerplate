@@ -113,4 +113,6 @@ function ItemStock(props: ItemStockProps) {
   );
 }
 
-export default ItemStock;
+// Memoized: pure leaf rendered inside memoized cards; skips re-render when its
+// (inventory / labels / flags) props are shallow-equal (rbp §5.2).
+export default React.memo(ItemStock);

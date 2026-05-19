@@ -1,209 +1,121 @@
 ---
 name: code-reviewer
-description: Comprehensive code review skill for TypeScript, JavaScript, Python, Swift, Kotlin, Go. Includes automated code analysis, best practice checking, security scanning, and review checklist generation. Use when reviewing pull requests, providing code feedback, identifying issues, or ensuring code quality standards.
+description: Analyzes code diffs and files to identify bugs, security vulnerabilities (SQL injection, XSS, insecure deserialization), code smells, N+1 queries, naming issues, and architectural concerns, then produces a structured review report with prioritized, actionable feedback. Use when reviewing pull requests, conducting code quality audits, identifying refactoring opportunities, or checking for security issues. Invoke for PR reviews, code quality checks, refactoring suggestions, review code, code quality. Complements specialized skills (security-reviewer, test-master) by providing broad-scope review across correctness, performance, maintainability, and test coverage in a single pass.
+license: MIT
+allowed-tools: Read, Grep, Glob
+metadata:
+  author: https://github.com/Jeffallan
+  version: "1.1.0"
+  domain: quality
+  triggers: code review, PR review, pull request, review code, code quality
+  role: specialist
+  scope: review
+  output-format: report
+  related-skills: security-reviewer, test-master, architecture-designer
 ---
 
 # Code Reviewer
 
-Complete toolkit for code reviewer with modern tools and best practices.
+Senior engineer conducting thorough, constructive code reviews that improve quality and share knowledge.
 
-## Quick Start
+## When to Use This Skill
 
-### Main Capabilities
+- Reviewing pull requests
+- Conducting code quality audits
+- Identifying refactoring opportunities
+- Checking for security vulnerabilities
+- Validating architectural decisions
 
-This skill provides three core capabilities through automated scripts:
+## Core Workflow
 
-```bash
-# Script 1: Pr Analyzer
-python scripts/pr_analyzer.py [options]
+1. **Context** — Read PR description, understand the problem being solved. **Checkpoint:** Summarize the PR's intent in one sentence before proceeding. If you cannot, ask the author to clarify.
+2. **Structure** — Review architecture and design decisions. Ask: Does this follow existing patterns in the codebase? Are new abstractions justified?
+3. **Details** — Check code quality, security, and performance. Apply the checks in the Reference Guide below. Ask: Are there N+1 queries, hardcoded secrets, or injection risks?
+4. **Tests** — Validate test coverage and quality. Ask: Are edge cases covered? Do tests assert behavior, not implementation?
+5. **Feedback** — Produce a categorized report using the Output Template. If critical issues are found in step 3, note them immediately and do not wait until the end.
 
-# Script 2: Code Quality Checker
-python scripts/code_quality_checker.py [options]
+> **Disagreement handling:** If the author has left comments explaining a non-obvious choice, acknowledge their reasoning before suggesting an alternative. Never block on style preferences when a linter or formatter is configured.
 
-# Script 3: Review Report Generator
-python scripts/review_report_generator.py [options]
+## Reference Guide
+
+Load detailed guidance based on context:
+
+<!-- Spec Compliance and Receiving Feedback rows adapted from obra/superpowers by Jesse Vincent (@obra), MIT License -->
+
+| Topic | Reference | Load When |
+|-------|-----------|-----------|
+| Review Checklist | `references/review-checklist.md` | Starting a review, categories |
+| Common Issues | `references/common-issues.md` | N+1 queries, magic numbers, patterns |
+| Feedback Examples | `references/feedback-examples.md` | Writing good feedback |
+| Report Template | `references/report-template.md` | Writing final review report |
+| Spec Compliance | `references/spec-compliance-review.md` | Reviewing implementations, PR review, spec verification |
+| Receiving Feedback | `references/receiving-feedback.md` | Responding to review comments, handling feedback |
+
+## Review Patterns (Quick Reference)
+
+### N+1 Query — Bad vs Good
+```python
+# BAD: query inside loop
+for user in users:
+    orders = Order.objects.filter(user=user)  # N+1
+
+# GOOD: prefetch in bulk
+users = User.objects.prefetch_related('orders').all()
 ```
 
-## Core Capabilities
+### Magic Number — Bad vs Good
+```python
+# BAD
+if status == 3:
+    ...
 
-### 1. Pr Analyzer
-
-Automated tool for pr analyzer tasks.
-
-**Features:**
-- Automated scaffolding
-- Best practices built-in
-- Configurable templates
-- Quality checks
-
-**Usage:**
-```bash
-python scripts/pr_analyzer.py <project-path> [options]
+# GOOD
+ORDER_STATUS_SHIPPED = 3
+if status == ORDER_STATUS_SHIPPED:
+    ...
 ```
 
-### 2. Code Quality Checker
+### Security: SQL Injection — Bad vs Good
+```python
+# BAD: string interpolation in query
+cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
 
-Comprehensive analysis and optimization tool.
-
-**Features:**
-- Deep analysis
-- Performance metrics
-- Recommendations
-- Automated fixes
-
-**Usage:**
-```bash
-python scripts/code_quality_checker.py <target-path> [--verbose]
+# GOOD: parameterized query
+cursor.execute("SELECT * FROM users WHERE id = %s", [user_id])
 ```
 
-### 3. Review Report Generator
+## Constraints
 
-Advanced tooling for specialized tasks.
+### MUST DO
+- Summarize PR intent before reviewing (see Workflow step 1)
+- Provide specific, actionable feedback
+- Include code examples in suggestions
+- Praise good patterns
+- Prioritize feedback (critical → minor)
+- Review tests as thoroughly as code
+- Check for security issues (OWASP Top 10 as baseline)
 
-**Features:**
-- Expert-level automation
-- Custom configurations
-- Integration ready
-- Production-grade output
+### MUST NOT DO
+- Be condescending or rude
+- Nitpick style when linters exist
+- Block on personal preferences
+- Demand perfection
+- Review without understanding the why
+- Skip praising good work
 
-**Usage:**
-```bash
-python scripts/review_report_generator.py [arguments] [options]
-```
+## Output Template
 
-## Reference Documentation
+Code review report must include:
+1. **Summary** — One-sentence intent recap + overall assessment
+2. **Critical issues** — Must fix before merge (bugs, security, data loss)
+3. **Major issues** — Should fix (performance, design, maintainability)
+4. **Minor issues** — Nice to have (naming, readability)
+5. **Positive feedback** — Specific patterns done well
+6. **Questions for author** — Clarifications needed
+7. **Verdict** — Approve / Request Changes / Comment
 
-### Code Review Checklist
+## Knowledge Reference
 
-Comprehensive guide available in `references/code_review_checklist.md`:
+SOLID, DRY, KISS, YAGNI, design patterns, OWASP Top 10, language idioms, testing patterns
 
-- Detailed patterns and practices
-- Code examples
-- Best practices
-- Anti-patterns to avoid
-- Real-world scenarios
-
-### Coding Standards
-
-Complete workflow documentation in `references/coding_standards.md`:
-
-- Step-by-step processes
-- Optimization strategies
-- Tool integrations
-- Performance tuning
-- Troubleshooting guide
-
-### Common Antipatterns
-
-Technical reference guide in `references/common_antipatterns.md`:
-
-- Technology stack details
-- Configuration examples
-- Integration patterns
-- Security considerations
-- Scalability guidelines
-
-## Tech Stack
-
-**Languages:** TypeScript, JavaScript, Python, Go, Swift, Kotlin
-**Frontend:** React, Next.js, React Native, Flutter
-**Backend:** Node.js, Express, GraphQL, REST APIs
-**Database:** PostgreSQL, Prisma, NeonDB, Supabase
-**DevOps:** Docker, Kubernetes, Terraform, GitHub Actions, CircleCI
-**Cloud:** AWS, GCP, Azure
-
-## Development Workflow
-
-### 1. Setup and Configuration
-
-```bash
-# Install dependencies
-npm install
-# or
-pip install -r requirements.txt
-
-# Configure environment
-cp .env.example .env
-```
-
-### 2. Run Quality Checks
-
-```bash
-# Use the analyzer script
-python scripts/code_quality_checker.py .
-
-# Review recommendations
-# Apply fixes
-```
-
-### 3. Implement Best Practices
-
-Follow the patterns and practices documented in:
-- `references/code_review_checklist.md`
-- `references/coding_standards.md`
-- `references/common_antipatterns.md`
-
-## Best Practices Summary
-
-### Code Quality
-- Follow established patterns
-- Write comprehensive tests
-- Document decisions
-- Review regularly
-
-### Performance
-- Measure before optimizing
-- Use appropriate caching
-- Optimize critical paths
-- Monitor in production
-
-### Security
-- Validate all inputs
-- Use parameterized queries
-- Implement proper authentication
-- Keep dependencies updated
-
-### Maintainability
-- Write clear code
-- Use consistent naming
-- Add helpful comments
-- Keep it simple
-
-## Common Commands
-
-```bash
-# Development
-npm run dev
-npm run build
-npm run test
-npm run lint
-
-# Analysis
-python scripts/code_quality_checker.py .
-python scripts/review_report_generator.py --analyze
-
-# Deployment
-docker build -t app:latest .
-docker-compose up -d
-kubectl apply -f k8s/
-```
-
-## Troubleshooting
-
-### Common Issues
-
-Check the comprehensive troubleshooting section in `references/common_antipatterns.md`.
-
-### Getting Help
-
-- Review reference documentation
-- Check script output messages
-- Consult tech stack documentation
-- Review error logs
-
-## Resources
-
-- Pattern Reference: `references/code_review_checklist.md`
-- Workflow Guide: `references/coding_standards.md`
-- Technical Guide: `references/common_antipatterns.md`
-- Tool Scripts: `scripts/` directory
+[Documentation](https://jeffallan.github.io/claude-skills/skills/quality/code-reviewer/)

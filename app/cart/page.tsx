@@ -2,8 +2,6 @@
 
 import { useSyncExternalStore } from 'react';
 import { useCart } from '@/context/CartContext';
-import { usePrice } from '@/context/PriceContext';
-import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CartItem from '@/components/propeller/CartItem';
@@ -13,21 +11,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { useCompany } from '@/context/CompanyContext';
-import { type Cart, type CartMainItem, type Contact, CrossupsellType, type Customer } from 'propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
+import { type Cart, type CartMainItem, CrossupsellType } from 'propeller-sdk-v2';
 
 const subscribe = () => () => { };
 
 export default function CartPage() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const { cart, saveCart, clearCart } = useCart();
-  const { includeTax } = usePrice();
-  const { state } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
-  const { selectedCompany } = useCompany();
 
   const items = mounted ? (cart?.items || []) : [];
 
@@ -55,15 +47,9 @@ export default function CartPage() {
                 {items.map((item: CartMainItem) => (
                   <CartItem
                     key={item.itemId}
-                    includeTax={includeTax}
-                    user={state.user as Contact | Customer}
                     taxZone={'NL'}
-                    companyId={selectedCompany?.companyId}
-                    language={'NL'}
-                    graphqlClient={graphqlClient}
                     cartId={cart!.cartId}
                     cartItem={item}
-                    configuration={config}
                     enableIncrementDecrement={true}
                     showCrossupsells={true}
                     crossupsellTypes={[CrossupsellType.ACCESSORIES]}
@@ -79,9 +65,6 @@ export default function CartPage() {
                   <>
                     <CartSummary
                       cart={cart}
-                      graphqlClient={graphqlClient}
-                      user={state.user as Contact | Customer}
-                      companyId={selectedCompany?.companyId}
                       onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
                       afterRequestAuthorization={(updatedCart: Cart) => {
                         clearCart();
@@ -90,9 +73,7 @@ export default function CartPage() {
                       onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
                     />
                     <ActionCode
-                      graphqlClient={graphqlClient}
                       cart={cart}
-                      configuration={config}
                       afterActionCodeApply={saveCart}
                       afterActionCodeRemove={saveCart}
                     />

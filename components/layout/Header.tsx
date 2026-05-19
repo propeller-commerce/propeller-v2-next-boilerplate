@@ -278,11 +278,6 @@ export default function Header() {
               {showSearch && (
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
-                    graphqlClient={graphqlClient}
-                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
-                    companyId={selectedCompany?.companyId}
-                    configuration={config}
-                    language={language}
                     clearSignal={searchClearSignal}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
@@ -298,8 +293,6 @@ export default function Header() {
                 {/* User Menu */}
                 {showAccount && (
                   <AccountIconAndMenu
-                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
-                    graphqlClient={graphqlClient}
                     cart={cart as Cart | null}
                     afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
                       const loggedInUser = stripLeadingUnderscores(user);
@@ -310,10 +303,14 @@ export default function Header() {
                         setSelectedCompany((loggedInUser as Contact).company as Company);
                       }
 
-                      if (accessToken && refreshToken && expiresAt) {
-                        localStorage.setItem('accessToken', accessToken);
-                        localStorage.setItem('refreshToken', refreshToken);
-                        localStorage.setItem('expiresAt', expiresAt);
+                      // Persist the token in the httpOnly cookie (server-side),
+                      // not localStorage. Survives reloads via the proxy.
+                      if (accessToken) {
+                        await fetch('/api/auth/session', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ accessToken, refreshToken }),
+                        });
                       }
 
                       // Dispatch event for AuthContext
@@ -390,14 +387,9 @@ export default function Header() {
                 {showCart && (
                   <CartIconAndSidebar
                     cart={cart as Cart}
-                    user={state.isAuthenticated ? (state.user as Contact | Customer) : undefined}
-                    companyId={selectedCompany?.companyId}
-                    graphqlClient={graphqlClient}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}
-                    configuration={config}
-                    language={language}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                     onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
                     afterRequestAuthorization={(updatedCart) => {
@@ -450,12 +442,8 @@ export default function Header() {
                   )}>
                     {!state.isLoading && (
                       <PropellerMenu
-                        graphqlClient={graphqlClient}
                         categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
-                        language={language}
                         menuStyle="dropdown-vertical"
-                        user={state.user}
-                        configuration={config}
                         onMenuItemClick={(category) => {
                           setShowMainMenu(false);
                           router.push(config.urls.getCategoryUrl(category, language));
@@ -502,8 +490,6 @@ export default function Header() {
             {showSearch && (
               <div className="p-4 border-b border-border">
                 <SearchBar
-                  graphqlClient={graphqlClient}
-                  language={language}
                   clearSignal={searchClearSignal}
                   onSubmit={(term) => {
                     setShowMobileMenu(false);
@@ -524,12 +510,8 @@ export default function Header() {
             {/* Mobile categories */}
             {showCategoriesMenu && !state.isLoading && (
               <PropellerMenu
-                graphqlClient={graphqlClient}
                 categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
-                language={language}
                 menuStyle="dropdown-vertical"
-                user={state.user}
-                configuration={config}
                 onMenuItemClick={(category) => {
                   setShowMobileMenu(false);
                   router.push(config.urls.getCategoryUrl(category, language));

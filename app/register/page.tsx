@@ -58,7 +58,6 @@ export default function RegisterPage() {
 
               <CardContent>
                 <RegisterForm
-                  graphqlClient={graphqlClient}
                   title=""
                   requiredFields={['firstName', 'lastName']}
                   onLoginClick={() => router.push(localizeHref('/login', language))}
@@ -91,9 +90,13 @@ export default function RegisterPage() {
                       setSelectedCompany(company as Company);
                     }
 
-                    localStorage.setItem('accessToken', accessToken);
-                    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-                    if (expiresAt) localStorage.setItem('expiresAt', expiresAt);
+                    // Persist the token in the httpOnly cookie (server-side),
+                    // not localStorage. Survives reloads via the proxy.
+                    await fetch('/api/auth/session', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ accessToken, refreshToken }),
+                    });
 
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(new CustomEvent('userLoggedIn'));

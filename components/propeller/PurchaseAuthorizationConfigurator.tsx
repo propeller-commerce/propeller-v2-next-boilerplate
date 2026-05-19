@@ -3,17 +3,18 @@ import * as React from 'react';
 
 import { Contact, Customer, Gender, GraphQLClient, PurchaseAuthorizationConfig, PurchaseAuthorizationConfigCreateInput, PurchaseRole, RegisterContactInput } from 'propeller-sdk-v2';
 import { usePurchaseAuthorizationConfigurator } from '@/composables/react/usePurchaseAuthorization';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface PurchaseAuthorizationConfiguratorProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
-  /** The logged-in user */
-  user: Contact | Customer;
+  /** The logged-in user. Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer;
 
-  /** The companyId of the current selected company */
-  companyId: number;
+  /** The companyId of the current selected company. Resolved from PropellerProvider when omitted. */
+  companyId?: number;
 
   /**
    * Adds a button "Add contact" above the contacts list and enables registering contacts
@@ -58,7 +59,9 @@ export interface PurchaseAuthorizationConfiguratorProps {
   configuration?: Record<string, any>;
 }
 
-function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfiguratorProps) {
+function PurchaseAuthorizationConfigurator(rawProps: PurchaseAuthorizationConfiguratorProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const {
     company, loading, contacts, totalPages, currentPage, isAuthManager,
     showAddContactModal, addContactForm, addContactLoading, addContactError,
@@ -67,9 +70,9 @@ function PurchaseAuthorizationConfigurator(props: PurchaseAuthorizationConfigura
     handlePageChange, openAddContactModal, closeAddContactModal, setAddContactForm,
     handleAddContactSubmit,
   } = usePurchaseAuthorizationConfigurator({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
-    companyId: props.companyId,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
+    companyId: props.companyId!,
     beforeContactCreate: props.beforeContactCreate,
     onContactCreate: props.onContactCreate,
     afterContactCreate: props.afterContactCreate,

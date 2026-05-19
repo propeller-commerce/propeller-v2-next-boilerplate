@@ -26,14 +26,12 @@ import ProductSlider from '@/components/propeller/ProductSlider';
 import ProductBundles from '@/components/propeller/ProductBundles';
 import AddToFavorite from '@/components/propeller/AddToFavorite';
 import { useLanguage } from '@/context/LanguageContext';
-import { useCompany } from '@/context/CompanyContext';
 import { getLanguageString } from '@/composables/shared/utils/languageResolver';
 
 
 export default function ProductPage() {
   const params = useParams();
   const { state, refreshUser } = useAuth();
-  const { selectedCompany } = useCompany();
   const productId = parseInt(params.productId as string);
   const [product, setProduct] = useState<Product | null>(null);
   const { cart, saveCart } = useCart();
@@ -85,15 +83,10 @@ export default function ProductPage() {
             <div className="flex flex-col">
               <div className="mb-6">
                 <ProductInfo
-                  user={state.user}
-                  companyId={selectedCompany?.companyId}
                   productId={productId}
-                  graphqlClient={graphqlClient}
-                  language={language}
                   imageSearchFilters={imageSearchFilters}
                   imageVariantFilters={imageVariantFiltersLarge}
                   onProductLoaded={setProduct}
-                  configuration={config}
                 />
 
                 <ProductPrice price={price} includeTax={includeTax} />
@@ -115,17 +108,13 @@ export default function ProductPage() {
                 <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
                   <div className="flex items-center gap-2">
                     <AddToCart
-                      user={state.user}
-                      companyId={selectedCompany?.companyId}
                       product={product}
                       cartId={cart?.cartId}
-                      graphqlClient={graphqlClient}
                       createCart={true}
                       onCartCreated={(cart) => {
                         saveCart(cart);
                       }}
                       className='flex items-center w-full gap-2'
-                      configuration={config}
                       showModal={true}
                       afterAddToCart={(cart) => {
                         saveCart(cart);
@@ -144,18 +133,12 @@ export default function ProductPage() {
 
             </div>
           </div>
-          <ProductTabs product={product as Product} productId={productId} graphqlClient={graphqlClient} language={language} />
+          <ProductTabs product={product as Product} productId={productId} />
           <div className="my-6">
             <ProductBundles
-              graphqlClient={graphqlClient}
               productId={productId}
-              companyId={selectedCompany?.companyId}
-              language={language}
               cartId={cart?.cartId}
               taxZone="NL"
-              includeTax={includeTax}
-              configuration={config}
-              user={state.user}
               createCart={true}
               showModal={true}
               onCartCreated={(newCart) => saveCart(newCart)}
@@ -164,16 +147,11 @@ export default function ProductPage() {
             />
           </div>
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
             productId={productId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -186,16 +164,11 @@ export default function ProductPage() {
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.RELATED]}
             productId={productId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}

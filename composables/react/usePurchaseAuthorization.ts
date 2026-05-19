@@ -6,7 +6,8 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { CartService, CartStatus, Gender, PurchaseRole, UserService } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { CartStatus, Gender, PurchaseRole } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Company,
@@ -45,11 +46,11 @@ const EMPTY_CONTACT_FORM: AddContactFormState = {
 /** Checks if a user is an authorization manager for the given company. Works on plain objects from localStorage. */
 function checkIsAuthManager(user: Contact | Customer | null | undefined, companyId: number): boolean {
   if (!user || !('contactId' in user)) return false;
-  const pacData = (user as any).purchaseAuthorizationConfigs;
-  const items: any[] = pacData?.items ?? pacData?._items ?? [];
-  return items.some((pac: any) => {
-    const role = pac.purchaseRole ?? pac._purchaseRole;
-    const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
+  const pacData = (user as Contact).purchaseAuthorizationConfigs;
+  const items: PurchaseAuthorizationConfig[] = pacData?.items ?? [];
+  return items.some((pac: PurchaseAuthorizationConfig) => {
+    const role = pac.purchaseRole;
+    const pacCompanyId = pac.company?.companyId;
     return role === PurchaseRole.AUTHORIZATION_MANAGER && Number(pacCompanyId) === Number(companyId);
   });
 }
@@ -141,7 +142,7 @@ export function usePurchaseAuthorizationConfigurator(
   );
 
   const totalPages = useMemo<number>(
-    () => (company as any)?.contacts?.pages ?? 0,
+    () => (company as Company)?.contacts?.pages ?? 0,
     [company],
   );
 
@@ -303,7 +304,7 @@ export function usePurchaseAuthorizationConfigurator(
       if (cbRef.current.onContactCreate) {
         cbRef.current.onContactCreate(input);
       } else {
-        const userService = new UserService(graphqlClient);
+        const userService = getServices(graphqlClient).user;
         const result = await userService.registerContact({ contactRegisterInput: input });
         if (cbRef.current.afterContactCreate) {
           cbRef.current.afterContactCreate(result.contact as unknown as Contact);
@@ -406,7 +407,7 @@ export function usePurchaseAuthorizationRequests(
     if (!graphqlClient || !companyId) return;
     setLoading(true);
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const response = await service.getCarts({
         statuses: [CartStatus.PENDING_PURCHASE_AUTHORIZATION],
         companyIds: [companyId],
@@ -423,7 +424,7 @@ export function usePurchaseAuthorizationRequests(
     setSelectedCart(cart);
     setModalLoading(true);
     try {
-      const service = new CartService(graphqlClient);
+      const service = getServices(graphqlClient).cart;
       const fullCart = await service.getCart({
         cartId: cart.cartId,
         language: configuration?.language || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
@@ -447,7 +448,7 @@ export function usePurchaseAuthorizationRequests(
       if (cbRef.current.onAcceptRequest) {
         cbRef.current.onAcceptRequest(cartId);
       } else {
-        const service = new CartService(graphqlClient);
+        const service = getServices(graphqlClient).cart;
         cartForCallback = await service.acceptPurchaseAuthorizationRequest({
           id: cartId,
           input: { contactId: (user as Contact)?.contactId },
@@ -474,7 +475,7 @@ export function usePurchaseAuthorizationRequests(
       if (cbRef.current.onDeleteRequest) {
         cbRef.current.onDeleteRequest(cartId);
       } else {
-        const service = new CartService(graphqlClient);
+        const service = getServices(graphqlClient).cart;
         await service.deleteCart({ id: cartId });
       }
       cbRef.current.afterDeleteRequest?.(cartId);

@@ -33,69 +33,65 @@ export interface DeliveryDateProps {
   /** Pre-selected date from cart (e.g. cart.postageData.requestDate: "2026-04-17T00:00:00.000Z") */
   initialDate?: string;
 }
-interface DeliveryDateState {
-  selectedDate: string;
-  modalOpen: boolean;
-  customDateValue: string;
-  upcomingDays: () => number;
-  skipWeekends: () => boolean;
-  showDatePicker: () => boolean;
-  isCustomDateSelected: () => boolean;
-  containerClass: () => string;
-  upcomingDates: () => string[];
-  minDate: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  toApiDate: (date: Date) => string;
-  formatDisplay: (isoDate: string) => string;
-  handleSelect: (isoDate: string) => void;
-  handleCustomDateChange: (value: string) => void;
-  openModal: () => void;
-  closeModal: () => void;
-  handleBackdropClick: (event: Event) => void;
+
+// ── Pure date helpers (module scope — created once, not per render) ─────────────
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+function toApiDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}T00:00:00Z`;
 }
-function DeliveryDate(props: DeliveryDateProps) {
-  const [selectedDate, setSelectedDate] = useState<DeliveryDateState['selectedDate']>(() => '');
-  const [modalOpen, setModalOpen] = useState<DeliveryDateState['modalOpen']>(() => false);
-  const [customDateValue, setCustomDateValue] = useState<DeliveryDateState['customDateValue']>(
-    () => ''
-  );
-  const [customDateError, setCustomDateError] = useState<string>(() => '');
-  function upcomingDays(): ReturnType<DeliveryDateState['upcomingDays']> {
-    return props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
-  }
-  function skipWeekends(): ReturnType<DeliveryDateState['skipWeekends']> {
-    return props.skipWeekends !== undefined ? props.skipWeekends : true;
-  }
-  function showDatePicker(): ReturnType<DeliveryDateState['showDatePicker']> {
-    return props.showDatePicker !== undefined ? props.showDatePicker : true;
-  }
-  function isCustomDateSelected(): ReturnType<DeliveryDateState['isCustomDateSelected']> {
-    return selectedDate !== '' && upcomingDates().indexOf(selectedDate) === -1;
-  }
-  function containerClass(): ReturnType<DeliveryDateState['containerClass']> {
-    return props.containerClass || 'delivery-date';
-  }
-  function upcomingDates(): ReturnType<DeliveryDateState['upcomingDates']> {
-    const days: string[] = [];
-    const today = new Date();
-    const current = new Date(today);
-    current.setDate(current.getDate() + 1);
-    while (days.length < upcomingDays()) {
-      const dayOfWeek = current.getDay();
-      if (!skipWeekends() || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
-        days.push(toApiDate(current));
-      }
-      current.setDate(current.getDate() + 1);
+
+/** Tomorrow as a YYYY-MM-DD string (the minimum selectable date). */
+function getMinDate(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const y = tomorrow.getFullYear();
+  const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const d = String(tomorrow.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function computeUpcomingDates(count: number, skipWeekends: boolean): string[] {
+  const days: string[] = [];
+  const current = new Date();
+  current.setDate(current.getDate() + 1);
+  while (days.length < count) {
+    const dayOfWeek = current.getDay();
+    if (!skipWeekends || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
+      days.push(toApiDate(current));
     }
-    return days;
+    current.setDate(current.getDate() + 1);
   }
-  function toApiDate(date: Date): ReturnType<DeliveryDateState['toApiDate']> {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d + 'T00:00:00Z';
-  }
-  function formatDisplay(isoDate: string): ReturnType<DeliveryDateState['formatDisplay']> {
+  return days;
+}
+
+function DeliveryDate(props: DeliveryDateProps) {
+  const [selectedDate, setSelectedDate] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [customDateValue, setCustomDateValue] = useState('');
+  const [customDateError, setCustomDateError] = useState('');
+
+  const upcomingDays = props.showUpcomingDays !== undefined ? props.showUpcomingDays : 3;
+  const skipWeekends = props.skipWeekends !== undefined ? props.skipWeekends : true;
+  const showDatePicker = props.showDatePicker !== undefined ? props.showDatePicker : true;
+  const containerClass = props.containerClass || 'delivery-date';
+  const minDate = getMinDate();
+
+  // Computed once per render (previously recomputed on every call — and
+  // `upcomingDates()` was invoked once for the map plus 3× via
+  // `isCustomDateSelected()`, each running a Date-math while loop).
+  const upcomingDates = computeUpcomingDates(upcomingDays, skipWeekends);
+  const isCustomDateSelected = selectedDate !== '' && upcomingDates.indexOf(selectedDate) === -1;
+
+  function formatDisplay(isoDate: string): string {
     if (props.formatDateDisplay) {
       return props.formatDateDisplay(isoDate);
     }
@@ -105,41 +101,18 @@ function DeliveryDate(props: DeliveryDateProps) {
     if (!isoDate) return '';
     const date = new Date(isoDate);
     if (isNaN(date.getTime())) return '';
-    const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return weekday + ', ' + months[date.getMonth()] + ' ' + date.getDate();
+    return `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
   }
-  function minDate(): ReturnType<DeliveryDateState['minDate']> {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const y = tomorrow.getFullYear();
-    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const d = String(tomorrow.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
-  }
-  function handleSelect(isoDate: string): ReturnType<DeliveryDateState['handleSelect']> {
+
+  function handleSelect(isoDate: string): void {
     setSelectedDate(isoDate);
     setModalOpen(false);
     if (props.onDateSelect) {
       props.onDateSelect(isoDate);
     }
   }
-  function handleCustomDateChange(
-    value: string
-  ): ReturnType<DeliveryDateState['handleCustomDateChange']> {
+
+  function handleCustomDateChange(value: string): void {
     // Validate before committing. The native date input doesn't reliably enforce
     // the `min` attribute on typed input across browsers, and historical or
     // out-of-range dates parse to a real Date that crashes downstream rendering
@@ -159,28 +132,31 @@ function DeliveryDate(props: DeliveryDateProps) {
     }
     // Reject anything earlier than minDate (tomorrow). String comparison works
     // because both sides are ISO-formatted YYYY-MM-DD.
-    if (value < minDate()) {
+    if (value < minDate) {
       setCustomDateError(getLabel(props.labels, 'pastDate', 'Please select a date in the future.'));
       return;
     }
     setCustomDateError('');
-    const isoDate = toApiDate(parsed);
-    handleSelect(isoDate);
+    handleSelect(toApiDate(parsed));
   }
-  function openModal(): ReturnType<DeliveryDateState['openModal']> {
+
+  function openModal(): void {
     setCustomDateError('');
     setModalOpen(true);
   }
-  function closeModal(): ReturnType<DeliveryDateState['closeModal']> {
+
+  function closeModal(): void {
     setCustomDateError('');
     setModalOpen(false);
   }
-  function handleBackdropClick(event: Event): ReturnType<DeliveryDateState['handleBackdropClick']> {
+
+  function handleBackdropClick(event: React.MouseEvent): void {
     if (event.target === event.currentTarget) {
       setCustomDateError('');
       setModalOpen(false);
     }
   }
+
   useEffect(() => {
     if (props.initialDate && !selectedDate) {
       // Normalize cart format "2026-04-17T00:00:00.000Z" → "2026-04-17T00:00:00Z"
@@ -192,39 +168,41 @@ function DeliveryDate(props: DeliveryDateProps) {
       }
     }
   }, [props.initialDate, props.cart]);
+
   return (
-    <div className={`propeller-delivery-date ${containerClass()}`}>
+    <div className={`propeller-delivery-date ${containerClass}`}>
       <div className="propeller-delivery-date__grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {upcomingDates()?.map((dateStr, index) => (
+        {upcomingDates.map((dateStr, index) => (
           <div
             key={index}
-            onClick={(event) => handleSelect(dateStr)}
+            onClick={() => handleSelect(dateStr)}
             data-selected={selectedDate === dateStr ? 'true' : 'false'}
             className={`propeller-delivery-date__option cursor-pointer border border-border rounded-container p-3 text-center transition-all ${selectedDate === dateStr ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
           >
-            <div className="propeller-delivery-date__option-label font-semibold">{formatDisplay(dateStr)}</div>
+            <div className="propeller-delivery-date__option-label font-semibold">
+              {formatDisplay(dateStr)}
+            </div>
           </div>
         ))}
-        {showDatePicker() ? (
+        {showDatePicker ? (
           <div
-            onClick={(event) => openModal()}
-            data-selected={isCustomDateSelected() ? 'true' : 'false'}
+            onClick={() => openModal()}
+            data-selected={isCustomDateSelected ? 'true' : 'false'}
             data-custom="true"
-            className={`propeller-delivery-date__option propeller-delivery-date__option--custom cursor-pointer border border-border rounded-container p-3 text-center transition-all ${isCustomDateSelected() ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
+            className={`propeller-delivery-date__option propeller-delivery-date__option--custom cursor-pointer border border-border rounded-container p-3 text-center transition-all ${isCustomDateSelected ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
           >
-            {isCustomDateSelected() ? (
-              <div className="propeller-delivery-date__option-label font-semibold">{formatDisplay(selectedDate)}</div>
-            ) : null}
-            {!isCustomDateSelected() ? (
-              <div className="propeller-delivery-date__option-label font-semibold">{getLabel(props.labels, 'pickDate', 'Other date...')}</div>
-            ) : null}
+            <div className="propeller-delivery-date__option-label font-semibold">
+              {isCustomDateSelected
+                ? formatDisplay(selectedDate)
+                : getLabel(props.labels, 'pickDate', 'Other date...')}
+            </div>
           </div>
         ) : null}
       </div>
       {modalOpen ? (
         <div
           className="propeller-delivery-date__modal fixed inset-0 z-50 flex items-center justify-center bg-foreground/50"
-          onClick={(event) => handleBackdropClick(event as unknown as Event)}
+          onClick={(event) => handleBackdropClick(event)}
         >
           <div className="propeller-delivery-date__modal-content bg-card rounded-container shadow-xl p-6 w-full max-w-sm mx-4">
             <div className="propeller-delivery-date__modal-header flex justify-between items-center mb-4">
@@ -234,7 +212,7 @@ function DeliveryDate(props: DeliveryDateProps) {
               <button
                 type="button"
                 className="propeller-delivery-date__modal-close text-foreground-subtle hover:text-foreground transition-colors"
-                onClick={(event) => closeModal()}
+                onClick={() => closeModal()}
               >
                 <svg
                   fill="none"
@@ -250,7 +228,7 @@ function DeliveryDate(props: DeliveryDateProps) {
             <input
               type="date"
               className={`propeller-delivery-date__input w-full border rounded-control px-3 py-2 text-sm focus:outline-none focus:ring-2 ${customDateError ? 'border-destructive focus:ring-destructive focus:border-destructive' : 'border-input focus:ring-secondary focus:border-secondary'}`}
-              min={minDate()}
+              min={minDate}
               value={customDateValue}
               onChange={(event) => handleCustomDateChange(event.target.value)}
             />
@@ -266,7 +244,7 @@ function DeliveryDate(props: DeliveryDateProps) {
               <button
                 type="button"
                 className="propeller-delivery-date__cancel-btn px-4 py-2 text-sm font-medium text-foreground bg-surface-hover rounded-control hover:bg-muted transition-colors"
-                onClick={(event) => closeModal()}
+                onClick={() => closeModal()}
               >
                 {getLabel(props.labels, 'cancel', 'Cancel')}
               </button>

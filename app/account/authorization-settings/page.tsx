@@ -4,7 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from '@/lib/api';
 import PurchaseAuthorizationConfigurator from '@/components/propeller/PurchaseAuthorizationConfigurator';
 import { Contact, Customer, Company } from 'propeller-sdk-v2';
 
@@ -34,9 +33,6 @@ export default function AuthorizationSettingsPage() {
                 </h1>
             </div>
             <PurchaseAuthorizationConfigurator
-                graphqlClient={graphqlClient}
-                user={state.user}
-                companyId={companyId}
                 labels={{
                     title: 'Purchase Authorization Settings',
                     addContact: 'Add contact',

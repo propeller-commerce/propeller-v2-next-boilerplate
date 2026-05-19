@@ -2,10 +2,6 @@ import type {
   Cart,
   CartMainItem,
   CartBaseItem,
-  CartSearchInput,
-  CartStartInput,
-  CartStartVariables,
-  Address,
   GraphQLClient,
 } from 'propeller-sdk-v2';
 

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Order, GraphQLClient } from 'propeller-sdk-v2';
 import { useOrders } from '@/composables/react/useOrders';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 
 export interface QuoteActionsProps {
@@ -30,7 +31,9 @@ export interface QuoteActionsProps {
   onTermsAndConditionsClick?: () => void;
 }
 
-function QuoteActions(props: QuoteActionsProps) {
+function QuoteActions(rawProps: QuoteActionsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
 

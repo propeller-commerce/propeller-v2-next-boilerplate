@@ -2,7 +2,7 @@
  * useAuth (React) — Login, registration, and forgot-password flows.
  *
  * React mirror of vue/useAuth.ts.
- * Mirrors RegisterForm.lite.tsx, LoginForm.lite.tsx, ForgotPassword.lite.tsx.
+ * Mirrors RegisterForm.tsx, LoginForm.tsx, ForgotPassword.tsx.
  *
  * Responsibilities:
  * - login: LoginService + getViewer for session token + user
@@ -12,7 +12,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { AddressService, AddressType, CompanyService, Gender, LoginService, UserService, YesNo } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { AddressType, Gender, YesNo } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Contact,
@@ -126,7 +127,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         const user = await onLoginSubmit(email, password);
         return { success: true, user };
       }
-      const loginService = new LoginService(graphqlClient);
+      const loginService = getServices(graphqlClient).login;
       const loginResult = await loginService.login({ email, password });
       const session = loginResult?.session;
       const accessToken = session?.accessToken;
@@ -136,7 +137,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         graphqlClient.setAccessToken(accessToken);
         onAuthHeaderUpdate?.(accessToken);
       }
-      const userService = new UserService(graphqlClient);
+      const userService = getServices(graphqlClient).user;
       const viewerInput: ViewerInput = {
         ...(configuration?.contactTrackAttributes?.length && {
           contactAttributesInput: { attributeDescription: { names: configuration.contactTrackAttributes } },
@@ -167,7 +168,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
   }, [graphqlClient, language, onAuthHeaderUpdate, configuration]);
 
   // ── Register contact ──────────────────────────────────────────────────────
-  // Mirrors RegisterForm.lite.tsx contact registration path:
+  // Mirrors RegisterForm.tsx contact registration path:
   // createCompany → registerContact (ContactRegisterInput) → createCompanyAddress(es)
 
   const registerContact = useCallback(async (
@@ -178,9 +179,9 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
     setLoading(true);
     setError(null);
     try {
-      const userService = new UserService(graphqlClient);
-      const companyService = new CompanyService(graphqlClient);
-      const addressService = new AddressService(graphqlClient);
+      const userService = getServices(graphqlClient).user;
+      const companyService = getServices(graphqlClient).company;
+      const addressService = getServices(graphqlClient).address;
 
       let companyId: number | undefined;
       if (input.companyName) {
@@ -305,7 +306,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
   }, [graphqlClient, language, login, configuration]);
 
   // ── Register customer ─────────────────────────────────────────────────────
-  // Mirrors RegisterForm.lite.tsx customer registration path:
+  // Mirrors RegisterForm.tsx customer registration path:
   // registerCustomer (CustomerRegisterInput) → login → createCustomerAddress
 
   const registerCustomer = useCallback(async (
@@ -316,8 +317,8 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
     setLoading(true);
     setError(null);
     try {
-      const userService = new UserService(graphqlClient);
-      const addressService = new AddressService(graphqlClient);
+      const userService = getServices(graphqlClient).user;
+      const addressService = getServices(graphqlClient).address;
 
       const customerInput: CustomerRegisterInput = {
         customerRegisterInput: {
@@ -442,7 +443,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
     setLoading(true);
     setError(null);
     try {
-      const userService = new UserService(graphqlClient);
+      const userService = getServices(graphqlClient).user;
       const resetInput: PasswordResetInput = { email };
       await userService.sendPasswordResetEmail(resetInput);
       return { success: true };

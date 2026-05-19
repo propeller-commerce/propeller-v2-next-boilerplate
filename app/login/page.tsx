@@ -59,7 +59,6 @@ export default function LoginPage() {
 
               <CardContent>
                 <LoginForm
-                  graphqlClient={graphqlClient}
                   title=""
                   accountHeaderLoginForm={false}
                   displayGuestCheckoutLink={false}
@@ -76,10 +75,15 @@ export default function LoginPage() {
                       setSelectedCompany(company as Company);
                     }
 
-                    if (accessToken && refreshToken && expiresAt) {
-                      localStorage.setItem('accessToken', accessToken);
-                      localStorage.setItem('refreshToken', refreshToken);
-                      localStorage.setItem('expiresAt', expiresAt);
+                    // Persist the token in the httpOnly cookie (server-side),
+                    // not localStorage — JS can't read it. Survives reloads via
+                    // the /api/graphql proxy.
+                    if (accessToken) {
+                      await fetch('/api/auth/session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accessToken, refreshToken }),
+                      });
                     }
 
                     // Dispatch event for AuthContext

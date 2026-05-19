@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useEffect } from 'react';
 import { AttributeResult, AttributeType, GraphQLClient, LocalizedString } from 'propeller-sdk-v2';
 import { useProductSpecs } from '@/composables/react/useProductSpecs';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 
 export interface ProductSpecificationsProps {
   /**
@@ -46,7 +47,9 @@ export interface ProductSpecificationsProps {
   className?: string;
 }
 
-function ProductSpecifications(props: ProductSpecificationsProps) {
+function ProductSpecifications(rawProps: ProductSpecificationsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const { attributes: fetchedAttributes, loading, fetchSpecs } = useProductSpecs(
     props.graphqlClient
       ? { graphqlClient: props.graphqlClient, language: props.language }

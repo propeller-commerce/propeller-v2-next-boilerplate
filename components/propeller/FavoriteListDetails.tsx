@@ -16,17 +16,18 @@ import {
 import { useFavorites } from '@/composables/react/useFavorites';
 import { useProductSearch } from '@/composables/react/useProductSearch';
 import { useCart } from '@/composables/react/useCart';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import FavoriteListItem from './FavoriteListItem';
 import GridPagination from './GridPagination';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
 import { getProductImageUrl, getClusterImageUrl } from '@/composables/shared/utils/productHelpers';
 
 export interface FavoriteListDetailsProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
-  /** The logged in user for which the favorite list is going to be displayed */
-  user: Contact | Customer;
+  /** The logged in user for which the favorite list is going to be displayed. Resolved from PropellerProvider when omitted. */
+  user?: Contact | Customer;
 
   /** The favorite list ID to display */
   favoriteListId: string;
@@ -139,15 +140,17 @@ export interface FavoriteListDetailsProps {
   /** Include tax in prices. Pass from PriceContext's usePrice() */ includeTax?: boolean;
 }
 
-function FavoriteListDetails(props: FavoriteListDetailsProps) {
+function FavoriteListDetails(rawProps: FavoriteListDetailsProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const { addToList } = useFavorites({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
   });
 
   const { addItem } = useCart({
-    graphqlClient: props.graphqlClient,
-    user: props.user,
+    graphqlClient: props.graphqlClient!,
+    user: props.user ?? null,
     cartId: props.cartId,
     language: props.language,
     configuration: props.configuration,
@@ -160,9 +163,9 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
     searchLoading,
     search,
   } = useProductSearch({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     language: props.language,
-    user: props.user,
+    user: props.user ?? null,
     configuration: props.configuration || {},
   });
 
@@ -517,8 +520,6 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                   <div className="propeller-favorite-list-details__row-item flex-1 min-w-0">
                   <FavoriteListItem
                     item={item}
-                    graphqlClient={props.graphqlClient}
-                    user={props.user}
                     cartId={props.cartId}
                     createCart={props.createCart}
                     onCartCreated={props.onCartCreated}
@@ -527,13 +528,11 @@ function FavoriteListDetails(props: FavoriteListDetailsProps) {
                     showModal={props.showModal}
                     allowIncrDecr={props.allowIncrDecr}
                     enableStockValidation={props.enableStockValidation}
-                    language={props.language}
                     onProceedToCheckout={props.onProceedToCheckout}
                     onRequestQuoteClick={props.onRequestQuoteClick}
                     addToCartLabels={props.addToCartLabels}
                     stockLabels={props.stockLabels}
                     labels={props.itemLabels}
-                    configuration={props.configuration}
                     titleLinkable={props.titleLinkable}
                     showStockComponent={props.showStockComponent}
                     showAvailability={props.showAvailability}

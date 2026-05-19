@@ -4,10 +4,11 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Cart, Contact, Customer, Gender, GraphQLClient } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 
 export interface RegisterFormProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** Title of the register form
    * @default "Create account"
@@ -107,7 +108,9 @@ export interface RegisterFormProps {
   countries?: Record<string, string>;
 }
 
-function RegisterForm(props: RegisterFormProps) {
+function RegisterForm(rawProps: RegisterFormProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   // Personal details
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
@@ -143,135 +146,64 @@ function RegisterForm(props: RegisterFormProps) {
   const [submitted, setSubmitted] = useState(false);
 
   const { loading, registerContact, registerCustomer } = useAuth({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
     language: props.preferredLanguage || 'NL',
   });
 
-  function resolvedTitle(): string {
-    return props.title !== undefined ? props.title : 'Create account';
-  }
-  function resolvedButtonText(): string {
-    return props.buttonText || 'Register';
-  }
-  function showUserTypeSelector(): boolean {
-    return props.showUserType === undefined || props.showUserType === null;
-  }
-  function effectiveUserType(): string {
-    if (props.showUserType) return props.showUserType;
-    return selectedUserType;
-  }
-  function isContact(): boolean {
-    return effectiveUserType() === 'Contact';
-  }
-  function isCustomer(): boolean {
-    return effectiveUserType() === 'Customer';
-  }
-  function showLoginLink(): boolean {
-    return props.displayLoginLink !== false;
-  }
-  function personalDetailsTitle(): string {
-    return props.labels?.personalDetailsTitle || 'Your details';
-  }
-  function billingAddressTitle(): string {
-    return props.labels?.billingAddressTitle || 'Billing address';
-  }
-  function deliveryAddressTitle(): string {
-    return props.labels?.deliveryAddressTitle || 'Delivery address';
-  }
-  function passwordTitle(): string {
-    return props.labels?.passwordTitle || 'Password';
-  }
-  function sameAsDeliveryLabel(): string {
-    return props.labels?.sameAsDelivery || 'Delivery address is the same as billing address';
-  }
-  function firstNameLabel(): string {
-    return props.labels?.firstName || 'First name';
-  }
-  function middleNameLabel(): string {
-    return props.labels?.middleName || 'Insertion';
-  }
-  function lastNameLabel(): string {
-    return props.labels?.lastName || 'Last name';
-  }
-  function emailLabel(): string {
-    return props.labels?.email || 'Email address';
-  }
-  function passwordLabel(): string {
-    return props.labels?.password || 'Password';
-  }
-  function confirmPasswordLabel(): string {
-    return props.labels?.confirmPassword || 'Repeat password';
-  }
-  function phoneLabel(): string {
-    return props.labels?.phone || 'Phone number';
-  }
-  function genderLabel(): string {
-    return props.labels?.gender || 'Title';
-  }
-  function companyNameLabel(): string {
-    return props.labels?.companyName || 'Company name';
-  }
-  function vatNumberLabel(): string {
-    return props.labels?.vatNumber || 'VAT number';
-  }
-  function cocNumberLabel(): string {
-    return props.labels?.cocNumber || 'CoC number';
-  }
-  function streetLabel(): string {
-    return props.labels?.street || 'Street';
-  }
-  function numberLabel(): string {
-    return props.labels?.number || 'Number';
-  }
-  function numberExtensionLabel(): string {
-    return props.labels?.numberExtension || 'Apt/Suite/Unit';
-  }
-  function postalCodeLabel(): string {
-    return props.labels?.postalCode || 'Postal code';
-  }
-  function cityLabel(): string {
-    return props.labels?.city || 'City';
-  }
-  function countryLabel(): string {
-    return props.labels?.country || 'Country';
-  }
-  function userTypeLabel(): string {
-    return props.labels?.userTypeLabel || 'Account type';
-  }
-  function contactLabel(): string {
-    return props.labels?.contactLabel || 'Company';
-  }
-  function customerLabel(): string {
-    return props.labels?.customerLabel || 'Consumer';
-  }
-  function emailPlaceholder(): string {
-    return props.labels?.emailPlaceholder || 'name@example.com';
-  }
-  function passwordPlaceholder(): string {
-    return props.labels?.passwordPlaceholder || '••••••••';
-  }
-  function passwordMismatchText(): string {
-    return props.labels?.passwordMismatch || 'Passwords do not match';
-  }
-  function loginText(): string {
-    return props.labels?.loginText || 'Already have an account?';
-  }
-  function loginLinkText(): string {
-    return props.labels?.loginLink || 'Log in';
-  }
+  // Flags / labels resolved once per render (previously each was a one-line
+  // function redefined every render and called from the JSX).
+  const resolvedTitle = props.title !== undefined ? props.title : 'Create account';
+  const resolvedButtonText = props.buttonText || 'Register';
+  const showUserTypeSelector =
+    props.showUserType === undefined || props.showUserType === null;
+  const effectiveUserType = props.showUserType ? props.showUserType : selectedUserType;
+  const isContact = effectiveUserType === 'Contact';
+  const showLoginLink = props.displayLoginLink !== false;
+  const personalDetailsTitle = props.labels?.personalDetailsTitle || 'Your details';
+  const billingAddressTitle = props.labels?.billingAddressTitle || 'Billing address';
+  const deliveryAddressTitle = props.labels?.deliveryAddressTitle || 'Delivery address';
+  const passwordTitle = props.labels?.passwordTitle || 'Password';
+  const sameAsDeliveryLabel =
+    props.labels?.sameAsDelivery || 'Delivery address is the same as billing address';
+  const firstNameLabel = props.labels?.firstName || 'First name';
+  const middleNameLabel = props.labels?.middleName || 'Insertion';
+  const lastNameLabel = props.labels?.lastName || 'Last name';
+  const emailLabel = props.labels?.email || 'Email address';
+  const passwordLabel = props.labels?.password || 'Password';
+  const confirmPasswordLabel = props.labels?.confirmPassword || 'Repeat password';
+  const phoneLabel = props.labels?.phone || 'Phone number';
+  const genderLabel = props.labels?.gender || 'Title';
+  const companyNameLabel = props.labels?.companyName || 'Company name';
+  const vatNumberLabel = props.labels?.vatNumber || 'VAT number';
+  const cocNumberLabel = props.labels?.cocNumber || 'CoC number';
+  const streetLabel = props.labels?.street || 'Street';
+  const numberLabel = props.labels?.number || 'Number';
+  const numberExtensionLabel = props.labels?.numberExtension || 'Apt/Suite/Unit';
+  const postalCodeLabel = props.labels?.postalCode || 'Postal code';
+  const cityLabel = props.labels?.city || 'City';
+  const countryLabel = props.labels?.country || 'Country';
+  const userTypeLabel = props.labels?.userTypeLabel || 'Account type';
+  const contactLabel = props.labels?.contactLabel || 'Company';
+  const customerLabel = props.labels?.customerLabel || 'Consumer';
+  const emailPlaceholder = props.labels?.emailPlaceholder || 'name@example.com';
+  const passwordPlaceholder = props.labels?.passwordPlaceholder || '••••••••';
+  const passwordMismatchText = props.labels?.passwordMismatch || 'Passwords do not match';
+  const loginText = props.labels?.loginText || 'Already have an account?';
+  const loginLinkText = props.labels?.loginLink || 'Log in';
+
   function isFieldRequired(fieldName: string): boolean {
-    if (fieldName === 'companyName' && isContact()) return true;
+    if (fieldName === 'companyName' && isContact) return true;
     if (!props.requiredFields) return false;
     return props.requiredFields.indexOf(fieldName) !== -1;
   }
-  async function handleSubmit(e: Event | any): Promise<void> {
+  async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
-    if (!effectiveUserType()) {
+    if (!effectiveUserType) {
       setError('Please select an account type.');
       return;
     }
     if (password !== confirmPassword) {
-      setError(passwordMismatchText());
+      setError(passwordMismatchText);
       return;
     }
     if (loading) return;
@@ -282,7 +214,7 @@ function RegisterForm(props: RegisterFormProps) {
 
     const autoLogin = props.automaticLogin !== false;
     let result;
-    if (isContact()) {
+    if (isContact) {
       result = await registerContact({
         email,
         password,
@@ -353,23 +285,23 @@ function RegisterForm(props: RegisterFormProps) {
   }
   return (
     <div className="propeller-register-form" data-loading={loading ? 'true' : 'false'} data-user-type={selectedUserType}>
-      {resolvedTitle() ? (
+      {resolvedTitle ? (
         <div className="propeller-register-form__header space-y-1 text-center mb-6">
-          <h2 className="propeller-register-form__title text-2xl font-bold">{resolvedTitle()}</h2>
+          <h2 className="propeller-register-form__title text-2xl font-bold">{resolvedTitle}</h2>
           {props.subtitle ? <p className="propeller-register-form__subtitle text-sm text-muted-foreground">{props.subtitle}</p> : null}
         </div>
       ) : null}
       {!submitted ? (
         <form className="space-y-6" onSubmit={(e) => handleSubmit(e)}>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">{personalDetailsTitle()}</h3>
-            {showUserTypeSelector() ? (
+            <h3 className="text-lg font-semibold border-b pb-2">{personalDetailsTitle}</h3>
+            {showUserTypeSelector ? (
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none">{userTypeLabel()}</label>
+                <label className="text-sm font-medium leading-none">{userTypeLabel}</label>
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={(event) => {
+                    onClick={() => {
                       setSelectedUserType('Contact');
                     }}
                     className={
@@ -379,11 +311,11 @@ function RegisterForm(props: RegisterFormProps) {
                         : 'border-input hover:bg-surface-hover')
                     }
                   >
-                    {contactLabel()}
+                    {contactLabel}
                   </button>
                   <button
                     type="button"
-                    onClick={(event) => {
+                    onClick={() => {
                       setSelectedUserType('Customer');
                     }}
                     className={
@@ -393,13 +325,13 @@ function RegisterForm(props: RegisterFormProps) {
                         : 'border-input hover:bg-surface-hover')
                     }
                   >
-                    {customerLabel()}
+                    {customerLabel}
                   </button>
                 </div>
               </div>
             ) : null}
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">{genderLabel()}</label>
+              <label className="text-sm font-medium leading-none">{genderLabel}</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -408,7 +340,7 @@ function RegisterForm(props: RegisterFormProps) {
                     value="M"
                     className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
                     checked={gender === Gender.M}
-                    onChange={(event) => {
+                    onChange={() => {
                       setGender(Gender.M);
                     }}
                     disabled={loading}
@@ -422,7 +354,7 @@ function RegisterForm(props: RegisterFormProps) {
                     value="F"
                     className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
                     checked={gender === Gender.F}
-                    onChange={(event) => {
+                    onChange={() => {
                       setGender(Gender.F);
                     }}
                     disabled={loading}
@@ -436,7 +368,7 @@ function RegisterForm(props: RegisterFormProps) {
                     value="U"
                     className="propeller-register-form__radio h-4 w-4 border-input text-primary focus:ring-primary"
                     checked={gender === Gender.U}
-                    onChange={(event) => {
+                    onChange={() => {
                       setGender(Gender.U);
                     }}
                     disabled={loading}
@@ -447,7 +379,7 @@ function RegisterForm(props: RegisterFormProps) {
             </div>
             <div className="space-y-2">
               <label htmlFor="register-email" className="text-sm font-medium leading-none">
-                {emailLabel()}
+                {emailLabel}
                 <span className="propeller-register-form__required text-destructive ml-1">*</span>
               </label>
               <input
@@ -459,12 +391,12 @@ function RegisterForm(props: RegisterFormProps) {
                 onChange={(e) => {
                   setEmail((e.target as HTMLInputElement).value);
                 }}
-                placeholder={emailPlaceholder()}
+                placeholder={emailPlaceholder}
                 required
                 disabled={loading}
               />
             </div>
-            {isContact() ? (
+            {isContact ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
@@ -472,7 +404,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-vatNumber"
                       className="text-sm font-medium leading-none"
                     >
-                      {vatNumberLabel()}
+                      {vatNumberLabel}
                       {isFieldRequired('vatNumber') ? (
                         <span className="propeller-register-form__required text-destructive ml-1">*</span>
                       ) : null}
@@ -495,7 +427,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-cocNumber"
                       className="text-sm font-medium leading-none"
                     >
-                      {cocNumberLabel()}
+                      {cocNumberLabel}
                       {isFieldRequired('cocNumber') ? (
                         <span className="propeller-register-form__required text-destructive ml-1">*</span>
                       ) : null}
@@ -519,7 +451,7 @@ function RegisterForm(props: RegisterFormProps) {
                     htmlFor="register-companyName"
                     className="text-sm font-medium leading-none"
                   >
-                    {companyNameLabel()}
+                    {companyNameLabel}
                     {isFieldRequired('companyName') ? (
                       <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     ) : null}
@@ -542,7 +474,7 @@ function RegisterForm(props: RegisterFormProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label htmlFor="register-firstName" className="text-sm font-medium leading-none">
-                  {firstNameLabel()}
+                  {firstNameLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
@@ -560,7 +492,7 @@ function RegisterForm(props: RegisterFormProps) {
               </div>
               <div className="space-y-2">
                 <label htmlFor="register-middleName" className="text-sm font-medium leading-none">
-                  {middleNameLabel()}
+                  {middleNameLabel}
                 </label>
                 <input
                   type="text"
@@ -578,7 +510,7 @@ function RegisterForm(props: RegisterFormProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label htmlFor="register-lastName" className="text-sm font-medium leading-none">
-                  {lastNameLabel()}
+                  {lastNameLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
@@ -596,7 +528,7 @@ function RegisterForm(props: RegisterFormProps) {
               </div>
               <div className="space-y-2">
                 <label htmlFor="register-phone" className="text-sm font-medium leading-none">
-                  {phoneLabel()}
+                  {phoneLabel}
                   {isFieldRequired('phone') ? <span className="propeller-register-form__required text-destructive ml-1">*</span> : null}
                 </label>
                 <input
@@ -615,14 +547,14 @@ function RegisterForm(props: RegisterFormProps) {
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">{billingAddressTitle()}</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{billingAddressTitle}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label
                   htmlFor="register-billingPostalCode"
                   className="text-sm font-medium leading-none"
                 >
-                  {postalCodeLabel()}
+                  {postalCodeLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
@@ -643,7 +575,7 @@ function RegisterForm(props: RegisterFormProps) {
                   htmlFor="register-billingStreet"
                   className="text-sm font-medium leading-none"
                 >
-                  {streetLabel()}
+                  {streetLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
@@ -666,7 +598,7 @@ function RegisterForm(props: RegisterFormProps) {
                   htmlFor="register-billingNumber"
                   className="text-sm font-medium leading-none"
                 >
-                  {numberLabel()}
+                  {numberLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
@@ -687,7 +619,7 @@ function RegisterForm(props: RegisterFormProps) {
                   htmlFor="register-billingNumberExtension"
                   className="text-sm font-medium leading-none"
                 >
-                  {numberExtensionLabel()}
+                  {numberExtensionLabel}
                 </label>
                 <input
                   type="text"
@@ -705,7 +637,7 @@ function RegisterForm(props: RegisterFormProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label htmlFor="register-billingCity" className="text-sm font-medium leading-none">
-                  {cityLabel()}
+                  {cityLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <input
@@ -726,7 +658,7 @@ function RegisterForm(props: RegisterFormProps) {
                   htmlFor="register-billingCountry"
                   className="text-sm font-medium leading-none"
                 >
-                  {countryLabel()}
+                  {countryLabel}
                   <span className="propeller-register-form__required text-destructive ml-1">*</span>
                 </label>
                 <select
@@ -751,7 +683,7 @@ function RegisterForm(props: RegisterFormProps) {
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">{deliveryAddressTitle()}</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{deliveryAddressTitle}</h3>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -765,7 +697,7 @@ function RegisterForm(props: RegisterFormProps) {
                 disabled={loading}
               />
               <label htmlFor="register-sameAsDelivery" className="text-sm font-medium leading-none">
-                {sameAsDeliveryLabel()}
+                {sameAsDeliveryLabel}
               </label>
             </div>
             {!sameAsDelivery ? (
@@ -776,7 +708,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-deliveryPostalCode"
                       className="text-sm font-medium leading-none"
                     >
-                      {postalCodeLabel()}
+                      {postalCodeLabel}
                       <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
@@ -797,7 +729,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-deliveryStreet"
                       className="text-sm font-medium leading-none"
                     >
-                      {streetLabel()}
+                      {streetLabel}
                       <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
@@ -820,7 +752,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-deliveryNumber"
                       className="text-sm font-medium leading-none"
                     >
-                      {numberLabel()}
+                      {numberLabel}
                       <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
@@ -841,7 +773,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-deliveryNumberExtension"
                       className="text-sm font-medium leading-none"
                     >
-                      {numberExtensionLabel()}
+                      {numberExtensionLabel}
                     </label>
                     <input
                       type="text"
@@ -862,7 +794,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-deliveryCity"
                       className="text-sm font-medium leading-none"
                     >
-                      {cityLabel()}
+                      {cityLabel}
                       <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <input
@@ -883,7 +815,7 @@ function RegisterForm(props: RegisterFormProps) {
                       htmlFor="register-deliveryCountry"
                       className="text-sm font-medium leading-none"
                     >
-                      {countryLabel()}
+                      {countryLabel}
                       <span className="propeller-register-form__required text-destructive ml-1">*</span>
                     </label>
                     <select
@@ -910,10 +842,10 @@ function RegisterForm(props: RegisterFormProps) {
             ) : null}
           </div>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">{passwordTitle()}</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{passwordTitle}</h3>
             <div className="space-y-2">
               <label htmlFor="register-password" className="text-sm font-medium leading-none">
-                {passwordLabel()}
+                {passwordLabel}
                 <span className="propeller-register-form__required text-destructive ml-1">*</span>
               </label>
               <input
@@ -925,7 +857,7 @@ function RegisterForm(props: RegisterFormProps) {
                 onChange={(e) => {
                   setPassword((e.target as HTMLInputElement).value);
                 }}
-                placeholder={passwordPlaceholder()}
+                placeholder={passwordPlaceholder}
                 required
                 disabled={loading}
               />
@@ -935,7 +867,7 @@ function RegisterForm(props: RegisterFormProps) {
                 htmlFor="register-confirmPassword"
                 className="text-sm font-medium leading-none"
               >
-                {confirmPasswordLabel()}
+                {confirmPasswordLabel}
                 <span className="propeller-register-form__required text-destructive ml-1">*</span>
               </label>
               <input
@@ -947,7 +879,7 @@ function RegisterForm(props: RegisterFormProps) {
                 onChange={(e) => {
                   setConfirmPassword((e.target as HTMLInputElement).value);
                 }}
-                placeholder={passwordPlaceholder()}
+                placeholder={passwordPlaceholder}
                 required
                 disabled={loading}
               />
@@ -983,7 +915,7 @@ function RegisterForm(props: RegisterFormProps) {
                 />
               </svg>
             ) : null}
-            {loading ? <>Registering...</> : <>{resolvedButtonText()}</>}
+            {loading ? <>Registering...</> : <>{resolvedButtonText}</>}
           </button>
         </form>
       ) : null}
@@ -1008,18 +940,18 @@ function RegisterForm(props: RegisterFormProps) {
           <p className="propeller-register-form__success-message text-sm text-muted-foreground">Your account has been created successfully.</p>
         </div>
       ) : null}
-      {showLoginLink() && !submitted ? (
+      {showLoginLink && !submitted ? (
         <div className="mt-6 border-t pt-6">
           <div className="text-center">
-            <p className="propeller-register-form__login-prompt text-sm text-muted-foreground mb-2">{loginText()}</p>
+            <p className="propeller-register-form__login-prompt text-sm text-muted-foreground mb-2">{loginText}</p>
             <button
               type="button"
               className="text-sm text-primary hover:underline"
-              onClick={(event) => {
+              onClick={() => {
                 if (props.onLoginClick) props.onLoginClick();
               }}
             >
-              {loginLinkText()}
+              {loginLinkText}
             </button>
           </div>
         </div>

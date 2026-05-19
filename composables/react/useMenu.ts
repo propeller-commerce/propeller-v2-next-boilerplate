@@ -2,7 +2,7 @@
  * useMenu (React) — Category tree fetch with depth-configurable recursive GraphQL query.
  *
  * React mirror of vue/useMenu.ts.
- * Mirrors the fetch logic of ui-components/Menu.lite.tsx exactly.
+ * Mirrors the fetch logic of components/propeller/Menu.tsx exactly.
  *
  * Responsibilities:
  * - Dynamic recursive GraphQL category query (depth-configurable, default 3)
@@ -38,7 +38,7 @@ export interface MenuCategory {
 export interface UseMenuOptions {
   graphqlClient: GraphQLClient;
   language?: string;
-  /** Nesting depth for the category tree. Default: 3 (mirrors Menu.lite.tsx). */
+  /** Nesting depth for the category tree. Default: 3 (mirrors Menu.tsx). */
   depth?: number;
   /** Cache TTL in milliseconds. Default: 12h. */
   cacheTtlMs?: number;
@@ -65,7 +65,7 @@ const inflightFetches = new Map<string, Promise<void>>();
 
 /**
  * Builds recursive `categories { ... }` fragment string for the GraphQL query.
- * Mirrors Menu.lite.tsx buildCategoriesQuery() exactly.
+ * Mirrors Menu.tsx buildCategoriesQuery() exactly.
  */
 function buildCategoriesQuery(depth: number): string {
   if (depth === 0) return '';
@@ -166,7 +166,7 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
     inflightFetches.set(key, promise);
 
     try {
-      // Build recursive query — mirrors Menu.lite.tsx buildCategoriesQuery() + query string
+      // Build recursive query — mirrors Menu.tsx buildCategoriesQuery() + query string
       const gql = `
         query Menu($categoryId: Float, $language: String) {
           category(categoryId: $categoryId) {
@@ -184,7 +184,7 @@ export function useMenu(options: UseMenuOptions): UseMenuReturn {
       const data = await graphqlClient.query<{ category: MenuCategoryRaw }>(gql, variables);
       const root = data?.category ?? null;
 
-      // Return subcategories of root (L1 items) — same as Menu.lite.tsx getSubCategories(rootCategory)
+      // Return subcategories of root (L1 items) — same as Menu.tsx getSubCategories(rootCategory)
       const items: MenuCategory[] = root
         ? (root.categories ?? [])
             .filter(cat => !isHidden(cat))

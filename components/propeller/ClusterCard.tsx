@@ -5,6 +5,15 @@ import { useState } from 'react';
 import { Cluster, AttributeResult } from 'propeller-sdk-v2';
 import ItemStock from './ItemStock';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
+import {
+  getClusterImageUrl,
+  getClusterSku,
+  getLocalizedValue,
+} from '@/composables/shared/utils/productHelpers';
+import { formatPrice } from '@/composables/shared/utils/formatting';
+import { config } from '@/data/config';
+import { useResolvedProps, ResolveSpec } from '@/composables/react/useResolvedProps';
+import { ProductGridConfig } from '@/context/ProductGridContext';
 
 export interface ClusterCardProps {
   // === Core ===
@@ -116,156 +125,129 @@ export interface ClusterCardProps {
   /** Language code used to resolve localised names and slugs. Defaults to 'NL'. */
   language?: string;
 }
-interface ClusterCardState {
-  isFavorite: boolean;
-  includeTax: boolean;
-  priceListener: any;
-  isRow: () => boolean;
-  getClusterName: () => string;
-  getClusterSku: () => string;
-  getClusterImageUrl: () => string;
-  getClusterUrl: () => string;
-  getClusterShortDescription: () => string;
-  getClusterManufacturer: () => string;
-  getStockQuantity: () => number;
-  getStockStatusLabel: () => string;
-  getStockStatusClass: () => string;
-  getClusterPrice: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  handleClusterClick: (e: any) => void;
-  handleToggleFavorite: (e: any) => void;
-  computedImageLabels: () => string[];
-  computedTextLabels: () => {
-    name: string;
-    value: string;
-  }[];
+
+// ── Pure helpers (module scope — created once, not per render) ──────────────────
+
+/** Cluster name with fallback chain: cluster.names → defaultProduct.names → 'Cluster'. */
+function getClusterName(cluster: Cluster | undefined, language: string): string {
+  const fromCluster = getLocalizedValue(cluster?.names, language, '');
+  if (fromCluster) return fromCluster;
+  return getLocalizedValue(cluster?.defaultProduct?.names, language, 'Cluster');
 }
-function ClusterCard(props: ClusterCardProps) {
-  const [isFavorite, setIsFavorite] = useState<ClusterCardState['isFavorite']>(() => false);
-  const [includeTax, setIncludeTax] = useState<ClusterCardState['includeTax']>(() => false);
-  const [priceListener, setPriceListener] = useState<ClusterCardState['priceListener']>(() => null);
-  function isRow(): ReturnType<ClusterCardState['isRow']> {
-    return (props.columns as number) === 1;
-  }
-  function getClusterName(): ReturnType<ClusterCardState['getClusterName']> {
-    const lang = (props.language as string) || 'NL';
-    const names = (props.cluster as Cluster)?.names;
-    const match = names?.find((n: any) => n.language === lang);
-    if (match?.value) return match.value;
-    const dpNames = (props.cluster as Cluster)?.defaultProduct?.names;
-    const dpMatch = dpNames?.find((n: any) => n.language === lang);
-    return dpMatch?.value || names?.[0]?.value || dpNames?.[0]?.value || 'Cluster';
-  }
-  function getClusterSku(): ReturnType<ClusterCardState['getClusterSku']> {
-    return (props.cluster as Cluster)?.sku || (props.cluster as Cluster)?.defaultProduct?.sku || '';
-  }
-  function getClusterImageUrl(): ReturnType<ClusterCardState['getClusterImageUrl']> {
-    return (
-      (props.cluster as Cluster)?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]
-        ?.url || ''
-    );
-  }
-  function getClusterUrl(): ReturnType<ClusterCardState['getClusterUrl']> {
-    return props.configuration.urls.getClusterUrl(props.cluster, props.language);
-  }
-  function getClusterShortDescription(): ReturnType<
-    ClusterCardState['getClusterShortDescription']
-  > {
-    const lang = (props.language as string) || 'NL';
-    const descs = (props.cluster as Cluster)?.shortDescriptions;
-    const match = descs?.find((d: any) => d.language === lang);
-    if (match?.value) return match.value;
-    const dpDescs = (props.cluster as Cluster)?.defaultProduct?.shortDescriptions;
-    const dpMatch = dpDescs?.find((d: any) => d.language === lang);
-    return dpMatch?.value || descs?.[0]?.value || dpDescs?.[0]?.value || '';
-  }
-  function getClusterManufacturer(): ReturnType<ClusterCardState['getClusterManufacturer']> {
-    return (props.cluster as Cluster)?.defaultProduct?.manufacturer || '';
-  }
-  function getStockQuantity(): ReturnType<ClusterCardState['getStockQuantity']> {
-    const qty = (props.cluster as Cluster)?.defaultProduct?.inventory?.totalQuantity;
-    return qty !== undefined && qty !== null ? qty : -1;
-  }
-  function getStockStatusLabel(): ReturnType<ClusterCardState['getStockStatusLabel']> {
-    const qty = getStockQuantity();
-    if (qty < 0) return '';
-    if (qty === 0) return getLabel(props.labels, 'outOfStock', 'Out of stock');
-    if (qty <= 5) return getLabel(props.labels, 'lowStock', 'Low stock');
-    return getLabel(props.labels, 'inStock', 'In stock');
-  }
-  function getStockStatusClass(): ReturnType<ClusterCardState['getStockStatusClass']> {
-    const qty = getStockQuantity();
-    if (qty <= 0) return 'text-destructive bg-destructive/10';
-    if (qty <= 5) return 'text-warning bg-warning/10';
-    return 'text-success bg-success/10';
-  }
-  function getClusterPrice(): ReturnType<ClusterCardState['getClusterPrice']> {
-    if (props.showPrice === false) return '';
-    const priceObj = (props.cluster as Cluster)?.defaultProduct?.price;
-    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : includeTax;
-    const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
-    if (!value && value !== 0) return '';
-    return `\u20AC${Number(value).toFixed(2)}`;
-  }
-  function handleClusterClick(e: any): ReturnType<ClusterCardState['handleClusterClick']> {
+
+function getClusterShortDescription(cluster: Cluster | undefined, language: string): string {
+  const fromCluster = getLocalizedValue(cluster?.shortDescriptions, language, '');
+  if (fromCluster) return fromCluster;
+  return getLocalizedValue(cluster?.defaultProduct?.shortDescriptions, language, '');
+}
+
+function getClusterManufacturer(cluster: Cluster | undefined): string {
+  return cluster?.defaultProduct?.manufacturer || '';
+}
+
+/** Resolves attribute codes against the default product, dropping empties. */
+function resolveAttributeValues(cluster: Cluster | undefined, codes: string[] | undefined): string[] {
+  if (!codes || codes.length === 0) return [];
+  const attrs = cluster?.defaultProduct?.attributes?.items || [];
+  return codes
+    .map((code) => {
+      const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
+      return found?.value?.value || '';
+    })
+    .filter((v: string) => v.length > 0);
+}
+
+// Two-tier precedence (explicit prop > ProductGrid context > Propeller infra >
+// default) for the props ProductGrid otherwise cascades through here.
+const RESOLVE_SPEC: ResolveSpec<ClusterCardProps> = {
+  configuration: { infra: 'configuration' },
+  includeTax: { infra: 'includeTax' },
+  language: { infra: 'language', default: 'NL' },
+  columns: { grid: 'columns', default: 3 },
+  showPrice: { grid: 'showPrice' },
+  showStock: { grid: 'showStock' },
+  showAvailability: { grid: 'showAvailability' },
+  stockLabels: { grid: 'stockLabels' },
+  enableAddFavorite: { grid: 'enableAddFavorite' },
+  onClusterClick: { grid: 'onClusterClick' },
+  onToggleFavorite: {
+    grid: 'onToggleFavorite',
+    transform: (fn) => (c: Cluster, fav: boolean) =>
+      (fn as ProductGridConfig['onToggleFavorite'])!(c, fav),
+  },
+};
+
+function ClusterCard(rawProps: ClusterCardProps) {
+  // Resolve infra (Tier 1) + grid config (Tier 2) declaratively. Non-throwing —
+  // standalone use (no provider) falls back to explicit props / defaults.
+  const props = useResolvedProps(rawProps, RESOLVE_SPEC);
+
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const language = (props.language as string) || 'NL';
+  const cluster = props.cluster;
+  const isRow = props.columns === 1;
+
+  // Derived values — computed once per render (previously redefined every render
+  // and called twice each across the layout branches).
+  const clusterName = getClusterName(cluster, language);
+  const clusterSku = getClusterSku(cluster);
+  const clusterImageUrl = getClusterImageUrl(cluster);
+  const shortDescription = getClusterShortDescription(cluster, language);
+  const manufacturer = getClusterManufacturer(cluster);
+  const clusterUrl = props.configuration.urls.getClusterUrl(cluster, props.language);
+  const imageLabelValues = resolveAttributeValues(cluster, props.imageLabels);
+  const textLabelValues = resolveAttributeValues(cluster, props.textLabels).map((value) => ({
+    value,
+  }));
+
+  const defaultProductInventory = cluster?.defaultProduct?.inventory;
+
+  const useTax = props.includeTax !== undefined ? !!props.includeTax : false;
+  const priceObj = cluster?.defaultProduct?.price;
+  const priceValue = useTax ? priceObj?.net : priceObj?.gross;
+  const clusterPrice =
+    props.showPrice === false ? '' : formatPrice(priceValue, { symbol: config.currency });
+
+  function handleClusterClick(e: React.MouseEvent): void {
     if (props.onClusterClick) {
       e.preventDefault();
-      props.onClusterClick(props.cluster);
+      props.onClusterClick(cluster);
     }
   }
-  function handleToggleFavorite(e: any): ReturnType<ClusterCardState['handleToggleFavorite']> {
+
+  function handleToggleFavorite(e: React.MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
     setIsFavorite(!isFavorite);
     if (props.onToggleFavorite) {
-      props.onToggleFavorite(props.cluster, isFavorite);
+      props.onToggleFavorite(cluster, isFavorite);
     }
   }
-  function computedImageLabels(): ReturnType<ClusterCardState['computedImageLabels']> {
-    if (!props.imageLabels || (props.imageLabels as string[]).length === 0) return [];
-    const attrs = (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
-    return (props.imageLabels as string[])
-      .map((code: string) => {
-        const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-        return found?.value?.value || '';
-      })
-      .filter((v: string) => v.length > 0);
-  }
-  function computedTextLabels(): ReturnType<ClusterCardState['computedTextLabels']> {
-    if (!props.textLabels || (props.textLabels as string[]).length === 0) return [];
-    const attrs = (props.cluster as Cluster)?.defaultProduct?.attributes?.items || [];
-    return (props.textLabels as string[])
-      .map((code: string) => {
-        const found = attrs.find((a: AttributeResult) => a.attributeDescription?.name === code);
-        return {
-          name: code,
-          value: found?.value?.value || '',
-        };
-      })
-      .filter((item: { name: string; value: string }) => item.value.length > 0);
-  }
+
+  const viewClusterLabel = getLabel(props.labels, 'viewCluster', 'View cluster');
+
   return (
     <div
-      className={`propeller-cluster-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow() ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
-      data-layout={isRow() ? 'row' : 'grid'}
+      className={`propeller-cluster-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+      data-layout={isRow ? 'row' : 'grid'}
     >
       {props.showImage !== false ? (
         <div
-          className={`propeller-cluster-card__media relative overflow-hidden bg-surface-hover ${isRow() ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
+          className={`propeller-cluster-card__media relative overflow-hidden bg-surface-hover ${isRow ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
         >
           <a
             className="block h-full w-full"
-            href={getClusterUrl()}
+            href={clusterUrl}
             onClick={(e) => handleClusterClick(e)}
           >
-            {!!getClusterImageUrl() ? (
+            {clusterImageUrl ? (
               <img
                 className="propeller-cluster-card__image h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                src={getClusterImageUrl()}
-                alt={getClusterName()}
+                src={clusterImageUrl}
+                alt={clusterName}
               />
-            ) : null}
-            {!getClusterImageUrl() ? (
+            ) : (
               <div className="propeller-cluster-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-16 w-16">
                   <path
@@ -276,14 +258,15 @@ function ClusterCard(props: ClusterCardProps) {
                   />
                 </svg>
               </div>
-            ) : null}
+            )}
           </a>
-          {!!props.imageLabels &&
-          props.imageLabels.length > 0 &&
-          computedImageLabels().length > 0 ? (
+          {imageLabelValues.length > 0 ? (
             <div className="propeller-cluster-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
-              {computedImageLabels()?.map((label) => (
-                <span className="propeller-cluster-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm">
+              {imageLabelValues.map((label) => (
+                <span
+                  key={label}
+                  className="propeller-cluster-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm"
+                >
                   {label}
                 </span>
               ))}
@@ -318,107 +301,125 @@ function ClusterCard(props: ClusterCardProps) {
           ) : null}
         </div>
       ) : null}
-      {isRow() ? (
+
+      {isRow ? (
         <>
           <div className="propeller-cluster-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              {props.showSku !== false && !!getClusterSku() ? (
-                <div className="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle">{getClusterSku()}</div>
+              {props.showSku !== false && clusterSku ? (
+                <div className="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle">
+                  {clusterSku}
+                </div>
               ) : null}
               {props.showName !== false ? (
                 <a
                   className="propeller-cluster-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-1"
-                  href={getClusterUrl()}
+                  href={clusterUrl}
                   onClick={(e) => handleClusterClick(e)}
                 >
-                  {getClusterName()}
+                  {clusterName}
                 </a>
               ) : null}
-              {!!props.textLabels &&
-              props.textLabels.length > 0 &&
-              computedTextLabels().length > 0 ? (
+              {textLabelValues.length > 0 ? (
                 <div className="flex flex-col gap-0.5">
-                  {computedTextLabels()?.map((item) => (
-                    <div className="propeller-cluster-card__label text-xs text-muted-foreground">{item.value}</div>
+                  {textLabelValues.map((item) => (
+                    <div
+                      key={item.value}
+                      className="propeller-cluster-card__label text-xs text-muted-foreground"
+                    >
+                      {item.value}
+                    </div>
                   ))}
                 </div>
               ) : null}
-              {props.showManufacturer && !!getClusterManufacturer() ? (
-                <div className="propeller-cluster-card__manufacturer text-xs text-muted-foreground">{getClusterManufacturer()}</div>
+              {props.showManufacturer && manufacturer ? (
+                <div className="propeller-cluster-card__manufacturer text-xs text-muted-foreground">
+                  {manufacturer}
+                </div>
               ) : null}
-              {props.showShortDescription && !!getClusterShortDescription() ? (
-                <p className="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground">{getClusterShortDescription()}</p>
+              {props.showShortDescription && shortDescription ? (
+                <p className="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground">
+                  {shortDescription}
+                </p>
               ) : null}
             </div>
           </div>
           <div className="propeller-cluster-card__footer w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-border-subtle">
-            {props.showStock && !!props.cluster.defaultProduct?.inventory ? (
+            {props.showStock && defaultProductInventory ? (
               <ItemStock
-                inventory={props.cluster.defaultProduct?.inventory!}
+                inventory={defaultProductInventory}
                 showAvailability={false}
                 showStock
                 labels={props.stockLabels}
               />
             ) : null}
-            {!!getClusterPrice() ? (
+            {clusterPrice ? (
               <span className="propeller-cluster-card__price font-bold text-foreground text-sm whitespace-nowrap">
-                {getClusterPrice()}
+                {clusterPrice}
               </span>
             ) : null}
             <div className="propeller-cluster-card__cta flex-shrink-0 ml-auto">
               <a
                 className="propeller-cluster-card__cta-link flex w-full items-center justify-center rounded-control bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                href={getClusterUrl()}
+                href={clusterUrl}
                 onClick={(e) => handleClusterClick(e)}
               >
-                {getLabel(props.labels, 'viewCluster', 'View cluster')}
+                {viewClusterLabel}
               </a>
             </div>
           </div>
         </>
-      ) : null}
-      {!isRow() ? (
+      ) : (
         <>
           <div className="propeller-cluster-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
-            {props.showSku !== false && !!getClusterSku() ? (
-              <div className="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle">{getClusterSku()}</div>
+            {props.showSku !== false && clusterSku ? (
+              <div className="propeller-cluster-card__sku font-mono text-xs text-foreground-subtle">
+                {clusterSku}
+              </div>
             ) : null}
             {props.showName !== false ? (
               <a
                 className="propeller-cluster-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-2"
-                href={getClusterUrl()}
+                href={clusterUrl}
                 onClick={(e) => handleClusterClick(e)}
               >
-                {getClusterName()}
+                {clusterName}
               </a>
             ) : null}
-            {props.showStock && !!props.cluster.defaultProduct?.inventory ? (
+            {props.showStock && defaultProductInventory ? (
               <ItemStock
-                inventory={props.cluster.defaultProduct?.inventory!}
+                inventory={defaultProductInventory}
                 showAvailability={props.showAvailability !== false}
                 showStock
                 labels={props.stockLabels}
               />
             ) : null}
-            {!!props.textLabels &&
-            props.textLabels.length > 0 &&
-            computedTextLabels().length > 0 ? (
+            {textLabelValues.length > 0 ? (
               <div className="propeller-cluster-card__labels flex flex-col gap-0.5">
-                {computedTextLabels()?.map((item) => (
-                  <div className="propeller-cluster-card__label text-xs text-muted-foreground">{item.value}</div>
+                {textLabelValues.map((item) => (
+                  <div
+                    key={item.value}
+                    className="propeller-cluster-card__label text-xs text-muted-foreground"
+                  >
+                    {item.value}
+                  </div>
                 ))}
               </div>
             ) : null}
-            {props.showManufacturer && !!getClusterManufacturer() ? (
-              <div className="propeller-cluster-card__manufacturer text-xs text-muted-foreground">{getClusterManufacturer()}</div>
+            {props.showManufacturer && manufacturer ? (
+              <div className="propeller-cluster-card__manufacturer text-xs text-muted-foreground">
+                {manufacturer}
+              </div>
             ) : null}
-            {props.showShortDescription && !!getClusterShortDescription() ? (
-              <p className="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground">{getClusterShortDescription()}</p>
+            {props.showShortDescription && shortDescription ? (
+              <p className="propeller-cluster-card__description line-clamp-2 text-xs text-muted-foreground">
+                {shortDescription}
+              </p>
             ) : null}
-            {!!getClusterPrice() ? (
+            {clusterPrice ? (
               <div className="propeller-cluster-card__price mt-auto pt-1">
                 <span className="font-bold text-foreground text-base sm:text-lg">
-                  {getClusterPrice()}
+                  {clusterPrice}
                 </span>
               </div>
             ) : null}
@@ -426,16 +427,18 @@ function ClusterCard(props: ClusterCardProps) {
           <div className="propeller-cluster-card__cta px-3 pb-3 sm:px-4 sm:pb-4">
             <a
               className="propeller-cluster-card__cta-link flex w-full items-center justify-center rounded-control bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-              href={getClusterUrl()}
+              href={clusterUrl}
               onClick={(e) => handleClusterClick(e)}
             >
-              {getLabel(props.labels, 'viewCluster', 'View cluster')}
+              {viewClusterLabel}
             </a>
           </div>
         </>
-      ) : null}
+      )}
     </div>
   );
 }
 
-export default ClusterCard;
+// Memoized: ProductGrid passes only the stable { cluster } prop; config flows
+// via context so shallow-equal props skip re-render (rbp §5.2).
+export default React.memo(ClusterCard);

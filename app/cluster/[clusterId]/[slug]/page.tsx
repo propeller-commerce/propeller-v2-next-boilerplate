@@ -174,12 +174,8 @@ export default function ClusterPage() {
               <div className="mb-6">
                 {/* ClusterInfo: fetches cluster config + cluster, fires onClusterLoaded, renders title + SKU */}
                 <ClusterInfo
-                  user={state.user}
                   clusterId={clusterId}
-                  graphqlClient={graphqlClient}
                   onClusterLoaded={handleClusterLoaded}
-                  language={language}
-                  configuration={config}
                   imageSearchFilters={config.imageSearchFilters}
                   imageVariantFilters={config.imageVariantFiltersLarge}
                 />
@@ -267,20 +263,15 @@ export default function ClusterPage() {
           </div>
           {/* Product Tabs - Description, Specifications, etc. */}
           {displayProduct && (
-            <ProductTabs product={displayProduct as Product} productId={(displayProduct as Product).productId} graphqlClient={graphqlClient} language={language} className='pb-8' />
+            <ProductTabs product={displayProduct as Product} productId={(displayProduct as Product).productId} className='pb-8' />
           )}
 
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
             clusterId={clusterId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -288,21 +279,15 @@ export default function ClusterPage() {
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.ALTERNATIVES]}
             clusterId={clusterId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -310,21 +295,15 @@ export default function ClusterPage() {
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.RELATED]}
             clusterId={clusterId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -332,21 +311,15 @@ export default function ClusterPage() {
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.OPTIONS]}
             clusterId={clusterId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -354,21 +327,15 @@ export default function ClusterPage() {
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />
           <ProductSlider
-            graphqlClient={graphqlClient}
             crossUpsellTypes={[CrossupsellType.PARTS]}
             clusterId={clusterId}
-            language={language}
             taxZone="NL"
             showAvailability={false}
             showStock={true}
-            includeTax={includeTax}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
             cartId={cart?.cartId}
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
@@ -376,7 +343,6 @@ export default function ClusterPage() {
             showModal={true}
             onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
           />

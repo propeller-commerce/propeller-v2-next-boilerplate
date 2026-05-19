@@ -2,6 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 import { Cart, Contact, Customer, GraphQLClient } from 'propeller-sdk-v2';
 import LoginForm from './LoginForm';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
@@ -205,7 +206,9 @@ interface AccountIconAndMenuState {
     handler: ((e: MouseEvent) => void) | null;
   };
 }
-function AccountIconAndMenu(props: AccountIconAndMenuProps) {
+function AccountIconAndMenu(rawProps: AccountIconAndMenuProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [isMounted, setIsMounted] = useState<AccountIconAndMenuState['isMounted']>(() => false);
   const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState['menuOpen']>(() => false);
   function isSidebar(): ReturnType<AccountIconAndMenuState['isSidebar']> {
@@ -448,7 +451,6 @@ function AccountIconAndMenu(props: AccountIconAndMenuProps) {
                     <>
                       {props.accountHeaderLoginForm !== false ? (
                         <LoginForm
-                          graphqlClient={props.graphqlClient}
                           cart={props.cart}
                           title={props.loginFormTitle ?? getLabel(props.labels, 'loginTitle', 'Welcome Back')}
                           subtitle={props.loginFormSubtitle ?? getLabel(props.labels, 'loginSubtitle', '')}

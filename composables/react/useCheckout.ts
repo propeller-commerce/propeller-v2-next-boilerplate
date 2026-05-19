@@ -10,7 +10,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { AddressService, AddressType, CartAddressType, CartService, Gender, OrderService, PaymentStatuses } from 'propeller-sdk-v2';
+import { getServices } from '@/lib/api';
+import { AddressType, CartAddressType, Gender, PaymentStatuses } from 'propeller-sdk-v2';
 import type {
   GraphQLClient,
   Cart,
@@ -107,7 +108,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
 
   const populateCartAddresses = useCallback(
     async (cart: Cart): Promise<Cart> => {
-      const cartService = new CartService(graphqlClient);
+      const cartService = getServices(graphqlClient).cart;
       const imageSearchFilters = configuration.imageSearchFiltersGrid;
       const imageVariantFilters = configuration.imageVariantFiltersSmall;
       const hasInvoice = !!cart.invoiceAddress?.street;
@@ -185,7 +186,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
 
   const updateCartAddress = useCallback(
     async (cartId: string, input: CartUpdateAddressInput): Promise<Cart> => {
-      const cartService = new CartService(graphqlClient);
+      const cartService = getServices(graphqlClient).cart;
       return cartService.updateCartAddress({
         id: cartId,
         input,
@@ -201,7 +202,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
 
   const updateCartShipping = useCallback(
     async (cartId: string, input: CartUpdateInput): Promise<Cart> => {
-      const cartService = new CartService(graphqlClient);
+      const cartService = getServices(graphqlClient).cart;
       return cartService.updateCart({
         id: cartId,
         input,
@@ -220,8 +221,8 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
       setLoading(true);
       setError(null);
       try {
-        const cartService = new CartService(graphqlClient);
-        const orderService = new OrderService(graphqlClient);
+        const cartService = getServices(graphqlClient).cart;
+        const orderService = getServices(graphqlClient).order;
         const { cartId, orderStatus, reference, notes, isQuoteMode } = opts;
 
         if (reference || notes) {
@@ -277,7 +278,7 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
     async (addressData: Record<string, unknown>, type: CartAddressType): Promise<void> => {
       if (!user) return;
 
-      const addressService = new AddressService(graphqlClient);
+      const addressService = getServices(graphqlClient).address;
       const addressType = type === CartAddressType.INVOICE
         ? AddressType.invoice
         : AddressType.delivery;

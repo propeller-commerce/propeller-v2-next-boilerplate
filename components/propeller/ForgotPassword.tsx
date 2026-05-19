@@ -4,10 +4,11 @@ import * as React from 'react';
 import { useState } from 'react';
 import { GraphQLClient } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
+import { useInfraProps } from '@/composables/react/useInfraProps';
 
 export interface ForgotPasswordProps {
-  /** GraphQL client for the Propeller SDK */
-  graphqlClient: GraphQLClient;
+  /** GraphQL client for the Propeller SDK. Resolved from PropellerProvider when omitted. */
+  graphqlClient?: GraphQLClient;
 
   /** Title of the forgot password form
    * @default "Forgot password?"
@@ -45,12 +46,14 @@ export interface ForgotPasswordProps {
   afterForgotPassword?: (result: boolean) => void;
 }
 
-function ForgotPassword(props: ForgotPasswordProps) {
+function ForgotPassword(rawProps: ForgotPasswordProps) {
+  // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
+  const props = useInfraProps(rawProps);
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const { loading, error, forgotPassword } = useAuth({
-    graphqlClient: props.graphqlClient,
+    graphqlClient: props.graphqlClient!,
   });
 
   // Surface a friendly fixed message for any forgot-password failure — server

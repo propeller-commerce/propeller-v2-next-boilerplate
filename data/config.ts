@@ -11,7 +11,7 @@ import {
 } from './defaults';
 
 const DEFAULT_LANG = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
-
+const BASE_CATEGORY_ID = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10);
 /**
  * Returns the URL prefix for a given language.
  * Default language (NL) gets no prefix; others get '/en', '/de', etc.
@@ -104,7 +104,7 @@ export const PORTAL_MODE = {
 } as const;
 
 export const config = {
-  baseCategoryId: 1,
+  baseCategoryId: BASE_CATEGORY_ID,
   channelId: 1,
   anonymousId: 1,
   language: DEFAULT_LANG,

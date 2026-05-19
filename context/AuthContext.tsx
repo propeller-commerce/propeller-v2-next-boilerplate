@@ -207,7 +207,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // httpOnly cookie + `user`/`cart`; a blanket `localStorage.clear()` would
     // also wipe unrelated keys (menuData, preferred_language, host-app data).
     if (typeof window !== 'undefined') {
-      for (const key of ['user', 'cart', 'selected_company', 'accessToken', 'refreshToken', 'expiresAt']) {
+      // `access_token` is the SDK's own DEFAULT_TOKEN_STORAGE_KEY; clear it too
+      // so any legacy/stale token left by an older build is removed on logout.
+      for (const key of ['user', 'cart', 'selected_company', 'accessToken', 'access_token', 'refreshToken', 'refresh_token', 'expiresAt']) {
         localStorage.removeItem(key);
       }
     }

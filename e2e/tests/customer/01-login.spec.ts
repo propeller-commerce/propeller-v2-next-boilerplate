@@ -17,8 +17,20 @@ test.describe('Customer — login & auth state', () => {
     expect(token).not.toBeNull();
     expect(token!.length).toBeGreaterThan(0);
     // The JWT must NOT be reachable from client JS — that is the security fix.
-    const lsToken = await page.evaluate(() => localStorage.getItem('accessToken'));
-    expect(lsToken).toBeNull();
+    // Check BOTH key spellings: the legacy camelCase `accessToken` our old
+    // code wrote, and `access_token` — the SDK's DEFAULT_TOKEN_STORAGE_KEY,
+    // which graphqlClient.setAccessToken() would persist if ever called on
+    // the client (the regression that re-leaked the token to localStorage).
+    const lsTokens = await page.evaluate(() => ({
+      accessToken: localStorage.getItem('accessToken'),
+      access_token: localStorage.getItem('access_token'),
+      refreshToken: localStorage.getItem('refreshToken'),
+      refresh_token: localStorage.getItem('refresh_token'),
+    }));
+    expect(lsTokens.accessToken).toBeNull();
+    expect(lsTokens.access_token).toBeNull();
+    expect(lsTokens.refreshToken).toBeNull();
+    expect(lsTokens.refresh_token).toBeNull();
   });
 
   test('UserDetails: no company name visible (consumer account)', async ({ page }) => {

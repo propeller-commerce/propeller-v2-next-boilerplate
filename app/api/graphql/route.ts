@@ -26,11 +26,16 @@ export async function POST(request: NextRequest) {
     };
 
     // Auth precedence:
-    // 1. httpOnly `access_token` cookie (the secure path — token never exposed
-    //    to client JS; survives page reloads).
-    // 2. Client `Authorization` header — transitional fallback only, so the
-    //    same-session in-memory SDK token keeps working during the cookie
-    //    migration. Remove once all callers rely on the cookie.
+    // 1. httpOnly `access_token` cookie — the source of truth. Token never
+    //    exposed to client JS; survives page reloads; set by /api/auth/session.
+    // 2. Client `Authorization` header — a deliberate one-request bridge, NOT
+    //    tech debt to delete. During login, useAuth.login() calls getViewer()
+    //    immediately after authenticating, in the sub-second window BEFORE
+    //    afterLogin POSTs the token to /api/auth/session and the cookie lands.
+    //    For that single in-flight request the cookie doesn't exist yet, so the
+    //    in-memory Bearer header (set via graphqlClient.updateConfig, never
+    //    persisted to localStorage) carries auth. Once the cookie is set it
+    //    always wins here, so the header is inert for every subsequent request.
     const cookieToken = request.cookies.get('access_token')?.value;
     const authHeader = request.headers.get('authorization');
 

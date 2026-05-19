@@ -134,7 +134,17 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       const refreshToken = session?.refreshToken;
       const expiresAt = session?.expirationTime;
       if (accessToken) {
-        graphqlClient.setAccessToken(accessToken);
+        // Set the Bearer header IN MEMORY only for the rest of this page
+        // session — do NOT call graphqlClient.setAccessToken(), whose SDK
+        // default resolver persists the JWT to localStorage['access_token']
+        // (the XSS hole Phase 5 closed). Cross-reload auth is handled by the
+        // httpOnly cookie: the caller's afterLogin POSTs the token to
+        // /api/auth/session and the /api/graphql proxy injects Bearer
+        // server-side from that cookie.
+        const cfg = graphqlClient.getConfig();
+        graphqlClient.updateConfig({
+          headers: { ...cfg.headers, Authorization: `Bearer ${accessToken}` },
+        });
         onAuthHeaderUpdate?.(accessToken);
       }
       const userService = getServices(graphqlClient).user;
@@ -402,7 +412,13 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       if (!autoLogin) {
         // Address creation needed the customerId from login(); now drop the
         // session so the caller doesn't see this as a logged-in flow.
-        graphqlClient.setAccessToken('');
+        // clearAccessToken() removes localStorage['access_token']; also strip
+        // the in-memory Bearer header set during the implicit login above.
+        graphqlClient.clearAccessToken();
+        const cfg = graphqlClient.getConfig();
+        const headers = { ...cfg.headers };
+        delete headers['Authorization'];
+        graphqlClient.updateConfig({ headers });
         onAuthHeaderUpdate?.('');
         return { success: true };
       }

@@ -5,12 +5,12 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { AttributeFilter, AttributeType, Category, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from 'propeller-sdk-v2';
-import ProductGrid from '@/components/propeller/ProductGrid';
-import GridToolbar from '@/components/propeller/GridToolbar';
-import GridFilters from '@/components/propeller/GridFilters';
-import GridPagination from '@/components/propeller/GridPagination';
-import GridTitle from '@/components/propeller/GridTitle';
-import CategoryDescription from '@/components/propeller/CategoryDescription';
+import { ProductGrid } from 'propeller-v2-react-ui';
+import { GridToolbar } from 'propeller-v2-react-ui';
+import { GridFilters } from 'propeller-v2-react-ui';
+import { GridPagination } from 'propeller-v2-react-ui';
+import { GridTitle } from 'propeller-v2-react-ui';
+import { CategoryDescription } from 'propeller-v2-react-ui';
 import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
@@ -18,7 +18,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
-import Breadcrumbs from '@/components/propeller/Breadcrumbs';
+import { Breadcrumbs } from 'propeller-v2-react-ui';
 
 export default function CategoryPage() {
   const params = useParams();

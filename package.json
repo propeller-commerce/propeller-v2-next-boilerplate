@@ -25,6 +25,7 @@
     "marked": "^17.0.5",
     "next": "16.0.10",
     "propeller-sdk-v2": "github:propeller-commerce/propeller-sdk-v2#master",
+    "propeller-v2-react-ui": "file:../propeller-ui/propeller-v2-react-ui",
     "qs": "^6.15.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",

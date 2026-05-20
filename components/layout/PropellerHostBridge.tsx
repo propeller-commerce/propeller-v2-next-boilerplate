@@ -17,13 +17,13 @@
  */
 
 import { useMemo, ReactNode } from 'react';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { config } from '@/data/config';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { PropellerProvider, PropellerInfra } from '@/context/PropellerContext';
+import { PropellerProvider, PropellerInfra } from 'propeller-v2-react-ui';
 
 export default function PropellerHostBridge({ children }: { children: ReactNode }) {
   const { state } = useAuth();
@@ -42,6 +42,7 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
       companyId: selectedCompany?.companyId,
       language,
       includeTax,
+      currency: config.currency,
       configuration: config,
       portalMode: config.portal.mode,
     }),

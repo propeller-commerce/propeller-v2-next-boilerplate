@@ -23,18 +23,24 @@
 
 import { notFound } from 'next/navigation';
 import Header from '@/components/layout/Header';
+// NOTE: Breadcrumbs reads `configuration.urls.getCategoryUrl` (a function),
+// which is non-serializable across the RSC boundary. After Phase E the
+// package is bundled with `"use client"`, so passing `config` from this
+// Server Component throws. Keep Breadcrumbs in the client island below.
 import Footer from '@/components/layout/Footer';
-import Breadcrumbs from '@/components/propeller/Breadcrumbs';
-import ProductPrice from '@/components/propeller/ProductPrice';
-import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
-import ProductShortDescription from '@/components/propeller/ProductShortDescription';
-import ItemStock from '@/components/propeller/ItemStock';
-import ProductGallery from '@/components/propeller/ProductGallery';
-import { fetchProduct, getServerInfra } from '@/lib/api/server';
+import { ProductPrice } from 'propeller-v2-react-ui';
+import { ProductBulkPrices } from 'propeller-v2-react-ui';
+import { ProductShortDescription } from 'propeller-v2-react-ui';
+import { ItemStock } from 'propeller-v2-react-ui';
+import { ProductGallery } from 'propeller-v2-react-ui';
+import { fetchProduct, getServerInfra } from 'propeller-v2-react-ui/server';
 import { config } from '@/data/config';
-import { getLanguageString } from '@/composables/shared/utils/languageResolver';
+import { getLanguageString } from 'propeller-v2-react-ui/shared';
 import { ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
-import AddToCartIsland, { ProductBelowFoldIsland } from './ProductDetailIsland';
+import AddToCartIsland, {
+  ProductBelowFoldIsland,
+  ProductBreadcrumbsIsland,
+} from './ProductDetailIsland';
 
 interface RouteParams {
   productId: string;
@@ -56,22 +62,25 @@ export default async function ProductPage({
 
   const price = product.price as ProductPriceSDK;
   const title = getLanguageString(product.names, infra.language, '');
-  const images: string[] = product.media?.images?.items
-    ?.map((image) => image.imageVariants?.[0]?.url)
-    .filter((url): url is string => !!url) ?? [];
+  const images: string[] = (product.media?.images?.items ?? [])
+    .map((image: { imageVariants?: { url?: string }[] }) => image.imageVariants?.[0]?.url)
+    .filter((url: string | undefined): url is string => !!url);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
-          {/* Above the fold — pure RSC. Visible in initial HTML. */}
+          {/* Above the fold — pure RSC. Visible in initial HTML.
+              Breadcrumbs is wrapped in a client island because its
+              `configuration` prop holds function-valued URL builders that
+              aren't serializable from a Server Component once the package is
+              bundled with "use client". */}
           <div className="propeller-breadcrumbs mb-6">
-            <Breadcrumbs
+            <ProductBreadcrumbsIsland
               categoryPath={product.categoryPath || []}
               currentCategory={product.category || undefined}
               language={infra.language}
-              configuration={config}
               currentLabel={title}
             />
           </div>

@@ -8,13 +8,13 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useOrders } from '@/composables/react/useOrders';
-import { graphqlClient } from '@/lib/api';
+import { useOrders } from 'propeller-v2-react-ui';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import OrderSummary from '@/components/propeller/OrderSummary';
+import { OrderSummary } from 'propeller-v2-react-ui';
 import { Order, OrderItem } from 'propeller-sdk-v2';
-import OrderItemCard from '@/components/propeller/OrderItemCard';
-import { COUNTRIES } from '@/composables/shared/utils/countries';
+import { OrderItemCard } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
 
 function ThankYouPageInner() {
   const params = useParams();

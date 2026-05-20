@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
-import { graphqlClient } from '@/lib/api';
-import AddressCard from '@/components/propeller/AddressCard';
+import { graphqlClient } from 'propeller-v2-react-ui';
+import { AddressCard } from 'propeller-v2-react-ui';
 import { Address, AddressType, Company, Contact, Customer, YesNo } from 'propeller-sdk-v2';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
-import { useAddress, type AddressInput } from '@/composables/react/useAddress';
-import { COUNTRIES } from '@/composables/shared/utils/countries';
+import { useAddress, type AddressInput } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
 
 // COUNTRIES imported from shared utils
 export default function AddressesPage() {

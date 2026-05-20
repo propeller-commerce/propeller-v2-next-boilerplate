@@ -7,12 +7,12 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
 import { type FavoriteList } from 'propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
-import { useFavorites } from '@/composables/react/useFavorites';
+import { graphqlClient } from 'propeller-v2-react-ui';
+import { useFavorites } from 'propeller-v2-react-ui';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import FavoriteListDetails from '@/components/propeller/FavoriteListDetails';
+import { FavoriteListDetails } from 'propeller-v2-react-ui';
 
 export default function FavoriteListPage() {
   const { state: authState, refreshUser } = useAuth();

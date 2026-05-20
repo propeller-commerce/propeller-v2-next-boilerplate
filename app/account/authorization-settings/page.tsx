@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import PurchaseAuthorizationConfigurator from '@/components/propeller/PurchaseAuthorizationConfigurator';
+import { PurchaseAuthorizationConfigurator } from 'propeller-v2-react-ui';
 import { Contact, Customer, Company } from 'propeller-sdk-v2';
 
 export default function AuthorizationSettingsPage() {

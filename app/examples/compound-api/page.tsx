@@ -13,21 +13,20 @@
  * canonical proof that the new shape works end-to-end.
  */
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Product } from 'propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { config } from '@/data/config';
-import ProductCard from '@/components/propeller/ProductCard';
-import ProductGrid from '@/components/propeller/ProductGrid';
+import { ProductCard } from 'propeller-v2-react-ui';
+import { ProductGrid } from 'propeller-v2-react-ui';
 
-export default function CompoundApiDemo() {
+function CompoundApiDemoInner() {
   const search = useSearchParams();
   const categoryId = Number.parseInt(search.get('categoryId') ?? '1793', 10);
 
   return (
-    <main className="container-width max-w-6xl py-12 space-y-12">
-      <h1 className="text-3xl font-bold">Phase C compound-API demo</h1>
-
+    <>
       <section>
         <h2 className="text-xl font-semibold mb-2">
           <code>&lt;ProductGrid&gt;</code> with compound subcomponents
@@ -90,6 +89,20 @@ export default function CompoundApiDemo() {
           inside <code>&lt;ProductGrid.Items renderItem&gt;</code>.)
         </p>
       </section>
+    </>
+  );
+}
+
+export default function CompoundApiDemo() {
+  // `useSearchParams` lives inside the inner component so Next 16 can defer
+  // its evaluation behind a Suspense boundary at build time. Without this the
+  // static-prerender step bails out per the missing-csr-bailout warning.
+  return (
+    <main className="container-width max-w-6xl py-12 space-y-12">
+      <h1 className="text-3xl font-bold">Phase C compound-API demo</h1>
+      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+        <CompoundApiDemoInner />
+      </Suspense>
     </main>
   );
 }

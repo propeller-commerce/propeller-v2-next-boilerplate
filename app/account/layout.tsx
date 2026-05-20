@@ -2,7 +2,7 @@
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
+import { AccountIconAndMenu } from 'propeller-v2-react-ui';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useRouter, usePathname } from 'next/navigation';

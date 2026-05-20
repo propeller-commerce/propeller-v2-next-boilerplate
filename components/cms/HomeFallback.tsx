@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { graphqlClient, getServices } from '@/lib/api';
-import { useMenu } from '@/composables/react/useMenu';
+import { graphqlClient, getServices } from 'propeller-v2-react-ui';
+import { useMenu } from 'propeller-v2-react-ui';
 import type { Cluster, Product } from 'propeller-sdk-v2';
 import { CategoryQueryVariables } from 'propeller-sdk-v2';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';

@@ -9,22 +9,22 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import SearchBar from '@/components/propeller/SearchBar';
-import PropellerMenu from '@/components/propeller/Menu';
-import PriceToggle from '@/components/propeller/PriceToggle';
-import { graphqlClient, getServices } from '@/lib/api';
+import { SearchBar } from 'propeller-v2-react-ui';
+import { Menu as PropellerMenu } from 'propeller-v2-react-ui';
+import { PriceToggle } from 'propeller-v2-react-ui';
+import { graphqlClient, getServices } from 'propeller-v2-react-ui';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
-import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
-import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
-import CompanySwitcher from '@/components/propeller/CompanySwitcher';
+import { CartIconAndSidebar } from 'propeller-v2-react-ui';
+import { AccountIconAndMenu } from 'propeller-v2-react-ui';
+import { CompanySwitcher } from 'propeller-v2-react-ui';
 import { useCompany } from '@/context/CompanyContext';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
-import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart';
-import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
-import { initCart } from '@/composables/shared/utils/cartInit';
+import { fetchActiveCart as fetchActiveCartShared } from 'propeller-v2-react-ui';
+import { mergeAnonymousCart } from 'propeller-v2-react-ui';
+import { initCart } from 'propeller-v2-react-ui';
 
 export default function Header() {
   const router = useRouter();
@@ -338,17 +338,21 @@ export default function Header() {
                             imageVariantFilters: config.imageVariantFiltersSmall,
                           });
                         }
+                        // After the guard above, `initCart` returned a non-null Cart;
+                        // `let` re-assignment loses CFA narrowing across awaits, so
+                        // re-bind to a non-null local for the rest of the block.
+                        const liveCart: Cart = targetCart!;
                         const merged = await mergeAnonymousCart({
                           graphqlClient,
-                          targetCartId: targetCart.cartId,
+                          targetCartId: liveCart.cartId,
                           anonymousCart,
                           language,
                           imageSearchFilters: config.imageSearchFiltersGrid,
                           imageVariantFilters: config.imageVariantFiltersSmall,
                         });
-                        if (merged) targetCart = merged;
+                        const finalCart: Cart = merged ?? liveCart;
 
-                        if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+                        if (anonymousCart.cartId && anonymousCart.cartId !== finalCart.cartId) {
                           try {
                             await getServices(graphqlClient).cart.deleteCart({ id: anonymousCart.cartId });
                           } catch (e) {
@@ -356,7 +360,7 @@ export default function Header() {
                           }
                         }
 
-                        saveCart(targetCart);
+                        saveCart(finalCart);
                       }
 
                       router.push(localizeHref('/account', userLang || language));

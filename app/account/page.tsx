@@ -3,8 +3,8 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { Contact, Customer } from 'propeller-sdk-v2';
-import UserDetails from '@/components/propeller/UserDetails';
-import { COUNTRIES } from '@/composables/shared/utils/countries';
+import { UserDetails } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
 
 // COUNTRIES imported from shared utils
 export default function AccountPage() {

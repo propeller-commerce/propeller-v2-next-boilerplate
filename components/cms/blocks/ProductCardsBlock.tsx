@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { CmsProductCards } from '@/lib/cms/types';
-import ProductSlider from '@/components/propeller/ProductSlider';
+import { ProductSlider } from 'propeller-v2-react-ui';
 import { useCart } from '@/context/CartContext';
 
 export default function ProductCardsBlock({ block }: { block: CmsProductCards }) {

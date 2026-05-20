@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import OrderList from '@/components/propeller/OrderList';
+import { OrderList } from 'propeller-v2-react-ui';
 
 
 export default function OrdersPage() {

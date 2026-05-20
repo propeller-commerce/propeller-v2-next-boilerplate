@@ -5,18 +5,18 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { Order, OrderItem } from 'propeller-sdk-v2';
-import { useOrders } from '@/composables/react/useOrders';
-import OrderSummary from '@/components/propeller/OrderSummary';
-import QuoteActions from '@/components/propeller/QuoteActions';
+import { useOrders } from 'propeller-v2-react-ui';
+import { OrderSummary } from 'propeller-v2-react-ui';
+import { QuoteActions } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import OrderItemCard from '@/components/propeller/OrderItemCard';
-import OrderTotals from '@/components/propeller/OrderTotals';
-import { COUNTRIES } from '@/composables/shared/utils/countries';
+import { OrderItemCard } from 'propeller-v2-react-ui';
+import { OrderTotals } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
 
 // COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {

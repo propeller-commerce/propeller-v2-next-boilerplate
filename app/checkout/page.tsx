@@ -7,27 +7,27 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CartSummary from '@/components/propeller/CartSummary';
-import AddressCard from '@/components/propeller/AddressCard';
+import { CartSummary } from 'propeller-v2-react-ui';
+import { AddressCard } from 'propeller-v2-react-ui';
 
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from 'propeller-sdk-v2';
-import { useCheckout } from '@/composables/react/useCheckout';
+import { useCheckout } from 'propeller-v2-react-ui';
 import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
-import CartPaymethods from '@/components/propeller/CartPaymethods';
-import AddressSelector from '@/components/propeller/AddressSelector';
-import CartCarriers from '@/components/propeller/CartCarriers';
-import DeliveryDate from '@/components/propeller/DeliveryDate';
-import CartOverview from '@/components/propeller/CartOverview';
-import ItemsOverview from '@/components/propeller/ItemsOverview';
+import { CartPaymethods } from 'propeller-v2-react-ui';
+import { AddressSelector } from 'propeller-v2-react-ui';
+import { CartCarriers } from 'propeller-v2-react-ui';
+import { DeliveryDate } from 'propeller-v2-react-ui';
+import { CartOverview } from 'propeller-v2-react-ui';
+import { ItemsOverview } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
-import { COUNTRIES } from '@/composables/shared/utils/countries';
+import { COUNTRIES } from 'propeller-v2-react-ui';
 
 interface CheckoutState {
   currentStep: number;

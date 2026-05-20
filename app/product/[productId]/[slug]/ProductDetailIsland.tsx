@@ -25,17 +25,19 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CrossupsellType, Product } from 'propeller-sdk-v2';
+import { Cart, CrossupsellType, Product } from 'propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
-import AddToCart from '@/components/propeller/AddToCart';
-import ProductTabs from '@/components/propeller/ProductTabs';
-import ProductSlider from '@/components/propeller/ProductSlider';
-import ProductBundles from '@/components/propeller/ProductBundles';
-import AddToFavorite from '@/components/propeller/AddToFavorite';
+import { AddToCart } from 'propeller-v2-react-ui';
+import { Breadcrumbs } from 'propeller-v2-react-ui';
+import { ProductTabs } from 'propeller-v2-react-ui';
+import { ProductSlider } from 'propeller-v2-react-ui';
+import { ProductBundles } from 'propeller-v2-react-ui';
+import { AddToFavorite } from 'propeller-v2-react-ui';
+import type { Category } from 'propeller-sdk-v2';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { config, localizeHref } from '@/data/config';
 
 export interface ProductDetailIslandProps {
@@ -76,10 +78,10 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
           product={product}
           cartId={cart?.cartId}
           createCart={true}
-          onCartCreated={(c) => saveCart(c)}
+          onCartCreated={(c: Cart) => saveCart(c)}
           className="flex items-center w-full gap-2"
           showModal={true}
-          afterAddToCart={(c) => saveCart(c)}
+          afterAddToCart={(c: Cart) => saveCart(c)}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
         />
@@ -91,6 +93,34 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
         />
       </div>
     </Card>
+  );
+}
+
+/**
+ * Above-the-fold breadcrumbs island. Lives in its own client component so the
+ * non-serializable `configuration.urls.getCategoryUrl` function can be wired
+ * up on the client — passing it directly from the Server Component would
+ * throw at the RSC serialization step.
+ */
+export function ProductBreadcrumbsIsland({
+  categoryPath,
+  currentCategory,
+  language,
+  currentLabel,
+}: {
+  categoryPath: Category[];
+  currentCategory?: Category;
+  language: string;
+  currentLabel: string;
+}) {
+  return (
+    <Breadcrumbs
+      categoryPath={categoryPath}
+      currentCategory={currentCategory}
+      language={language}
+      configuration={config}
+      currentLabel={currentLabel}
+    />
   );
 }
 

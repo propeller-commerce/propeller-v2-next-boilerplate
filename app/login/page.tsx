@@ -6,17 +6,17 @@ import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import LoginForm from '@/components/propeller/LoginForm';
-import { graphqlClient, getServices } from '@/lib/api';
+import { LoginForm } from 'propeller-v2-react-ui';
+import { graphqlClient, getServices } from 'propeller-v2-react-ui';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref, config } from '@/data/config';
-import { fetchActiveCart } from '@/composables/shared/utils/fetchActiveCart';
-import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
-import { initCart } from '@/composables/shared/utils/cartInit';
+import { fetchActiveCart } from 'propeller-v2-react-ui';
+import { mergeAnonymousCart } from 'propeller-v2-react-ui';
+import { initCart } from 'propeller-v2-react-ui';
 
 export default function LoginPage() {
   const { state, updateUser } = useAuth();

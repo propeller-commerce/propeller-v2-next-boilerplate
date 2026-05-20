@@ -5,27 +5,27 @@ import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import ClusterConfigurator from '@/components/propeller/ClusterConfigurator';
-import ClusterOptions from '@/components/propeller/ClusterOptions';
-import ClusterInfo from '@/components/propeller/ClusterInfo';
-import { Cluster, CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
+import { ClusterConfigurator } from 'propeller-v2-react-ui';
+import { ClusterOptions } from 'propeller-v2-react-ui';
+import { ClusterInfo } from 'propeller-v2-react-ui';
+import { Cart, Cluster, CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { graphqlClient } from 'propeller-v2-react-ui';
 import { useCart } from '@/context/CartContext';
-import ProductGallery from '@/components/propeller/ProductGallery';
-import Breadcrumbs from '@/components/propeller/Breadcrumbs';
+import { ProductGallery } from 'propeller-v2-react-ui';
+import { Breadcrumbs } from 'propeller-v2-react-ui';
 import { config, localizeHref } from '@/data/config';
 import { useAuth } from '@/context/AuthContext';
-import ProductPriceDisplay from '@/components/propeller/ProductPrice';
-import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
-import ProductShortDescription from '@/components/propeller/ProductShortDescription';
-import ItemStock from '@/components/propeller/ItemStock';
-import AddToCart from '@/components/propeller/AddToCart';
-import AddToFavorite from '@/components/propeller/AddToFavorite';
-import ProductTabs from '@/components/propeller/ProductTabs';
+import { ProductPrice as ProductPriceDisplay } from 'propeller-v2-react-ui';
+import { ProductBulkPrices } from 'propeller-v2-react-ui';
+import { ProductShortDescription } from 'propeller-v2-react-ui';
+import { ItemStock } from 'propeller-v2-react-ui';
+import { AddToCart } from 'propeller-v2-react-ui';
+import { AddToFavorite } from 'propeller-v2-react-ui';
+import { ProductTabs } from 'propeller-v2-react-ui';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
-import ProductSlider from '@/components/propeller/ProductSlider';
+import { ProductSlider } from 'propeller-v2-react-ui';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
 
@@ -240,13 +240,13 @@ export default function ClusterPage() {
                     cartId={cart?.cartId}
                     graphqlClient={graphqlClient}
                     createCart={true}
-                    onCartCreated={(cart) => {
+                    onCartCreated={(cart: Cart) => {
                       saveCart(cart);
                     }}
                     className='flex items-center w-full gap-2'
                     configuration={config}
                     showModal={true}
-                    afterAddToCart={(cart) => {
+                    afterAddToCart={(cart: Cart) => {
                       saveCart(cart);
                     }}
                     onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}

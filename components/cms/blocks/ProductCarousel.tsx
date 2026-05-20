@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getServices } from '@/lib/api';
+import { getServices } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
 import type { CmsProductCarousel } from '@/lib/cms/types';
 import type { Product, Cluster } from 'propeller-sdk-v2';

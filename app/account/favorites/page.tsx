@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import FavoriteLists from '@/components/propeller/FavoriteLists';
+import { FavoriteLists } from 'propeller-v2-react-ui';
 
 export default function FavoritesPage() {
   const { state: authState, refreshUser } = useAuth();

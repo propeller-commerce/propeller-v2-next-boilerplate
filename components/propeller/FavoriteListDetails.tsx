@@ -1,4 +1,10 @@
 'use client';
+/**
+ * @rsc-blocked — Client-only component: interactive state (useState/useReducer).
+ * Must be rendered inside (or below) a Client Component boundary; cannot be
+ * imported directly into a React Server Component. The 'use client' header
+ * above marks this boundary to Next.js.
+ */
 import { useState, useEffect, useMemo } from 'react';
 import {
   Product,

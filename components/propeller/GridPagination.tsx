@@ -1,4 +1,10 @@
 'use client';
+/**
+ * @rsc-blocked — Client-only component: JSX event handlers (onClick/onChange/etc.).
+ * Must be rendered inside (or below) a Client Component boundary; cannot be
+ * imported directly into a React Server Component. The 'use client' header
+ * above marks this boundary to Next.js.
+ */
 import * as React from 'react';
 import { ProductsResponse } from 'propeller-sdk-v2';
 

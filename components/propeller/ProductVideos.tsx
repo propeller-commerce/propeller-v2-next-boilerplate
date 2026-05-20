@@ -1,3 +1,9 @@
+/**
+ * @rsc-safe — Pure display component. No React hooks, no event handlers, no
+ * browser APIs, no context reads. Renders directly from props and can be
+ * imported into a React Server Component without a 'use client' boundary.
+ * Verified C0.2 (2026-05-20).
+ */
 import * as React from 'react';
 import {
   PaginatedMediaVideoResponse,

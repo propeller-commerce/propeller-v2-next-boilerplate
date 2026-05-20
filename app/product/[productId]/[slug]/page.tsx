@@ -1,185 +1,124 @@
-'use client';
+/**
+ * Product Detail Page — Server Component.
+ *
+ * Hybrid SSR pattern (Phase C0 demo):
+ *   1. This file is a Server Component. It runs on the server, fetches the
+ *      product directly via the upstream Propeller GraphQL API (no proxy
+ *      round-trip), and renders the above-the-fold static markup
+ *      (Breadcrumbs, name, price, bulk prices, short description, stock).
+ *      That HTML is in the initial response — visible with JS disabled.
+ *   2. Everything interactive (gallery, AddToCart, AddToFavorite, ProductTabs,
+ *      bundles, cross-sell sliders) lives in client components rendered
+ *      below. Each one is its own 'use client' boundary; Next.js stitches
+ *      them into the server-rendered tree.
+ *
+ * Why split here: PDP is the highest-traffic page, the page where SEO bots
+ * spend the most time, and the page where above-the-fold render quality
+ * matters most. Server-rendering the price and name removes a hydration
+ * round-trip and lets crawlers see the real content.
+ *
+ * Reference: the existing `app/page.tsx` already uses the same pattern
+ * (server CMS fetch + client `<HomeFallback>`).
+ */
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { useCart } from '@/context/CartContext';
-import { imageSearchFilters, imageVariantFiltersLarge, imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import { Card } from '@/components/ui/Card';
-import { CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
-import AddToCart from '@/components/propeller/AddToCart';
-import ItemStock from '@/components/propeller/ItemStock';
-import ProductInfo from '@/components/propeller/ProductInfo';
-import ProductGallery from '@/components/propeller/ProductGallery';
-import ProductPrice from '@/components/propeller/ProductPrice';
-import ProductShortDescription from '@/components/propeller/ProductShortDescription';
-import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
 import Breadcrumbs from '@/components/propeller/Breadcrumbs';
-import ProductTabs from '@/components/propeller/ProductTabs';
-import { usePrice } from '@/context/PriceContext';
-import { graphqlClient } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
-import { config, localizeHref } from '@/data/config';
-import ProductSlider from '@/components/propeller/ProductSlider';
-import ProductBundles from '@/components/propeller/ProductBundles';
-import AddToFavorite from '@/components/propeller/AddToFavorite';
-import { useLanguage } from '@/context/LanguageContext';
+import ProductPrice from '@/components/propeller/ProductPrice';
+import ProductBulkPrices from '@/components/propeller/ProductBulkPrices';
+import ProductShortDescription from '@/components/propeller/ProductShortDescription';
+import ItemStock from '@/components/propeller/ItemStock';
+import ProductGallery from '@/components/propeller/ProductGallery';
+import { fetchProduct, getServerInfra } from '@/lib/api/server';
+import { config } from '@/data/config';
 import { getLanguageString } from '@/composables/shared/utils/languageResolver';
+import { ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import AddToCartIsland, { ProductBelowFoldIsland } from './ProductDetailIsland';
 
+interface RouteParams {
+  productId: string;
+  slug: string;
+}
 
-export default function ProductPage() {
-  const params = useParams();
-  const { state, refreshUser } = useAuth();
-  const productId = parseInt(params.productId as string);
-  const [product, setProduct] = useState<Product | null>(null);
-  const { cart, saveCart } = useCart();
-  const router = useRouter();
-  const { includeTax } = usePrice();
-  const { language } = useLanguage();
-  const images: string[] = product?.media?.images?.items
-    ?.map(image => image.imageVariants?.[0]?.url)
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<RouteParams>;
+}) {
+  const { productId: productIdStr } = await params;
+  const productId = Number.parseInt(productIdStr, 10);
+  if (!Number.isFinite(productId)) notFound();
+
+  const infra = await getServerInfra();
+  const product = await fetchProduct(infra, productId, infra.language);
+  if (!product) notFound();
+
+  const price = product.price as ProductPriceSDK;
+  const title = getLanguageString(product.names, infra.language, '');
+  const images: string[] = product.media?.images?.items
+    ?.map((image) => image.imageVariants?.[0]?.url)
     .filter((url): url is string => !!url) ?? [];
-
-  const price = product?.price as ProductPriceSDK;
-
-  // Update URL slug when language or product changes — use history.replaceState
-  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
-  useEffect(() => {
-    if (!product) return;
-    const match = product.slugs?.find((s: { language?: string; value?: string }) => s.language === language);
-    const slug = match?.value || product.slugs?.[0]?.value || '';
-    const currentSlug = window.location.pathname.split('/').pop();
-    if (slug && slug !== currentSlug) {
-      window.history.replaceState(null, '', localizeHref(`/product/${productId}/${slug}`, language));
-    }
-  }, [product, language, productId]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
+          {/* Above the fold — pure RSC. Visible in initial HTML. */}
           <div className="propeller-breadcrumbs mb-6">
             <Breadcrumbs
-              categoryPath={product?.categoryPath || []}
-              currentCategory={product?.category || undefined}
-              language={language}
+              categoryPath={product.categoryPath || []}
+              currentCategory={product.category || undefined}
+              language={infra.language}
               configuration={config}
-              currentLabel={product ? getLanguageString(product.names, language, '') : undefined}
+              currentLabel={title}
             />
           </div>
 
-          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Left: Image Gallery */}
+            {/* Left column — gallery (client island, but layout is server-controlled). */}
             <div className="bg-white rounded-lg shadow p-6">
-              {/* Gallery Column */}
               <ProductGallery images={images} />
             </div>
 
-            {/* Details Column */}
+            {/* Right column — server-rendered name/price/desc/stock, then the
+                interactive AddToCart+AddToFavorite card (client). */}
             <div className="flex flex-col">
               <div className="mb-6">
-                <ProductInfo
-                  productId={productId}
-                  imageSearchFilters={imageSearchFilters}
-                  imageVariantFilters={imageVariantFiltersLarge}
-                  onProductLoaded={setProduct}
+                <h1 className="text-2xl font-bold mb-4">{title}</h1>
+                <ProductPrice
+                  price={price}
+                  includeTax={infra.includeTax}
+                  user={infra.user}
+                  portalMode={infra.portalMode}
                 />
-
-                <ProductPrice price={price} includeTax={includeTax} />
                 <div className="mt-6">
-                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} includeTax={includeTax} labels={{ title: '' }} />
+                  <ProductBulkPrices
+                    bulkPrices={product.bulkPrices || []}
+                    includeTax={infra.includeTax}
+                    user={infra.user}
+                    portalMode={infra.portalMode}
+                    labels={{ title: '' }}
+                  />
                 </div>
                 <div className="mt-6">
-                  <ProductShortDescription product={product as Product} language={language} />
+                  <ProductShortDescription product={product} language={infra.language} />
                 </div>
-
-                {product?.inventory && (
+                {product.inventory && (
                   <div className="mt-4">
                     <ItemStock inventory={product.inventory} showAvailability={false} />
                   </div>
                 )}
               </div>
 
-              {product && (
-                <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
-                  <div className="flex items-center gap-2">
-                    <AddToCart
-                      product={product}
-                      cartId={cart?.cartId}
-                      createCart={true}
-                      onCartCreated={(cart) => {
-                        saveCart(cart);
-                      }}
-                      className='flex items-center w-full gap-2'
-                      showModal={true}
-                      afterAddToCart={(cart) => {
-                        saveCart(cart);
-                      }}
-                      onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-                      onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))} />
-                    <AddToFavorite
-                      graphqlClient={graphqlClient}
-                      user={state.user}
-                      productId={product.productId}
-                      onFavoriteChanged={refreshUser}
-                    />
-                  </div>
-                </Card>
-              )}
-
+              {/* AddToCart + AddToFavorite — client island. */}
+              <AddToCartIsland product={product} productId={productId} />
             </div>
           </div>
-          <ProductTabs product={product as Product} productId={productId} />
-          <div className="my-6">
-            <ProductBundles
-              productId={productId}
-              cartId={cart?.cartId}
-              taxZone="NL"
-              createCart={true}
-              showModal={true}
-              onCartCreated={(newCart) => saveCart(newCart)}
-              afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
-              onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-            />
-          </div>
-          <ProductSlider
-            crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
-            productId={productId}
-            taxZone="NL"
-            showAvailability={false}
-            showStock={true}
-            cartId={cart?.cartId}
-            createCart={true}
-            onCartCreated={(newCart) => saveCart(newCart)}
-            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-            showModal={true}
-            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-            onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
-            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-          />
-          <ProductSlider
-            crossUpsellTypes={[CrossupsellType.RELATED]}
-            productId={productId}
-            taxZone="NL"
-            showAvailability={false}
-            showStock={true}
-            cartId={cart?.cartId}
-            createCart={true}
-            onCartCreated={(newCart) => saveCart(newCart)}
-            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-            showModal={true}
-            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-            onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-            configuration={config}
-            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-          />
+
+          {/* Below-the-fold — tabs, bundles, cross-sells (all client). */}
+          <ProductBelowFoldIsland product={product} productId={productId} />
         </div>
       </main>
       <Footer />

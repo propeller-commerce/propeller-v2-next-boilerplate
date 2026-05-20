@@ -1,4 +1,10 @@
-'use client';
+/**
+ * @rsc-safe — Pure display component. No React hooks, no event handlers, no
+ * browser APIs, no context reads. The legacy `'use client'` header was a
+ * Mitosis-era leftover; removed in C0 once verified pure. Renders directly
+ * from props and can be imported into a React Server Component.
+ * Verified C0.2 (2026-05-20).
+ */
 import * as React from 'react';
 
 import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';

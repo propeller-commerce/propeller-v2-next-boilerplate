@@ -1,4 +1,10 @@
 'use client';
+/**
+ * @rsc-blocked — Client-only component: side effects (useEffect).
+ * Must be rendered inside (or below) a Client Component boundary; cannot be
+ * imported directly into a React Server Component. The 'use client' header
+ * above marks this boundary to Next.js.
+ */
 
 import { useEffect } from 'react';
 import {

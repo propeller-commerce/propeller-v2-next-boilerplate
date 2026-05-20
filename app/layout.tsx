@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+// Package stylesheet first so the host's globals.css can override theme tokens.
+// The package bundles every Tailwind utility its components reference
+// (`bg-card`, `text-foreground`, etc.) — without this they'd be absent from
+// the consumer's CSS because Tailwind doesn't scan `node_modules`.
+import "propeller-v2-react-ui/styles.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";

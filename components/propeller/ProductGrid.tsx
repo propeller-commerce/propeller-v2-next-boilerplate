@@ -6,7 +6,8 @@
  * above marks this boundary to Next.js.
  */
 
-import { useEffect } from 'react';
+import * as React from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -207,6 +208,50 @@ export interface ProductGridProps {
     product: Product
   ) => void;
   /** Extra CSS class applied to the root element. */ className?: string;
+
+  /**
+   * Compound API: when provided, the grid renders these children inside a
+   * `<ProductGridContext>` instead of its built-in grid+pagination layout.
+   * Subcomponents (`<ProductGrid.Items>`, `<ProductGrid.Pagination>`) read
+   * the search state via the context; consumers control the layout.
+   *
+   * @example
+   * <ProductGrid categoryId={17}>
+   *   <ProductGrid.Items renderItem={(item) => <ProductCard product={item as Product} />} />
+   *   <ProductGrid.Pagination />
+   * </ProductGrid>
+   */
+  children?: React.ReactNode;
+}
+
+// ── Compound context ────────────────────────────────────────────────────────
+
+/**
+ * Shared state the compound subcomponents read. Populated by `<ProductGrid>`
+ * around its children. Not exported — consumers compose subcomponents under
+ * `<ProductGrid>` rather than reading the context directly.
+ */
+interface ProductGridContextValue {
+  items: (Product | Cluster)[];
+  itemsFound: number;
+  isLoading: boolean;
+  currentPage: number;
+  totalPages: number;
+  goToPage: (page: number) => void;
+  gridConfig: ProductGridConfig;
+}
+
+const ProductGridSearchContext = createContext<ProductGridContextValue | null>(null);
+
+function useProductGrid(): ProductGridContextValue {
+  const ctx = useContext(ProductGridSearchContext);
+  if (!ctx) {
+    throw new Error(
+      '<ProductGrid.X> must be rendered inside <ProductGrid>. ' +
+        'Got null context — wrap the subcomponents in <ProductGrid categoryId={...}>...</ProductGrid>.'
+    );
+  }
+  return ctx;
 }
 
 function ProductGrid(rawProps: ProductGridProps) {
@@ -214,7 +259,10 @@ function ProductGrid(rawProps: ProductGridProps) {
   const props = useInfraProps(rawProps);
   const {
     displayProducts,
+    itemsFound,
     isLoading,
+    currentPage,
+    totalPages,
     fetchProducts,
     goToPage,
   } = useProductSearch({
@@ -318,6 +366,35 @@ function ProductGrid(rawProps: ProductGridProps) {
     onClusterClick: (c: Cluster) => props.onClusterClick?.(c),
   };
 
+  // ── Compound mode ────────────────────────────────────────────────────────
+  // When the consumer supplies children, render them inside the search
+  // context instead of the built-in grid+pagination layout. Subcomponents
+  // (<ProductGrid.Items>, <ProductGrid.Pagination>) read state from context.
+  if (rawProps.children !== undefined) {
+    const compoundCtx: ProductGridContextValue = {
+      items: displayProducts,
+      itemsFound,
+      isLoading: getIsLoading(),
+      currentPage,
+      totalPages,
+      goToPage: handlePageChange,
+      gridConfig,
+    };
+    return (
+      <ProductGridConfigProvider value={gridConfig}>
+        <ProductGridSearchContext.Provider value={compoundCtx}>
+          <div
+            className={`propeller-product-grid w-full ${(props.className as string) || ''}`}
+            data-loading={getIsLoading() ? 'true' : 'false'}
+            data-mode="compound"
+          >
+            {rawProps.children}
+          </div>
+        </ProductGridSearchContext.Provider>
+      </ProductGridConfigProvider>
+    );
+  }
+
   return (
     <ProductGridConfigProvider value={gridConfig}>
     <div
@@ -407,4 +484,142 @@ function ProductGrid(rawProps: ProductGridProps) {
     </ProductGridConfigProvider>
   );
 }
-export default ProductGrid;
+// ── Compound subcomponents ──────────────────────────────────────────────────
+
+/**
+ * The items grid. By default renders `<ProductCard>` / `<ClusterCard>` for
+ * each item — but `renderItem` is the proper extension point: pass a
+ * function that returns whatever shape you want (compound `<ProductCard>`
+ * with custom subcomponents, a fully custom card, a list row, etc.).
+ *
+ * Reads `items`, `isLoading`, and `gridConfig.columns` from the parent
+ * `<ProductGrid>` context. Also handles the loading skeleton and empty state.
+ */
+function ProductGridItems(props: {
+  renderItem?: (item: Product | Cluster, index: number) => React.ReactNode;
+  /** Custom empty-state node. Defaults to the built-in "No products found" panel. */
+  empty?: React.ReactNode;
+  /** Extra class on the grid container. */
+  className?: string;
+}) {
+  const { items, isLoading, gridConfig } = useProductGrid();
+  const cols = gridConfig.columns || 3;
+  const gridClass =
+    cols === 1
+      ? 'flex flex-col gap-4'
+      : cols === 2
+        ? 'grid grid-cols-2 gap-3 sm:gap-6 auto-rows-fr'
+        : cols === 4
+          ? 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-fr'
+          : cols === 5
+            ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 auto-rows-fr'
+            : cols === 6
+              ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-6 auto-rows-fr'
+              : 'grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-fr';
+
+  if (isLoading) {
+    const skeletonCount = cols === 2 ? 4 : cols === 4 ? 8 : cols === 5 ? 10 : cols === 6 ? 12 : 6;
+    return (
+      <div className={`propeller-product-grid__skeleton-grid ${gridClass} ${props.className ?? ''}`}>
+        {Array.from({ length: skeletonCount }).map((_, idx) => (
+          <div
+            key={idx}
+            className="propeller-product-grid__skeleton-card flex flex-col overflow-hidden rounded-container border border-border bg-card shadow-sm"
+          >
+            <div className="propeller-product-grid__skeleton-image aspect-square bg-surface-hover animate-pulse" />
+            <div className="p-4 flex flex-col gap-2 flex-1">
+              <div className="propeller-product-grid__skeleton-line h-3 bg-surface-hover animate-pulse rounded w-1/4" />
+              <div className="propeller-product-grid__skeleton-line h-4 bg-surface-hover animate-pulse rounded w-3/4" />
+              <div className="propeller-product-grid__skeleton-line h-4 bg-surface-hover animate-pulse rounded w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <>
+        {props.empty ?? (
+          <div className="propeller-product-grid__empty text-center py-24 bg-surface-hover rounded-container border border-dashed border-border">
+            <h3 className="propeller-product-grid__empty-title mt-4 text-lg font-semibold text-foreground">
+              No products found
+            </h3>
+            <p className="propeller-product-grid__empty-message mt-1 text-sm text-muted-foreground">
+              Try adjusting your filters or search term.
+            </p>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div className={`propeller-product-grid__grid ${gridClass} ${props.className ?? ''}`}>
+      {items.map((item, idx) => {
+        const isCluster = 'clusterId' in item && !!(item as Cluster).clusterId;
+        const key = (item as Product).productId || (item as Cluster).clusterId || idx;
+        return (
+          <div key={key}>
+            {props.renderItem
+              ? props.renderItem(item, idx)
+              : isCluster
+                ? <ClusterCard cluster={item as Cluster} />
+                : <ProductCard product={item as Product} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Pagination control wired to the parent ProductGrid context. Compact "Prev /
+ * Page X of Y / Next" style by default — a future enhancement could expose
+ * `style="full"` matching GridPagination. For complex pagination, render
+ * GridPagination directly (it accepts the same context fields as props).
+ */
+function ProductGridPagination(props: { className?: string }) {
+  const { currentPage, totalPages, goToPage, isLoading } = useProductGrid();
+  if (totalPages <= 1) return null;
+  return (
+    <nav
+      className={props.className ?? 'propeller-product-grid__pagination flex items-center justify-center gap-3 mt-6'}
+      aria-label="Pagination"
+    >
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-control border border-border text-sm disabled:opacity-50"
+        disabled={currentPage <= 1 || isLoading}
+        onClick={() => goToPage(currentPage - 1)}
+      >
+        Previous
+      </button>
+      <span className="text-sm text-muted-foreground">
+        Page {currentPage} of {totalPages}
+      </span>
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-control border border-border text-sm disabled:opacity-50"
+        disabled={currentPage >= totalPages || isLoading}
+        onClick={() => goToPage(currentPage + 1)}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+
+// ── Compound default export ─────────────────────────────────────────────────
+
+type ProductGridComponent = typeof ProductGrid & {
+  Items: typeof ProductGridItems;
+  Pagination: typeof ProductGridPagination;
+};
+
+const ProductGridCompound = ProductGrid as ProductGridComponent;
+ProductGridCompound.Items = ProductGridItems;
+ProductGridCompound.Pagination = ProductGridPagination;
+
+export default ProductGridCompound;

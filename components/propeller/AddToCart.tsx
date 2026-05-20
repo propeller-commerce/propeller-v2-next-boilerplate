@@ -152,6 +152,42 @@ export interface AddToCartProps {
    * Defaults to false.
    */
   includeTax?: boolean;
+
+  // ── Grouped props (preferred — Phase C3) ───────────────────────────────
+  // These reduce the 27-prop surface into three focused groups. When both a
+  // grouped field and its flat-prop equivalent are supplied, the flat prop
+  // wins (back-compat preserved). Consumers migrating to the new shape can
+  // drop the equivalent flat props at their leisure.
+
+  /**
+   * Display toggles. Equivalent flat props: `allowIncrDecr`, `showModal`,
+   * `enableStockValidation`.
+   */
+  display?: AddToCartDisplay;
+
+  /**
+   * Event callbacks. Equivalent flat props: `beforeAddToCart`, `onAddToCart`,
+   * `afterAddToCart`, `onCartCreated`, `onProceedToCheckout`,
+   * `onRequestQuoteClick`.
+   */
+  events?: AddToCartEvents;
+}
+
+/** @see AddToCartProps.display */
+export interface AddToCartDisplay {
+  allowIncrDecr?: boolean;
+  showModal?: boolean;
+  enableStockValidation?: boolean;
+}
+
+/** @see AddToCartProps.events */
+export interface AddToCartEvents {
+  beforeAddToCart?: () => boolean;
+  onAddToCart?: AddToCartProps['onAddToCart'];
+  afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
+  onCartCreated?: (cart: Cart) => void;
+  onProceedToCheckout?: () => void;
+  onRequestQuoteClick?: (cart: Cart) => void;
 }
 
 export interface CartQueryVariables {
@@ -161,9 +197,39 @@ export interface CartQueryVariables {
   /** Image transformation filters */ imageVariantFilters: TransformationsInput;
 }
 
+/**
+ * Merge grouped Phase-C3 props (`display`, `events`) into a flat props
+ * object. Flat props win over grouped equivalents when both are supplied —
+ * preserves back-compat for the 30+ existing call sites that pass the
+ * monolithic shape. Returns a new object so the original `rawProps` is not
+ * mutated; downstream code reads `props.x` as before, transparently
+ * picking up grouped values when only those are supplied.
+ */
+function mergeGrouped(p: AddToCartProps): AddToCartProps {
+  const d = p.display;
+  const e = p.events;
+  if (!d && !e) return p;
+  return {
+    ...p,
+    allowIncrDecr: p.allowIncrDecr ?? d?.allowIncrDecr,
+    showModal: p.showModal ?? d?.showModal,
+    enableStockValidation: p.enableStockValidation ?? d?.enableStockValidation,
+    beforeAddToCart: p.beforeAddToCart ?? e?.beforeAddToCart,
+    onAddToCart: p.onAddToCart ?? e?.onAddToCart,
+    afterAddToCart: p.afterAddToCart ?? e?.afterAddToCart,
+    onCartCreated: p.onCartCreated ?? e?.onCartCreated,
+    onProceedToCheckout: p.onProceedToCheckout ?? e?.onProceedToCheckout,
+    onRequestQuoteClick: p.onRequestQuoteClick ?? e?.onRequestQuoteClick,
+  };
+}
+
 function AddToCart(rawProps: AddToCartProps) {
   // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
-  const props = useInfraProps(rawProps);
+  // Then merge the Phase-C3 grouped props (display / events) on top so the
+  // rest of the component reads `props.allowIncrDecr` etc. uniformly
+  // regardless of whether the consumer passed the flat or grouped shape.
+  const props = mergeGrouped(useInfraProps(rawProps));
+
   // --- composable ---
   const { cart, loading, checkoutAllowed, addItem, getMinQuantity, getStep } = useCart({
     graphqlClient: props.graphqlClient!,

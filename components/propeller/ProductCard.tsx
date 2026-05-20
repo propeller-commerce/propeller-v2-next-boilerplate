@@ -1,13 +1,15 @@
 'use client';
 /**
- * @rsc-blocked — Client-only component: interactive state (useState/useReducer).
- * Must be rendered inside (or below) a Client Component boundary; cannot be
- * imported directly into a React Server Component. The 'use client' header
- * above marks this boundary to Next.js.
+ * @rsc-blocked — Client-only component: interactive state (useState).
+ * The compound subcomponents (`<ProductCard.Image>` etc.) inherit this
+ * boundary even though several of them are individually pure — moving the
+ * boundary would force a context-less prop drilling that defeats the
+ * compound pattern. Server-side render needs go through the underlying
+ * Bucket-B primitives (ProductPrice, ItemStock) directly.
  */
 import * as React from 'react';
 
-import { useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import {
   GraphQLClient,
   Product,
@@ -18,7 +20,7 @@ import {
   CartChildItemInput,
   AttributeResult,
 } from 'propeller-sdk-v2';
-import AddToCart from './AddToCart';
+import AddToCartImpl from './AddToCart';
 import ItemStock from './ItemStock';
 import ProductPriceDisplay from './ProductPrice';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
@@ -30,13 +32,36 @@ import {
 import { useResolvedProps, ResolveSpec } from '@/composables/react/useResolvedProps';
 import { ProductGridConfig } from '@/context/ProductGridContext';
 
+// ── Public types ────────────────────────────────────────────────────────────
+
+/**
+ * Props for the root `<ProductCard>` (and the back-compat monolithic
+ * variant). Most fields are display toggles preserved for back-compat; in
+ * the new compound API, consumers control rendering by composition instead
+ * — see the Subcomponents section below.
+ */
 export interface ProductCardProps {
   // === Core ===
 
   /** The product object to display */
   product: Product;
 
-  // === Display toggles ===
+  /**
+   * Compound API: provide subcomponents as children. When omitted, the
+   * monolithic legacy layout renders based on the show*/ /* allow* prop
+   * toggles below.
+   *
+   * @example
+   * <ProductCard product={p}>
+   *   <ProductCard.Image variant="grid" />
+   *   <ProductCard.Name linkable />
+   *   <ProductCard.Price />
+   *   <ProductCard.AddToCart />
+   * </ProductCard>
+   */
+  children?: React.ReactNode;
+
+  // === Display toggles (legacy / monolithic mode only) ===
 
   /** Show the product name. Defaults to true. */
   showName?: boolean;
@@ -89,25 +114,19 @@ export interface ProductCardProps {
 
   /**
    * Attribute codes/names to look up and display as badge overlays on the product image.
-   * Each code is resolved against `product.attributes.items[].attributeDescription.code`
-   * (or `.name`). Attributes with no matching value are silently omitted.
    * Example: ['new', 'sale']
    */
   imageLabels?: string[];
 
   /**
    * Attribute codes/names to look up and display as extra text rows below the product name.
-   * Resolved the same way as `imageLabels`.
    * Example: ['brand', 'color']
    */
   textLabels?: string[];
 
   // === UI string overrides ===
 
-  /**
-   * Override any UI string.
-   * Available keys: addToFavorites, removeFromFavorites
-   */
+  /** Override any UI string. Keys: addToFavorites, removeFromFavorites */
   labels?: Record<string, string>;
 
   // === Favourites ===
@@ -115,28 +134,20 @@ export interface ProductCardProps {
   /** Renders a heart-icon toggle button on the product image. Defaults to false. */
   enableAddFavorite?: boolean;
 
-  /**
-   * Called whenever the favourite state is toggled.
-   * The second argument indicates the new state: `true` = added, `false` = removed.
-   */
+  /** Called whenever the favourite state is toggled. */
   onToggleFavorite?: (product: Product, isFavorite: boolean) => void;
 
   // === Navigation ===
 
   /**
    * Called when the product name or image is clicked.
-   * When provided, the default `<a>` navigation is prevented so the consumer
-   * can use framework-specific routing (e.g. Next.js `router.push`).
+   * When provided, the default `<a>` navigation is prevented.
    */
   onProductClick?: (product: Product) => void;
 
   // === Pricing ===
 
-  /**
-   * When true, tax-inclusive price (net) is the leading price.
-   * When false, tax-exclusive price (gross) is shown.
-   * Defaults to false.
-   */
+  /** When true, tax-inclusive (net) price is the leading price. Defaults to false. */
   includeTax?: boolean;
 
   // === Appearance ===
@@ -150,50 +161,23 @@ export interface ProductCardProps {
   /**
    * URL pattern controlling which segments appear in product links.
    * Tokens: page → 'product', id → productId, slug → slug value.
-   * Examples: 'page/id/slug' (default) | 'page/slug' | 'page/id'
-   * Defaults to 'page/id/slug' when omitted.
+   * Defaults to 'page/id/slug'.
    */
   urlPattern?: string;
 
-  // === AddToCart pass-through props ===
+  // === AddToCart pass-through props (forwarded to the compound subcomponent
+  //     OR the legacy embedded AddToCart) ===
 
-  /** Initialised Propeller SDK GraphQL client. Resolved from PropellerProvider when omitted. */
   graphqlClient?: GraphQLClient;
-
-  /** Authenticated user — used for cart creation / lookup. Resolved from PropellerProvider when omitted. */
   user?: Contact | Customer | null;
-
-  /** ID of an existing cart to add items to. */
   cartId?: string;
-
-  /** Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall. */
   configuration?: any;
-
-  /** Cluster ID for configurable products. */
   clusterId?: number;
-
-  /** Product IDs of selected cluster child options. */
   childItems?: number[];
-
-  /** Free-text notes attached to the cart item. */
   notes?: string;
-
-  /** Custom unit price override. Omit to use calculated price. */
   price?: number;
-
-  /**
-   * When true and no cartId is available, the embedded AddToCart automatically
-   * looks up or creates a cart. Always pair with onCartCreated.
-   */
   createCart?: boolean;
-
-  /** Called after a new cart is created internally by AddToCart. */
   onCartCreated?: (cart: Cart) => void;
-
-  /**
-   * Fully replaces the internal CartService.addItemToCart call inside AddToCart.
-   * Must return a Cart object.
-   */
   onAddToCart?: (
     product: Product,
     clusterId?: number,
@@ -203,49 +187,18 @@ export interface ProductCardProps {
     price?: number,
     showModal?: boolean
   ) => Cart;
-
-  /** Called after every successful add-to-cart. Receives the updated cart and the added item. */
   afterAddToCart?: (cart: Cart, item?: CartMainItem) => void;
-
-  /**
-   * When true the embedded AddToCart shows a modal after a successful add
-   * instead of the default toast notification. Defaults to false.
-   */
   showModal?: boolean;
-
-  /**
-   * Renders − and + buttons beside the quantity input in AddToCart.
-   * Defaults to true.
-   */
   allowIncrDecr?: boolean;
-
-  /** Validate stock before adding to cart. Defaults to false. */
   enableStockValidation?: boolean;
-
-  /** Language code forwarded to CartService operations. Defaults to 'NL'. */
   language?: string;
-
-  /**
-   * Active company ID from the company switcher.
-   * When provided, overrides the user's default company for cart creation and lookup.
-   */
   companyId?: number;
-
-  /** Called when the user clicks "Proceed to checkout" inside the AddToCart modal. */
   onProceedToCheckout?: () => void;
-
-  /** Called when the user clicks "Request a Quote" inside the AddToCart modal. */
   onRequestQuoteClick?: (cart: Cart) => void;
-
-  /**
-   * Label overrides for UI strings. Available labels: outOfStock, noCartId,
-   * errorAdding, addedToCart, modalTitle, quantity, continueShopping,
-   * proceedToCheckout, requestQuoteButton, add, adding
-   */
   addToCartLabels?: Record<string, string>;
 }
 
-// ── Pure helpers (module scope — created once, not per render) ──────────────────
+// ── Pure helpers (module scope — created once, not per render) ──────────────
 
 function getProductName(product: Product | undefined, language: string): string {
   return getLocalizedValue(product?.names, language, 'Product');
@@ -272,8 +225,7 @@ function resolveAttributeValues(product: Product | undefined, codes: string[] | 
 }
 
 // Two-tier precedence (explicit prop > ProductGrid context > Propeller infra >
-// default) for the ~24 props ProductGrid otherwise cascades through here. See
-// useResolvedProps — declarative replacement for the old hand-written block.
+// default) for the ~24 props ProductGrid otherwise cascades through here.
 const RESOLVE_SPEC: ResolveSpec<ProductCardProps> = {
   graphqlClient: { infra: 'graphqlClient' },
   user: { infra: 'user', default: null },
@@ -309,10 +261,64 @@ const RESOLVE_SPEC: ResolveSpec<ProductCardProps> = {
   },
 };
 
-function ProductCard(rawProps: ProductCardProps) {
+// ── Context (shared by compound subcomponents) ──────────────────────────────
+
+/**
+ * Internal context populated by the root `<ProductCard>`. Subcomponents read
+ * `useProductCard()` to get the product + resolved props + derived values
+ * (name, sku, imageUrl, productUrl) computed once. Not exported — consumers
+ * compose subcomponents under `<ProductCard>` rather than reading the
+ * context directly.
+ */
+interface ProductCardContextValue {
+  product: Product;
+  /** Fully resolved props (infra + grid context + explicit) — read instead of `props`. */
+  resolved: ProductCardProps;
+  /** Derived display values, computed once at the root and read by leaves. */
+  derived: {
+    name: string;
+    sku: string;
+    imageUrl: string;
+    shortDescription: string;
+    manufacturer: string;
+    productUrl: string;
+    imageLabelValues: string[];
+    textLabelValues: string[];
+    useTax: boolean;
+    isRow: boolean;
+    language: string;
+  };
+  /** Local UI state shared between Image (which renders the heart) and any sibling. */
+  favorite: {
+    isFavorite: boolean;
+    toggle: (e: React.MouseEvent) => void;
+  };
+  /** Click handler shared by Image + Name. */
+  handleProductClick: (e: React.MouseEvent) => void;
+}
+
+const ProductCardContext = createContext<ProductCardContextValue | null>(null);
+
+/**
+ * Internal hook used by compound subcomponents. Throws if called outside
+ * `<ProductCard>` — the error is intentional, that's a developer mistake.
+ */
+function useProductCard(): ProductCardContextValue {
+  const ctx = useContext(ProductCardContext);
+  if (!ctx) {
+    throw new Error(
+      '<ProductCard.X> must be rendered inside <ProductCard>. ' +
+        'Got null context — wrap your subcomponents in <ProductCard product={...}>...</ProductCard>.'
+    );
+  }
+  return ctx;
+}
+
+// ── Root component ──────────────────────────────────────────────────────────
+
+function ProductCardRoot(rawProps: ProductCardProps) {
   // Resolve infra (Tier 1) + grid config (Tier 2) declaratively so this
-  // component no longer needs ~24 cascaded props. Non-throwing — standalone use
-  // (no provider) falls back to explicit props / defaults.
+  // component no longer needs ~24 cascaded props.
   const props = useResolvedProps(rawProps, RESOLVE_SPEC);
 
   const [isFavorite, setIsFavorite] = useState(false);
@@ -321,19 +327,15 @@ function ProductCard(rawProps: ProductCardProps) {
   const product = props.product;
   const isRow = props.columns === 1;
 
-  // Derived values — computed once per render (previously these helpers were
-  // redefined every render and called up to 5× across the layout branches).
-  const productName = getProductName(product, language);
-  const productSku = getProductSku(product);
-  const productImageUrl = getProductImageUrl(product);
+  // Derived values — computed once per render.
+  const name = getProductName(product, language);
+  const sku = getProductSku(product);
+  const imageUrl = getProductImageUrl(product);
   const shortDescription = getProductShortDescription(product, language);
   const manufacturer = getProductManufacturer(product);
-  const productUrl = props.configuration.urls.getProductUrl(product, props.language);
+  const productUrl = props.configuration?.urls?.getProductUrl?.(product, props.language) ?? '#';
   const imageLabelValues = resolveAttributeValues(product, props.imageLabels);
-  const textLabelValues = resolveAttributeValues(product, props.textLabels).map((value) => ({
-    value,
-  }));
-
+  const textLabelValues = resolveAttributeValues(product, props.textLabels);
   const useTax = props.includeTax !== undefined ? !!props.includeTax : false;
 
   function handleProductClick(e: React.MouseEvent): void {
@@ -343,7 +345,7 @@ function ProductCard(rawProps: ProductCardProps) {
     }
   }
 
-  function handleToggleFavorite(e: React.MouseEvent): void {
+  function toggleFavorite(e: React.MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
     setIsFavorite(!isFavorite);
@@ -352,242 +354,377 @@ function ProductCard(rawProps: ProductCardProps) {
     }
   }
 
-  // Single AddToCart prop set — previously this 19-prop block was duplicated
-  // verbatim across the row and grid layout branches.
-  const addToCartProps = {
-    className: 'flex w-full items-center gap-2',
-    graphqlClient: props.graphqlClient,
-    user: props.user,
-    product: product,
-    cartId: props.cartId,
-    configuration: props.configuration,
-    childItems: props.childItems,
-    notes: props.notes,
-    price: props.price,
-    createCart: props.createCart,
-    onCartCreated: props.onCartCreated,
-    onAddToCart: props.onAddToCart,
-    afterAddToCart: props.afterAddToCart,
-    showModal: props.showModal,
-    allowIncrDecr: props.allowIncrDecr,
-    enableStockValidation: props.enableStockValidation,
-    language: props.language,
-    onProceedToCheckout: props.onProceedToCheckout,
-    labels: props.addToCartLabels,
-    companyId: props.companyId,
-    onRequestQuoteClick: props.onRequestQuoteClick,
+  const contextValue: ProductCardContextValue = {
+    product,
+    resolved: props,
+    derived: {
+      name,
+      sku,
+      imageUrl,
+      shortDescription,
+      manufacturer,
+      productUrl,
+      imageLabelValues,
+      textLabelValues,
+      useTax,
+      isRow,
+      language,
+    },
+    favorite: { isFavorite, toggle: toggleFavorite },
+    handleProductClick,
   };
 
+  // Compound mode: consumer supplied children. Render them inside a default
+  // shell with the root layout classes, but the consumer controls the order
+  // and which subcomponents appear. The shell can be replaced via
+  // <ProductCard.Shell as="article"> in a future extension; for now the div
+  // matches the legacy markup so styling stays identical.
+  if (rawProps.children !== undefined) {
+    return (
+      <ProductCardContext.Provider value={contextValue}>
+        <div
+          className={`propeller-product-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+          data-layout={isRow ? 'row' : 'grid'}
+        >
+          {rawProps.children}
+        </div>
+      </ProductCardContext.Provider>
+    );
+  }
+
+  // Legacy / monolithic mode: render the original full layout based on the
+  // show*/allow* toggles. Internally we still use the compound subcomponents
+  // so there's one rendering path. Marked @deprecated in the prop docs;
+  // planned removal in v2 once consumers have migrated.
+  return (
+    <ProductCardContext.Provider value={contextValue}>
+      <div
+        className={`propeller-product-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
+        data-layout={isRow ? 'row' : 'grid'}
+      >
+        {props.showImage !== false ? <ProductCardImage /> : null}
+        {isRow ? (
+          <>
+            <div className="propeller-product-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                {props.showSku !== false && sku ? <ProductCardSku /> : null}
+                {props.showName !== false ? <ProductCardName linkable /> : null}
+                {textLabelValues.length > 0 ? <ProductCardTextLabels /> : null}
+                {props.showManufacturer && manufacturer ? <ProductCardManufacturer /> : null}
+                {props.showShortDescription && shortDescription ? <ProductCardShortDescription /> : null}
+              </div>
+            </div>
+            <div className="propeller-product-card__footer w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-border-subtle">
+              {props.showStock && !!product.inventory ? <ProductCardStock /> : null}
+              {props.showPrice !== false && !!product?.price ? (
+                <ProductCardPrice priceSize="text-sm" />
+              ) : null}
+              {props.allowAddToCart !== false ? (
+                <div className="propeller-product-card__cta flex-shrink-0 ml-auto">
+                  <ProductCardAddToCart />
+                </div>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="propeller-product-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+              {props.showSku !== false && sku ? <ProductCardSku /> : null}
+              {props.showName !== false ? <ProductCardName linkable /> : null}
+              {textLabelValues.length > 0 ? <ProductCardTextLabels /> : null}
+              {props.showStock && !!product.inventory ? <ProductCardStock /> : null}
+              {props.showManufacturer && manufacturer ? <ProductCardManufacturer /> : null}
+              {props.showShortDescription && shortDescription ? <ProductCardShortDescription /> : null}
+              {props.showPrice !== false && !!product?.price ? (
+                <div className="propeller-product-card__price mt-auto pt-1">
+                  <ProductCardPrice priceSize="text-base sm:text-lg" />
+                </div>
+              ) : null}
+            </div>
+            {props.allowAddToCart !== false ? (
+              <div className="propeller-product-card__cta px-3 pb-3 sm:px-4 sm:pb-4">
+                <ProductCardAddToCart />
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    </ProductCardContext.Provider>
+  );
+}
+
+// ── Compound subcomponents ──────────────────────────────────────────────────
+
+/**
+ * Product image with optional badge overlays and favourite button.
+ * Reads `derived.imageUrl`, `derived.imageLabelValues`, `derived.productUrl`,
+ * and the `favorite` state from context.
+ */
+function ProductCardImage(props: {
+  /** Override the wrapper class. */
+  className?: string;
+  /** Render the favourite heart button. Defaults to context `enableAddFavorite`. */
+  showFavorite?: boolean;
+}) {
+  const { derived, resolved, favorite, handleProductClick } = useProductCard();
+  const showFavorite = props.showFavorite ?? !!resolved.enableAddFavorite;
+  const isRow = derived.isRow;
   return (
     <div
-      className={`propeller-product-card group relative flex h-full overflow-hidden rounded-container border border-border bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-secondary/20 ${isRow ? 'flex-row flex-wrap md:flex-nowrap items-center' : 'flex-col'} ${props.className || ''}`}
-      data-layout={isRow ? 'row' : 'grid'}
+      className={
+        props.className ??
+        `propeller-product-card__media relative overflow-hidden bg-surface-hover ${isRow ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`
+      }
     >
-      {props.showImage !== false ? (
-        <div
-          className={`propeller-product-card__media relative overflow-hidden bg-surface-hover ${isRow ? 'w-20 h-20 flex-shrink-0 p-2' : 'aspect-[4/3] sm:aspect-square p-2 sm:p-4'}`}
-        >
-          <a
-            className="block h-full w-full"
-            href={productUrl}
-            onClick={(e) => handleProductClick(e)}
-          >
-            {productImageUrl ? (
-              <img
-                className="propeller-product-card__image h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                src={productImageUrl}
-                alt={productName}
+      <a className="block h-full w-full" href={derived.productUrl} onClick={handleProductClick}>
+        {derived.imageUrl ? (
+          <img
+            className="propeller-product-card__image h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            src={derived.imageUrl}
+            alt={derived.name}
+          />
+        ) : (
+          <div className="propeller-product-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-16 w-16">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                strokeWidth={1}
               />
-            ) : (
-              <div className="propeller-product-card__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-16 w-16">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    strokeWidth={1}
-                  />
-                </svg>
-              </div>
-            )}
-          </a>
-          {imageLabelValues.length > 0 ? (
-            <div className="propeller-product-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1">
-              {imageLabelValues.map((label) => (
-                <span
-                  key={label}
-                  className="propeller-product-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          {props.enableAddFavorite ? (
-            <button
-              type="button"
-              onClick={(e) => handleToggleFavorite(e)}
-              aria-label={
-                isFavorite
-                  ? getLabel(props.labels, 'removeFromFavorites', 'Remove from favourites')
-                  : getLabel(props.labels, 'addToFavorites', 'Add to favourites')
-              }
-              data-favorite={isFavorite ? 'true' : 'false'}
-              className={`propeller-product-card__favorite-btn absolute right-2 top-2 rounded-full border bg-card p-1.5 shadow-sm transition-colors ${isFavorite ? 'border-destructive/30 text-destructive' : 'border-border-subtle text-foreground-subtle hover:text-destructive'}`}
-            >
-              <svg
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill={isFavorite ? 'currentColor' : 'none'}
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {isRow ? (
-        <>
-          <div className="propeller-product-card__body flex flex-1 flex-row items-center gap-4 px-4 py-2 min-w-0">
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              {props.showSku !== false && productSku ? (
-                <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">
-                  {productSku}
-                </div>
-              ) : null}
-              {props.showName !== false ? (
-                <a
-                  className="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-1"
-                  href={productUrl}
-                  onClick={(e) => handleProductClick(e)}
-                >
-                  {productName}
-                </a>
-              ) : null}
-              {textLabelValues.length > 0 ? (
-                <div className="propeller-product-card__labels flex flex-col gap-0.5">
-                  {textLabelValues.map((item) => (
-                    <div
-                      key={item.value}
-                      className="propeller-product-card__label text-xs text-muted-foreground"
-                    >
-                      {item.value}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {props.showManufacturer && manufacturer ? (
-                <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">
-                  {manufacturer}
-                </div>
-              ) : null}
-              {props.showShortDescription && shortDescription ? (
-                <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">
-                  {shortDescription}
-                </p>
-              ) : null}
-            </div>
-          </div>{' '}
-          <div className="propeller-product-card__footer w-full md:w-auto flex items-center gap-3 px-4 py-2 md:py-0 border-t md:border-t-0 border-border-subtle">
-            {props.showStock && !!product.inventory ? (
-              <ItemStock
-                inventory={product.inventory!}
-                showAvailability={false}
-                showStock
-                labels={props.stockLabels}
-              />
-            ) : null}
-            {props.showPrice !== false && !!product?.price ? (
-              <div className="propeller-product-card__price">
-                <ProductPriceDisplay
-                  price={product.price}
-                  includeTax={useTax}
-                  priceSize="text-sm"
-                />
-              </div>
-            ) : null}
-            {props.allowAddToCart !== false ? (
-              <div className="propeller-product-card__cta flex-shrink-0 ml-auto">
-                <AddToCart {...addToCartProps} />
-              </div>
-            ) : null}
+            </svg>
           </div>
-        </>
-      ) : (
-        <>
-          <div className="propeller-product-card__body flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
-            {props.showSku !== false && productSku ? (
-              <div className="propeller-product-card__sku font-mono text-xs text-foreground-subtle">
-                {productSku}
-              </div>
-            ) : null}
-            {props.showName !== false ? (
-              <a
-                className="propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary line-clamp-2"
-                href={productUrl}
-                onClick={(e) => handleProductClick(e)}
-              >
-                {productName}
-              </a>
-            ) : null}
-            {textLabelValues.length > 0 ? (
-              <div className="propeller-product-card__labels flex flex-col gap-0.5">
-                {textLabelValues.map((item) => (
-                  <div
-                    key={item.value}
-                    className="propeller-product-card__label text-xs text-muted-foreground"
-                  >
-                    {item.value}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {props.showStock && !!product.inventory ? (
-              <ItemStock
-                inventory={product.inventory!}
-                showAvailability={props.showAvailability !== false}
-                showStock
-                labels={props.stockLabels}
-              />
-            ) : null}
-            {props.showManufacturer && manufacturer ? (
-              <div className="propeller-product-card__manufacturer text-xs text-muted-foreground">
-                {manufacturer}
-              </div>
-            ) : null}
-            {props.showShortDescription && shortDescription ? (
-              <p className="propeller-product-card__description line-clamp-2 text-xs text-muted-foreground">
-                {shortDescription}
-              </p>
-            ) : null}
-            {props.showPrice !== false && !!product?.price ? (
-              <div className="propeller-product-card__price mt-auto pt-1">
-                <ProductPriceDisplay
-                  price={product.price}
-                  includeTax={useTax}
-                  priceSize="text-base sm:text-lg"
-                />
-              </div>
-            ) : null}
-          </div>{' '}
-          {props.allowAddToCart !== false ? (
-            <div className="propeller-product-card__cta px-3 pb-3 sm:px-4 sm:pb-4">
-              <AddToCart {...addToCartProps} />
-            </div>
-          ) : null}
-        </>
-      )}
+        )}
+      </a>
+      {derived.imageLabelValues.length > 0 ? <ProductCardBadges /> : null}
+      {showFavorite ? <ProductCardFavorite /> : null}
     </div>
   );
 }
+
+/** Image-overlay badge list (e.g. "new", "sale" attributes). */
+function ProductCardBadges(props: { className?: string }) {
+  const { derived } = useProductCard();
+  if (derived.imageLabelValues.length === 0) return null;
+  return (
+    <div className={props.className ?? 'propeller-product-card__badges pointer-events-none absolute left-2 top-2 flex flex-col gap-1'}>
+      {derived.imageLabelValues.map((label) => (
+        <span
+          key={label}
+          className="propeller-product-card__badge inline-block rounded bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground shadow-sm"
+        >
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Favourite (heart) toggle button — typically placed inside `<ProductCard.Image>`. */
+function ProductCardFavorite(props: { className?: string }) {
+  const { resolved, favorite } = useProductCard();
+  return (
+    <button
+      type="button"
+      onClick={favorite.toggle}
+      aria-label={
+        favorite.isFavorite
+          ? getLabel(resolved.labels, 'removeFromFavorites', 'Remove from favourites')
+          : getLabel(resolved.labels, 'addToFavorites', 'Add to favourites')
+      }
+      data-favorite={favorite.isFavorite ? 'true' : 'false'}
+      className={
+        props.className ??
+        `propeller-product-card__favorite-btn absolute right-2 top-2 rounded-full border bg-card p-1.5 shadow-sm transition-colors ${favorite.isFavorite ? 'border-destructive/30 text-destructive' : 'border-border-subtle text-foreground-subtle hover:text-destructive'}`
+      }
+    >
+      <svg
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill={favorite.isFavorite ? 'currentColor' : 'none'}
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+        />
+      </svg>
+    </button>
+  );
+}
+
+/** Product name. `linkable` (default true) wraps it in an `<a>` to the PDP. */
+function ProductCardName(props: { linkable?: boolean; className?: string }) {
+  const { derived, handleProductClick } = useProductCard();
+  const linkable = props.linkable ?? true;
+  const cls =
+    props.className ??
+    `propeller-product-card__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-primary ${derived.isRow ? 'line-clamp-1' : 'line-clamp-2'}`;
+  if (linkable) {
+    return (
+      <a className={cls} href={derived.productUrl} onClick={handleProductClick}>
+        {derived.name}
+      </a>
+    );
+  }
+  return <span className={cls}>{derived.name}</span>;
+}
+
+function ProductCardSku(props: { className?: string }) {
+  const { derived } = useProductCard();
+  if (!derived.sku) return null;
+  return (
+    <div className={props.className ?? 'propeller-product-card__sku font-mono text-xs text-foreground-subtle'}>
+      {derived.sku}
+    </div>
+  );
+}
+
+function ProductCardShortDescription(props: { className?: string }) {
+  const { derived } = useProductCard();
+  if (!derived.shortDescription) return null;
+  return (
+    <p className={props.className ?? 'propeller-product-card__description line-clamp-2 text-xs text-muted-foreground'}>
+      {derived.shortDescription}
+    </p>
+  );
+}
+
+function ProductCardManufacturer(props: { className?: string }) {
+  const { derived } = useProductCard();
+  if (!derived.manufacturer) return null;
+  return (
+    <div className={props.className ?? 'propeller-product-card__manufacturer text-xs text-muted-foreground'}>
+      {derived.manufacturer}
+    </div>
+  );
+}
+
+function ProductCardTextLabels(props: { className?: string }) {
+  const { derived } = useProductCard();
+  if (derived.textLabelValues.length === 0) return null;
+  return (
+    <div className={props.className ?? 'propeller-product-card__labels flex flex-col gap-0.5'}>
+      {derived.textLabelValues.map((value) => (
+        <div key={value} className="propeller-product-card__label text-xs text-muted-foreground">
+          {value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProductCardStock(props: { showAvailability?: boolean }) {
+  const { product, resolved } = useProductCard();
+  if (!product.inventory) return null;
+  return (
+    <ItemStock
+      inventory={product.inventory}
+      showAvailability={props.showAvailability ?? (resolved.showAvailability !== false)}
+      showStock
+      labels={resolved.stockLabels}
+    />
+  );
+}
+
+function ProductCardPrice(props: { priceSize?: string; className?: string }) {
+  const { product, derived } = useProductCard();
+  if (!product?.price) return null;
+  return (
+    <div className={props.className ?? 'propeller-product-card__price'}>
+      <ProductPriceDisplay
+        price={product.price}
+        includeTax={derived.useTax}
+        priceSize={props.priceSize ?? 'text-base sm:text-lg'}
+      />
+    </div>
+  );
+}
+
+function ProductCardAddToCart(props: { className?: string }) {
+  const { product, resolved } = useProductCard();
+  return (
+    <AddToCartImpl
+      className={props.className ?? 'flex w-full items-center gap-2'}
+      graphqlClient={resolved.graphqlClient}
+      user={resolved.user}
+      product={product}
+      cartId={resolved.cartId}
+      configuration={resolved.configuration}
+      childItems={resolved.childItems}
+      notes={resolved.notes}
+      price={resolved.price}
+      createCart={resolved.createCart}
+      onCartCreated={resolved.onCartCreated}
+      onAddToCart={resolved.onAddToCart}
+      afterAddToCart={resolved.afterAddToCart}
+      showModal={resolved.showModal}
+      allowIncrDecr={resolved.allowIncrDecr}
+      enableStockValidation={resolved.enableStockValidation}
+      language={resolved.language}
+      onProceedToCheckout={resolved.onProceedToCheckout}
+      labels={resolved.addToCartLabels}
+      companyId={resolved.companyId}
+      onRequestQuoteClick={resolved.onRequestQuoteClick}
+    />
+  );
+}
+
+// ── Compound default export ─────────────────────────────────────────────────
+
 // Memoized: with ProductGrid passing only stable { product, allowAddToCart }
 // and config flowing via context, shallow-equal props skip re-render of the
-// whole card subtree (rbp §5.2).
-export default React.memo(ProductCard);
+// whole card subtree.
+const MemoizedRoot = React.memo(ProductCardRoot);
+
+/**
+ * Compound component. Use either:
+ *
+ *  **Compound mode (new — preferred):**
+ *  ```tsx
+ *  <ProductCard product={p}>
+ *    <ProductCard.Image variant="grid" />
+ *    <ProductCard.Name linkable />
+ *    <ProductCard.Sku />
+ *    <ProductCard.Price />
+ *    <ProductCard.AddToCart />
+ *  </ProductCard>
+ *  ```
+ *
+ *  **Legacy mode (deprecated — kept for back-compat):**
+ *  ```tsx
+ *  <ProductCard product={p} showName showPrice allowAddToCart />
+ *  ```
+ *  All the show* / allow* toggles still work and render the canonical layout
+ *  using the compound subcomponents internally.
+ */
+type ProductCardComponent = typeof MemoizedRoot & {
+  Image: typeof ProductCardImage;
+  Badges: typeof ProductCardBadges;
+  Favorite: typeof ProductCardFavorite;
+  Name: typeof ProductCardName;
+  Sku: typeof ProductCardSku;
+  ShortDescription: typeof ProductCardShortDescription;
+  Manufacturer: typeof ProductCardManufacturer;
+  TextLabels: typeof ProductCardTextLabels;
+  Stock: typeof ProductCardStock;
+  Price: typeof ProductCardPrice;
+  AddToCart: typeof ProductCardAddToCart;
+};
+
+const ProductCard = MemoizedRoot as ProductCardComponent;
+ProductCard.Image = ProductCardImage;
+ProductCard.Badges = ProductCardBadges;
+ProductCard.Favorite = ProductCardFavorite;
+ProductCard.Name = ProductCardName;
+ProductCard.Sku = ProductCardSku;
+ProductCard.ShortDescription = ProductCardShortDescription;
+ProductCard.Manufacturer = ProductCardManufacturer;
+ProductCard.TextLabels = ProductCardTextLabels;
+ProductCard.Stock = ProductCardStock;
+ProductCard.Price = ProductCardPrice;
+ProductCard.AddToCart = ProductCardAddToCart;
+
+export default ProductCard;

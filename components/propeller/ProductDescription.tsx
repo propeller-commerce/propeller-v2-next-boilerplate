@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 export interface ProductDescriptionProps {
@@ -46,7 +46,9 @@ interface ProductDescriptionState {
 }
 function ProductDescription(props: ProductDescriptionProps) {
   const [expanded, setExpanded] = useState<ProductDescriptionState['expanded']>(() => false);
-  const [html, setHtml] = useState<ProductDescriptionState['html']>(() => '');
+  // Derived from props — no state needed. Was previously set via useEffect
+  // (set-state-in-effect anti-pattern) which caused an extra render per
+  // prop change with no real benefit.
   function getDescription(): ReturnType<ProductDescriptionState['getDescription']> {
     const product = props.product as Product;
     if (!product?.descriptions) return '';
@@ -54,6 +56,7 @@ function ProductDescription(props: ProductDescriptionProps) {
     const match = product.descriptions.find((d: LocalizedString) => d.language === lang);
     return match?.value || product.descriptions?.[0]?.value || '';
   }
+  const html = getDescription();
   function getMaxLen(): ReturnType<ProductDescriptionState['getMaxLen']> {
     const max = props.maxLength;
     if (!max || (max as number) <= 0) return 0;
@@ -77,9 +80,6 @@ function ProductDescription(props: ProductDescriptionProps) {
   function toggle(): ReturnType<ProductDescriptionState['toggle']> {
     setExpanded(!expanded);
   }
-  useEffect(() => {
-    setHtml(getDescription());
-  }, [props.product, props.language]);
   return (
     <>
       {!!html ? (

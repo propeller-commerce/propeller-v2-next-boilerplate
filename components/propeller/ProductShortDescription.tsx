@@ -1,7 +1,6 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
 import type { Product, Cluster, LocalizedString } from 'propeller-sdk-v2';
 
 export interface ProductShortDescriptionProps {
@@ -26,7 +25,7 @@ interface ProductShortDescriptionState {
   getShortDescription: () => string;
 }
 function ProductShortDescription(props: ProductShortDescriptionProps) {
-  const [html, setHtml] = useState<ProductShortDescriptionState['html']>(() => '');
+  // Derived from props — pure render-time computation, no state needed.
   function getShortDescription(): ReturnType<ProductShortDescriptionState['getShortDescription']> {
     const product = props.product as Product;
     if (!product?.shortDescriptions) return '';
@@ -34,9 +33,7 @@ function ProductShortDescription(props: ProductShortDescriptionProps) {
     const match = product.shortDescriptions.find((d: LocalizedString) => d.language === lang);
     return match?.value || product.shortDescriptions?.[0]?.value || '';
   }
-  useEffect(() => {
-    setHtml(getShortDescription());
-  }, [props.product, props.language]);
+  const html = getShortDescription();
   return (
     <>
       {!!html ? (

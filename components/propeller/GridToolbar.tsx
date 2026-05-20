@@ -277,26 +277,34 @@ function GridToolbar(props: GridToolbarProps) {
     setCurrentViewMode(next);
     if (props.onViewChange) props.onViewChange(next);
   }
+  // Three external-state → local sync effects: ProductGrid (parent) drives
+  // defaultSort / defaultOffset / viewMode; GridToolbar mirrors them so
+  // local selectors track the canonical values. Same family of intentional
+  // sync as the GridFilters effects.
   useEffect(() => {
     const sort =
       (props.defaultSort as {
         field: string;
         order: string;
       }[]) || [];
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentSortField(
       sort.length > 0
         ? sort[0].field || ProductSortField.CATEGORY_ORDER
         : ProductSortField.CATEGORY_ORDER
     );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentSortOrder(
       sort.length > 0 ? sort[0].order || SortOrder.DESC : SortOrder.DESC
     );
   }, [props.defaultSort]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentOffset((props.defaultOffset as number) || 12);
   }, [props.defaultOffset]);
   useEffect(() => {
     if (props.viewMode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentViewMode(props.viewMode as string);
     }
   }, [props.viewMode]);

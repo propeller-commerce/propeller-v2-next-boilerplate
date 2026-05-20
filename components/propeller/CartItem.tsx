@@ -103,8 +103,10 @@ function CartItem(rawProps: CartItemProps) {
   });
 
   // --- local UI state ---
-  const [quantity, setQuantity] = useState<number>(() => 1);
-  const [notes, setNotes] = useState<string>(() => '');
+  // Lazy-initialize from props.cartItem; the previous code seeded to 1/''
+  // and then setX in a mount effect, an unnecessary extra render.
+  const [quantity, setQuantity] = useState<number>(() => props.cartItem.quantity || 1);
+  const [notes, setNotes] = useState<string>(() => props.cartItem.notes || '');
   const [loading, setLoading] = useState<boolean>(() => false);
   const [deleting, setDeleting] = useState<boolean>(() => false);
   const [crossupsells, setCrossupsells] = useState<Crossupsell[]>(() => []);
@@ -290,13 +292,20 @@ function CartItem(rawProps: CartItemProps) {
     }
   }
 
+  // Mount-only: fetch related crossupsells once we know the cart context.
   useEffect(() => {
-    setQuantity(props.cartItem.quantity || 1);
-    setNotes(props.cartItem.notes || '');
     fetchCrossupsells();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-sync local quantity/notes when the cart item changes externally —
+  // e.g. server-side reconciliation after an optimistic update, or a
+  // different item being swapped into the same component instance via
+  // parent re-render. Intentional external-state sync.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuantity(props.cartItem.quantity || 1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNotes(props.cartItem.notes || '');
   }, [props.cartItem]);
   return (

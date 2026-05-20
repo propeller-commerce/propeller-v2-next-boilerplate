@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Category, LocalizedString } from 'propeller-sdk-v2';
 
 export interface CategoryDescriptionProps {
@@ -50,7 +50,7 @@ interface CategoryDescriptionState {
 }
 function CategoryDescription(props: CategoryDescriptionProps) {
   const [expanded, setExpanded] = useState<CategoryDescriptionState['expanded']>(() => false);
-  const [html, setHtml] = useState<CategoryDescriptionState['html']>(() => '');
+  // Derived from props — pure render-time computation, no state needed.
   function getDescription(): ReturnType<CategoryDescriptionState['getDescription']> {
     if (!props.category?.description) return '';
     const match = props.category.description.find(
@@ -58,6 +58,7 @@ function CategoryDescription(props: CategoryDescriptionProps) {
     );
     return match?.value || '';
   }
+  const html = getDescription();
   function getMaxLen(): ReturnType<CategoryDescriptionState['getMaxLen']> {
     return props.maxLength || 200;
   }
@@ -74,9 +75,6 @@ function CategoryDescription(props: CategoryDescriptionProps) {
   function toggle(): ReturnType<CategoryDescriptionState['toggle']> {
     setExpanded(!expanded);
   }
-  useEffect(() => {
-    setHtml(getDescription());
-  }, [props.category, props.language]);
   return (
     <>
       {!!html ? (

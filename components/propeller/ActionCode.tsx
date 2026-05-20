@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GraphQLClient, Cart } from 'propeller-sdk-v2';
 import { useCart } from '@/composables/react/useCart';
 import { useInfraProps } from '@/composables/react/useInfraProps';
@@ -56,7 +56,6 @@ function ActionCode(rawProps: ActionCodeProps) {
   // --- local UI state ---
   const [code, setCode] = useState<string>(() => '');
   const [fallbackError, setFallbackError] = useState<string>(() => '');
-  const [isMounted, setIsMounted] = useState<boolean>(() => false);
 
   // --- display helpers ---
 
@@ -125,15 +124,10 @@ function ActionCode(rawProps: ActionCodeProps) {
     }
   }
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   return (
     <div className="propeller-action-code w-full bg-card p-6 rounded-container shadow space-y-3">
       <h2 className="text-lg font-bold">{title()}</h2>
-      {isMounted ? (
-        <>
+      <>
           {hasAppliedCode() ? (
             <div className="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-md px-3 py-2">
               <div className="flex items-center gap-2">
@@ -190,7 +184,6 @@ function ActionCode(rawProps: ActionCodeProps) {
           ) : null}
           {(!!error || !!fallbackError) ? <p className="propeller-action-code__error text-sm text-destructive">{errorMessage()}</p> : null}
         </>
-      ) : null}
     </div>
   );
 }

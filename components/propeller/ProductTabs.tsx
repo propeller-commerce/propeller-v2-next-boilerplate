@@ -136,8 +136,23 @@ function ProductTabs(rawProps: ProductTabsProps) {
     language: props.language || 'NL',
   });
 
-  const [activeTab, setActiveTab] = useState<ProductTabsState['activeTab']>(() => 'description');
-  const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(() => false);
+  // Lazy-pick the first visible tab so we don't useState('description')
+  // and then immediately setActiveTab(...) inside a useEffect.
+  const initialTab: string = (() => {
+    const lang = props.language || 'NL';
+    const descs = props.product?.descriptions;
+    const hasDesc = !!descs && descs.length > 0
+      && (descs.find((d) => d.language === lang)?.value
+        || descs[0]?.value || '').length > 0;
+    if (props.showDescription !== false && hasDesc) return 'description';
+    if (props.showSpecifications !== false) return 'specifications';
+    if (props.showDownloads !== false) return 'downloads';
+    return 'videos';
+  })();
+  const [activeTab, setActiveTab] = useState<ProductTabsState['activeTab']>(() => initialTab);
+  const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(
+    () => initialTab === 'specifications'
+  );
   function getSpecsAttributes(): ReturnType<ProductTabsState['getSpecsAttributes']> {
     return fetchedAttributes.length
       ? fetchedAttributes
@@ -166,24 +181,17 @@ function ProductTabs(rawProps: ProductTabsProps) {
     }
     setActiveTab(tab);
   }
+  // Re-evaluate the active tab when product / language changes (e.g. user
+  // navigates between products with the same component instance). Mirrors
+  // the initial-tab logic computed lazily above. Intentional external-state
+  // sync — the user might have manually switched tabs between renders, but
+  // when the product itself changes that selection is no longer meaningful.
   useEffect(() => {
-    // Set the first visible tab as active
     if (props.showDescription !== false && hasDescription()) {
-      setActiveTab('description');
-    } else if (props.showSpecifications !== false) {
-      setActiveTab('specifications');
-      setSpecsVisited(true);
-    } else if (props.showDownloads !== false) {
-      setActiveTab('downloads');
-    } else {
-      setActiveTab('videos');
-    }
-  }, []);
-  useEffect(() => {
-    // Re-evaluate first visible tab when product data or language changes
-    if (props.showDescription !== false && hasDescription()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab('description');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.product, props.language]);
   useEffect(() => {
     if (!props.productId || !props.graphqlClient) return;

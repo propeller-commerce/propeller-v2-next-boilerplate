@@ -157,17 +157,30 @@ function DeliveryDate(props: DeliveryDateProps) {
     }
   }
 
+  // Sync external `initialDate` (from cart.postageData.requestDate) into our
+  // local selection state — but only once per `initialDate` change, and only
+  // when the user hasn't already picked a date themselves. This propagates
+  // the cart's stored delivery date back to the parent via onDateSelect on
+  // initial cart load (parent stores selectedDeliveryDate in its own state,
+  // which it needs for "Continue" validation).
+  //
+  // The React Compiler rule flags this as set-state-in-effect; in this case
+  // it's intentional external-state sync (the textbook valid use of
+  // useEffect) — derived-state-from-props won't work here because we also
+  // need to fire props.onDateSelect as a side effect on adoption, and the
+  // user can override the initial with handleSelect.
   useEffect(() => {
     if (props.initialDate && !selectedDate) {
       // Normalize cart format "2026-04-17T00:00:00.000Z" → "2026-04-17T00:00:00Z"
       const dot = props.initialDate.lastIndexOf('.');
       const normalized = dot !== -1 ? props.initialDate.substring(0, dot) + 'Z' : props.initialDate;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDate(normalized);
       if (props.onDateSelect) {
         props.onDateSelect(normalized);
       }
     }
-  }, [props.initialDate, props.cart]);
+  }, [props.initialDate, props.cart, selectedDate, props.onDateSelect, props]);
 
   return (
     <div className={`propeller-delivery-date ${containerClass}`}>

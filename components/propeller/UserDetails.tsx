@@ -1,7 +1,8 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+// Note: useState/useEffect were used for a hydration-gate (`isMounted`) that's
+// unnecessary on this 'use client' component — see git history pre-2026-05-20.
 import { Contact, Customer, Company, Address } from 'propeller-sdk-v2';
 import { getCountryName as _getCountryName } from '@/composables/shared/utils/countries';
 
@@ -39,7 +40,6 @@ export interface UserDetailsProps {
   }[];
 }
 interface UserDetailsState {
-  isMounted: boolean;
   isContact: () => boolean;
   getName: () => string;
   getActiveCompany: () => Company | null;
@@ -57,7 +57,6 @@ interface UserDetailsState {
   shouldShowDeliveryAddress: () => boolean;
 }
 function UserDetails(props: UserDetailsProps) {
-  const [isMounted, setIsMounted] = useState<UserDetailsState['isMounted']>(() => false);
   function isContact(): ReturnType<UserDetailsState['isContact']> {
     return props.user !== null && 'company' in props.user;
   }
@@ -130,14 +129,9 @@ function UserDetails(props: UserDetailsProps) {
   function shouldShowDeliveryAddress(): ReturnType<UserDetailsState['shouldShowDeliveryAddress']> {
     return props.showDefaultDeliveryAddress === true;
   }
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
   return (
     <div className="propeller-user-details space-y-6">
-      {isMounted ? (
-        <>
-          <div className="propeller-user-details__section propeller-user-details__section--personal rounded-container bg-card text-card-foreground shadow-sm">
+      <div className="propeller-user-details__section propeller-user-details__section--personal rounded-container bg-card text-card-foreground shadow-sm">
             <div className="propeller-user-details__section-header p-6 pb-2">
               <h3 className="propeller-user-details__section-title text-lg font-semibold">Personal Information</h3>
             </div>
@@ -289,8 +283,6 @@ function UserDetails(props: UserDetailsProps) {
               </div>
             </div>
           ) : null}
-        </>
-      ) : null}
     </div>
   );
 }

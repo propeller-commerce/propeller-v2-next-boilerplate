@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export interface PriceToggleProps {
   /**
@@ -51,11 +51,9 @@ function PriceToggle(props: PriceToggleProps) {
       })
     );
   }
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsOn(props.initialState ?? true);
-    }
-  }, []);
+  // Note: the previous code re-set isOn from props.initialState in a
+  // useEffect — redundant with the lazy initializer above and a
+  // set-state-in-effect anti-pattern, so it was removed.
   return (
     <div
       className={`propeller-price-toggle flex items-center gap-2 ${(props.className as string) || ''}`}

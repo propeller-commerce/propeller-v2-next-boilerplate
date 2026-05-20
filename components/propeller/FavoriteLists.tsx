@@ -121,7 +121,6 @@ function FavoriteLists(rawProps: FavoriteListsProps) {
 
   const [showCreateModal, setShowCreateModal] = useState(() => false);
   const [showDeleteModal, setShowDeleteModal] = useState(() => false);
-  const [isMounted, setIsMounted] = useState(() => false);
 
   function formatDate(dateString: string): string {
     if (props.formatDate) return props.formatDate(dateString);
@@ -167,10 +166,6 @@ function FavoriteLists(rawProps: FavoriteListsProps) {
   }, [lists, props.limit]);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
     if (props.user) {
       fetchLists();
     }
@@ -206,7 +201,6 @@ function FavoriteLists(rawProps: FavoriteListsProps) {
     <div className={`propeller-favorite-lists ${props.className || ''}`} data-loading={loading ? 'true' : 'false'}>
       {props.allowFavoriteListCreate !== false &&
       !loading &&
-      isMounted &&
       displayedLists.length > 0 ? (
         <div className="propeller-favorite-lists__toolbar flex justify-end mb-4">
           <button
@@ -256,7 +250,7 @@ function FavoriteLists(rawProps: FavoriteListsProps) {
           </div>
         </div>
       ) : null}
-      {!loading && isMounted ? (
+      {!loading ? (
         <>
           {displayedLists.length > 0 ? (
             <div className="propeller-favorite-lists__list space-y-4">

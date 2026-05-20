@@ -218,6 +218,15 @@ function GridFilters(props: GridFiltersProps) {
   function getMaxBound(): ReturnType<GridFiltersState['getMaxBound']> {
     return (props.priceMax as number) || 9999;
   }
+  // All five of the effects below are intentional external-state → local
+  // sync. ProductGrid (the parent) drives filter+price state via props;
+  // GridFilters mirrors it locally so the user can interact (drag the
+  // slider, tick a checkbox) before the parent commits. Replacing with
+  // derived-on-render would require lifting the entire local-edit buffer
+  // up to ProductGrid — a real refactor planned for Phase C (compound
+  // primitives). Disables are scoped to the specific setState calls.
+
+  // Initialize accordion open/closed when the filter set changes.
   useEffect(() => {
     const currentExp = expandedFilters as Record<string, boolean>;
     const open = props.collapsed === false;
@@ -237,30 +246,51 @@ function GridFilters(props: GridFiltersProps) {
         changed = true;
       }
     });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (changed) setExpandedFilters(nextExp);
-  }, [props.filters]);
+  }, [props.filters, expandedFilters, props.collapsed, selectedFilters]);
+
+  // Re-bound the slider when the catalog's price range changes.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentMin((props.priceMin as number) || 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentMax((props.priceMax as number) || 9999);
   }, [props.priceMin, props.priceMax]);
+
+  // Parent-triggered "clear all" pulse.
   useEffect(() => {
     if (props.clearSignal === undefined) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedFilters({});
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentMin((props.priceMin as number) || 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentMax((props.priceMax as number) || 9999);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedFilters({});
-  }, [props.clearSignal]);
+  }, [props.clearSignal, props.priceMin, props.priceMax]);
+
+  // Adopt parent-supplied active filter set (URL state rehydration).
   useEffect(() => {
     if (!props.activeTextFilters) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedFilters(props.activeTextFilters as Record<string, string[]>);
   }, [props.activeTextFilters]);
+
+  // Reset slider to bounds when parent has no active price filter.
   useEffect(() => {
     if (props.activePriceMin === undefined && props.activePriceMax === undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentMin((props.priceMin as number) || 0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentMax((props.priceMax as number) || 9999);
     }
-  }, [props.activePriceMin, props.activePriceMax]);
+  }, [props.activePriceMin, props.activePriceMax, props.priceMin, props.priceMax]);
+
+  // Clear the "rapid click" pending flag when the parent reports loading done.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!props.isLoading) setIsPending(false);
   }, [props.isLoading]);
   return (

@@ -187,7 +187,6 @@ export interface AccountIconAndMenuProps {
   currentPath?: string;
 }
 interface AccountIconAndMenuState {
-  isMounted: boolean;
   menuOpen: boolean;
   isSidebar: () => boolean;
   getUserName: () => string;
@@ -202,14 +201,10 @@ interface AccountIconAndMenuState {
   handleRegisterClick: () => void;
   handleGuestCheckoutClick: () => void;
   closeMenu: () => void;
-  clickOutsideListener: {
-    handler: ((e: MouseEvent) => void) | null;
-  };
 }
 function AccountIconAndMenu(rawProps: AccountIconAndMenuProps) {
   // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
   const props = useInfraProps(rawProps);
-  const [isMounted, setIsMounted] = useState<AccountIconAndMenuState['isMounted']>(() => false);
   const [menuOpen, setMenuOpen] = useState<AccountIconAndMenuState['menuOpen']>(() => false);
   function isSidebar(): ReturnType<AccountIconAndMenuState['isSidebar']> {
     return props.variant === 'sidebar';
@@ -302,29 +297,29 @@ function AccountIconAndMenu(rawProps: AccountIconAndMenuProps) {
   function closeMenu(): ReturnType<AccountIconAndMenuState['closeMenu']> {
     setMenuOpen(false);
   }
-  const [clickOutsideListener, setClickOutsideListener] = useState<
-    AccountIconAndMenuState['clickOutsideListener']
-  >(() => ({
-    handler: null as ((e: MouseEvent) => void) | null,
-  }));
+  // Click-outside-to-close. Listener is closed-over in the effect — the
+  // previous code stashed it in state (setClickOutsideListener) but nothing
+  // ever read that state. Also adds a cleanup so the listener detaches on
+  // unmount; the previous code leaked it.
   useEffect(() => {
-    setIsMounted(true);
     const listener = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target && !target.closest('[data-account-menu]')) {
         setMenuOpen(false);
       }
     };
-    setClickOutsideListener({
-      handler: listener,
-    });
     document.addEventListener('mousedown', listener);
+    return () => document.removeEventListener('mousedown', listener);
   }, []);
+  // Close the open menu when the user prop changes from null to a logged-in
+  // user — login dismisses the dropdown. Intentional external-state sync
+  // (the user object is owned by AuthContext, not this component).
   useEffect(() => {
-    // Close menu when user logs in (user prop changes from null to truthy)
     if (props.user && menuOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMenuOpen(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.user]);
   return (
     <div
@@ -394,26 +389,20 @@ function AccountIconAndMenu(rawProps: AccountIconAndMenuProps) {
                 d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
               />
             </svg>
-            {isMounted ? (
-              <>
-                {props.user ? (
-                  <span className="propeller-account-menu__greeting hidden md:block font-normal">Hi, {getUserName()}</span>
-                ) : null}
-                {!props.user ? (
-                  <span className="propeller-account-menu__greeting hidden md:block font-normal">
-                    {getLabel(props.labels, 'accountLabel', 'Account')}
-                  </span>
-                ) : null}
-              </>
+            {props.user ? (
+              <span className="propeller-account-menu__greeting hidden md:block font-normal">Hi, {getUserName()}</span>
+            ) : null}
+            {!props.user ? (
+              <span className="propeller-account-menu__greeting hidden md:block font-normal">
+                {getLabel(props.labels, 'accountLabel', 'Account')}
+              </span>
             ) : null}
           </button>
           {menuOpen ? (
             <div
               className={`propeller-account-menu__popover absolute right-0 mt-2 w-80 bg-popover text-foreground rounded-container shadow-lg border border-border py-4 px-5 z-50${props.menuClassName ? ' ' + props.menuClassName : ''}`}
             >
-              {isMounted ? (
-                <>
-                  {!!props.user ? (
+              {!!props.user ? (
                     <>
                       <div className="propeller-account-menu__user pb-3 mb-3 border-b border-border">
                         <p className="propeller-account-menu__user-label text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
@@ -490,8 +479,6 @@ function AccountIconAndMenu(rawProps: AccountIconAndMenuProps) {
                       ) : null}
                     </>
                   ) : null}
-                </>
-              ) : null}
             </div>
           ) : null}
         </>

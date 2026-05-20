@@ -77,16 +77,22 @@ function CartPaymethods(props: CartPaymethodsProps) {
       props.onPaymethodSelect(method);
     }
   }
+  // Adopt the cart's stored payment method once it loads (cart may be
+  // undefined on mount, then arrive). Intentional external-prop →
+  // local-state sync; derived-from-props can't replace this because
+  // handleSelect lets the user override the cart value locally and we also
+  // fire onPaymethodSelect.
   useEffect(() => {
     if (!selectedCode && props.cart?.paymentData?.method) {
       const code = props.cart.paymentData.method as string;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCode(code);
       if (props.onPaymethodSelect) {
         const match = payMethods().find((m: CartPaymethod) => m.code === code);
         if (match) props.onPaymethodSelect(match);
       }
     }
-  }, [props.cart]);
+  }, [props.cart, selectedCode, props.onPaymethodSelect, props]);
   return (
     <div className={`propeller-cart-paymethods ${containerClass()}`}>
       {payMethods().length > 0 ? (

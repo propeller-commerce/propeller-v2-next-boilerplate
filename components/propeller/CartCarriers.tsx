@@ -63,16 +63,21 @@ function CartCarriers(props: CartCarriersProps) {
       props.onCarrierSelect(carrier);
     }
   }
+  // Adopt the cart's stored carrier once it loads (cart may be undefined on
+  // mount, then arrive). Intentional external-prop → local-state sync;
+  // derived-from-props can't replace this because handleSelect lets the user
+  // override the cart value locally and we also fire onCarrierSelect.
   useEffect(() => {
     if (!selectedName && props.cart?.postageData?.carrier) {
       const name = props.cart.postageData.carrier as string;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedName(name);
       if (props.onCarrierSelect) {
         const match = carriers().find((c: CartCarrier) => c.name === name);
         if (match) props.onCarrierSelect(match);
       }
     }
-  }, [props.cart]);
+  }, [props.cart, selectedName, props.onCarrierSelect, props]);
   return (
     <div className={`propeller-cart-carriers ${containerClass()}`}>
       {carriers().length > 0 ? (

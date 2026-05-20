@@ -168,7 +168,10 @@ function AddToCart(rawProps: AddToCartProps) {
   });
 
   // --- local UI state ---
-  const [quantity, setQuantity] = useState<number>(() => 1);
+  // Lazy-initialize from the product's min quantity (was previously seeded
+  // to 1 then overwritten in useEffect — the set-state-in-effect anti-pattern
+  // caused an extra render on every mount).
+  const [quantity, setQuantity] = useState<number>(() => getMinQuantity(props.product));
   const [toastMessage, setToastMessage] = useState<string>(() => '');
   const [toastType, setToastType] = useState<string>(() => '');
   const [toastVisible, setToastVisible] = useState<boolean>(() => false);
@@ -287,10 +290,6 @@ function AddToCart(rawProps: AddToCartProps) {
       showToast(`${getLocalizedValue((props.product as Product)?.names, props.language as string, 'Product')} ${getLabel(props.labels, 'addedToCart', 'added to cart')}`, 'success');
     }
   }
-
-  useEffect(() => {
-    setQuantity(getMinQuantity(props.product));
-  }, []);
 
   return (
     <div

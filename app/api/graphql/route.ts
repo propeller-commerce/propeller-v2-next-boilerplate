@@ -12,8 +12,13 @@ const isDev = process.env.NODE_ENV !== 'production';
 const MAX_BODY_BYTES = 100 * 1024; // 100 KB — accommodates large bulk queries
 const MAX_QUERY_DEPTH = 12; // generous; deep cart/order trees are ~6-7
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 min rolling window
-const RATE_LIMIT_AUTH = 120; // per-IP, authenticated
-const RATE_LIMIT_ANON = 30; // per-IP, anonymous
+// These are intentionally generous — a real shopper clicking around fires
+// 4–8 GraphQL calls per page navigation (header menu, search box, cart, price
+// toggle, ProductGrid, PDP tabs), so a brisk session crosses 60+/min easily.
+// The cap is a bot/scraper / DoS shield, not a user-behavior shield. The
+// e2e suite at workers=2 also brushed against 30/min before this was raised.
+const RATE_LIMIT_AUTH = 300; // per-IP, authenticated
+const RATE_LIMIT_ANON = 150; // per-IP, anonymous
 
 /**
  * Approximate GraphQL query depth by counting maximum brace nesting in the

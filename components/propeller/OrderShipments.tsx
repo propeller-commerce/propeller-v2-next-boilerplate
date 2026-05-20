@@ -15,44 +15,19 @@ export interface OrderShipmentsProps {
   /** Additional CSS class for the root element */
   className?: string;
 }
-interface OrderShipmentsState {
-  activeShipment: Shipment | null;
-  getLabel: (key: string, fallback: string) => string;
-  openModal: (shipment: Shipment) => void;
-  closeModal: () => void;
-  formatDate: (dateStr: string) => string;
-  getOrderItemForShipmentItem: (shipmentItem: ShipmentItem) => OrderItem | null;
-  buildTrackAndTraceUrl: (tat: TrackAndTrace) => string;
-}
 function OrderShipments(props: OrderShipmentsProps) {
-  const [activeShipment, setActiveShipment] = useState<OrderShipmentsState['activeShipment']>(
-    () => null
-  );
-  const shipments: Shipment[] = (props.order?.shipments as Shipment[]) || [];
-  function openModal(shipment: Shipment): ReturnType<OrderShipmentsState['openModal']> {
-    setActiveShipment(shipment);
-  }
-  function closeModal(): ReturnType<OrderShipmentsState['closeModal']> {
-    setActiveShipment(null);
-  }
-  function formatDate(dateStr: string): ReturnType<OrderShipmentsState['formatDate']> {
+  const [activeShipment, setActiveShipment] = useState<Shipment | null>(null);
+  const shipments: Shipment[] = props.order?.shipments || [];
+  function formatDate(dateStr: string): string {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
   }
-  function getOrderItemForShipmentItem(
-    shipmentItem: ShipmentItem
-  ): ReturnType<OrderShipmentsState['getOrderItemForShipmentItem']> {
+  function getOrderItemForShipmentItem(shipmentItem: ShipmentItem): OrderItem | null {
     if (!props.order?.items || !shipmentItem.orderItemId) return null;
-    return (
-      (props.order.items as OrderItem[]).find(
-        (oi: OrderItem) => oi.id === shipmentItem.orderItemId
-      ) || null
-    );
+    return props.order.items.find((oi: OrderItem) => oi.id === shipmentItem.orderItemId) || null;
   }
-  function buildTrackAndTraceUrl(
-    tat: TrackAndTrace
-  ): ReturnType<OrderShipmentsState['buildTrackAndTraceUrl']> {
+  function buildTrackAndTraceUrl(tat: TrackAndTrace): string {
     const baseUrl = tat.carrier?.trackAndTraceURL || '';
     const code = tat.code || '';
     return `${baseUrl}${code}`;
@@ -110,7 +85,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                       <button
                         type="button"
                         className="text-primary hover:text-primary/80 text-sm font-medium hover:underline"
-                        onClick={(event) => openModal(shipment)}
+                        onClick={() => setActiveShipment(shipment)}
                       >
                         {getLabel(props.labels, 'details', 'Details')}
                       </button>
@@ -125,7 +100,7 @@ function OrderShipments(props: OrderShipmentsProps) {
       {!!activeShipment ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(event) => closeModal()}
+          onClick={() => setActiveShipment(null)}
         >
           <div className="propeller-order-shipments__modal-backdrop absolute inset-0 bg-foreground/50" />
           <div
@@ -139,7 +114,7 @@ function OrderShipments(props: OrderShipmentsProps) {
               <button
                 type="button"
                 className="text-muted-foreground hover:text-foreground transition-colors"
-                onClick={(event) => closeModal()}
+                onClick={() => setActiveShipment(null)}
               >
                 <svg
                   fill="none"
@@ -206,7 +181,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                                   <>
                                     {!!getOrderItemForShipmentItem(shipmentItem) ? (
                                       <>
-                                        {(getOrderItemForShipmentItem(shipmentItem) as any)?.name ||
+                                        {getOrderItemForShipmentItem(shipmentItem)?.name ||
                                           '-'}
                                       </>
                                     ) : null}
@@ -220,8 +195,7 @@ function OrderShipments(props: OrderShipmentsProps) {
                                   <>
                                     {!!getOrderItemForShipmentItem(shipmentItem) ? (
                                       <>
-                                        {(getOrderItemForShipmentItem(shipmentItem) as any)?.product
-                                          ?.sku || '-'}
+                                        {getOrderItemForShipmentItem(shipmentItem)?.product?.sku || '-'}
                                       </>
                                     ) : null}
                                     {!getOrderItemForShipmentItem(shipmentItem) ? <>-</> : null}
@@ -291,7 +265,7 @@ function OrderShipments(props: OrderShipmentsProps) {
               <button
                 type="button"
                 className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:bg-muted transition-colors"
-                onClick={(event) => closeModal()}
+                onClick={() => setActiveShipment(null)}
               >
                 {getLabel(props.labels, 'close', 'Close')}
               </button>

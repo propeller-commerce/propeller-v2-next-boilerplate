@@ -47,8 +47,14 @@ export interface AddressInput {
 }
 
 export interface UseAddressOptions {
-  graphqlClient: GraphQLClient;
-  user: AnyUser;
+  /**
+   * GraphQL client. Nullable so callers can invoke the hook unconditionally
+   * (Rules of Hooks) even when the client isn't ready yet — the CRUD methods
+   * bail with `{ success: false, error: 'No client' }` until it is.
+   */
+  graphqlClient: GraphQLClient | null | undefined;
+  /** Authenticated user. Nullable for the same reason as `graphqlClient`. */
+  user: AnyUser | null | undefined;
   companyId?: number;
 }
 
@@ -80,6 +86,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
 
   const createAddress = useCallback(
     async (input: AddressInput): Promise<{ success: boolean; address?: Address; error?: string }> => {
+      if (!graphqlClient) return { success: false, error: 'No client' };
       setLoading(true);
       setError(null);
       try {
@@ -151,6 +158,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
 
   const updateAddress = useCallback(
     async (addressId: number, input: Partial<AddressInput>): Promise<{ success: boolean; address?: Address; error?: string }> => {
+      if (!graphqlClient) return { success: false, error: 'No client' };
       setLoading(true);
       setError(null);
       try {
@@ -221,6 +229,7 @@ export function useAddress(options: UseAddressOptions): UseAddressReturn {
 
   const deleteAddress = useCallback(
     async (addressId: number): Promise<{ success: boolean; error?: string }> => {
+      if (!graphqlClient) return { success: false, error: 'No client' };
       setLoading(true);
       setError(null);
       try {

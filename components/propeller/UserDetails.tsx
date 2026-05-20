@@ -39,96 +39,40 @@ export interface UserDetailsProps {
     name: string;
   }[];
 }
-interface UserDetailsState {
-  isContact: () => boolean;
-  getName: () => string;
-  getActiveCompany: () => Company | null;
-  getCompanies: () => Company[];
-  getAllAddresses: () => Address[];
-  getDefaultInvoiceAddress: () => Address | null;
-  getDefaultDeliveryAddress: () => Address | null;
-  getAddressName: (addr: Address) => string;
-  getAddressLine1: (addr: Address) => string;
-  getAddressLine2: (addr: Address) => string;
-  getCountryName: (code: string) => string;
-  shouldShowCompanyInfo: () => boolean;
-  shouldListCompanies: () => boolean;
-  shouldShowInvoiceAddress: () => boolean;
-  shouldShowDeliveryAddress: () => boolean;
-}
+// Pure address helpers — hoisted to module scope; no `props` dependencies.
+const getAddressName = (addr: Address): string =>
+  [addr.firstName, addr.middleName, addr.lastName].filter(Boolean).join(' ');
+const getAddressLine1 = (addr: Address): string =>
+  [addr.street, addr.number, addr.numberExtension].filter(Boolean).join(' ');
+const getAddressLine2 = (addr: Address): string =>
+  [addr.postalCode, addr.city].filter(Boolean).join(' ');
+
 function UserDetails(props: UserDetailsProps) {
-  function isContact(): ReturnType<UserDetailsState['isContact']> {
-    return props.user !== null && 'company' in props.user;
-  }
-  function getName(): ReturnType<UserDetailsState['getName']> {
-    if (props.user && props.user.firstName) {
-      return [props.user.firstName, props.user.lastName].filter(Boolean).join(' ');
-    }
-    return 'User';
-  }
-  function getActiveCompany(): ReturnType<UserDetailsState['getActiveCompany']> {
-    return isContact() ? props.activeCompany : null;
-  }
-  function getCompanies(): ReturnType<UserDetailsState['getCompanies']> {
-    if (!isContact()) return [];
+  const isContact = props.user !== null && 'company' in props.user;
+  const name = props.user && props.user.firstName
+    ? [props.user.firstName, props.user.lastName].filter(Boolean).join(' ')
+    : 'User';
+  const activeCompany: Company | null = isContact ? props.activeCompany : null;
+  const companies: Company[] = (() => {
+    if (!isContact) return [];
     const contact = props.user as Contact;
-    const companiesResponse = contact.companies;
-    if (companiesResponse?.items && companiesResponse.items.length > 0) {
-      return companiesResponse.items;
+    if (contact.companies?.items && contact.companies.items.length > 0) {
+      return contact.companies.items;
     }
-    const defaultCompany = contact.company;
-    if (defaultCompany) {
-      return [defaultCompany];
-    }
-    return [];
-  }
-  function getAllAddresses(): ReturnType<UserDetailsState['getAllAddresses']> {
-    if (isContact()) {
-      const company = getActiveCompany();
-      return company?.addresses || [];
-    }
-    const customer = props.user as Customer;
-    return customer.addresses || [];
-  }
-  function getDefaultInvoiceAddress(): ReturnType<UserDetailsState['getDefaultInvoiceAddress']> {
-    const addresses = getAllAddresses();
-    return (
-      addresses.find((addr: Address) => addr.type === 'invoice' && addr.isDefault === 'Y') ?? null
-    );
-  }
-  function getDefaultDeliveryAddress(): ReturnType<UserDetailsState['getDefaultDeliveryAddress']> {
-    const addresses = getAllAddresses();
-    return (
-      addresses.find((addr: Address) => addr.type === 'delivery' && addr.isDefault === 'Y') ?? null
-    );
-  }
-  function getAddressName(addr: Address): ReturnType<UserDetailsState['getAddressName']> {
-    const parts = [addr.firstName, addr.middleName, addr.lastName].filter(Boolean);
-    return parts.join(' ');
-  }
-  function getAddressLine1(addr: Address): ReturnType<UserDetailsState['getAddressLine1']> {
-    const parts = [addr.street, addr.number, addr.numberExtension].filter(Boolean);
-    return parts.join(' ');
-  }
-  function getAddressLine2(addr: Address): ReturnType<UserDetailsState['getAddressLine2']> {
-    const parts = [addr.postalCode, addr.city].filter(Boolean);
-    return parts.join(' ');
-  }
-  function getCountryName(code: string): ReturnType<UserDetailsState['getCountryName']> {
-    return _getCountryName(code, props.countries);
-  }
-  function shouldShowCompanyInfo(): ReturnType<UserDetailsState['shouldShowCompanyInfo']> {
-    return props.showCompanyInfo !== false && isContact();
-  }
-  function shouldListCompanies(): ReturnType<UserDetailsState['shouldListCompanies']> {
-    return props.listAllContactCompanies === true && isContact();
-  }
-  function shouldShowInvoiceAddress(): ReturnType<UserDetailsState['shouldShowInvoiceAddress']> {
-    return props.showDefaultInvoiceAddress !== false;
-  }
-  function shouldShowDeliveryAddress(): ReturnType<UserDetailsState['shouldShowDeliveryAddress']> {
-    return props.showDefaultDeliveryAddress === true;
-  }
+    return contact.company ? [contact.company] : [];
+  })();
+  const allAddresses: Address[] = isContact
+    ? activeCompany?.addresses || []
+    : (props.user as Customer).addresses || [];
+  const defaultInvoiceAddress: Address | null =
+    allAddresses.find((a: Address) => a.type === 'invoice' && a.isDefault === 'Y') ?? null;
+  const defaultDeliveryAddress: Address | null =
+    allAddresses.find((a: Address) => a.type === 'delivery' && a.isDefault === 'Y') ?? null;
+  const getCountryName = (code: string): string => _getCountryName(code, props.countries);
+  const shouldShowCompanyInfo = props.showCompanyInfo !== false && isContact;
+  const shouldListCompanies = props.listAllContactCompanies === true && isContact;
+  const shouldShowInvoiceAddress = props.showDefaultInvoiceAddress !== false;
+  const shouldShowDeliveryAddress = props.showDefaultDeliveryAddress === true;
   return (
     <div className="propeller-user-details space-y-6">
       <div className="propeller-user-details__section propeller-user-details__section--personal rounded-container bg-card text-card-foreground shadow-sm">
@@ -140,7 +84,7 @@ function UserDetails(props: UserDetailsProps) {
                 <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Name
                 </label>
-                <div className="propeller-user-details__field-value font-medium">{getName()}</div>
+                <div className="propeller-user-details__field-value font-medium">{name}</div>
               </div>
               <div className="propeller-user-details__field grid grid-cols-1 gap-1">
                 <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -150,7 +94,7 @@ function UserDetails(props: UserDetailsProps) {
               </div>
             </div>
           </div>
-          {shouldShowCompanyInfo() && getActiveCompany() ? (
+          {shouldShowCompanyInfo && activeCompany ? (
             <div className="propeller-user-details__section propeller-user-details__section--company rounded-container bg-card text-card-foreground shadow-sm">
               <div className="propeller-user-details__section-header p-6 pb-2">
                 <h3 className="propeller-user-details__section-title text-lg font-semibold">Company Information</h3>
@@ -160,42 +104,42 @@ function UserDetails(props: UserDetailsProps) {
                   <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Company Name
                   </label>
-                  <div className="propeller-user-details__field-value font-medium">{getActiveCompany()?.name}</div>
+                  <div className="propeller-user-details__field-value font-medium">{activeCompany?.name}</div>
                 </div>
-                {getActiveCompany()?.taxNumber ? (
+                {activeCompany?.taxNumber ? (
                   <div className="propeller-user-details__field grid grid-cols-1 gap-1">
                     <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       Tax Number
                     </label>
-                    <div className="propeller-user-details__field-value font-medium">{getActiveCompany()?.taxNumber}</div>
+                    <div className="propeller-user-details__field-value font-medium">{activeCompany?.taxNumber}</div>
                   </div>
                 ) : null}
-                {getActiveCompany()?.cocNumber ? (
+                {activeCompany?.cocNumber ? (
                   <div className="propeller-user-details__field grid grid-cols-1 gap-1">
                     <label className="propeller-user-details__field-label text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       CoC Number
                     </label>
-                    <div className="propeller-user-details__field-value font-medium">{getActiveCompany()?.cocNumber}</div>
+                    <div className="propeller-user-details__field-value font-medium">{activeCompany?.cocNumber}</div>
                   </div>
                 ) : null}
               </div>
             </div>
           ) : null}
-          {shouldListCompanies() && getCompanies().length > 0 ? (
+          {shouldListCompanies && companies.length > 0 ? (
             <div className="propeller-user-details__section propeller-user-details__section--companies rounded-container bg-card text-card-foreground shadow-sm">
               <div className="propeller-user-details__section-header p-6 pb-2">
                 <h3 className="propeller-user-details__section-title text-lg font-semibold">Companies</h3>
               </div>
               <div className="propeller-user-details__section-body p-6 pt-2">
                 <ul className="propeller-user-details__companies space-y-2">
-                  {getCompanies()?.map((company) => (
+                  {companies?.map((company) => (
                     <li
                       key={String(company.companyId)}
-                      data-active={getActiveCompany()?.companyId === company.companyId ? 'true' : 'false'}
-                      className={`propeller-user-details__company flex items-center gap-2 py-2 px-3 rounded-control ${getActiveCompany()?.companyId === company.companyId ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground'}`}
+                      data-active={activeCompany?.companyId === company.companyId ? 'true' : 'false'}
+                      className={`propeller-user-details__company flex items-center gap-2 py-2 px-3 rounded-control ${activeCompany?.companyId === company.companyId ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground'}`}
                     >
                       <span className="propeller-user-details__company-name truncate">{company.name}</span>
-                      {getActiveCompany()?.companyId === company.companyId ? (
+                      {activeCompany?.companyId === company.companyId ? (
                         <span className="propeller-user-details__company-badge text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
                           Active
                         </span>
@@ -206,75 +150,75 @@ function UserDetails(props: UserDetailsProps) {
               </div>
             </div>
           ) : null}
-          {shouldShowInvoiceAddress() || shouldShowDeliveryAddress() ? (
+          {shouldShowInvoiceAddress || shouldShowDeliveryAddress ? (
             <div className="propeller-user-details__section propeller-user-details__section--addresses rounded-container bg-card text-card-foreground shadow-sm">
               <div className="propeller-user-details__section-header p-6 pb-2">
                 <h3 className="propeller-user-details__section-title text-lg font-semibold">Default Addresses</h3>
               </div>
               <div className="propeller-user-details__section-body p-6 pt-2">
                 <div className="propeller-user-details__addresses grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {shouldShowInvoiceAddress() ? (
+                  {shouldShowInvoiceAddress ? (
                     <div className="propeller-user-details__address-group space-y-3" data-address="invoice">
                       <h4 className="propeller-user-details__address-title text-base font-bold">Invoice Address</h4>
-                      {getDefaultInvoiceAddress() ? (
+                      {defaultInvoiceAddress ? (
                         <div className="propeller-user-details__address-card bg-card p-4 rounded-container shadow-sm border border-border">
-                          {getDefaultInvoiceAddress()?.company ? (
+                          {defaultInvoiceAddress?.company ? (
                             <div className="propeller-user-details__address-company font-bold text-lg mb-1">
-                              {getDefaultInvoiceAddress()?.company}
+                              {defaultInvoiceAddress?.company}
                             </div>
                           ) : null}
-                          {getAddressName(getDefaultInvoiceAddress()!) ? (
+                          {getAddressName(defaultInvoiceAddress!) ? (
                             <div className="propeller-user-details__address-name font-medium mb-1">
-                              {getAddressName(getDefaultInvoiceAddress()!)}
+                              {getAddressName(defaultInvoiceAddress!)}
                             </div>
                           ) : null}
                           <div className="propeller-user-details__address-line text-muted-foreground">
-                            {getAddressLine1(getDefaultInvoiceAddress()!)}
+                            {getAddressLine1(defaultInvoiceAddress!)}
                           </div>
                           <div className="propeller-user-details__address-line text-muted-foreground">
-                            {getAddressLine2(getDefaultInvoiceAddress()!)}
+                            {getAddressLine2(defaultInvoiceAddress!)}
                           </div>
-                          {getDefaultInvoiceAddress()?.country ? (
+                          {defaultInvoiceAddress?.country ? (
                             <div className="propeller-user-details__address-country text-muted-foreground">
-                              {getCountryName(getDefaultInvoiceAddress()?.country || '')}
+                              {getCountryName(defaultInvoiceAddress?.country || '')}
                             </div>
                           ) : null}
                         </div>
                       ) : null}
-                      {!getDefaultInvoiceAddress() ? (
+                      {!defaultInvoiceAddress ? (
                         <p className="propeller-user-details__address-empty text-muted-foreground italic">No invoice address found</p>
                       ) : null}
                     </div>
                   ) : null}
-                  {shouldShowDeliveryAddress() ? (
+                  {shouldShowDeliveryAddress ? (
                     <div className="propeller-user-details__address-group space-y-3" data-address="delivery">
                       <h4 className="propeller-user-details__address-title text-base font-bold">Delivery Address</h4>
-                      {getDefaultDeliveryAddress() ? (
+                      {defaultDeliveryAddress ? (
                         <div className="propeller-user-details__address-card bg-card p-4 rounded-container shadow-sm border border-border">
-                          {getDefaultDeliveryAddress()?.company ? (
+                          {defaultDeliveryAddress?.company ? (
                             <div className="propeller-user-details__address-company font-bold text-lg mb-1">
-                              {getDefaultDeliveryAddress()?.company}
+                              {defaultDeliveryAddress?.company}
                             </div>
                           ) : null}
-                          {getAddressName(getDefaultDeliveryAddress()!) ? (
+                          {getAddressName(defaultDeliveryAddress!) ? (
                             <div className="propeller-user-details__address-name font-medium mb-1">
-                              {getAddressName(getDefaultDeliveryAddress()!)}
+                              {getAddressName(defaultDeliveryAddress!)}
                             </div>
                           ) : null}
                           <div className="propeller-user-details__address-line text-muted-foreground">
-                            {getAddressLine1(getDefaultDeliveryAddress()!)}
+                            {getAddressLine1(defaultDeliveryAddress!)}
                           </div>
                           <div className="propeller-user-details__address-line text-muted-foreground">
-                            {getAddressLine2(getDefaultDeliveryAddress()!)}
+                            {getAddressLine2(defaultDeliveryAddress!)}
                           </div>
-                          {getDefaultDeliveryAddress()?.country ? (
+                          {defaultDeliveryAddress?.country ? (
                             <div className="propeller-user-details__address-country text-muted-foreground">
-                              {getCountryName(getDefaultDeliveryAddress()?.country || '')}
+                              {getCountryName(defaultDeliveryAddress?.country || '')}
                             </div>
                           ) : null}
                         </div>
                       ) : null}
-                      {!getDefaultDeliveryAddress() ? (
+                      {!defaultDeliveryAddress ? (
                         <p className="propeller-user-details__address-empty text-muted-foreground italic">No delivery address found</p>
                       ) : null}
                     </div>

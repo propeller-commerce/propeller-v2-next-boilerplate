@@ -116,17 +116,6 @@ export interface ProductTabsProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductTabsState {
-  activeTab: string;
-  specsVisited: boolean;
-  fetchedAttributes: AttributeResult[];
-  hasDescription: () => boolean;
-  isTabVisible: (tab: string) => boolean;
-  isActive: (tab: string) => boolean;
-  selectTab: (tab: string) => void;
-  getLabel: (key: string, fallback: string) => string;
-  getSpecsAttributes: () => AttributeResult[];
-}
 function ProductTabs(rawProps: ProductTabsProps) {
   // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
   const props = useInfraProps(rawProps);
@@ -149,33 +138,33 @@ function ProductTabs(rawProps: ProductTabsProps) {
     if (props.showDownloads !== false) return 'downloads';
     return 'videos';
   })();
-  const [activeTab, setActiveTab] = useState<ProductTabsState['activeTab']>(() => initialTab);
-  const [specsVisited, setSpecsVisited] = useState<ProductTabsState['specsVisited']>(
+  const [activeTab, setActiveTab] = useState(() => initialTab);
+  const [specsVisited, setSpecsVisited] = useState(
     () => initialTab === 'specifications'
   );
-  function getSpecsAttributes(): ReturnType<ProductTabsState['getSpecsAttributes']> {
+  function getSpecsAttributes() {
     return fetchedAttributes.length
       ? fetchedAttributes
       : (props.product?.attributes?.items as AttributeResult[]) || [];
   }
-  function hasDescription(): ReturnType<ProductTabsState['hasDescription']> {
+  function hasDescription() {
     const lang = props.language || 'NL';
     const descriptions = props.product?.descriptions;
     if (!descriptions || descriptions.length === 0) return false;
     const match = descriptions.find((d) => d.language === lang);
     return !!(match?.value || descriptions[0]?.value);
   }
-  function isTabVisible(tab: string): ReturnType<ProductTabsState['isTabVisible']> {
+  function isTabVisible(tab: string) {
     if (tab === 'description') return props.showDescription !== false && hasDescription();
     if (tab === 'specifications') return props.showSpecifications !== false;
     if (tab === 'downloads') return props.showDownloads !== false;
     if (tab === 'videos') return props.showVideos !== false;
     return false;
   }
-  function isActive(tab: string): ReturnType<ProductTabsState['isActive']> {
+  function isActive(tab: string) {
     return activeTab === tab;
   }
-  function selectTab(tab: string): ReturnType<ProductTabsState['selectTab']> {
+  function selectTab(tab: string) {
     if (tab === 'specifications') {
       setSpecsVisited(true);
     }

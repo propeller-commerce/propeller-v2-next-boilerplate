@@ -23,63 +23,27 @@ export interface ProductGalleryProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductGalleryState {
-  selectedIndex: number;
-  lightboxOpen: boolean;
-  getImages: () => string[];
-  getMainImage: () => string;
-  hasThumbnails: () => boolean;
-  selectImage: (index: number) => void;
-  openLightbox: () => void;
-  closeLightbox: () => void;
-  prevImage: () => void;
-  nextImage: () => void;
-}
 function ProductGallery(props: ProductGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState<ProductGalleryState['selectedIndex']>(() => 0);
-  const [lightboxOpen, setLightboxOpen] = useState<ProductGalleryState['lightboxOpen']>(
-    () => false
-  );
-  function getImages(): ReturnType<ProductGalleryState['getImages']> {
-    return (props.images as string[]) || [];
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const images = props.images || [];
+  const mainImage = images.length === 0 ? '' : images[selectedIndex] || images[0] || '';
+  const hasThumbnails = images.length > 1;
+  function openLightbox(): void {
+    if (props.enableLightbox !== false) setLightboxOpen(true);
   }
-  function getMainImage(): ReturnType<ProductGalleryState['getMainImage']> {
-    const images = getImages();
-    if (!images || images.length === 0) return '';
-    const idx = selectedIndex;
-    return images[idx] || images[0] || '';
+  function prevImage(): void {
+    if (images.length === 0) return;
+    setSelectedIndex((idx) => (idx - 1 + images.length) % images.length);
   }
-  function hasThumbnails(): ReturnType<ProductGalleryState['hasThumbnails']> {
-    const images = getImages();
-    return !!images && images.length > 1;
-  }
-  function selectImage(index: number): ReturnType<ProductGalleryState['selectImage']> {
-    setSelectedIndex(index);
-  }
-  function openLightbox(): ReturnType<ProductGalleryState['openLightbox']> {
-    if (props.enableLightbox !== false) {
-      setLightboxOpen(true);
-    }
-  }
-  function closeLightbox(): ReturnType<ProductGalleryState['closeLightbox']> {
-    setLightboxOpen(false);
-  }
-  function prevImage(): ReturnType<ProductGalleryState['prevImage']> {
-    const images = getImages();
-    const len = images?.length || 0;
-    if (len === 0) return;
-    setSelectedIndex((selectedIndex - 1 + len) % len);
-  }
-  function nextImage(): ReturnType<ProductGalleryState['nextImage']> {
-    const images = getImages();
-    const len = images?.length || 0;
-    if (len === 0) return;
-    setSelectedIndex((selectedIndex + 1) % len);
+  function nextImage(): void {
+    if (images.length === 0) return;
+    setSelectedIndex((idx) => (idx + 1) % images.length);
   }
   return (
-    <div className={`propeller-product-gallery ${(props.className as string) || ''}`}>
+    <div className={`propeller-product-gallery ${props.className || ''}`}>
       <div className="propeller-product-gallery__stage relative aspect-square bg-card overflow-hidden">
-        {getImages().length === 0 ? (
+        {images.length === 0 ? (
           <div className="propeller-product-gallery__empty flex h-full w-full items-center justify-center bg-surface-hover">
             <svg
               fill="none"
@@ -96,22 +60,22 @@ function ProductGallery(props: ProductGalleryProps) {
             </svg>
           </div>
         ) : null}
-        {getImages().length > 0 ? (
+        {images.length > 0 ? (
           <img
             alt="Product image"
-            src={getMainImage()}
-            onClick={(event) => openLightbox()}
+            src={mainImage}
+            onClick={openLightbox}
             className={`h-full w-full object-contain p-8 transition-transform duration-200 ${props.enableZoom !== false ? 'cursor-zoom-in hover:scale-105' : ''}`}
           />
         ) : null}
       </div>
-      {props.showThumbnails !== false && hasThumbnails() ? (
+      {props.showThumbnails !== false && hasThumbnails ? (
         <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-          {getImages()?.map((img, index) => (
+          {images.map((img, index) => (
             <button
               type="button"
               key={index}
-              onClick={(event) => selectImage(index)}
+              onClick={() => setSelectedIndex(index)}
               className={`propeller-product-gallery__thumbnail relative flex-shrink-0 w-20 h-20 rounded-container border-2 overflow-hidden transition-all bg-card ${selectedIndex === index ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-border'}`}
             >
               <img
@@ -126,7 +90,7 @@ function ProductGallery(props: ProductGalleryProps) {
       {lightboxOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={(event) => closeLightbox()}
+          onClick={() => setLightboxOpen(false)}
         >
           <button
             type="button"
@@ -134,7 +98,7 @@ function ProductGallery(props: ProductGalleryProps) {
             className="absolute top-4 right-4 z-10 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
-              closeLightbox();
+              setLightboxOpen(false);
             }}
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-6 w-6">
@@ -146,7 +110,7 @@ function ProductGallery(props: ProductGalleryProps) {
               />
             </svg>
           </button>
-          {hasThumbnails() ? (
+          {hasThumbnails ? (
             <button
               type="button"
               aria-label="Previous image"
@@ -169,10 +133,10 @@ function ProductGallery(props: ProductGalleryProps) {
           <img
             alt="Product image fullscreen"
             className="max-h-full max-w-full object-contain rounded-lg"
-            src={getMainImage()}
+            src={mainImage}
             onClick={(e) => e.stopPropagation()}
           />
-          {hasThumbnails() ? (
+          {hasThumbnails ? (
             <button
               type="button"
               aria-label="Next image"

@@ -155,23 +155,6 @@ interface FilterBadge {
 
 /** Flat badge item used when rendering the active-filters bar. */
 
-interface GridToolbarState {
-  currentSortField: string;
-  currentSortOrder: string;
-  currentOffset: number;
-  currentViewMode: string;
-  getLabel: (key: string) => string;
-  getSortOptions: () => string[];
-  getOffsetOptions: () => number[];
-  hasActiveFilters: () => boolean;
-  getActiveFilterBadges: () => FilterBadge[];
-  isPriceSortDisabled: () => boolean;
-  handleSortFieldChange: (field: string) => void;
-  handleSortOrderChange: (order: string) => void;
-  handleOffsetChange: (offset: number) => void;
-  handleViewChange: () => void;
-}
-
 // Default sort field keys shown in the dropdown when sortOptions is not provided.
 const ALL_SORT_FIELDS: string[] = [
   ProductSortField.CATEGORY_ORDER,
@@ -210,35 +193,34 @@ const DEFAULT_LABELS: Record<string, string> = {
 };
 
 function GridToolbar(props: GridToolbarProps) {
-  const [currentSortField, setCurrentSortField] = useState<GridToolbarState['currentSortField']>(
-    () => ProductSortField.CATEGORY_ORDER
+  // The field/order useState seeds are enum values; widening to `string`
+  // here lets the prop-sync effects below adopt arbitrary strings the parent
+  // passes (URL state may carry either the enum value or its key form).
+  const [currentSortField, setCurrentSortField] = useState<string>(
+    ProductSortField.CATEGORY_ORDER,
   );
-  const [currentSortOrder, setCurrentSortOrder] = useState<GridToolbarState['currentSortOrder']>(
-    () => SortOrder.DESC
-  );
-  const [currentOffset, setCurrentOffset] = useState<GridToolbarState['currentOffset']>(() => 12);
-  const [currentViewMode, setCurrentViewMode] = useState<GridToolbarState['currentViewMode']>(
-    () => 'grid'
-  );
-  function getLabel(key: string): ReturnType<GridToolbarState['getLabel']> {
+  const [currentSortOrder, setCurrentSortOrder] = useState<string>(SortOrder.DESC);
+  const [currentOffset, setCurrentOffset] = useState(12);
+  const [currentViewMode, setCurrentViewMode] = useState('grid');
+  function getLabel(key: string) {
     const labels = (props.labels as Record<string, string>) || {};
     return labels[key] !== undefined ? labels[key] : DEFAULT_LABELS[key] || key;
   }
-  function getSortOptions(): ReturnType<GridToolbarState['getSortOptions']> {
+  function getSortOptions() {
     const opts = (props.sortOptions as string[]) || [];
     return opts.length > 0 ? opts : ALL_SORT_FIELDS;
   }
-  function getOffsetOptions(): ReturnType<GridToolbarState['getOffsetOptions']> {
+  function getOffsetOptions() {
     const opts = (props.offset as number[]) || [];
     return opts.length > 0 ? opts : [12, 24, 48];
   }
-  function hasActiveFilters(): ReturnType<GridToolbarState['hasActiveFilters']> {
+  function hasActiveFilters() {
     const text = (props.activeTextFilters as Record<string, string[]>) || {};
     const hasText = Object.keys(text).some((k) => (text[k] || []).length > 0);
     const hasPrice = props.priceFilterMin !== undefined || props.priceFilterMax !== undefined;
     return hasText || hasPrice;
   }
-  function getActiveFilterBadges(): ReturnType<GridToolbarState['getActiveFilterBadges']> {
+  function getActiveFilterBadges() {
     const text = (props.activeTextFilters as Record<string, string[]>) || {};
     const badges: FilterBadge[] = [];
     Object.entries(text)
@@ -253,26 +235,26 @@ function GridToolbar(props: GridToolbarProps) {
       });
     return badges;
   }
-  function isPriceSortDisabled(): ReturnType<GridToolbarState['isPriceSortDisabled']> {
+  function isPriceSortDisabled() {
     return isContentHidden(props.portalMode as string | undefined, props.user);
   }
   function handleSortFieldChange(
     field: string
-  ): ReturnType<GridToolbarState['handleSortFieldChange']> {
+  ) {
     setCurrentSortField(field);
     if (props.onSortChange) props.onSortChange(field, currentSortOrder);
   }
   function handleSortOrderChange(
     order: string
-  ): ReturnType<GridToolbarState['handleSortOrderChange']> {
+  ) {
     setCurrentSortOrder(order);
     if (props.onSortChange) props.onSortChange(currentSortField, order);
   }
-  function handleOffsetChange(offset: number): ReturnType<GridToolbarState['handleOffsetChange']> {
+  function handleOffsetChange(offset: number) {
     setCurrentOffset(offset);
     if (props.onOffsetChange) props.onOffsetChange(offset);
   }
-  function handleViewChange(): ReturnType<GridToolbarState['handleViewChange']> {
+  function handleViewChange() {
     const next = currentViewMode === 'grid' ? 'list' : 'grid';
     setCurrentViewMode(next);
     if (props.onViewChange) props.onViewChange(next);

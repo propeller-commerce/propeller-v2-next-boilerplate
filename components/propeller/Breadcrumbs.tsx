@@ -76,81 +76,55 @@ export interface BreadcrumbsProps {
   /** Configuration object passed to the component */
   configuration?: any;
 }
-interface BreadcrumbsState {
-  getItems: () => Category[];
-  getDisplayItems: () => Category[];
-  getCategoryName: (cat: Category) => string;
-  getCategorySlug: (cat: Category) => string;
-  getCategoryUrl: (cat: Category, index: number) => string;
-  isCurrentItem: (index: number) => boolean;
-  showSeparatorBefore: (index: number) => boolean;
-  getLabel: (key: string, fallback: string) => string;
-}
 function Breadcrumbs(props: BreadcrumbsProps) {
-  function getItems(): ReturnType<BreadcrumbsState['getItems']> {
-    const path = (props.categoryPath as Category[]) || [];
-    const baseId = props.configuration?.baseCategoryId;
-    const filtered = baseId
-      ? path.filter((cat: Category) => cat.categoryId !== baseId)
-      : path;
-    const current = props.currentCategory;
-    if (current) {
-      const last = filtered[filtered.length - 1];
-      if (!last || last.categoryId !== current.categoryId) {
-        return [...filtered, current];
-      }
+  const lang = props.language || 'NL';
+  // Filter the path to drop the base category, then optionally append the
+  // explicit currentCategory if the API didn't already include it as the tail.
+  const path = props.categoryPath || [];
+  const baseId = props.configuration?.baseCategoryId;
+  const filtered = baseId
+    ? path.filter((cat: Category) => cat.categoryId !== baseId)
+    : path;
+  let items = filtered;
+  if (props.currentCategory) {
+    const last = filtered[filtered.length - 1];
+    if (!last || last.categoryId !== props.currentCategory.categoryId) {
+      items = [...filtered, props.currentCategory];
     }
-    return filtered;
   }
-  function getDisplayItems(): ReturnType<BreadcrumbsState['getDisplayItems']> {
-    const items = getItems();
-    if (props.showCurrent === false && items.length > 0) {
-      return items.slice(0, items.length - 1);
-    }
-    return items;
-  }
-  function getCategoryName(cat: Category): ReturnType<BreadcrumbsState['getCategoryName']> {
-    const lang = (props.language as string) || 'NL';
+  const displayItems = props.showCurrent === false && items.length > 0
+    ? items.slice(0, items.length - 1)
+    : items;
+  function getCategoryName(cat: Category): string {
     const match = cat.name?.find((n: LocalizedString) => n.language === lang);
     return match?.value || cat.name?.[0]?.value || '';
   }
-  function getCategorySlug(cat: Category): ReturnType<BreadcrumbsState['getCategorySlug']> {
-    const lang = (props.language as string) || 'NL';
-    const match = cat.slug?.find((s: LocalizedString) => s.language === lang);
-    return match?.value || cat.slug?.[0]?.value || '';
-  }
-  function getCategoryUrl(
-    cat: Category,
-    index: number
-  ): ReturnType<BreadcrumbsState['getCategoryUrl']> {
-    if (props.getUrl) {
-      return (props.getUrl as (cat: Category, index: number) => string)(cat, index);
-    }
+  function getCategoryUrl(cat: Category, index: number): string {
+    if (props.getUrl) return props.getUrl(cat, index);
     return props.configuration.urls.getCategoryUrl(cat, props.language);
   }
-  function isCurrentItem(index: number): ReturnType<BreadcrumbsState['isCurrentItem']> {
+  function isCurrentItem(index: number): boolean {
     if (props.showCurrent === false) return false;
     if (props.currentLabel) return false;
-    return index === getDisplayItems().length - 1;
+    return index === displayItems.length - 1;
   }
-  function showSeparatorBefore(index: number): ReturnType<BreadcrumbsState['showSeparatorBefore']> {
-    // Show separator when Home precedes this item, or when a previous category item exists.
-    return props.showHome !== false || index > 0;
-  }
+  // Show separator when Home precedes this item, or when a previous category item exists.
+  const showSeparatorBefore = (index: number) =>
+    props.showHome !== false || index > 0;
   return (
-    <nav aria-label="Breadcrumb" className={`propeller-breadcrumbs ${(props.className as string) || ''}`}>
+    <nav aria-label="Breadcrumb" className={`propeller-breadcrumbs ${props.className || ''}`}>
       <ol className="propeller-breadcrumbs__list flex flex-wrap items-center text-sm text-muted-foreground">
         {props.showHome !== false ? (
           <li className="propeller-breadcrumbs__item flex items-center" data-home="true">
             <a
               className="propeller-breadcrumbs__link hover:text-foreground transition-colors"
-              href={(props.homeUrl as string) || '/'}
+              href={props.homeUrl || '/'}
             >
               {getLabel(props.labels, 'home', 'Home')}
             </a>
           </li>
         ) : null}
-        {getDisplayItems()?.map((cat, index) => (
+        {displayItems.map((cat, index) => (
           <li
             className="propeller-breadcrumbs__item flex items-center"
             key={cat.categoryId || index}

@@ -97,47 +97,32 @@ export interface ClusterOptionsProps {
  * to avoid calling state methods with arguments inside JSX.
  */
 
-interface ClusterOptionsState {
-  selectedProductIds: Record<string, string>;
-  getLabel: (key: string, fallback: string) => string;
-  formatPrice: (price: number) => string;
-  getProductName: (product: Product) => string;
-  getProductImageUrl: (product: Product) => string;
-  getOptionsForRender: () => RenderedOption[];
-  handleOptionChange: (optionIdStr: string, productIdStr: string) => void;
+function formatPrice(price: number): string {
+  return `\u20AC${Number(price).toFixed(2)}`;
 }
+
+function getProductName(product: Product): string {
+  return product.names?.[0]?.value || `Product ${product.productId}`;
+}
+
+function getProductImageUrl(product: Product): string {
+  const media = product.media;
+  if (
+    media?.images?.items &&
+    Array.isArray(media.images.items) &&
+    media.images.items.length > 0
+  ) {
+    const firstImage = media.images.items[0];
+    if (firstImage?.imageVariants?.[0]?.url) return firstImage.imageVariants[0].url;
+  }
+  return '';
+}
+
 function ClusterOptions(props: ClusterOptionsProps) {
-  const [selectedProductIds, setSelectedProductIds] = useState<
-    ClusterOptionsState['selectedProductIds']
-  >(() => ({}));
-  function formatPrice(price: number): ReturnType<ClusterOptionsState['formatPrice']> {
-    return `\u20AC${Number(price).toFixed(2)}`;
-  }
-  function getProductName(product: Product): ReturnType<ClusterOptionsState['getProductName']> {
-    return (product as Product).names?.[0]?.value || `Product ${(product as Product).productId}`;
-  }
-  function getProductImageUrl(
-    product: Product
-  ): ReturnType<ClusterOptionsState['getProductImageUrl']> {
-    const media = (product as Product).media;
-    if (
-      media?.images?.items &&
-      Array.isArray(media.images.items) &&
-      media.images.items.length > 0
-    ) {
-      const firstImage = media.images.items[0];
-      if (firstImage?.imageVariants?.[0]?.url) {
-        return firstImage.imageVariants[0].url;
-      }
-      if ((firstImage as any)?.variants?.[0]?.url) {
-        return (firstImage as any).variants[0].url;
-      }
-    }
-    return '';
-  }
-  function getOptionsForRender(): ReturnType<ClusterOptionsState['getOptionsForRender']> {
-    const options = (props.options as ClusterOption[]) || [];
-    const sel = selectedProductIds as Record<string, string>;
+  const [selectedProductIds, setSelectedProductIds] = useState<Record<string, string>>({});
+  function getOptionsForRender(): RenderedOption[] {
+    const options = props.options || [];
+    const sel = selectedProductIds;
     return options
       .filter((option: ClusterOption) => option.hidden !== YesNo.Y)
       .map((option: ClusterOption) => {
@@ -177,37 +162,28 @@ function ClusterOptions(props: ClusterOptionsProps) {
         };
       });
   }
-  function handleOptionChange(
-    optionIdStr: string,
-    productIdStr: string
-  ): ReturnType<ClusterOptionsState['handleOptionChange']> {
-    const newIds: Record<string, string> = {
-      ...(selectedProductIds as Record<string, string>),
-    };
-    if (productIdStr) {
-      newIds[optionIdStr] = productIdStr;
-    } else {
-      delete newIds[optionIdStr];
-    }
+  function handleOptionChange(optionIdStr: string, productIdStr: string): void {
+    const newIds: Record<string, string> = { ...selectedProductIds };
+    if (productIdStr) newIds[optionIdStr] = productIdStr;
+    else delete newIds[optionIdStr];
     setSelectedProductIds(newIds);
     if (productIdStr && props.onOptionSelect) {
-      const options = (props.options as ClusterOption[]) || [];
+      const options = props.options || [];
       const option = options.find((o: ClusterOption) => o.id.toString() === optionIdStr);
       const product = (option?.products || []).find(
-        (p: Product) => p.productId.toString() === productIdStr
+        (p: Product) => p.productId.toString() === productIdStr,
       );
-      if (product) {
-        props.onOptionSelect(product);
-      }
+      if (product) props.onOptionSelect(product);
     } else if (!productIdStr && props.onOptionClear) {
       props.onOptionClear(parseInt(optionIdStr, 10));
     }
   }
+  const renderedOptions = getOptionsForRender();
   return (
     <div className={`propeller-cluster-options ${props.className || ''}`}>
-      {getOptionsForRender().length > 0 ? (
+      {renderedOptions.length > 0 ? (
         <div className="propeller-cluster-options__content flex flex-col gap-6">
-          {getOptionsForRender()?.map((option) => (
+          {renderedOptions.map((option) => (
             <div
               className="propeller-cluster-options__group"
               key={option.id}

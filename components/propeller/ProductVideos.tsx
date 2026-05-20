@@ -28,40 +28,24 @@ export interface ProductVideosProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductVideosState {
-  hasItems: () => boolean;
-  getVideoItems: () => MediaVideo[];
-  getVideoUri: (video: MediaVideo) => string;
-  getVideoTitle: (video: MediaVideo) => string;
-  isEmbeddable: (uri: string) => boolean;
-  getEmbedUrl: (uri: string) => string;
-  getLabel: (key: string, fallback: string) => string;
-}
 function ProductVideos(props: ProductVideosProps) {
-  function hasItems(): ReturnType<ProductVideosState['hasItems']> {
-    const v = props.videos as PaginatedMediaVideoResponse;
-    return !!v?.items && v.items.length > 0;
-  }
-  function getVideoItems(): ReturnType<ProductVideosState['getVideoItems']> {
-    const v = props.videos as PaginatedMediaVideoResponse;
-    return v?.items || [];
-  }
-  function getVideoUri(video: MediaVideo): ReturnType<ProductVideosState['getVideoUri']> {
-    const lang = (props.language as string) || 'NL';
+  const items: MediaVideo[] = props.videos?.items || [];
+  const hasItems = items.length > 0;
+  const lang = props.language || 'NL';
+  function getVideoUri(video: MediaVideo): string {
     const vids = video.videos || [];
     const match = vids.find((v: LocalizedVideo) => v.language === lang);
     return match?.uri || vids?.[0]?.uri || '';
   }
-  function getVideoTitle(video: MediaVideo): ReturnType<ProductVideosState['getVideoTitle']> {
-    const lang = (props.language as string) || 'NL';
+  function getVideoTitle(video: MediaVideo): string {
     const alts = video.alt || [];
     const match = alts.find((a: LocalizedString) => a.language === lang);
     return match?.value || alts?.[0]?.value || 'Video';
   }
-  function isEmbeddable(uri: string): ReturnType<ProductVideosState['isEmbeddable']> {
+  function isEmbeddable(uri: string): boolean {
     return uri.includes('youtube.com') || uri.includes('youtu.be') || uri.includes('vimeo.com');
   }
-  function getEmbedUrl(uri: string): ReturnType<ProductVideosState['getEmbedUrl']> {
+  function getEmbedUrl(uri: string): string {
     // Already an embed URL — return as-is
     if (uri.includes('youtube.com/embed/') || uri.includes('player.vimeo.com/video/')) {
       return uri;
@@ -89,15 +73,15 @@ function ProductVideos(props: ProductVideosProps) {
     return uri;
   }
   return (
-    <div className={`propeller-product-videos ${(props.className as string) || ''}`}>
-      {hasItems() ? (
+    <div className={`propeller-product-videos ${props.className || ''}`}>
+      {hasItems ? (
         <h3 className="propeller-product-videos__title text-base font-semibold text-foreground mb-3">
           {getLabel(props.labels, 'title', 'Videos')}
         </h3>
       ) : null}
-      {hasItems() ? (
+      {hasItems ? (
         <div className="propeller-product-videos__list space-y-4">
-          {getVideoItems()?.map((video, index) => (
+          {items.map((video, index) => (
             <div
               className="propeller-product-videos__item rounded-container overflow-hidden border border-border bg-foreground"
               key={index}
@@ -133,7 +117,7 @@ function ProductVideos(props: ProductVideosProps) {
           ))}
         </div>
       ) : null}
-      {!hasItems() ? (
+      {!hasItems ? (
         <p className="propeller-product-videos__empty text-sm text-muted-foreground">{getLabel(props.labels, 'empty', 'No videos')}</p>
       ) : null}
     </div>

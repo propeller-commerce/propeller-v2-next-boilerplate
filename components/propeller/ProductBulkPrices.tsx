@@ -40,35 +40,17 @@ export interface ProductBulkPricesProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductBulkPricesState {
-  isHidden: () => boolean;
-  hasItems: () => boolean;
-  getIncludeTax: () => boolean;
-  getTierQuantity: (tier: ProductPrice) => number | null;
-  getBulkPrices: () => ProductPrice[];
-  getPrice: (tier: ProductPrice) => string;
-  getQuantityLabel: (tier: ProductPrice, index: number) => string;
-  getLabel: (key: string, fallback: string) => string;
-}
 function ProductBulkPrices(props: ProductBulkPricesProps) {
-  function isHidden(): ReturnType<ProductBulkPricesState['isHidden']> {
-    return isContentHidden(props.portalMode as string | undefined, props.user);
-  }
-  function getIncludeTax(): ReturnType<ProductBulkPricesState['getIncludeTax']> {
-    return props.includeTax !== undefined ? !!props.includeTax : false;
-  }
-  function getTierQuantity(
-    tier: ProductPrice
-  ): ReturnType<ProductBulkPricesState['getTierQuantity']> {
+  const includeTax = !!props.includeTax;
+  const isHidden = isContentHidden(props.portalMode, props.user);
+  function getTierQuantity(tier: ProductPrice): number | null {
     const discount = tier.discount as
-      | (IDiscount & {
-          quantityFrom?: number;
-        })
+      | (IDiscount & { quantityFrom?: number })
       | undefined;
     return discount?.quantityFrom ?? tier.quantity ?? null;
   }
-  function getBulkPrices(): ReturnType<ProductBulkPricesState['getBulkPrices']> {
-    const rawAll = (props.bulkPrices as ProductPrice[]) || [];
+  function getBulkPrices(): ProductPrice[] {
+    const rawAll = props.bulkPrices || [];
     const all = rawAll.filter((tier) => {
       const t = tier as ProductPrice & {
         type?: string;
@@ -137,45 +119,33 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
     if (filtered.length === 1 && getTierQuantity(filtered[0]) === 1) return [];
     return filtered;
   }
-  function hasItems(): ReturnType<ProductBulkPricesState['hasItems']> {
-    return getBulkPrices().length > 0;
-  }
-  function getPrice(tier: ProductPrice): ReturnType<ProductBulkPricesState['getPrice']> {
-    const useTax: boolean = getIncludeTax();
-    const value: number | undefined = useTax ? tier.net : tier.gross;
+  const bulkPrices = getBulkPrices();
+  const hasItems = bulkPrices.length > 0;
+  function getPrice(tier: ProductPrice): string {
+    const value = includeTax ? tier.net : tier.gross;
     if (value === null || value === undefined) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
   }
-  function getQuantityLabel(
-    tier: ProductPrice,
-    index: number
-  ): ReturnType<ProductBulkPricesState['getQuantityLabel']> {
-    const prices = getBulkPrices();
+  function getQuantityLabel(tier: ProductPrice, index: number): string {
     const discount = tier.discount as
-      | (IDiscount & {
-          quantityFrom?: number;
-        })
+      | (IDiscount & { quantityFrom?: number })
       | undefined;
     const qty = discount?.quantityFrom || tier.quantity || 1;
-    const nextTier = prices[index + 1];
+    const nextTier = bulkPrices[index + 1];
     const nextDiscount = nextTier?.discount as
-      | (IDiscount & {
-          quantityFrom?: number;
-        })
+      | (IDiscount & { quantityFrom?: number })
       | undefined;
     const nextQty = nextDiscount?.quantityFrom || nextTier?.quantity;
-    if (nextQty) {
-      return `${qty}\u2013${nextQty - 1}`;
-    }
+    if (nextQty) return `${qty}\u2013${nextQty - 1}`;
     return `${qty}+`;
   }
   return (
     <>
-      {!isHidden() && hasItems() ? (
+      {!isHidden && hasItems ? (
         <>
           <div
-            className={`propeller-product-bulk-prices ${(props.className as string) || ''}`}
-            data-include-tax={getIncludeTax() ? 'true' : 'false'}
+            className={`propeller-product-bulk-prices ${props.className || ''}`}
+            data-include-tax={includeTax ? 'true' : 'false'}
           >
             {getLabel(props.labels, 'title', 'Volume pricing') ? (
               <h3 className="propeller-product-bulk-prices__title text-base font-semibold text-foreground mb-3">
@@ -193,18 +163,16 @@ function ProductBulkPrices(props: ProductBulkPricesProps) {
                       {getLabel(props.labels, 'price', 'Price')}
                       <span className="propeller-product-bulk-prices__tax-label font-normal text-xs">
                         (
-                        {getIncludeTax() ? (
-                          <>{getLabel(props.labels, 'inclTax', 'incl. VAT')}</>
-                        ) : (
-                          <>{getLabel(props.labels, 'exclTax', 'excl. VAT')}</>
-                        )}
+                        {includeTax
+                          ? getLabel(props.labels, 'inclTax', 'incl. VAT')
+                          : getLabel(props.labels, 'exclTax', 'excl. VAT')}
                         )
                       </span>
                     </th>
                   </tr>
                 </thead>
                 <tbody className="propeller-product-bulk-prices__tbody divide-y divide-border">
-                  {getBulkPrices()?.map((tier, index) => (
+                  {bulkPrices.map((tier, index) => (
                     <tr className="propeller-product-bulk-prices__row bg-card hover:bg-muted/20 transition-colors" key={index}>
                       <td className="propeller-product-bulk-prices__cell propeller-product-bulk-prices__cell--quantity px-4 py-2 text-foreground font-medium">
                         {getQuantityLabel(tier, index)}

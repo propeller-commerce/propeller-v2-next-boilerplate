@@ -115,11 +115,17 @@ export interface AddressCardProps {
 function AddressCard(rawProps: AddressCardProps) {
   // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
   const props = useInfraProps(rawProps);
-  // useAddress is used when graphqlClient + user are available for SDK-backed operations.
-  // The component also supports callback-only mode (onEdit/onDelete props).
-  const addressHook = props.graphqlClient && props.user
-    ? useAddress({ graphqlClient: props.graphqlClient, user: props.user })
-    : null;
+  // Hook MUST be called unconditionally (Rules of Hooks). It tolerates null
+  // graphqlClient/user — its CRUD methods short-circuit with an error result
+  // until both are present. The component also supports callback-only mode
+  // (onEdit/onDelete props), in which case `addressHook` is never invoked.
+  const addressHook = useAddress({
+    graphqlClient: props.graphqlClient,
+    user: props.user,
+  });
+  // Whether the hook is "live" for SDK calls. Used downstream to gate
+  // addressHook usage in handlers (so we don't fire a no-op SDK call).
+  const hookReady = !!props.graphqlClient && !!props.user;
 
   const [showEditModal, setShowEditModal] = useState(() => false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(() => false);
@@ -141,7 +147,7 @@ function AddressCard(rawProps: AddressCardProps) {
   const [editNotes, setEditNotes] = useState(() => '');
   const [editIcp, setEditIcp] = useState<YesNo>(() => YesNo.N);
 
-  const isSaving = addressHook ? addressHook.loading : saving;
+  const isSaving = hookReady ? addressHook.loading : saving;
 
   
 
@@ -255,7 +261,7 @@ function AddressCard(rawProps: AddressCardProps) {
     try {
       if (props.onEdit) {
         await props.onEdit(editedAddress);
-      } else if (addressHook && addr?.()?.id) {
+      } else if (hookReady && addr?.()?.id) {
         await addressHook.updateAddress(addr().id, editedAddress as any);
       }
       setShowEditModal(false);
@@ -272,7 +278,7 @@ function AddressCard(rawProps: AddressCardProps) {
     if (id != null) {
       if (props.onDelete) {
         props.onDelete(addr());
-      } else if (addressHook) {
+      } else if (hookReady) {
         addressHook.deleteAddress(id);
       }
       setShowDeleteConfirm(false);
@@ -287,7 +293,7 @@ function AddressCard(rawProps: AddressCardProps) {
   function handleSetDefault() {
     if (props.onSetDefault) {
       props.onSetDefault(addr());
-    } else if (addressHook && addr?.()?.id) {
+    } else if (hookReady && addr?.()?.id) {
       addressHook.setDefaultAddress(addr().id);
     }
     if (props.afterSetDefault) {

@@ -52,30 +52,18 @@ export interface ProductPriceProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductPriceState {
-  isHidden: () => boolean;
-  getOptionsTotal: (useNet: boolean) => number;
-  getLeadingPrice: () => string;
-  getSecondaryPrice: () => string;
-  getTaxLabel: () => string;
-  getSecondaryTaxLabel: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  formatPrice: (value: number | null | undefined) => string;
-}
 function ProductPriceDisplay(props: ProductPriceProps) {
-  function isHidden(): ReturnType<ProductPriceState['isHidden']> {
-    return isContentHidden(props.portalMode as string | undefined, props.user);
+  function isHidden(): boolean {
+    return isContentHidden(props.portalMode, props.user);
   }
-  function formatPrice(
-    value: number | null | undefined
-  ): ReturnType<ProductPriceState['formatPrice']> {
+  function formatPrice(value: number | null | undefined): string {
     if (value === null || value === undefined) return '';
-    const currency = (props.currency as string) || '\u20AC';
+    const currency = props.currency || '\u20AC';
     return `${currency}${Number(value).toFixed(2)}`;
   }
-  function getOptionsTotal(useNet: boolean): ReturnType<ProductPriceState['getOptionsTotal']> {
-    const options = (props.options as ClusterOption[]) || [];
-    const selected = (props.selectedOptionProducts as Product[]) || [];
+  function getOptionsTotal(useNet: boolean): number {
+    const options = props.options || [];
+    const selected = props.selectedOptionProducts || [];
     let total = 0;
     options.forEach((option: ClusterOption) => {
       if (option.hidden === YesNo.Y) return;
@@ -100,30 +88,30 @@ function ProductPriceDisplay(props: ProductPriceProps) {
     });
     return total;
   }
-  function getLeadingPrice(): ReturnType<ProductPriceState['getLeadingPrice']> {
-    const price = props.price as ProductPrice;
+  function getLeadingPrice(): string {
+    const price = props.price;
     if (!price) return '';
     const useNet = !!props.includeTax;
     const base = useNet ? price.net : price.gross;
     if (base === null || base === undefined) return '';
     return formatPrice(base + getOptionsTotal(useNet));
   }
-  function getSecondaryPrice(): ReturnType<ProductPriceState['getSecondaryPrice']> {
-    const price = props.price as ProductPrice;
+  function getSecondaryPrice(): string {
+    const price = props.price;
     if (!price) return '';
     const useNet = !props.includeTax; // opposite of leading
     const base = useNet ? price.net : price.gross;
     if (base === null || base === undefined) return '';
     return formatPrice(base + getOptionsTotal(useNet));
   }
-  function getTaxLabel(): ReturnType<ProductPriceState['getTaxLabel']> {
+  function getTaxLabel(): string {
     return props.includeTax ? getLabel(props.labels, 'inclTax', 'incl. VAT') : getLabel(props.labels, 'exclTax', 'excl. VAT');
   }
-  function getSecondaryTaxLabel(): ReturnType<ProductPriceState['getSecondaryTaxLabel']> {
+  function getSecondaryTaxLabel(): string {
     return props.includeTax ? getLabel(props.labels, 'exclTax', 'excl. VAT') : getLabel(props.labels, 'inclTax', 'incl. VAT');
   }
   return (
-    <div className={`propeller-product-price ${(props.className as string) || ''}`} data-hidden={isHidden() ? 'true' : 'false'}>
+    <div className={`propeller-product-price ${props.className || ''}`} data-hidden={isHidden() ? 'true' : 'false'}>
       {isHidden() ? (
         <p className="propeller-product-price__login-prompt text-sm text-muted-foreground italic">
           {getLabel(props.labels, 'loginToSeePrices', 'Log in to see prices')}
@@ -133,7 +121,7 @@ function ProductPriceDisplay(props: ProductPriceProps) {
         <div className="propeller-product-price__content flex flex-col gap-0.5">
           <div className="propeller-product-price__primary flex items-baseline gap-2">
             <span
-              className={`propeller-product-price__amount ${(props.priceSize as string) || 'text-3xl'} font-bold text-foreground`}
+              className={`propeller-product-price__amount ${props.priceSize || 'text-3xl'} font-bold text-foreground`}
             >
               {getLeadingPrice()}
             </span>

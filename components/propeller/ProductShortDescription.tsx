@@ -20,16 +20,12 @@ export interface ProductShortDescriptionProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductShortDescriptionState {
-  html: string;
-  getShortDescription: () => string;
-}
 function ProductShortDescription(props: ProductShortDescriptionProps) {
   // Derived from props — pure render-time computation, no state needed.
-  function getShortDescription(): ReturnType<ProductShortDescriptionState['getShortDescription']> {
+  function getShortDescription(): string {
     const product = props.product as Product;
     if (!product?.shortDescriptions) return '';
-    const lang = (props.language as string) || 'NL';
+    const lang = props.language || 'NL';
     const match = product.shortDescriptions.find((d: LocalizedString) => d.language === lang);
     return match?.value || product.shortDescriptions?.[0]?.value || '';
   }
@@ -37,14 +33,10 @@ function ProductShortDescription(props: ProductShortDescriptionProps) {
   return (
     <>
       {!!html ? (
-        <>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: html,
-            }}
-            className={`propeller-product-short-description prose prose-slate max-w-none text-muted-foreground ${(props.className as string) || ''}`}
-          />
-        </>
+        <div
+          dangerouslySetInnerHTML={{ __html: html }}
+          className={`propeller-product-short-description prose prose-slate max-w-none text-muted-foreground ${props.className || ''}`}
+        />
       ) : null}
     </>
   );

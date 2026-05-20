@@ -27,55 +27,28 @@ export interface CartPaymethodsProps {
   /** Labels for the component */
   labels?: Record<string, string>;
 }
-interface CartPaymethodsState {
-  selectedCode: string;
-  containerClass: () => string;
-  showOnAccountForGuests: () => boolean;
-  isGuest: () => boolean;
-  payMethods: () => CartPaymethod[];
-  isOnAccountMethod: (method: CartPaymethod) => boolean;
-  getLabel: (key: string, fallback: string) => string;
-  formatMethodPrice: (price: number) => string;
-  handleSelect: (method: CartPaymethod) => void;
+function isOnAccountMethod(method: CartPaymethod): boolean {
+  const code = (method.code || '').toLowerCase();
+  return code === 'on_account' || code === 'onaccount' || code === 'on-account';
 }
+
 function CartPaymethods(props: CartPaymethodsProps) {
-  const [selectedCode, setSelectedCode] = useState<CartPaymethodsState['selectedCode']>(() => '');
-  function containerClass(): ReturnType<CartPaymethodsState['containerClass']> {
-    return props.paymentsContainerClass || 'cart-paymethods';
-  }
-  function showOnAccountForGuests(): ReturnType<CartPaymethodsState['showOnAccountForGuests']> {
-    return props.showOnAccountForGuests !== undefined ? props.showOnAccountForGuests : false;
-  }
-  function isGuest(): ReturnType<CartPaymethodsState['isGuest']> {
-    return !props.user;
-  }
-  function payMethods(): ReturnType<CartPaymethodsState['payMethods']> {
-    const methods: CartPaymethod[] = props.cart?.payMethods || [];
-    return methods.filter((m: CartPaymethod) => {
-      if (!m?.code) return false;
-      if (!showOnAccountForGuests() && isGuest() && isOnAccountMethod(m)) {
-        return false;
-      }
-      return true;
-    });
-  }
-  function isOnAccountMethod(
-    method: CartPaymethod
-  ): ReturnType<CartPaymethodsState['isOnAccountMethod']> {
-    const code = (method.code || '').toLowerCase();
-    return code === 'on_account' || code === 'onaccount' || code === 'on-account';
-  }
-  function formatMethodPrice(price: number): ReturnType<CartPaymethodsState['formatMethodPrice']> {
-    if (props.formatPrice) {
-      return props.formatPrice(price);
-    }
+  const [selectedCode, setSelectedCode] = useState('');
+  const containerClass = props.paymentsContainerClass || 'cart-paymethods';
+  const showOnAccountForGuests = !!props.showOnAccountForGuests;
+  const isGuest = !props.user;
+  const payMethods: CartPaymethod[] = (props.cart?.payMethods || []).filter((m: CartPaymethod) => {
+    if (!m?.code) return false;
+    if (!showOnAccountForGuests && isGuest && isOnAccountMethod(m)) return false;
+    return true;
+  });
+  function formatMethodPrice(price: number): string {
+    if (props.formatPrice) return props.formatPrice(price);
     return '\u20AC' + Number(price || 0).toFixed(2);
   }
-  function handleSelect(method: CartPaymethod): ReturnType<CartPaymethodsState['handleSelect']> {
+  function handleSelect(method: CartPaymethod): void {
     setSelectedCode(method.code);
-    if (props.onPaymethodSelect) {
-      props.onPaymethodSelect(method);
-    }
+    if (props.onPaymethodSelect) props.onPaymethodSelect(method);
   }
   // Adopt the cart's stored payment method once it loads (cart may be
   // undefined on mount, then arrive). Intentional external-prop →
@@ -88,19 +61,19 @@ function CartPaymethods(props: CartPaymethodsProps) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCode(code);
       if (props.onPaymethodSelect) {
-        const match = payMethods().find((m: CartPaymethod) => m.code === code);
+        const match = payMethods.find((m: CartPaymethod) => m.code === code);
         if (match) props.onPaymethodSelect(match);
       }
     }
-  }, [props.cart, selectedCode, props.onPaymethodSelect, props]);
+  }, [props.cart, selectedCode, props.onPaymethodSelect, payMethods, props]);
   return (
-    <div className={`propeller-cart-paymethods ${containerClass()}`}>
-      {payMethods().length > 0 ? (
+    <div className={`propeller-cart-paymethods ${containerClass}`}>
+      {payMethods.length > 0 ? (
         <div className="propeller-cart-paymethods__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {payMethods()?.map((method, index) => (
+          {payMethods.map((method, index) => (
             <div
               key={method.code}
-              onClick={(event) => handleSelect(method)}
+              onClick={() => handleSelect(method)}
               data-selected={selectedCode === method.code ? 'true' : 'false'}
               className={`propeller-cart-paymethods__method cursor-pointer border border-border rounded-container p-4 flex flex-col gap-2 transition-all ${selectedCode === method.code ? 'border-secondary bg-secondary/5 shadow-sm' : 'hover:border-secondary/30'}`}
             >
@@ -118,7 +91,7 @@ function CartPaymethods(props: CartPaymethodsProps) {
           ))}
         </div>
       ) : null}
-      {payMethods().length === 0 ? (
+      {payMethods.length === 0 ? (
         <p className="propeller-cart-paymethods__empty text-muted-foreground italic">
           {getLabel(props.labels, 'noMethods', 'No payment methods available.')}
         </p>

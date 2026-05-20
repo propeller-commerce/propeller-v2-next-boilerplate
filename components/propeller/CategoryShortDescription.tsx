@@ -22,30 +22,21 @@ export interface CategoryShortDescriptionProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface CategoryShortDescriptionState {
-  html: () => string;
-}
 function CategoryShortDescription(props: CategoryShortDescriptionProps) {
-  function html(): ReturnType<CategoryShortDescriptionState['html']> {
-    if (!props.category?.shortDescription) return '';
-    const match = props.category.shortDescription.find(
-      (d: LocalizedString) => d.language === props.language
-    );
-    return match?.value || '';
-  }
+  // Derived from props — computed once on render.
+  const match = props.category?.shortDescription?.find(
+    (d: LocalizedString) => d.language === props.language,
+  );
+  const html = match?.value || '';
   return (
     <>
-      {!!html() ? (
-        <>
-          <div className={`propeller-category-short-description mb-6 ${(props.className as string) || ''}`}>
-            <div
-              className="propeller-category-short-description__content prose prose-slate max-w-none text-muted-foreground"
-              dangerouslySetInnerHTML={{
-                __html: html(),
-              }}
-            />
-          </div>
-        </>
+      {!!html ? (
+        <div className={`propeller-category-short-description mb-6 ${props.className || ''}`}>
+          <div
+            className="propeller-category-short-description__content prose prose-slate max-w-none text-muted-foreground"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        </div>
       ) : null}
     </>
   );

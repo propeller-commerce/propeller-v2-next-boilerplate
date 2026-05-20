@@ -27,23 +27,11 @@ export interface AddressSelectorProps {
   >;
   /** Extra CSS class on the root element. */ className?: string;
 }
-interface AddressSelectorState {
-  showModal: boolean;
-  selectedAddress: Address | null;
-  isLoading: boolean;
-  getLabel: (key: string, fallback: string) => string;
-  getActiveCompany: () => Company | null;
-  getAddresses: () => Address[];
-  handleTileClick: (address: Address) => void;
-  handleConfirm: () => Promise<void>;
-}
 function AddressSelector(props: AddressSelectorProps) {
-  const [showModal, setShowModal] = useState<AddressSelectorState['showModal']>(() => false);
-  const [selectedAddress, setSelectedAddress] = useState<AddressSelectorState['selectedAddress']>(
-    () => null
-  );
-  const [isLoading, setIsLoading] = useState<AddressSelectorState['isLoading']>(() => false);
-  function getActiveCompany(): ReturnType<AddressSelectorState['getActiveCompany']> {
+  const [showModal, setShowModal] = useState(() => false);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [isLoading, setIsLoading] = useState(() => false);
+  function getActiveCompany() {
     const user = props.user as Contact | Customer | null;
     if (!user || !('contactId' in user)) return null;
     const contact = user as Contact;
@@ -60,7 +48,7 @@ function AddressSelector(props: AddressSelectorProps) {
     }
     return (contact.company as Company | undefined) ?? null;
   }
-  function getAddresses(): ReturnType<AddressSelectorState['getAddresses']> {
+  function getAddresses() {
     const user = props.user as Contact | Customer | null;
     if (!user) return [];
     const type = (props.addressType as string) || AddressType.delivery;
@@ -73,10 +61,10 @@ function AddressSelector(props: AddressSelectorProps) {
     }
     return all.filter((a: Address) => a.type === type);
   }
-  function handleTileClick(address: Address): ReturnType<AddressSelectorState['handleTileClick']> {
+  function handleTileClick(address: Address) {
     setSelectedAddress(address);
   }
-  async function handleConfirm(): ReturnType<AddressSelectorState['handleConfirm']> {
+  async function handleConfirm() {
     if (!selectedAddress || isLoading) return;
     setIsLoading(true);
     try {
@@ -142,8 +130,8 @@ function AddressSelector(props: AddressSelectorProps) {
                     <div
                       key={(address as Address).id}
                       onClick={(event) => handleTileClick(address)}
-                      data-selected={(selectedAddress as Address)?.id === (address as Address).id ? 'true' : 'false'}
-                      className={`propeller-address-selector__option cursor-pointer rounded-container transition-all ring-2 ${(selectedAddress as Address)?.id === (address as Address).id ? 'ring-primary' : 'ring-transparent hover:ring-primary/40'}`}
+                      data-selected={selectedAddress?.id === (address as Address).id ? 'true' : 'false'}
+                      className={`propeller-address-selector__option cursor-pointer rounded-container transition-all ring-2 ${selectedAddress?.id === (address as Address).id ? 'ring-primary' : 'ring-transparent hover:ring-primary/40'}`}
                     >
                       <AddressCard
                         address={address}

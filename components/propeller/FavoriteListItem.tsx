@@ -113,110 +113,64 @@ export interface FavoriteListItemProps {
   /** Label overrides for ItemStock UI strings */
   stockLabels?: Record<string, string>;
 }
-interface FavoriteListItemState {
-  isProduct: () => boolean;
-  getProduct: () => Product;
-  getCluster: () => Cluster;
-  getName: () => string;
-  getSku: () => string;
-  getImageUrl: () => string;
-  getItemUrl: () => string;
-  getItemId: () => string;
-  getItemPrice: () => string;
-  getLabel: (key: string, fallback: string) => string;
-  handleItemClick: (e: any) => void;
-  handleDelete: () => void;
-}
 function FavoriteListItem(rawProps: FavoriteListItemProps) {
   // Explicit props win; otherwise infra is resolved from <PropellerProvider>.
   const props = useInfraProps(rawProps);
-  function isProduct(): ReturnType<FavoriteListItemState['isProduct']> {
-    return 'productId' in props.item;
-  }
-  function getProduct(): ReturnType<FavoriteListItemState['getProduct']> {
-    return props.item as Product;
-  }
-  function getCluster(): ReturnType<FavoriteListItemState['getCluster']> {
-    return props.item as Cluster;
-  }
-  function getName(): ReturnType<FavoriteListItemState['getName']> {
-    if (isProduct()) {
-      return getProduct()?.names?.[0]?.value || 'Product';
-    }
-    return (
-      getCluster()?.names?.[0]?.value ||
-      getCluster()?.defaultProduct?.names?.[0]?.value ||
-      'Cluster'
-    );
-  }
-  function getSku(): ReturnType<FavoriteListItemState['getSku']> {
-    if (isProduct()) {
-      return getProduct()?.sku || '';
-    }
-    return getCluster()?.sku || getCluster()?.defaultProduct?.sku || '';
-  }
-  function getImageUrl(): ReturnType<FavoriteListItemState['getImageUrl']> {
-    if (isProduct()) {
-      return getProduct()?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-    }
-    return getCluster()?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
-  }
-  function getItemUrl(): ReturnType<FavoriteListItemState['getItemUrl']> {
-    if (isProduct()) {
-      return props.configuration?.urls?.getProductUrl?.(props.item) || '';
-    }
-    return props.configuration?.urls?.getClusterUrl?.(props.item) || '';
-  }
-  function getItemId(): ReturnType<FavoriteListItemState['getItemId']> {
-    if (isProduct()) {
-      return String(getProduct()?.productId || '');
-    }
-    return String(getCluster()?.clusterId || '');
-  }
-  function getItemPrice(): ReturnType<FavoriteListItemState['getItemPrice']> {
-    const useTax: boolean = props.includeTax !== undefined ? !!props.includeTax : false;
-    let priceObj: any = null;
-    if (isProduct()) {
-      priceObj = getProduct()?.price;
-    } else {
-      priceObj = getCluster()?.defaultProduct?.price;
-    }
+  const isProduct = 'productId' in props.item;
+  const product = props.item as Product;
+  const cluster = props.item as Cluster;
+  const name = isProduct
+    ? product?.names?.[0]?.value || 'Product'
+    : cluster?.names?.[0]?.value || cluster?.defaultProduct?.names?.[0]?.value || 'Cluster';
+  const sku = isProduct
+    ? product?.sku || ''
+    : cluster?.sku || cluster?.defaultProduct?.sku || '';
+  const imageUrl = isProduct
+    ? product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || ''
+    : cluster?.defaultProduct?.media?.images?.items?.[0]?.imageVariants?.[0]?.url || '';
+  const itemUrl = isProduct
+    ? props.configuration?.urls?.getProductUrl?.(props.item) || ''
+    : props.configuration?.urls?.getClusterUrl?.(props.item) || '';
+  const itemId = isProduct
+    ? String(product?.productId || '')
+    : String(cluster?.clusterId || '');
+  const itemPrice = (() => {
+    const useTax = !!props.includeTax;
+    const priceObj = isProduct ? product?.price : cluster?.defaultProduct?.price;
     if (!priceObj) return '';
-    const value: number | undefined = useTax ? priceObj?.net : priceObj?.gross;
+    const value = useTax ? priceObj.net : priceObj.gross;
     if (!value && value !== 0) return '';
     return `\u20AC${Number(value).toFixed(2)}`;
-  }
-  function handleItemClick(e: any): ReturnType<FavoriteListItemState['handleItemClick']> {
+  })();
+  function handleItemClick(e: React.MouseEvent): void {
     if (props.onItemClick) {
       e.preventDefault();
       props.onItemClick(props.item);
-    } else if (getItemUrl()) {
+    } else if (itemUrl) {
       e.preventDefault();
-      window.location.href = getItemUrl();
+      window.location.href = itemUrl;
     }
   }
-  function handleDelete(): ReturnType<FavoriteListItemState['handleDelete']> {
-    if (props.onDelete) {
-      props.onDelete(getItemId());
-    }
+  function handleDelete(): void {
+    if (props.onDelete) props.onDelete(itemId);
   }
   return (
     <div
       onClick={(e) => handleItemClick(e)}
-      data-type={isProduct() ? 'product' : 'cluster'}
+      data-type={isProduct ? 'product' : 'cluster'}
       className={`propeller-favorite-list-item flex flex-row items-center gap-4 rounded-container border border-border bg-card p-4 transition-colors hover:border-secondary/20 hover:shadow-sm cursor-pointer ${props.className || ''}`}
     >
       <div className="propeller-favorite-list-item__media relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-control bg-surface-hover p-1">
         {props.titleLinkable !== false ? (
           <a
             className="block h-full w-full"
-            href={getItemUrl()}
+            href={itemUrl}
             onClick={(e) => handleItemClick(e)}
           >
-            {!!getImageUrl() ? (
-              <img className="propeller-favorite-list-item__image h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
+            {!!imageUrl ? (
+              <img className="propeller-favorite-list-item__image h-full w-full object-contain" src={imageUrl} alt={name} />
             ) : null}
-            {!getImageUrl() ? (
+            {!imageUrl ? (
               <div className="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-8 w-8">
                   <path
@@ -232,10 +186,10 @@ function FavoriteListItem(rawProps: FavoriteListItemProps) {
         ) : null}
         {props.titleLinkable === false ? (
           <div className="block h-full w-full">
-            {!!getImageUrl() ? (
-              <img className="propeller-favorite-list-item__image h-full w-full object-contain" src={getImageUrl()} alt={getName()} />
+            {!!imageUrl ? (
+              <img className="propeller-favorite-list-item__image h-full w-full object-contain" src={imageUrl} alt={name} />
             ) : null}
-            {!getImageUrl() ? (
+            {!imageUrl ? (
               <div className="propeller-favorite-list-item__image-placeholder flex h-full w-full items-center justify-center text-foreground-subtle">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="h-8 w-8">
                   <path
@@ -251,50 +205,50 @@ function FavoriteListItem(rawProps: FavoriteListItemProps) {
         ) : null}
       </div>
       <div className="propeller-favorite-list-item__body flex flex-col gap-0.5 min-w-0 flex-1">
-        {props.showSku !== false && !!getSku() ? (
-          <span className="propeller-favorite-list-item__sku font-mono text-xs text-foreground-subtle">{getSku()}</span>
+        {props.showSku !== false && !!sku ? (
+          <span className="propeller-favorite-list-item__sku font-mono text-xs text-foreground-subtle">{sku}</span>
         ) : null}
         {props.titleLinkable !== false ? (
           <a
             className="propeller-favorite-list-item__title text-sm font-medium leading-tight text-foreground transition-colors hover:text-secondary line-clamp-1"
-            href={getItemUrl()}
+            href={itemUrl}
             onClick={(e) => handleItemClick(e)}
           >
-            {getName()}
+            {name}
           </a>
         ) : null}
         {props.titleLinkable === false ? (
           <span className="propeller-favorite-list-item__title text-sm font-medium leading-tight text-foreground line-clamp-1">
-            {getName()}
+            {name}
           </span>
         ) : null}
       </div>
-      {props.showStockComponent && isProduct() && !!getProduct().inventory ? (
+      {props.showStockComponent && isProduct && !!product.inventory ? (
         <div className="flex-shrink-0">
           <ItemStock
-            inventory={getProduct().inventory!}
+            inventory={product.inventory!}
             showAvailability={props.showAvailability !== false}
             showStock={props.showStock !== false}
             labels={props.stockLabels}
           />
         </div>
       ) : null}
-      {props.showStockComponent && !isProduct() ? (
+      {props.showStockComponent && !isProduct ? (
         <>
-          {getCluster()?.defaultProduct?.inventory?.totalQuantity !== undefined ? (
+          {cluster?.defaultProduct?.inventory?.totalQuantity !== undefined ? (
             <div className="propeller-favorite-list-item__stock flex-shrink-0">
-              {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 5 ? (
+              {(cluster?.defaultProduct?.inventory?.totalQuantity || 0) > 5 ? (
                 <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-success bg-success/10" data-stock="in">
                   {getLabel(props.labels, 'inStock', 'In stock')}
                 </span>
               ) : null}
-              {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
-              (getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) <= 5 ? (
+              {(cluster?.defaultProduct?.inventory?.totalQuantity || 0) > 0 &&
+              (cluster?.defaultProduct?.inventory?.totalQuantity || 0) <= 5 ? (
                 <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-warning bg-warning/10" data-stock="low">
                   {getLabel(props.labels, 'lowStock', 'Low stock')}
                 </span>
               ) : null}
-              {(getCluster()?.defaultProduct?.inventory?.totalQuantity || 0) === 0 ? (
+              {(cluster?.defaultProduct?.inventory?.totalQuantity || 0) === 0 ? (
                 <span className="propeller-favorite-list-item__stock-badge inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-destructive bg-destructive/10" data-stock="out">
                   {getLabel(props.labels, 'outOfStock', 'Out of stock')}
                 </span>
@@ -303,16 +257,16 @@ function FavoriteListItem(rawProps: FavoriteListItemProps) {
           ) : null}
         </>
       ) : null}
-      {!!getItemPrice() ? (
+      {!!itemPrice ? (
         <span className="propeller-favorite-list-item__price text-base font-bold text-foreground whitespace-nowrap flex-shrink-0">
-          {getItemPrice()}
+          {itemPrice}
         </span>
       ) : null}
       <div className="propeller-favorite-list-item__actions flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        {props.allowAddToCart !== false && isProduct() && !!props.graphqlClient ? (
+        {props.allowAddToCart !== false && isProduct && !!props.graphqlClient ? (
           <AddToCart
             className="flex items-center gap-2"
-            product={getProduct()}
+            product={product}
             cartId={props.cartId}
             createCart={props.createCart}
             onCartCreated={props.onCartCreated}
@@ -326,10 +280,10 @@ function FavoriteListItem(rawProps: FavoriteListItemProps) {
             labels={props.addToCartLabels}
           />
         ) : null}
-        {!isProduct() ? (
+        {!isProduct ? (
           <a
             className="propeller-favorite-list-item__view-cluster inline-flex items-center justify-center rounded-control bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90 whitespace-nowrap"
-            href={getItemUrl()}
+            href={itemUrl}
             onClick={(e) => handleItemClick(e)}
           >
             {getLabel(props.labels, 'viewCluster', 'View cluster')}
@@ -339,7 +293,7 @@ function FavoriteListItem(rawProps: FavoriteListItemProps) {
           <button
             type="button"
             className="propeller-favorite-list-item__delete-btn h-8 w-8 p-0 inline-flex items-center justify-center rounded-control text-foreground-subtle hover:text-destructive hover:bg-destructive/10 transition-colors"
-            onClick={(event) => handleDelete()}
+            onClick={handleDelete}
             title={getLabel(props.labels, 'delete', 'Remove from list')}
           >
             <svg

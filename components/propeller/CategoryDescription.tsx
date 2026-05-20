@@ -38,74 +38,47 @@ export interface CategoryDescriptionProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface CategoryDescriptionState {
-  expanded: boolean;
-  /** Cached resolved HTML — updated via onUpdate whenever category/language changes. */
-  html: string;
-  getDescription(): string;
-  getMaxLen(): number;
-  shouldTruncate(): boolean;
-  getTruncated(): string;
-  toggle(): void;
-}
 function CategoryDescription(props: CategoryDescriptionProps) {
-  const [expanded, setExpanded] = useState<CategoryDescriptionState['expanded']>(() => false);
-  // Derived from props — pure render-time computation, no state needed.
-  function getDescription(): ReturnType<CategoryDescriptionState['getDescription']> {
-    if (!props.category?.description) return '';
-    const match = props.category.description.find(
-      (d: LocalizedString) => d.language === props.language
-    );
-    return match?.value || '';
-  }
-  const html = getDescription();
-  function getMaxLen(): ReturnType<CategoryDescriptionState['getMaxLen']> {
-    return props.maxLength || 200;
-  }
-  function shouldTruncate(): ReturnType<CategoryDescriptionState['shouldTruncate']> {
-    if (props.collapsed === false) return false;
-    return html.length > getMaxLen();
-  }
-  function getTruncated(): ReturnType<CategoryDescriptionState['getTruncated']> {
+  const [expanded, setExpanded] = useState(false);
+  // All values below are derived from props or local state — pure, computed on render.
+  const match = props.category?.description?.find(
+    (d: LocalizedString) => d.language === props.language,
+  );
+  const html = match?.value || '';
+  const maxLen = props.maxLength || 200;
+  const shouldTruncate = props.collapsed !== false && html.length > maxLen;
+  function getTruncated(): string {
     const plain = html.replace(/<[^>]*>/g, '');
-    if (plain.length <= getMaxLen()) return html;
-    const truncated = plain.substring(0, getMaxLen());
+    if (plain.length <= maxLen) return html;
+    const truncated = plain.substring(0, maxLen);
     return truncated.substring(0, truncated.lastIndexOf(' ')) + '…';
-  }
-  function toggle(): ReturnType<CategoryDescriptionState['toggle']> {
-    setExpanded(!expanded);
   }
   return (
     <>
       {!!html ? (
-        <>
-          <div
-            className={`propeller-category-description mb-6 ${(props.className as string) || ''}`}
-            data-expanded={expanded ? 'true' : 'false'}
-            data-truncatable={shouldTruncate() ? 'true' : 'false'}
-          >
-            {!shouldTruncate() || expanded ? (
-              <div
-                className="propeller-category-description__content prose prose-slate max-w-none text-muted-foreground"
-                dangerouslySetInnerHTML={{
-                  __html: html,
-                }}
-              />
-            ) : null}
-            {shouldTruncate() && !expanded ? (
-              <p className="propeller-category-description__truncated text-muted-foreground">{getTruncated()}</p>
-            ) : null}
-            {shouldTruncate() ? (
-              <button
-                className="propeller-category-description__toggle mt-2 text-sm font-medium text-primary hover:underline"
-                onClick={(event) => toggle()}
-              >
-                {expanded ? <>Read less</> : null}
-                {!expanded ? <>Read more</> : null}
-              </button>
-            ) : null}
-          </div>
-        </>
+        <div
+          className={`propeller-category-description mb-6 ${props.className || ''}`}
+          data-expanded={expanded ? 'true' : 'false'}
+          data-truncatable={shouldTruncate ? 'true' : 'false'}
+        >
+          {!shouldTruncate || expanded ? (
+            <div
+              className="propeller-category-description__content prose prose-slate max-w-none text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <p className="propeller-category-description__truncated text-muted-foreground">{getTruncated()}</p>
+          )}
+          {shouldTruncate ? (
+            <button
+              type="button"
+              className="propeller-category-description__toggle mt-2 text-sm font-medium text-primary hover:underline"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? 'Read less' : 'Read more'}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </>
   );

@@ -28,55 +28,30 @@ export interface ProductDownloadsProps {
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
-interface ProductDownloadsState {
-  hasItems: () => boolean;
-  getDownloadItems: () => MediaDocument[];
-  getDocumentUrl: (doc: MediaDocument) => string;
-  getDocumentName: (doc: MediaDocument) => string;
-  getDocumentMime: (doc: MediaDocument) => string;
-  getLabel: (key: string, fallback: string) => string;
-}
 function ProductDownloads(props: ProductDownloadsProps) {
-  function hasItems(): ReturnType<ProductDownloadsState['hasItems']> {
-    const d = props.downloads as PaginatedMediaDocumentResponse;
-    return !!d?.items && d.items.length > 0;
-  }
-  function getDownloadItems(): ReturnType<ProductDownloadsState['getDownloadItems']> {
-    const d = props.downloads as PaginatedMediaDocumentResponse;
-    return d?.items || [];
-  }
-  function getDocumentUrl(doc: MediaDocument): ReturnType<ProductDownloadsState['getDocumentUrl']> {
-    const lang = (props.language as string) || 'NL';
+  const items: MediaDocument[] = props.downloads?.items || [];
+  const hasItems = items.length > 0;
+  const lang = props.language || 'NL';
+  function getDocumentUrl(doc: MediaDocument): string {
     const docs = doc.documents || [];
     const match = docs.find((d: LocalizedDocument) => d.language === lang);
     return match?.originalUrl || docs?.[0]?.originalUrl || '';
   }
-  function getDocumentName(
-    doc: MediaDocument
-  ): ReturnType<ProductDownloadsState['getDocumentName']> {
-    const lang = (props.language as string) || 'NL';
+  function getDocumentName(doc: MediaDocument): string {
     const alts = doc.alt || [];
     const match = alts.find((a: LocalizedString) => a.language === lang);
     return match?.value || alts?.[0]?.value || 'Download';
   }
-  function getDocumentMime(
-    doc: MediaDocument
-  ): ReturnType<ProductDownloadsState['getDocumentMime']> {
-    const lang = (props.language as string) || 'NL';
-    const docs = doc.documents || [];
-    const match = docs.find((d: LocalizedDocument) => d.language === lang);
-    return match?.mimeType || docs?.[0]?.mimeType || '';
-  }
   return (
-    <div className={`propeller-product-downloads ${(props.className as string) || ''}`}>
-      {hasItems() ? (
+    <div className={`propeller-product-downloads ${props.className || ''}`}>
+      {hasItems ? (
         <h3 className="propeller-product-downloads__title text-base font-semibold text-foreground mb-3">
           {getLabel(props.labels, 'title', 'Downloads')}
         </h3>
       ) : null}
-      {hasItems() ? (
+      {hasItems ? (
         <ul className="propeller-product-downloads__list space-y-2">
-          {getDownloadItems()?.map((doc, index) => (
+          {items.map((doc, index) => (
             <li className="propeller-product-downloads__item" key={index}>
               {!!getDocumentUrl(doc) ? (
                 <a
@@ -118,7 +93,7 @@ function ProductDownloads(props: ProductDownloadsProps) {
           ))}
         </ul>
       ) : null}
-      {!hasItems() ? (
+      {!hasItems ? (
         <p className="propeller-product-downloads__empty text-sm text-muted-foreground">{getLabel(props.labels, 'empty', 'No downloads')}</p>
       ) : null}
     </div>

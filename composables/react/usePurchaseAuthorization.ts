@@ -19,6 +19,8 @@ import type {
   PurchaseAuthorizationConfigCreateInput,
   RegisterContactInput,
   AttributeResultSearchInput,
+  MediaImageProductSearchInput,
+  TransformationsInput,
 } from 'propeller-sdk-v2';
 import { useCompany } from './useCompany';
 
@@ -313,8 +315,9 @@ export function usePurchaseAuthorizationConfigurator(
         }
       }
       closeAddContactModal();
-    } catch (err: any) {
-      setAddContactError(err?.message || 'Failed to create contact');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create contact';
+      setAddContactError(msg);
     } finally {
       setAddContactLoading(false);
     }
@@ -341,8 +344,8 @@ export interface UsePurchaseAuthorizationRequestsOptions {
   companyId: number;
   configuration?: {
     language?: string;
-    imageSearchFiltersGrid?: any;
-    imageVariantFiltersSmall?: any;
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersSmall?: TransformationsInput;
   };
   onAcceptRequest?: (cartId: string) => void;
   afterAcceptRequest?: (cart: Cart) => void;
@@ -413,7 +416,7 @@ export function usePurchaseAuthorizationRequests(
         companyIds: [companyId],
       });
       setCarts(response?.items || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       cbRef.current.onError?.(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
@@ -428,11 +431,11 @@ export function usePurchaseAuthorizationRequests(
       const fullCart = await service.getCart({
         cartId: cart.cartId,
         language: configuration?.language || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-        imageSearchFilters: configuration?.imageSearchFiltersGrid,
+        imageSearchFilters: configuration?.imageSearchFiltersGrid ?? {},
         imageVariantFilters: configuration?.imageVariantFiltersSmall,
       });
       setSelectedCart(fullCart);
-    } catch (err: any) {
+    } catch (err: unknown) {
       cbRef.current.onError?.(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setModalLoading(false);
@@ -460,7 +463,7 @@ export function usePurchaseAuthorizationRequests(
       cbRef.current.afterAcceptRequest?.(cartForCallback);
       setSelectedCart(null);
       await loadCarts();
-    } catch (err: any) {
+    } catch (err: unknown) {
       cbRef.current.onError?.(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setAcceptLoading(false);
@@ -481,7 +484,7 @@ export function usePurchaseAuthorizationRequests(
       cbRef.current.afterDeleteRequest?.(cartId);
       setSelectedCart(null);
       await loadCarts();
-    } catch (err: any) {
+    } catch (err: unknown) {
       cbRef.current.onError?.(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setDeleteLoading(false);

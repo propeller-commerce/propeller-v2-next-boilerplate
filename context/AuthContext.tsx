@@ -5,7 +5,7 @@ import { Contact, Customer, PurchaseRole, UserService } from 'propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient, toPlain } from '@/lib/api';
 import { localizeHref } from '@/data/config';
 
 type User = Contact | Customer;
@@ -106,18 +106,17 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Helper to remove leading underscores from object keys
-const sanitizeUser = (data: any): User => {
-  if (!data || typeof data !== 'object') return data;
-
-  const cleanData: any = {};
-  Object.keys(data).forEach(key => {
-    const cleanKey = key.startsWith('_') ? key.substring(1) : key;
-    cleanData[cleanKey] = data[key];
-  });
-
-  return cleanData as User;
-};
+// Strip SDK underscore prefixes off the cached user payload.
+//
+// Until this commit there were three copies of this helper (here, inside
+// AuthProvider, and inside AuthService) and they only walked one level deep —
+// which is why every consumer that touched `user.companies.items` or
+// `user.purchaseAuthorizationConfigs._items` had to write `?? _items` fallbacks
+// (see CartSummary, CompanySwitcher, useCheckout). `toPlain` from lib/api
+// walks the full tree, so the cached `user` shape now matches the SDK's
+// public Contact/Customer types end-to-end and the underscore fallbacks
+// can go away.
+const sanitizeUser = (data: unknown): User => toPlain(data) as User;
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
@@ -271,19 +270,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
   }, []);
 
-  // Helper to remove leading underscores from object keys
-  const sanitizeUser = (data: any): User => {
-    if (!data || typeof data !== 'object') return data;
-
-    const cleanData: any = {};
-    Object.keys(data).forEach(key => {
-      const cleanKey = key.startsWith('_') ? key.substring(1) : key;
-      cleanData[cleanKey] = data[key];
-    });
-
-    return cleanData as User;
-  };
-
   const updateUser = useCallback((userData: Partial<User>): void => {
     dispatch({ type: 'UPDATE_USER', payload: userData });
 
@@ -298,25 +284,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userService = new UserService(graphqlClient);
       const viewerData = await userService.getViewer({});
       if (viewerData) {
-        const strip = (obj: any): any => {
-          if (obj === null || obj === undefined) return obj;
-          if (Array.isArray(obj)) return obj.map(strip);
-          if (typeof obj === 'object') {
-            const r: any = {};
-            for (const [k, val] of Object.entries(obj)) {
-              r[k.startsWith('_') ? k.slice(1) : k] = strip(val);
-            }
-            return r;
-          }
-          return obj;
-        };
-        const plain = strip(JSON.parse(JSON.stringify(viewerData, (_k, v) => v)));
+        const plain = toPlain(viewerData) as User;
         localStorage.setItem('user', JSON.stringify(plain));
         // accessToken in reducer state is vestigial — the JWT lives only in the
         // httpOnly cookie and is injected by the /api/graphql proxy.
         dispatch({
           type: 'AUTH_SUCCESS',
-          payload: { user: plain as User, accessToken: '' },
+          payload: { user: plain, accessToken: '' },
         });
       }
     } catch (e) {
@@ -326,12 +300,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthManagerForCompany = (user: Contact | Customer | null, companyId: number | undefined): boolean => {
     if (!user || !companyId || !('contactId' in user)) return false;
-    const pacData = (user as any).purchaseAuthorizationConfigs;
-    const items: any[] = pacData?.items ?? pacData?._items ?? [];
-    return items.some((pac: any) => {
-      const role = pac.purchaseRole ?? pac._purchaseRole;
-      const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-      return role === PurchaseRole.AUTHORIZATION_MANAGER && pacCompanyId === companyId;
+    // The cached user has been through toPlain(), so .items / .purchaseRole /
+    // .company are the canonical (non-underscored) fields.
+    const items = user.purchaseAuthorizationConfigs?.items ?? [];
+    return items.some((pac) => {
+      return pac.purchaseRole === PurchaseRole.AUTHORIZATION_MANAGER
+        && pac.company?.companyId === companyId;
     });
   };
 

@@ -155,6 +155,14 @@ function AddressCard(rawProps: AddressCardProps) {
     return _getCountryName(code, props.countries);
   }
 
+  // The address shape is a union of Address|CartAddress|WarehouseAddress|
+  // OrderAddress|null|local edited form, and the JSX reads dozens of fields
+  // via `addr?.()?.x ? push(addr().x) : null` where the narrowing doesn't
+  // carry to the second call. Typing this strictly would force ~40 line
+  // edits to use a single local const per call instead of double-invocation.
+  // Out of scope here — flagged for the AddressCard compound-primitive
+  // rework in Phase C.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function addr(): any {
     return localAddress || props.address;
   }
@@ -230,7 +238,7 @@ function AddressCard(rawProps: AddressCardProps) {
     setShowEditModal(true);
   }
 
-  async function handleSaveEdit(e: any) {
+  async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (isSaving) return;
     if (props.beforeSave) {
@@ -262,7 +270,7 @@ function AddressCard(rawProps: AddressCardProps) {
       if (props.onEdit) {
         await props.onEdit(editedAddress);
       } else if (hookReady && addr?.()?.id) {
-        await addressHook.updateAddress(addr().id, editedAddress as any);
+        await addressHook.updateAddress(addr().id, editedAddress);
       }
       setShowEditModal(false);
       if (props.afterEdit) {

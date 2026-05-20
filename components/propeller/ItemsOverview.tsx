@@ -34,26 +34,26 @@ export interface ItemsOverviewProps {
 const money = (value: number | null | undefined): string =>
   value === undefined || value === null ? '' : formatPrice(value, { symbol: config.currency });
 
-function getItemName(item: any): string {
+function getItemName(item: CartMainItem): string {
   return item.product?.names?.[0]?.value || 'Product';
 }
 
-function getItemImageUrl(item: any): string {
+function getItemImageUrl(item: CartMainItem): string {
   const url = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
   return url && typeof url === 'string' && url.startsWith('http') ? url : '';
 }
 
-function getItemChildItems(item: any): any[] {
-  const children = item.childItems;
+function getItemChildItems(item: CartMainItem): CartMainItem[] {
+  const children = (item as CartMainItem & { childItems?: CartMainItem[] }).childItems;
   if (!children || !Array.isArray(children)) return [];
   return children;
 }
 
-function getBundleLeader(item: any): BundleItem | undefined {
+function getBundleLeader(item: CartMainItem): BundleItem | undefined {
   return item.bundle?.items?.find((bi: BundleItem) => bi.isLeader === YesNo.Y);
 }
 
-function getBundleNonLeaders(item: any): BundleItem[] {
+function getBundleNonLeaders(item: CartMainItem): BundleItem[] {
   const items = item.bundle?.items;
   if (!items) return [];
   return items.filter((bi: BundleItem) => bi.isLeader !== YesNo.Y);
@@ -73,7 +73,7 @@ function ItemsOverview(props: ItemsOverviewProps) {
 
   // Computed once per render (previously items() was redefined every render and
   // called 3× — once for the map, twice for length checks).
-  const items: any[] = (props.cart as any)?.items || [];
+  const items: CartMainItem[] = props.cart?.items ?? [];
 
   function formatItemPrice(price: number): string {
     if (props.formatPrice) {
@@ -82,9 +82,9 @@ function ItemsOverview(props: ItemsOverviewProps) {
     return formatPrice(price || 0, { symbol: config.currency });
   }
 
-  function handleItemNameClick(item: any): void {
+  function handleItemNameClick(item: CartMainItem): void {
     if (itemNameClickable && props.onCartItemNameClick) {
-      props.onCartItemNameClick(item as CartMainItem);
+      props.onCartItemNameClick(item);
     }
   }
 

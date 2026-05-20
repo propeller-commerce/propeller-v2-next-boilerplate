@@ -28,6 +28,14 @@ export class HomePage {
   }
 
   async search(term: string) {
+    // Wait for the header and search input to be present before typing.
+    // Under parallel suite load the React tree can still be hydrating when
+    // the test fires Enter, in which case the native form submission (a
+    // GET to the current URL) wins over the not-yet-bound onSubmit handler
+    // and the route never changes. The 05-search test does the same thing
+    // explicitly for the same reason.
+    await this.page.locator('header').waitFor({ state: 'visible' });
+    await this.searchInput.waitFor({ state: 'visible' });
     await this.searchInput.fill(term);
     await this.searchInput.press('Enter');
   }

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
+import type {
   FavoriteList,
   GraphQLClient,
   Contact,
   Customer,
+  Product,
+  Cluster,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
 import { useInfraProps } from '@/composables/react/useInfraProps';
@@ -165,15 +167,17 @@ function AddToFavorite(rawProps: AddToFavoriteProps) {
           const myItemId = (props.productId || props.clusterId || 0) as number;
           const myIsProduct = !!props.productId;
           (userLists || []).forEach((list: FavoriteList) => {
-            const productsRef = list?.products as any;
-            const clustersRef = list?.clusters as any;
+            // FavoriteList.products / .clusters are ProductsResponse with .items: IBaseProduct[].
+            // We narrow to Product/Cluster at the call site by id field.
+            const productItems = (list?.products?.items ?? []) as Array<Product | Cluster>;
+            const clusterItems = (list?.clusters?.items ?? []) as Array<Product | Cluster>;
             if (myIsProduct) {
-              if (productsRef?.items?.some((item: any) => item.productId === myItemId)) {
+              if (productItems.some((item) => 'productId' in item && item.productId === myItemId)) {
                 memberIds.add(String(list.id));
               }
             } else {
-              const inProducts = productsRef?.items?.some((item: any) => item.clusterId === myItemId);
-              const inClusters = clustersRef?.items?.some((item: any) => item.clusterId === myItemId);
+              const inProducts = productItems.some((item) => 'clusterId' in item && item.clusterId === myItemId);
+              const inClusters = clusterItems.some((item) => 'clusterId' in item && item.clusterId === myItemId);
               if (inProducts || inClusters) {
                 memberIds.add(String(list.id));
               }

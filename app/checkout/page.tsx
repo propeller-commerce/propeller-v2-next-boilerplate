@@ -140,15 +140,13 @@ function CheckoutPageInner() {
     if (!user || !isContact(user)) return null;
     const stored = selectedCompany?.companyId;
     if (stored) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const companiesRaw = (user as any).companies;
-      const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
+      const items = user.companies?.items;
       if (Array.isArray(items)) {
         const found = items.find((c: Company) => c.companyId === stored);
         if (found) return found;
       }
     }
-    return (user.company as Company | undefined) ?? null;
+    return user.company ?? null;
   };
 
   const { populateCartAddresses, updateCartAddress, updateCartShipping, placeOrder } = useCheckout({

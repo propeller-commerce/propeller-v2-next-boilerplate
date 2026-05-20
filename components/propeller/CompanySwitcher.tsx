@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useRef, useEffect } from 'react';
-import { Contact, Company } from 'propeller-sdk-v2';
+import { Contact, Company, GraphQLClient } from 'propeller-sdk-v2';
 import { useCompany } from '@/composables/react/useCompany';
 
 export interface CompanySwitcherProps {
@@ -10,7 +10,7 @@ export interface CompanySwitcherProps {
   user: Contact;
 
   /** GraphQL client for the Propeller SDK */
-  graphqlClient?: any;
+  graphqlClient?: GraphQLClient;
 
   /** Icon identifier for the company switcher trigger button. @default 'default-company-switch-icon' */
   icon?: string;
@@ -27,14 +27,15 @@ function CompanySwitcher(props: CompanySwitcherProps) {
   const [isOpen, setIsOpen] = useState(() => false);
   const [activeCompanyId, setActiveCompanyId] = useState<number | null>(() => null);
 
-  // useCompany provides SDK methods; company list is derived from user prop
-  useCompany(props.graphqlClient ? { graphqlClient: props.graphqlClient } : { graphqlClient: null as any });
+  // useCompany provides SDK methods; company list is derived from user prop.
+  // graphqlClient is allowed to be null/undefined — useCompany's CRUD methods
+  // short-circuit until the client is ready.
+  useCompany({ graphqlClient: props.graphqlClient });
 
   function getCompanies(): Company[] {
-    // sanitizeUser in AuthContext is not recursive, so CompaniesResponse fields
-    // may still have their raw _items key instead of the getter-based items.
-    const companiesRaw = props.user.companies as any;
-    const items = (companiesRaw?.items ?? companiesRaw?._items) as Company[] | undefined;
+    // AuthContext now runs the cached user through toPlain(), so the SDK
+    // CompaniesResponse shape is canonical (.items, not ._items).
+    const items = props.user.companies?.items;
     if (Array.isArray(items) && items.length > 0) {
       return items;
     }
@@ -82,7 +83,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !(containerRef.current as any).contains(e.target)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -93,7 +94,7 @@ function CompanySwitcher(props: CompanySwitcherProps) {
   return (
     <div
       className="propeller-company-switcher relative inline-block"
-      ref={containerRef as any}
+      ref={containerRef}
       data-open={isOpen ? 'true' : 'false'}
     >
       <button

@@ -2,7 +2,20 @@
 import * as React from 'react';
 
 import { useEffect } from 'react';
-import { AttributeResult, AttributeType, GraphQLClient, LocalizedString } from 'propeller-sdk-v2';
+import {
+  AttributeResult,
+  AttributeType,
+  GraphQLClient,
+  LocalizedString,
+} from 'propeller-sdk-v2';
+import type {
+  AttributeTextValue,
+  AttributeEnumValue,
+  AttributeIntValue,
+  AttributeDecimalValue,
+  AttributeColorValue,
+  AttributeDateTimeValue,
+} from 'propeller-sdk-v2';
 import { useProductSpecs } from '@/composables/react/useProductSpecs';
 import { useInfraProps } from '@/composables/react/useInfraProps';
 
@@ -97,28 +110,35 @@ function ProductSpecifications(rawProps: ProductSpecificationsProps) {
     const v = attr.value;
     if (!v) return '';
     const lang = (props.language as string) || 'NL';
+    // AttributeValue is a discriminated union by `type`. The SDK's base
+    // interface only types `value: any`; each concrete attribute type adds a
+    // field with the type-specific shape. We cast through the corresponding
+    // SDK type per branch to get real autocompletion / safety on the field
+    // we expect to read.
     if (v.type === AttributeType.TEXT) {
-      const entry = (v as any).textValues?.find((tv: any) => tv.language === lang);
+      const tv = v as AttributeTextValue;
+      const entry = tv.textValues?.find((row) => row.language === lang);
       const vals = (entry?.values || []).filter(Boolean);
       return vals.join(', ');
     }
     if (v.type === AttributeType.ENUM) {
-      const vals = ((v as any).enumValues || []).filter(Boolean);
+      const ev = v as AttributeEnumValue;
+      const vals = (ev.enumValues || []).filter(Boolean);
       return vals.join(', ');
     }
     if (v.type === AttributeType.INT) {
-      const val = (v as any).intValue;
-      return val !== null && val !== undefined ? String(val) : '';
+      const iv = v as AttributeIntValue;
+      return iv.intValue !== null && iv.intValue !== undefined ? String(iv.intValue) : '';
     }
     if (v.type === AttributeType.DECIMAL) {
-      const val = (v as any).decimalValue;
-      return val !== null && val !== undefined ? String(val) : '';
+      const dv = v as AttributeDecimalValue;
+      return dv.decimalValue !== null && dv.decimalValue !== undefined ? String(dv.decimalValue) : '';
     }
     if (v.type === AttributeType.DATETIME) {
-      return (v as any).dateTimeValue || '';
+      return (v as AttributeDateTimeValue).dateTimeValue || '';
     }
     if (v.type === AttributeType.COLOR) {
-      return (v as any).colorValue || '';
+      return (v as AttributeColorValue).colorValue || '';
     }
     const fallback = v.value;
     if (fallback === null || fallback === undefined) return '';

@@ -7,6 +7,8 @@ import {
   Contact,
   Customer,
   GraphQLClient,
+  MediaImageProductSearchInput,
+  TransformationsInput,
 } from 'propeller-sdk-v2';
 import { useAuth } from '@/composables/react/useAuth';
 import { useInfraProps } from '@/composables/react/useInfraProps';
@@ -36,7 +38,7 @@ export interface LoginFormProps {
   displayForgotPasswordLink?: boolean;
 
   /** Action for the password reset link click */
-  onForgotPasswordClick?: (event?: any) => void;
+  onForgotPasswordClick?: (event?: React.MouseEvent) => void;
 
   /** Show/hide the registration link
    * @default true
@@ -44,7 +46,7 @@ export interface LoginFormProps {
   displayRegisterLink?: boolean;
 
   /** Action for the registration link click */
-  onRegisterClick?: (event?: any) => void;
+  onRegisterClick?: (event?: React.MouseEvent) => void;
 
   /** Show/hide the guest checkout link
    * @default true
@@ -52,7 +54,7 @@ export interface LoginFormProps {
   displayGuestCheckoutLink?: boolean;
 
   /** Action for the guest checkout link click */
-  onGuestCheckoutClick?: (event?: any) => void;
+  onGuestCheckoutClick?: (event?: React.MouseEvent) => void;
 
   /** Label for the submit button
    * @default "Login"
@@ -117,7 +119,10 @@ export interface LoginFormProps {
   accountHeaderLoginForm?: boolean;
 
   /** Config object providing imageSearchFiltersGrid and imageVariantFiltersSmall. */
-  configuration?: any;
+  configuration?: {
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersSmall?: TransformationsInput;
+  };
 }
 
 function LoginForm(rawProps: LoginFormProps) {

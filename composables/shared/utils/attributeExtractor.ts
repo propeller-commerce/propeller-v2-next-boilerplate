@@ -7,7 +7,7 @@
  * Framework-agnostic pure functions.
  */
 
-import type { AttributeResult } from 'propeller-sdk-v2';
+import type { AttributeResult, LocalizedString } from 'propeller-sdk-v2';
 import { AttributeType } from 'propeller-sdk-v2';
 
 /**
@@ -21,7 +21,7 @@ export function attributeNameMatches(
   const desc = attr.attributeDescription;
   if (!desc) return false;
   if (desc.name === targetName) return true;
-  if (desc.descriptions?.some((d: any) => d.value === targetName)) return true;
+  if (desc.descriptions?.some((d: LocalizedString) => d.value === targetName)) return true;
   return false;
 }
 
@@ -38,7 +38,7 @@ export function getAttributeDisplayName(
 
   if (language && desc.descriptions?.length) {
     const lang = language.toUpperCase();
-    const match = desc.descriptions.find((d: any) => d.language?.toUpperCase() === lang);
+    const match = desc.descriptions.find((d: LocalizedString) => d.language?.toUpperCase() === lang);
     if (match?.value) return match.value;
   }
 
@@ -55,6 +55,11 @@ export function getAttributeDisplayName(
  */
 export function extractAttributeValues(attr: AttributeResult): string[] {
   const values: string[] = [];
+  // AttributeValue.value is intentionally `any` in the SDK because it is
+  // polymorphic across legacy + current schemas; the reader below duck-types
+  // it. Casting to a structural index is honest about that — we don't claim
+  // to know which keys exist, we just read what's there.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const v = attr.value as any;
 
   if (!v) return values;
@@ -91,7 +96,7 @@ export function extractAttributeValues(attr: AttributeResult): string[] {
     values.push(v);
   } else if (typeof v === 'object') {
     if (Array.isArray(v.values)) {
-      return (v.values as any[]).filter((x) => typeof x === 'string');
+      return (v.values as unknown[]).filter((x): x is string => typeof x === 'string');
     }
     const strVals = Object.values(v).filter((x) => typeof x === 'string');
     return strVals as string[];

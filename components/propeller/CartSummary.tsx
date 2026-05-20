@@ -157,16 +157,15 @@ function CartSummary(rawProps: CartSummaryProps) {
     if (!props.user || !('contactId' in props.user)) return false;
     if (!props.companyId) return false;
     if (!props.cart) return false;
-    const pacData = (props.user as any).purchaseAuthorizationConfigs ?? (props.user as any)._purchaseAuthorizationConfigs;
-    const items: any[] = pacData?.items ?? pacData?._items ?? [];
-    const purchaserPAC = items.find((pac: any) => {
-      const role = pac.purchaseRole ?? pac._purchaseRole;
-      const pacCompanyId = pac.company?.companyId ?? pac.company?._companyId ?? pac._company?.companyId ?? pac._company?._companyId;
-      return role === PurchaseRole.PURCHASER && Number(pacCompanyId) === Number(props.companyId);
-    });
+    // user has been through toPlain() in AuthContext, so SDK field names are canonical.
+    const items = props.user.purchaseAuthorizationConfigs?.items ?? [];
+    const purchaserPAC = items.find(
+      (pac) => pac.purchaseRole === PurchaseRole.PURCHASER
+        && Number(pac.company?.companyId) === Number(props.companyId)
+    );
     if (!purchaserPAC) return false;
-    const limit = purchaserPAC.authorizationLimit ?? purchaserPAC._authorizationLimit ?? 0;
-    const totalGross = (props.cart as any)?.total?.totalGross ?? (props.cart as any)?._total?._totalGross ?? 0;
+    const limit = purchaserPAC.authorizationLimit ?? 0;
+    const totalGross = props.cart.total?.totalGross ?? 0;
     return totalGross > limit;
   }
 

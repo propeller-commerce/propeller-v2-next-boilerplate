@@ -2,7 +2,7 @@
 import * as React from 'react';
 
 import { useState, useEffect } from 'react';
-import { Contact, Customer, AttributeFilter } from 'propeller-sdk-v2';
+import { Contact, Customer, AttributeFilter, AttributeTextFilter } from 'propeller-sdk-v2';
 
 export interface GridFiltersProps {
   /**
@@ -105,18 +105,16 @@ function GridFilters(props: GridFiltersProps) {
       ''
     );
   }
-  function getFilteredFilters() {
-    const list = (props.filters as AttributeFilter[]) || [];
-    return list.filter((f: AttributeFilter) => {
-      const opts = (f?.textFilters as any[]) || [];
-      return opts.some((o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0);
+  function getFilteredFilters(): AttributeFilter[] {
+    const list = props.filters ?? [];
+    return list.filter((f) => {
+      const opts: AttributeTextFilter[] = f?.textFilters ?? [];
+      return opts.some((o) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0);
     });
   }
-  function getValidOptions(
-    filter: AttributeFilter
-  ) {
-    return (((filter as AttributeFilter)?.textFilters as any[]) || []).filter(
-      (o: any) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0
+  function getValidOptions(filter: AttributeFilter): AttributeTextFilter[] {
+    return (filter?.textFilters ?? []).filter(
+      (o) => (o?.count || 0) > 0 || (o?.countActive || 0) > 0
     );
   }
   function getSelectedCount() {
@@ -182,7 +180,7 @@ function GridFilters(props: GridFiltersProps) {
     if (props.onClearFilters) props.onClearFilters();
     if (props.getSelectedFilters) props.getSelectedFilters();
   }
-  function getCount(option: any) {
+  function getCount(option: AttributeTextFilter): number {
     const c = option?.count || 0;
     const ca = option?.countActive || 0;
     return c === 0 && ca > 0 ? ca : c;

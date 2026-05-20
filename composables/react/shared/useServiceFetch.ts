@@ -6,32 +6,32 @@
 
 import { useState, useCallback } from 'react';
 
-export interface ServiceFetchState<T> {
+export interface ServiceFetchState<T, A extends unknown[]> {
   data: T;
   loading: boolean;
   error: string | null;
-  execute: (...args: any[]) => Promise<T | undefined>;
+  execute: (...args: A) => Promise<T | undefined>;
   reset: () => void;
 }
 
-export function useServiceFetch<T>(
-  fetchFn: (...args: any[]) => Promise<T>,
+export function useServiceFetch<T, A extends unknown[]>(
+  fetchFn: (...args: A) => Promise<T>,
   defaultValue: T
-): ServiceFetchState<T> {
+): ServiceFetchState<T, A> {
   const [data, setData] = useState<T>(defaultValue);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(
-    async (...args: any[]): Promise<T | undefined> => {
+    async (...args: A): Promise<T | undefined> => {
       setLoading(true);
       setError(null);
       try {
         const result = await fetchFn(...args);
         setData(result);
         return result;
-      } catch (e: any) {
-        const msg = e?.message || 'An error occurred';
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'An error occurred';
         setError(msg);
         console.error('[useServiceFetch] error:', e);
         return undefined;

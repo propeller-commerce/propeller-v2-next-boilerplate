@@ -1,13 +1,14 @@
 import * as React from 'react';
+import type { OrderItem } from 'propeller-sdk-v2';
 import { formatPrice } from '@/composables/shared/utils/formatting';
 import { config } from '@/data/config';
 
 export interface OrderItemCardProps {
   /** The order item to display */
-  orderItem: any;
+  orderItem: OrderItem;
 
   /** Child order items (rendered as indented sub-rows beneath the parent) */
-  childItems?: any[];
+  childItems?: OrderItem[];
 
   /** Should the item title be a link to the PDP */
   titleLinkable?: boolean;
@@ -42,20 +43,20 @@ export interface OrderItemCardProps {
 
 // ── Pure accessors (module scope — created once, not per render) ────────────────
 
-function getProductName(orderItem: any): string {
+function getProductName(orderItem: OrderItem): string {
   return orderItem?.product?.names?.[0]?.value || orderItem?.name || 'Unknown Product';
 }
 
-function getClusterUrl(orderItem: any): string {
+function getClusterUrl(orderItem: OrderItem): string {
   const cluster = orderItem?.product?.cluster;
   if (!cluster) return '';
-  const id = cluster.clusterId ?? cluster.urlId;
-  const slug = cluster.slugs?.[0]?.value || cluster.slug?.[0]?.value || '';
+  const id = cluster.clusterId;
+  const slug = cluster.slugs?.[0]?.value || '';
   if (!id || !slug) return '';
   return `/cluster/${id}/${slug}`;
 }
 
-function getProductUrl(orderItem: any): string {
+function getProductUrl(orderItem: OrderItem): string {
   const cu = getClusterUrl(orderItem);
   if (cu) return cu;
   const id = orderItem?.product?.productId;

@@ -29,7 +29,9 @@ import type {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface UseCompanyOptions {
-  graphqlClient: GraphQLClient;
+  /** GraphQL client. Nullable so the hook can be called unconditionally even
+   * when CompanySwitcher renders before the client is ready (see CompanySwitcher). */
+  graphqlClient: GraphQLClient | null | undefined;
   language?: string;
 }
 
@@ -63,6 +65,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   // - companyAttributesInput: {}
 
   const fetchCompany = useCallback(async (companyId: number, overrides?: Partial<Omit<CompanyVariables, 'id'>>): Promise<void> => {
+    if (!graphqlClient) return;
     setLoading(true);
     setError(null);
     try {
@@ -94,6 +97,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   // - statuses: [CartStatus.PENDING_PURCHASE_AUTHORIZATION]
 
   const fetchPendingCarts = useCallback(async (companyId: number): Promise<void> => {
+    if (!graphqlClient) return;
     setLoading(true);
     try {
       const service = getServices(graphqlClient).cart;
@@ -115,6 +119,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   const createPac = useCallback(async (
     input: PurchaseAuthorizationConfigCreateInput,
   ): Promise<{ success: boolean; error?: string }> => {
+    if (!graphqlClient) return { success: false, error: 'No client' };
     try {
       const service = getServices(graphqlClient).purchaseAuthConfig;
       await service.createPurchaseAuthorizationConfig(input);
@@ -128,6 +133,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
     pacId: string,
     input: PurchaseAuthorizationConfigUpdateInput,
   ): Promise<{ success: boolean; error?: string }> => {
+    if (!graphqlClient) return { success: false, error: 'No client' };
     try {
       const service = getServices(graphqlClient).purchaseAuthConfig;
       await service.updatePurchaseAuthorizationConfig(pacId, input);
@@ -138,6 +144,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   }, [graphqlClient]);
 
   const deletePac = useCallback(async (pacId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!graphqlClient) return { success: false, error: 'No client' };
     try {
       const service = getServices(graphqlClient).purchaseAuthConfig;
       await service.deletePurchaseAuthorizationConfig(pacId);
@@ -148,6 +155,7 @@ export function useCompany(options: UseCompanyOptions): UseCompanyReturn {
   }, [graphqlClient]);
 
   const acceptCartRequest = useCallback(async (cartId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!graphqlClient) return { success: false, error: 'No client' };
     try {
       const service = getServices(graphqlClient).cart;
       await service.acceptPurchaseAuthorizationRequest({ id: cartId });

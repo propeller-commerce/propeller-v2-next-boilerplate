@@ -13,6 +13,8 @@ import {
   ProductTextFilterInput,
   ProductsResponse,
   Category,
+  MediaImageProductSearchInput,
+  TransformationsInput,
 } from 'propeller-sdk-v2';
 import { useProductSearch } from '@/composables/react/useProductSearch';
 import { useInfraProps } from '@/composables/react/useInfraProps';
@@ -118,7 +120,8 @@ export interface ProductGridProps {
   /**  * Active price range lower bound from the FiltersSidebar `onPriceChange`.  * Triggers a re-fetch when changed.  */ priceFilterMin?: number;
   /**  * Active price range upper bound from the FiltersSidebar `onPriceChange`.  * Triggers a re-fetch when changed.  */ priceFilterMax?: number;
   /**  * Called when sort state changes internally (for syncing a sibling toolbar).  */ onSortChange?: (
-    sort: any
+    field: string,
+    order: string
   ) => void;
   /**  * Called after each internal data fetch with the min/max price of the  * current product set — use to populate a price range slider in the parent.  */ onPriceBoundsChange?: (
     min: number,
@@ -146,7 +149,22 @@ export interface ProductGridProps {
   /**  * Number of products per page. Defaults to 12.  * When changed the grid automatically re-fetches (page resets to 1).  */ pageSize?: number;
   /**  * Sort field to use (e.g. 'NAME', 'PRICE').  * When provided overrides internal sort state.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortField?: string;
   /**  * Sort direction: 'ASC' or 'DESC'.  * Only used when sortField is also provided.  * When changed the grid automatically re-fetches (page resets to 1).  */ sortOrder?: string;
-  /* ── Configuration ──────────────────────────────────────────────────────── */ /**  * Configuration object providing:  *   imageSearchFiltersGrid, imageVariantFiltersMedium — passed to CategoryService  *   baseCategoryId — used when querying by term or brand  *   urls.getProductUrl / urls.getClusterUrl — for card URL generation  */ configuration?: any;
+  /* ── Configuration ──────────────────────────────────────────────────────── */
+  /**
+   * Configuration object providing:
+   *   imageSearchFiltersGrid, imageVariantFiltersMedium — passed to CategoryService
+   *   baseCategoryId — used when querying by term or brand
+   *   urls.getProductUrl / urls.getClusterUrl — for card URL generation
+   */
+  configuration?: {
+    baseCategoryId?: number;
+    imageSearchFiltersGrid?: MediaImageProductSearchInput;
+    imageVariantFiltersMedium?: TransformationsInput;
+    urls?: {
+      getProductUrl?: (p: Product) => string;
+      getClusterUrl?: (c: Cluster) => string;
+    };
+  };
   /* ── ProductCard / AddToCart pass-through props ─────────────────────────── */ /** ID of an existing cart to add items into. */ cartId?: string;
   /**  * Auto-create a cart when none is available.  * Always pair with `onCartCreated` to persist the new cart ID.  */ createCart?: boolean;
   /** Called after AddToCart creates a new cart internally. */ onCartCreated?: (cart: Cart) => void;
@@ -218,8 +236,8 @@ function ProductGrid(rawProps: ProductGridProps) {
     onCategoryChange: props.onCategoryChange,
   });
 
-  function isClusterItem(item: Product | Cluster): boolean {
-    return !!(item as any)?.clusterId;
+  function isClusterItem(item: Product | Cluster): item is Cluster {
+    return 'clusterId' in item && !!item.clusterId;
   }
 
   function getGridColsClass(): string {

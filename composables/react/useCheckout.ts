@@ -19,6 +19,8 @@ import type {
   CartUpdateInput,
   MediaImageProductSearchInput,
   TransformationsInput,
+  Address,
+  Company,
 } from 'propeller-sdk-v2';
 import type { AnyUser } from '../shared/utils/userIdentity';
 import { isContact, isCustomer } from '../shared/utils/userIdentity';
@@ -71,12 +73,10 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  function getActiveCompany() {
+  function getActiveCompany(): Company | null {
     if (!user || !isContact(user)) return null;
     if (companyId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const companiesRaw = (user as any).companies;
-      const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Array<{ companyId: number; addresses?: unknown[] }> | undefined;
+      const items = user.companies?.items;
       if (Array.isArray(items)) {
         const found = items.find((c) => c.companyId === companyId);
         if (found) return found;
@@ -85,22 +85,18 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
     return user.company ?? null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function getUserDefaultAddress(type: 'invoice' | 'delivery'): any | null {
+  function getUserDefaultAddress(type: 'invoice' | 'delivery'): Address | null {
     if (!user) return null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let addresses: any[] = [];
+    let addresses: Address[] = [];
     if (isContact(user)) {
       const company = getActiveCompany();
-      if (company) addresses = (company as { addresses?: unknown[] }).addresses as typeof addresses || [];
+      if (company) addresses = (company.addresses ?? []) as Address[];
     } else if (isCustomer(user)) {
-      addresses = user.addresses || [];
+      addresses = (user.addresses ?? []) as Address[];
     }
     const addressType = type === 'invoice' ? AddressType.invoice : AddressType.delivery;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      || addresses.find((a: any) => a.type === addressType)
+    return addresses.find((a) => a.type === addressType && a.isDefault === 'Y')
+      || addresses.find((a) => a.type === addressType)
       || null;
   }
 
@@ -283,20 +279,17 @@ export function useCheckout(options: UseCheckoutOptions): UseCheckoutReturn {
         ? AddressType.invoice
         : AddressType.delivery;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let addresses: any[] = [];
+      let addresses: Address[] = [];
       const company = isContact(user) ? getActiveCompany() : null;
       if (isContact(user)) {
         if (!company) return;
-        addresses = (company as { addresses?: unknown[] }).addresses as typeof addresses || [];
+        addresses = (company.addresses ?? []) as Address[];
       } else if (isCustomer(user)) {
-        addresses = user.addresses || [];
+        addresses = (user.addresses ?? []) as Address[];
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const matchedAddr = addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        || addresses.find((a: any) => a.type === addressType);
+      const matchedAddr = addresses.find((a) => a.type === addressType && a.isDefault === 'Y')
+        || addresses.find((a) => a.type === addressType);
 
       if (!matchedAddr?.id) return;
 

@@ -12,8 +12,6 @@ import type {
   GraphQLClient,
   Contact,
   Customer,
-  Product,
-  Cluster,
 } from 'propeller-sdk-v2';
 import { useFavorites } from '@/composables/react/useFavorites';
 import { useInfraProps } from '@/composables/react/useInfraProps';
@@ -161,43 +159,12 @@ function AddToFavorite(rawProps: AddToFavoriteProps) {
     setMemberListIds(computeMemberListIds());
   }, [props.user, props.productId, props.clusterId, lists]);
 
-  // Listen for user data changes (e.g. after favorite list modifications on other pages)
-  useEffect(() => {
-    const handler = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const freshUser = JSON.parse(storedUser);
-          const userLists = freshUser?.favoriteLists?.items as FavoriteList[] | undefined;
-          const memberIds = new Set<string>();
-          const myItemId = (props.productId || props.clusterId || 0) as number;
-          const myIsProduct = !!props.productId;
-          (userLists || []).forEach((list: FavoriteList) => {
-            // FavoriteList.products / .clusters are ProductsResponse with .items: IBaseProduct[].
-            // We narrow to Product/Cluster at the call site by id field.
-            const productItems = (list?.products?.items ?? []) as Array<Product | Cluster>;
-            const clusterItems = (list?.clusters?.items ?? []) as Array<Product | Cluster>;
-            if (myIsProduct) {
-              if (productItems.some((item) => 'productId' in item && item.productId === myItemId)) {
-                memberIds.add(String(list.id));
-              }
-            } else {
-              const inProducts = productItems.some((item) => 'clusterId' in item && item.clusterId === myItemId);
-              const inClusters = clusterItems.some((item) => 'clusterId' in item && item.clusterId === myItemId);
-              if (inProducts || inClusters) {
-                memberIds.add(String(list.id));
-              }
-            }
-          });
-          setMemberListIds(memberIds);
-        } catch (e) {
-          // ignore parse errors
-        }
-      }
-    };
-    window.addEventListener('userLoggedIn', handler);
-    return () => window.removeEventListener('userLoggedIn', handler);
-  }, [props.productId, props.clusterId]);
+  // Note: the previous build listened for a global `userLoggedIn` window
+  // event and re-read the user from localStorage to refresh membership.
+  // That cross-tab listener has been removed (Phase D.3 / D.4): the parent
+  // AuthContext propagates user changes via the `user` prop, so the effect
+  // above already re-runs and updates membership. A separately-tab login is
+  // an edge case the SDK doesn't currently support cleanly anyway.
 
   return (
     <>

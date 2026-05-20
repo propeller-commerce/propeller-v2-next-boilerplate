@@ -164,9 +164,9 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       };
       const viewer = await userService.getViewer(viewerInput);
       const user = viewer as Contact | Customer;
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: { user } }));
-      }
+      // Phase D.3: no longer dispatches `userLoggedIn` to coordinate
+      // host-side state. The caller receives `user` in the return value and
+      // is responsible for updating its own auth store.
       return { success: true, user, accessToken, refreshToken, expiresAt };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Login failed';

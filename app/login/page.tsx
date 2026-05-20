@@ -7,11 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import LoginForm from '@/components/propeller/LoginForm';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient, getServices } from '@/lib/api';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
-import { Cart, CartService, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref, config } from '@/data/config';
 import { fetchActiveCart } from '@/composables/shared/utils/fetchActiveCart';
@@ -129,7 +129,7 @@ export default function LoginPage() {
 
                       if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
                         try {
-                          await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId });
+                          await getServices(graphqlClient).cart.deleteCart({ id: anonymousCart.cartId });
                         } catch (e) {
                           console.error('[auth] Failed to delete anonymous cart', e);
                         }

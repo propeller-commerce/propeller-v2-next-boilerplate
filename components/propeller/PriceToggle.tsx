@@ -1,9 +1,7 @@
 'use client';
 /**
- * @rsc-blocked — Client-only component: browser-only APIs (window/document/storage).
- * Must be rendered inside (or below) a Client Component boundary; cannot be
- * imported directly into a React Server Component. The 'use client' header
- * above marks this boundary to Next.js.
+ * @rsc-blocked — Client-only component: interactive state (useState).
+ * Must be rendered inside (or below) a Client Component boundary.
  */
 import * as React from 'react';
 
@@ -17,37 +15,57 @@ export interface PriceToggleProps {
   label?: string;
 
   /**
-   * Initial state of the toggle.
+   * Controlled mode: current on/off state (true = incl. VAT).
+   * When supplied, the component does not own its state — the parent does.
+   * Pair with `onChange` to receive flips.
+   */
+  value?: boolean;
+
+  /**
+   * Controlled mode: notified on every flip with the new state.
+   * Required when `value` is supplied. Optional otherwise (uncontrolled).
+   */
+  onChange?: (on: boolean) => void;
+
+  /**
+   * Uncontrolled mode: initial state of the toggle.
+   * Ignored when `value` is supplied (controlled mode).
    * Defaults to true (incl. VAT).
    */
   initialState?: boolean;
 
   /**
-   * Required callback fired when the toggle is switched.
-   * Receives the new state: true = incl. VAT, false = excl. VAT.
+   * @deprecated Use `onChange` instead. Alias kept for back-compat with
+   * existing call sites; receives the same boolean as `onChange`.
    */
-  inclExclVatSwitched: (on: boolean) => void;
+  inclExclVatSwitched?: (on: boolean) => void;
 
   /** Extra CSS class applied to the root element. */
   className?: string;
 }
+
 function PriceToggle(props: PriceToggleProps) {
-  const [isOn, setIsOn] = useState(props.initialState ?? true);
+  const isControlled = props.value !== undefined;
+  // Uncontrolled local state — only used when `value` isn't supplied.
+  const [internal, setInternal] = useState<boolean>(props.initialState ?? true);
+  const isOn = isControlled ? !!props.value : internal;
   const label = props.label || 'Prices:';
   const statusText = isOn ? 'Incl. VAT' : 'Excl. VAT';
+
   function handleToggle(): void {
     const newValue = !isOn;
-    setIsOn(newValue);
-    if (props.inclExclVatSwitched) {
-      props.inclExclVatSwitched(newValue);
+    if (!isControlled) {
+      setInternal(newValue);
     }
-    window.dispatchEvent(
-      new CustomEvent('priceToggleChanged', { detail: newValue }),
-    );
+    // Notify parent. Phase D.3: the package no longer dispatches a global
+    // `priceToggleChanged` window event — coordinating tax-inclusive across
+    // components is the host's job (via PriceContext or whatever store the
+    // host uses). The host's onChange handler will update the store and the
+    // PropellerProvider value will propagate `includeTax` reactively.
+    props.onChange?.(newValue);
+    props.inclExclVatSwitched?.(newValue);
   }
-  // Note: the previous code re-set isOn from props.initialState in a
-  // useEffect — redundant with the lazy initializer above and a
-  // set-state-in-effect anti-pattern, so it was removed.
+
   return (
     <div
       className={`propeller-price-toggle flex items-center gap-2 ${props.className || ''}`}

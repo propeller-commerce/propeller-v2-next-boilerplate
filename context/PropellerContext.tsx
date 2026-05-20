@@ -1,20 +1,20 @@
 'use client';
 
-import { createContext, useContext, useMemo, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { GraphQLClient, Contact, Customer } from 'propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
-import { useAuth } from '@/context/AuthContext';
-import { useCompany } from '@/context/CompanyContext';
-import { usePrice } from '@/context/PriceContext';
-import { useLanguage } from '@/context/LanguageContext';
 
 /**
  * Tier 1 infrastructure context. Aggregates the repetitive "infra" values
- * (graphqlClient, user, companyId, language, includeTax, configuration,
- * portalMode) that ~20 propeller components otherwise receive as cascaded
- * props. Reads the already-mounted Auth/Company/Price/Language providers plus
- * the module-level singletons so pages no longer have to wire these manually.
+ * that ~20 propeller components otherwise receive as cascaded props.
+ *
+ * Phase D refactor (2026-05-20): the provider now takes its value object as
+ * an explicit prop. Previously it imported the host app's AuthContext /
+ * CompanyContext / PriceContext / LanguageContext directly, which was fine
+ * for the monolithic boilerplate but blocks extraction into a standalone
+ * package — a published `@propeller/react` cannot assume the consumer's
+ * auth library or react-context naming. The host now does the aggregation
+ * and passes the result in via `value`. See app/layout.tsx in this repo
+ * for the canonical wire-up.
  */
 export interface PropellerInfra {
   graphqlClient: GraphQLClient;
@@ -22,38 +22,43 @@ export interface PropellerInfra {
   companyId: number | undefined;
   language: string;
   includeTax: boolean;
-  configuration: typeof config;
+  /**
+   * Free-form configuration bag forwarded to components. Today the only
+   * field the propeller surface reads from it is `currency`, but kept as
+   * `unknown` so consumers can stuff extra config in for their own use
+   * without changing this interface.
+   */
+  configuration: unknown;
   portalMode: string;
 }
 
 const PropellerContext = createContext<PropellerInfra | null>(null);
 
-export function PropellerProvider({ children }: { children: ReactNode }) {
-  const { state } = useAuth();
-  const { selectedCompany } = useCompany();
-  const { includeTax } = usePrice();
-  const { language } = useLanguage();
+export interface PropellerProviderProps {
+  /** The infra value object. Reactive — the provider passes it through as-is. */
+  value: PropellerInfra;
+  children: ReactNode;
+}
 
-  const user = state.user;
-  const companyId = selectedCompany?.companyId;
-
-  // Only the 4 reactive values are deps. graphqlClient/config/portalMode are
-  // module constants and never change at runtime, so a stable value object is
-  // produced — context consumers only re-render on intentional cache-busts
-  // (auth/company/language/tax), not on every parent render.
-  const value = useMemo<PropellerInfra>(
-    () => ({
-      graphqlClient,
-      user,
-      companyId,
-      language,
-      includeTax,
-      configuration: config,
-      portalMode: config.portal.mode,
-    }),
-    [user, companyId, language, includeTax],
-  );
-
+/**
+ * Provider — host wires its own Auth / Company / Price / Language stores
+ * into the `value` object. The package imports zero host contexts.
+ *
+ * @example
+ * // host app/layout.tsx
+ * function Providers({ children }) {
+ *   const { state } = useAuth();
+ *   const { selectedCompany } = useCompany();
+ *   const { includeTax } = usePrice();
+ *   const { language } = useLanguage();
+ *   const value = useMemo(() => ({
+ *     graphqlClient, user: state.user, companyId: selectedCompany?.companyId,
+ *     language, includeTax, configuration: config, portalMode: config.portal.mode,
+ *   }), [state.user, selectedCompany, includeTax, language]);
+ *   return <PropellerProvider value={value}>{children}</PropellerProvider>;
+ * }
+ */
+export function PropellerProvider({ value, children }: PropellerProviderProps) {
   return (
     <PropellerContext.Provider value={value}>
       {children}

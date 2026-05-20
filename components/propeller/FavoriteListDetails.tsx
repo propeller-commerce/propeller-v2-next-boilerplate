@@ -23,6 +23,7 @@ import { useFavorites } from '@/composables/react/useFavorites';
 import { useProductSearch } from '@/composables/react/useProductSearch';
 import { useCart } from '@/composables/react/useCart';
 import { useInfraProps } from '@/composables/react/useInfraProps';
+import { getServices } from '@/lib/api';
 import FavoriteListItem from './FavoriteListItem';
 import GridPagination from './GridPagination';
 import { getLabel } from '@/composables/shared/utils/labelHelpers';
@@ -403,8 +404,7 @@ function FavoriteListDetails(rawProps: FavoriteListDetailsProps) {
     if (!props.graphqlClient || !props.favoriteListId) return;
     setLoading(true);
     try {
-      const { FavoriteListService } = await import('propeller-sdk-v2');
-      const service = new FavoriteListService(props.graphqlClient);
+      const service = getServices(props.graphqlClient).favoriteList;
       const list = await service.getFavoriteList(
         buildFetchVariables() as unknown as FavoriteListVariables
       );

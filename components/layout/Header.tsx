@@ -12,7 +12,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import SearchBar from '@/components/propeller/SearchBar';
 import PropellerMenu from '@/components/propeller/Menu';
 import PriceToggle from '@/components/propeller/PriceToggle';
-import { graphqlClient } from '@/lib/api';
+import { graphqlClient, getServices } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
@@ -20,7 +20,7 @@ import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
 import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
 import CompanySwitcher from '@/components/propeller/CompanySwitcher';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, CartService, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { stripLeadingUnderscores } from '@/data/defaults';
 import { fetchActiveCart as fetchActiveCartShared } from '@/composables/shared/utils/fetchActiveCart';
 import { mergeAnonymousCart } from '@/composables/shared/utils/mergeAnonymousCart';
@@ -350,7 +350,7 @@ export default function Header() {
 
                         if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
                           try {
-                            await new CartService(graphqlClient).deleteCart({ id: anonymousCart.cartId });
+                            await getServices(graphqlClient).cart.deleteCart({ id: anonymousCart.cartId });
                           } catch (e) {
                             console.error('[auth] Failed to delete anonymous cart', e);
                           }

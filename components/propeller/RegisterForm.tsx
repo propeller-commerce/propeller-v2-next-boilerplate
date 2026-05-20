@@ -273,9 +273,9 @@ function RegisterForm(rawProps: RegisterFormProps) {
 
     if (result.success) {
       setSubmitted(true);
-      if (autoLogin && typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
-      }
+      // Phase D.3: the package no longer dispatches a global `userLoggedIn`
+      // event — the host's `afterRegistration` callback (below) is the
+      // documented hook for "user just registered/logged in, refresh stores".
       if (props.afterRegistration) {
         props.afterRegistration(
           (result.user ?? null) as Contact | Customer,

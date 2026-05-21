@@ -1,5 +1,6 @@
 import { LoginService, UserService, LoginInput } from 'propeller-sdk-v2';
 import { graphqlClient, toPlain } from '../api';
+import { pickUserHint } from '../userHint';
 import toast from 'react-hot-toast';
 import { ViewerInput } from 'propeller-sdk-v2';
 
@@ -76,9 +77,11 @@ export class AuthService {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ accessToken, refreshToken }),
                 });
-                // `user` is non-sensitive profile data kept only as a render
-                // hint for fast hydration; it is re-validated via the proxy.
-                localStorage.setItem('user', JSON.stringify(toPlain(user)));
+                // Persist ONLY the thin render hint (id, type, name,
+                // companyId) — never the full Contact. The full profile is
+                // re-fetched via getViewer() on mount; see lib/userHint.ts.
+                const hint = pickUserHint(toPlain(user));
+                if (hint) localStorage.setItem('user', JSON.stringify(hint));
                 window.dispatchEvent(new CustomEvent('userLoggedIn'));
             }
 

@@ -67,9 +67,14 @@ function CheckoutPageInner() {
   const [quoteNotes, setQuoteNotes] = useState('');
 
   useEffect(() => {
-    // Wait for auth to finish hydrating before initializing checkout
-    // This prevents the flash where addresses aren't loaded yet
+    // Wait for auth to finish hydrating before initializing checkout.
+    // `isLoading` alone is not enough: since Phase A-bis it flips to false
+    // at the thin-hint paint step, while `authState.user` (the full
+    // Contact, with addresses + company) is still null until getViewer()
+    // resolves. Pre-populating cart addresses needs the full user, so for
+    // an authenticated visitor we also wait for `authState.user`.
     if (authState.isLoading) return;
+    if (authState.isAuthenticated && !authState.user) return;
 
     const initializeCheckout = async () => {
       let cartToUse = contextCart;

@@ -8,11 +8,27 @@ import { authService } from '@/lib/services/AuthService';
 import { graphqlClient } from '@/lib/api';
 import { toPlain } from 'propeller-v2-react-ui';
 import { localizeHref } from '@/data/config';
+import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
 
 type User = Contact | Customer;
 
 interface AuthState {
+  /**
+   * The full Contact/Customer. Populated by a fresh `getViewer()` call —
+   * on mount, on login, on refresh. NOT restored from localStorage; the
+   * only thing cached there is the thin `UserHint`. So between a page
+   * mount and the getViewer() round-trip completing, `user` is `null`
+   * even for an authenticated visitor — consumers that need deep fields
+   * (addresses, company tree, PA configs) must tolerate that gap.
+   */
   user: User | null;
+  /**
+   * The thin render hint — `{userId,type,firstName,lastName,companyId}`.
+   * Restored synchronously from localStorage so the UI can paint the
+   * header greeting / authenticated state instantly, before `user`
+   * arrives. Carries no PII beyond a name. See lib/userHint.ts.
+   */
+  userHint: UserHint | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -36,10 +52,15 @@ type AuthAction =
   | { type: 'AUTH_LOGOUT' }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'UPDATE_USER'; payload: Partial<User> };
+  | { type: 'UPDATE_USER'; payload: Partial<User> }
+  // Instant-paint hydration from the localStorage hint — sets the thin
+  // `userHint` + `isAuthenticated`, but leaves `user` null until the
+  // companion getViewer() call resolves.
+  | { type: 'AUTH_HINT'; payload: { userHint: UserHint } };
 
 const initialState: AuthState = {
   user: null,
+  userHint: null,
   isAuthenticated: false,
   isLoading: true,
   error: null,
@@ -54,10 +75,22 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: true,
         error: null,
       };
+    case 'AUTH_HINT':
+      // Instant paint from the localStorage hint. `user` stays null — the
+      // full profile arrives via the companion getViewer() / AUTH_SUCCESS.
+      return {
+        ...state,
+        userHint: action.payload.userHint,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      };
     case 'AUTH_SUCCESS':
       return {
         ...state,
         user: action.payload.user,
+        // Keep the thin hint in step with the full user.
+        userHint: pickUserHint(action.payload.user),
         accessToken: action.payload.accessToken,
         isAuthenticated: true,
         isLoading: false,
@@ -67,6 +100,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...state,
         user: null,
+        userHint: null,
         accessToken: null,
         isAuthenticated: false,
         isLoading: false,
@@ -76,6 +110,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...state,
         user: null,
+        userHint: null,
         accessToken: null,
         isAuthenticated: false,
         isLoading: false,
@@ -126,11 +161,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Initialize auth state on mount.
   //
-  // The JWT now lives only in an httpOnly cookie that JS cannot read. We ask
-  // the server (/api/auth/me) whether that cookie is present, and if so hydrate
-  // the UI from the non-sensitive `user` render hint in localStorage. No token
-  // is read or injected client-side — the /api/graphql proxy attaches it from
-  // the cookie, and the real GraphQL API validates it on the next data call.
+  // The JWT lives only in an httpOnly cookie that JS cannot read. We ask the
+  // server (/api/auth/me) whether that cookie is present. If so:
+  //
+  //  1. Paint immediately from the thin `UserHint` in localStorage — enough
+  //     for the header greeting and the authenticated UI state, no PII.
+  //  2. Fetch the full Contact/Customer with getViewer() (refreshUser). It
+  //     replaces `state.user` when it lands. The full profile is NEVER
+  //     restored from localStorage — only ever fetched fresh — so an XSS
+  //     reading localStorage gets the thin hint, not the whole profile.
+  //
+  // Between step 1 and step 2 resolving, `state.user` is null for an
+  // authenticated visitor; `state.userHint` carries the paint data.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -141,18 +183,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { authenticated } = (await res.json()) as { authenticated: boolean };
         if (cancelled) return;
 
-        const storedUser = localStorage.getItem('user');
-        if (authenticated && storedUser) {
-          const user = sanitizeUser(JSON.parse(storedUser));
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user, accessToken: '' },
-          });
-        } else {
-          // No session cookie (or no cached profile) — stale hint, clear it.
-          if (!authenticated) localStorage.removeItem('user');
+        if (!authenticated) {
+          // No session cookie — drop any stale hint and finish loading.
+          localStorage.removeItem('user');
           dispatch({ type: 'SET_LOADING', payload: false });
+          return;
         }
+
+        // Step 1 — instant paint from the thin hint, if present and valid.
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (isUserHint(parsed)) {
+              dispatch({ type: 'AUTH_HINT', payload: { userHint: parsed } });
+            } else {
+              // Stale full-Contact shape from before Phase A-bis — discard.
+              localStorage.removeItem('user');
+            }
+          } catch {
+            localStorage.removeItem('user');
+          }
+        }
+
+        // Step 2 — fetch the full profile. refreshUser dispatches
+        // AUTH_SUCCESS (and rewrites the thin hint) when it resolves.
+        await refreshUser();
+        if (cancelled) return;
+
+        // If we had no valid hint AND getViewer() returned nothing, settle
+        // the loading flag so the UI doesn't spin forever.
+        dispatch({ type: 'SET_LOADING', payload: false });
       } catch (error) {
         if (cancelled) return;
         console.error('Error initializing auth:', error);
@@ -164,6 +225,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       cancelled = true;
     };
+    // refreshUser is a stable useCallback (empty deps) — safe to omit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Login function
@@ -275,8 +338,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'UPDATE_USER', payload: userData });
 
     if (typeof window !== 'undefined' && state.user) {
-      const updatedUser = { ...state.user, ...userData };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Persist only the thin hint — never the full (PII-bearing) Contact.
+      const updatedUser = { ...state.user, ...userData } as User;
+      const hint = pickUserHint(updatedUser);
+      if (hint) localStorage.setItem('user', JSON.stringify(hint));
     }
   }, [state.user]);
 
@@ -286,7 +351,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const viewerData = await userService.getViewer({});
       if (viewerData) {
         const plain = toPlain(viewerData) as User;
-        localStorage.setItem('user', JSON.stringify(plain));
+        // localStorage gets ONLY the thin hint. The full profile lives in
+        // React state for this page session and is never serialized.
+        const hint = pickUserHint(plain);
+        if (hint) localStorage.setItem('user', JSON.stringify(hint));
         // accessToken in reducer state is vestigial — the JWT lives only in the
         // httpOnly cookie and is injected by the /api/graphql proxy.
         dispatch({
@@ -313,19 +381,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Listen for external auth events (e.g. from other tabs)
   useEffect(() => {
     const handleUserLoggedIn = async () => {
-      // Cross-tab / post-login signal. The token is in the httpOnly cookie, so
-      // confirm the session server-side and hydrate from the user hint.
+      // Cross-tab / post-login signal. The token is in the httpOnly cookie,
+      // so confirm the session server-side, paint from the thin hint, then
+      // fetch the full profile — same two-step as the mount path.
       try {
         const res = await fetch('/api/auth/me');
         const { authenticated } = (await res.json()) as { authenticated: boolean };
-        const storedUser = localStorage.getItem('user');
-        if (authenticated && storedUser) {
-          const user = sanitizeUser(JSON.parse(storedUser));
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user, accessToken: '' },
-          });
+        if (!authenticated) return;
+
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (isUserHint(parsed)) {
+              dispatch({ type: 'AUTH_HINT', payload: { userHint: parsed } });
+            }
+          } catch {
+            /* malformed hint — refreshUser below still repopulates */
+          }
         }
+        await refreshUser();
       } catch (e) {
         console.error('Failed to resolve session on userLoggedIn event:', e);
       }

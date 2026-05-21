@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../page-objects/LoginPage';
-import { getAccessToken } from '../../helpers/auth';
+import { getAccessToken, clearAuth } from '../../helpers/auth';
 
 // These tests run with the contact storageState already applied
 
@@ -59,14 +59,13 @@ test.describe('Contact — login & auth state', () => {
   });
 
   test('login with wrong password shows error', async ({ page }) => {
-    // Navigate first (must be on site to access localStorage)
+    // Fully clear the session — expire the httpOnly auth cookie AND the
+    // localStorage hint. Removing only the hint is no longer a logout:
+    // since Phase A-bis the cookie is the source of truth and the client
+    // re-fetches the user via getViewer(), so a hint-only clear would leave
+    // the visitor authenticated and /login would redirect away.
     await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('expiresAt');
-      localStorage.removeItem('user');
-    });
+    await clearAuth(page);
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 

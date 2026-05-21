@@ -7,7 +7,7 @@ import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { Order, OrderItem, Company } from 'propeller-sdk-v2';
 import { useOrders } from 'propeller-v2-react-ui';
 import { OrderSummary } from 'propeller-v2-react-ui';

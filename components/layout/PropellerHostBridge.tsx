@@ -17,7 +17,7 @@
  */
 
 import { useMemo, ReactNode } from 'react';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient, services } from '@/lib/api';
 import { config } from '@/data/config';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
@@ -31,13 +31,14 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
   const { includeTax } = usePrice();
   const { language } = useLanguage();
 
-  // Only the 4 reactive values are deps; graphqlClient/config/portalMode are
-  // module constants and never change at runtime, so a stable value object
+  // Only the 4 reactive values are deps; graphqlClient/services/config/portalMode
+  // are module constants and never change at runtime, so a stable value object
   // is produced — context consumers only re-render on intentional cache-busts
   // (auth/company/language/tax), not on every parent render.
   const value = useMemo<PropellerInfra>(
     () => ({
       graphqlClient,
+      services,
       user: state.user,
       companyId: selectedCompany?.companyId,
       language,

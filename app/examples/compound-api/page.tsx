@@ -16,7 +16,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Product } from 'propeller-sdk-v2';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
 import { ProductCard } from 'propeller-v2-react-ui';
 import { ProductGrid } from 'propeller-v2-react-ui';

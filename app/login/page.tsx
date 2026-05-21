@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoginForm } from 'propeller-v2-react-ui';
-import { graphqlClient, getServices } from 'propeller-v2-react-ui';
+import { graphqlClient, services } from '@/lib/api';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
@@ -98,7 +98,7 @@ export default function LoginPage() {
                     }
 
                     let targetCart = await fetchActiveCart({
-                      graphqlClient,
+                      services,
                       user: loggedInUser as Contact | Customer,
                       companyId: company?.companyId,
                       language,
@@ -109,7 +109,7 @@ export default function LoginPage() {
                     if (anonymousCart?.items?.length) {
                       if (!targetCart) {
                         targetCart = await initCart({
-                          graphqlClient,
+                          services,
                           user: loggedInUser as Contact | Customer,
                           companyId: company?.companyId,
                           language,
@@ -118,7 +118,7 @@ export default function LoginPage() {
                         });
                       }
                       const merged = await mergeAnonymousCart({
-                        graphqlClient,
+                        services,
                         targetCartId: targetCart.cartId,
                         anonymousCart,
                         language,
@@ -129,7 +129,7 @@ export default function LoginPage() {
 
                       if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
                         try {
-                          await getServices(graphqlClient).cart.deleteCart({ id: anonymousCart.cartId });
+                          await services.cart.deleteCart({ id: anonymousCart.cartId });
                         } catch (e) {
                           console.error('[auth] Failed to delete anonymous cart', e);
                         }

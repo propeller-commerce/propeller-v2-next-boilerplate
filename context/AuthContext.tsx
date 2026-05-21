@@ -5,7 +5,8 @@ import { Contact, Customer, PurchaseRole, UserService } from 'propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
-import { graphqlClient, toPlain } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
+import { toPlain } from 'propeller-v2-react-ui';
 import { localizeHref } from '@/data/config';
 
 type User = Contact | Customer;

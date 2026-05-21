@@ -10,7 +10,7 @@ import Footer from '@/components/layout/Footer';
 import { CartSummary } from 'propeller-v2-react-ui';
 import { AddressCard } from 'propeller-v2-react-ui';
 
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from 'propeller-sdk-v2';

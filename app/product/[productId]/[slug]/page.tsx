@@ -33,7 +33,7 @@ import { ProductBulkPrices } from 'propeller-v2-react-ui';
 import { ProductShortDescription } from 'propeller-v2-react-ui';
 import { ItemStock } from 'propeller-v2-react-ui';
 import { ProductGallery } from 'propeller-v2-react-ui';
-import { fetchProduct, getServerInfra } from 'propeller-v2-react-ui/server';
+import { fetchProduct, getServerInfra } from '@/lib/server';
 import { config } from '@/data/config';
 import { getLanguageString } from 'propeller-v2-react-ui/shared';
 import { ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';

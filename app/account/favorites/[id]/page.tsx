@@ -7,7 +7,7 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
 import { type FavoriteList } from 'propeller-sdk-v2';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { useFavorites } from 'propeller-v2-react-ui';
 import Link from 'next/link';
 import toast from 'react-hot-toast';

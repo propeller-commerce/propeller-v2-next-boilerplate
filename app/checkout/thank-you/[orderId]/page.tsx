@@ -9,7 +9,7 @@ import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useOrders } from 'propeller-v2-react-ui';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { OrderSummary } from 'propeller-v2-react-ui';
 import { Order, OrderItem } from 'propeller-sdk-v2';

@@ -37,7 +37,6 @@ import type { Category } from 'propeller-sdk-v2';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from 'propeller-v2-react-ui';
 import { config, localizeHref } from '@/data/config';
 
 export interface ProductDetailIslandProps {
@@ -56,7 +55,7 @@ export interface ProductDetailIslandProps {
 export default function AddToCartIsland({ product, productId }: ProductDetailIslandProps) {
   const router = useRouter();
   const { cart, saveCart } = useCart();
-  const { state, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const { language } = useLanguage();
 
   // Update URL slug when the user switches language. Uses replaceState to
@@ -86,8 +85,6 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
         />
         <AddToFavorite
-          graphqlClient={graphqlClient}
-          user={state.user}
           productId={product.productId}
           onFavoriteChanged={refreshUser}
         />

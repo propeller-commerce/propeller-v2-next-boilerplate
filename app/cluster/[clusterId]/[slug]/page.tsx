@@ -9,7 +9,7 @@ import { ClusterConfigurator } from 'propeller-v2-react-ui';
 import { ClusterOptions } from 'propeller-v2-react-ui';
 import { ClusterInfo } from 'propeller-v2-react-ui';
 import { Cart, Cluster, CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import { ProductGallery } from 'propeller-v2-react-ui';
 import { Breadcrumbs } from 'propeller-v2-react-ui';

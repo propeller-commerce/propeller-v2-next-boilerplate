@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { graphqlClient, getServices } from 'propeller-v2-react-ui';
+import { graphqlClient, services } from '@/lib/api';
 import { useMenu } from 'propeller-v2-react-ui';
 import type { Cluster, Product } from 'propeller-sdk-v2';
 import { CategoryQueryVariables } from 'propeller-sdk-v2';
@@ -61,7 +61,7 @@ export default function HomeFallback() {
           imageSearchFilters: imageSearchFiltersGrid,
           imageVariantFilters: imageVariantFiltersMedium,
         };
-        const categoryData = await getServices().category.getCategory(categoryQueryVariables);
+        const categoryData = await services.category.getCategory(categoryQueryVariables);
         if (categoryData.products?.items) {
           setFeaturedProducts(categoryData.products.items.slice(0, 8) as (Product | Cluster)[]);
         }

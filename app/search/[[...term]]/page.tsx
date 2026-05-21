@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { graphqlClient } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { AttributeFilter, AttributeType, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from 'propeller-sdk-v2';
 import { ProductGrid } from 'propeller-v2-react-ui';
 import { GridToolbar } from 'propeller-v2-react-ui';

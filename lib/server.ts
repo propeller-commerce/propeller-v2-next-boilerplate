@@ -46,6 +46,11 @@ import {
   type Category,
 } from 'propeller-sdk-v2';
 import { createServices, toPlain, type Services } from 'propeller-v2-react-ui/shared';
+import {
+  imageSearchFilters,
+  imageVariantFiltersMedium,
+  imageVariantFiltersLarge,
+} from '@/data/defaults';
 
 // ── Environment ──────────────────────────────────────────────────────────────
 
@@ -176,6 +181,12 @@ export async function getServerInfra(): Promise<ServerInfra> {
  * Fetch a single product by ID with default media/transform shape.
  * Throws on network or non-partial GraphQL errors; returns `null` if the
  * product genuinely doesn't exist.
+ *
+ * `imageVariantFilters` MUST request at least one transformation: the
+ * backend only populates `image.imageVariants[].url` for transformations
+ * that were asked for. An empty `transformations: []` returns image items
+ * with empty variant arrays — which is why the PDP gallery rendered blank.
+ * We request the `large` variant (the gallery's size).
  */
 export async function fetchProduct(
   infra: ServerInfra,
@@ -186,8 +197,8 @@ export async function fetchProduct(
     const result = await infra.services.product.getProduct({
       productId,
       language: language ?? infra.language,
-      imageSearchFilters: {},
-      imageVariantFilters: { transformations: [] },
+      imageSearchFilters,
+      imageVariantFilters: imageVariantFiltersLarge,
     });
     return result ? (toPlain(result) as Product) : null;
   } catch (e) {
@@ -211,8 +222,9 @@ export async function fetchCategory(
     const result = await infra.services.category.getCategory({
       categoryId,
       language: language ?? infra.language,
-      imageSearchFilters: {},
-      imageVariantFilters: { transformations: [] },
+      imageSearchFilters,
+      // Category product listings use the grid-sized variant.
+      imageVariantFilters: imageVariantFiltersMedium,
     });
     return result ? (toPlain(result) as Category) : null;
   } catch (e) {

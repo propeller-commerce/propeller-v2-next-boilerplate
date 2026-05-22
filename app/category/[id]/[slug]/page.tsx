@@ -174,7 +174,17 @@ export default async function CategoryPage({
           {/* Everything interactive — breadcrumbs (config has non-serializable
               URL builders), filters, toolbar, grid, pagination — lives in the
               client island, seeded with the server-fetched first page. */}
+          {/* key={categoryId} forces a fresh mount on every category change.
+              The island seeds all its state (filters, sort, page, category,
+              facet sidebar) from `initialParams`/`initialCategory` via
+              `useState` initializers, which only run on mount. Without the key,
+              a soft navigation to another category reuses the same instance and
+              carries the previous category's active filters into the new
+              category's fetch — the backend then returns 0 products (a filter
+              the new category's facets don't have), and only a full refresh
+              fixes it. The key makes navigation behave like a refresh. */}
           <CategoryIsland
+            key={categoryId}
             categoryId={categoryId}
             initialSlug={slug}
             initialCategory={category}

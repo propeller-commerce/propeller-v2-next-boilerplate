@@ -99,7 +99,15 @@ export default async function SearchPage({
           {/* Search heading — server-rendered, pure RSC component. */}
           <GridTitle title={heading} language={infra.language} />
 
+          {/* key forces a fresh mount when the search term changes. The island
+              seeds all its state (filters, sort, page) from `initialParams` via
+              `useState` initializers, which only run on mount. Without the key,
+              changing the term (or going term → all-products) reuses the same
+              instance and carries the previous term's active filters into the
+              new fetch, returning 0 products until a full refresh. Mirrors the
+              category page fix. */}
           <SearchIsland
+            key={term || '__all__'}
             term={term}
             isAllProducts={isAllProducts}
             initialProducts={initialProducts}

@@ -131,6 +131,15 @@ export interface CreateServerClientOptions {
   endpoint?: string;
   /** Override the API key (defaults to BOILERPLATE_API_KEY). */
   apiKey?: string;
+  /**
+   * Bearer token to attach as a static `Authorization` header. Required for
+   * authenticated SSR queries: the SDK in `direct` mode sends the `apikey`
+   * header but NOT the Bearer token (its `getAccessToken` resolver is only
+   * consulted in `proxy` mode — see GraphQLClient.buildHeaders), so without
+   * this an authenticated query like `getViewer()` runs anonymously and the
+   * backend returns an empty viewer. The header is spread into every request.
+   */
+  bearerToken?: string;
 }
 
 /**
@@ -150,6 +159,10 @@ export function createServerClient(opts: CreateServerClientOptions = {}): GraphQ
     securityMode: 'direct',
     timeout: 30000,
     getAccessToken: opts.getAccessToken ?? readCookieAccessToken,
+    // Attach the Bearer token as a static header so `direct`-mode SDK calls
+    // are actually authenticated (the SDK doesn't send it otherwise — see
+    // CreateServerClientOptions.bearerToken).
+    ...(opts.bearerToken && { headers: { Authorization: `Bearer ${opts.bearerToken}` } }),
   };
   return new GraphQLClient(config);
 }
@@ -200,11 +213,13 @@ export interface ServerInfra {
  * trigger a refresh.
  */
 export async function getServerInfra(): Promise<ServerInfra> {
-  const client = createServerClient();
+  // Read the token FIRST so we can attach it as the client's Authorization
+  // header — `direct`-mode SDK calls aren't authenticated otherwise.
+  const token = await readCookieAccessToken();
+  const client = createServerClient({ bearerToken: token });
   const services = createServices(client);
 
   let user: Contact | Customer | null = null;
-  const token = await readCookieAccessToken();
   if (token) {
     try {
       const viewer = await services.user.getViewer({});
@@ -379,6 +394,19 @@ function resolveUserId(user: Contact | Customer | null): number | undefined {
 }
 
 /**
+ * Resolve the contact's `companyId` for product/search scoping. The client grid
+ * (propeller-v2-react-ui `useProductSearch`) ALWAYS scopes a contact's listing
+ * query by `user.company.companyId`, so the SSR fetch must do the same — else
+ * the server seeds products + filter facets from a broader (un-scoped)
+ * assortment than the company-scoped client re-fetch, and any filter the user
+ * picks from the seeded sidebar returns 0 products. Customers have no company.
+ */
+function resolveCompanyId(user: Contact | Customer | null): number | undefined {
+  if (!user || !('contactId' in user)) return undefined;
+  return (user as Contact).company?.companyId;
+}
+
+/**
  * Fetch a single category WITH its first page of products — the shape the
  * category page needs to server-render real product cards in the initial
  * HTML. Returns `null` when the category doesn't exist; throws on other
@@ -398,6 +426,7 @@ export async function fetchCategory(
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
   const userId = resolveUserId(infra.user);
+  const companyId = resolveCompanyId(infra.user);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -408,6 +437,7 @@ export async function fetchCategory(
     sortInputs,
     ...buildFilterInput(opts),
     ...(userId !== undefined && { userId }),
+    ...(companyId !== undefined && { companyId }),
   };
 
   try {
@@ -454,6 +484,7 @@ export async function fetchSearch(
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
   const userId = resolveUserId(infra.user);
+  const companyId = resolveCompanyId(infra.user);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -465,6 +496,7 @@ export async function fetchSearch(
     sortInputs,
     ...buildFilterInput(opts),
     ...(userId !== undefined && { userId }),
+    ...(companyId !== undefined && { companyId }),
   };
 
   try {

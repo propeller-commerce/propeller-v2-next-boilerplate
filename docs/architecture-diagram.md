@@ -141,12 +141,17 @@
 │                                                                                                                  │
 │  app/layout.tsx ─────────── Root server component, fetches CMS global, wraps Auth+Cart+Global providers          │
 │  app/(cms)/[...slug]/ ───── CMS catch-all for Strapi-managed pages                                               │
+│  app/{category,search,cluster,product}/ ── Hybrid-SSR pages: async server shell + "use client" island           │
+│  app/csr/ ───────────────── Legacy fully-client copies of the catalog pages (pre-SSR), comparison only           │
 │  app/account/layout.tsx ─── Client-side auth guard for all /account/* routes                                     │
-│  lib/api.ts ─────────────── GraphQLClient + 6 service singletons (endpoint: /api/graphql)                        │
+│  lib/api.ts ─────────────── Client-side GraphQLClient + service singletons (endpoint: /api/graphql)              │
+│  lib/server.ts ──────────── Server-side SDK helpers: getServerInfra / getAnonymousInfra / fetch{Product,…}       │
+│  lib/seo.ts ─────────────── SEO metadata resolvers consumed by generateMetadata (title / desc / canonical)        │
+│  lib/listingParams.ts ───── URL-query parser shared by the listing server pages and their client islands         │
 │  lib/cms/strapi.ts ──────── Strapi fetch helper (getPage, getGlobal, getCategoryBanner)                          │
 │  lib/services/ ──────────── BaseApiService subclasses with retry logic, error handling, caching                  │
 │  context/ ───────────────── AuthContext, CartContext, GlobalContext                                               │
-│  components/propeller/ ──── Hand-maintained React components (ProductGrid, AddToCart, etc.) — no codegen         │
+│  propeller-v2-react-ui ──── External npm package: Propeller components, hooks, contexts (+ /pure, /shared)        │
 │  components/cms/ ────────── DynamicBlockRenderer + block components for Strapi content                            │
 │  data/config.ts ─────────── Feature flags, URL builders, base category ID                                        │
 │  data/defaults.ts ───────── Pagination, search, cart, validation, timeout, cache defaults                        │

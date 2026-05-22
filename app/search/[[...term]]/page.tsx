@@ -19,9 +19,14 @@
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { GridTitle } from 'propeller-v2-react-ui/pure';
-import type { ProductsResponse } from 'propeller-sdk-v2';
+import { ProductSortField, type ProductsResponse } from 'propeller-sdk-v2';
 import { getListingInfra, fetchSearch, fetchCategory } from '@/lib/server';
 import { config } from '@/data/config';
+import {
+  parseListingParams,
+  buildTextFilters,
+  type RawSearchParams,
+} from '@/lib/listingParams';
 import SearchIsland from './SearchIsland';
 
 interface RouteParams {
@@ -33,24 +38,53 @@ export const revalidate = 300;
 
 export default async function SearchPage({
   params,
+  searchParams,
 }: {
   params: Promise<RouteParams>;
+  searchParams: Promise<RawSearchParams>;
 }) {
   const { term: termSegments } = await params;
   const term = termSegments?.[0] ? decodeURIComponent(termSegments[0]) : '';
   const isAllProducts = !term;
 
+  // Parse the URL query so the server-rendered first page reflects active
+  // filters / sort / page — a refreshed filtered search URL restores.
+  const listing = parseListingParams(
+    await searchParams,
+    ProductSortField.RELEVANCE
+  );
+
   const infra = await getListingInfra();
+
+  // The (possibly filtered) fetch options, straight from the URL.
+  const fetchOpts = {
+    page: listing.page,
+    offset: listing.offset,
+    sortField: listing.sortField,
+    sortOrder: listing.sortOrder,
+    textFilters: buildTextFilters(listing.filters),
+    priceFilterMin: listing.minPrice,
+    priceFilterMax: listing.maxPrice,
+  };
 
   // Term search → query the base category with a search term + boosted
   // fields. No term → plain base-category listing ("all products").
   let initialProducts: ProductsResponse | null = null;
   if (isAllProducts) {
-    const category = await fetchCategory(infra, config.baseCategoryId);
+    const category = await fetchCategory(
+      infra,
+      config.baseCategoryId,
+      fetchOpts
+    );
     initialProducts =
       (category?.products as ProductsResponse | undefined) ?? null;
   } else {
-    initialProducts = await fetchSearch(infra, config.baseCategoryId, term);
+    initialProducts = await fetchSearch(
+      infra,
+      config.baseCategoryId,
+      term,
+      fetchOpts
+    );
   }
 
   const heading = isAllProducts
@@ -69,6 +103,7 @@ export default async function SearchPage({
             term={term}
             isAllProducts={isAllProducts}
             initialProducts={initialProducts}
+            initialParams={listing}
           />
         </div>
       </main>

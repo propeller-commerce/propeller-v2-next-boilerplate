@@ -50,6 +50,8 @@ import {
   type ProductSortInput,
   type SearchFieldsInput,
   type FilterAvailableAttributeInput,
+  type ProductTextFilterInput,
+  type ProductPriceFilterInput,
   type ClusterConfigSetting,
   ProductStatus,
   ProductSortField,
@@ -324,8 +326,37 @@ export interface ListingFetchOptions {
   sortField?: ProductSortField;
   /** Sort direction. Defaults to DESC. */
   sortOrder?: SortOrder;
+  /**
+   * Active attribute (checkbox) filters. When supplied, the server-rendered
+   * first page is the *filtered* result — so refreshing a filtered URL
+   * server-renders products that match the URL, not the unfiltered set.
+   */
+  textFilters?: ProductTextFilterInput[];
+  /** Active price-range filter lower bound. */
+  priceFilterMin?: number;
+  /** Active price-range filter upper bound. */
+  priceFilterMax?: number;
   /** Language override. Defaults to `infra.language`. */
   language?: string;
+}
+
+/**
+ * Build the optional `textFilters` / `price` slice of a
+ * `CategoryProductSearchInput` from listing options. Mirrors the client
+ * `useProductSearch` listing path. Price defaults match the client's
+ * (`from: 0`, `to: 999999`).
+ */
+function buildFilterInput(opts: ListingFetchOptions): Partial<CategoryProductSearchInput> {
+  const slice: Partial<CategoryProductSearchInput> = {};
+  if (opts.textFilters?.length) slice.textFilters = opts.textFilters;
+  if (opts.priceFilterMin !== undefined || opts.priceFilterMax !== undefined) {
+    const price: ProductPriceFilterInput = {
+      from: opts.priceFilterMin ?? 0,
+      to: opts.priceFilterMax ?? 999999,
+    };
+    slice.price = price;
+  }
+  return slice;
 }
 
 /**
@@ -375,6 +406,7 @@ export async function fetchCategory(
     statuses: STOREFRONT_STATUSES,
     hidden: false,
     sortInputs,
+    ...buildFilterInput(opts),
     ...(userId !== undefined && { userId }),
   };
 
@@ -431,6 +463,7 @@ export async function fetchSearch(
     hidden: false,
     ...(term && { term, searchFields: SEARCH_FIELDS }),
     sortInputs,
+    ...buildFilterInput(opts),
     ...(userId !== undefined && { userId }),
   };
 

@@ -40,6 +40,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { parseListingParams, type ListingParams } from '@/lib/listingParams';
 
 interface CategoryIslandProps {
   /** Numeric category ID from the route. */
@@ -51,12 +52,20 @@ interface CategoryIslandProps {
    * (`products.items`, `products.pages`). Seeds the first paint.
    */
   initialCategory: Category;
+  /**
+   * The URL query parsed by the Server Component. The island seeds ALL of
+   * its filter/sort/page state from this — NOT from `window.location` — so
+   * the server-rendered markup and the client's first render agree (and a
+   * refreshed filtered URL restores correctly).
+   */
+  initialParams: ListingParams;
 }
 
 export default function CategoryIsland({
   categoryId,
   initialSlug,
   initialCategory,
+  initialParams,
 }: CategoryIslandProps) {
   const router = useRouter();
 
@@ -67,52 +76,26 @@ export default function CategoryIsland({
 
   const [category, setCategory] = useState<Category>(initialCategory);
 
-  // URL-derived state. Initialised from `window.location.search` so a paste /
-  // refresh with filter params restores correctly; on a clean URL this is the
-  // server-rendered first page.
-  const readSearch = (): URLSearchParams =>
-    typeof window === 'undefined'
-      ? new URLSearchParams()
-      : new URLSearchParams(window.location.search);
-
-  const [currentPage, setCurrentPage] = useState(() =>
-    parseInt(readSearch().get('page') || '1')
+  // URL-derived state — seeded from `initialParams` (parsed by the Server
+  // Component). Using the prop, not `window.location`, keeps the server HTML
+  // and the client's first render identical and restores a refreshed
+  // filtered URL correctly.
+  const [currentPage, setCurrentPage] = useState(initialParams.page);
+  const [filters, setFilters] = useState<Record<string, string[]>>(
+    initialParams.filters
   );
-  const [filters, setFilters] = useState<Record<string, string[]>>(() => {
-    const initial: Record<string, string[]> = {};
-    readSearch().forEach((value, key) => {
-      if (
-        !['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(
-          key
-        )
-      ) {
-        try {
-          initial[key] = JSON.parse(value);
-        } catch {
-          initial[key] = [value];
-        }
-      }
-    });
-    return initial;
-  });
-  const [minPrice, setMinPrice] = useState<number | undefined>(() => {
-    const v = readSearch().get('minPrice');
-    return v ? parseFloat(v) : undefined;
-  });
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(() => {
-    const v = readSearch().get('maxPrice');
-    return v ? parseFloat(v) : undefined;
-  });
-  const [offset, setOffset] = useState(() =>
-    parseInt(readSearch().get('offset') || '12')
+  const [minPrice, setMinPrice] = useState<number | undefined>(
+    initialParams.minPrice
   );
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(
+    initialParams.maxPrice
+  );
+  const [offset, setOffset] = useState(initialParams.offset);
   const [sortField, setSortField] = useState<ProductSortField>(
-    () =>
-      (readSearch().get('sortField') as ProductSortField) ||
-      ProductSortField.CATEGORY_ORDER
+    initialParams.sortField
   );
   const [sortOrder, setSortOrder] = useState<SortOrder>(
-    () => (readSearch().get('sortOrder') as SortOrder) || SortOrder.DESC
+    initialParams.sortOrder
   );
 
   // Seed the filter sidebar from the server-fetched filter facets so it
@@ -163,37 +146,26 @@ export default function CategoryIsland({
    */
   const releaseServerData = () => setUsingServerData(false);
 
-  // Keep URL-derived state in sync with the address bar after client-side
-  // navigations (router.push). On the first mount this produces no change
-  // (state was initialised from the same source).
+  // Keep URL-derived state in sync with the address bar after browser
+  // back/forward. Parsed via the same `parseListingParams` the Server
+  // Component uses, so the interpretation is identical.
   useEffect(() => {
     const onChange = () => {
-      const sp = new URLSearchParams(window.location.search);
-      const newFilters: Record<string, string[]> = {};
-      sp.forEach((value, key) => {
-        if (
-          !['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(
-            key
-          )
-        ) {
-          try {
-            newFilters[key] = JSON.parse(value);
-          } catch {
-            newFilters[key] = [value];
-          }
-        }
-      });
-      setCurrentPage(parseInt(sp.get('page') || '1'));
+      const next = parseListingParams(
+        new URLSearchParams(window.location.search),
+        ProductSortField.CATEGORY_ORDER
+      );
+      setCurrentPage(next.page);
       setFilters((prev) =>
-        JSON.stringify(prev) === JSON.stringify(newFilters) ? prev : newFilters
+        JSON.stringify(prev) === JSON.stringify(next.filters)
+          ? prev
+          : next.filters
       );
-      setMinPrice(sp.get('minPrice') ? parseFloat(sp.get('minPrice')!) : undefined);
-      setMaxPrice(sp.get('maxPrice') ? parseFloat(sp.get('maxPrice')!) : undefined);
-      setOffset(parseInt(sp.get('offset') || '12'));
-      setSortField(
-        (sp.get('sortField') as ProductSortField) || ProductSortField.CATEGORY_ORDER
-      );
-      setSortOrder((sp.get('sortOrder') as SortOrder) || SortOrder.DESC);
+      setMinPrice(next.minPrice);
+      setMaxPrice(next.maxPrice);
+      setOffset(next.offset);
+      setSortField(next.sortField);
+      setSortOrder(next.sortOrder);
     };
     window.addEventListener('popstate', onChange);
     return () => window.removeEventListener('popstate', onChange);

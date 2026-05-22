@@ -39,6 +39,12 @@ import {
   resolveCanonicalUrl,
   resolveSeoKeywords,
 } from '@/lib/seo';
+import {
+  parseListingParams,
+  buildTextFilters,
+  type RawSearchParams,
+} from '@/lib/listingParams';
+import { ProductSortField } from 'propeller-sdk-v2';
 import CategoryIsland from './CategoryIsland';
 
 interface RouteParams {
@@ -110,18 +116,37 @@ export const revalidate = 300;
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<RouteParams>;
+  searchParams: Promise<RawSearchParams>;
 }) {
   const { id, slug } = await params;
   const categoryId = Number.parseInt(id, 10);
   if (!Number.isFinite(categoryId)) notFound();
 
+  // Parse the URL query so the server-rendered first page reflects any
+  // active filters / sort / page — i.e. refreshing a filtered URL
+  // server-renders the filtered result, not the unfiltered set.
+  const listing = parseListingParams(
+    await searchParams,
+    ProductSortField.CATEGORY_ORDER
+  );
+
   // Anonymous → cacheable infra; authenticated → dynamic, personalised infra.
   const infra = await getListingInfra();
 
-  // Fetch the category + its first page of products in one server round-trip.
-  const category = await fetchCategory(infra, categoryId);
+  // Fetch the category + the (possibly filtered) first page in one
+  // server round-trip — the fetch options come straight from the URL.
+  const category = await fetchCategory(infra, categoryId, {
+    page: listing.page,
+    offset: listing.offset,
+    sortField: listing.sortField,
+    sortOrder: listing.sortOrder,
+    textFilters: buildTextFilters(listing.filters),
+    priceFilterMin: listing.minPrice,
+    priceFilterMax: listing.maxPrice,
+  });
   if (!category) notFound();
 
   // Resolve the localized category name for the server-rendered <h1>.
@@ -153,6 +178,7 @@ export default async function CategoryPage({
             categoryId={categoryId}
             initialSlug={slug}
             initialCategory={category}
+            initialParams={listing}
           />
         </div>
       </main>

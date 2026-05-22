@@ -37,6 +37,7 @@ import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
 import { useCompany } from '@/context/CompanyContext';
+import { parseListingParams, type ListingParams } from '@/lib/listingParams';
 
 interface SearchIslandProps {
   /** The search term (empty string for the "all products" listing). */
@@ -45,12 +46,20 @@ interface SearchIslandProps {
   isAllProducts: boolean;
   /** First page of results fetched server-side. Seeds the first paint. */
   initialProducts: ProductsResponse | null;
+  /**
+   * The URL query parsed by the Server Component. The island seeds all of
+   * its filter/sort/page state from this — NOT from `window.location` — so
+   * the server HTML and the client's first render agree, and a refreshed
+   * filtered URL restores correctly.
+   */
+  initialParams: ListingParams;
 }
 
 export default function SearchIsland({
   term,
   isAllProducts,
   initialProducts,
+  initialParams,
 }: SearchIslandProps) {
   const router = useRouter();
 
@@ -59,51 +68,25 @@ export default function SearchIsland({
   const [usingServerData, setUsingServerData] = useState(true);
   const releaseServerData = () => setUsingServerData(false);
 
-  const readSearch = (): URLSearchParams =>
-    typeof window === 'undefined'
-      ? new URLSearchParams()
-      : new URLSearchParams(window.location.search);
-
-  // URL-derived state.
-  const [currentPage, setCurrentPage] = useState(() =>
-    parseInt(readSearch().get('page') || '1')
+  // URL-derived state — seeded from `initialParams` (parsed by the Server
+  // Component), not `window.location`, for SSR/client consistency.
+  const [currentPage, setCurrentPage] = useState(initialParams.page);
+  const [minPrice, setMinPrice] = useState<number | undefined>(
+    initialParams.minPrice
   );
-  const [minPrice, setMinPrice] = useState<number | undefined>(() => {
-    const v = readSearch().get('minPrice');
-    return v ? parseFloat(v) : undefined;
-  });
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(() => {
-    const v = readSearch().get('maxPrice');
-    return v ? parseFloat(v) : undefined;
-  });
-  const [offset, setOffset] = useState(() =>
-    parseInt(readSearch().get('offset') || '12')
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(
+    initialParams.maxPrice
   );
+  const [offset, setOffset] = useState(initialParams.offset);
   const [sortField, setSortField] = useState<ProductSortField>(
-    () =>
-      (readSearch().get('sortField') as ProductSortField) ||
-      ProductSortField.RELEVANCE
+    initialParams.sortField
   );
   const [sortOrder, setSortOrder] = useState<SortOrder>(
-    () => (readSearch().get('sortOrder') as SortOrder) || SortOrder.DESC
+    initialParams.sortOrder
   );
-  const [filters, setFilters] = useState<Record<string, string[]>>(() => {
-    const initial: Record<string, string[]> = {};
-    readSearch().forEach((value, key) => {
-      if (
-        !['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(
-          key
-        )
-      ) {
-        try {
-          initial[key] = JSON.parse(value);
-        } catch {
-          initial[key] = [value];
-        }
-      }
-    });
-    return initial;
-  });
+  const [filters, setFilters] = useState<Record<string, string[]>>(
+    initialParams.filters
+  );
 
   // Component-local state. `gridFilters` is seeded from the server-fetched
   // filter facets so the filter sidebar shows on first paint — ProductGrid's
@@ -171,35 +154,25 @@ export default function SearchIsland({
   const hasNoResults =
     !!term && !filtersLoading && itemsFound === 0 && productsResponse !== null;
 
-  // Keep URL-derived state in sync after browser back/forward.
+  // Keep URL-derived state in sync after browser back/forward — parsed via
+  // the same `parseListingParams` the Server Component uses.
   useEffect(() => {
     const onChange = () => {
-      const sp = new URLSearchParams(window.location.search);
-      const newFilters: Record<string, string[]> = {};
-      sp.forEach((value, key) => {
-        if (
-          !['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(
-            key
-          )
-        ) {
-          try {
-            newFilters[key] = JSON.parse(value);
-          } catch {
-            newFilters[key] = [value];
-          }
-        }
-      });
-      setCurrentPage(parseInt(sp.get('page') || '1'));
+      const next = parseListingParams(
+        new URLSearchParams(window.location.search),
+        ProductSortField.RELEVANCE
+      );
+      setCurrentPage(next.page);
       setFilters((prev) =>
-        JSON.stringify(prev) === JSON.stringify(newFilters) ? prev : newFilters
+        JSON.stringify(prev) === JSON.stringify(next.filters)
+          ? prev
+          : next.filters
       );
-      setMinPrice(sp.get('minPrice') ? parseFloat(sp.get('minPrice')!) : undefined);
-      setMaxPrice(sp.get('maxPrice') ? parseFloat(sp.get('maxPrice')!) : undefined);
-      setOffset(parseInt(sp.get('offset') || '12'));
-      setSortField(
-        (sp.get('sortField') as ProductSortField) || ProductSortField.RELEVANCE
-      );
-      setSortOrder((sp.get('sortOrder') as SortOrder) || SortOrder.DESC);
+      setMinPrice(next.minPrice);
+      setMaxPrice(next.maxPrice);
+      setOffset(next.offset);
+      setSortField(next.sortField);
+      setSortOrder(next.sortOrder);
     };
     window.addEventListener('popstate', onChange);
     return () => window.removeEventListener('popstate', onChange);

@@ -23,15 +23,70 @@
  * the auth-cookie read in `getServerInfra()`. See `lib/server.ts`.
  */
 
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { getListingInfra, fetchCluster } from '@/lib/server';
+import {
+  getListingInfra,
+  getAnonymousInfra,
+  fetchCluster,
+} from '@/lib/server';
+import {
+  resolveSeoTitle,
+  resolveSeoDescription,
+  resolveCanonicalUrl,
+} from '@/lib/seo';
 import ClusterDetailIsland from './ClusterDetailIsland';
 
 interface RouteParams {
   clusterId: string;
   slug: string;
+}
+
+/**
+ * Per-cluster SEO metadata. Uses the cluster's curated `metadataTitles` /
+ * `metadataDescriptions` / `metadataCanonicalUrls` when populated, falling
+ * back to the cluster `names` / `shortDescriptions`. Fetched anonymously.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<RouteParams>;
+}): Promise<Metadata> {
+  const { clusterId: clusterIdStr } = await params;
+  const clusterId = Number.parseInt(clusterIdStr, 10);
+  if (!Number.isFinite(clusterId)) return {};
+
+  const infra = getAnonymousInfra();
+  const cluster = await fetchCluster(infra, clusterId);
+  if (!cluster) return {};
+
+  const title = resolveSeoTitle(
+    cluster.metadataTitles,
+    cluster.names,
+    infra.language
+  );
+  const description = resolveSeoDescription(
+    cluster.metadataDescriptions,
+    [cluster.shortDescriptions, cluster.descriptions],
+    infra.language
+  );
+  const canonical = resolveCanonicalUrl(
+    cluster.metadataCanonicalUrls,
+    infra.language
+  );
+
+  return {
+    ...(title && { title }),
+    ...(description && { description }),
+    ...(canonical && { alternates: { canonical } }),
+    openGraph: {
+      ...(title && { title }),
+      ...(description && { description }),
+      type: 'website',
+    },
+  };
 }
 
 /** Anonymous variant is cacheable for 5 min; authenticated renders are dynamic. */

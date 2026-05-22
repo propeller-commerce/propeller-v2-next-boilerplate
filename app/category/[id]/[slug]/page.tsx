@@ -20,19 +20,83 @@
  * `getListingInfra()` picks the right one. See `lib/server.ts`.
  */
 
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { GridTitle } from 'propeller-v2-react-ui/pure';
-import { getListingInfra, fetchCategory } from '@/lib/server';
+import {
+  getListingInfra,
+  getAnonymousInfra,
+  fetchCategory,
+} from '@/lib/server';
 import { getCategoryBanner } from '@/lib/cms';
 import type { CmsCategoryBanner } from '@/lib/cms/types';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
+import {
+  resolveSeoTitle,
+  resolveSeoDescription,
+  resolveCanonicalUrl,
+  resolveSeoKeywords,
+} from '@/lib/seo';
 import CategoryIsland from './CategoryIsland';
 
 interface RouteParams {
   id: string;
   slug: string;
+}
+
+/**
+ * Per-category SEO metadata. Uses the category's curated `metadataTitles` /
+ * `metadataDescriptions` / `metadataCanonicalUrls` / `metadataKeywords` when
+ * populated, falling back to the category `name` / `shortDescription`.
+ *
+ * Fetched anonymously with `offset: 1` — we only need the category's own
+ * metadata fields here, not the full product page.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<RouteParams>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const categoryId = Number.parseInt(id, 10);
+  if (!Number.isFinite(categoryId)) return {};
+
+  const infra = getAnonymousInfra();
+  const category = await fetchCategory(infra, categoryId, { offset: 1 });
+  if (!category) return {};
+
+  const title = resolveSeoTitle(
+    category.metadataTitles,
+    category.name,
+    infra.language
+  );
+  const description = resolveSeoDescription(
+    category.metadataDescriptions,
+    [category.shortDescription, category.description],
+    infra.language
+  );
+  const canonical = resolveCanonicalUrl(
+    category.metadataCanonicalUrls,
+    infra.language
+  );
+  const keywords = resolveSeoKeywords(
+    category.metadataKeywords,
+    infra.language
+  );
+
+  return {
+    ...(title && { title }),
+    ...(description && { description }),
+    ...(keywords && { keywords }),
+    ...(canonical && { alternates: { canonical } }),
+    openGraph: {
+      ...(title && { title }),
+      ...(description && { description }),
+      type: 'website',
+    },
+  };
 }
 
 /**

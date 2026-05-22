@@ -28,10 +28,16 @@ import Header from '@/components/layout/Header';
 // package is bundled with `"use client"`, so passing `config` from this
 // Server Component throws. Keep Breadcrumbs in the client island below.
 import Footer from '@/components/layout/Footer';
-import { ProductPrice } from 'propeller-v2-react-ui';
-import { ProductBulkPrices } from 'propeller-v2-react-ui';
-import { ProductShortDescription } from 'propeller-v2-react-ui';
-import { ItemStock } from 'propeller-v2-react-ui';
+// Pure / RSC-safe display components — imported from the `/pure` entry, which
+// is built WITHOUT the `"use client"` banner so they render in this Server
+// Component without drawing a Client boundary or shipping the client bundle.
+import {
+  ProductPrice,
+  ProductBulkPrices,
+  ProductShortDescription,
+  ItemStock,
+} from 'propeller-v2-react-ui/pure';
+// ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from 'propeller-v2-react-ui';
 import { fetchProduct, getServerInfra } from '@/lib/server';
 import { config } from '@/data/config';

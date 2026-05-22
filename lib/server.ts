@@ -44,13 +44,64 @@ import {
   type Customer,
   type Product,
   type Category,
+  type Cluster,
+  type ProductsResponse,
+  type CategoryProductSearchInput,
+  type ProductSortInput,
+  type SearchFieldsInput,
+  type ClusterConfigSetting,
+  ProductStatus,
+  ProductSortField,
+  SortOrder,
+  ProductSearchableField,
 } from 'propeller-sdk-v2';
 import { createServices, toPlain, type Services } from 'propeller-v2-react-ui/shared';
 import {
   imageSearchFilters,
+  imageSearchFiltersGrid,
   imageVariantFiltersMedium,
   imageVariantFiltersLarge,
 } from '@/data/defaults';
+
+/** Statuses the storefront grid shows — mirrors the client `useProductSearch`. */
+const STOREFRONT_STATUSES: ProductStatus[] = [
+  ProductStatus.A,
+  ProductStatus.P,
+  ProductStatus.T,
+  ProductStatus.S,
+];
+
+/**
+ * Boosted search-field config — identical to the client `useProductSearch`
+ * term path so server-rendered search results rank the same as client ones.
+ */
+const SEARCH_FIELDS: SearchFieldsInput[] = [
+  {
+    fieldNames: [
+      ProductSearchableField.NAME,
+      ProductSearchableField.KEYWORDS,
+      ProductSearchableField.SKU,
+      ProductSearchableField.CUSTOM_KEYWORDS,
+    ],
+    boost: 5,
+  },
+  {
+    fieldNames: [
+      ProductSearchableField.DESCRIPTION,
+      ProductSearchableField.MANUFACTURER,
+      ProductSearchableField.MANUFACTURER_CODE,
+      ProductSearchableField.EAN_CODE,
+      ProductSearchableField.BAR_CODE,
+      ProductSearchableField.CLUSTER_ID,
+      ProductSearchableField.CUSTOM_KEYWORDS,
+      ProductSearchableField.PRODUCT_ID,
+      ProductSearchableField.SHORT_DESCRIPTION,
+      ProductSearchableField.SUPPLIER,
+      ProductSearchableField.SUPPLIER_CODE,
+    ],
+    boost: 1,
+  },
+];
 
 // ── Environment ──────────────────────────────────────────────────────────────
 
@@ -175,6 +226,54 @@ export async function getServerInfra(): Promise<ServerInfra> {
   };
 }
 
+/**
+ * Resolve the per-request server infra bundle for an **anonymous** render.
+ *
+ * Unlike `getServerInfra()`, this NEVER reads the `access_token` cookie and
+ * NEVER calls `getViewer()` — `user` is always `null`. Because it does not
+ * touch `cookies()`, a route that only ever calls this can be statically
+ * rendered / cached (pair it with `export const revalidate = <window>`).
+ *
+ * The intended pattern (category / search / cluster listing pages):
+ *   - The page checks for the `access_token` cookie up front.
+ *   - No cookie  → `getAnonymousInfra()` → cacheable, generic pricing.
+ *   - Cookie set → `getServerInfra()` → reading the cookie opts the route
+ *     into dynamic rendering, so logged-in users always get fresh,
+ *     contact-priced HTML.
+ *
+ * Personalised pricing for the (rare) case of a logged-in user served a
+ * cached anonymous shell is reconciled client-side once their auth context
+ * resolves and the grid re-fetches.
+ */
+export function getAnonymousInfra(): ServerInfra {
+  const client = createServerClient({ getAccessToken: () => undefined });
+  const services = createServices(client);
+  return {
+    client,
+    services,
+    user: null,
+    language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
+    portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
+    currency: process.env.BOILERPLATE_CURRENCY || '€',
+    includeTax: false,
+  };
+}
+
+/** True when the request carries an `access_token` cookie (i.e. logged in). */
+export async function hasAuthCookie(): Promise<boolean> {
+  const store = await cookies();
+  return !!store.get('access_token')?.value;
+}
+
+/**
+ * Pick the right infra for a listing page: anonymous (cacheable) when there
+ * is no auth cookie, full (dynamic, personalised) when there is. Reading the
+ * cookie here is what makes the authenticated branch dynamic.
+ */
+export async function getListingInfra(): Promise<ServerInfra> {
+  return (await hasAuthCookie()) ? getServerInfra() : getAnonymousInfra();
+}
+
 // ── Thin fetch helpers (the data layer Bucket-B components consume) ─────────
 
 /**
@@ -210,23 +309,173 @@ export async function fetchProduct(
 }
 
 /**
- * Fetch a single category with the standard product-search shape. Returns
- * `null` when the category doesn't exist; throws on other failures.
+ * Options for the initial server-side listing fetch. All optional — the
+ * defaults reproduce the *first paint* the client grid would produce
+ * (page 1, 12 per page, default sort). The client `ProductGrid` island
+ * takes over for subsequent filter/sort/page changes.
+ */
+export interface ListingFetchOptions {
+  /** 1-based page. Defaults to 1. */
+  page?: number;
+  /** Items per page. Defaults to 12 (the storefront grid default). */
+  offset?: number;
+  /** Sort field. Categories default to CATEGORY_ORDER, search to RELEVANCE. */
+  sortField?: ProductSortField;
+  /** Sort direction. Defaults to DESC. */
+  sortOrder?: SortOrder;
+  /** Language override. Defaults to `infra.language`. */
+  language?: string;
+}
+
+/** Resolve the `userId` the SDK price/search inputs expect from the infra user. */
+function resolveUserId(user: Contact | Customer | null): number | undefined {
+  if (!user) return undefined;
+  if ('contactId' in user) return (user as Contact).contactId;
+  if ('customerId' in user) return (user as Customer).customerId;
+  return undefined;
+}
+
+/**
+ * Fetch a single category WITH its first page of products — the shape the
+ * category page needs to server-render real product cards in the initial
+ * HTML. Returns `null` when the category doesn't exist; throws on other
+ * failures.
+ *
+ * The `categoryProductSearchInput` mirrors the client `useProductSearch`
+ * listing path (`services.category.getCategory`) so the server-rendered
+ * first page matches what the client grid would have fetched.
  */
 export async function fetchCategory(
   infra: ServerInfra,
   categoryId: number,
-  language?: string
+  opts: ListingFetchOptions = {}
 ): Promise<Category | null> {
+  const lang = opts.language ?? infra.language;
+  const sortField = opts.sortField ?? ProductSortField.CATEGORY_ORDER;
+  const sortOrder = opts.sortOrder ?? SortOrder.DESC;
+  const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
+  const userId = resolveUserId(infra.user);
+
+  const categoryProductSearchInput: CategoryProductSearchInput = {
+    language: lang,
+    page: opts.page ?? 1,
+    offset: opts.offset ?? 12,
+    statuses: STOREFRONT_STATUSES,
+    hidden: false,
+    sortInputs,
+    ...(userId !== undefined && { userId }),
+  };
+
   try {
     const result = await infra.services.category.getCategory({
       categoryId,
-      language: language ?? infra.language,
-      imageSearchFilters,
+      language: lang,
+      categoryProductSearchInput,
+      imageSearchFilters: imageSearchFiltersGrid,
       // Category product listings use the grid-sized variant.
       imageVariantFilters: imageVariantFiltersMedium,
     });
     return result ? (toPlain(result) as Category) : null;
+  } catch (e) {
+    // The known `Product.slugs` backend break surfaces as "null for
+    // non-nullable" — swallow it so the page can still render its shell and
+    // let the client grid re-fetch. Genuine "not found" → null too.
+    if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+/**
+ * Server-side product search — the first page of results for a search term.
+ * Mirrors the client `useProductSearch` term path: it queries the base
+ * category (`baseCategoryId`) with a `term` + boosted `searchFields`.
+ *
+ * `baseCategoryId` must be supplied by the caller (it lives in the consumer's
+ * `data/config`, which this server module deliberately does not import).
+ * Returns the category's `ProductsResponse`, or `null` on failure.
+ */
+export async function fetchSearch(
+  infra: ServerInfra,
+  baseCategoryId: number,
+  term: string,
+  opts: ListingFetchOptions = {}
+): Promise<ProductsResponse | null> {
+  const lang = opts.language ?? infra.language;
+  const sortField = opts.sortField ?? ProductSortField.RELEVANCE;
+  const sortOrder = opts.sortOrder ?? SortOrder.DESC;
+  const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
+  const userId = resolveUserId(infra.user);
+
+  const categoryProductSearchInput: CategoryProductSearchInput = {
+    language: lang,
+    page: opts.page ?? 1,
+    offset: opts.offset ?? 12,
+    statuses: STOREFRONT_STATUSES,
+    hidden: false,
+    ...(term && { term, searchFields: SEARCH_FIELDS }),
+    sortInputs,
+    ...(userId !== undefined && { userId }),
+  };
+
+  try {
+    const result = await infra.services.category.getCategory({
+      categoryId: baseCategoryId,
+      language: lang,
+      categoryProductSearchInput,
+      imageSearchFilters: imageSearchFiltersGrid,
+      imageVariantFilters: imageVariantFiltersMedium,
+    });
+    const products = result?.products as ProductsResponse | undefined;
+    return products ? (toPlain(products) as ProductsResponse) : null;
+  } catch (e) {
+    if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+/**
+ * Fetch a single cluster for the cluster detail page.
+ *
+ * Mirrors the two-step fetch the client `ClusterInfo` / `useProductInfo`
+ * performs: first `getClusterConfig()` to discover the configurator's
+ * attribute names, then `getCluster()` with an `attributeResultSearchInput`
+ * scoped to those names (so image-badge attributes resolve).
+ *
+ * Returns `null` when the cluster doesn't exist; throws on other failures.
+ * The cluster page server-renders the *default product*'s title/price/
+ * description/stock from this; configurator-driven selection (which changes
+ * the displayed product) is reconciled client-side.
+ */
+export async function fetchCluster(
+  infra: ServerInfra,
+  clusterId: number,
+  language?: string
+): Promise<Cluster | null> {
+  const lang = language ?? infra.language;
+  try {
+    // Step 1 — config drives the attribute name list.
+    const clusterConfig = await infra.services.cluster.getClusterConfig(clusterId);
+    const attributeNames: string[] = (clusterConfig?.config?.settings ?? []).map(
+      (setting: ClusterConfigSetting) => setting.name
+    );
+
+    // Step 2 — full cluster fetch with the config-derived attribute filter.
+    const result = await infra.services.cluster.getCluster({
+      clusterId,
+      language: lang,
+      imageSearchFilters: imageSearchFiltersGrid,
+      imageVariantFilters: imageVariantFiltersLarge,
+      ...(attributeNames.length > 0 && {
+        attributeResultSearchInput: {
+          attributeDescription: { names: attributeNames },
+        },
+      }),
+    });
+    return result ? (toPlain(result) as Cluster) : null;
   } catch (e) {
     if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
       return null;

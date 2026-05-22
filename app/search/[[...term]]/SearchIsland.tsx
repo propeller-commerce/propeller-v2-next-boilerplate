@@ -105,10 +105,21 @@ export default function SearchIsland({
     return initial;
   });
 
-  // Component-local state.
-  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
-  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
-  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
+  // Component-local state. `gridFilters` is seeded from the server-fetched
+  // filter facets so the filter sidebar shows on first paint — ProductGrid's
+  // `onFiltersChange` only fires from its internal fetch, which is skipped
+  // while the grid is server-controlled.
+  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>(
+    () => (initialProducts?.filters ?? []) as AttributeFilter[]
+  );
+  // Price-slider bounds, seeded from the server response — `onPriceBoundsChange`
+  // only fires from the grid's internal fetch, skipped while server-controlled.
+  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>(
+    () => initialProducts?.minPrice
+  );
+  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>(
+    () => initialProducts?.maxPrice
+  );
   const [clearSignal, setClearSignal] = useState(0);
   const [itemsFound, setItemsFound] = useState<number>(
     () => initialProducts?.itemsFound ?? 0

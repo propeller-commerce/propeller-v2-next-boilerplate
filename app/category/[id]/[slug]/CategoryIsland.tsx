@@ -115,9 +115,25 @@ export default function CategoryIsland({
     () => (readSearch().get('sortOrder') as SortOrder) || SortOrder.DESC
   );
 
-  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
-  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
-  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>();
+  // Seed the filter sidebar from the server-fetched filter facets so it
+  // shows on first paint. `ProductGrid.onFiltersChange` only fires from its
+  // internal fetch — which is skipped while the grid is server-controlled —
+  // so without this seed the sidebar would render "No filters available"
+  // until the first interaction.
+  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>(
+    () =>
+      ((initialCategory.products as ProductsResponse | undefined)?.filters ??
+        []) as AttributeFilter[]
+  );
+  // Price-slider bounds, seeded from the server response for the same reason
+  // as `gridFilters` — `onPriceBoundsChange` only fires from the grid's
+  // internal fetch.
+  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>(
+    () => (initialCategory.products as ProductsResponse | undefined)?.minPrice
+  );
+  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>(
+    () => (initialCategory.products as ProductsResponse | undefined)?.maxPrice
+  );
   const [clearSignal, setClearSignal] = useState(0);
   const [itemsFound, setItemsFound] = useState<number>(
     () => (initialCategory.products as ProductsResponse | undefined)?.itemsFound ?? 0

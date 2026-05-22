@@ -49,6 +49,7 @@ import {
   type CategoryProductSearchInput,
   type ProductSortInput,
   type SearchFieldsInput,
+  type FilterAvailableAttributeInput,
   type ClusterConfigSetting,
   ProductStatus,
   ProductSortField,
@@ -327,6 +328,17 @@ export interface ListingFetchOptions {
   language?: string;
 }
 
+/**
+ * Tells the backend to compute and return the available attribute filter
+ * facets (`products.filters`) alongside the product list. WITHOUT this the
+ * `getCategory` response carries an empty `filters` array — so the grid
+ * filter sidebar would render "No filters available". Mirrors the client
+ * `useProductSearch` listing query.
+ */
+const FILTER_AVAILABLE_ATTRIBUTE_INPUT: FilterAvailableAttributeInput = {
+  isSearchable: true,
+};
+
 /** Resolve the `userId` the SDK price/search inputs expect from the infra user. */
 function resolveUserId(user: Contact | Customer | null): number | undefined {
   if (!user) return undefined;
@@ -371,6 +383,9 @@ export async function fetchCategory(
       categoryId,
       language: lang,
       categoryProductSearchInput,
+      // Ask the backend for the attribute filter facets so the grid filter
+      // sidebar has data on first paint.
+      filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
       imageSearchFilters: imageSearchFiltersGrid,
       // Category product listings use the grid-sized variant.
       imageVariantFilters: imageVariantFiltersMedium,
@@ -424,6 +439,8 @@ export async function fetchSearch(
       categoryId: baseCategoryId,
       language: lang,
       categoryProductSearchInput,
+      // Filter facets for the search page's grid filter sidebar.
+      filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
       imageSearchFilters: imageSearchFiltersGrid,
       imageVariantFilters: imageVariantFiltersMedium,
     });

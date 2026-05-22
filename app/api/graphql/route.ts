@@ -2,8 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const GRAPHQL_ENDPOINT = process.env.BOILERPLATE_GRAPHQL_ENDPOINT || '';
 const API_KEY = process.env.BOILERPLATE_API_KEY || '';
+// Second API key for order-editor mutations. The Propeller backend authorizes
+// these sensitive mutations ONLY against this key, not the general API_KEY —
+// sending them with API_KEY returns "Forbidden resource". The client SDK runs
+// in proxy mode (no apikey sent), so the routing playground-v2 does in
+// PropellerApi::buildHeaders($type) has to happen HERE instead.
+const ORDER_EDITOR_API_KEY = process.env.BOILERPLATE_ORDER_EDITOR_API_KEY || '';
+
+// Mirrors the SDK's DEFAULT_ORDER_EDITOR_MUTATIONS (GraphQLClient.ts). Keep in
+// sync if the SDK list changes. These operation names route to the order key.
+const ORDER_EDITOR_MUTATIONS = new Set([
+  'orderSetStatus',
+  'passwordResetLink',
+  'triggerQuoteSendRequest',
+  'triggerOrderSendConfirm',
+]);
 
 const isDev = process.env.NODE_ENV !== 'production';
+
+/**
+ * Extract an operation name from a GraphQL document — fallback for requests
+ * that don't carry `operationName` in the body. Mirrors the SDK's own
+ * `extractOperationName`: strips leading `#` comments, then matches the first
+ * `query NAME` / `mutation NAME`. Returns undefined for anonymous operations.
+ */
+function extractOperationName(query: unknown): string | undefined {
+  if (typeof query !== 'string') return undefined;
+  const stripped = query.replace(/^\s*(#[^\n]*\n)+/g, '').trimStart();
+  const match = stripped.match(/^(?:query|mutation)\s+(\w+)/);
+  return match ? match[1] : undefined;
+}
 
 // ── Proxy hardening limits ──────────────────────────────────────────────────
 // These are defensive guards. They do not replace upstream validation, but
@@ -89,14 +117,23 @@ function clientIp(request: NextRequest): string {
  * Calls the upstream GraphQL endpoint once with the supplied bearer (or
  * none). Returns the raw Response so the caller can inspect status before
  * deciding to retry.
+ *
+ * `operationName` selects the API key: order-editor mutations route to
+ * ORDER_EDITOR_API_KEY, everything else to the general API_KEY. If the order
+ * key is unset we fall back to the general key (which the backend will reject
+ * for these mutations — surfaced as the same "Forbidden resource" error rather
+ * than a silent mismatch).
  */
 async function callUpstream(
   body: unknown,
   bearer: string | undefined,
+  operationName: string | undefined,
 ): Promise<Response> {
+  const useOrderKey =
+    !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName) && !!ORDER_EDITOR_API_KEY;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    apikey: API_KEY,
+    apikey: useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY,
   };
   if (bearer) headers['Authorization'] = `Bearer ${bearer}`;
   return fetch(GRAPHQL_ENDPOINT, {
@@ -168,6 +205,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'invalid JSON body' }, { status: 400 });
     }
 
+    // Resolve the operation name (used to pick the API key). The SDK sends it
+    // in the body; fall back to parsing the query for any caller that doesn't.
+    const operationName =
+      (typeof body.operationName === 'string' ? body.operationName : undefined) ??
+      extractOperationName(body.query);
+
     // ── Query-depth limit ────────────────────────────────────────────────
     const depth = estimateQueryDepth(body.query);
     if (depth > MAX_QUERY_DEPTH) {
@@ -185,6 +228,8 @@ export async function POST(request: NextRequest) {
       console.log('📤 GraphQL Proxy Request:', {
         endpoint: GRAPHQL_ENDPOINT,
         hasApiKey: !!API_KEY,
+        operationName,
+        usingOrderKey: !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName),
         query: querySnippet,
         variables: body.variables,
         depth,
@@ -208,7 +253,7 @@ export async function POST(request: NextRequest) {
       cookieToken ?? (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
 
     // First attempt.
-    let response = await callUpstream(body, initialBearer);
+    let response = await callUpstream(body, initialBearer, operationName);
     let refreshSetCookies: string[] = [];
 
     // 401-refresh-retry: ONLY when we had a cookie token (a logged-in session
@@ -218,7 +263,7 @@ export async function POST(request: NextRequest) {
       const refreshed = await tryRefresh(request);
       if (refreshed) {
         refreshSetCookies = refreshed.setCookies;
-        response = await callUpstream(body, refreshed.newAccessToken);
+        response = await callUpstream(body, refreshed.newAccessToken, operationName);
       }
     }
 

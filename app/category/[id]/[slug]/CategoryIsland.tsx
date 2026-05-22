@@ -173,6 +173,11 @@ export default function CategoryIsland({
 
   // Update URL slug when language or category changes — history.replaceState
   // to avoid a Next.js re-render cascade.
+  //
+  // IMPORTANT: pass the CURRENT `window.history.state`, not `null`. The App
+  // Router keeps its navigation tree key in `history.state`; replacing it with
+  // `null` desyncs the router from the real URL, which silently breaks
+  // `<title>` / metadata updates on every subsequent soft navigation.
   useEffect(() => {
     if (!category) return;
     const match = category.slug?.find(
@@ -183,7 +188,7 @@ export default function CategoryIsland({
     if (newSlug && newSlug !== currentSlug) {
       const search = window.location.search;
       window.history.replaceState(
-        null,
+        window.history.state,
         '',
         localizeHref(`/category/${categoryId}/${newSlug}`, language) + search
       );

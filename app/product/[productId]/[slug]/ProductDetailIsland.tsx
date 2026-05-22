@@ -61,12 +61,21 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
   // Update URL slug when the user switches language. Uses replaceState to
   // avoid a Next router re-render cascade that would otherwise trigger a
   // double fetch of the (already-server-rendered) product.
+  //
+  // IMPORTANT: pass the CURRENT `window.history.state`, not `null`. The App
+  // Router keeps its navigation tree key in `history.state`; replacing it with
+  // `null` desyncs the router from the real URL, which silently breaks
+  // `<title>` / metadata updates on every subsequent soft navigation.
   useEffect(() => {
     const match = product.slugs?.find((s: { language?: string; value?: string }) => s.language === language);
     const slug = match?.value || product.slugs?.[0]?.value || '';
     const currentSlug = window.location.pathname.split('/').pop();
     if (slug && slug !== currentSlug) {
-      window.history.replaceState(null, '', localizeHref(`/product/${productId}/${slug}`, language));
+      window.history.replaceState(
+        window.history.state,
+        '',
+        localizeHref(`/product/${productId}/${slug}`, language)
+      );
     }
   }, [product, language, productId]);
 

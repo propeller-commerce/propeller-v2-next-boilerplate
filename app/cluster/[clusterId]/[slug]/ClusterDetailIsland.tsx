@@ -121,6 +121,11 @@ export default function ClusterDetailIsland({
 
   // Update URL slug when language or cluster changes — history.replaceState
   // to avoid a Next.js re-render cascade.
+  //
+  // IMPORTANT: pass the CURRENT `window.history.state`, not `null`. The App
+  // Router keeps its navigation tree key in `history.state`; replacing it with
+  // `null` desyncs the router from the real URL, which silently breaks
+  // `<title>` / metadata updates on every subsequent soft navigation.
   useEffect(() => {
     if (!cluster) return;
     const slugs = cluster.slugs || cluster.defaultProduct?.slugs;
@@ -131,7 +136,7 @@ export default function ClusterDetailIsland({
     const currentSlug = window.location.pathname.split('/').pop();
     if (slug && slug !== currentSlug) {
       window.history.replaceState(
-        null,
+        window.history.state,
         '',
         localizeHref(`/cluster/${clusterId}/${slug}`, language)
       );

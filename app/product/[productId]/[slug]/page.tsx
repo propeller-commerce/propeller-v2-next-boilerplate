@@ -21,6 +21,7 @@
  * (server CMS fetch + client `<HomeFallback>`).
  */
 
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/layout/Header';
 // NOTE: Breadcrumbs reads `configuration.urls.getCategoryUrl` (a function),
@@ -28,14 +29,25 @@ import Header from '@/components/layout/Header';
 // package is bundled with `"use client"`, so passing `config` from this
 // Server Component throws. Keep Breadcrumbs in the client island below.
 import Footer from '@/components/layout/Footer';
-import { ProductPrice } from 'propeller-v2-react-ui';
-import { ProductBulkPrices } from 'propeller-v2-react-ui';
-import { ProductShortDescription } from 'propeller-v2-react-ui';
-import { ItemStock } from 'propeller-v2-react-ui';
+// Pure / RSC-safe display components — imported from the `/pure` entry, which
+// is built WITHOUT the `"use client"` banner so they render in this Server
+// Component without drawing a Client boundary or shipping the client bundle.
+import {
+  ProductPrice,
+  ProductBulkPrices,
+  ProductShortDescription,
+  ItemStock,
+} from 'propeller-v2-react-ui/pure';
+// ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from 'propeller-v2-react-ui';
-import { fetchProduct, getServerInfra } from '@/lib/server';
+import { fetchProduct, getServerInfra, getAnonymousInfra } from '@/lib/server';
 import { config } from '@/data/config';
 import { getLanguageString } from 'propeller-v2-react-ui/shared';
+import {
+  resolveSeoTitle,
+  resolveSeoDescription,
+  resolveCanonicalUrl,
+} from '@/lib/seo';
 import { ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import AddToCartIsland, {
   ProductBelowFoldIsland,
@@ -45,6 +57,55 @@ import AddToCartIsland, {
 interface RouteParams {
   productId: string;
   slug: string;
+}
+
+/**
+ * Per-product SEO metadata. Uses the product's curated `metadataTitles` /
+ * `metadataDescriptions` / `metadataCanonicalUrls` when populated, falling
+ * back to the product `names` / `shortDescriptions` otherwise.
+ *
+ * Fetched anonymously — SEO metadata is identical for every viewer, so this
+ * avoids coupling it to the auth cookie. Without a curated canonical, Next.js
+ * defaults `alternates.canonical` to the request URL.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<RouteParams>;
+}): Promise<Metadata> {
+  const { productId: productIdStr } = await params;
+  const productId = Number.parseInt(productIdStr, 10);
+  if (!Number.isFinite(productId)) return {};
+
+  const infra = getAnonymousInfra();
+  const product = await fetchProduct(infra, productId, infra.language);
+  if (!product) return {};
+
+  const title = resolveSeoTitle(
+    product.metadataTitles,
+    product.names,
+    infra.language
+  );
+  const description = resolveSeoDescription(
+    product.metadataDescriptions,
+    [product.shortDescriptions, product.descriptions],
+    infra.language
+  );
+  const canonical = resolveCanonicalUrl(
+    product.metadataCanonicalUrls,
+    infra.language
+  );
+
+  return {
+    ...(title && { title }),
+    ...(description && { description }),
+    ...(canonical && { alternates: { canonical } }),
+    openGraph: {
+      ...(title && { title }),
+      ...(description && { description }),
+      type: 'website',
+    },
+  };
 }
 
 export default async function ProductPage({

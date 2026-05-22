@@ -54,25 +54,66 @@ npm run dev
 
 ```
 ├── app/                    # Next.js app router pages
-│   ├── cart/              # Shopping cart page
-│   ├── category/          # Category pages
-│   ├── product/           # Product detail pages
-│   ├── login/             # Authentication pages
+│   ├── category/          # Category page — hybrid SSR (server shell + CategoryIsland)
+│   ├── search/            # Search page — hybrid SSR (server shell + SearchIsland)
+│   ├── cluster/           # Cluster page — hybrid SSR (server shell + ClusterDetailIsland)
+│   ├── product/           # Product detail page — hybrid SSR (server shell + islands)
+│   ├── csr/               # Legacy fully-client copies of the above, for comparison
+│   ├── cart/              # Shopping cart page (client)
+│   ├── login/             # Authentication pages (client)
 │   └── layout.tsx         # Root layout with providers
-├── components/            # React components (hand-maintained, no codegen)
-│   ├── propeller/        # Propeller business components (ProductCard, AddToCart, etc.)
+├── components/            # Host-side components (layout, CMS, UI primitives)
 │   ├── layout/           # Layout components (Header, Footer)
 │   ├── cms/              # CMS-driven content blocks
 │   └── ui/               # Basic UI primitives
-├── composables/          # Shared logic
-│   ├── react/            # React hooks (useCart, useAuth, useProductSearch, …)
-│   └── shared/           # Framework-agnostic utils + types
+│                         # NOTE: the Propeller business components (ProductCard,
+│                         # AddToCart, …) and the composables live in the
+│                         # propeller-v2-react-ui package, not here.
 ├── context/              # React context providers (Auth, Cart, Propeller, …)
-├── lib/                  # Services & SDK client
-│   ├── api.ts           # GraphQL client configuration
-│   └── services/        # Service layer (AuthService, MenuService, …)
+├── lib/                  # Services, SDK clients, server helpers
+│   ├── api.ts            # Client-side GraphQL client (endpoint: /api/graphql proxy)
+│   ├── server.ts         # Server-side SDK helpers — getServerInfra / getAnonymousInfra,
+│   │                     #   fetchProduct / fetchCategory / fetchSearch / fetchCluster
+│   ├── seo.ts            # SEO metadata resolvers (used by generateMetadata)
+│   ├── listingParams.ts  # URL-query parser shared by listing pages + islands
+│   └── services/         # Service layer (AuthService, MenuService, …)
 └── data/                 # config.ts, defaults, countries
 ```
+
+## Rendering (SSR)
+
+This is a **hybrid SSR app**, not a client SPA. Next.js App Router renders
+server-first by default; pages opt into client rendering only where they need
+interactivity.
+
+**Server-rendered pages.** Home, blog and CMS pages are Server Components. The
+catalog pages — `category`, `search`, `cluster`, `product` — use a *hybrid
+SSR* pattern: the `page.tsx` is an async Server Component that fetches data
+from the upstream Propeller GraphQL API (via `lib/server.ts`) and renders the
+static shell; the interactive parts (filters, grid, configurator, add-to-cart)
+live in a `"use client"` **island** seeded with the server-fetched data. The
+result: crawlers and a JS-disabled browser see real product content, prices
+and SEO metadata in the initial HTML.
+
+- `lib/server.ts` — server-side SDK helpers. `getServerInfra()` reads the auth
+  cookie (→ personalised, dynamic render); `getAnonymousInfra()` skips it
+  (→ cacheable). `getListingInfra()` picks between them: anonymous requests
+  are cacheable (`revalidate`), logged-in requests render fresh.
+- `generateMetadata` on the product / category / cluster pages emits per-page
+  `<title>`, `<meta description>`, canonical and OpenGraph tags, resolved from
+  the backend's localized `metadata*` fields (`lib/seo.ts`).
+- `propeller-v2-react-ui/pure` — the package's RSC-safe component entry, used
+  to server-render pure display components (`ProductPrice`, `ItemStock`, …)
+  without drawing a client boundary.
+
+**Client-rendered pages.** `cart`, `checkout`, `account/*`, and the auth pages
+are fully `"use client"` — they are interactive, session-specific surfaces
+with no crawl value.
+
+**`/csr` routes.** `app/csr/` holds verbatim fully-client copies of the
+category / search / cluster / product pages (the pre-SSR implementation),
+reachable at `/csr/...`. They exist purely for side-by-side comparison of
+first paint, bundle size and crawlability — not a long-term fixture.
 
 ## Environment Variables
 

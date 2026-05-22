@@ -228,7 +228,12 @@ function CheckoutPageInner() {
   };
 
   const handleStep3Continue = async () => {
-    if (!state.selectedPayment || !state.selectedCarrier || !state.selectedDeliveryDate) {
+    // A carrier is only required when the cart actually offers one. Some carts
+    // (e.g. digital-only or business-rule configs) return no carriers; in that
+    // case CartCarriers shows "No carriers available." and never fires a
+    // selection, so requiring one here would dead-end the checkout.
+    const hasCarriers = (state.cart?.carriers?.length ?? 0) > 0;
+    if (!state.selectedPayment || (hasCarriers && !state.selectedCarrier) || !state.selectedDeliveryDate) {
       setState(prev => ({ ...prev, step3Submitted: true }));
       return;
     }
@@ -237,7 +242,10 @@ function CheckoutPageInner() {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const input: CartUpdateInput = {
         paymentData: { method: state.selectedPayment },
-        postageData: { carrier: state.selectedCarrier, requestDate: state.selectedDeliveryDate }
+        postageData: {
+          ...(state.selectedCarrier && { carrier: state.selectedCarrier }),
+          requestDate: state.selectedDeliveryDate,
+        }
       };
 
       const updatedCart = await updateCartShipping(state.cart!.cartId, input);
@@ -545,7 +553,7 @@ function CheckoutPageInner() {
                     {/* Carrier */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Truck className="w-4 h-4" /> Carrier</h3>
-                      {state.step3Submitted && !state.selectedCarrier && (
+                      {state.step3Submitted && (state.cart?.carriers?.length ?? 0) > 0 && !state.selectedCarrier && (
                         <p className="text-sm text-destructive">Please select a carrier</p>
                       )}
                       <CartCarriers

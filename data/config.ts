@@ -105,8 +105,8 @@ export const PORTAL_MODE = {
 
 export const config = {
   baseCategoryId: BASE_CATEGORY_ID,
-  channelId: 1,
-  anonymousId: 1,
+  channelId: 621,
+  anonymousId: 71,
   language: DEFAULT_LANG,
   currency: '€',
   imageSearchFilters: imageSearchFilters,

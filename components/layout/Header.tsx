@@ -9,6 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import type { MenuCategory } from 'propeller-v2-react-ui/shared';
 import { SearchBar } from 'propeller-v2-react-ui';
 import { Menu as PropellerMenu } from 'propeller-v2-react-ui';
 import { PriceToggle } from 'propeller-v2-react-ui';
@@ -26,7 +27,26 @@ import { fetchActiveCart as fetchActiveCartShared } from 'propeller-v2-react-ui'
 import { mergeAnonymousCart } from 'propeller-v2-react-ui';
 import { initCart } from 'propeller-v2-react-ui';
 
-export default function Header() {
+/**
+ * Props for the Header.
+ *
+ * `menuTree` is the pre-fetched category navigation tree, resolved on the
+ * server by the sibling `HeaderServer` wrapper (which calls `fetchMenu` from
+ * `lib/server.ts`). When present, both Menu instances (desktop dropdown +
+ * mobile drawer) short-circuit their internal fetch — anonymous menu HTML
+ * is in the initial response and there's no avoidable client roundtrip on
+ * hydration.
+ *
+ * Omitting the prop falls back to the component's legacy client-side fetch
+ * via `useMenu`. Client-only pages (login/register/cart/checkout/etc.) that
+ * cannot await `HeaderServer` import this component directly and accept the
+ * client-fetched menu — no breakage.
+ */
+export interface HeaderProps {
+  menuTree?: MenuCategory[];
+}
+
+export default function Header({ menuTree }: HeaderProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { cart, saveCart, clearCart } = useCart();
@@ -444,16 +464,21 @@ export default function Header() {
                     "absolute left-0 top-full z-50",
                     showMainMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none h-0 overflow-hidden"
                   )}>
-                    {!state.isLoading && (
-                      <PropellerMenu
-                        categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
-                        menuStyle="dropdown-vertical"
-                        onMenuItemClick={(category) => {
-                          setShowMainMenu(false);
-                          router.push(config.urls.getCategoryUrl(category, language));
-                        }}
-                      />
-                    )}
+                    {/* Menu tree pre-fetched server-side (see app/layout.tsx +
+                        lib/server.ts fetchMenu). The internal `useMenu` fetch
+                        is short-circuited by the `tree` prop, so there is no
+                        loading flash and no client-side roundtrip on hydration.
+                        The previous `!state.isLoading` gate is therefore gone —
+                        we never need to wait for auth before rendering the menu. */}
+                    <PropellerMenu
+                      categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
+                      menuStyle="dropdown-vertical"
+                      tree={menuTree}
+                      onMenuItemClick={(category) => {
+                        setShowMainMenu(false);
+                        router.push(config.urls.getCategoryUrl(category, language));
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -511,11 +536,14 @@ export default function Header() {
               </div>
             )}
 
-            {/* Mobile categories */}
-            {showCategoriesMenu && !state.isLoading && (
+            {/* Mobile categories — same pre-fetched tree as the desktop
+                instance. The `state.isLoading` gate is gone for the same
+                reason (see desktop note above). */}
+            {showCategoriesMenu && (
               <PropellerMenu
                 categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
                 menuStyle="dropdown-vertical"
+                tree={menuTree}
                 onMenuItemClick={(category) => {
                   setShowMobileMenu(false);
                   router.push(config.urls.getCategoryUrl(category, language));

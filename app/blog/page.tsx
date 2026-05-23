@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { getArticles } from '@/lib/cms';
 import type { CmsArticle } from '@/lib/cms/types';
@@ -94,7 +94,7 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1">
         <section className="py-12">
           <div className="container-width">

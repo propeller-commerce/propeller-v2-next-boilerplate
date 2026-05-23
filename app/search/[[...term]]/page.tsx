@@ -16,7 +16,8 @@
  * base category instead of running a term search.
  */
 
-import Header from '@/components/layout/Header';
+import { Suspense } from 'react';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { GridTitle } from 'propeller-v2-react-ui/pure';
 import { ProductSortField, type ProductsResponse } from 'propeller-sdk-v2';
@@ -93,7 +94,7 @@ export default async function SearchPage({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1 py-8">
         <div className="container-width">
           {/* Search heading — server-rendered, pure RSC component. */}
@@ -106,13 +107,18 @@ export default async function SearchPage({
               instance and carries the previous term's active filters into the
               new fetch, returning 0 products until a full refresh. Mirrors the
               category page fix. */}
-          <SearchIsland
-            key={term || '__all__'}
-            term={term}
-            isAllProducts={isAllProducts}
-            initialProducts={initialProducts}
-            initialParams={listing}
-          />
+          {/* Suspense future-proofs the static shell against inner async
+              (PPR-ready). Fallback is null because the island seeds
+              synchronously today. */}
+          <Suspense fallback={null}>
+            <SearchIsland
+              key={term || '__all__'}
+              term={term}
+              isAllProducts={isAllProducts}
+              initialProducts={initialProducts}
+              initialParams={listing}
+            />
+          </Suspense>
         </div>
       </main>
       <Footer />

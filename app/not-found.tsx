@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { localizeHref } from '@/data/config';
 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <HeaderServer />
       <main className="flex-1 container mx-auto px-4 py-8 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-6xl font-bold text-gray-800 mb-4">404</h1>

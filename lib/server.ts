@@ -36,10 +36,29 @@
 
 import 'server-only';
 
+import * as React from 'react';
+import { cache } from 'react';
+
+/**
+ * `experimental_taintObjectReference` is exported only from React's
+ * `react-server` build (the runtime that backs React Server Components).
+ * Next.js's SSR / prerender path uses the regular `react` build, which
+ * doesn't expose it — calling it there throws
+ * "experimental_taintObjectReference is not a function".
+ *
+ * We resolve it dynamically so this module stays callable from both
+ * runtimes; when the API isn't present we no-op (the `'server-only'`
+ * import above already prevents client bundling, so taint is
+ * defence-in-depth, not the primary guard).
+ */
+const taintObjectReference: (msg: string, obj: object) => void =
+  (React as unknown as { experimental_taintObjectReference?: (msg: string, obj: object) => void })
+    .experimental_taintObjectReference ?? (() => {});
 import { cookies } from 'next/headers';
 import {
   GraphQLClient,
   type GraphQLClientConfig,
+  type GraphQLFetchOptions,
   type Contact,
   type Customer,
   type Product,
@@ -58,7 +77,39 @@ import {
   SortOrder,
   ProductSearchableField,
 } from 'propeller-sdk-v2';
-import { createServices, toPlain, type Services } from 'propeller-v2-react-ui/shared';
+import { createServices, toPlain, type Services, type MenuCategory } from 'propeller-v2-react-ui/shared';
+
+// ── Cache control: tags + revalidate window ─────────────────────────────────
+// (see `tagFor` below and the `cacheable` flag on `ServerInfra`)
+
+/**
+ * Default revalidate window for anonymous catalog fetches (seconds).
+ * Authenticated renders bypass the cache entirely via the cookie read.
+ *
+ * Tune to the real catalog change rate. The `/api/revalidate` route can
+ * still bust entries surgically before the window elapses.
+ */
+export const ANONYMOUS_CACHE_TTL_SECONDS = 300;
+
+/**
+ * Umbrella tag attached to every anonymous catalog fetch — a single
+ * `revalidateTag(TAG_CATALOG)` busts every cached catalog read at once.
+ * Use surgically (e.g. nightly full refresh); per-entity tags below are
+ * the preferred path for routine invalidation.
+ */
+export const TAG_CATALOG = 'catalog';
+
+type CacheableEntity = 'product' | 'category' | 'cluster' | 'menu' | 'search';
+
+/**
+ * Constructs a Next.js cache tag for a cacheable entity. Single source of
+ * truth for the tag shape — NEVER inline string literals like `'product:42'`
+ * elsewhere. The `/api/revalidate` route accepts tags produced by this
+ * helper and only those.
+ */
+export function tagFor(entity: CacheableEntity, id?: number | string): string {
+  return id === undefined ? entity : `${entity}:${id}`;
+}
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -198,6 +249,15 @@ export interface ServerInfra {
   currency: string;
   /** Whether to display tax-inclusive prices by default. */
   includeTax: boolean;
+  /**
+   * Whether the underlying fetches on THIS infra are safe to cache via Next's
+   * data cache. True for `getAnonymousInfra()`, false for `getServerInfra()`
+   * (authenticated). The fetch helpers (`fetchProduct`/`fetchCategory`/etc.)
+   * branch on this flag to decide whether to attach `next.revalidate` +
+   * `tags` to the SDK call. Authenticated renders are already dynamic via
+   * the cookie read; attaching cache hints would be harmless but misleading.
+   */
+  cacheable: boolean;
 }
 
 /**
@@ -212,6 +272,44 @@ export interface ServerInfra {
  * server-side we render anonymously and the next client-side call will
  * trigger a refresh.
  */
+/**
+ * Per-request `getViewer` dedupe. Within one request, a layout + page +
+ * `generateMetadata` may each call `getServerInfra()` — without this wrap,
+ * `getViewer` runs once per call. `React.cache` keys on the function
+ * identity + arguments and dedupes for the lifetime of the request render
+ * (not across requests — that's the fetch cache's job).
+ */
+const cachedGetViewer = cache(
+  async (services: Services): Promise<Contact | Customer | null> => {
+    try {
+      const viewer = await services.user.getViewer({});
+      return viewer ? ((toPlain(viewer) as unknown) as Contact | Customer) : null;
+    } catch {
+      // Expired or otherwise invalid token — render anonymously. The client
+      // will refresh on its first action.
+      return null;
+    }
+  }
+);
+
+/**
+ * Mark the GraphQL client + services as server-only. If a Server Component
+ * ever tried to forward one of these objects as a prop into a client island,
+ * React would throw — preventing accidental leakage of an authenticated
+ * client (with its Bearer token in the headers config) into the browser
+ * bundle. Pure defence-in-depth on top of the `'server-only'` import.
+ */
+function taintInfra(infra: ServerInfra): void {
+  taintObjectReference(
+    'Do not pass GraphQLClient to client components — it carries server-only auth state.',
+    infra.client
+  );
+  taintObjectReference(
+    'Do not pass the Services bag to client components — it captures the server GraphQLClient.',
+    infra.services as unknown as object
+  );
+}
+
 export async function getServerInfra(): Promise<ServerInfra> {
   // Read the token FIRST so we can attach it as the client's Authorization
   // header — `direct`-mode SDK calls aren't authenticated otherwise.
@@ -219,21 +317,9 @@ export async function getServerInfra(): Promise<ServerInfra> {
   const client = createServerClient({ bearerToken: token });
   const services = createServices(client);
 
-  let user: Contact | Customer | null = null;
-  if (token) {
-    try {
-      const viewer = await services.user.getViewer({});
-      // `toPlain` matches the shape we keep client-side so Bucket-B
-      // components see identical input regardless of render runtime.
-      user = (viewer ? toPlain(viewer) : null) as Contact | Customer | null;
-    } catch {
-      // Expired or otherwise invalid token — render anonymously. The client
-      // will refresh on its first action.
-      user = null;
-    }
-  }
+  const user: Contact | Customer | null = token ? await cachedGetViewer(services) : null;
 
-  return {
+  const infra: ServerInfra = {
     client,
     services,
     user,
@@ -241,7 +327,10 @@ export async function getServerInfra(): Promise<ServerInfra> {
     portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax: false, // sticky-per-user toggle; defaults to net prices on the server
+    cacheable: false,  // cookie read forces dynamic rendering — no fetch cache
   };
+  taintInfra(infra);
+  return infra;
 }
 
 /**
@@ -266,7 +355,7 @@ export async function getServerInfra(): Promise<ServerInfra> {
 export function getAnonymousInfra(): ServerInfra {
   const client = createServerClient({ getAccessToken: () => undefined });
   const services = createServices(client);
-  return {
+  const infra: ServerInfra = {
     client,
     services,
     user: null,
@@ -274,7 +363,10 @@ export function getAnonymousInfra(): ServerInfra {
     portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax: false,
+    cacheable: true, // no cookie read → Next data cache applies when tags + revalidate are attached
   };
+  taintInfra(infra);
+  return infra;
 }
 
 /** True when the request carries an `access_token` cookie (i.e. logged in). */
@@ -295,6 +387,27 @@ export async function getListingInfra(): Promise<ServerInfra> {
 // ── Thin fetch helpers (the data layer Bucket-B components consume) ─────────
 
 /**
+ * Build `GraphQLFetchOptions` (cache hints) for a given infra + tag set.
+ * Returns `undefined` when the infra is not cacheable (authenticated render),
+ * which lets the SDK call run as a normal uncached POST.
+ *
+ * Centralising this here means every fetch helper applies the same TTL and
+ * the same per-call tag conventions; nobody hand-writes `next: { ... }`.
+ */
+function cacheOptions(
+  infra: ServerInfra,
+  tags: readonly string[]
+): GraphQLFetchOptions | undefined {
+  if (!infra.cacheable) return undefined;
+  return {
+    next: {
+      revalidate: ANONYMOUS_CACHE_TTL_SECONDS,
+      tags,
+    },
+  };
+}
+
+/**
  * Fetch a single product by ID with default media/transform shape.
  * Throws on network or non-partial GraphQL errors; returns `null` if the
  * product genuinely doesn't exist.
@@ -304,6 +417,11 @@ export async function getListingInfra(): Promise<ServerInfra> {
  * that were asked for. An empty `transformations: []` returns image items
  * with empty variant arrays — which is why the PDP gallery rendered blank.
  * We request the `large` variant (the gallery's size).
+ *
+ * **Cache-key keying note:** the SDK serialises the GraphQL request body
+ * byte-for-byte for Next.js's POST cache key. Keep the variable order below
+ * stable — `{productId, language, imageSearchFilters, imageVariantFilters}` —
+ * because reordering produces a different cache entry.
  */
 export async function fetchProduct(
   infra: ServerInfra,
@@ -311,12 +429,15 @@ export async function fetchProduct(
   language?: string
 ): Promise<Product | null> {
   try {
-    const result = await infra.services.product.getProduct({
-      productId,
-      language: language ?? infra.language,
-      imageSearchFilters,
-      imageVariantFilters: imageVariantFiltersLarge,
-    });
+    const result = await infra.services.product.getProduct(
+      {
+        productId,
+        language: language ?? infra.language,
+        imageSearchFilters,
+        imageVariantFilters: imageVariantFiltersLarge,
+      },
+      cacheOptions(infra, [TAG_CATALOG, tagFor('product'), tagFor('product', productId)])
+    );
     return result ? (toPlain(result) as Product) : null;
   } catch (e) {
     if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
@@ -441,17 +562,22 @@ export async function fetchCategory(
   };
 
   try {
-    const result = await infra.services.category.getCategory({
-      categoryId,
-      language: lang,
-      categoryProductSearchInput,
-      // Ask the backend for the attribute filter facets so the grid filter
-      // sidebar has data on first paint.
-      filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
-      imageSearchFilters: imageSearchFiltersGrid,
-      // Category product listings use the grid-sized variant.
-      imageVariantFilters: imageVariantFiltersMedium,
-    });
+    // Variable order locked in for Next.js cache-key keying — see the note
+    // in `fetchProduct`. Don't reorder the keys below casually.
+    const result = await infra.services.category.getCategory(
+      {
+        categoryId,
+        language: lang,
+        categoryProductSearchInput,
+        // Ask the backend for the attribute filter facets so the grid filter
+        // sidebar has data on first paint.
+        filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
+        imageSearchFilters: imageSearchFiltersGrid,
+        // Category product listings use the grid-sized variant.
+        imageVariantFilters: imageVariantFiltersMedium,
+      },
+      cacheOptions(infra, [TAG_CATALOG, tagFor('category'), tagFor('category', categoryId)])
+    );
     return result ? (toPlain(result) as Category) : null;
   } catch (e) {
     // The known `Product.slugs` backend break surfaces as "null for
@@ -500,15 +626,21 @@ export async function fetchSearch(
   };
 
   try {
-    const result = await infra.services.category.getCategory({
-      categoryId: baseCategoryId,
-      language: lang,
-      categoryProductSearchInput,
-      // Filter facets for the search page's grid filter sidebar.
-      filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
-      imageSearchFilters: imageSearchFiltersGrid,
-      imageVariantFilters: imageVariantFiltersMedium,
-    });
+    // Cache-key keying note: variable order locked. See `fetchProduct`.
+    const result = await infra.services.category.getCategory(
+      {
+        categoryId: baseCategoryId,
+        language: lang,
+        categoryProductSearchInput,
+        // Filter facets for the search page's grid filter sidebar.
+        filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
+        imageSearchFilters: imageSearchFiltersGrid,
+        imageVariantFilters: imageVariantFiltersMedium,
+      },
+      // Search isn't tagged per-term — long-tail terms would explode the tag
+      // namespace. Long-tail entries age out via the revalidate window.
+      cacheOptions(infra, [TAG_CATALOG, tagFor('search')])
+    );
     const products = result?.products as ProductsResponse | undefined;
     return products ? (toPlain(products) as ProductsResponse) : null;
   } catch (e) {
@@ -538,30 +670,144 @@ export async function fetchCluster(
   language?: string
 ): Promise<Cluster | null> {
   const lang = language ?? infra.language;
+  const clusterTags = [TAG_CATALOG, tagFor('cluster'), tagFor('cluster', clusterId)];
   try {
     // Step 1 — config drives the attribute name list.
-    const clusterConfig = await infra.services.cluster.getClusterConfig(clusterId);
+    const clusterConfig = await infra.services.cluster.getClusterConfig(
+      clusterId,
+      cacheOptions(infra, clusterTags)
+    );
     const attributeNames: string[] = (clusterConfig?.config?.settings ?? []).map(
       (setting: ClusterConfigSetting) => setting.name
     );
 
     // Step 2 — full cluster fetch with the config-derived attribute filter.
-    const result = await infra.services.cluster.getCluster({
-      clusterId,
-      language: lang,
-      imageSearchFilters: imageSearchFiltersGrid,
-      imageVariantFilters: imageVariantFiltersLarge,
-      ...(attributeNames.length > 0 && {
-        attributeResultSearchInput: {
-          attributeDescription: { names: attributeNames },
-        },
-      }),
-    });
+    // Cache-key keying note: variable order locked. See `fetchProduct`.
+    const result = await infra.services.cluster.getCluster(
+      {
+        clusterId,
+        language: lang,
+        imageSearchFilters: imageSearchFiltersGrid,
+        imageVariantFilters: imageVariantFiltersLarge,
+        ...(attributeNames.length > 0 && {
+          attributeResultSearchInput: {
+            attributeDescription: { names: attributeNames },
+          },
+        }),
+      },
+      cacheOptions(infra, clusterTags)
+    );
     return result ? (toPlain(result) as Cluster) : null;
   } catch (e) {
     if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
       return null;
     }
     throw e;
+  }
+}
+
+// ── Menu (category tree) ────────────────────────────────────────────────────
+
+/**
+ * Default depth of the menu tree. Matches `useMenu`'s default (3) so the
+ * server-fetched tree and the legacy client-fetched tree have the same shape.
+ */
+const MENU_DEPTH_DEFAULT = 3;
+
+/**
+ * Raw shape returned by the recursive `categories { ... }` GraphQL query —
+ * mirrors `MenuCategoryRaw` in the package's `useMenu`. We map to the
+ * serialisable `MenuCategory` shape the `<Menu tree={...} />` prop consumes
+ * before returning, so the Server Component → client island hop carries plain
+ * data (no nested LocalizedString arrays).
+ */
+interface RawMenuCategory {
+  categoryId: number;
+  hidden?: boolean | string;
+  name?: Array<{ value: string; language: string }>;
+  slug?: Array<{ value: string; language?: string }>;
+  categories?: RawMenuCategory[];
+}
+
+function isMenuCategoryHidden(raw: RawMenuCategory): boolean {
+  return raw.hidden === true || raw.hidden === 'Y';
+}
+
+function buildMenuCategoriesFragment(depth: number): string {
+  if (depth === 0) return '';
+  return `
+    categories {
+      categoryId
+      hidden
+      name(language: $language) { value language }
+      slug(language: $language) { value }
+      ${buildMenuCategoriesFragment(depth - 1)}
+    }
+  `;
+}
+
+function mapRawMenuCategory(raw: RawMenuCategory, language: string): MenuCategory {
+  const nameEntry = raw.name?.find((n) => n.language === language) ?? raw.name?.[0];
+  const slugEntry = raw.slug?.[0];
+  return {
+    categoryId: raw.categoryId,
+    name: nameEntry?.value ?? '',
+    slug: slugEntry?.value ?? '',
+    children: (raw.categories ?? [])
+      .filter((child) => !isMenuCategoryHidden(child))
+      .map((child) => mapRawMenuCategory(child, language)),
+  };
+}
+
+/**
+ * Server-side menu fetch — returns the `MenuCategory[]` tree the package's
+ * `<Menu tree={...} />` prop accepts. Calls the same recursive GraphQL query
+ * the client `useMenu` composable uses, but at the network layer with cache
+ * hints attached (when `infra.cacheable`).
+ *
+ * Bypasses the service layer because the menu query is hand-built and not
+ * exposed as an SDK service method. `client.execute({...fetchOptions})` is
+ * the lowest-level entry point and is the right tool here.
+ *
+ * Returns an empty array on failure rather than throwing — the menu is
+ * non-critical chrome, and a transient backend error shouldn't break the
+ * whole layout. The `<Menu>` component renders its empty state in that case.
+ */
+export async function fetchMenu(
+  infra: ServerInfra,
+  rootCategoryId: number,
+  language?: string,
+  depth: number = MENU_DEPTH_DEFAULT
+): Promise<MenuCategory[]> {
+  const lang = language ?? infra.language;
+  // Cache-key keying note: variable order locked (categoryId, language). See
+  // the note on `fetchProduct`.
+  const query = `
+    query Menu($categoryId: Float, $language: String) {
+      category(categoryId: $categoryId) {
+        categoryId
+        hidden
+        name(language: $language) { value language }
+        slug(language: $language) { value }
+        ${buildMenuCategoriesFragment(depth)}
+      }
+    }
+  `;
+  try {
+    const result = await infra.client.execute<{ category: RawMenuCategory | null }>({
+      query,
+      variables: { categoryId: rootCategoryId, language: lang },
+      operationName: 'Menu',
+      fetchOptions: cacheOptions(infra, [TAG_CATALOG, tagFor('menu')]),
+    });
+    const root = result.data?.category ?? null;
+    if (!root) return [];
+    return (root.categories ?? [])
+      .filter((cat) => !isMenuCategoryHidden(cat))
+      .map((cat) => mapRawMenuCategory(cat, lang));
+  } catch {
+    // Menu is non-critical; fall back to an empty tree rather than failing
+    // the whole layout render. The client `<Menu>` shows its empty state.
+    return [];
   }
 }

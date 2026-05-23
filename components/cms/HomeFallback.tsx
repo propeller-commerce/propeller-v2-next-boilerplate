@@ -1,13 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { graphqlClient, services } from '@/lib/api';
-import { useMenu } from 'propeller-v2-react-ui';
-import type { Cluster, Product } from 'propeller-sdk-v2';
-import { CategoryQueryVariables } from 'propeller-sdk-v2';
-import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
+import { graphqlClient } from '@/lib/api';
+import { useMenu, type MenuCategory } from 'propeller-v2-react-ui';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -25,15 +22,30 @@ interface CategoryDisplay {
 const baseCategoryId = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10);
 const categoryIcons = ['\uD83D\uDCBB', '\u2328\uFE0F', '\uD83C\uDF10', '\uD83D\uDDA5\uFE0F', '\uD83C\uDFAE', '\uD83D\uDD0C'];
 
-export default function HomeFallback() {
-  const [featuredProducts, setFeaturedProducts] = useState<(Product | Cluster)[]>([]);
-  const [loading, setLoading] = useState(true);
+export interface HomeFallbackProps {
+  /**
+   * Pre-fetched menu tree (same shape `<Menu tree={...} />` accepts). When
+   * supplied \u2014 typically by the home page Server Component via
+   * `fetchMenu(getAnonymousInfra(), BASE_CATEGORY_ID)` \u2014 the "Shop by
+   * Category" grid renders from this immediately with no client-side
+   * roundtrip and no loading flash.
+   *
+   * Omitting the prop falls back to the legacy client-side `useMenu` fetch.
+   */
+  menuTree?: MenuCategory[];
+}
+
+export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
   const { language } = useLanguage();
 
-  const { categories: menuCategories, fetchMenu } = useMenu({
+  // Fallback fetch only when no pre-fetched tree was supplied.
+  const { categories: fetchedCategories, fetchMenu } = useMenu({
     graphqlClient,
     language,
   });
+
+  const hasPrefetchedTree = Array.isArray(menuTree);
+  const menuCategories: MenuCategory[] = hasPrefetchedTree ? menuTree! : fetchedCategories;
 
   const categories: CategoryDisplay[] = menuCategories.slice(0, 6).map((cat, index) => ({
     id: cat.categoryId,
@@ -44,36 +56,12 @@ export default function HomeFallback() {
   }));
 
   useEffect(() => {
+    // Skip the client-side fetch when the host pre-fetched the tree. This
+    // mirrors the pattern in propeller-v2-react-ui's <Menu tree={...} />
+    // component \u2014 see TECH.md \u00A77 "Pre-fetched data prop pattern".
+    if (hasPrefetchedTree) return;
     fetchMenu(baseCategoryId);
-  }, [fetchMenu]);
-
-  useEffect(() => {
-    if (menuCategories.length === 0) return;
-    const firstCat = menuCategories[0];
-
-    const loadProducts = async () => {
-      setLoading(true);
-      try {
-        const lang = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-        const categoryQueryVariables: CategoryQueryVariables = {
-          categoryId: firstCat.categoryId,
-          language: lang,
-          imageSearchFilters: imageSearchFiltersGrid,
-          imageVariantFilters: imageVariantFiltersMedium,
-        };
-        const categoryData = await services.category.getCategory(categoryQueryVariables);
-        if (categoryData.products?.items) {
-          setFeaturedProducts(categoryData.products.items.slice(0, 8) as (Product | Cluster)[]);
-        }
-      } catch (error) {
-        console.error('Failed to load featured products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, [menuCategories]);
+  }, [hasPrefetchedTree, fetchMenu]);
 
   return (
     <>

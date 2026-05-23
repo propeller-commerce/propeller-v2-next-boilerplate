@@ -23,9 +23,10 @@
  * the auth-cookie read in `getServerInfra()`. See `lib/server.ts`.
  */
 
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import {
   getListingInfra,
@@ -107,14 +108,19 @@ export default async function ClusterPage({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1 py-12">
         <div className="container-width">
           {/* The cluster detail UI is one interactive unit. The island is
               seeded with the server-fetched cluster, so its first render
               (default product) matches the SSR HTML exactly — crawlable
               content, no hydration flash. */}
-          <ClusterDetailIsland clusterId={clusterId} initialCluster={cluster} />
+          {/* Suspense future-proofs the static shell against inner async
+              (PPR-ready). Fallback is null because the island seeds
+              synchronously today. */}
+          <Suspense fallback={null}>
+            <ClusterDetailIsland clusterId={clusterId} initialCluster={cluster} />
+          </Suspense>
         </div>
       </main>
       <Footer />

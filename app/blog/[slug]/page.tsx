@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
 import { getArticle, getAllArticleSlugs } from '@/lib/cms';
@@ -34,7 +34,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1">
         {/* Hero / Cover image */}
         {article.cover && (

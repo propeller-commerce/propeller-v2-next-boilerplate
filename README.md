@@ -105,6 +105,16 @@ and SEO metadata in the initial HTML.
 - `propeller-v2-react-ui/pure` — the package's RSC-safe component entry, used
   to server-render pure display components (`ProductPrice`, `ItemStock`, …)
   without drawing a client boundary.
+- **Anonymous SSR data cache.** Catalog GraphQL fetches issued by anonymous
+  Server Components carry Next 16 `next: { revalidate: 300, tags: [...] }`
+  hints (via the SDK's `GraphQLFetchOptions` slot, v0.11.0+). Logged-in users
+  bypass automatically (cookie read → dynamic render). Tag scheme is
+  centralised in `tagFor()` (`lib/server.ts`); per-entity busts go through
+  `POST /api/revalidate` (gated by `REVALIDATE_SECRET`, body
+  `{ "tag": "product:42" }`) so a backend webhook can refresh just the
+  affected catalog entries without waiting on the revalidate window. The
+  main menu is also pre-fetched server-side (`HeaderServer`) so anonymous
+  navigation HTML lands in the initial response.
 
 **Client-rendered pages.** `cart`, `checkout`, `account/*`, and the auth pages
 are fully `"use client"` — they are interactive, session-specific surfaces

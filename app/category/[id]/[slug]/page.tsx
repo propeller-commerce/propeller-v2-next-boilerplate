@@ -20,9 +20,10 @@
  * `getListingInfra()` picks the right one. See `lib/server.ts`.
  */
 
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { GridTitle } from 'propeller-v2-react-ui/pure';
 import {
@@ -162,7 +163,7 @@ export default async function CategoryPage({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1 py-8">
         <div className="container-width">
           {/* CMS Category Banner — server-rendered. */}
@@ -183,13 +184,21 @@ export default async function CategoryPage({
               category's fetch — the backend then returns 0 products (a filter
               the new category's facets don't have), and only a full refresh
               fixes it. The key makes navigation behave like a refresh. */}
-          <CategoryIsland
-            key={categoryId}
-            categoryId={categoryId}
-            initialSlug={slug}
-            initialCategory={category}
-            initialParams={listing}
-          />
+          {/* Suspense boundary streams the static shell (heading, banner,
+              breadcrumbs) independently of the client island's own work.
+              Today the island is seeded synchronously, but wrapping it now
+              future-proofs the page for any inner async (PPR, deferred
+              data fetches, etc.). The fallback is intentionally minimal —
+              the seeded path is the dominant case. */}
+          <Suspense fallback={null}>
+            <CategoryIsland
+              key={categoryId}
+              categoryId={categoryId}
+              initialSlug={slug}
+              initialCategory={category}
+              initialParams={listing}
+            />
+          </Suspense>
         </div>
       </main>
       <Footer />

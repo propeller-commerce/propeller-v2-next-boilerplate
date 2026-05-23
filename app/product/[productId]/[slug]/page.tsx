@@ -23,7 +23,7 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 // NOTE: Breadcrumbs reads `configuration.urls.getCategoryUrl` (a function),
 // which is non-serializable across the RSC boundary. After Phase E the
 // package is bundled with `"use client"`, so passing `config` from this
@@ -129,7 +129,7 @@ export default async function ProductPage({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">
           {/* Above the fold — pure RSC. Visible in initial HTML.

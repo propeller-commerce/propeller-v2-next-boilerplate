@@ -372,16 +372,6 @@ export default function CategoryIsland({
 
   return (
     <>
-      <div className="propeller-breadcrumbs mb-6">
-        <Breadcrumbs
-          categoryPath={category?.categoryPath || []}
-          currentCategory={category || undefined}
-          language={language}
-          showCurrent={true}
-          configuration={config}
-        />
-      </div>
-
       <CategoryDescription category={category} language={language} />
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -496,5 +486,29 @@ export default function CategoryIsland({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * Above-the-fold breadcrumbs island. Lives in its own client component so the
+ * non-serializable `configuration.urls.getCategoryUrl` function can be wired
+ * up on the client — passing it directly from the Server Component would
+ * throw at the RSC serialization step. Mirrors `ProductBreadcrumbsIsland`.
+ */
+export function CategoryBreadcrumbsIsland({
+  category,
+  language,
+}: {
+  category: Category;
+  language: string;
+}) {
+  return (
+    <Breadcrumbs
+      categoryPath={category.categoryPath || []}
+      currentCategory={category || undefined}
+      language={language}
+      showCurrent={true}
+      configuration={config}
+    />
   );
 }

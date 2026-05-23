@@ -46,7 +46,7 @@ import {
   type RawSearchParams,
 } from '@/lib/listingParams';
 import { ProductSortField } from 'propeller-sdk-v2';
-import CategoryIsland from './CategoryIsland';
+import CategoryIsland, { CategoryBreadcrumbsIsland } from './CategoryIsland';
 
 interface RouteParams {
   id: string;
@@ -168,6 +168,14 @@ export default async function CategoryPage({
         <div className="container-width">
           {/* CMS Category Banner — server-rendered. */}
           {banner && <CategoryBanner banner={banner} />}
+
+          {/* Breadcrumbs — wrapped in a client island because `config` holds
+              function-valued URL builders that aren't serializable from a
+              Server Component. Rendered ABOVE the title so the page order is
+              Breadcrumbs → Title → Description → Grid. */}
+          <div className="propeller-breadcrumbs mb-6">
+            <CategoryBreadcrumbsIsland category={category} language={infra.language} />
+          </div>
 
           {/* Category heading — server-rendered, pure RSC component. */}
           <GridTitle title={categoryName} language={infra.language} />

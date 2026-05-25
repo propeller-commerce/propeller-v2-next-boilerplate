@@ -33,8 +33,6 @@ import Footer from '@/components/layout/Footer';
 // is built WITHOUT the `"use client"` banner so they render in this Server
 // Component without drawing a Client boundary or shipping the client bundle.
 import {
-  ProductPrice,
-  ProductBulkPrices,
   ProductShortDescription,
   ItemStock,
 } from 'propeller-v2-react-ui/pure';
@@ -52,6 +50,7 @@ import { ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import AddToCartIsland, {
   ProductBelowFoldIsland,
   ProductBreadcrumbsIsland,
+  ProductPriceIsland,
 } from './ProductDetailIsland';
 
 interface RouteParams {
@@ -157,21 +156,16 @@ export default async function ProductPage({
             <div className="flex flex-col">
               <div className="mb-6">
                 <h1 className="text-2xl font-bold mb-4">{title}</h1>
-                <ProductPrice
+                {/* Price + bulk prices live in a client island so the
+                    Header's VAT toggle (PriceContext, localStorage-backed)
+                    reactively flips the leading price. The pure components
+                    themselves are unchanged — only the includeTax source. */}
+                <ProductPriceIsland
                   price={price}
-                  includeTax={infra.includeTax}
+                  bulkPrices={(product.bulkPrices || []) as ProductPriceSDK[]}
                   user={infra.user}
                   portalMode={infra.portalMode}
                 />
-                <div className="mt-6">
-                  <ProductBulkPrices
-                    bulkPrices={product.bulkPrices || []}
-                    includeTax={infra.includeTax}
-                    user={infra.user}
-                    portalMode={infra.portalMode}
-                    labels={{ title: '' }}
-                  />
-                </div>
                 <div className="mt-6">
                   <ProductShortDescription product={product} language={infra.language} />
                 </div>

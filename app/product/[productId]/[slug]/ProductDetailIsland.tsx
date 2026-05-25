@@ -25,7 +25,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Cart, CrossupsellType, Product } from 'propeller-sdk-v2';
+import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart } from 'propeller-v2-react-ui';
 import { Breadcrumbs } from 'propeller-v2-react-ui';
@@ -33,10 +33,12 @@ import { ProductTabs } from 'propeller-v2-react-ui';
 import { ProductSlider } from 'propeller-v2-react-ui';
 import { ProductBundles } from 'propeller-v2-react-ui';
 import { AddToFavorite } from 'propeller-v2-react-ui';
+import { ProductPrice, ProductBulkPrices } from 'propeller-v2-react-ui/pure';
 import type { Category } from 'propeller-sdk-v2';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePrice } from '@/context/PriceContext';
 import { config, localizeHref } from '@/data/config';
 
 export interface ProductDetailIslandProps {
@@ -99,6 +101,48 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
         />
       </div>
     </Card>
+  );
+}
+
+/**
+ * Price + bulk-prices client island. The components themselves are
+ * pure/rsc-safe, but the leading-price tax mode is driven by `usePrice()`
+ * (a localStorage-backed client store), which the server can't read.
+ * Server-rendering them with a hardcoded `includeTax={false}` meant the
+ * Header's VAT toggle had no effect on the PDP main price — only the
+ * cross-sell sliders below (which read includeTax via PropellerProvider
+ * infra) reacted. This island re-reads PriceContext on every flip.
+ */
+export function ProductPriceIsland({
+  price,
+  bulkPrices,
+  user,
+  portalMode,
+}: {
+  price: ProductPriceSDK;
+  bulkPrices: ProductPriceSDK[];
+  user: Contact | Customer | null;
+  portalMode: string;
+}) {
+  const { includeTax } = usePrice();
+  return (
+    <>
+      <ProductPrice
+        price={price}
+        includeTax={includeTax}
+        user={user}
+        portalMode={portalMode}
+      />
+      <div className="mt-6">
+        <ProductBulkPrices
+          bulkPrices={bulkPrices}
+          includeTax={includeTax}
+          user={user}
+          portalMode={portalMode}
+          labels={{ title: '' }}
+        />
+      </div>
+    </>
   );
 }
 

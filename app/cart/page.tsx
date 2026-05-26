@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { CartItem } from 'propeller-v2-react-ui';
 import { CartSummary } from 'propeller-v2-react-ui';
+import { CartBonusItems } from 'propeller-v2-react-ui';
 import { ActionCode } from 'propeller-v2-react-ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -57,6 +58,11 @@ export default function CartPage() {
                     afterCartUpdate={(cart: Cart) => { saveCart(cart); }}
                   />
                 ))}
+
+                {/* Bonus items — free items added via incentives. Read-only
+                    list. currency/includeTax/language resolve from
+                    PropellerProvider (PropellerHostBridge). */}
+                <CartBonusItems cart={cart ?? undefined} />
               </div>
 
               {/* Cart Summary */}

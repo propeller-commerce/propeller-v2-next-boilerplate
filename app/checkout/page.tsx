@@ -22,6 +22,7 @@ import { CartCarriers } from 'propeller-v2-react-ui';
 import { DeliveryDate } from 'propeller-v2-react-ui';
 import { CartOverview } from 'propeller-v2-react-ui';
 import { ItemsOverview } from 'propeller-v2-react-ui';
+import { CartBonusItems } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -659,6 +660,9 @@ function CheckoutPageInner() {
                       showAvailability={false}
                       itemNameClickable={false}
                     />
+                    {/* Bonus items — free items added via incentives.
+                        currency/includeTax/language resolve from PropellerProvider. */}
+                    <CartBonusItems cart={state.cart} />
                   </CardContent>
                 </Card>
 

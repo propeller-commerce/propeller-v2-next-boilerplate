@@ -32,6 +32,7 @@ export const serializeCart = (cart: Cart): string => {
     notes: cart.notes,
     reference: cart.reference,
     items: deepPlain(cart.items),
+    bonusItems: deepPlain(cart.bonusItems),
     total: deepPlain(cart.total),
     invoiceAddress: deepPlain(cart.invoiceAddress),
     deliveryAddress: deepPlain(cart.deliveryAddress),

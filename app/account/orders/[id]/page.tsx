@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { OrderItemCard } from 'propeller-v2-react-ui';
+import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { OrderTotals } from 'propeller-v2-react-ui';
 import { OrderActions } from 'propeller-v2-react-ui';
 import { OrderShipments } from 'propeller-v2-react-ui';
@@ -162,65 +163,7 @@ export default function OrderDetailPage() {
                         })()}
 
                         {/* Bonus Items */}
-                        {(() => {
-                            const bonusItems = order.items?.filter((item: OrderItem) =>
-                                item.class === "product" && item.isBonus === "Y"
-                            );
-
-                            if (bonusItems?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                <thead className="bg-gray-50 border-b">
-                                                    <tr>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                                                    </tr>
-                                                </thead>
-                                                {bonusItems.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
-
-                        {/* Surcharges */}
-                        {(() => {
-                            const surcharges = order.items?.filter((item: OrderItem) => item.class === "surcharge");
-
-                            if (surcharges?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                {surcharges.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                        showImage={false}
-                                                        showSku={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
+                        <OrderBonusItems order={order} />
                     </div>
 
                     {/* Order Bottom Actions & Totals */}

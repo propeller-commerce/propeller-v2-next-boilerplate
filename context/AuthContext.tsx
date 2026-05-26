@@ -361,6 +361,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           type: 'AUTH_SUCCESS',
           payload: { user: plain, accessToken: '' },
         });
+        // Let CompanyContext re-point its `selectedCompany` at the fresh
+        // company copy. That context holds a SEPARATE snapshot of the company
+        // (the dashboard reads addresses + company info off it, not off
+        // `user.company`), so after an address mutation + refreshUser it would
+        // otherwise stay stale — old addresses on the dashboard. Decoupled via
+        // a window event, like the existing `companySwitched`/`userLoggedIn`.
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('userRefreshed', { detail: { user: plain } }));
+        }
       }
     } catch (e) {
       console.error('Error refreshing user data:', e);

@@ -55,6 +55,44 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     return () => window.removeEventListener('userLoggedOut', handleLogout);
   }, [clearSelectedCompany]);
 
+  // Re-sync the selected company when the user is refreshed (e.g. after an
+  // address edit calls refreshUser). `selectedCompany` is a separate snapshot
+  // that the dashboard reads addresses + company info off — without this it
+  // keeps the stale copy and shows the old addresses. Re-point it at the FRESH
+  // company carried on the refreshed user, matching the current companyId
+  // (multi-company contacts), else the user's default. State-only — this is the
+  // same data the user already selected, so no `companySwitched` dispatch and
+  // no localStorage churn beyond keeping the snapshot current.
+  useEffect(() => {
+    const handleUserRefreshed = (e: Event) => {
+      const user = (e as CustomEvent<{ user: unknown }>).detail?.user as
+        | { company?: Company; companies?: { items?: Company[] } }
+        | null
+        | undefined;
+      if (!user) return;
+      setSelectedCompanyState((current) => {
+        const targetId = current?.companyId;
+        const candidates: Company[] = [
+          ...(user.companies?.items ?? []),
+          ...(user.company ? [user.company] : []),
+        ];
+        const next =
+          (targetId != null && candidates.find((c) => c?.companyId === targetId)) ||
+          user.company ||
+          null;
+        if (!next) return current;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          /* storage full / unavailable — in-memory state still updates */
+        }
+        return next;
+      });
+    };
+    window.addEventListener('userRefreshed', handleUserRefreshed);
+    return () => window.removeEventListener('userRefreshed', handleUserRefreshed);
+  }, []);
+
   return (
     <CompanyContext.Provider value={{ selectedCompany, setSelectedCompany, clearSelectedCompany }}>
       {children}

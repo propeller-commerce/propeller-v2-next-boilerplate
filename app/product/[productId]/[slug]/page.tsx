@@ -46,7 +46,7 @@ import {
   resolveSeoDescription,
   resolveCanonicalUrl,
 } from '@/lib/seo';
-import { ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { ProductPrice as ProductPriceSDK, MediaImage } from 'propeller-sdk-v2';
 import AddToCartIsland, {
   ProductBelowFoldIsland,
   ProductBreadcrumbsIsland,
@@ -123,8 +123,8 @@ export default async function ProductPage({
   const price = product.price as ProductPriceSDK;
   const title = getLanguageString(product.names, infra.language, '');
   const images: string[] = (product.media?.images?.items ?? [])
-    .map((image: { imageVariants?: { url?: string }[] }) => image.imageVariants?.[0]?.url)
-    .filter((url: string | undefined): url is string => !!url);
+    .map((image: MediaImage) => image.imageVariants?.[0]?.url)
+    .filter((url): url is string => !!url);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -156,10 +156,13 @@ export default async function ProductPage({
             <div className="flex flex-col">
               <div className="mb-6">
                 <h1 className="text-2xl font-bold mb-4">{title}</h1>
-                {/* Price + bulk prices live in a client island so the
-                    Header's VAT toggle (PriceContext, localStorage-backed)
-                    reactively flips the leading price. The pure components
-                    themselves are unchanged — only the includeTax source. */}
+                {/* Price + bulk prices live in a client island so the Header's
+                    VAT toggle flips them in-place without a navigation. The
+                    server still renders the correct initial markup — the
+                    `price_include_tax` cookie is read both here (via
+                    `getServerInfra`) AND by `PriceProvider` (seeded in
+                    `app/layout.tsx`), so SSR + hydration agree on first paint.
+                    The island just owns subsequent client-side toggles. */}
                 <ProductPriceIsland
                   price={price}
                   bulkPrices={(product.bulkPrices || []) as ProductPriceSDK[]}

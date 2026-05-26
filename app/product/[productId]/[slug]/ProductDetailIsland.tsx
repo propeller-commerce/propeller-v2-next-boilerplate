@@ -105,13 +105,17 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
 }
 
 /**
- * Price + bulk-prices client island. The components themselves are
- * pure/rsc-safe, but the leading-price tax mode is driven by `usePrice()`
- * (a localStorage-backed client store), which the server can't read.
- * Server-rendering them with a hardcoded `includeTax={false}` meant the
- * Header's VAT toggle had no effect on the PDP main price — only the
- * cross-sell sliders below (which read includeTax via PropellerProvider
- * infra) reacted. This island re-reads PriceContext on every flip.
+ * Price + bulk-prices client island. The components themselves are pure /
+ * rsc-safe, but the tax-mode preference is reactive — when the user toggles
+ * the Header's VAT switch, this island re-reads `usePrice()` and re-renders
+ * the prices in-place, no navigation required.
+ *
+ * The initial render still matches the server: `PriceProvider` is seeded
+ * from the `price_include_tax` cookie in `app/layout.tsx`, and the server's
+ * `getServerInfra()` reads the same cookie — so SSR HTML and this island's
+ * first hydration snapshot agree (no flash for gross-price users on first
+ * paint). The island only earns its keep on subsequent toggles within the
+ * same page view.
  */
 export function ProductPriceIsland({
   price,
@@ -227,6 +231,17 @@ export function ProductBreadcrumbsIsland({
   );
 }
 
+// Ordered list of cross-sell sections shown below the PDP fold. Each entry
+// becomes one `<ProductSlider>` with its own title — passing multiple types to
+// a single slider merges them into one section, which is NOT the UX we want.
+const CROSS_SELLS = [
+  CrossupsellType.ACCESSORIES,
+  CrossupsellType.RELATED,
+  CrossupsellType.ALTERNATIVES,
+  CrossupsellType.OPTIONS,
+  CrossupsellType.PARTS,
+] as const;
+
 /**
  * Below-the-fold section — tabs, bundles, related/accessory sliders.
  * Sits outside the main 2-column grid, full width.
@@ -251,91 +266,26 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
         />
       </div>
-      <ProductSlider
-        crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
-        productId={productId}
-        taxZone="NL"
-        showAvailability={false}
-        showStock={true}
-        cartId={cart?.cartId}
-        createCart={true}
-        onCartCreated={(newCart) => saveCart(newCart)}
-        afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-        showModal={true}
-        onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-        onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-        configuration={config}
-        onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-        onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-      />
-      <ProductSlider
-        crossUpsellTypes={[CrossupsellType.RELATED]}
-        productId={productId}
-        taxZone="NL"
-        showAvailability={false}
-        showStock={true}
-        cartId={cart?.cartId}
-        createCart={true}
-        onCartCreated={(newCart) => saveCart(newCart)}
-        afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-        showModal={true}
-        onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-        onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-        configuration={config}
-        onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-        onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-      />
-      <ProductSlider
-        crossUpsellTypes={[CrossupsellType.ALTERNATIVES]}
-        productId={productId}
-        taxZone="NL"
-        showAvailability={false}
-        showStock={true}
-        cartId={cart?.cartId}
-        createCart={true}
-        onCartCreated={(newCart) => saveCart(newCart)}
-        afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-        showModal={true}
-        onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-        onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-        configuration={config}
-        onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-        onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-      />
-      <ProductSlider
-        crossUpsellTypes={[CrossupsellType.OPTIONS]}
-        productId={productId}
-        taxZone="NL"
-        showAvailability={false}
-        showStock={true}
-        cartId={cart?.cartId}
-        createCart={true}
-        onCartCreated={(newCart) => saveCart(newCart)}
-        afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-        showModal={true}
-        onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-        onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-        configuration={config}
-        onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-        onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-      />
-      <ProductSlider
-        crossUpsellTypes={[CrossupsellType.PARTS]}
-        productId={productId}
-        taxZone="NL"
-        showAvailability={false}
-        showStock={true}
-        cartId={cart?.cartId}
-        createCart={true}
-        onCartCreated={(newCart) => saveCart(newCart)}
-        afterAddToCart={(updatedCart) => saveCart(updatedCart)}
-        showModal={true}
-        onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-        onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-        configuration={config}
-        onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
-        onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
-      />
+      {CROSS_SELLS.map((type) => (
+        <ProductSlider
+          key={type}
+          crossUpsellTypes={[type]}
+          productId={productId}
+          taxZone="NL"
+          showAvailability={false}
+          showStock={true}
+          cartId={cart?.cartId}
+          createCart={true}
+          onCartCreated={(newCart) => saveCart(newCart)}
+          afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+          showModal={true}
+          onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+          onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+          configuration={config}
+          onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+          onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+        />
+      ))}
     </>
   );
 }

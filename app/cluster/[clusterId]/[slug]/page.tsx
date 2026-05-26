@@ -28,6 +28,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
+import { ClusterJsonLd } from 'propeller-v2-react-ui/pure';
 import {
   getListingInfra,
   getAnonymousInfra,
@@ -37,6 +38,7 @@ import {
   resolveSeoTitle,
   resolveSeoDescription,
   resolveCanonicalUrl,
+  buildJsonLdContext,
 } from '@/lib/seo';
 import ClusterDetailIsland from './ClusterDetailIsland';
 
@@ -106,8 +108,13 @@ export default async function ClusterPage({
   const cluster = await fetchCluster(infra, clusterId);
   if (!cluster) notFound();
 
+  const jsonLdContext = buildJsonLdContext(infra);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* schema.org structured data — emitted as `@type: "Product"` because
+          schema.org has no `Cluster` type. Server-rendered in the body. */}
+      <ClusterJsonLd cluster={cluster} context={jsonLdContext} />
       <HeaderServer />
       <main className="flex-1 py-12">
         <div className="container-width">

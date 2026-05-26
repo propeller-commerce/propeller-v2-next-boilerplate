@@ -225,6 +225,30 @@ async function readCookieAccessToken(): Promise<string | undefined> {
   return store.get('access_token')?.value;
 }
 
+/**
+ * VAT-inclusive preference, sourced from the non-httpOnly `price_include_tax`
+ * cookie set by the Header's toggle (see `context/PriceContext.tsx`).
+ * Reading this cookie opts the route into dynamic rendering — anonymous
+ * routes that call this MUST set `cacheable: false`.
+ */
+async function readIncludeTaxCookie(): Promise<boolean> {
+  const store = await cookies();
+  return store.get('price_include_tax')?.value === '1';
+}
+
+/**
+ * Read the portal mode env var and normalise it to the kebab-case values the
+ * package's `isContentHidden` helper matches on (`'open'` / `'semi-closed'` /
+ * `'closed'`). Old defaults of `'OPEN'` (uppercase) or `'semiClosed'` (camelCase)
+ * silently never matched, leaving the semi-closed gate as a no-op.
+ */
+function readPortalMode(): string {
+  const raw = (process.env.BOILERPLATE_PORTAL_MODE || 'open').trim().toLowerCase();
+  // Tolerate the historical camelCase value too — it means the same thing.
+  if (raw === 'semiclosed') return 'semi-closed';
+  return raw;
+}
+
 // ── Server-side services accessor (mirrors the client-side createServices) ──
 
 /** Same `Services` shape as the client; wired to a server client instance. */
@@ -243,7 +267,8 @@ export interface ServerInfra {
   user: Contact | Customer | null;
   /** Default language. Reads `BOILERPLATE_DEFAULT_LANGUAGE` env, falls back to 'NL'. */
   language: string;
-  /** Portal mode. Reads `BOILERPLATE_PORTAL_MODE`, falls back to 'OPEN'. */
+  /** Portal mode — `'open'` / `'semi-closed'` / `'closed'`. Reads `BOILERPLATE_PORTAL_MODE`,
+   *  normalised to lowercase kebab-case (the package's `isContentHidden` matches on these). */
   portalMode: string;
   /** Currency symbol. Reads `BOILERPLATE_CURRENCY`, falls back to '€'. */
   currency: string;
@@ -311,9 +336,14 @@ function taintInfra(infra: ServerInfra): void {
 }
 
 export async function getServerInfra(): Promise<ServerInfra> {
-  // Read the token FIRST so we can attach it as the client's Authorization
-  // header — `direct`-mode SDK calls aren't authenticated otherwise.
-  const token = await readCookieAccessToken();
+  // Read the token + tax preference FIRST. The token is attached as the
+  // client's Authorization header (direct-mode SDK calls aren't authenticated
+  // otherwise); the tax flag flows into the infra value object so server
+  // components render the right gross/net price in the initial HTML.
+  const [token, includeTax] = await Promise.all([
+    readCookieAccessToken(),
+    readIncludeTaxCookie(),
+  ]);
   const client = createServerClient({ bearerToken: token });
   const services = createServices(client);
 
@@ -324,9 +354,9 @@ export async function getServerInfra(): Promise<ServerInfra> {
     services,
     user,
     language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
-    portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
+    portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
-    includeTax: false, // sticky-per-user toggle; defaults to net prices on the server
+    includeTax,
     cacheable: false,  // cookie read forces dynamic rendering — no fetch cache
   };
   taintInfra(infra);
@@ -360,7 +390,7 @@ export function getAnonymousInfra(): ServerInfra {
     services,
     user: null,
     language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
-    portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
+    portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax: false,
     cacheable: true, // no cookie read → Next data cache applies when tags + revalidate are attached
@@ -376,12 +406,43 @@ export async function hasAuthCookie(): Promise<boolean> {
 }
 
 /**
- * Pick the right infra for a listing page: anonymous (cacheable) when there
- * is no auth cookie, full (dynamic, personalised) when there is. Reading the
- * cookie here is what makes the authenticated branch dynamic.
+ * Anonymous infra variant that honours the VAT toggle cookie. Reading the
+ * cookie opts the route into dynamic rendering, so this returns
+ * `cacheable: false` — use it for routes that render prices in the initial
+ * HTML and need the gross/net toggle to take effect server-side.
+ *
+ * Routes that don't render prices (or render only generic, non-personalised
+ * chrome) should keep using `getAnonymousInfra()` — it stays cacheable and
+ * always renders net prices, which is correct for SEO crawlers and first-time
+ * visitors with no cookie set.
+ */
+export async function getAnonymousInfraWithTax(): Promise<ServerInfra> {
+  const includeTax = await readIncludeTaxCookie();
+  const client = createServerClient({ getAccessToken: () => undefined });
+  const services = createServices(client);
+  const infra: ServerInfra = {
+    client,
+    services,
+    user: null,
+    language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
+    portalMode: readPortalMode(),
+    currency: process.env.BOILERPLATE_CURRENCY || '€',
+    includeTax,
+    cacheable: false, // cookie read forces dynamic rendering
+  };
+  taintInfra(infra);
+  return infra;
+}
+
+/**
+ * Pick the right infra for a listing page that renders prices: full server
+ * infra (auth + tax cookie, dynamic) when logged in; anonymous-with-tax
+ * (no auth, tax cookie, dynamic) when logged out. Both branches read the
+ * tax cookie, so this is always dynamic — pages that don't show prices
+ * should call `getAnonymousInfra()` directly to stay cacheable.
  */
 export async function getListingInfra(): Promise<ServerInfra> {
-  return (await hasAuthCookie()) ? getServerInfra() : getAnonymousInfra();
+  return (await hasAuthCookie()) ? getServerInfra() : getAnonymousInfraWithTax();
 }
 
 // ── Thin fetch helpers (the data layer Bucket-B components consume) ─────────

@@ -14,6 +14,7 @@ import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
 import { Toaster } from "react-hot-toast";
+import { cookies } from "next/headers";
 import { getGlobal } from "@/lib/cms";
 
 const inter = Inter({
@@ -31,7 +32,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const globalData = await getGlobal();
+  const [globalData, cookieStore] = await Promise.all([getGlobal(), cookies()]);
+  // Seed the price preference from the cookie so SSR and the first client
+  // snapshot agree — without this, gross-price users see a net-priced flash
+  // on first paint while React hydrates and reads the cookie.
+  const initialIncludeTax = cookieStore.get('price_include_tax')?.value === '1';
 
   return (
     <html lang="en">
@@ -40,7 +45,7 @@ export default async function RootLayout({
       >
         <AuthProvider>
           <CompanyProvider>
-            <PriceProvider>
+            <PriceProvider initialIncludeTax={initialIncludeTax}>
             <LanguageProvider>
             <PropellerHostBridge>
             <CartProvider>

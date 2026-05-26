@@ -19,9 +19,14 @@
 import { Suspense } from 'react';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
-import { GridTitle } from 'propeller-v2-react-ui/pure';
-import { ProductSortField, type ProductsResponse } from 'propeller-sdk-v2';
+import { GridTitle, ItemListJsonLd } from 'propeller-v2-react-ui/pure';
+import {
+  ProductSortField,
+  type Product,
+  type ProductsResponse,
+} from 'propeller-sdk-v2';
 import { getListingInfra, fetchSearch, fetchCategory } from '@/lib/server';
+import { buildJsonLdContext } from '@/lib/seo';
 import { config } from '@/data/config';
 import {
   parseListingParams,
@@ -92,8 +97,13 @@ export default async function SearchPage({
     ? 'All products'
     : `Search results for "${term}"`;
 
+  const jsonLdContext = buildJsonLdContext(infra);
+  const firstPageItems = (initialProducts?.items ?? []) as Product[];
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* schema.org ItemList of the first-page search results. Body-level. */}
+      <ItemListJsonLd products={firstPageItems} context={jsonLdContext} />
       <HeaderServer />
       <main className="flex-1 py-8">
         <div className="container-width">

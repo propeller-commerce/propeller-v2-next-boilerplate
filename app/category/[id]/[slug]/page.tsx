@@ -25,7 +25,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
-import { GridTitle } from 'propeller-v2-react-ui/pure';
+import { GridTitle, ItemListJsonLd } from 'propeller-v2-react-ui/pure';
 import {
   getListingInfra,
   getAnonymousInfra,
@@ -39,13 +39,14 @@ import {
   resolveSeoDescription,
   resolveCanonicalUrl,
   resolveSeoKeywords,
+  buildJsonLdContext,
 } from '@/lib/seo';
 import {
   parseListingParams,
   buildTextFilters,
   type RawSearchParams,
 } from '@/lib/listingParams';
-import { ProductSortField } from 'propeller-sdk-v2';
+import { ProductSortField, type Product, type ProductsResponse } from 'propeller-sdk-v2';
 import CategoryIsland, { CategoryBreadcrumbsIsland } from './CategoryIsland';
 
 interface RouteParams {
@@ -161,8 +162,17 @@ export default async function CategoryPage({
     String(categoryId)
   );
 
+  const jsonLdContext = buildJsonLdContext(infra);
+  // First-page items only — schema.org/ItemList captures what's in the SSR
+  // HTML; filter/sort/page navigation does NOT re-emit. Crawlers see this
+  // snapshot.
+  const firstPageItems =
+    ((category.products as ProductsResponse | undefined)?.items ?? []) as Product[];
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* schema.org ItemList of the first-page products. Body-level script. */}
+      <ItemListJsonLd products={firstPageItems} context={jsonLdContext} />
       <HeaderServer />
       <main className="flex-1 py-8">
         <div className="container-width">

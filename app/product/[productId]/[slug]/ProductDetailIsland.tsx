@@ -25,7 +25,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from 'propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart } from 'propeller-v2-react-ui';
 import { Breadcrumbs } from 'propeller-v2-react-ui';
@@ -116,15 +116,18 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
 export function ProductPriceIsland({
   price,
   bulkPrices,
+  surcharges,
   user,
   portalMode,
 }: {
   price: ProductPriceSDK;
   bulkPrices: ProductPriceSDK[];
+  surcharges?: Surcharge[];
   user: Contact | Customer | null;
   portalMode: string;
 }) {
   const { includeTax } = usePrice();
+  const { language } = useLanguage();
   return (
     <>
       <ProductPrice
@@ -132,7 +135,9 @@ export function ProductPriceIsland({
         includeTax={includeTax}
         user={user}
         portalMode={portalMode}
+        currency={config.currency}
       />
+      <ProductSurcharges surcharges={surcharges} language={language} />
       <div className="mt-6">
         <ProductBulkPrices
           bulkPrices={bulkPrices}
@@ -143,6 +148,54 @@ export function ProductPriceIsland({
         />
       </div>
     </>
+  );
+}
+
+/**
+ * Additional product surcharges (e.g. "Statiegeld" / deposit fees), shown
+ * under the price. Mirrors playground-v2's `propeller-product-surcharges.php`:
+ * a quantity (always 1 on the PDP) × value, formatted by surcharge `type` —
+ * `FlatFee` → `1 x € 0,25 (Name)`, `Percentage` → `1 x 5% (Name)`.
+ *
+ * The surcharge data comes from the product query (`Product.surcharges`, fetched
+ * by the SDK's `SurchargeFields` fragment) — no extra request. Renders nothing
+ * when the product has no surcharges.
+ */
+function ProductSurcharges({
+  surcharges,
+  language,
+}: {
+  surcharges?: Surcharge[];
+  language: string;
+}) {
+  const list = (surcharges ?? []).filter((s) => s.enabled !== false);
+  if (list.length === 0) return null;
+
+  // Localized surcharge name — match the active language, else the first entry.
+  const surchargeName = (s: Surcharge): string =>
+    s.name?.find((n) => n.language === language)?.value ?? s.name?.[0]?.value ?? '';
+
+  // Match the PDP price block's Dutch number style (e.g. 0,25).
+  const formatValue = (v: number): string =>
+    new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+      Number(v || 0)
+    );
+
+  const quantity = 1; // PDP price block has no quantity selector — playground uses 1 here too.
+
+  return (
+    <div className="propeller-product-surcharges mt-2 text-sm text-muted-foreground">
+      <span className="font-medium">Additional surcharges:</span>
+      <ul className="propeller-product-surcharges__list mt-1 space-y-0.5">
+        {list.map((s) => (
+          <li key={s.id} className="propeller-product-surcharges__item">
+            {s.type === SurchargeType.Percentage
+              ? `${quantity} x ${s.value}% (${surchargeName(s)})`
+              : `${quantity} x ${config.currency} ${formatValue(s.value)} (${surchargeName(s)})`}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

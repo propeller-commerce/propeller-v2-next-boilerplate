@@ -163,6 +163,7 @@ export default async function ProductPage({
                 <ProductPriceIsland
                   price={price}
                   bulkPrices={(product.bulkPrices || []) as ProductPriceSDK[]}
+                  surcharges={product.surcharges || []}
                   user={infra.user}
                   portalMode={infra.portalMode}
                 />

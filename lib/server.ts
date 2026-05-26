@@ -236,6 +236,19 @@ async function readIncludeTaxCookie(): Promise<boolean> {
   return store.get('price_include_tax')?.value === '1';
 }
 
+/**
+ * Read the portal mode env var and normalise it to the kebab-case values the
+ * package's `isContentHidden` helper matches on (`'open'` / `'semi-closed'` /
+ * `'closed'`). Old defaults of `'OPEN'` (uppercase) or `'semiClosed'` (camelCase)
+ * silently never matched, leaving the semi-closed gate as a no-op.
+ */
+function readPortalMode(): string {
+  const raw = (process.env.BOILERPLATE_PORTAL_MODE || 'open').trim().toLowerCase();
+  // Tolerate the historical camelCase value too — it means the same thing.
+  if (raw === 'semiclosed') return 'semi-closed';
+  return raw;
+}
+
 // ── Server-side services accessor (mirrors the client-side createServices) ──
 
 /** Same `Services` shape as the client; wired to a server client instance. */
@@ -254,7 +267,8 @@ export interface ServerInfra {
   user: Contact | Customer | null;
   /** Default language. Reads `BOILERPLATE_DEFAULT_LANGUAGE` env, falls back to 'NL'. */
   language: string;
-  /** Portal mode. Reads `BOILERPLATE_PORTAL_MODE`, falls back to 'OPEN'. */
+  /** Portal mode — `'open'` / `'semi-closed'` / `'closed'`. Reads `BOILERPLATE_PORTAL_MODE`,
+   *  normalised to lowercase kebab-case (the package's `isContentHidden` matches on these). */
   portalMode: string;
   /** Currency symbol. Reads `BOILERPLATE_CURRENCY`, falls back to '€'. */
   currency: string;
@@ -340,7 +354,7 @@ export async function getServerInfra(): Promise<ServerInfra> {
     services,
     user,
     language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
-    portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
+    portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax,
     cacheable: false,  // cookie read forces dynamic rendering — no fetch cache
@@ -376,7 +390,7 @@ export function getAnonymousInfra(): ServerInfra {
     services,
     user: null,
     language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
-    portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
+    portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax: false,
     cacheable: true, // no cookie read → Next data cache applies when tags + revalidate are attached
@@ -411,7 +425,7 @@ export async function getAnonymousInfraWithTax(): Promise<ServerInfra> {
     services,
     user: null,
     language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
-    portalMode: process.env.BOILERPLATE_PORTAL_MODE || 'OPEN',
+    portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax,
     cacheable: false, // cookie read forces dynamic rendering

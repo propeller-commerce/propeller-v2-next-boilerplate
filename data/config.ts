@@ -97,9 +97,17 @@ function buildEntityUrl(
   return localizeHref(base, language);
 }
 
+/**
+ * Portal access modes. Values are KEBAB-CASE strings — the package's
+ * `isContentHidden(portalMode, user)` helper matches on these exact strings
+ * (see `propeller-v2-react-ui/src/composables/shared/utils/visibilityHelpers.ts`).
+ * Historical note: `SEMI_CLOSED` used to be `'semiClosed'` (camelCase), which
+ * silently never matched the helper — the semi-closed gate was a no-op until
+ * 2026-05-26 when this was corrected.
+ */
 export const PORTAL_MODE = {
   CLOSED: 'closed',
-  SEMI_CLOSED: 'semiClosed',
+  SEMI_CLOSED: 'semi-closed',
   OPEN: 'open'
 } as const;
 
@@ -109,6 +117,9 @@ export const config = {
   anonymousId: 71,
   language: DEFAULT_LANG,
   currency: '€',
+  /** ISO 4217 currency code — used by JSON-LD / schema.org payloads (`priceCurrency`).
+   *  Distinct from `currency` above, which is the display symbol shown to humans. */
+  currencyCode: 'EUR',
   imageSearchFilters: imageSearchFilters,
   imageSearchFiltersGrid: imageSearchFiltersGrid,
   imageVariantFiltersSmall: imageVariantFiltersSmall,

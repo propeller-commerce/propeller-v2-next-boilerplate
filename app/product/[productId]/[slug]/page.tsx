@@ -35,6 +35,7 @@ import Footer from '@/components/layout/Footer';
 import {
   ProductShortDescription,
   ItemStock,
+  ProductJsonLd,
 } from 'propeller-v2-react-ui/pure';
 // ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from 'propeller-v2-react-ui';
@@ -45,6 +46,7 @@ import {
   resolveSeoTitle,
   resolveSeoDescription,
   resolveCanonicalUrl,
+  buildJsonLdContext,
 } from '@/lib/seo';
 import { ProductPrice as ProductPriceSDK, MediaImage } from 'propeller-sdk-v2';
 import AddToCartIsland, {
@@ -126,8 +128,15 @@ export default async function ProductPage({
     .map((image: MediaImage) => image.imageVariants?.[0]?.url)
     .filter((url): url is string => !!url);
 
+  const jsonLdContext = buildJsonLdContext(infra);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* schema.org structured data for Google Rich Results. Server-rendered
+          inside the body — Next's App Router doesn't allow appending raw
+          <script> tags via <head>/generateMetadata. Crawlers accept JSON-LD
+          anywhere in the document. */}
+      <ProductJsonLd product={product} context={jsonLdContext} />
       <HeaderServer />
       <main className="flex-1 py-12">
         <div className="container-width max-w-5xl">

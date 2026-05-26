@@ -16,7 +16,9 @@
 
 import 'server-only';
 import type { LocalizedString } from 'propeller-sdk-v2';
-import { getLanguageString } from 'propeller-v2-react-ui/shared';
+import { getLanguageString, type JsonLdContext } from 'propeller-v2-react-ui/shared';
+import { config } from '@/data/config';
+import type { ServerInfra } from './server';
 
 /**
  * Resolve a localized field for `language`, returning `undefined` (not '')
@@ -98,6 +100,31 @@ export function resolveSeoKeywords(
     .map((k) => k.trim())
     .filter(Boolean);
   return list.length > 0 ? list : undefined;
+}
+
+/**
+ * Build the per-request `JsonLdContext` consumed by `<ProductJsonLd>`,
+ * `<ClusterJsonLd>` and `<ItemListJsonLd>`. Centralised here so every page
+ * constructs the same shape and any future config (e.g. multi-currency,
+ * stored portalMode) gets wired in one place.
+ *
+ * Sources:
+ *   - `siteUrl`  from `NEXT_PUBLIC_SITE_URL` (REQUIRED for absolute URLs in
+ *     JSON-LD; falls back to '' which yields path-only URLs — Google accepts
+ *     these but absolute is preferred for canonicalisation).
+ *   - `currencyCode` from `config.currencyCode` (ISO 4217; separate from the
+ *     display symbol `config.currency`).
+ *   - `portalMode`, `user`, `language` from the request's `ServerInfra`.
+ */
+export function buildJsonLdContext(infra: ServerInfra): JsonLdContext {
+  return {
+    siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, ''),
+    language: infra.language,
+    currencyCode: config.currencyCode,
+    portalMode: infra.portalMode,
+    user: infra.user,
+    urls: config.urls,
+  };
 }
 
 /** Strip HTML tags and collapse whitespace — for description fallbacks. */

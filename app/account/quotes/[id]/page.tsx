@@ -195,33 +195,6 @@ export default function QuoteDetailPage() {
 
                         {/* Bonus Items */}
                         <OrderBonusItems order={quote} />
-
-                        {/* Surcharges */}
-                        {(() => {
-                            const surcharges = quote.items?.filter((item: OrderItem) => item.class === "surcharge");
-
-                            if (surcharges?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                {surcharges.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                        showImage={false}
-                                                        showSku={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
                     </div>
 
                     {/* Quote Bottom Totals */}

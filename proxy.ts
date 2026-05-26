@@ -22,6 +22,10 @@ const CSP_PROD = [
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self' 'unsafe-inline'",
   "connect-src 'self' https:",
+  // Allow embedded product videos (ProductVideos iframes). Without an explicit
+  // frame-src, iframes fall back to default-src 'self' and YouTube/Vimeo embeds
+  // are blocked. frame-ancestors below is unrelated (controls who may frame us).
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -36,6 +40,8 @@ const CSP_DEV = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   // Allow ws/wss for HMR websocket.
   "connect-src 'self' ws: wss: https: http:",
+  // Allow embedded product videos (ProductVideos iframes) — see CSP_PROD.
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

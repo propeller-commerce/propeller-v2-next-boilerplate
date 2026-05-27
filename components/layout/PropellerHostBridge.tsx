@@ -2,18 +2,20 @@
 
 /**
  * PropellerHostBridge — host-side glue that wires the boilerplate's auth /
- * company / price / language stores into the package's PropellerProvider.
+ * company / price / language stores into the package's two-tier provider.
  *
- * After Phase D, `PropellerProvider` takes its value object as an explicit
- * prop and imports nothing from `@/context/*`. The aggregation that used to
- * live inside the provider lives here instead. When the propeller surface
- * ships as `@propeller/react`, each adopter writes a thin file like this to
- * map their own state stores into the PropellerInfra shape — there's no
- * assumption baked into the package about how the host manages auth/cart/etc.
+ * After Workstream E the package splits its DI into two providers:
+ *   - <PropellerDepsProvider> — Tier 1, app-wide (graphqlClient, services,
+ *     currency, configuration). Doesn't change at runtime.
+ *   - <PropellerProvider>     — Tier 2, per-scope (user, companyId, language,
+ *     includeTax, portalMode). Nestable for impersonation / multi-cart.
+ *
+ * The bridge mounts both, so package components inside this subtree see a
+ * unified PropellerInfra via `useInfraProps()` / `usePropellerContext()`.
  *
  * Mirror file in propeller-vue: a small wrapper component that reads the
- * host's Pinia/Vuex stores and feeds the same value object to the Vue
- * PropellerProvider.
+ * host's Pinia stores and feeds the same values to <PropellerProvider> after
+ * `app.use(propellerVue, deps)` has installed Tier 1 deps.
  */
 
 import { useMemo, ReactNode } from 'react';
@@ -23,7 +25,22 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { PropellerProvider, PropellerInfra } from 'propeller-v2-react-ui';
+import {
+  PropellerDepsProvider,
+  PropellerProvider,
+  type PropellerDeps,
+  type PropellerScope,
+} from 'propeller-v2-react-ui';
+
+// Tier 1 deps are module-constant — graphqlClient/services/config never
+// change at runtime, so hoist outside the component to avoid a fresh object
+// per render (which would re-broadcast the deps context to every consumer).
+const deps: PropellerDeps = {
+  graphqlClient,
+  services,
+  currency: config.currency,
+  configuration: config,
+};
 
 export default function PropellerHostBridge({ children }: { children: ReactNode }) {
   const { state } = useAuth();
@@ -31,24 +48,23 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
   const { includeTax } = usePrice();
   const { language } = useLanguage();
 
-  // Only the 4 reactive values are deps; graphqlClient/services/config/portalMode
-  // are module constants and never change at runtime, so a stable value object
-  // is produced — context consumers only re-render on intentional cache-busts
-  // (auth/company/language/tax), not on every parent render.
-  const value = useMemo<PropellerInfra>(
+  // Tier 2 scope — only the 4 reactive store values are deps; the memo keeps
+  // the context value stable across unrelated parent renders so scope
+  // consumers only re-render on intentional cache-busts.
+  const scope = useMemo<PropellerScope>(
     () => ({
-      graphqlClient,
-      services,
       user: state.user,
       companyId: selectedCompany?.companyId,
       language,
       includeTax,
-      currency: config.currency,
-      configuration: config,
       portalMode: config.portal.mode,
     }),
     [state.user, selectedCompany?.companyId, language, includeTax]
   );
 
-  return <PropellerProvider value={value}>{children}</PropellerProvider>;
+  return (
+    <PropellerDepsProvider value={deps}>
+      <PropellerProvider value={scope}>{children}</PropellerProvider>
+    </PropellerDepsProvider>
+  );
 }

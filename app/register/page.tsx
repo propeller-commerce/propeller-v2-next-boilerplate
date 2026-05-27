@@ -101,7 +101,7 @@ export default function RegisterPage() {
 
                     let targetCart = await fetchActiveCart({
                       services,
-                      user: registeredUser as Contact | Customer,
+                      user: user as Contact | Customer,
                       companyId: company?.companyId,
                       language,
                       imageSearchFilters: config.imageSearchFiltersGrid,
@@ -112,7 +112,7 @@ export default function RegisterPage() {
                       if (!targetCart) {
                         targetCart = await initCart({
                           services,
-                          user: registeredUser as Contact | Customer,
+                          user: user as Contact | Customer,
                           companyId: company?.companyId,
                           language,
                           imageSearchFilters: config.imageSearchFiltersGrid,

@@ -90,14 +90,14 @@ export default function LoginPage() {
                     }
 
                     // Switch to user's preferred language if available
-                    const userLang = (loggedInUser as Contact | Customer).primaryLanguage;
+                    const userLang = (user as Contact | Customer).primaryLanguage;
                     if (userLang && userLang !== language) {
                       setLanguage(userLang);
                     }
 
                     let targetCart = await fetchActiveCart({
                       services,
-                      user: loggedInUser as Contact | Customer,
+                      user: user as Contact | Customer,
                       companyId: company?.companyId,
                       language,
                       imageSearchFilters: config.imageSearchFiltersGrid,
@@ -108,7 +108,7 @@ export default function LoginPage() {
                       if (!targetCart) {
                         targetCart = await initCart({
                           services,
-                          user: loggedInUser as Contact | Customer,
+                          user: user as Contact | Customer,
                           companyId: company?.companyId,
                           language,
                           imageSearchFilters: config.imageSearchFiltersGrid,

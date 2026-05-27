@@ -337,19 +337,19 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                       }
 
                       // Switch to user's preferred language if available
-                      const userLang = (loggedInUser as Contact | Customer).primaryLanguage;
+                      const userLang = (user as Contact | Customer).primaryLanguage;
                       if (userLang && userLang !== language) {
                         setLanguage(userLang);
                       }
 
-                      const company = (loggedInUser as Contact).company;
-                      let targetCart = await fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
+                      const company = (user as Contact).company;
+                      let targetCart = await fetchActiveCart(user as Contact | Customer, company?.companyId);
 
                       if (anonymousCart?.items?.length) {
                         if (!targetCart) {
                           targetCart = await initCart({
                             services,
-                            user: loggedInUser as Contact | Customer,
+                            user: user as Contact | Customer,
                             companyId: company?.companyId,
                             language,
                             imageSearchFilters: config.imageSearchFiltersGrid,

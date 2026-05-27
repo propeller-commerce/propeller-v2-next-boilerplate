@@ -22,7 +22,6 @@ import { AccountIconAndMenu } from 'propeller-v2-react-ui';
 import { CompanySwitcher } from 'propeller-v2-react-ui';
 import { useCompany } from '@/context/CompanyContext';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
-import { stripLeadingUnderscores } from '@/data/defaults';
 import { fetchActiveCart as fetchActiveCartShared } from 'propeller-v2-react-ui';
 import { mergeAnonymousCart } from 'propeller-v2-react-ui';
 import { initCart } from 'propeller-v2-react-ui';
@@ -315,12 +314,11 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                   <AccountIconAndMenu
                     cart={cart as Cart | null}
                     afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
-                      const loggedInUser = stripLeadingUnderscores(user);
-                      localStorage.setItem('user', JSON.stringify(loggedInUser));
-                      updateUser(loggedInUser);
+                      localStorage.setItem('user', JSON.stringify(user));
+                      updateUser(user);
 
-                      if ((loggedInUser as Contact).company) {
-                        setSelectedCompany((loggedInUser as Contact).company as Company);
+                      if ((user as Contact).company) {
+                        setSelectedCompany((user as Contact).company as Company);
                       }
 
                       // Persist the token in the httpOnly cookie (server-side),

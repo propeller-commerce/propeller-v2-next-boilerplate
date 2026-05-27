@@ -12,7 +12,6 @@ import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
-import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref, config } from '@/data/config';
 import { fetchActiveCart } from 'propeller-v2-react-ui';
 import { mergeAnonymousCart } from 'propeller-v2-react-ui';
@@ -66,11 +65,10 @@ export default function LoginPage() {
                   onForgotPasswordClick={() => router.push(localizeHref('/forgot-password', language))}
                   onRegisterClick={() => router.push(localizeHref('/register', language))}
                   afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
-                    const loggedInUser = stripLeadingUnderscores(user);
-                    localStorage.setItem('user', JSON.stringify(loggedInUser));
-                    updateUser(loggedInUser);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    updateUser(user);
 
-                    const company = (loggedInUser as Contact).company;
+                    const company = (user as Contact).company;
                     if (company) {
                       setSelectedCompany(company as Company);
                     }

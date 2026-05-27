@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/Button';
 import { RegisterForm } from 'propeller-v2-react-ui';
 import { graphqlClient, services } from '@/lib/api';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
-import { stripLeadingUnderscores } from '@/data/defaults';
 import { localizeHref, config } from '@/data/config';
 import { fetchActiveCart } from 'propeller-v2-react-ui';
 import { mergeAnonymousCart } from 'propeller-v2-react-ui';
@@ -80,12 +79,10 @@ export default function RegisterPage() {
                       return;
                     }
 
-                    const registeredUser = stripLeadingUnderscores(user);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    updateUser(user);
 
-                    localStorage.setItem('user', JSON.stringify(registeredUser));
-                    updateUser(registeredUser);
-
-                    const company = (registeredUser as Contact).company;
+                    const company = (user as Contact).company;
                     if (company) {
                       setSelectedCompany(company as Company);
                     }

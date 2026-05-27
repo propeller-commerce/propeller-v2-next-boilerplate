@@ -270,7 +270,7 @@ function CheckoutPageInner() {
       isQuoteMode,
     });
 
-    if (result.success && result.orderId) {
+    if (result.ok) {
       clearCart();
       const managerCart = localStorage.getItem('manager_cart');
       if (managerCart) {
@@ -279,12 +279,13 @@ function CheckoutPageInner() {
       }
       if (getCart) await getCart();
       const thankYouUrl = isQuoteMode
-        ? localizeHref(`/checkout/thank-you/${result.orderId}`, language) + '?mode=quote'
-        : localizeHref(`/checkout/thank-you/${result.orderId}`, language);
+        ? localizeHref(`/checkout/thank-you/${result.data.orderId}`, language) + '?mode=quote'
+        : localizeHref(`/checkout/thank-you/${result.data.orderId}`, language);
       router.push(thankYouUrl);
     } else {
       orderPlacedRef.current = false;
-      setState(prev => ({ ...prev, error: isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order', loading: false }));
+      const fallback = isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order';
+      setState(prev => ({ ...prev, error: result.error || fallback, loading: false }));
     }
   };
 

@@ -76,13 +76,22 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
           ...(user.companies?.items ?? []),
           ...(user.company ? [user.company] : []),
         ];
+        // Prefer the FRESH copy of the currently-selected company (keeps the
+        // user's choice, just with up-to-date data). If the current selection
+        // isn't one of THIS user's companies — e.g. a stale `selected_company`
+        // left over from a previously logged-in identity — fall back to their
+        // default company. This is what stops `fetchActiveCart` from filtering
+        // `carts` by a company the user isn't a member of → "Unauthorized use
+        // of companyIds".
         const next =
           (targetId != null && candidates.find((c) => c?.companyId === targetId)) ||
           user.company ||
           null;
-        if (!next) return current;
+        // Reconcile localStorage with the resolved selection so a later reload
+        // (which reads it back) doesn't resurrect the stale company.
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          else localStorage.removeItem(STORAGE_KEY);
         } catch {
           /* storage full / unavailable — in-memory state still updates */
         }

@@ -198,9 +198,17 @@ export default function ClusterDetailIsland({
                   includeTax={includeTax}
                 />
 
+                {/* Cluster owns the marketing description; variant products
+                    typically ship with empty `shortDescriptions`. Prefer the
+                    selected variant's text when present, otherwise fall back
+                    to the cluster — mirrors the legacy PHP shop. */}
                 <div className="mt-6">
                   <ProductShortDescription
-                    product={selectedProduct as Product}
+                    product={
+                      selectedProduct?.shortDescriptions?.length
+                        ? (selectedProduct as Product)
+                        : (cluster as Cluster)
+                    }
                     language={language}
                   />
                 </div>
@@ -286,10 +294,25 @@ export default function ClusterDetailIsland({
         </div>
       </div>
 
-      {/* Product Tabs — Description, Specifications, etc. */}
+      {/* Product Tabs — Description, Specifications, etc.
+          Backfill `descriptions` / `shortDescriptions` from the cluster when
+          the variant ships empty (the usual case — cluster owns the
+          marketing copy, variants only carry SKU-specific differences). */}
       {displayProduct && (
         <ProductTabs
-          product={displayProduct as Product}
+          product={
+            {
+              ...(displayProduct as Product),
+              descriptions:
+                (displayProduct as Product).descriptions?.length
+                  ? (displayProduct as Product).descriptions
+                  : cluster?.descriptions ?? [],
+              shortDescriptions:
+                (displayProduct as Product).shortDescriptions?.length
+                  ? (displayProduct as Product).shortDescriptions
+                  : cluster?.shortDescriptions ?? [],
+            } as Product
+          }
           productId={(displayProduct as Product).productId}
           className="pb-8"
         />

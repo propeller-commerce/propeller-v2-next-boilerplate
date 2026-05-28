@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
+import { restoreManagerCart } from '@/utils/cartHelpers';
 import { type Cart, type CartMainItem, CrossupsellType } from 'propeller-sdk-v2';
 
 const subscribe = () => () => { };
@@ -73,7 +74,10 @@ export default function CartPage() {
                       cart={cart}
                       onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
                       afterRequestAuthorization={(updatedCart: Cart) => {
-                        clearCart();
+                        // If a manager parked their own cart to act on this
+                        // request, hand it back; otherwise clear.
+                        const parked = restoreManagerCart();
+                        if (parked) saveCart(parked); else clearCart();
                         router.push(`/authorization-request-sent/${updatedCart.cartId}`);
                       }}
                       onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}

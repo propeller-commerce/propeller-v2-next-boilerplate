@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from 'propeller-sdk-v2';
 import { useCheckout } from 'propeller-v2-react-ui';
-import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
+import { restoreManagerCart } from '@/utils/cartHelpers';
 import { CartPaymethods } from 'propeller-v2-react-ui';
 import { AddressSelector } from 'propeller-v2-react-ui';
 import { CartCarriers } from 'propeller-v2-react-ui';
@@ -271,12 +271,10 @@ function CheckoutPageInner() {
     });
 
     if (result.ok) {
-      clearCart();
-      const managerCart = localStorage.getItem('manager_cart');
-      if (managerCart) {
-        saveCart(deserializeCart(managerCart) as Cart);
-        localStorage.removeItem('manager_cart');
-      }
+      // Restore the manager's parked cart if they were acting on a requester's
+      // authorization cart; otherwise clear.
+      const parked = restoreManagerCart();
+      if (parked) saveCart(parked); else clearCart();
       if (getCart) await getCart();
       const thankYouUrl = isQuoteMode
         ? localizeHref(`/checkout/thank-you/${result.data.orderId}`, language) + '?mode=quote'
@@ -678,7 +676,10 @@ function CheckoutPageInner() {
                         user={authState.user ?? undefined}
                         companyId={getActiveCompany()?.companyId ?? undefined}
                         afterRequestAuthorization={(updatedCart) => {
-                          clearCart();
+                          // If a manager parked their own cart to act on this
+                          // request, hand it back; otherwise clear.
+                          const parked = restoreManagerCart();
+                          if (parked) saveCart(parked); else clearCart();
                           router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
                         }}
                         onError={(err) => console.error('Authorization request failed:', err)}

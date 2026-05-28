@@ -17,6 +17,7 @@ import { services } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
+import { restoreManagerCart } from '@/utils/cartHelpers';
 import { CartIconAndSidebar } from 'propeller-v2-react-ui';
 import { AccountIconAndMenu } from 'propeller-v2-react-ui';
 import { CompanySwitcher } from 'propeller-v2-react-ui';
@@ -415,7 +416,10 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                     onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
                     afterRequestAuthorization={(updatedCart) => {
-                      clearCart();
+                      // If a manager parked their own cart to act on this
+                      // request, hand it back; otherwise clear.
+                      const parked = restoreManagerCart();
+                      if (parked) saveCart(parked); else clearCart();
                       router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
                     }}
                     onError={(err) => console.error('Authorization request failed:', err)}

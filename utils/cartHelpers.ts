@@ -64,3 +64,24 @@ export const deserializeCart = (cartJson: string): Cart | null => {
     return null;
   }
 };
+
+/**
+ * Restore the manager's own cart after they finish acting on a requester's
+ * authorization cart.
+ *
+ * When a manager accepts an authorization request, their own cart is parked in
+ * `manager_cart` (see the account/authorization-requests page) and the
+ * requester's cart is loaded. Whether the manager completes that cart by
+ * placing the order OR by submitting it for further authorization, control of
+ * the storefront returns to the manager — so their parked cart must come back.
+ *
+ * Returns the restored Cart when one was parked (caller should saveCart it),
+ * or `null` when there was nothing to restore (caller should clear).
+ */
+export const restoreManagerCart = (): Cart | null => {
+  if (typeof window === 'undefined') return null;
+  const parked = localStorage.getItem('manager_cart');
+  if (!parked) return null;
+  localStorage.removeItem('manager_cart');
+  return deserializeCart(parked);
+};

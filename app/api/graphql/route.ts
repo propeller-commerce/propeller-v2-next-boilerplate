@@ -18,6 +18,15 @@ const ORDER_EDITOR_MUTATIONS = new Set([
   'triggerOrderSendConfirm',
 ]);
 
+// Operations that route to the order key ONLY when the caller identifies as the
+// order-editor client. `contactRegister` is used by BOTH public self-registration
+// (general key) AND authorization-settings "add contact" (order key) — the
+// operationName is identical, so the caller signals intent via the SDK's
+// `clientId` (sent as `X-Client-ID`) and the proxy routes accordingly. The
+// header is server-internal: not forwarded upstream.
+const ORDER_EDITOR_OPT_IN_MUTATIONS = new Set(['contactRegister']);
+const ORDER_EDITOR_CLIENT_ID = 'order-editor';
+
 const isDev = process.env.NODE_ENV !== 'production';
 
 /**
@@ -128,9 +137,13 @@ async function callUpstream(
   body: unknown,
   bearer: string | undefined,
   operationName: string | undefined,
+  orderEditorOptIn = false,
 ): Promise<Response> {
   const useOrderKey =
-    !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName) && !!ORDER_EDITOR_API_KEY;
+    !!ORDER_EDITOR_API_KEY &&
+    !!operationName &&
+    (ORDER_EDITOR_MUTATIONS.has(operationName) ||
+      (orderEditorOptIn && ORDER_EDITOR_OPT_IN_MUTATIONS.has(operationName)));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     apikey: useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY,
@@ -211,6 +224,11 @@ export async function POST(request: NextRequest) {
       (typeof body.operationName === 'string' ? body.operationName : undefined) ??
       extractOperationName(body.query);
 
+    // Opt-in signal for clientId-gated order-editor operations (contactRegister
+    // from authorization settings). Public self-registration uses the default
+    // client (no clientId) and omits it.
+    const orderEditorOptIn = request.headers.get('x-client-id') === ORDER_EDITOR_CLIENT_ID;
+
     // ── Query-depth limit ────────────────────────────────────────────────
     const depth = estimateQueryDepth(body.query);
     if (depth > MAX_QUERY_DEPTH) {
@@ -253,7 +271,7 @@ export async function POST(request: NextRequest) {
       cookieToken ?? (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
 
     // First attempt.
-    let response = await callUpstream(body, initialBearer, operationName);
+    let response = await callUpstream(body, initialBearer, operationName, orderEditorOptIn);
     let refreshSetCookies: string[] = [];
 
     // 401-refresh-retry: ONLY when we had a cookie token (a logged-in session
@@ -263,7 +281,7 @@ export async function POST(request: NextRequest) {
       const refreshed = await tryRefresh(request);
       if (refreshed) {
         refreshSetCookies = refreshed.setCookies;
-        response = await callUpstream(body, refreshed.newAccessToken, operationName);
+        response = await callUpstream(body, refreshed.newAccessToken, operationName, orderEditorOptIn);
       }
     }
 

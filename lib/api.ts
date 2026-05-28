@@ -56,6 +56,22 @@ export const graphqlClient = new GraphQLClient(config);
  */
 export const services: Services = createServices(graphqlClient);
 
+/**
+ * A sibling client identified as the "order-editor" caller via the SDK's
+ * built-in `clientId` (sent as the `X-Client-ID` header in proxy mode). The
+ * proxy (`app/api/graphql/route.ts`) routes header-gated operations
+ * (`contactRegister`) to the ORDER_EDITOR key only for this client id — so the
+ * authorization-settings "add contact" uses the order key while public
+ * self-registration (the default `graphqlClient`, no clientId) stays on the
+ * general key. Same operationName, different key, decided by `X-Client-ID`. Pass
+ * this to `PurchaseAuthorizationConfigurator`'s `graphqlClient` prop.
+ */
+export const ORDER_EDITOR_CLIENT_ID = 'order-editor';
+export const orderEditorGraphqlClient = new GraphQLClient({
+  ...config,
+  clientId: ORDER_EDITOR_CLIENT_ID,
+});
+
 export { config as graphqlConfig };
 export { createServices, toPlain };
 export type { Services };

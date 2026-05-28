@@ -6,6 +6,7 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { PurchaseAuthorizationConfigurator } from 'propeller-v2-react-ui';
 import { Contact, Customer, Company } from 'propeller-sdk-v2';
+import { orderEditorGraphqlClient } from '@/lib/api';
 
 export default function AuthorizationSettingsPage() {
     const { state } = useAuth();
@@ -33,6 +34,7 @@ export default function AuthorizationSettingsPage() {
                 </h1>
             </div>
             <PurchaseAuthorizationConfigurator
+                graphqlClient={orderEditorGraphqlClient}
                 labels={{
                     title: 'Purchase Authorization Settings',
                     addContact: 'Add contact',

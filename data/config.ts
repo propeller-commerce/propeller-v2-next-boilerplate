@@ -136,7 +136,7 @@ export const config = {
   contactTrackAttributes: [],
   customerTrackAttributes: [],
   contactPAConfigInput: [],
-  includeVAT: false,
+  includeVAT: true,
   enableRegistration: true,
   enableGuestCheckout: false,
   urls: {

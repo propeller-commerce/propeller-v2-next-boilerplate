@@ -34,9 +34,12 @@ export default async function RootLayout({
 }>) {
   const [globalData, cookieStore] = await Promise.all([getGlobal(), cookies()]);
   // Seed the price preference from the cookie so SSR and the first client
-  // snapshot agree — without this, gross-price users see a net-priced flash
-  // on first paint while React hydrates and reads the cookie.
-  const initialIncludeTax = cookieStore.get('price_include_tax')?.value === '1';
+  // snapshot agree — without this, users see a flash on first paint while
+  // React hydrates and reads the cookie. Default is gross (true) when the
+  // cookie is absent.
+  const includeTaxCookie = cookieStore.get('price_include_tax')?.value;
+  const initialIncludeTax =
+    includeTaxCookie === undefined ? true : includeTaxCookie === '1';
 
   return (
     <html lang="en">

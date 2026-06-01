@@ -233,7 +233,9 @@ async function readCookieAccessToken(): Promise<string | undefined> {
  */
 async function readIncludeTaxCookie(): Promise<boolean> {
   const store = await cookies();
-  return store.get('price_include_tax')?.value === '1';
+  const raw = store.get('price_include_tax')?.value;
+  if (raw === undefined) return true;
+  return raw === '1';
 }
 
 /**

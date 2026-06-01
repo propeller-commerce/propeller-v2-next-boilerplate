@@ -14,7 +14,7 @@ import React, { createContext, useContext, useCallback, useSyncExternalStore, Re
  * switch the user flips); httpOnly would prevent that. It carries no
  * authentication value, so this is safe.
  *
- * Cookie format: `'1'` (gross / VAT-inclusive) or `'0'` (net). Absent → net.
+ * Cookie format: `'1'` (gross / VAT-inclusive) or `'0'` (net). Absent → gross.
  */
 const COOKIE_NAME = 'price_include_tax';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
@@ -27,9 +27,10 @@ interface PriceContextType {
 const PriceContext = createContext<PriceContextType | undefined>(undefined);
 
 function readCookie(): boolean {
-  if (typeof document === 'undefined') return false;
+  if (typeof document === 'undefined') return true;
   const match = document.cookie.match(/(?:^|;\s*)price_include_tax=([^;]+)/);
-  return match?.[1] === '1';
+  if (!match) return true;
+  return match[1] === '1';
 }
 
 function writeCookie(value: boolean): void {
@@ -56,7 +57,7 @@ export interface PriceProviderProps {
   children: ReactNode;
 }
 
-export const PriceProvider: React.FC<PriceProviderProps> = ({ initialIncludeTax = false, children }) => {
+export const PriceProvider: React.FC<PriceProviderProps> = ({ initialIncludeTax = true, children }) => {
   // `useSyncExternalStore`'s server snapshot is the SSR value. The client
   // snapshot reads the live cookie (in case it changed between the server
   // render and hydration, e.g. via another tab).

@@ -64,6 +64,11 @@ function CheckoutPageInner() {
   });
   const sameAsInvoiceRef = useRef(false);
   const orderPlacedRef = useRef(false);
+  // One-shot guard for the step-3 auto-advance: we only auto-skip step 3 the
+  // FIRST time we enter it for a given cart. Otherwise clicking Back from step 4
+  // (or expanding the step-3 header) would immediately push the user right back
+  // to step 4, making step 3 unreachable in single-option carts.
+  const autoAdvancedCartIdRef = useRef<string | null>(null);
   const [quoteReference, setQuoteReference] = useState('');
   const [quoteNotes, setQuoteNotes] = useState('');
 
@@ -227,6 +232,77 @@ function CheckoutPageInner() {
       setState(prev => ({ ...prev, error: 'Failed to save address', loading: false }));
     }
   };
+
+  // First available delivery date — tomorrow, skipping weekends. Mirrors the
+  // tile-0 logic inside the `DeliveryDate` component (`computeUpcomingDates(1,
+  // true)` + `toApiDate`) so an auto-advance picks the same date the user would
+  // have seen highlighted on the quick-pick row. ISO `YYYY-MM-DDT00:00:00Z`.
+  const computeFirstDeliveryDate = (): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}T00:00:00Z`;
+  };
+
+  // Auto-advance step 3 → 4 when the cart offers only ONE payment method and at
+  // most ONE carrier. Preselects payment + carrier (if any) + the first
+  // available delivery date, persists via `updateCartShipping`, then jumps to
+  // step 4. One-shot per cart (see `autoAdvancedCartIdRef`) so Back from step 4
+  // still works. If a precondition isn't met (no payments yet, multi-option,
+  // quote mode) we fall through to the normal step-3 UI.
+  useEffect(() => {
+    if (state.currentStep !== 3) return;
+    if (isQuoteMode) return;
+    const cart = state.cart;
+    if (!cart?.cartId) return;
+    if (autoAdvancedCartIdRef.current === cart.cartId) return;
+    const payMethods = cart.payMethods ?? [];
+    const carriers = cart.carriers ?? [];
+    if (payMethods.length !== 1) return;
+    if (carriers.length > 1) return;
+    const onlyPayment = payMethods[0]?.code;
+    const onlyCarrier = carriers[0]?.name;
+    if (!onlyPayment) return;
+    // Use the cart's stored requestDate when present, else the first available;
+    // matches what the `DeliveryDate` component would render as preselected.
+    const requestDate =
+      (cart.postageData?.requestDate as string | undefined) || computeFirstDeliveryDate();
+    autoAdvancedCartIdRef.current = cart.cartId;
+    (async () => {
+      try {
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+        const input: CartUpdateInput = {
+          paymentData: { method: onlyPayment },
+          postageData: {
+            ...(onlyCarrier && { carrier: onlyCarrier }),
+            requestDate,
+          },
+        };
+        const updatedCart = await updateCartShipping(cart.cartId, input);
+        saveCart(updatedCart);
+        setState((prev) => ({
+          ...prev,
+          cart: updatedCart,
+          selectedPayment: onlyPayment,
+          selectedCarrier: onlyCarrier ?? '',
+          selectedDeliveryDate: requestDate,
+          currentStep: 4,
+          loading: false,
+        }));
+      } catch (error) {
+        // On failure, release the one-shot guard so the user can try Continue
+        // manually. The normal step-3 UI is still rendered.
+        autoAdvancedCartIdRef.current = null;
+        console.error(error);
+        setState((prev) => ({ ...prev, error: 'Failed to update cart', loading: false }));
+      }
+    })();
+    // updateCartShipping/saveCart are stable from their contexts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentStep, state.cart, isQuoteMode]);
 
   const handleStep3Continue = async () => {
     // A carrier is only required when the cart actually offers one. Some carts

@@ -70,6 +70,7 @@ export default function FavoriteListPage() {
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
         onItemsDelete={handleItemsDelete}
+        onItemAdded={() => refreshUser()}
         onListLoaded={handleListLoaded}
         cartId={cart?.cartId}
         createCart={true}

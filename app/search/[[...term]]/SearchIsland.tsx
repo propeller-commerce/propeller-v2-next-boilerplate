@@ -410,17 +410,11 @@ export default function SearchIsland({
           <ProductGrid
             // Server-seeded first page — dropped on the first interaction.
             products={usingServerData ? initialItems : undefined}
-            graphqlClient={graphqlClient}
             term={isAllProducts ? undefined : term}
             categoryId={isAllProducts ? config.baseCategoryId : undefined}
-            configuration={config}
-            user={state.user}
-            companyId={selectedCompany?.companyId}
-            language={language}
             showModal={true}
             createCart={true}
             cartId={cart?.cartId}
-            includeTax={includeTax}
             showAvailability={false}
             showStock={true}
             onCartCreated={(newCart) => {

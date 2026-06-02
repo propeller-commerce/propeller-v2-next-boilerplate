@@ -37,9 +37,7 @@ function CompoundApiDemoInner() {
           gets a compound <code>&lt;ProductCard&gt;</code> with consumer-controlled layout.
         </p>
         <ProductGrid
-          graphqlClient={graphqlClient}
           categoryId={categoryId}
-          configuration={config}
           pageSize={6}
           allowAddToCart={true}
           showPrice={true}

@@ -749,8 +749,6 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         title="Order Summary"
                         showCheckoutButton={false}
-                        user={authState.user ?? undefined}
-                        companyId={getActiveCompany()?.companyId ?? undefined}
                         afterRequestAuthorization={(updatedCart) => {
                           // If a manager parked their own cart to act on this
                           // request, hand it back; otherwise clear.

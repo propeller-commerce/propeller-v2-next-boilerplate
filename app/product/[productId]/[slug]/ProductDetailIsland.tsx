@@ -281,7 +281,6 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           showModal={true}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
-          configuration={config}
           onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
           onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
         />

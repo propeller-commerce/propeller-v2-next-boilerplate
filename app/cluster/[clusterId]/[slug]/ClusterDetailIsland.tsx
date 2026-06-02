@@ -256,8 +256,6 @@ export default function ClusterDetailIsland({
 
             <div className="flex items-center gap-2">
               <AddToCart
-                user={state.user}
-                companyId={selectedCompany?.companyId}
                 product={selectedProduct as Product}
                 cluster={cluster as Cluster}
                 beforeAddToCart={validateClusterOptions}
@@ -265,13 +263,11 @@ export default function ClusterDetailIsland({
                   (p) => p.productId
                 )}
                 cartId={cart?.cartId}
-                graphqlClient={graphqlClient}
                 createCart={true}
                 onCartCreated={(c: Cart) => {
                   saveCart(c);
                 }}
                 className="flex items-center w-full gap-2"
-                configuration={config}
                 showModal={true}
                 afterAddToCart={(c: Cart) => {
                   saveCart(c);
@@ -284,8 +280,6 @@ export default function ClusterDetailIsland({
                 }
               />
               <AddToFavorite
-                graphqlClient={graphqlClient}
-                user={state.user}
                 clusterId={clusterId}
                 onFavoriteChanged={refreshUser}
               />

@@ -275,17 +275,11 @@ export default function SearchPage() {
                   use a wrapper div with `hidden`. */}
               <div className={hasNoResults ? 'hidden' : ''}>
               <ProductGrid
-                graphqlClient={graphqlClient}
                 term={isAllProducts ? undefined : term}
                 categoryId={isAllProducts ? config.baseCategoryId : undefined}
-                configuration={config}
-                user={state.user}
-                companyId={selectedCompany?.companyId}
-                language={language}
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}
-                includeTax={includeTax}
                 showAvailability={false}
                 showStock={true}
                 onCartCreated={(newCart) => {

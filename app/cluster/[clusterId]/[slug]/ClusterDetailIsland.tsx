@@ -155,8 +155,6 @@ export default function ClusterDetailIsland({
         <Breadcrumbs
           categoryPath={selectedProduct?.categoryPath || []}
           currentCategory={selectedProduct?.category || undefined}
-          language={language}
-          configuration={config}
           showCurrent={true}
         />
       </div>
@@ -188,14 +186,12 @@ export default function ClusterDetailIsland({
                     (selectedProduct?.price ??
                       cluster.defaultProduct?.price) as ProductPriceSDK
                   }
-                  includeTax={includeTax}
                   options={cluster.options}
                   selectedOptionProducts={Object.values(selectedOptionProducts)}
                 />
 
                 <ProductBulkPrices
                   bulkPrices={selectedProduct?.bulkPrices || []}
-                  includeTax={includeTax}
                 />
 
                 {/* Cluster owns the marketing description; variant products
@@ -209,7 +205,6 @@ export default function ClusterDetailIsland({
                         ? (selectedProduct as Product)
                         : (cluster as Cluster)
                     }
-                    language={language}
                   />
                 </div>
 
@@ -256,8 +251,6 @@ export default function ClusterDetailIsland({
 
             <div className="flex items-center gap-2">
               <AddToCart
-                user={state.user}
-                companyId={selectedCompany?.companyId}
                 product={selectedProduct as Product}
                 cluster={cluster as Cluster}
                 beforeAddToCart={validateClusterOptions}
@@ -265,13 +258,11 @@ export default function ClusterDetailIsland({
                   (p) => p.productId
                 )}
                 cartId={cart?.cartId}
-                graphqlClient={graphqlClient}
                 createCart={true}
                 onCartCreated={(c: Cart) => {
                   saveCart(c);
                 }}
                 className="flex items-center w-full gap-2"
-                configuration={config}
                 showModal={true}
                 afterAddToCart={(c: Cart) => {
                   saveCart(c);
@@ -284,8 +275,6 @@ export default function ClusterDetailIsland({
                 }
               />
               <AddToFavorite
-                graphqlClient={graphqlClient}
-                user={state.user}
                 clusterId={clusterId}
                 onFavoriteChanged={refreshUser}
               />

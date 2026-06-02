@@ -46,7 +46,6 @@ export default function AccountLayout({
                                 <AccountIconAndMenu
                                     variant="sidebar"
                                     currentPath={pathname}
-                                    user={state.user}
                                     onMenuItemClick={(href) => router.push(localizeHref(href, language))}
                                     onLogoutClick={() => logout()}
                                     menuLinks={[

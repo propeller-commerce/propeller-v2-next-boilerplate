@@ -243,9 +243,7 @@ export default function CategoryPage() {
             <Breadcrumbs
               categoryPath={category?.categoryPath || []}
               currentCategory={category || undefined}
-              language={language}
               showCurrent={true}
-              configuration={config}
             />
           </div>
           {/* CMS Category Banner */}
@@ -254,10 +252,7 @@ export default function CategoryPage() {
           {/* Category Header */}
           <GridTitle title={categoryName} />
 
-          <CategoryDescription
-            category={category}
-            language={language}
-          />
+          <CategoryDescription category={category} />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}
@@ -266,13 +261,10 @@ export default function CategoryPage() {
                 filters={gridFilters}
                 priceMin={priceBoundsMin}
                 priceMax={priceBoundsMax}
-                language={language}
                 onFilterChange={handleFilterChange}
                 onPriceChange={handlePriceRangeChange}
                 onClearFilters={clearAllFilters}
                 isMobile={false}
-                portalMode="open"
-                user={state.user}
                 collapsed={true}
                 clearSignal={clearSignal}
                 activeTextFilters={filters}
@@ -295,7 +287,6 @@ export default function CategoryPage() {
                   activeTextFilters={filters}
                   priceFilterMin={minPrice}
                   priceFilterMax={maxPrice}
-                  user={state.user}
                   onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                   onOffsetChange={handleOffsetChange}
                   viewMode={viewMode}

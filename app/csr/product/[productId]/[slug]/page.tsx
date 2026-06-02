@@ -92,8 +92,6 @@ export default function ProductPage() {
             <Breadcrumbs
               categoryPath={product?.categoryPath || []}
               currentCategory={product?.category || undefined}
-              language={language}
-              configuration={config}
               currentLabel={product ? getLanguageString(product.names, language, '') : undefined}
             />
           </div>
@@ -116,12 +114,12 @@ export default function ProductPage() {
                   onProductLoaded={setProduct}
                 />
 
-                <ProductPrice price={price} includeTax={includeTax} />
+                <ProductPrice price={price} />
                 <div className="mt-6">
-                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} includeTax={includeTax} labels={{ title: '' }} />
+                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ title: '' }} />
                 </div>
                 <div className="mt-6">
-                  <ProductShortDescription product={product as Product} language={language} />
+                  <ProductShortDescription product={product as Product} />
                 </div>
 
                 {product?.inventory && (

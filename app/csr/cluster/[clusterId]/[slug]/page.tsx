@@ -170,8 +170,6 @@ export default function ClusterPage() {
             <Breadcrumbs
               categoryPath={selectedProduct?.categoryPath || []}
               currentCategory={selectedProduct?.category || undefined}
-              language={language}
-              configuration={config}
               showCurrent={true}
             />
           </div>
@@ -199,15 +197,14 @@ export default function ClusterPage() {
                   <>
                     <ProductPriceDisplay
                       price={(selectedProduct?.price ?? cluster.defaultProduct?.price) as ProductPriceSDK}
-                      includeTax={includeTax}
                       options={cluster.options}
                       selectedOptionProducts={Object.values(selectedOptionProducts)}
                     />
 
-                    <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} includeTax={includeTax} />
+                    <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} />
 
                     <div className="mt-6">
-                      <ProductShortDescription product={selectedProduct as Product} language={language} />
+                      <ProductShortDescription product={selectedProduct as Product} />
                     </div>
 
                     {selectedProduct?.inventory && (

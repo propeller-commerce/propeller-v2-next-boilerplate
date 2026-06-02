@@ -184,7 +184,7 @@ export default async function CategoryPage({
               Server Component. Rendered ABOVE the title so the page order is
               Breadcrumbs → Title → Description → Grid. */}
           <div className="propeller-breadcrumbs mb-6">
-            <CategoryBreadcrumbsIsland category={category} language={infra.language} />
+            <CategoryBreadcrumbsIsland category={category} />
           </div>
 
           {/* Category heading — server-rendered, pure RSC component. */}

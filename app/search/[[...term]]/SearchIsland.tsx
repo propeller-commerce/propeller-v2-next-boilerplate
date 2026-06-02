@@ -31,12 +31,10 @@ import {
   GridFilters,
   GridPagination,
 } from 'propeller-v2-react-ui';
-import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
-import { useCompany } from '@/context/CompanyContext';
 import { parseListingParams, type ListingParams } from '@/lib/listingParams';
 
 interface SearchIslandProps {
@@ -114,8 +112,6 @@ export default function SearchIsland({
     () => initialProducts
   );
 
-  const { state } = useAuth();
-  const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const { includeTax } = usePrice();
@@ -328,13 +324,10 @@ export default function SearchIsland({
             filters={gridFilters}
             priceMin={priceBoundsMin}
             priceMax={priceBoundsMax}
-            language={language}
             onFilterChange={handleFilterChange}
             onPriceChange={handlePriceRangeChange}
             onClearFilters={clearAllFilters}
             isMobile={false}
-            portalMode="open"
-            user={state.user}
             collapsed={true}
             clearSignal={clearSignal}
             activeTextFilters={filters}
@@ -358,7 +351,6 @@ export default function SearchIsland({
               activeTextFilters={filters}
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
-              user={state.user}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')

@@ -36,7 +36,6 @@ import {
   CategoryDescription,
   Breadcrumbs,
 } from 'propeller-v2-react-ui';
-import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -128,7 +127,6 @@ export default function CategoryIsland({
     () => (initialCategory.products as ProductsResponse | undefined) ?? null
   );
 
-  const { state } = useAuth();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
 
@@ -372,7 +370,7 @@ export default function CategoryIsland({
 
   return (
     <>
-      <CategoryDescription category={category} language={language} />
+      <CategoryDescription category={category} />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Filters Sidebar */}
@@ -381,13 +379,10 @@ export default function CategoryIsland({
             filters={gridFilters}
             priceMin={priceBoundsMin}
             priceMax={priceBoundsMax}
-            language={language}
             onFilterChange={handleFilterChange}
             onPriceChange={handlePriceRangeChange}
             onClearFilters={clearAllFilters}
             isMobile={false}
-            portalMode="open"
-            user={state.user}
             collapsed={true}
             clearSignal={clearSignal}
             activeTextFilters={filters}
@@ -409,7 +404,6 @@ export default function CategoryIsland({
               activeTextFilters={filters}
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
-              user={state.user}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')
@@ -497,18 +491,14 @@ export default function CategoryIsland({
  */
 export function CategoryBreadcrumbsIsland({
   category,
-  language,
 }: {
   category: Category;
-  language: string;
 }) {
   return (
     <Breadcrumbs
       categoryPath={category.categoryPath || []}
       currentCategory={category || undefined}
-      language={language}
       showCurrent={true}
-      configuration={config}
     />
   );
 }

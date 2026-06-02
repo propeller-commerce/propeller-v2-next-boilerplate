@@ -212,20 +212,16 @@ function ProductSurcharges({
 export function ProductBreadcrumbsIsland({
   categoryPath,
   currentCategory,
-  language,
   currentLabel,
 }: {
   categoryPath: Category[];
   currentCategory?: Category;
-  language: string;
   currentLabel: string;
 }) {
   return (
     <Breadcrumbs
       categoryPath={categoryPath}
       currentCategory={currentCategory}
-      language={language}
-      configuration={config}
       currentLabel={currentLabel}
     />
   );

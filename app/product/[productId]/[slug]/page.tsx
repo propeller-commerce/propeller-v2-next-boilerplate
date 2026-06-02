@@ -149,7 +149,6 @@ export default async function ProductPage({
             <ProductBreadcrumbsIsland
               categoryPath={product.categoryPath || []}
               currentCategory={product.category || undefined}
-              language={infra.language}
               currentLabel={title}
             />
           </div>

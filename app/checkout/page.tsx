@@ -580,8 +580,6 @@ function CheckoutPageInner() {
                           <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>Confirm Delivery Address</Button>
                           {authState.isAuthenticated && (
                             <AddressSelector
-                              user={authState.user}
-                              companyId={getActiveCompany()?.companyId}
                               addressType={AddressType.delivery}
                               onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
                               countries={COUNTRIES}
@@ -620,7 +618,6 @@ function CheckoutPageInner() {
                         <p className="text-sm text-destructive">Please select a payment method</p>
                       )}
                       <CartPaymethods
-                        user={authState.user}
                         cart={state.cart}
                         onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
                       />

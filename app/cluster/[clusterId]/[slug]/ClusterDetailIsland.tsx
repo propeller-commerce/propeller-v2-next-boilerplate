@@ -155,8 +155,6 @@ export default function ClusterDetailIsland({
         <Breadcrumbs
           categoryPath={selectedProduct?.categoryPath || []}
           currentCategory={selectedProduct?.category || undefined}
-          language={language}
-          configuration={config}
           showCurrent={true}
         />
       </div>
@@ -188,14 +186,12 @@ export default function ClusterDetailIsland({
                     (selectedProduct?.price ??
                       cluster.defaultProduct?.price) as ProductPriceSDK
                   }
-                  includeTax={includeTax}
                   options={cluster.options}
                   selectedOptionProducts={Object.values(selectedOptionProducts)}
                 />
 
                 <ProductBulkPrices
                   bulkPrices={selectedProduct?.bulkPrices || []}
-                  includeTax={includeTax}
                 />
 
                 {/* Cluster owns the marketing description; variant products
@@ -209,7 +205,6 @@ export default function ClusterDetailIsland({
                         ? (selectedProduct as Product)
                         : (cluster as Cluster)
                     }
-                    language={language}
                   />
                 </div>
 

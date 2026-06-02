@@ -190,13 +190,10 @@ export default function SearchPage() {
                   filters={gridFilters}
                   priceMin={priceBoundsMin}
                   priceMax={priceBoundsMax}
-                  language={language}
                   onFilterChange={handleFilterChange}
                   onPriceChange={handlePriceRangeChange}
                   onClearFilters={clearAllFilters}
                   isMobile={false}
-                  portalMode="open"
-                  user={state.user}
                   collapsed={true}
                   clearSignal={clearSignal}
                   activeTextFilters={filters}
@@ -221,7 +218,6 @@ export default function SearchPage() {
                     activeTextFilters={filters}
                     priceFilterMin={minPrice}
                     priceFilterMax={maxPrice}
-                    user={state.user}
                     onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                     onOffsetChange={handleOffsetChange}
                     viewMode={viewMode}

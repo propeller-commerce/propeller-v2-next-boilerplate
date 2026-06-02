@@ -21,6 +21,7 @@ export default function AccountPage() {
       </div>
 
       <UserDetails
+        user={user as Contact | Customer}
         activeCompany={selectedCompany}
         showCompanyInfo={true}
         listAllContactCompanies={false}

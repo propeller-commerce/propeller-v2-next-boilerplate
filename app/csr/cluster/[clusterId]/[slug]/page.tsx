@@ -170,6 +170,8 @@ export default function ClusterPage() {
             <Breadcrumbs
               categoryPath={selectedProduct?.categoryPath || []}
               currentCategory={selectedProduct?.category || undefined}
+              language={language}
+              configuration={config}
               showCurrent={true}
             />
           </div>
@@ -197,6 +199,7 @@ export default function ClusterPage() {
                   <>
                     <ProductPriceDisplay
                       price={(selectedProduct?.price ?? cluster.defaultProduct?.price) as ProductPriceSDK}
+                      includeTax={includeTax}
                       options={cluster.options}
                       selectedOptionProducts={Object.values(selectedOptionProducts)}
                     />
@@ -243,16 +246,20 @@ export default function ClusterPage() {
 
                 <div className="flex items-center gap-2">
                   <AddToCart
+                    user={state.user}
+                    companyId={selectedCompany?.companyId}
                     product={selectedProduct as Product}
                     cluster={cluster as Cluster}
                     beforeAddToCart={validateClusterOptions}
                     childItems={Object.values(selectedOptionProducts).map((p) => p.productId)}
                     cartId={cart?.cartId}
+                    graphqlClient={graphqlClient}
                     createCart={true}
                     onCartCreated={(cart: Cart) => {
                       saveCart(cart);
                     }}
                     className='flex items-center w-full gap-2'
+                    configuration={config}
                     showModal={true}
                     afterAddToCart={(cart: Cart) => {
                       saveCart(cart);
@@ -260,6 +267,8 @@ export default function ClusterPage() {
                     onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
                     onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))} />
                   <AddToFavorite
+                    graphqlClient={graphqlClient}
+                    user={state.user}
                     clusterId={clusterId}
                     onFavoriteChanged={refreshUser}
                   />

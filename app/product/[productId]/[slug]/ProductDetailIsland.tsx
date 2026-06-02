@@ -136,11 +136,18 @@ export function ProductPriceIsland({
     <>
       <ProductPrice
         price={price}
+        includeTax={includeTax}
+        user={user}
+        portalMode={portalMode}
+        currency={config.currency}
       />
       <ProductSurcharges surcharges={surcharges} language={language} />
       <div className="mt-6">
         <ProductBulkPrices
           bulkPrices={bulkPrices}
+          includeTax={includeTax}
+          user={user}
+          portalMode={portalMode}
           labels={{ title: '' }}
         />
       </div>
@@ -217,6 +224,8 @@ export function ProductBreadcrumbsIsland({
     <Breadcrumbs
       categoryPath={categoryPath}
       currentCategory={currentCategory}
+      language={language}
+      configuration={config}
       currentLabel={currentLabel}
     />
   );
@@ -272,6 +281,7 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           showModal={true}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+          configuration={config}
           onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
           onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
         />

@@ -34,6 +34,7 @@ export default function AuthorizationSettingsPage() {
                 </h1>
             </div>
             <PurchaseAuthorizationConfigurator
+                graphqlClient={orderEditorGraphqlClient}
                 labels={{
                     title: 'Purchase Authorization Settings',
                     addContact: 'Add contact',

@@ -328,10 +328,13 @@ export default function SearchIsland({
             filters={gridFilters}
             priceMin={priceBoundsMin}
             priceMax={priceBoundsMax}
+            language={language}
             onFilterChange={handleFilterChange}
             onPriceChange={handlePriceRangeChange}
             onClearFilters={clearAllFilters}
             isMobile={false}
+            portalMode="open"
+            user={state.user}
             collapsed={true}
             clearSignal={clearSignal}
             activeTextFilters={filters}
@@ -355,6 +358,7 @@ export default function SearchIsland({
               activeTextFilters={filters}
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
+              user={state.user}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')
@@ -406,11 +410,17 @@ export default function SearchIsland({
           <ProductGrid
             // Server-seeded first page — dropped on the first interaction.
             products={usingServerData ? initialItems : undefined}
+            graphqlClient={graphqlClient}
             term={isAllProducts ? undefined : term}
             categoryId={isAllProducts ? config.baseCategoryId : undefined}
+            configuration={config}
+            user={state.user}
+            companyId={selectedCompany?.companyId}
+            language={language}
             showModal={true}
             createCart={true}
             cartId={cart?.cartId}
+            includeTax={includeTax}
             showAvailability={false}
             showStock={true}
             onCartCreated={(newCart) => {

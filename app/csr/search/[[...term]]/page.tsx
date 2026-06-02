@@ -179,6 +179,7 @@ export default function SearchPage() {
           {/* Search Header */}
           <GridTitle
             title={`Search results for "${term}"`}
+            language={language}
           />
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -192,10 +193,13 @@ export default function SearchPage() {
                   filters={gridFilters}
                   priceMin={priceBoundsMin}
                   priceMax={priceBoundsMax}
+                  language={language}
                   onFilterChange={handleFilterChange}
                   onPriceChange={handlePriceRangeChange}
                   onClearFilters={clearAllFilters}
                   isMobile={false}
+                  portalMode="open"
+                  user={state.user}
                   collapsed={true}
                   clearSignal={clearSignal}
                   activeTextFilters={filters}
@@ -220,6 +224,7 @@ export default function SearchPage() {
                     activeTextFilters={filters}
                     priceFilterMin={minPrice}
                     priceFilterMax={maxPrice}
+                    user={state.user}
                     onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                     onOffsetChange={handleOffsetChange}
                     viewMode={viewMode}
@@ -270,11 +275,17 @@ export default function SearchPage() {
                   use a wrapper div with `hidden`. */}
               <div className={hasNoResults ? 'hidden' : ''}>
               <ProductGrid
+                graphqlClient={graphqlClient}
                 term={isAllProducts ? undefined : term}
                 categoryId={isAllProducts ? config.baseCategoryId : undefined}
+                configuration={config}
+                user={state.user}
+                companyId={selectedCompany?.companyId}
+                language={language}
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}
+                includeTax={includeTax}
                 showAvailability={false}
                 showStock={true}
                 onCartCreated={(newCart) => {

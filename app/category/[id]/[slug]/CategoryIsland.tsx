@@ -381,10 +381,13 @@ export default function CategoryIsland({
             filters={gridFilters}
             priceMin={priceBoundsMin}
             priceMax={priceBoundsMax}
+            language={language}
             onFilterChange={handleFilterChange}
             onPriceChange={handlePriceRangeChange}
             onClearFilters={clearAllFilters}
             isMobile={false}
+            portalMode="open"
+            user={state.user}
             collapsed={true}
             clearSignal={clearSignal}
             activeTextFilters={filters}
@@ -406,6 +409,7 @@ export default function CategoryIsland({
               activeTextFilters={filters}
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
+              user={state.user}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')
@@ -493,14 +497,18 @@ export default function CategoryIsland({
  */
 export function CategoryBreadcrumbsIsland({
   category,
+  language,
 }: {
   category: Category;
+  language: string;
 }) {
   return (
     <Breadcrumbs
       categoryPath={category.categoryPath || []}
       currentCategory={category || undefined}
+      language={language}
       showCurrent={true}
+      configuration={config}
     />
   );
 }

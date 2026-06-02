@@ -252,10 +252,7 @@ export default function CategoryPage() {
           {banner && <CategoryBanner banner={banner} />}
 
           {/* Category Header */}
-          <GridTitle
-            title={categoryName}
-            language={language}
-          />
+          <GridTitle title={categoryName} />
 
           <CategoryDescription
             category={category}

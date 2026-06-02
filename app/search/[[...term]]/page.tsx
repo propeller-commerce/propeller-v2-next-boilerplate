@@ -108,7 +108,7 @@ export default async function SearchPage({
       <main className="flex-1 py-8">
         <div className="container-width">
           {/* Search heading — server-rendered, pure RSC component. */}
-          <GridTitle title={heading} language={infra.language} />
+          <GridTitle title={heading} />
 
           {/* key forces a fresh mount when the search term changes. The island
               seeds all its state (filters, sort, page) from `initialParams` via

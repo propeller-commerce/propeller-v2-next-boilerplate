@@ -177,10 +177,7 @@ export default function SearchPage() {
       <main className="flex-1 py-8">
         <div className="container-width">
           {/* Search Header */}
-          <GridTitle
-            title={`Search results for "${term}"`}
-            language={language}
-          />
+          <GridTitle title={`Search results for "${term}"`} />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar — hidden when search returned no results so

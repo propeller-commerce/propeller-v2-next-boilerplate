@@ -188,7 +188,7 @@ export default async function CategoryPage({
           </div>
 
           {/* Category heading — server-rendered, pure RSC component. */}
-          <GridTitle title={categoryName} language={infra.language} />
+          <GridTitle title={categoryName} />
 
           {/* Everything interactive — breadcrumbs (config has non-serializable
               URL builders), filters, toolbar, grid, pagination — lives in the

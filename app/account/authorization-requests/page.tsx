@@ -7,12 +7,14 @@ import { useRouter } from 'next/navigation';
 import { PurchaseAuthorizationRequests } from 'propeller-v2-react-ui';
 import { serializeCart } from '@/utils/cartHelpers';
 import { Contact, Customer, Cart } from 'propeller-sdk-v2';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function AuthorizationRequestsPage() {
     const { state } = useAuth();
     const { selectedCompany } = useCompany();
     const { cart, saveCart } = useCart();
     const router = useRouter();
+    const purchaseAuthorizationRequestsLabels = useTranslations('PurchaseAuthorizationRequests');
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
         u !== null && 'contactId' in u;
@@ -37,35 +39,7 @@ export default function AuthorizationRequestsPage() {
                     saveCart(acceptedCart);
                     router.push('/cart');
                 }}
-                labels={{
-                    title: 'Authorization Requests',
-                    colId: '#',
-                    colDate: 'Date',
-                    colQuantity: 'Quantity',
-                    colTotal: 'Total',
-                    colRequestedBy: 'Requested by',
-                    colActions: 'Actions',
-                    view: 'View',
-                    modalTitle: 'Authorization Request',
-                    requesterInfo: 'Requester',
-                    itemsTitle: 'Items',
-                    itemProduct: 'Product',
-                    itemQty: 'Qty',
-                    itemUnitPrice: 'Unit price',
-                    itemTotal: 'Total',
-                    totalExclVat: 'Total excl. VAT:',
-                    totalVat: 'VAT:',
-                    total: 'Total:',
-                    acceptRequest: 'Accept request',
-                    accepting: 'Accepting...',
-                    delete: 'Delete',
-                    deleting: 'Deleting...',
-                    deleteConfirmTitle: 'Delete authorization request?',
-                    deleteConfirmBody: 'Are you sure you want to delete this authorization request? The cart will be permanently removed.',
-                    deleteConfirmYes: 'Yes, delete',
-                    deleteConfirmNo: 'No',
-                    empty: 'No pending authorization requests',
-                }}
+                labels={purchaseAuthorizationRequestsLabels}
             />
         </div>
     );

@@ -17,6 +17,7 @@ import { OrderItemCard } from 'propeller-v2-react-ui';
 import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { OrderTotals } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 // COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
@@ -28,6 +29,11 @@ export default function QuoteDetailPage() {
     const [quote, setQuote] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+    const orderTotalsLabels = useTranslations('OrderTotals');
+    const orderItemCardLabels = useTranslations('OrderItemCard');
 
     const { getOrderById } = useOrders({
         graphqlClient,
@@ -94,7 +100,7 @@ export default function QuoteDetailPage() {
                         <div className="flex-1">
                             <OrderSummary
                                 order={quote}
-                                labels={{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }}
+                                labels={orderSummaryLabels}
                                 countries={COUNTRIES}
                             />
                         </div>
@@ -135,6 +141,7 @@ export default function QuoteDetailPage() {
                                                     orderItem={item}
                                                     showDiscount={true}
                                                     childItems={childMap.get(item.id) || []}
+                                                    labels={orderItemCardLabels}
                                                 />
                                             ))}
                                         </table>
@@ -145,12 +152,12 @@ export default function QuoteDetailPage() {
                         })()}
 
                         {/* Bonus Items */}
-                        <OrderBonusItems order={quote} />
+                        <OrderBonusItems order={quote} labels={orderBonusItemsLabels} />
                     </div>
 
                     {/* Quote Bottom Totals */}
                     <div className="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t md:border-none">
-                        <OrderTotals order={quote} />
+                        <OrderTotals order={quote} labels={orderTotalsLabels} />
                     </div>
                 </div>
             )}

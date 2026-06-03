@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
 import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 interface CheckoutState {
   currentStep: number;
@@ -159,6 +160,17 @@ function CheckoutPageInner() {
     }
     return user.company ?? null;
   };
+
+  const addressCardLabels = useTranslations('AddressCard');
+  const addressSelectorLabels = useTranslations('AddressSelector');
+  const cartPaymethodsLabels = useTranslations('CartPaymethods');
+  const cartCarriersLabels = useTranslations('CartCarriers');
+  const deliveryDateLabels = useTranslations('DeliveryDate');
+  const cartOverviewLabels = useTranslations('CartOverview');
+  const itemsOverviewLabels = useTranslations('ItemsOverview');
+  const cartBonusItemsLabels = useTranslations('CartBonusItems');
+  const cartSummaryLabels = useTranslations('CartSummary');
+  const t = useTranslations('CheckoutPage');
 
   const { populateCartAddresses, updateCartAddress, updateCartShipping, placeOrder } = useCheckout({
     graphqlClient,
@@ -373,7 +385,7 @@ function CheckoutPageInner() {
 
             {/* Skeleton step indicator */}
             <div className="flex justify-between max-w-2xl mb-8 px-2">
-              {['Details', 'Shipping', 'Payment', 'Review'].map((label, i) => (
+              {[t.stepDetails, t.stepShipping, t.stepPayment, t.stepReview].map((label, i) => (
                 <React.Fragment key={label}>
                   {i > 0 && <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />}
                   <div className="flex items-center gap-2 text-muted-foreground/50">
@@ -473,17 +485,17 @@ function CheckoutPageInner() {
 
           {/* Progress Stages (Simplified) */}
           <div className="flex justify-between max-w-2xl mb-8 px-2">
-            <StepIndicator step={1} currentStep={state.currentStep} title="Details" />
+            <StepIndicator step={1} currentStep={state.currentStep} title={t.stepDetails} />
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={2} currentStep={state.currentStep} title="Shipping" />
+            <StepIndicator step={2} currentStep={state.currentStep} title={t.stepShipping} />
             {!isQuoteMode && (
               <>
                 <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-                <StepIndicator step={3} currentStep={state.currentStep} title="Payment" />
+                <StepIndicator step={3} currentStep={state.currentStep} title={t.stepPayment} />
               </>
             )}
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={isQuoteMode ? 3 : 4} currentStep={state.currentStep} title="Review" />
+            <StepIndicator step={isQuoteMode ? 3 : 4} currentStep={state.currentStep} title={t.stepReview} />
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -498,7 +510,7 @@ function CheckoutPageInner() {
               <Card className={`${state.currentStep === 1 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 1 && setState(prev => ({ ...prev, currentStep: 1 }))}>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">1. Invoice Address</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step1Title}</CardTitle>
                     {state.currentStep > 1 && state.cart?.invoiceAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
                         {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number} {state.cart.invoiceAddress.numberExtension}, {state.cart.invoiceAddress.city}
@@ -517,6 +529,7 @@ function CheckoutPageInner() {
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE, false)}
                           countries={COUNTRIES}
+                          labels={addressCardLabels}
                         />
                         <Button onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>
                           Confirm Invoice Address
@@ -533,6 +546,7 @@ function CheckoutPageInner() {
                           beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
                           countries={COUNTRIES}
+                          labels={addressCardLabels}
                         />
                         {!authState.isAuthenticated && (
                           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -542,7 +556,7 @@ function CheckoutPageInner() {
                               onChange={(e) => { sameAsInvoiceRef.current = e.target.checked; setState(prev => ({ ...prev, sameAsInvoice: e.target.checked })); }}
                               className="rounded border-gray-300 text-primary focus:ring-primary"
                             />
-                            Delivery address same as invoice address
+                            {t.deliverySameAsInvoice}
                           </label>
                         )}
                       </div>
@@ -555,7 +569,7 @@ function CheckoutPageInner() {
               <Card className={`${state.currentStep === 2 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 2 && setState(prev => ({ ...prev, currentStep: 2 }))}>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">2. Shipping Address</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step2Title}</CardTitle>
                     {state.currentStep > 2 && state.cart?.deliveryAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
                         {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number} {state.cart.deliveryAddress.numberExtension}, {state.cart.deliveryAddress.city}
@@ -574,6 +588,7 @@ function CheckoutPageInner() {
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
                           countries={COUNTRIES}
+                          labels={addressCardLabels}
                         />
                         <div className="flex items-center gap-4">
                           <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
@@ -584,6 +599,7 @@ function CheckoutPageInner() {
                               onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
                               countries={COUNTRIES}
                               className="ml-auto"
+                              labels={addressSelectorLabels}
                             />
                           )}
                         </div>
@@ -598,6 +614,7 @@ function CheckoutPageInner() {
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY)}
                         countries={COUNTRIES}
+                        labels={addressCardLabels}
                       />
                     )}
                   </CardContent>
@@ -607,7 +624,7 @@ function CheckoutPageInner() {
               {/* Step 3: Payment & Delivery Method (normal mode only) */}
               {!isQuoteMode && <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 3 && setState(prev => ({ ...prev, currentStep: 3 }))}>
-                  <CardTitle className="text-lg flex items-center gap-2">3. Payment & Delivery</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">{t.step3PaymentTitle}</CardTitle>
                 </CardHeader>
                 {state.currentStep === 3 && (
                   <CardContent className="space-y-8 animate-in slide-in-from-top-2">
@@ -620,6 +637,7 @@ function CheckoutPageInner() {
                       <CartPaymethods
                         cart={state.cart}
                         onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
+                        labels={cartPaymethodsLabels}
                       />
                     </div>
 
@@ -633,6 +651,7 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         showPrice={false}
                         onCarrierSelect={(carrier) => setState(prev => ({ ...prev, selectedCarrier: carrier.name }))}
+                        labels={cartCarriersLabels}
                       />
                     </div>
 
@@ -646,6 +665,7 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         initialDate={state.cart?.postageData?.requestDate as string | undefined}
                         onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
+                        labels={deliveryDateLabels}
                       />
                     </div>
 
@@ -661,7 +681,7 @@ function CheckoutPageInner() {
               {!isQuoteMode && (
                 <Card className={`${state.currentStep === 4 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step4Title}</CardTitle>
                   </CardHeader>
                   {state.currentStep === 4 && (
                     <CardContent className="animate-in slide-in-from-top-2">
@@ -669,6 +689,7 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                         onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
+                        labels={cartOverviewLabels}
                       />
                     </CardContent>
                   )}
@@ -679,7 +700,7 @@ function CheckoutPageInner() {
               {isQuoteMode && (
                 <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">3. Quote Details</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step3QuoteTitle}</CardTitle>
                   </CardHeader>
                   {state.currentStep === 3 && (
                     <CardContent className="space-y-6 animate-in slide-in-from-top-2">
@@ -724,17 +745,18 @@ function CheckoutPageInner() {
                 {/* Cart Items */}
                 <Card className="border-none">
                   <CardHeader className='p-0 px-6 pt-6'>
-                    <CardTitle className="text-lg">Cart Items</CardTitle>
+                    <CardTitle className="text-lg">{t.cartItemsTitle}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ItemsOverview
                       cart={state.cart}
                       showAvailability={false}
                       itemNameClickable={false}
+                      labels={itemsOverviewLabels}
                     />
                     {/* Bonus items — free items added via incentives.
                         currency/includeTax/language resolve from PropellerProvider. */}
-                    <CartBonusItems cart={state.cart} />
+                    <CartBonusItems cart={state.cart} labels={cartBonusItemsLabels} />
                   </CardContent>
                 </Card>
 
@@ -744,7 +766,7 @@ function CheckoutPageInner() {
                     {state.cart && (
                       <CartSummary
                         cart={state.cart}
-                        title="Order Summary"
+                        title={t.orderSummaryTitle}
                         showCheckoutButton={false}
                         afterRequestAuthorization={(updatedCart) => {
                           // If a manager parked their own cart to act on this
@@ -754,6 +776,7 @@ function CheckoutPageInner() {
                           router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
                         }}
                         onError={(err) => console.error('Authorization request failed:', err)}
+                        labels={cartSummaryLabels}
                       />
                     )}
                   </CardContent>

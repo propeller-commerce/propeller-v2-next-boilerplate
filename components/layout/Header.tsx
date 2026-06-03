@@ -17,6 +17,7 @@ import { services } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
+import { useTranslations } from '@/lib/i18n/client';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 import { CartIconAndSidebar } from 'propeller-v2-react-ui';
 import { AccountIconAndMenu } from 'propeller-v2-react-ui';
@@ -65,6 +66,13 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   // Bumped on every route change away from the search results page so the
   // SearchBar(s) reset their input. This is what gives users an empty search
   // box when they navigate via product clicks, the homepage logo, the menu, etc.
+  const companySwitcherLabels = useTranslations('CompanySwitcher');
+  const priceToggleLabels = useTranslations('PriceToggle');
+  const searchBarLabels = useTranslations('SearchBar');
+  const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+  const loginFormLabels = useTranslations('LoginForm');
+  const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+
   const [searchClearSignal, setSearchClearSignal] = useState(0);
   const lastPathnameRef = useRef<string | null>(null);
   useEffect(() => {
@@ -187,6 +195,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 {/* Company Switcher — Contact users only */}
                 {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && ((state.user as Contact).companies!.items?.length || 0) > 1 && (
                   <CompanySwitcher
+                    labels={companySwitcherLabels}
                     user={state.user as Contact}
                     selectedCompanyId={selectedCompany?.companyId}
                     onCompanyChange={(company) => {
@@ -199,6 +208,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 )}
                 {showVatToggle && (
                   <PriceToggle
+                    labels={priceToggleLabels}
                     inclExclVatSwitched={setIncludeTax}
                     initialState={config.includeVAT}
                   />
@@ -298,6 +308,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
               {showSearch && (
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
+                    labels={searchBarLabels}
                     clearSignal={searchClearSignal}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
@@ -313,6 +324,8 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 {/* User Menu */}
                 {showAccount && (
                   <AccountIconAndMenu
+                    labels={accountIconAndMenuLabels}
+                    loginFormLabels={loginFormLabels}
                     cart={cart as Cart | null}
                     afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
                       localStorage.setItem('user', JSON.stringify(user));
@@ -409,6 +422,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 {/* Cart */}
                 {showCart && (
                   <CartIconAndSidebar
+                    labels={cartIconAndSidebarLabels}
                     cart={cart as Cart}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
@@ -521,6 +535,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
             {showSearch && (
               <div className="p-4 border-b border-border">
                 <SearchBar
+                  labels={searchBarLabels}
                   clearSignal={searchClearSignal}
                   onSubmit={(term) => {
                     setShowMobileMenu(false);

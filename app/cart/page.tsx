@@ -14,6 +14,7 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 import { type Cart, type CartMainItem, CrossupsellType } from 'propeller-sdk-v2';
+import { useTranslations } from '@/lib/i18n/client';
 
 const subscribe = () => () => { };
 
@@ -22,6 +23,10 @@ export default function CartPage() {
   const { cart, saveCart, clearCart } = useCart();
   const router = useRouter();
   const { language } = useLanguage();
+  const cartItemLabels = useTranslations('CartItem');
+  const cartBonusItemsLabels = useTranslations('CartBonusItems');
+  const cartSummaryLabels = useTranslations('CartSummary');
+  const actionCodeLabels = useTranslations('ActionCode');
 
   const items = mounted ? (cart?.items || []) : [];
 
@@ -57,13 +62,14 @@ export default function CartPage() {
                     crossupsellTypes={[CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}
                     afterCartUpdate={(cart: Cart) => { saveCart(cart); }}
+                    labels={cartItemLabels}
                   />
                 ))}
 
                 {/* Bonus items — free items added via incentives. Read-only
                     list. currency/includeTax/language resolve from
                     PropellerProvider (PropellerHostBridge). */}
-                <CartBonusItems cart={cart ?? undefined} />
+                <CartBonusItems cart={cart ?? undefined} labels={cartBonusItemsLabels} />
               </div>
 
               {/* Cart Summary */}
@@ -81,11 +87,13 @@ export default function CartPage() {
                         router.push(`/authorization-request-sent/${updatedCart.cartId}`);
                       }}
                       onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                      labels={cartSummaryLabels}
                     />
                     <ActionCode
                       cart={cart}
                       afterActionCodeApply={saveCart}
                       afterActionCodeRemove={saveCart}
+                      labels={actionCodeLabels}
                     />
                   </>
                 )}

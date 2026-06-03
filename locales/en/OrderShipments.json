@@ -1,0 +1,20 @@
+{
+  "close": "Close",
+  "colActions": "Actions",
+  "colCreatedAt": "Date",
+  "colExpectedDelivery": "Expected delivery",
+  "colItems": "Items",
+  "colProduct": "Product",
+  "colQuantity": "Qty",
+  "colSku": "SKU",
+  "colStatus": "Status",
+  "details": "Details",
+  "itemsTitle": "Items",
+  "labelExpectedDelivery": "Expected delivery",
+  "labelStatus": "Status",
+  "modalTitle": "Shipment details",
+  "noItems": "No items in this shipment",
+  "title": "Shipping details",
+  "trackAndTrace": "Track & Trace",
+  "trackAndTraceTitle": "Track & Trace"
+}

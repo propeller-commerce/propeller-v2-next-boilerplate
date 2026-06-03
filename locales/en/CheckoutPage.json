@@ -1,0 +1,14 @@
+{
+  "cartItemsTitle": "Cart Items",
+  "deliverySameAsInvoice": "Delivery address same as invoice address",
+  "orderSummaryTitle": "Order Summary",
+  "step1Title": "1. Invoice Address",
+  "step2Title": "2. Shipping Address",
+  "step3PaymentTitle": "3. Payment & Delivery",
+  "step3QuoteTitle": "3. Quote Details",
+  "step4Title": "4. Review & Place Order",
+  "stepDetails": "Details",
+  "stepPayment": "Payment",
+  "stepReview": "Review",
+  "stepShipping": "Shipping"
+}

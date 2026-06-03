@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { LoginForm } from 'propeller-v2-react-ui';
 import { graphqlClient, services } from '@/lib/api';
+import { useTranslations } from '@/lib/i18n/client';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
@@ -22,6 +23,7 @@ export default function LoginPage() {
   const { setSelectedCompany } = useCompany();
   const { language, setLanguage } = useLanguage();
   const { cart, saveCart, clearCart } = useCart();
+  const loginFormLabels = useTranslations('LoginForm');
   const router = useRouter();
 
 
@@ -58,6 +60,7 @@ export default function LoginPage() {
 
               <CardContent>
                 <LoginForm
+                  labels={loginFormLabels}
                   title=""
                   accountHeaderLoginForm={false}
                   displayGuestCheckoutLink={false}

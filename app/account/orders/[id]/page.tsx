@@ -21,6 +21,7 @@ import { OrderTotals } from 'propeller-v2-react-ui';
 import { OrderActions } from 'propeller-v2-react-ui';
 import { OrderShipments } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 // COUNTRIES imported from shared utils
 export default function OrderDetailPage() {
@@ -36,6 +37,13 @@ export default function OrderDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     const companyId = (selectedCompany as Company | null)?.companyId;
+
+    const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderActionsLabels = useTranslations('OrderActions');
+    const orderShipmentsLabels = useTranslations('OrderShipments');
+    const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+    const orderTotalsLabels = useTranslations('OrderTotals');
+    const orderItemCardLabels = useTranslations('OrderItemCard');
 
     const { getOrderById } = useOrders({
         graphqlClient,
@@ -101,10 +109,11 @@ export default function OrderDetailPage() {
                     {/* Order Summary + Addresses + Delivery Info */}
                     <Card className="p-6">
                         <div className="flex-1">
-                            <OrderSummary order={order} countries={COUNTRIES} />
+                            <OrderSummary order={order} labels={orderSummaryLabels} countries={COUNTRIES} />
                         </div>
                         <OrderActions
                             order={order}
+                            labels={orderActionsLabels}
                             cartId={cart?.cartId}
                             onCartCreated={(newCart) => {
                                 console.log('Cart created:', newCart);
@@ -118,7 +127,7 @@ export default function OrderDetailPage() {
                     </Card>
 
                     {/* Shipments */}
-                    <OrderShipments order={order} />
+                    <OrderShipments order={order} labels={orderShipmentsLabels} />
 
                     {/* Order Overview */}
                     <div className="pt-10">
@@ -153,6 +162,7 @@ export default function OrderDetailPage() {
                                                     key={item.id}
                                                     orderItem={item}
                                                     childItems={childMap.get(item.id) || []}
+                                                    labels={orderItemCardLabels}
                                                 />
                                             ))}
                                         </table>
@@ -163,19 +173,20 @@ export default function OrderDetailPage() {
                         })()}
 
                         {/* Bonus Items */}
-                        <OrderBonusItems order={order} />
+                        <OrderBonusItems order={order} labels={orderBonusItemsLabels} />
                     </div>
 
                     {/* Order Bottom Actions & Totals */}
                     <div className="flex flex-col md:flex-row justify-between gap-8 pt-6 border-t md:border-none">
                         <OrderActions
                             order={order}
+                            labels={orderActionsLabels}
                             cartId={cart?.cartId}
                             onCartCreated={(newCart) => saveCart(newCart)}
                             afterReorder={(newCart) => saveCart(newCart)}
                         />
 
-                        <OrderTotals order={order} />
+                        <OrderTotals order={order} labels={orderTotalsLabels} />
                     </div>
                 </div>
             )}

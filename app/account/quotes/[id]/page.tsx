@@ -18,6 +18,7 @@ import { OrderItemCard } from 'propeller-v2-react-ui';
 import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { OrderTotals } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 // COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
@@ -61,6 +62,12 @@ export default function QuoteDetailPage() {
     // PDF download UX state — shows "Downloading..." while the request is in
     // flight, then a success or error toast based on the result. Mirrors the
     // pattern OrderActions uses for the order-confirmation PDF.
+    const orderSummaryLabels = useTranslations('OrderSummary');
+    const quoteActionsLabels = useTranslations('QuoteActions');
+    const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+    const orderTotalsLabels = useTranslations('OrderTotals');
+    const orderItemCardLabels = useTranslations('OrderItemCard');
+
     const [downloading, setDownloading] = useState(false);
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -132,13 +139,14 @@ export default function QuoteDetailPage() {
                         <div className="flex-1">
                             <OrderSummary
                                 order={quote}
-                                labels={{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }}
+                                labels={orderSummaryLabels}
                                 countries={COUNTRIES}
                             />
                         </div>
                         <div className="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
                             <QuoteActions
                                 quote={quote}
+                                labels={quoteActionsLabels}
                                 afterAccept={handleAfterAccept}
                                 showTermsAndConditions={true}
                                 onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
@@ -184,6 +192,7 @@ export default function QuoteDetailPage() {
                                                     orderItem={item}
                                                     showDiscount={true}
                                                     childItems={childMap.get(item.id) || []}
+                                                    labels={orderItemCardLabels}
                                                 />
                                             ))}
                                         </table>
@@ -194,12 +203,12 @@ export default function QuoteDetailPage() {
                         })()}
 
                         {/* Bonus Items */}
-                        <OrderBonusItems order={quote} />
+                        <OrderBonusItems order={quote} labels={orderBonusItemsLabels} />
                     </div>
 
                     {/* Quote Bottom Totals */}
                     <div className="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t md:border-none">
-                        <OrderTotals order={quote} />
+                        <OrderTotals order={quote} labels={orderTotalsLabels} />
                     </div>
                 </div>
             )}

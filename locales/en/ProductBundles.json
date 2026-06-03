@@ -1,0 +1,18 @@
+{
+  "addToCart": "In cart",
+  "addedToCart": "added to cart",
+  "adding": "Adding...",
+  "condition_ALL": "Discount on all items",
+  "condition_EP": "Discount on extra items",
+  "continueShopping": "Continue shopping",
+  "errorAdding": "Failed to add bundle to cart",
+  "exclTax": "excl. VAT",
+  "inclTax": "incl. VAT",
+  "loginToSeePrices": "Log in to see prices and add to cart",
+  "modalTitle": "Added to cart",
+  "noCartId": "No cart ID provided",
+  "proceedToCheckout": "Proceed to checkout",
+  "quantity": "Quantity",
+  "title": "Bundle",
+  "youSave": "Your savings:"
+}

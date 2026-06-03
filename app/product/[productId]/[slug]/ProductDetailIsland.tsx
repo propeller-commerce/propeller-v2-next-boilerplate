@@ -25,6 +25,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from '@/lib/i18n/client';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from 'propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart } from 'propeller-v2-react-ui';
@@ -59,6 +60,8 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
   const { cart, saveCart } = useCart();
   const { refreshUser } = useAuth();
   const { language } = useLanguage();
+  const addToCartLabels = useTranslations('AddToCart');
+  const addToFavoriteLabels = useTranslations('AddToFavorite');
 
   // Update URL slug when the user switches language. Uses replaceState to
   // avoid a Next router re-render cascade that would otherwise trigger a
@@ -94,10 +97,12 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
           afterAddToCart={(c: Cart) => saveCart(c)}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+          labels={addToCartLabels}
         />
         <AddToFavorite
           productId={product.productId}
           onFavoriteChanged={refreshUser}
+          labels={addToFavoriteLabels}
         />
       </div>
     </Card>
@@ -132,6 +137,7 @@ export function ProductPriceIsland({
 }) {
   const { includeTax } = usePrice();
   const { language } = useLanguage();
+  const bulkPricesLabels = useTranslations('ProductBulkPrices');
   return (
     <>
       <ProductPrice
@@ -148,7 +154,7 @@ export function ProductPriceIsland({
           includeTax={includeTax}
           user={user}
           portalMode={portalMode}
-          labels={{ title: '' }}
+          labels={{ ...bulkPricesLabels, title: '' }}
         />
       </div>
     </>
@@ -218,11 +224,13 @@ export function ProductBreadcrumbsIsland({
   currentCategory?: Category;
   currentLabel: string;
 }) {
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
   return (
     <Breadcrumbs
       categoryPath={categoryPath}
       currentCategory={currentCategory}
       currentLabel={currentLabel}
+      labels={breadcrumbsLabels}
     />
   );
 }
@@ -246,10 +254,18 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
   const router = useRouter();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
+  const productTabsLabels = useTranslations('ProductTabs');
+  const productBundlesLabels = useTranslations('ProductBundles');
+  const productSliderLabels = useTranslations('ProductSlider');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const addToCartLabels = useTranslations('AddToCart');
+  const itemStockLabels = useTranslations('ItemStock');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   return (
     <>
-      <ProductTabs product={product} productId={productId} />
+      <ProductTabs product={product} productId={productId} labels={productTabsLabels} />
       <div className="my-6">
         <ProductBundles
           productId={productId}
@@ -260,6 +276,7 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           onCartCreated={(newCart) => saveCart(newCart)}
           afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+          labels={productBundlesLabels}
         />
       </div>
       {CROSS_SELLS.map((type) => (
@@ -279,6 +296,12 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
           onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
           onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+          labels={productSliderLabels}
+          productCardLabels={productCardLabels}
+          clusterCardLabels={clusterCardLabels}
+          addToCartLabels={addToCartLabels}
+          stockLabels={itemStockLabels}
+          priceLabels={productPriceLabels}
         />
       ))}
     </>

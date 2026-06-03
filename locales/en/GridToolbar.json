@@ -1,0 +1,21 @@
+{
+  "ASC": "Asc",
+  "CATEGORY_ORDER": "Default Sorting",
+  "CREATED_AT": "Created Date",
+  "DESC": "Desc",
+  "LAST_MODIFIED_AT": "Last Modified Date",
+  "NAME": "Name",
+  "PRICE": "Price",
+  "PRIORITY": "Priority",
+  "RELEVANCE": "Relevance",
+  "SKU": "SKU",
+  "SUPPLIER_CODE": "Supplier Code",
+  "clearAll": "Clear All",
+  "from": "from",
+  "perPage": " per page",
+  "price": "Price",
+  "products": " Products",
+  "results": "results",
+  "switchToGrid": "Switch to grid view",
+  "switchToList": "Switch to list view"
+}

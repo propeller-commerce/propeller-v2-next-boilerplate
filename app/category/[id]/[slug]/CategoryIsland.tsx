@@ -40,6 +40,7 @@ import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { parseListingParams, type ListingParams } from '@/lib/listingParams';
+import { useTranslations } from '@/lib/i18n/client';
 
 interface CategoryIslandProps {
   /** Numeric category ID from the route. */
@@ -129,6 +130,15 @@ export default function CategoryIsland({
 
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
+  const gridPaginationLabels = useTranslations('GridPagination');
+  const gridFiltersLabels = useTranslations('GridFilters');
+  const gridToolbarLabels = useTranslations('GridToolbar');
+  const productGridLabels = useTranslations('ProductGrid');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const addToCartLabels = useTranslations('AddToCart');
+  const itemStockLabels = useTranslations('ItemStock');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   // The server-seeded first page of products. Passed to ProductGrid only
   // while `usingServerData` is true.
@@ -390,6 +400,7 @@ export default function CategoryIsland({
             activePriceMax={maxPrice}
             isLoading={filtersLoading}
             className=""
+            labels={gridFiltersLabels}
           />
         </aside>
 
@@ -414,6 +425,7 @@ export default function CategoryIsland({
               onFilterRemove={handleFilterRemove}
               onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
               onClearFilters={clearAllFilters}
+              labels={gridToolbarLabels}
             />
           </div>
 
@@ -466,6 +478,12 @@ export default function CategoryIsland({
             onClusterClick={(cluster: Cluster) => {
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
+            labels={productGridLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
 
           <div className="flex justify-center gap-2 mt-12">
@@ -474,6 +492,7 @@ export default function CategoryIsland({
                 products={productsResponse}
                 onPageChange={handlePageChange}
                 variant="full"
+                labels={gridPaginationLabels}
               />
             )}
           </div>
@@ -494,11 +513,13 @@ export function CategoryBreadcrumbsIsland({
 }: {
   category: Category;
 }) {
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
   return (
     <Breadcrumbs
       categoryPath={category.categoryPath || []}
       currentCategory={category || undefined}
       showCurrent={true}
+      labels={breadcrumbsLabels}
     />
   );
 }

@@ -13,6 +13,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { FavoriteListDetails } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function FavoriteListPage() {
   const { state: authState, refreshUser } = useAuth();
@@ -20,6 +21,7 @@ export default function FavoriteListPage() {
   const params = useParams();
   const listId = params?.id as string;
   const { language } = useLanguage();
+  const favoriteListDetailsLabels = useTranslations('FavoriteListDetails');
 
   const [listName, setListName] = useState('');
 
@@ -67,6 +69,7 @@ export default function FavoriteListPage() {
       </div>
 
       <FavoriteListDetails
+        labels={favoriteListDetailsLabels}
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
         onItemsDelete={handleItemsDelete}

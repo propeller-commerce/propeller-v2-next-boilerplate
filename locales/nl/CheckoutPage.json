@@ -1,0 +1,14 @@
+{
+  "cartItemsTitle": "Winkelwagen",
+  "deliverySameAsInvoice": "Bezorgadres is hetzelfde als factuuradres",
+  "orderSummaryTitle": "Bestelsamenvatting",
+  "step1Title": "1. Factuuradres",
+  "step2Title": "2. Bezorgadres",
+  "step3PaymentTitle": "3. Betaling & Bezorging",
+  "step3QuoteTitle": "3. Offertedetails",
+  "step4Title": "4. Controleren & Bestellen",
+  "stepDetails": "Gegevens",
+  "stepPayment": "Betaling",
+  "stepReview": "Controleren",
+  "stepShipping": "Verzending"
+}

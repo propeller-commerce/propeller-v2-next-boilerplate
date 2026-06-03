@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { RegisterForm } from 'propeller-v2-react-ui';
 import { graphqlClient, services } from '@/lib/api';
+import { useTranslations } from '@/lib/i18n/client';
 import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
 import { localizeHref, config } from '@/data/config';
 import { fetchActiveCart } from 'propeller-v2-react-ui';
@@ -22,6 +23,7 @@ export default function RegisterPage() {
   const { setSelectedCompany } = useCompany();
   const { language } = useLanguage();
   const { cart, saveCart, clearCart } = useCart();
+  const registerFormLabels = useTranslations('RegisterForm');
   const router = useRouter();
 
   return (
@@ -57,6 +59,7 @@ export default function RegisterPage() {
 
               <CardContent>
                 <RegisterForm
+                  labels={registerFormLabels}
                   title=""
                   requiredFields={['firstName', 'lastName']}
                   onLoginClick={() => router.push(localizeHref('/login', language))}

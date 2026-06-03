@@ -48,6 +48,7 @@ import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
 import { config, localizeHref } from '@/data/config';
+import { useTranslations } from '@/lib/i18n/client';
 
 interface ClusterDetailIslandProps {
   /** Numeric cluster ID from the route. */
@@ -76,6 +77,20 @@ export default function ClusterDetailIsland({
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const router = useRouter();
+
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
+  const bulkPricesLabels = useTranslations('ProductBulkPrices');
+  const itemStockLabels = useTranslations('ItemStock');
+  const clusterConfiguratorLabels = useTranslations('ClusterConfigurator');
+  const clusterOptionsLabels = useTranslations('ClusterOptions');
+  const addToCartLabels = useTranslations('AddToCart');
+  const addToFavoriteLabels = useTranslations('AddToFavorite');
+  const productTabsLabels = useTranslations('ProductTabs');
+  const productSliderLabels = useTranslations('ProductSlider');
+  const productGalleryLabels = useTranslations('ProductGallery');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   // ClusterInfo fires this once it has the cluster — immediately, since we
   // pass it the pre-fetched `cluster` prop.
@@ -156,6 +171,7 @@ export default function ClusterDetailIsland({
           categoryPath={selectedProduct?.categoryPath || []}
           currentCategory={selectedProduct?.category || undefined}
           showCurrent={true}
+          labels={breadcrumbsLabels}
         />
       </div>
 
@@ -163,7 +179,7 @@ export default function ClusterDetailIsland({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
         {/* Left: Image Gallery */}
         <div className="bg-white rounded-lg shadow p-6">
-          <ProductGallery images={images} />
+          <ProductGallery images={images} labels={productGalleryLabels} />
         </div>
 
         {/* Right: Product Info */}
@@ -192,6 +208,7 @@ export default function ClusterDetailIsland({
 
                 <ProductBulkPrices
                   bulkPrices={selectedProduct?.bulkPrices || []}
+                  labels={bulkPricesLabels}
                 />
 
                 {/* Cluster owns the marketing description; variant products
@@ -213,6 +230,7 @@ export default function ClusterDetailIsland({
                     <ItemStock
                       inventory={selectedProduct.inventory}
                       showAvailability={false}
+                      labels={itemStockLabels}
                     />
                   </div>
                 )}
@@ -230,6 +248,7 @@ export default function ClusterDetailIsland({
                         onConfigurationChange={(product: Product) =>
                           setSelectedProduct(product)
                         }
+                        labels={clusterConfiguratorLabels}
                       />
                     </div>
                   )}
@@ -243,6 +262,7 @@ export default function ClusterDetailIsland({
                       onOptionSelect={handleOptionSelect}
                       onOptionClear={handleOptionClear}
                       showErrors={showClusterErrors}
+                      labels={clusterOptionsLabels}
                     />
                   </div>
                 )}
@@ -273,10 +293,12 @@ export default function ClusterDetailIsland({
                 onRequestQuoteClick={() =>
                   router.push(localizeHref('/checkout?mode=quote', language))
                 }
+                labels={addToCartLabels}
               />
               <AddToFavorite
                 clusterId={clusterId}
                 onFavoriteChanged={refreshUser}
+                labels={addToFavoriteLabels}
               />
             </div>
           </div>
@@ -304,6 +326,7 @@ export default function ClusterDetailIsland({
           }
           productId={(displayProduct as Product).productId}
           className="pb-8"
+          labels={productTabsLabels}
         />
       )}
 
@@ -340,6 +363,12 @@ export default function ClusterDetailIsland({
           onClusterClick={(c) =>
             router.push(config.urls.getClusterUrl(c, language))
           }
+          labels={productSliderLabels}
+          productCardLabels={productCardLabels}
+          clusterCardLabels={clusterCardLabels}
+          addToCartLabels={addToCartLabels}
+          stockLabels={itemStockLabels}
+          priceLabels={productPriceLabels}
         />
       ))}
     </>

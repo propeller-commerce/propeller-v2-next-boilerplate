@@ -41,6 +41,7 @@ import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
 import { ProductSlider } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 // const clusterService = new ClusterService(graphqlClient); // ← moved to ClusterInfo
 
@@ -58,6 +59,19 @@ export default function ClusterPage() {
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const router = useRouter();
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
+  const productBulkPricesLabels = useTranslations('ProductBulkPrices');
+  const itemStockLabels = useTranslations('ItemStock');
+  const clusterConfiguratorLabels = useTranslations('ClusterConfigurator');
+  const clusterOptionsLabels = useTranslations('ClusterOptions');
+  const addToCartLabels = useTranslations('AddToCart');
+  const addToFavoriteLabels = useTranslations('AddToFavorite');
+  const productTabsLabels = useTranslations('ProductTabs');
+  const productSliderLabels = useTranslations('ProductSlider');
+  const productGalleryLabels = useTranslations('ProductGallery');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   // ── Old fetch effect — now handled by ClusterInfo via onClusterLoaded ──────
   /*
@@ -171,6 +185,7 @@ export default function ClusterPage() {
               categoryPath={selectedProduct?.categoryPath || []}
               currentCategory={selectedProduct?.category || undefined}
               showCurrent={true}
+              labels={breadcrumbsLabels}
             />
           </div>
 
@@ -179,7 +194,7 @@ export default function ClusterPage() {
             {/* Left: Image Gallery */}
             <div className="bg-white rounded-lg shadow p-6">
               {/* Gallery Column */}
-              <ProductGallery images={images} />
+              <ProductGallery images={images} labels={productGalleryLabels} />
             </div>
 
             {/* Right: Product Info */}
@@ -201,7 +216,7 @@ export default function ClusterPage() {
                       selectedOptionProducts={Object.values(selectedOptionProducts)}
                     />
 
-                    <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} />
+                    <ProductBulkPrices bulkPrices={selectedProduct?.bulkPrices || []} labels={productBulkPricesLabels} />
 
                     <div className="mt-6">
                       <ProductShortDescription product={selectedProduct as Product} />
@@ -209,7 +224,7 @@ export default function ClusterPage() {
 
                     {selectedProduct?.inventory && (
                       <div className="mt-4">
-                        <ItemStock inventory={selectedProduct.inventory} showAvailability={false} />
+                        <ItemStock inventory={selectedProduct.inventory} showAvailability={false} labels={itemStockLabels} />
                       </div>
                     )}
 
@@ -222,6 +237,7 @@ export default function ClusterPage() {
                           config={cluster.config}
                           defaultProduct={cluster.defaultProduct as Product}
                           onConfigurationChange={(product: Product) => setSelectedProduct(product)}
+                          labels={clusterConfiguratorLabels}
                         />
                       </div>
                     )}
@@ -235,6 +251,7 @@ export default function ClusterPage() {
                           onOptionSelect={handleOptionSelect}
                           onOptionClear={handleOptionClear}
                           showErrors={showClusterErrors}
+                          labels={clusterOptionsLabels}
                         />
                       </div>
                     )}
@@ -258,10 +275,12 @@ export default function ClusterPage() {
                       saveCart(cart);
                     }}
                     onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-                    onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))} />
+                    onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+                    labels={addToCartLabels} />
                   <AddToFavorite
                     clusterId={clusterId}
                     onFavoriteChanged={refreshUser}
+                    labels={addToFavoriteLabels}
                   />
                 </div>
               </div>
@@ -269,7 +288,7 @@ export default function ClusterPage() {
           </div>
           {/* Product Tabs - Description, Specifications, etc. */}
           {displayProduct && (
-            <ProductTabs product={displayProduct as Product} productId={(displayProduct as Product).productId} className='pb-8' />
+            <ProductTabs product={displayProduct as Product} productId={(displayProduct as Product).productId} className='pb-8' labels={productTabsLabels} />
           )}
 
           <ProductSlider
@@ -287,6 +306,12 @@ export default function ClusterPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
           <ProductSlider
             crossUpsellTypes={[CrossupsellType.ALTERNATIVES]}
@@ -303,6 +328,12 @@ export default function ClusterPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
           <ProductSlider
             crossUpsellTypes={[CrossupsellType.RELATED]}
@@ -319,6 +350,12 @@ export default function ClusterPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
           <ProductSlider
             crossUpsellTypes={[CrossupsellType.OPTIONS]}
@@ -335,6 +372,12 @@ export default function ClusterPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
           <ProductSlider
             crossUpsellTypes={[CrossupsellType.PARTS]}
@@ -351,6 +394,12 @@ export default function ClusterPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
         </div>
       </main>

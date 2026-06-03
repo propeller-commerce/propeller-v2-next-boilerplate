@@ -16,6 +16,7 @@ import { Order, OrderItem } from 'propeller-sdk-v2';
 import { OrderItemCard } from 'propeller-v2-react-ui';
 import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 function ThankYouPageInner() {
   const params = useParams();
@@ -27,6 +28,10 @@ function ThankYouPageInner() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const orderSummaryLabels = useTranslations('OrderSummary');
+  const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+  const orderItemCardLabels = useTranslations('OrderItemCard');
 
   const { getOrderById } = useOrders({
     graphqlClient,
@@ -110,6 +115,7 @@ function ThankYouPageInner() {
                   order={order}
                   countries={COUNTRIES}
                   title="Order Summary"
+                  labels={orderSummaryLabels}
                 />
               </div>
 
@@ -146,6 +152,7 @@ function ThankYouPageInner() {
                                               key={item.id}
                                               orderItem={item}
                                               childItems={childMap.get(item.id) || []}
+                                              labels={orderItemCardLabels}
                                           />
                                       ))}
                                   </table>
@@ -156,7 +163,7 @@ function ThankYouPageInner() {
                   })()}
 
                   {/* Bonus Items */}
-                  <OrderBonusItems order={order} />
+                  <OrderBonusItems order={order} labels={orderBonusItemsLabels} />
               </div>
 
               {/* Actions */}

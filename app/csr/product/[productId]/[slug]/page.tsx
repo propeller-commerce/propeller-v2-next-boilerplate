@@ -51,6 +51,7 @@ import {
 } from 'propeller-v2-react-ui';
 import { usePrice } from '@/context/PriceContext';
 import { graphqlClient } from '@/lib/api';
+import { useTranslations } from '@/lib/i18n/client';
 import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
@@ -65,6 +66,18 @@ export default function ProductPage() {
   const router = useRouter();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
+  const bulkPricesLabels = useTranslations('ProductBulkPrices');
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
+  const itemStockLabels = useTranslations('ItemStock');
+  const addToCartLabels = useTranslations('AddToCart');
+  const addToFavoriteLabels = useTranslations('AddToFavorite');
+  const productTabsLabels = useTranslations('ProductTabs');
+  const productBundlesLabels = useTranslations('ProductBundles');
+  const productSliderLabels = useTranslations('ProductSlider');
+  const productGalleryLabels = useTranslations('ProductGallery');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const productPriceLabels = useTranslations('ProductPrice');
   const images: string[] = product?.media?.images?.items
     ?.map(image => image.imageVariants?.[0]?.url)
     .filter((url): url is string => !!url) ?? [];
@@ -93,6 +106,7 @@ export default function ProductPage() {
               categoryPath={product?.categoryPath || []}
               currentCategory={product?.category || undefined}
               currentLabel={product ? getLanguageString(product.names, language, '') : undefined}
+              labels={breadcrumbsLabels}
             />
           </div>
 
@@ -101,7 +115,7 @@ export default function ProductPage() {
             {/* Left: Image Gallery */}
             <div className="bg-white rounded-lg shadow p-6">
               {/* Gallery Column */}
-              <ProductGallery images={images} />
+              <ProductGallery images={images} labels={productGalleryLabels} />
             </div>
 
             {/* Details Column */}
@@ -116,7 +130,7 @@ export default function ProductPage() {
 
                 <ProductPrice price={price} />
                 <div className="mt-6">
-                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ title: '' }} />
+                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ ...bulkPricesLabels, title: '' }} />
                 </div>
                 <div className="mt-6">
                   <ProductShortDescription product={product as Product} />
@@ -124,7 +138,7 @@ export default function ProductPage() {
 
                 {product?.inventory && (
                   <div className="mt-4">
-                    <ItemStock inventory={product.inventory} showAvailability={false} />
+                    <ItemStock inventory={product.inventory} showAvailability={false} labels={itemStockLabels} />
                   </div>
                 )}
               </div>
@@ -145,10 +159,12 @@ export default function ProductPage() {
                         saveCart(cart);
                       }}
                       onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
-                      onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))} />
+                      onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+                      labels={addToCartLabels} />
                     <AddToFavorite
                       productId={product.productId}
                       onFavoriteChanged={refreshUser}
+                      labels={addToFavoriteLabels}
                     />
                   </div>
                 </Card>
@@ -156,7 +172,7 @@ export default function ProductPage() {
 
             </div>
           </div>
-          <ProductTabs product={product as Product} productId={productId} />
+          <ProductTabs product={product as Product} productId={productId} labels={productTabsLabels} />
           <div className="my-6">
             <ProductBundles
               productId={productId}
@@ -167,6 +183,7 @@ export default function ProductPage() {
               onCartCreated={(newCart) => saveCart(newCart)}
               afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
               onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+              labels={productBundlesLabels}
             />
           </div>
           <ProductSlider
@@ -184,6 +201,12 @@ export default function ProductPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
           <ProductSlider
             crossUpsellTypes={[CrossupsellType.RELATED]}
@@ -200,6 +223,12 @@ export default function ProductPage() {
             onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
             onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
             onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
         </div>
       </main>

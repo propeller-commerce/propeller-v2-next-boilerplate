@@ -2,11 +2,18 @@
 
 import Link from 'next/link';
 import type { CmsProductCards } from '@/lib/cms/types';
+import { useTranslations } from '@/lib/i18n/client';
 import { ProductSlider } from 'propeller-v2-react-ui';
 import { useCart } from '@/context/CartContext';
 
 export default function ProductCardsBlock({ block }: { block: CmsProductCards }) {
   const { cart, saveCart } = useCart();
+  const productSliderLabels = useTranslations('ProductSlider');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const addToCartLabels = useTranslations('AddToCart');
+  const itemStockLabels = useTranslations('ItemStock');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   const productIds = block.products
     .map((p) => typeof p.productId === 'string' ? parseInt(p.productId, 10) : p.productId)
@@ -29,6 +36,12 @@ export default function ProductCardsBlock({ block }: { block: CmsProductCards })
 
         {productIds.length > 0 ? (
           <ProductSlider
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
             productIds={productIds.map(Number)}
             cartId={cart?.cartId}
             taxZone="NL"

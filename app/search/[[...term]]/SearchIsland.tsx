@@ -36,6 +36,7 @@ import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
 import { parseListingParams, type ListingParams } from '@/lib/listingParams';
+import { useTranslations } from '@/lib/i18n/client';
 
 interface SearchIslandProps {
   /** The search term (empty string for the "all products" listing). */
@@ -115,6 +116,15 @@ export default function SearchIsland({
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const { includeTax } = usePrice();
+  const gridPaginationLabels = useTranslations('GridPagination');
+  const gridFiltersLabels = useTranslations('GridFilters');
+  const gridToolbarLabels = useTranslations('GridToolbar');
+  const productGridLabels = useTranslations('ProductGrid');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const addToCartLabels = useTranslations('AddToCart');
+  const itemStockLabels = useTranslations('ItemStock');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   const initialItems = useMemo(
     () => ((initialProducts?.items ?? []) as (Product | Cluster)[]),
@@ -335,6 +345,7 @@ export default function SearchIsland({
             activePriceMax={maxPrice}
             isLoading={filtersLoading}
             className=""
+            labels={gridFiltersLabels}
           />
         </aside>
       ) : null}
@@ -361,6 +372,7 @@ export default function SearchIsland({
               onFilterRemove={handleFilterRemove}
               onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
               onClearFilters={clearAllFilters}
+              labels={gridToolbarLabels}
             />
           </div>
         ) : null}
@@ -446,6 +458,12 @@ export default function SearchIsland({
             onClusterClick={(cluster: Cluster) => {
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
+            labels={productGridLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
           />
         </div>
 
@@ -457,6 +475,7 @@ export default function SearchIsland({
                 products={productsResponse}
                 onPageChange={handlePageChange}
                 variant="full"
+                labels={gridPaginationLabels}
               />
             )}
           </div>

@@ -12,6 +12,7 @@ import { GlobalProvider } from "@/context/GlobalContext";
 import { CompanyProvider } from "@/context/CompanyContext";
 import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { TranslationsProvider } from "@/lib/i18n/client";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
 import { Toaster } from "react-hot-toast";
 import { cookies } from "next/headers";
@@ -50,6 +51,7 @@ export default async function RootLayout({
           <CompanyProvider>
             <PriceProvider initialIncludeTax={initialIncludeTax}>
             <LanguageProvider>
+            <TranslationsProvider>
             <PropellerHostBridge>
             <CartProvider>
               <GlobalProvider globalData={globalData}>
@@ -58,6 +60,7 @@ export default async function RootLayout({
               <Toaster position="top-center" reverseOrder={false} />
             </CartProvider>
             </PropellerHostBridge>
+            </TranslationsProvider>
             </LanguageProvider>
             </PriceProvider>
           </CompanyProvider>

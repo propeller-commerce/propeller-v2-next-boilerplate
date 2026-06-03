@@ -1,0 +1,8 @@
+{
+  "apply": "Apply",
+  "applying": "Applying...",
+  "errorApply": "Failed to apply action code. Please try again.",
+  "errorRemove": "Failed to remove action code. Please try again.",
+  "placeholder": "Enter action code",
+  "remove": "Remove"
+}

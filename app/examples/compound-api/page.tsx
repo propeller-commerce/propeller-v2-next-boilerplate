@@ -20,10 +20,12 @@ import { graphqlClient } from '@/lib/api';
 import { config } from '@/data/config';
 import { ProductCard } from 'propeller-v2-react-ui';
 import { ProductGrid } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 function CompoundApiDemoInner() {
   const search = useSearchParams();
   const categoryId = Number.parseInt(search.get('categoryId') ?? '1793', 10);
+  const productPriceLabels = useTranslations('ProductPrice');
 
   return (
     <>
@@ -43,6 +45,7 @@ function CompoundApiDemoInner() {
           showPrice={true}
           showStock={false}
           createCart={true}
+          priceLabels={productPriceLabels}
         >
           <ProductGrid.Items
             renderItem={(item) => {

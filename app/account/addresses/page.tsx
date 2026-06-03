@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { useAddress, type AddressInput } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 // COUNTRIES imported from shared utils
 export default function AddressesPage() {
@@ -41,6 +42,8 @@ export default function AddressesPage() {
   };
 
   const resolvedCompanyId = getActiveCompany()?.companyId;
+
+  const addressCardLabels = useTranslations('AddressCard');
 
   const { createAddress, updateAddress, deleteAddress, setDefaultAddress } = useAddress({
     graphqlClient,
@@ -162,6 +165,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={COUNTRIES}
+                labels={addressCardLabels}
               />
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -183,6 +187,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={COUNTRIES}
+                labels={addressCardLabels}
               />
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -213,6 +218,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={COUNTRIES}
+                labels={addressCardLabels}
               />
             ))}
           </div>
@@ -240,6 +246,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={COUNTRIES}
+                labels={addressCardLabels}
               />
             ))}
           </div>
@@ -257,6 +264,7 @@ export default function AddressesPage() {
           onCancel={() => setShowAddModal(false)}
           enableActions={false}
           countries={COUNTRIES}
+          labels={addressCardLabels}
         />
       )}
     </div>

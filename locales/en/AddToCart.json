@@ -1,0 +1,14 @@
+{
+  "add": "Add",
+  "addedToCart": "added to cart",
+  "adding": "Adding...",
+  "continueShopping": "Continue shopping",
+  "errorAdding": "Failed to add item to cart",
+  "modalTitle": "Added to cart",
+  "noCartId": "No cart ID provided",
+  "outOfStock": "Insufficient stock available",
+  "proceedToCheckout": "Proceed to checkout",
+  "quantity": "Quantity",
+  "requestQuoteButton": "Request a Quote",
+  "surcharges": "Additional surcharges:"
+}

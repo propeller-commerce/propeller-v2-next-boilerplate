@@ -40,6 +40,7 @@ import {
 // ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from 'propeller-v2-react-ui';
 import { fetchProduct, getServerInfra, getAnonymousInfra } from '@/lib/server';
+import { getTranslations } from '@/lib/i18n/server';
 import { config } from '@/data/config';
 import { getLanguageString } from 'propeller-v2-react-ui/shared';
 import {
@@ -122,6 +123,9 @@ export default async function ProductPage({
   const product = await fetchProduct(infra, productId, infra.language);
   if (!product) notFound();
 
+  const itemStockLabels = getTranslations(infra.language, 'ItemStock');
+  const productGalleryLabels = getTranslations(infra.language, 'ProductGallery');
+
   const price = product.price as ProductPriceSDK;
   const title = getLanguageString(product.names, infra.language, '');
   const images: string[] = (product.media?.images?.items ?? [])
@@ -156,7 +160,7 @@ export default async function ProductPage({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Left column — gallery (client island, but layout is server-controlled). */}
             <div className="bg-white rounded-lg shadow p-6">
-              <ProductGallery images={images} />
+              <ProductGallery images={images} labels={productGalleryLabels} />
             </div>
 
             {/* Right column — server-rendered name/price/desc/stock, then the
@@ -183,7 +187,7 @@ export default async function ProductPage({
                 </div>
                 {product.inventory && (
                   <div className="mt-4">
-                    <ItemStock inventory={product.inventory} showAvailability={false} />
+                    <ItemStock inventory={product.inventory} showAvailability={false} labels={itemStockLabels} />
                   </div>
                 )}
               </div>

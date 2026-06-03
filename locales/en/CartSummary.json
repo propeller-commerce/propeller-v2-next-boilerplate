@@ -1,0 +1,13 @@
+{
+  "checkoutButton": "Continue to Checkout",
+  "discount": "Discount:",
+  "requestAuthorizationButton": "Request Authorization",
+  "requestQuoteButton": "Request a Quote",
+  "requestingAuthorization": "Requesting...",
+  "shippingCosts": "Shipping costs:",
+  "subtotal": "Subtotal:",
+  "total": "Total:",
+  "totalExclVat": "Total excl. VAT:",
+  "totalVat": "Total VAT:",
+  "vat": "VAT"
+}

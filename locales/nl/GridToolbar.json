@@ -1,0 +1,21 @@
+{
+  "ASC": "Oplopend",
+  "CATEGORY_ORDER": "Standaardsortering",
+  "CREATED_AT": "Aanmaakdatum",
+  "DESC": "Aflopend",
+  "LAST_MODIFIED_AT": "Laatst gewijzigd",
+  "NAME": "Naam",
+  "PRICE": "Prijs",
+  "PRIORITY": "Prioriteit",
+  "RELEVANCE": "Relevantie",
+  "SKU": "SKU",
+  "SUPPLIER_CODE": "Leverancierscode",
+  "clearAll": "Alles wissen",
+  "from": "van",
+  "perPage": " per pagina",
+  "price": "Prijs",
+  "products": " Producten",
+  "results": "resultaten",
+  "switchToGrid": "Schakel naar rasterweergave",
+  "switchToList": "Schakel naar lijstweergave"
+}

@@ -1,0 +1,13 @@
+{
+  "checkoutButton": "Verder naar afrekenen",
+  "discount": "Korting:",
+  "requestAuthorizationButton": "Autorisatie aanvragen",
+  "requestQuoteButton": "Offerte aanvragen",
+  "requestingAuthorization": "Aanvragen...",
+  "shippingCosts": "Verzendkosten:",
+  "subtotal": "Subtotaal:",
+  "total": "Totaal:",
+  "totalExclVat": "Totaal excl. BTW:",
+  "totalVat": "Totaal BTW:",
+  "vat": "BTW"
+}

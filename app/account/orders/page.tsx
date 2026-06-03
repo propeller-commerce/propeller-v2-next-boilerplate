@@ -5,29 +5,16 @@ import { useRouter } from 'next/navigation';
 import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { OrderList } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 
 export default function OrdersPage() {
   const { state } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
+  const labels = useTranslations('OrderList');
 
   if (!state.isAuthenticated) return null;
-
-  const paginationLabels = {
-    view: 'Weergave',
-    previous: 'Vorige',
-    next: 'Volgende',
-    showingPage: 'Pagina',
-    of: 'van',
-    noOrders: 'Geen orders',
-    loading: 'Laden',
-    order: 'Order',
-    date: 'Datum',
-    status: 'Status',
-    total: 'Totaal',
-    action: 'Actie',
-  };
 
   const ordersColumnConf = {
     id: '#',
@@ -47,7 +34,7 @@ export default function OrdersPage() {
         <OrderList
           showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/orders/${orderId}`, language))}
-          labels={paginationLabels}
+          labels={labels}
           rowsClickable={true}
           searchFields={['term', 'createdAt', 'price']}
           columnConfig={ordersColumnConf}

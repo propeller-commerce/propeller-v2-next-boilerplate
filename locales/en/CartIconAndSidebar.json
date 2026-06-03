@@ -1,0 +1,17 @@
+{
+  "cartIconLabel": "Shopping cart",
+  "cartPageButton": "View Cart Details",
+  "cartSidebarTitle": "Shopping cart",
+  "checkoutButton": "Checkout",
+  "closeLabel": "Close",
+  "continueShopping": "Continue Shopping",
+  "emptyCart": "Your cart is empty.",
+  "itemsLabel": "item(s)",
+  "qty": "Qty",
+  "requestAuthorizationButton": "Request Authorization",
+  "requestQuoteButton": "Request a Quote",
+  "requestingAuthorization": "Requesting...",
+  "surcharges": "Additional surcharges:",
+  "total": "Total",
+  "totalLabel": "Total"
+}

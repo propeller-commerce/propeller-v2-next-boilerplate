@@ -34,6 +34,7 @@ import type { CmsCategoryBanner } from '@/lib/cms/types';
 import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
 import { Breadcrumbs } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function CategoryPage() {
   const params = useParams();
@@ -79,6 +80,16 @@ export default function CategoryPage() {
   const { cart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
   const { language } = useLanguage();
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
+  const gridPaginationLabels = useTranslations('GridPagination');
+  const gridFiltersLabels = useTranslations('GridFilters');
+  const gridToolbarLabels = useTranslations('GridToolbar');
+  const productGridLabels = useTranslations('ProductGrid');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const addToCartLabels = useTranslations('AddToCart');
+  const itemStockLabels = useTranslations('ItemStock');
+  const productPriceLabels = useTranslations('ProductPrice');
 
   // CMS banner
   const [banner, setBanner] = useState<CmsCategoryBanner | null>(null);
@@ -244,6 +255,7 @@ export default function CategoryPage() {
               categoryPath={category?.categoryPath || []}
               currentCategory={category || undefined}
               showCurrent={true}
+              labels={breadcrumbsLabels}
             />
           </div>
           {/* CMS Category Banner */}
@@ -272,6 +284,7 @@ export default function CategoryPage() {
                 activePriceMax={maxPrice}
                 isLoading={filtersLoading}
                 className=""
+                labels={gridFiltersLabels}
               />
             </aside>
 
@@ -294,6 +307,7 @@ export default function CategoryPage() {
                   onFilterRemove={handleFilterRemove}
                   onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
                   onClearFilters={clearAllFilters}
+                  labels={gridToolbarLabels}
                 />
               </div>
 
@@ -342,6 +356,12 @@ export default function CategoryPage() {
                 onClusterClick={(cluster: Cluster) => {
                   router.push(config.urls.getClusterUrl(cluster, language));
                 }}
+                labels={productGridLabels}
+                productCardLabels={productCardLabels}
+                clusterCardLabels={clusterCardLabels}
+                addToCartLabels={addToCartLabels}
+                stockLabels={itemStockLabels}
+                priceLabels={productPriceLabels}
               />
 
               {/* Pagination */}
@@ -351,6 +371,7 @@ export default function CategoryPage() {
                     products={productsResponse}
                     onPageChange={handlePageChange}
                     variant='full'
+                    labels={gridPaginationLabels}
                   />
                 )}
               </div>

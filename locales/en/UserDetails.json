@@ -1,0 +1,17 @@
+{
+  "activeBadge": "Active",
+  "cocNumberLabel": "CoC Number",
+  "companies": "Companies",
+  "companyInformation": "Company Information",
+  "companyNameLabel": "Company Name",
+  "defaultAddresses": "Default Addresses",
+  "deliveryAddress": "Delivery Address",
+  "emailLabel": "Email",
+  "invoiceAddress": "Invoice Address",
+  "nameLabel": "Name",
+  "noDeliveryAddress": "No delivery address found",
+  "noInvoiceAddress": "No invoice address found",
+  "personalInformation": "Personal Information",
+  "taxNumberLabel": "Tax Number",
+  "userFallback": "User"
+}

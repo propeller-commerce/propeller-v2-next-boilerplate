@@ -1,0 +1,21 @@
+{
+  "addProductDirectly": "Add product directly to this wishlist",
+  "addProductModalTitle": "Add product to list",
+  "addToCart": "Add to cart",
+  "adding": "Adding...",
+  "clearSearchAriaLabel": "Clear search",
+  "close": "Close",
+  "emptyDescription": "You haven't added any products or clusters to this list yet.",
+  "emptyTitle": "List is empty",
+  "inStock": "In stock",
+  "itemsSelected": "items selected",
+  "lowStock": "Low stock",
+  "noResults": "No results",
+  "ofWord": "of",
+  "outOfStock": "Out of stock",
+  "removeFromList": "Remove from this list",
+  "searchPlaceholder": "Search for products...",
+  "searching": "Searching...",
+  "selectAll": "Select all",
+  "selectItem": "Select item"
+}

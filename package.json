@@ -6,7 +6,10 @@
     "packages/*"
   ],
   "scripts": {
+    "locales:build": "node scripts/build-locales-registry.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/build-locales-registry.mjs",
+    "predev": "node scripts/build-locales-registry.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

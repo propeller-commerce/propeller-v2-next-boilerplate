@@ -1,0 +1,13 @@
+{
+  "backToHome": "Terug naar home",
+  "backToOrders": "Terug naar mijn orders",
+  "backToQuoteRequests": "Terug naar mijn offerteaanvragen",
+  "backToQuotes": "Terug naar mijn offertes",
+  "genericErrorMessage": "Er is een onverwachte fout opgetreden. Probeer het opnieuw of ga terug naar de vorige pagina.",
+  "genericErrorTitle": "Er is iets misgegaan",
+  "notAuthorizedMessage": "Je hebt geen toegang tot deze pagina. Als je denkt dat dit een fout is, probeer dan in te loggen met een ander account.",
+  "notAuthorizedTitle": "Geen toegang",
+  "notFoundMessage": "We konden niet vinden wat je zocht.",
+  "notFoundTitle": "Niet gevonden",
+  "signInButton": "Inloggen"
+}

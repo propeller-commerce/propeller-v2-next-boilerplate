@@ -17,6 +17,8 @@ import { OrderItemCard } from 'propeller-v2-react-ui';
 import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
 
 function ThankYouPageInner() {
   const params = useParams();
@@ -75,10 +77,8 @@ function ThankYouPageInner() {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-12 text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Oops! Something went wrong</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Link href={localizeHref('/', language)} className="px-6 py-2 bg-primary text-white rounded hover:bg-primary/80">Return to Home</Link>
+        <main className="flex-1 container mx-auto px-4 py-12">
+          <AccessErrorView kind={classifyApiError(error)} />
         </main>
         <Footer />
       </div>

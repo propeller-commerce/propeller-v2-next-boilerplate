@@ -186,6 +186,41 @@ npm run build
 npm start
 ```
 
+## Translations
+
+UI strings emitted by `propeller-v2-react-ui` components are resolved through `lib/i18n/`. The default provider reads from `locales/<lang>/<Component>.json` (one JSON file per component namespace).
+
+### Editing translations
+
+Edit the relevant `locales/<lang>/<Component>.json`. Keys are slugs the components emit (see existing keys for the slug list). HMR picks up changes immediately during `npm run dev`.
+
+### Adding a new language
+
+1. Create `locales/<new-lang>/` (lowercase ISO 639-1 code, e.g. `de`, `fr`).
+2. Copy `locales/en/*.json` into it and translate the values.
+3. Run `npm run locales:build` to regenerate `_registry.ts`.
+4. The new language is available the next time the app loads.
+
+### Swapping the provider
+
+The file provider is the default. To use a different source (CMS, Tolgee, Lokalise, etc.), implement the `TranslationProvider` interface from `propeller-v2-react-ui` and add a case to `lib/i18n/index.ts`. Set `TRANSLATIONS_PROVIDER=<name>` to activate it.
+
+A provider's `getNamespace(locale, namespace)` returns `Record<string, string>` synchronously. If your source is async (CMS), cache the responses inside the provider and expose a sync `getNamespace` once the cache is warm.
+
+### Reading translations at call sites
+
+- **Server Components** (no `'use client'` directive): `import { getTranslations } from '@/lib/i18n/server'` then `const labels = getTranslations(lang, 'OrderList')`.
+- **Client Components**: `import { useTranslations } from '@/lib/i18n/client'` then `const labels = useTranslations('OrderList')`. `<TranslationsProvider>` is mounted at the root layout and reads from `LanguageContext`, so the hook re-renders automatically when language changes.
+
+### Reviewing seeded NL translations
+
+`locales/nl/_review.md` lists slugs translated best-effort during the initial seed. Review and update as needed.
+
+### Package version requirements
+
+- `propeller-v2-react-ui@0.4.2+` — adds `labels?` to several components that previously didn't accept it (`UserDetails`, `OrderItemCard`, `ProductGallery`, `GridFilters`, `ProductGrid`, `GridToolbar`, `PriceToggle`), and adds forwarding props (`productCardLabels?`, `clusterCardLabels?`, `stockLabels?`, `addToCartLabels?`, `priceLabels?`) on `ProductGrid` / `ProductSlider`, plus `loginFormLabels?` on `AccountIconAndMenu`.
+- `propeller-v2-core-ui@0.2.2+` — owns the `TranslationProvider` interface (transitively installed via the UI package).
+
 ## License
 
 Private - Propeller Commerce

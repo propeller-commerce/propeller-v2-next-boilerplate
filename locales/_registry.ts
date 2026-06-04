@@ -21,6 +21,7 @@ import enClusterConfigurator from './en/ClusterConfigurator.json';
 import enClusterOptions from './en/ClusterOptions.json';
 import enCompanySwitcher from './en/CompanySwitcher.json';
 import enDeliveryDate from './en/DeliveryDate.json';
+import enErrorPages from './en/ErrorPages.json';
 import enFavoriteListDetails from './en/FavoriteListDetails.json';
 import enFavoriteListItem from './en/FavoriteListItem.json';
 import enFavoriteLists from './en/FavoriteLists.json';
@@ -76,6 +77,7 @@ import nlClusterConfigurator from './nl/ClusterConfigurator.json';
 import nlClusterOptions from './nl/ClusterOptions.json';
 import nlCompanySwitcher from './nl/CompanySwitcher.json';
 import nlDeliveryDate from './nl/DeliveryDate.json';
+import nlErrorPages from './nl/ErrorPages.json';
 import nlFavoriteListDetails from './nl/FavoriteListDetails.json';
 import nlFavoriteListItem from './nl/FavoriteListItem.json';
 import nlFavoriteLists from './nl/FavoriteLists.json';
@@ -134,6 +136,7 @@ export const registry = {
     ClusterOptions: enClusterOptions,
     CompanySwitcher: enCompanySwitcher,
     DeliveryDate: enDeliveryDate,
+    ErrorPages: enErrorPages,
     FavoriteListDetails: enFavoriteListDetails,
     FavoriteListItem: enFavoriteListItem,
     FavoriteLists: enFavoriteLists,
@@ -191,6 +194,7 @@ export const registry = {
     ClusterOptions: nlClusterOptions,
     CompanySwitcher: nlCompanySwitcher,
     DeliveryDate: nlDeliveryDate,
+    ErrorPages: nlErrorPages,
     FavoriteListDetails: nlFavoriteListDetails,
     FavoriteListItem: nlFavoriteListItem,
     FavoriteLists: nlFavoriteLists,

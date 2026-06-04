@@ -35,7 +35,21 @@
       "Bash(sed -n '470,498p' c:/workspace/propeller-v2-react-ui-gitlab/src/components/ProductGrid.tsx)",
       "Bash(sed -n '375,395p' c:/workspace/propeller-v2-react-ui-gitlab/src/components/ProductSlider.tsx)",
       "Bash(tee /tmp/all-importers.txt)",
-      "Bash(xargs grep -lE \"priceLabels|loginFormLabels\")"
+      "Bash(xargs grep -lE \"priceLabels|loginFormLabels\")",
+      "Bash(node -e \"const pkg = require\\('c:/workspace/vue-boilerplate/frontend/node_modules/propeller-v2-vue-ui/package.json'\\); console.log\\(pkg.version, pkg.exports ? Object.keys\\(pkg.exports\\) : 'no exports'\\)\")",
+      "Bash(node -e \"try { const m = require\\('c:/workspace/vue-boilerplate/frontend/node_modules/propeller-v2-vue-ui/dist/index.js'\\); console.log\\('exports:', Object.keys\\(m\\).filter\\(k => k.includes\\('Translation'\\) || k.includes\\('Provider'\\) || k.includes\\('Label'\\)\\)\\) } catch\\(e\\) { console.log\\('error:', e.message\\) }\")",
+      "Bash(node -e \"const m = require\\('c:/workspace/vue-boilerplate/frontend/node_modules/propeller-v2-vue-ui/dist/index.cjs'\\); console.log\\('all exports:', Object.keys\\(m\\)\\)\")",
+      "Bash(node -e \"const m = require\\('c:/workspace/vue-boilerplate/frontend/node_modules/propeller-v2-vue-ui/dist/shared.cjs'\\); console.log\\('shared exports:', Object.keys\\(m\\)\\)\")",
+      "Bash(node -e \"const m = require\\('c:/workspace/vue-boilerplate/frontend/node_modules/propeller-v2-vue-ui/dist/index.cjs'\\); const all = Object.keys\\(m\\); const more = all.slice\\(100\\); console.log\\('more:', more\\)\")",
+      "Bash(node -e \"const m = require\\('c:/workspace/vue-boilerplate/frontend/node_modules/propeller-v2-core-ui/dist/index.cjs'\\); console.log\\('core-ui exports:', Object.keys\\(m\\)\\)\")",
+      "Bash(cp c:/workspace/nextDemo/locales/en/*.json c:/workspace/vue-boilerplate/frontend/src/locales/en/)",
+      "Bash(cp c:/workspace/nextDemo/locales/nl/*.json c:/workspace/vue-boilerplate/frontend/src/locales/nl/)",
+      "Bash(Get-ChildItem -Path \"c:/workspace/vue-boilerplate/frontend/src/locales/en/\" -Filter \"*.json\")",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Sort-Object)",
+      "Bash(grep -nE \"result\\\\\\\\.success|result\\\\\\\\.error|setError|getOrder|order\\\\\\\\.contact|order\\\\\\\\.customer\" c:/workspace/nextDemo/app/account/orders/\\\\[id\\\\]/page.tsx)",
+      "Bash(grep -nE \"isAuthenticated|router\\\\\\\\.push|/login\" c:/workspace/nextDemo/app/account/layout.tsx)",
+      "Bash(grep -nE \"useRoute|route\\\\\\\\.name|route\\\\\\\\.path|isQuote|router\\\\\\\\.push\" c:/workspace/vue-boilerplate/frontend/src/views/account/QuoteDetailView.vue)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\.claude\\skills",

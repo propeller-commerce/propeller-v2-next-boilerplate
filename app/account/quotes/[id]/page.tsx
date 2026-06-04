@@ -19,6 +19,8 @@ import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { OrderTotals } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
 
 // COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
@@ -67,6 +69,7 @@ export default function QuoteDetailPage() {
     const orderBonusItemsLabels = useTranslations('OrderBonusItems');
     const orderTotalsLabels = useTranslations('OrderTotals');
     const orderItemCardLabels = useTranslations('OrderItemCard');
+    const errorPagesLabels = useTranslations('ErrorPages');
 
     const [downloading, setDownloading] = useState(false);
     const [toastVisible, setToastVisible] = useState(false);
@@ -124,12 +127,11 @@ export default function QuoteDetailPage() {
             )}
 
             {error && (
-                <Card className="p-8 text-center">
-                    <p className="text-destructive mb-4">{error}</p>
-                    <Link href={localizeHref('/account/quotes', language)} className="text-primary hover:underline">
-                        Return to Quotes
-                    </Link>
-                </Card>
+                <AccessErrorView
+                    kind={classifyApiError(error)}
+                    backHref="/account/quotes"
+                    backLabel={errorPagesLabels.backToQuotes}
+                />
             )}
 
             {!loading && !error && quote && (

@@ -22,6 +22,8 @@ import { OrderActions } from 'propeller-v2-react-ui';
 import { OrderShipments } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
 
 // COUNTRIES imported from shared utils
 export default function OrderDetailPage() {
@@ -96,12 +98,7 @@ export default function OrderDetailPage() {
             )}
 
             {error && (
-                <Card className="p-8 text-center">
-                    <p className="text-destructive mb-4">{error}</p>
-                    <Link href={localizeHref('/account/orders', language)} className="text-primary hover:underline">
-                        Return to Orders
-                    </Link>
-                </Card>
+                <AccessErrorView kind={classifyApiError(error)} />
             )}
 
             {!loading && !error && order && (

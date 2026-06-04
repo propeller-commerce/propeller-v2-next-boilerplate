@@ -76,7 +76,7 @@ import {
   ProductSortField,
   SortOrder,
   ProductSearchableField,
-} from 'propeller-sdk-v2';
+} from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from 'propeller-v2-react-ui/shared';
 
 // ── Cache control: tags + revalidate window ─────────────────────────────────
@@ -239,6 +239,21 @@ async function readIncludeTaxCookie(): Promise<boolean> {
 }
 
 /**
+ * Active companyId from the non-httpOnly `selected_company_id` cookie written
+ * by `CompanyContext` when the user picks a company. Reading this cookie opts
+ * the route into dynamic rendering, same as `readIncludeTaxCookie` — only the
+ * authenticated `getServerInfra()` calls it (anonymous renders have no
+ * company affinity).
+ */
+async function readSelectedCompanyIdCookie(): Promise<number | undefined> {
+  const store = await cookies();
+  const raw = store.get('selected_company_id')?.value;
+  if (!raw) return undefined;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
  * Read the portal mode env var and normalise it to the kebab-case values the
  * package's `isContentHidden` helper matches on (`'open'` / `'semi-closed'` /
  * `'closed'`). Old defaults of `'OPEN'` (uppercase) or `'semiClosed'` (camelCase)
@@ -276,6 +291,13 @@ export interface ServerInfra {
   currency: string;
   /** Whether to display tax-inclusive prices by default. */
   includeTax: boolean;
+  /**
+   * Active companyId selected via the CompanySwitcher (`selected_company_id`
+   * cookie). Overrides the user's default company in product / price queries.
+   * `undefined` for anonymous renders and for authenticated users who haven't
+   * switched away from their default company.
+   */
+  selectedCompanyId?: number;
   /**
    * Whether the underlying fetches on THIS infra are safe to cache via Next's
    * data cache. True for `getAnonymousInfra()`, false for `getServerInfra()`
@@ -338,13 +360,16 @@ function taintInfra(infra: ServerInfra): void {
 }
 
 export async function getServerInfra(): Promise<ServerInfra> {
-  // Read the token + tax preference FIRST. The token is attached as the
-  // client's Authorization header (direct-mode SDK calls aren't authenticated
-  // otherwise); the tax flag flows into the infra value object so server
-  // components render the right gross/net price in the initial HTML.
-  const [token, includeTax] = await Promise.all([
+  // Read the token + tax preference + active company FIRST. The token is
+  // attached as the client's Authorization header (direct-mode SDK calls
+  // aren't authenticated otherwise); the tax flag and active companyId flow
+  // into the infra value object so server components render the right
+  // gross/net price and the right company-scoped assortment in the initial
+  // HTML.
+  const [token, includeTax, selectedCompanyId] = await Promise.all([
     readCookieAccessToken(),
     readIncludeTaxCookie(),
+    readSelectedCompanyIdCookie(),
   ]);
   const client = createServerClient({ bearerToken: token });
   const services = createServices(client);
@@ -359,6 +384,7 @@ export async function getServerInfra(): Promise<ServerInfra> {
     portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax,
+    selectedCompanyId,
     cacheable: false,  // cookie read forces dynamic rendering — no fetch cache
   };
   taintInfra(infra);
@@ -580,12 +606,17 @@ function resolveUserId(user: Contact | Customer | null): number | undefined {
 /**
  * Resolve the contact's `companyId` for product/search scoping. The client grid
  * (propeller-v2-react-ui `useProductSearch`) ALWAYS scopes a contact's listing
- * query by `user.company.companyId`, so the SSR fetch must do the same — else
- * the server seeds products + filter facets from a broader (un-scoped)
- * assortment than the company-scoped client re-fetch, and any filter the user
- * picks from the seeded sidebar returns 0 products. Customers have no company.
+ * query by the active company (CompanyContext's `selectedCompany`), falling
+ * back to the user's default. The SSR fetch must do the same — else the
+ * server seeds products + filter facets from a broader (or wrong-company)
+ * assortment than the client re-fetch and any filter the user picks from the
+ * seeded sidebar returns 0 products. The active selection arrives here via
+ * the `selected_company_id` cookie set by CompanyContext. Customers have no
+ * company.
  */
-function resolveCompanyId(user: Contact | Customer | null): number | undefined {
+function resolveCompanyId(infra: ServerInfra): number | undefined {
+  if (infra.selectedCompanyId !== undefined) return infra.selectedCompanyId;
+  const user = infra.user;
   if (!user || !('contactId' in user)) return undefined;
   return (user as Contact).company?.companyId;
 }
@@ -610,7 +641,7 @@ export async function fetchCategory(
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
   const userId = resolveUserId(infra.user);
-  const companyId = resolveCompanyId(infra.user);
+  const companyId = resolveCompanyId(infra);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -673,7 +704,7 @@ export async function fetchSearch(
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
   const userId = resolveUserId(infra.user);
-  const companyId = resolveCompanyId(infra.user);
+  const companyId = resolveCompanyId(infra);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,

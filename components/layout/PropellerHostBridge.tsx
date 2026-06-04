@@ -18,7 +18,8 @@
  * `app.use(propellerVue, deps)` has installed Tier 1 deps.
  */
 
-import { useMemo, ReactNode } from 'react';
+import { useEffect, useMemo, useRef, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { graphqlClient, services } from '@/lib/api';
 import { config } from '@/data/config';
 import { useAuth } from '@/context/AuthContext';
@@ -43,6 +44,7 @@ const deps: PropellerDeps = {
 };
 
 export default function PropellerHostBridge({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const { includeTax } = usePrice();
@@ -61,6 +63,27 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
     }),
     [state.user, selectedCompany?.companyId, language, includeTax]
   );
+
+  // When the active company changes, ask Next to re-run the current Server
+  // Component. CompanyContext has already mirrored the new selection into the
+  // `selected_company_id` cookie, so the new server pass reads it via
+  // `lib/server.ts:getServerInfra()` and re-fetches the category / search /
+  // PDP / cluster data scoped to the new company. The PDP price block and
+  // anything else seeded from server-fetched props refreshes for free.
+  //
+  // The grids (`<ProductGrid>`) ALSO re-query client-side because their
+  // `companyId` infra prop changes — the two requests dedupe via the Next
+  // fetch cache for anonymous routes, and for authenticated routes the
+  // grid's effect is what actually replaces the stale items. Either path
+  // alone leaves a gap (server-only misses post-hydration interactions;
+  // client-only misses SSR data like cluster info that has no client
+  // refetch hook), so we keep both.
+  const lastCompanyIdRef = useRef<number | undefined>(selectedCompany?.companyId);
+  useEffect(() => {
+    if (lastCompanyIdRef.current === selectedCompany?.companyId) return;
+    lastCompanyIdRef.current = selectedCompany?.companyId;
+    router.refresh();
+  }, [selectedCompany?.companyId, router]);
 
   return (
     <PropellerDepsProvider value={deps}>

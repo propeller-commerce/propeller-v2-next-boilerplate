@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
-import { Contact, Customer } from 'propeller-sdk-v2';
+import { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { UserDetails } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';

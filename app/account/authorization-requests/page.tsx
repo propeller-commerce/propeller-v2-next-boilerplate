@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { PurchaseAuthorizationRequests } from 'propeller-v2-react-ui';
 import { serializeCart } from '@/utils/cartHelpers';
-import { Contact, Customer, Cart } from 'propeller-sdk-v2';
+import { Contact, Customer, Cart } from '@propeller-commerce/propeller-sdk-v2';
 import { useTranslations } from '@/lib/i18n/client';
 
 export default function AuthorizationRequestsPage() {

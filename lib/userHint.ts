@@ -25,7 +25,7 @@
  * lifetime of the page — never serialized to disk.
  */
 
-import type { Contact, Customer } from 'propeller-sdk-v2';
+import type { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 
 export interface UserHint {
   userId: number;

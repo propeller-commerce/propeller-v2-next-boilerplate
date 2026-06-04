@@ -26,7 +26,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/i18n/client';
-import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from 'propeller-sdk-v2';
+import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart } from 'propeller-v2-react-ui';
 import { Breadcrumbs } from 'propeller-v2-react-ui';
@@ -35,7 +35,7 @@ import { ProductSlider } from 'propeller-v2-react-ui';
 import { ProductBundles } from 'propeller-v2-react-ui';
 import { AddToFavorite } from 'propeller-v2-react-ui';
 import { ProductPrice, ProductBulkPrices } from 'propeller-v2-react-ui/pure';
-import type { Category } from 'propeller-sdk-v2';
+import type { Category } from '@propeller-commerce/propeller-sdk-v2';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';

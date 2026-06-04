@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
 import { AddressCard } from 'propeller-v2-react-ui';
-import { Address, AddressType, Company, Contact, Customer, YesNo } from 'propeller-sdk-v2';
+import { Address, AddressType, Company, Contact, Customer, YesNo } from '@propeller-commerce/propeller-sdk-v2';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';

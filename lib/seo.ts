@@ -15,7 +15,7 @@
  */
 
 import 'server-only';
-import type { LocalizedString } from 'propeller-sdk-v2';
+import type { LocalizedString } from '@propeller-commerce/propeller-sdk-v2';
 import { getLanguageString, type JsonLdContext } from 'propeller-v2-react-ui/shared';
 import { config } from '@/data/config';
 import type { ServerInfra } from './server';

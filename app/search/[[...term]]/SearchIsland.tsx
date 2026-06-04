@@ -24,7 +24,7 @@ import {
   ProductSortField,
   ProductsResponse,
   SortOrder,
-} from 'propeller-sdk-v2';
+} from '@propeller-commerce/propeller-sdk-v2';
 import {
   ProductGrid,
   GridToolbar,

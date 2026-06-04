@@ -1,7 +1,7 @@
 // Default configuration for the application
 // These will be used with project wide
 
-import { Category, Cluster, Product } from 'propeller-sdk-v2';
+import { Category, Cluster, Product } from '@propeller-commerce/propeller-sdk-v2';
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,

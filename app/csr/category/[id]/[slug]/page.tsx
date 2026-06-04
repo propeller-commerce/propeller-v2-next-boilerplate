@@ -19,7 +19,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { AttributeFilter, AttributeType, Category, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from 'propeller-sdk-v2';
+import { AttributeFilter, AttributeType, Category, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
 import { ProductGrid } from 'propeller-v2-react-ui';
 import { GridToolbar } from 'propeller-v2-react-ui';
 import { GridFilters } from 'propeller-v2-react-ui';

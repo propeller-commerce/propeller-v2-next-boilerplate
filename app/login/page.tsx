@@ -12,7 +12,7 @@ import { useTranslations } from '@/lib/i18n/client';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
-import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { localizeHref, config } from '@/data/config';
 import { fetchActiveCart } from 'propeller-v2-react-ui';
 import { mergeAnonymousCart } from 'propeller-v2-react-ui';

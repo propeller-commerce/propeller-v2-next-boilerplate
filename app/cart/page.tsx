@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { restoreManagerCart } from '@/utils/cartHelpers';
-import { type Cart, type CartMainItem, CrossupsellType } from 'propeller-sdk-v2';
+import { type Cart, type CartMainItem, CrossupsellType } from '@propeller-commerce/propeller-sdk-v2';
 import { useTranslations } from '@/lib/i18n/client';
 
 const subscribe = () => () => { };

@@ -26,7 +26,7 @@
  * cookies or localStorage) have one place to find it.
  */
 
-import { GraphQLClient, type GraphQLClientConfig } from 'propeller-sdk-v2';
+import { GraphQLClient, type GraphQLClientConfig } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services } from 'propeller-v2-react-ui';
 
 const config: GraphQLClientConfig = {

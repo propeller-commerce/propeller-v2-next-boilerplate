@@ -49,7 +49,7 @@ import {
   resolveCanonicalUrl,
   buildJsonLdContext,
 } from '@/lib/seo';
-import { ProductPrice as ProductPriceSDK, MediaImage } from 'propeller-sdk-v2';
+import { ProductPrice as ProductPriceSDK, MediaImage } from '@propeller-commerce/propeller-sdk-v2';
 import AddToCartIsland, {
   ProductBelowFoldIsland,
   ProductBreadcrumbsIsland,

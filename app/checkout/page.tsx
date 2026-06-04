@@ -13,7 +13,7 @@ import { AddressCard } from 'propeller-v2-react-ui';
 import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
-import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from 'propeller-sdk-v2';
+import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from '@propeller-commerce/propeller-sdk-v2';
 import { useCheckout } from 'propeller-v2-react-ui';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 import { CartPaymethods } from 'propeller-v2-react-ui';

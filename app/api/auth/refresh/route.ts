@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GraphQLClient, LoginService } from 'propeller-sdk-v2';
+import { GraphQLClient, LoginService } from '@propeller-commerce/propeller-sdk-v2';
 
 /**
  * Exchanges the httpOnly `refresh_token` cookie for a fresh access+refresh pair

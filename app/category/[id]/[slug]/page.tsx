@@ -46,7 +46,7 @@ import {
   buildTextFilters,
   type RawSearchParams,
 } from '@/lib/listingParams';
-import { ProductSortField, type Product, type ProductsResponse } from 'propeller-sdk-v2';
+import { ProductSortField, type Product, type ProductsResponse } from '@propeller-commerce/propeller-sdk-v2';
 import CategoryIsland, { CategoryBreadcrumbsIsland } from './CategoryIsland';
 
 interface RouteParams {

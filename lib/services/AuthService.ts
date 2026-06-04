@@ -1,8 +1,8 @@
-import { LoginService, UserService, LoginInput } from 'propeller-sdk-v2';
+import { LoginService, UserService, LoginInput } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient, toPlain } from '../api';
 import { pickUserHint } from '../userHint';
 import toast from 'react-hot-toast';
-import { ViewerInput } from 'propeller-sdk-v2';
+import { ViewerInput } from '@propeller-commerce/propeller-sdk-v2';
 
 export class AuthService {
     private loginService: LoginService;

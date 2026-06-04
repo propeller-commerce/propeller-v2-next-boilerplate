@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { services } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersMedium } from '@/data/defaults';
 import type { CmsProductCarousel } from '@/lib/cms/types';
-import type { Product, Cluster } from 'propeller-sdk-v2';
+import type { Product, Cluster } from '@propeller-commerce/propeller-sdk-v2';
 
 export default function ProductCarousel({ block }: { block: CmsProductCarousel }) {
   const [products, setProducts] = useState<(Product | Cluster)[]>([]);

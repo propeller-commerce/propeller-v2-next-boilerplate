@@ -24,7 +24,7 @@ import {
   ProductSortField,
   type Product,
   type ProductsResponse,
-} from 'propeller-sdk-v2';
+} from '@propeller-commerce/propeller-sdk-v2';
 import { getListingInfra, fetchSearch, fetchCategory } from '@/lib/server';
 import { buildJsonLdContext } from '@/lib/seo';
 import { config } from '@/data/config';

@@ -1,4 +1,4 @@
-import { FavoriteListService as PropellerFavoriteListService, UserService, Contact, Customer } from 'propeller-sdk-v2';
+import { FavoriteListService as PropellerFavoriteListService, UserService, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '../api';
 import { BaseApiService } from './BaseApiService';
 
@@ -10,7 +10,7 @@ import {
     FavoriteListsUpdateInput,
     FavoriteList,
     FavoriteListVariables
-} from 'propeller-sdk-v2';
+} from '@propeller-commerce/propeller-sdk-v2';
 
 // User type from AuthContext
 type User = Contact | Customer;

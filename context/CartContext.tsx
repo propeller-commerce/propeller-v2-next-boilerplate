@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 import { useCartSync } from '@/hooks/useCartSync';
 import { dispatchCartUpdate } from '@/utils/cartEvents';
 import { serializeCart } from '@/utils/cartHelpers';
-import { Cart, CartMainItem } from 'propeller-sdk-v2';
+import { Cart, CartMainItem } from '@propeller-commerce/propeller-sdk-v2';
 
 interface CartContextType {
   cart: Cart | null;

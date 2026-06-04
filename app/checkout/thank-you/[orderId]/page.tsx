@@ -12,7 +12,7 @@ import { useOrders } from 'propeller-v2-react-ui';
 import { graphqlClient } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import { OrderSummary } from 'propeller-v2-react-ui';
-import { Order, OrderItem } from 'propeller-sdk-v2';
+import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
 import { OrderItemCard } from 'propeller-v2-react-ui';
 import { OrderBonusItems } from 'propeller-v2-react-ui';
 import { COUNTRIES } from 'propeller-v2-react-ui';

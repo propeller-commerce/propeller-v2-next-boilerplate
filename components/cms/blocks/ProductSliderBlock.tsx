@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { config, localizeHref } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import type { CmsProductSlider } from '@/lib/cms/types';
-import type { Product, Cluster } from 'propeller-sdk-v2';
+import type { Product, Cluster } from '@propeller-commerce/propeller-sdk-v2';
 
 export default function ProductSliderBlock({ block }: { block: CmsProductSlider }) {
   const router = useRouter();

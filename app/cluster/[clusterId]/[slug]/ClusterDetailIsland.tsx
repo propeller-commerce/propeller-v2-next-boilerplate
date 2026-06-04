@@ -40,7 +40,7 @@ import {
   CrossupsellType,
   Product,
   ProductPrice as ProductPriceSDK,
-} from 'propeller-sdk-v2';
+} from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -157,6 +157,7 @@ export default function ClusterDetailIsland({
       );
     }
   }, [cluster, language, clusterId]);
+
 
   const displayProduct = selectedProduct || cluster?.defaultProduct;
   const images: string[] =

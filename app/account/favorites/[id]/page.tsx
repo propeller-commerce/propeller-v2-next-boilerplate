@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
-import { type FavoriteList } from 'propeller-sdk-v2';
+import { type FavoriteList } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
 import { useFavorites } from 'propeller-v2-react-ui';
 import Link from 'next/link';

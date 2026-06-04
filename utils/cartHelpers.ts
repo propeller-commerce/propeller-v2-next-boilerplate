@@ -1,4 +1,4 @@
-import { Cart } from 'propeller-sdk-v2';
+import { Cart } from '@propeller-commerce/propeller-sdk-v2';
 
 /**
  * Recursively strips underscore-prefixed keys from SDK class instances

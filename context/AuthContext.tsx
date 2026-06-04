@@ -1,7 +1,7 @@
 'use client';
 
 // 'use client' is already at the top of the file, this replacement starts after line 1.
-import { Contact, Customer, PurchaseRole, UserService } from 'propeller-sdk-v2';
+import { Contact, Customer, PurchaseRole, UserService } from '@propeller-commerce/propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';

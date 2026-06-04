@@ -19,7 +19,7 @@ import {
   ProductSortField,
   SortOrder,
   type ProductTextFilterInput,
-} from 'propeller-sdk-v2';
+} from '@propeller-commerce/propeller-sdk-v2';
 
 /** Reserved query keys — everything else is an attribute filter. */
 const RESERVED_KEYS = [

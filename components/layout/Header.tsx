@@ -23,7 +23,7 @@ import { CartIconAndSidebar } from 'propeller-v2-react-ui';
 import { AccountIconAndMenu } from 'propeller-v2-react-ui';
 import { CompanySwitcher } from 'propeller-v2-react-ui';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, Company, Contact, Customer } from 'propeller-sdk-v2';
+import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { fetchActiveCart as fetchActiveCartShared } from 'propeller-v2-react-ui';
 import { mergeAnonymousCart } from 'propeller-v2-react-ui';
 import { initCart } from 'propeller-v2-react-ui';

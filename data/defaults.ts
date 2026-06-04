@@ -1,4 +1,4 @@
-import { Fit, Format } from 'propeller-sdk-v2';
+import { Fit, Format } from '@propeller-commerce/propeller-sdk-v2';
 // Default values and constants for the application
 // These will be used with propeller-sdk-v2 package when available
 

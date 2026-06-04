@@ -34,7 +34,7 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
 import { Card } from '@/components/ui/Card';
-import { CrossupsellType, Product, ProductPrice as ProductPriceSDK } from 'propeller-sdk-v2';
+import { CrossupsellType, Product, ProductPrice as ProductPriceSDK } from '@propeller-commerce/propeller-sdk-v2';
 import {
   AddToCart,
   ItemStock,

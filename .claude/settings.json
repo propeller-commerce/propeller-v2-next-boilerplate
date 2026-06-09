@@ -78,7 +78,21 @@
       "Bash(grep -v \":0$\")",
       "Bash(grep -oE \"price-currency[^,}]{0,200}\" dist/index.js)",
       "Bash(grep -v \"^--$\\\\|^$\\\\|price-currency\")",
-      "Bash(grep -c \"children: \\\\\"\\\\\\\\\\\\\\\\u20AC\\\\\"\" node_modules/propeller-v2-react-ui/dist/index.js)"
+      "Bash(grep -c \"children: \\\\\"\\\\\\\\\\\\\\\\u20AC\\\\\"\" node_modules/propeller-v2-react-ui/dist/index.js)",
+      "Bash(grep -n \"category/\\\\${cat.categoryId}\" node_modules/propeller-v2-react-ui/dist/index.js)",
+      "Bash(grep -oE \"urls\\\\.getCategoryUrl\\\\\\([^\\)]{0,40}\\\\\\)\" node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(grep -oE \"getCategoryUrl[^,}]{0,80}\" node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(grep -B2 -A20 '_sfc_main$E = /\\\\* @__PURE__ \\\\*/ defineComponent' node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(grep -B1 -A1 \"includeTax: { type: Boolean, default:\" node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(grep -B6 \"includeTax: { type: Boolean }$\" node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(awk '/__name:/{name=$0} /includeTax: \\\\{ type: Boolean \\\\}$/{print name}' node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(awk '/__name:/{name=$0} /includeTax: \\\\{ type: Boolean \\\\},/{print name}' node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(git restore *)",
+      "Bash(grep -c \"includeTax: { type: Boolean },\" node_modules/propeller-v2-vue-ui/dist/index.js)",
+      "Bash(grep -oE \"\\\\\"ssrCatalog\\\\\":\\\\{[^z]{0,200}\" \"C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\e22d400c-f158-43ac-8935-6a637128a93c\\\\tool-results\\\\toolu_01R5m1foSgqHekgZs5iYEGBJ.txt\")",
+      "Bash(grep -oE \"\\\\\"categoryId\\\\\":1402[^z]{0,2000}\" \"C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\e22d400c-f158-43ac-8935-6a637128a93c\\\\tool-results\\\\toolu_01R5m1foSgqHekgZs5iYEGBJ.txt\")",
+      "Bash(grep -oE \"\\\\\"products\\\\\":\\\\{[^}]{0,200}\")",
+      "Bash(grep -oE \"\\\\\"ssrCatalog\\\\\":\\\\{[^}]{0,200}\" \"C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\e22d400c-f158-43ac-8935-6a637128a93c\\\\tool-results\\\\toolu_01XbFypX6rz4VEQWrqjY2MM8.txt\")"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\.claude\\skills",

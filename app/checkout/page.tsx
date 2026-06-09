@@ -595,6 +595,7 @@ function CheckoutPageInner() {
                           <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>Confirm Delivery Address</Button>
                           {authState.isAuthenticated && (
                             <AddressSelector
+                              user={authState.user}
                               addressType={AddressType.delivery}
                               onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
                               countries={COUNTRIES}

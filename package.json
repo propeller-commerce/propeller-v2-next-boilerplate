@@ -21,13 +21,13 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.560.0",
     "marked": "^17.0.5",
     "next": "16.0.10",
-    "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
     "propeller-v2-react-ui": "github:propeller-commerce/propeller-v2-react-ui#master",
     "qs": "^6.15.0",
     "react": "19.2.0",

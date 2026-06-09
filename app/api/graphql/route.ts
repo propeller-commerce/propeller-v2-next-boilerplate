@@ -18,6 +18,15 @@ const ORDER_EDITOR_MUTATIONS = new Set([
   'triggerOrderSendConfirm',
 ]);
 
+// Queries that the general API key isn't allowed to resolve. The `order` query
+// (used by the thank-you page and order detail screens to fetch a single order
+// by id) returns `Forbidden resource` under the general key; only the
+// order-editor key authorizes it. Mirrors the same routing decision the SDK
+// embeds for mutations, but applied at the query level where the SDK has no
+// equivalent default list — the proxy is the authoritative router in proxy
+// mode (see callUpstream below).
+const ORDER_EDITOR_QUERIES = new Set(['order']);
+
 // Operations that route to the order key ONLY when the caller identifies as the
 // order-editor client. `contactRegister` is used by BOTH public self-registration
 // (general key) AND authorization-settings "add contact" (order key) — the
@@ -138,11 +147,18 @@ async function callUpstream(
   bearer: string | undefined,
   operationName: string | undefined,
   orderEditorOptIn = false,
+  isAnonymous = false,
 ): Promise<Response> {
+  // ORDER_EDITOR_QUERIES is gated on `isAnonymous` so logged-in flows
+  // (e.g. /account/orders/[id]) keep using the general key with their own
+  // bearer token, which is the path the backend authorizes for owners.
+  // Guest sessions have no bearer at all, so the only way the thank-you
+  // page can read its just-placed order is through the order-editor key.
   const useOrderKey =
     !!ORDER_EDITOR_API_KEY &&
     !!operationName &&
     (ORDER_EDITOR_MUTATIONS.has(operationName) ||
+      (isAnonymous && ORDER_EDITOR_QUERIES.has(operationName)) ||
       (orderEditorOptIn && ORDER_EDITOR_OPT_IN_MUTATIONS.has(operationName)));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -247,7 +263,10 @@ export async function POST(request: NextRequest) {
         endpoint: GRAPHQL_ENDPOINT,
         hasApiKey: !!API_KEY,
         operationName,
-        usingOrderKey: !!operationName && ORDER_EDITOR_MUTATIONS.has(operationName),
+        usingOrderKey:
+          !!operationName &&
+          (ORDER_EDITOR_MUTATIONS.has(operationName) ||
+            (!hasSessionCookie && ORDER_EDITOR_QUERIES.has(operationName))),
         query: querySnippet,
         variables: body.variables,
         depth,
@@ -270,8 +289,20 @@ export async function POST(request: NextRequest) {
     const initialBearer =
       cookieToken ?? (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
 
+    // Guest sessions are the ones the ORDER_EDITOR_QUERIES gate cares about.
+    // `hasSessionCookie` was computed up-top for rate limiting and is the same
+    // signal we want here: no cookie ⇒ anonymous request ⇒ guest-only routing
+    // is permitted to escalate the `order` query to the order-editor key.
+    const isAnonymous = !hasSessionCookie;
+
     // First attempt.
-    let response = await callUpstream(body, initialBearer, operationName, orderEditorOptIn);
+    let response = await callUpstream(
+      body,
+      initialBearer,
+      operationName,
+      orderEditorOptIn,
+      isAnonymous,
+    );
     let refreshSetCookies: string[] = [];
 
     // 401-refresh-retry: ONLY when we had a cookie token (a logged-in session
@@ -281,7 +312,15 @@ export async function POST(request: NextRequest) {
       const refreshed = await tryRefresh(request);
       if (refreshed) {
         refreshSetCookies = refreshed.setCookies;
-        response = await callUpstream(body, refreshed.newAccessToken, operationName, orderEditorOptIn);
+        // After a successful refresh the request is no longer anonymous, so
+        // the retry runs with `isAnonymous=false` and skips the guest gate.
+        response = await callUpstream(
+          body,
+          refreshed.newAccessToken,
+          operationName,
+          orderEditorOptIn,
+          false,
+        );
       }
     }
 

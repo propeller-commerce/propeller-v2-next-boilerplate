@@ -380,7 +380,7 @@ export default function CategoryIsland({
 
   return (
     <>
-      <CategoryDescription category={category} />
+      <CategoryDescription category={category} language={language} />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Filters Sidebar */}

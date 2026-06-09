@@ -264,7 +264,7 @@ export default function CategoryPage() {
           {/* Category Header */}
           <GridTitle title={categoryName} />
 
-          <CategoryDescription category={category} />
+          <CategoryDescription category={category} language={language} />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}

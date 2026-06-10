@@ -10,7 +10,8 @@ import { localizeHref } from '@/data/config';
  */
 export function clearSession(): void {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('accessToken');
+    // The JWT lives in an httpOnly cookie now — clear it server-side.
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('user');
     localStorage.removeItem('cart');
     console.log('✅ Session cleared successfully. Please refresh the page.');
@@ -25,12 +26,11 @@ export function checkSession(): void {
   if (typeof window === 'undefined') return;
 
   const user = localStorage.getItem('user');
-  const accessToken = localStorage.getItem('accessToken');
   const cart = localStorage.getItem('cart');
 
   console.log('📊 Session Summary:');
   console.log('👤 User Data:', user ? JSON.parse(user) : null);
-  console.log('🔑 Access Token:', accessToken ? `${accessToken.substring(0, 20)}...` : null);
+  console.log('🔑 Access Token: (httpOnly cookie — not readable from JS)');
   console.log('🛒 Cart Data:', cart ? JSON.parse(cart) : null);
 }
 

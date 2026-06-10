@@ -1,0 +1,21 @@
+{
+  "addProductDirectly": "Product direct toevoegen aan deze verlanglijst",
+  "addProductModalTitle": "Product toevoegen aan lijst",
+  "addToCart": "Toevoegen aan winkelwagen",
+  "adding": "Toevoegen...",
+  "clearSearchAriaLabel": "Zoekopdracht wissen",
+  "close": "Sluiten",
+  "emptyDescription": "Je hebt nog geen producten of clusters aan deze lijst toegevoegd.",
+  "emptyTitle": "Lijst is leeg",
+  "inStock": "Op voorraad",
+  "itemsSelected": "artikelen geselecteerd",
+  "lowStock": "Lage voorraad",
+  "noResults": "Geen resultaten",
+  "ofWord": "van",
+  "outOfStock": "Niet op voorraad",
+  "removeFromList": "Verwijderen uit deze lijst",
+  "searchPlaceholder": "Zoek naar producten...",
+  "searching": "Zoeken...",
+  "selectAll": "Alles selecteren",
+  "selectItem": "Artikel selecteren"
+}

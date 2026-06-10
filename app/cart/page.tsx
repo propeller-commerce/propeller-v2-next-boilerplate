@@ -2,32 +2,31 @@
 
 import { useSyncExternalStore } from 'react';
 import { useCart } from '@/context/CartContext';
-import { usePrice } from '@/context/PriceContext';
-import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CartItem from '@/components/propeller/CartItem';
-import CartSummary from '@/components/propeller/CartSummary';
-import ActionCode from '@/components/propeller/ActionCode';
+import { CartItem } from 'propeller-v2-react-ui';
+import { CartSummary } from 'propeller-v2-react-ui';
+import { CartBonusItems } from 'propeller-v2-react-ui';
+import { ActionCode } from 'propeller-v2-react-ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { useCompany } from '@/context/CompanyContext';
-import { type CartMainItem, type Cart, type Contact, type Customer, Enums } from 'propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
+import { restoreManagerCart } from '@/utils/cartHelpers';
+import { type Cart, type CartMainItem, CrossupsellType } from '@propeller-commerce/propeller-sdk-v2';
+import { useTranslations } from '@/lib/i18n/client';
 
 const subscribe = () => () => { };
 
 export default function CartPage() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
-  const { cart, saveCart } = useCart();
-  const { includeTax } = usePrice();
-  const { state } = useAuth();
+  const { cart, saveCart, clearCart } = useCart();
   const router = useRouter();
   const { language } = useLanguage();
-  const { selectedCompany } = useCompany();
+  const cartItemLabels = useTranslations('CartItem');
+  const cartBonusItemsLabels = useTranslations('CartBonusItems');
+  const cartSummaryLabels = useTranslations('CartSummary');
+  const actionCodeLabels = useTranslations('ActionCode');
 
   const items = mounted ? (cart?.items || []) : [];
 
@@ -55,20 +54,22 @@ export default function CartPage() {
                 {items.map((item: CartMainItem) => (
                   <CartItem
                     key={item.itemId}
-                    includeTax={includeTax}
-                    user={state.user as Contact | Customer}
                     taxZone={'NL'}
-                    language={'NL'}
-                    graphqlClient={graphqlClient}
                     cartId={cart!.cartId}
                     cartItem={item}
-                    configuration={config}
+                    enableIncrementDecrement={true}
                     showCrossupsells={true}
-                    crossupsellTypes={[Enums.CrossupsellType.ACCESSORIES]}
+                    crossupsellTypes={[CrossupsellType.ACCESSORIES]}
                     crossupsellLimit={2}
-                    afterCartUpdate={saveCart}
+                    afterCartUpdate={(cart: Cart) => { saveCart(cart); }}
+                    labels={cartItemLabels}
                   />
                 ))}
+
+                {/* Bonus items — free items added via incentives. Read-only
+                    list. currency/includeTax/language resolve from
+                    PropellerProvider (PropellerHostBridge). */}
+                <CartBonusItems cart={cart ?? undefined} labels={cartBonusItemsLabels} />
               </div>
 
               {/* Cart Summary */}
@@ -77,22 +78,22 @@ export default function CartPage() {
                   <>
                     <CartSummary
                       cart={cart}
-                      graphqlClient={graphqlClient}
-                      user={state.user as Contact | Customer}
-                      companyId={selectedCompany?.companyId}
                       onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
                       afterRequestAuthorization={(updatedCart: Cart) => {
-                        saveCart(updatedCart);
+                        // If a manager parked their own cart to act on this
+                        // request, hand it back; otherwise clear.
+                        const parked = restoreManagerCart();
+                        if (parked) saveCart(parked); else clearCart();
                         router.push(`/authorization-request-sent/${updatedCart.cartId}`);
                       }}
                       onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                      labels={cartSummaryLabels}
                     />
                     <ActionCode
-                      graphqlClient={graphqlClient}
                       cart={cart}
-                      configuration={config}
                       afterActionCodeApply={saveCart}
                       afterActionCodeRemove={saveCart}
+                      labels={actionCodeLabels}
                     />
                   </>
                 )}

@@ -1,10 +1,10 @@
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 
 export default function TermsConditionsPage() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <HeaderServer />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
           <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>

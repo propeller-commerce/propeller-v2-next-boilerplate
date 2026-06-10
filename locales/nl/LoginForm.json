@@ -1,0 +1,12 @@
+{
+  "email": "Email",
+  "emailPlaceholder": "naam@voorbeeld.nl",
+  "forgotPassword": "Wachtwoord vergeten?",
+  "guestCheckoutLink": "Doorgaan als gast",
+  "loggingIn": "Inloggen...",
+  "noAccount": "Nog geen account?",
+  "password": "Wachtwoord",
+  "passwordPlaceholder": "••••••••",
+  "registerLink": "Account aanmaken",
+  "registerText": "Nog geen account?"
+}

@@ -1,0 +1,7 @@
+{
+  "cancel": "Cancel",
+  "invalidDate": "Please enter a valid date.",
+  "modalTitle": "Select a delivery date",
+  "pastDate": "Please select a date in the future.",
+  "pickDate": "Other date..."
+}

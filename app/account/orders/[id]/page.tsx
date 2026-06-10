@@ -1,34 +1,31 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
-import { localizeHref, config } from '@/data/config';
+import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
-import { OrderService, Order, OrderItem, Company } from 'propeller-sdk-v2';
-import OrderSummary from '@/components/propeller/OrderSummary';
+import { Order, OrderItem, Company } from '@propeller-commerce/propeller-sdk-v2';
+import { useOrders } from 'propeller-v2-react-ui';
+import { OrderSummary } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import { OrderQueryVariables } from 'propeller-sdk-v2/dist/service/OrderService';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import OrderItemCard from '@/components/propeller/OrderItemCard';
-import OrderTotals from '@/components/propeller/OrderTotals';
-import OrderActions from '@/components/propeller/OrderActions';
-import OrderShipments from '@/components/propeller/OrderShipments';
+import { OrderItemCard } from 'propeller-v2-react-ui';
+import { OrderBonusItems } from 'propeller-v2-react-ui';
+import { OrderTotals } from 'propeller-v2-react-ui';
+import { OrderActions } from 'propeller-v2-react-ui';
+import { OrderShipments } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
 
-const COUNTRIES = [
-    { code: 'NL', name: 'Netherlands' },
-    { code: 'BE', name: 'Belgium' },
-    { code: 'DE', name: 'Germany' },
-    { code: 'FR', name: 'France' },
-    { code: 'UK', name: 'United Kingdom' },
-    { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 export default function OrderDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
@@ -43,34 +40,31 @@ export default function OrderDetailPage() {
 
     const companyId = (selectedCompany as Company | null)?.companyId;
 
+    const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderActionsLabels = useTranslations('OrderActions');
+    const orderShipmentsLabels = useTranslations('OrderShipments');
+    const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+    const orderTotalsLabels = useTranslations('OrderTotals');
+    const orderItemCardLabels = useTranslations('OrderItemCard');
+
+    const { getOrderById } = useOrders({
+        graphqlClient,
+        user: state.user,
+        companyId,
+        language,
+        configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+    });
+
     useEffect(() => {
         const fetchOrderDetails = async () => {
-            try {
-                setLoading(true);
-                const orderService = new OrderService(graphqlClient);
-
-                const variables: OrderQueryVariables = {
-                    orderId: Number(orderId),
-                    imageSearchFilters: imageSearchFiltersGrid,
-                    imageVariantFilters: imageVariantFiltersSmall,
-                    language: 'NL'
-                };
-
-                const orderResponse = await orderService.getOrder(variables);
-
-                if (orderResponse) {
-                    setOrder(orderResponse);
-                } else {
-                    console.error('No order data found in response');
-                    setError('Order not found');
-                }
-
-            } catch (err) {
-                console.error('Error fetching order details:', err);
-                setError('Failed to load order details');
-            } finally {
-                setLoading(false);
+            setLoading(true);
+            const result = await getOrderById(Number(orderId));
+            if (result.success && result.order) {
+                setOrder(result.order);
+            } else {
+                setError(result.error ?? 'Order not found');
             }
+            setLoading(false);
         };
 
         if (orderId) {
@@ -104,12 +98,7 @@ export default function OrderDetailPage() {
             )}
 
             {error && (
-                <Card className="p-8 text-center">
-                    <p className="text-destructive mb-4">{error}</p>
-                    <Link href={localizeHref('/account/orders', language)} className="text-primary hover:underline">
-                        Return to Orders
-                    </Link>
-                </Card>
+                <AccessErrorView kind={classifyApiError(error)} />
             )}
 
             {!loading && !error && order && (
@@ -117,15 +106,12 @@ export default function OrderDetailPage() {
                     {/* Order Summary + Addresses + Delivery Info */}
                     <Card className="p-6">
                         <div className="flex-1">
-                            <OrderSummary order={order} countries={COUNTRIES} />
+                            <OrderSummary order={order} labels={orderSummaryLabels} countries={COUNTRIES} />
                         </div>
                         <OrderActions
-                            graphqlClient={graphqlClient}
                             order={order}
-                            user={state.user}
+                            labels={orderActionsLabels}
                             cartId={cart?.cartId}
-                            companyId={companyId}
-                            configuration={config}
                             onCartCreated={(newCart) => {
                                 console.log('Cart created:', newCart);
                                 saveCart(newCart)
@@ -138,7 +124,7 @@ export default function OrderDetailPage() {
                     </Card>
 
                     {/* Shipments */}
-                    <OrderShipments order={order} />
+                    <OrderShipments order={order} labels={orderShipmentsLabels} />
 
                     {/* Order Overview */}
                     <div className="pt-10">
@@ -173,6 +159,7 @@ export default function OrderDetailPage() {
                                                     key={item.id}
                                                     orderItem={item}
                                                     childItems={childMap.get(item.id) || []}
+                                                    labels={orderItemCardLabels}
                                                 />
                                             ))}
                                         </table>
@@ -183,85 +170,23 @@ export default function OrderDetailPage() {
                         })()}
 
                         {/* Bonus Items */}
-                        {(() => {
-                            const bonusItems = order.items?.filter((item: OrderItem) =>
-                                item.class === "product" && item.isBonus === "Y"
-                            );
-
-                            if (bonusItems?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                <thead className="bg-gray-50 border-b">
-                                                    <tr>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                                                    </tr>
-                                                </thead>
-                                                {bonusItems.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
-
-                        {/* Surcharges */}
-                        {(() => {
-                            const surcharges = order.items?.filter((item: OrderItem) => item.class === "surcharge");
-
-                            if (surcharges?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                {surcharges.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                        showImage={false}
-                                                        showSku={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
+                        <OrderBonusItems order={order} labels={orderBonusItemsLabels} />
                     </div>
 
                     {/* Order Bottom Actions & Totals */}
                     <div className="flex flex-col md:flex-row justify-between gap-8 pt-6 border-t md:border-none">
                         <OrderActions
-                            graphqlClient={graphqlClient}
                             order={order}
-                            user={state.user}
+                            labels={orderActionsLabels}
                             cartId={cart?.cartId}
-                            companyId={companyId}
-                            configuration={config}
                             onCartCreated={(newCart) => saveCart(newCart)}
                             afterReorder={(newCart) => saveCart(newCart)}
                         />
 
-                        <OrderTotals order={order} />
+                        <OrderTotals order={order} labels={orderTotalsLabels} />
                     </div>
                 </div>
             )}
         </div>
     );
 }
-

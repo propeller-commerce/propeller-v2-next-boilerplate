@@ -1,7 +1,7 @@
 // Default configuration for the application
 // These will be used with project wide
 
-import { Category, Cluster, Product } from 'propeller-sdk-v2';
+import { Category, Cluster, Product } from '@propeller-commerce/propeller-sdk-v2';
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -11,7 +11,7 @@ import {
 } from './defaults';
 
 const DEFAULT_LANG = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
-
+const BASE_CATEGORY_ID = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10);
 /**
  * Returns the URL prefix for a given language.
  * Default language (NL) gets no prefix; others get '/en', '/de', etc.
@@ -33,9 +33,7 @@ export function getLanguagePrefix(language?: string): string {
 export function localizeHref(path: string, language?: string): string {
   const prefix = getLanguagePrefix(language);
   if (!prefix) return path;
-  // Don't double-prefix
   if (path.startsWith(prefix + '/') || path === prefix) return path;
-  // '/' becomes '/en', '/foo' becomes '/en/foo'
   return path === '/' ? prefix : prefix + path;
 }
 
@@ -99,32 +97,46 @@ function buildEntityUrl(
   return localizeHref(base, language);
 }
 
+/**
+ * Portal access modes. Values are KEBAB-CASE strings — the package's
+ * `isContentHidden(portalMode, user)` helper matches on these exact strings
+ * (see `propeller-v2-react-ui/src/composables/shared/utils/visibilityHelpers.ts`).
+ * Historical note: `SEMI_CLOSED` used to be `'semiClosed'` (camelCase), which
+ * silently never matched the helper — the semi-closed gate was a no-op until
+ * 2026-05-26 when this was corrected.
+ */
 export const PORTAL_MODE = {
   CLOSED: 'closed',
-  SEMI_CLOSED: 'semiClosed',
+  SEMI_CLOSED: 'semi-closed',
   OPEN: 'open'
 } as const;
 
 export const config = {
-  baseCategoryId: 17,
-  channelId: 1,
-  anonymousId: 14551,
+  baseCategoryId: BASE_CATEGORY_ID,
+  channelId: 621,
+  anonymousId: 71,
   language: DEFAULT_LANG,
+  currency: '€',
+  /** ISO 4217 currency code — used by JSON-LD / schema.org payloads (`priceCurrency`).
+   *  Distinct from `currency` above, which is the display symbol shown to humans. */
+  currencyCode: 'EUR',
   imageSearchFilters: imageSearchFilters,
   imageSearchFiltersGrid: imageSearchFiltersGrid,
   imageVariantFiltersSmall: imageVariantFiltersSmall,
   imageVariantFiltersMedium: imageVariantFiltersMedium,
   imageVariantFiltersLarge: imageVariantFiltersLarge,
+  taxZone: 'NL',
   portal: {
     mode: PORTAL_MODE.OPEN,
   },
   productTrackAttributes: [],
   categoryTrackAttributes: [],
   clusterTrackAttributes: [],
-  companyTrackAttributes: ['SYSTEM_USER_GROUPS'],
+  companyTrackAttributes: [],
   contactTrackAttributes: [],
   customerTrackAttributes: [],
-  includeVAT: false,
+  contactPAConfigInput: [],
+  includeVAT: true,
   enableRegistration: true,
   enableGuestCheckout: false,
   urls: {

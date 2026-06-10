@@ -1,0 +1,6 @@
+{
+  "required": "Verplicht",
+  "requiredError": "Deze optie is verplicht",
+  "selectOptional": "— Geen (optioneel) —",
+  "selectRequired": "— Selecteer een optie —"
+}

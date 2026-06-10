@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { getPage } from '@/lib/cms';
 import type { CmsPage } from '@/lib/cms/types';
-import type { Contact, Company, AttributeResult } from 'propeller-sdk-v2';
+import type { Contact, Company, AttributeResult } from '@propeller-commerce/propeller-sdk-v2';
 import DynamicBlockRenderer from './DynamicBlockRenderer';
 
 /**

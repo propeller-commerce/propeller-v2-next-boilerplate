@@ -1,0 +1,17 @@
+{
+  "cartIconLabel": "Winkelwagen",
+  "cartPageButton": "Winkelwagen bekijken",
+  "cartSidebarTitle": "Winkelwagen",
+  "checkoutButton": "Afrekenen",
+  "closeLabel": "Sluiten",
+  "continueShopping": "Verder winkelen",
+  "emptyCart": "Je winkelwagen is leeg.",
+  "itemsLabel": "artikel(en)",
+  "qty": "Aantal",
+  "requestAuthorizationButton": "Autorisatie aanvragen",
+  "requestQuoteButton": "Offerte aanvragen",
+  "requestingAuthorization": "Aanvragen...",
+  "surcharges": "Aanvullende toeslagen:",
+  "total": "Totaal",
+  "totalLabel": "Totaal"
+}

@@ -8,24 +8,48 @@ import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import SearchBar from '@/components/propeller/SearchBar';
-import PropellerMenu from '@/components/propeller/Menu';
-import PriceToggle from '@/components/propeller/PriceToggle';
-import { graphqlClient } from '@/lib/api';
+import { useRouter, usePathname } from 'next/navigation';
+import type { MenuCategory } from 'propeller-v2-react-ui/shared';
+import { SearchBar } from 'propeller-v2-react-ui';
+import { Menu as PropellerMenu } from 'propeller-v2-react-ui';
+import { PriceToggle } from 'propeller-v2-react-ui';
+import { services } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Menu as MenuIcon } from 'lucide-react';
-import { config, localizeHref } from '@/data/config';
-import CartIconAndSidebar from '@/components/propeller/CartIconAndSidebar';
-import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
-import CompanySwitcher from '@/components/propeller/CompanySwitcher';
+import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
+import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
+import { useTranslations } from '@/lib/i18n/client';
+import { restoreManagerCart } from '@/utils/cartHelpers';
+import { CartIconAndSidebar } from 'propeller-v2-react-ui';
+import { AccountIconAndMenu } from 'propeller-v2-react-ui';
+import { CompanySwitcher } from 'propeller-v2-react-ui';
 import { useCompany } from '@/context/CompanyContext';
-import { Cart, CartService, CartSearchInput, Company, Contact, Customer, Enums } from 'propeller-sdk-v2';
-import type { CartQueryVariables } from 'propeller-sdk-v2/dist/service/CartService';
-import { stripLeadingUnderscores } from '@/data/defaults';
+import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
+import { fetchActiveCart as fetchActiveCartShared } from 'propeller-v2-react-ui';
+import { mergeAnonymousCart } from 'propeller-v2-react-ui';
+import { initCart } from 'propeller-v2-react-ui';
 
-export default function Header() {
+/**
+ * Props for the Header.
+ *
+ * `menuTree` is the pre-fetched category navigation tree, resolved on the
+ * server by the sibling `HeaderServer` wrapper (which calls `fetchMenu` from
+ * `lib/server.ts`). When present, both Menu instances (desktop dropdown +
+ * mobile drawer) short-circuit their internal fetch — anonymous menu HTML
+ * is in the initial response and there's no avoidable client roundtrip on
+ * hydration.
+ *
+ * Omitting the prop falls back to the component's legacy client-side fetch
+ * via `useMenu`. Client-only pages (login/register/cart/checkout/etc.) that
+ * cannot await `HeaderServer` import this component directly and accept the
+ * client-fetched menu — no breakage.
+ */
+export interface HeaderProps {
+  menuTree?: MenuCategory[];
+}
+
+export default function Header({ menuTree }: HeaderProps = {}) {
   const router = useRouter();
+  const pathname = usePathname();
   const { cart, saveCart, clearCart } = useCart();
   const { state, logout, updateUser, isAuthManagerForCompany } = useAuth();
   const { selectedCompany, setSelectedCompany } = useCompany();
@@ -34,45 +58,53 @@ export default function Header() {
   const globalData = useGlobal();
   const [showMainMenu, setShowMainMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch the user's active cart from the server for a given user/company
-  const fetchActiveCart = async (user: Contact | Customer, companyId?: number) => {
-    const cartService = new CartService(graphqlClient);
-    try {
-      const searchInput: CartSearchInput = {
-        offset: 100,
-        statuses: [Enums.CartStatus.OPEN]
-      };
-      if ('contactId' in user && user.contactId) {
-        searchInput.contactIds = [user.contactId];
-        if (companyId) {
-          searchInput.companyIds = [companyId];
-        }
-      } else if ('customerId' in user && user.customerId) {
-        searchInput.customerIds = [user.customerId];
-      }
-      const carts = await cartService.getCarts(searchInput);
-      if (carts?.items?.length) {
-        const existingCartId = carts.items[carts.items.length - 1].cartId;
-        const cartVars: CartQueryVariables = {
-          cartId: existingCartId,
-          imageSearchFilters: config.imageSearchFiltersGrid,
-          imageVariantFilters: config.imageVariantFiltersSmall,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-        };
-        const activeCart = await cartService.getCart(cartVars);
-        if (activeCart) {
-          saveCart(activeCart);
-          return;
-        }
-      }
-      // No active cart found — clear any stale cart from previous session/company
-      clearCart();
-    } catch (e) {
-      console.error('Failed to fetch active cart:', e);
+  // Bumped on every route change away from the search results page so the
+  // SearchBar(s) reset their input. This is what gives users an empty search
+  // box when they navigate via product clicks, the homepage logo, the menu, etc.
+  const companySwitcherLabels = useTranslations('CompanySwitcher');
+  const priceToggleLabels = useTranslations('PriceToggle');
+  const searchBarLabels = useTranslations('SearchBar');
+  const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+  const loginFormLabels = useTranslations('LoginForm');
+  const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+
+  const [searchClearSignal, setSearchClearSignal] = useState(0);
+  const lastPathnameRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (pathname === null) return;
+    if (lastPathnameRef.current === pathname) return;
+    const previous = lastPathnameRef.current;
+    lastPathnameRef.current = pathname;
+    if (previous === null) return; // first render — no navigation happened
+    const onSearchRoute = stripLanguagePrefix(pathname).startsWith('/search');
+    if (!onSearchRoute) setSearchClearSignal((s) => s + 1);
+  }, [pathname]);
+
+  // Fetch the user's active cart from the server for a given user/company,
+  // saving it to the cart context. Returns the cart for further work (merge, etc).
+  const fetchActiveCart = async (
+    user: Contact | Customer,
+    companyId?: number,
+  ): Promise<Cart | null> => {
+    const activeCart = await fetchActiveCartShared({
+      services,
+      user,
+      companyId,
+      language,
+      imageSearchFilters: config.imageSearchFiltersGrid,
+      imageVariantFilters: config.imageVariantFiltersSmall,
+    });
+    if (activeCart) {
+      saveCart(activeCart);
+      return activeCart;
     }
+    clearCart();
+    return null;
   };
 
   // CMS settings with defaults
@@ -106,6 +138,25 @@ export default function Header() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMainMenu]);
+
+  // Close language dropdown on outside click or Escape
+  useEffect(() => {
+    if (!showLangMenu) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setShowLangMenu(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowLangMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showLangMenu]);
 
   // Logo: CMS image or fallback
   const logoSrc = globalData?.logo?.url || '/propeller_logo.webp';
@@ -144,6 +195,7 @@ export default function Header() {
                 {/* Company Switcher — Contact users only */}
                 {state.isAuthenticated && state.user && 'contactId' in state.user && (state.user as Contact).companies && ((state.user as Contact).companies!.items?.length || 0) > 1 && (
                   <CompanySwitcher
+                    labels={companySwitcherLabels}
                     user={state.user as Contact}
                     selectedCompanyId={selectedCompany?.companyId}
                     onCompanyChange={(company) => {
@@ -156,27 +208,61 @@ export default function Header() {
                 )}
                 {showVatToggle && (
                   <PriceToggle
+                    labels={priceToggleLabels}
                     inclExclVatSwitched={setIncludeTax}
                     initialState={config.includeVAT}
                   />
                 )}
 
                 {showLanguageSwitcher && availableLanguages.length > 1 && (
-                  <div className="flex items-center gap-1.5 hover:text-white/80 transition-colors cursor-pointer">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                    </svg>
-                    <select
-                      value={language}
-                      onChange={(e) => {
-                        setLanguage(e.target.value);
-                      }}
-                      className="bg-transparent border-none focus:ring-0 p-0 text-xs font-medium cursor-pointer"
+                  <div ref={langMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowLangMenu((s) => !s)}
+                      aria-haspopup="listbox"
+                      aria-expanded={showLangMenu}
+                      aria-label="Select language"
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-control text-xs font-medium hover:bg-white/10 transition-colors"
                     >
-                      {availableLanguages.map((lang) => (
-                        <option key={lang} value={lang}>{lang}</option>
-                      ))}
-                    </select>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>{(language || '').toUpperCase()}</span>
+                      <ChevronDown
+                        className={cn(
+                          'w-3 h-3 transition-transform',
+                          showLangMenu && 'rotate-180',
+                        )}
+                      />
+                    </button>
+                    {showLangMenu && (
+                      <div
+                        role="listbox"
+                        className="absolute right-0 top-full mt-2 z-[60] min-w-[10rem] rounded-container border border-border bg-card text-foreground shadow-lg overflow-hidden"
+                      >
+                        {availableLanguages.map((lang) => {
+                          const code = lang.toUpperCase();
+                          const isActive = (language || '').toUpperCase() === code;
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              role="option"
+                              aria-selected={isActive}
+                              onClick={() => {
+                                setLanguage(code);
+                                setShowLangMenu(false);
+                              }}
+                              className={cn(
+                                'w-full flex items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-left transition-colors',
+                                isActive ? 'bg-primary/5 text-primary' : 'hover:bg-surface-hover',
+                              )}
+                            >
+                              <span>{code}</span>
+                              {isActive && <Check className="w-4 h-4 text-primary" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -222,11 +308,8 @@ export default function Header() {
               {showSearch && (
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
-                    graphqlClient={graphqlClient}
-                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
-                    companyId={selectedCompany?.companyId}
-                    configuration={config}
-                    language={language}
+                    labels={searchBarLabels}
+                    clearSignal={searchClearSignal}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
@@ -241,21 +324,25 @@ export default function Header() {
                 {/* User Menu */}
                 {showAccount && (
                   <AccountIconAndMenu
-                    user={state.isAuthenticated ? (state.user as Contact | Customer) : null}
-                    graphqlClient={graphqlClient}
-                    afterLogin={(user, accessToken, refreshToken, expiresAt) => {
-                      const loggedInUser = stripLeadingUnderscores(user);
-                      localStorage.setItem('user', JSON.stringify(loggedInUser));
-                      updateUser(loggedInUser);
+                    labels={accountIconAndMenuLabels}
+                    loginFormLabels={loginFormLabels}
+                    cart={cart as Cart | null}
+                    afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
+                      localStorage.setItem('user', JSON.stringify(user));
+                      updateUser(user);
 
-                      if ((loggedInUser as Contact).company) {
-                        setSelectedCompany((loggedInUser as Contact).company as Company);
+                      if ((user as Contact).company) {
+                        setSelectedCompany((user as Contact).company as Company);
                       }
 
-                      if (accessToken && refreshToken && expiresAt) {
-                        localStorage.setItem('accessToken', accessToken);
-                        localStorage.setItem('refreshToken', refreshToken);
-                        localStorage.setItem('expiresAt', expiresAt);
+                      // Persist the token in the httpOnly cookie (server-side),
+                      // not localStorage. Survives reloads via the proxy.
+                      if (accessToken) {
+                        await fetch('/api/auth/session', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ accessToken, refreshToken }),
+                        });
                       }
 
                       // Dispatch event for AuthContext
@@ -264,16 +351,51 @@ export default function Header() {
                       }
 
                       // Switch to user's preferred language if available
-                      const userLang = (loggedInUser as Contact | Customer).primaryLanguage;
+                      const userLang = (user as Contact | Customer).primaryLanguage;
                       if (userLang && userLang !== language) {
                         setLanguage(userLang);
                       }
 
-                      // Fetch the user's active cart from the server
-                      const company = (loggedInUser as Contact).company;
-                      fetchActiveCart(loggedInUser as Contact | Customer, company?.companyId);
+                      const company = (user as Contact).company;
+                      let targetCart = await fetchActiveCart(user as Contact | Customer, company?.companyId);
 
-                      router.push(localizeHref('/account', userLang || language))
+                      if (anonymousCart?.items?.length) {
+                        if (!targetCart) {
+                          targetCart = await initCart({
+                            services,
+                            user: user as Contact | Customer,
+                            companyId: company?.companyId,
+                            language,
+                            imageSearchFilters: config.imageSearchFiltersGrid,
+                            imageVariantFilters: config.imageVariantFiltersSmall,
+                          });
+                        }
+                        // After the guard above, `initCart` returned a non-null Cart;
+                        // `let` re-assignment loses CFA narrowing across awaits, so
+                        // re-bind to a non-null local for the rest of the block.
+                        const liveCart: Cart = targetCart!;
+                        const merged = await mergeAnonymousCart({
+                          services,
+                          targetCartId: liveCart.cartId,
+                          anonymousCart,
+                          language,
+                          imageSearchFilters: config.imageSearchFiltersGrid,
+                          imageVariantFilters: config.imageVariantFiltersSmall,
+                        });
+                        const finalCart: Cart = merged ?? liveCart;
+
+                        if (anonymousCart.cartId && anonymousCart.cartId !== finalCart.cartId) {
+                          try {
+                            await services.cart.deleteCart({ id: anonymousCart.cartId });
+                          } catch (e) {
+                            console.error('[auth] Failed to delete anonymous cart', e);
+                          }
+                        }
+
+                        saveCart(finalCart);
+                      }
+
+                      router.push(localizeHref('/account', userLang || language));
                     }}
                     onMenuItemClick={(href) => router.push(href)}
                     onLogoutClick={async () => {
@@ -300,14 +422,21 @@ export default function Header() {
                 {/* Cart */}
                 {showCart && (
                   <CartIconAndSidebar
+                    labels={cartIconAndSidebarLabels}
                     cart={cart as Cart}
-                    user={state.isAuthenticated ? (state.user as Contact | Customer) : undefined}
-                    companyId={selectedCompany?.companyId}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
                     showTotals={true}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
                     onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                    afterRequestAuthorization={(updatedCart) => {
+                      // If a manager parked their own cart to act on this
+                      // request, hand it back; otherwise clear.
+                      const parked = restoreManagerCart();
+                      if (parked) saveCart(parked); else clearCart();
+                      router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
+                    }}
+                    onError={(err) => console.error('Authorization request failed:', err)}
                   />
                   // <Button
                   //   variant="ghost"
@@ -351,20 +480,21 @@ export default function Header() {
                     "absolute left-0 top-full z-50",
                     showMainMenu ? "visible opacity-100" : "invisible opacity-0 pointer-events-none h-0 overflow-hidden"
                   )}>
-                    {!state.isLoading && (
-                      <PropellerMenu
-                        graphqlClient={graphqlClient}
-                        categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
-                        language={language}
-                        menuStyle="dropdown-vertical"
-                        user={state.user}
-                        configuration={config}
-                        onMenuItemClick={(category) => {
-                          setShowMainMenu(false);
-                          router.push(config.urls.getCategoryUrl(category, language));
-                        }}
-                      />
-                    )}
+                    {/* Menu tree pre-fetched server-side (see app/layout.tsx +
+                        lib/server.ts fetchMenu). The internal `useMenu` fetch
+                        is short-circuited by the `tree` prop, so there is no
+                        loading flash and no client-side roundtrip on hydration.
+                        The previous `!state.isLoading` gate is therefore gone —
+                        we never need to wait for auth before rendering the menu. */}
+                    <PropellerMenu
+                      categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
+                      menuStyle="dropdown-vertical"
+                      tree={menuTree}
+                      onMenuItemClick={(category) => {
+                        setShowMainMenu(false);
+                        router.push(config.urls.getCategoryUrl(category, language));
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -405,8 +535,8 @@ export default function Header() {
             {showSearch && (
               <div className="p-4 border-b border-border">
                 <SearchBar
-                  graphqlClient={graphqlClient}
-                  language={language}
+                  labels={searchBarLabels}
+                  clearSignal={searchClearSignal}
                   onSubmit={(term) => {
                     setShowMobileMenu(false);
                     router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language));
@@ -423,15 +553,14 @@ export default function Header() {
               </div>
             )}
 
-            {/* Mobile categories */}
-            {showCategoriesMenu && !state.isLoading && (
+            {/* Mobile categories — same pre-fetched tree as the desktop
+                instance. The `state.isLoading` gate is gone for the same
+                reason (see desktop note above). */}
+            {showCategoriesMenu && (
               <PropellerMenu
-                graphqlClient={graphqlClient}
-                categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10)}
-                language={language}
+                categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
                 menuStyle="dropdown-vertical"
-                user={state.user}
-                configuration={config}
+                tree={menuTree}
                 onMenuItemClick={(category) => {
                   setShowMobileMenu(false);
                   router.push(config.urls.getCategoryUrl(category, language));

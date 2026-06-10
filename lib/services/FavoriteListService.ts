@@ -1,4 +1,4 @@
-import { FavoriteListService as PropellerFavoriteListService, UserService, Contact, Customer } from 'propeller-sdk-v2';
+import { FavoriteListService as PropellerFavoriteListService, UserService, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '../api';
 import { BaseApiService } from './BaseApiService';
 
@@ -8,8 +8,9 @@ import {
     FavoriteListsSearchInput,
     FavoriteListsResponse,
     FavoriteListsUpdateInput,
-    FavoriteList
-} from 'propeller-sdk-v2';
+    FavoriteList,
+    FavoriteListVariables
+} from '@propeller-commerce/propeller-sdk-v2';
 
 // User type from AuthContext
 type User = Contact | Customer;
@@ -56,16 +57,8 @@ export class FavoriteListService extends BaseApiService {
 
             this.logOperation('Creating favorite list', { name: input.name });
 
-            // Check if we have proper authorization headers
-            const accessToken = this.getLocalStorage<string>('accessToken');
-            if (accessToken) {
-                // Ensure the GraphQL client has the authorization header
-                this.updateClientHeaders({
-                    'Authorization': `Bearer ${accessToken}`
-                });
-            } else {
-                console.warn('No access token found in localStorage');
-            }
+            // Auth is injected by the /api/graphql proxy from the httpOnly
+            // access_token cookie — no client-side token handling needed.
 
             // Make the API call directly
             const result = await this.favoriteListService.createFavoriteList(input);
@@ -113,13 +106,8 @@ export class FavoriteListService extends BaseApiService {
 
             this.logOperation('Fetching favorite list details', { listId });
 
-            // Check if we have proper authorization headers
-            const accessToken = this.getLocalStorage<string>('accessToken');
-            if (accessToken) {
-                this.updateClientHeaders({
-                    'Authorization': `Bearer ${accessToken}`
-                });
-            }
+            // Auth is injected by the /api/graphql proxy from the httpOnly
+            // access_token cookie — no client-side token handling needed.
 
             // Build the input object according to the specifications
             const input = {
@@ -155,7 +143,9 @@ export class FavoriteListService extends BaseApiService {
                 }
             }
 
-            const result = await this.favoriteListService.getFavoriteList(input);
+            const result = await this.favoriteListService.getFavoriteList(
+                input as unknown as FavoriteListVariables
+            );
 
             this.logOperation('Favorite list details fetched successfully', {
                 id: result.id,
@@ -216,12 +206,8 @@ export class FavoriteListService extends BaseApiService {
 
             this.logOperation('Refreshing user data');
 
-            const accessToken = this.getLocalStorage<string>('accessToken');
-            if (accessToken) {
-                this.updateClientHeaders({
-                    'Authorization': `Bearer ${accessToken}`
-                });
-            }
+            // Auth is injected by the /api/graphql proxy from the httpOnly
+            // access_token cookie — no client-side token handling needed.
 
             const viewerData = await this.userService.getViewer({});
 
@@ -246,12 +232,8 @@ export class FavoriteListService extends BaseApiService {
 
             this.logOperation('Updating favorite list', { id, name: input.name });
 
-            const accessToken = this.getLocalStorage<string>('accessToken');
-            if (accessToken) {
-                this.updateClientHeaders({
-                    'Authorization': `Bearer ${accessToken}`
-                });
-            }
+            // Auth is injected by the /api/graphql proxy from the httpOnly
+            // access_token cookie — no client-side token handling needed.
 
             const result = await this.favoriteListService.updateFavoriteList(id, input);
 
@@ -275,12 +257,8 @@ export class FavoriteListService extends BaseApiService {
 
             this.logOperation('Deleting favorite list', { id });
 
-            const accessToken = this.getLocalStorage<string>('accessToken');
-            if (accessToken) {
-                this.updateClientHeaders({
-                    'Authorization': `Bearer ${accessToken}`
-                });
-            }
+            // Auth is injected by the /api/graphql proxy from the httpOnly
+            // access_token cookie — no client-side token handling needed.
 
             await this.favoriteListService.deleteFavoriteList(id);
 

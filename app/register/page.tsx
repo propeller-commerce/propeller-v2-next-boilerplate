@@ -6,18 +6,24 @@ import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCart } from '@/context/CartContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import RegisterForm from '@/components/propeller/RegisterForm';
-import { graphqlClient } from '@/lib/api';
-import { Company, Contact } from 'propeller-sdk-v2';
-import { stripLeadingUnderscores } from '@/data/defaults';
-import { localizeHref } from '@/data/config';
+import { RegisterForm } from 'propeller-v2-react-ui';
+import { graphqlClient, services } from '@/lib/api';
+import { useTranslations } from '@/lib/i18n/client';
+import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
+import { localizeHref, config } from '@/data/config';
+import { fetchActiveCart } from 'propeller-v2-react-ui';
+import { mergeAnonymousCart } from 'propeller-v2-react-ui';
+import { initCart } from 'propeller-v2-react-ui';
 
 export default function RegisterPage() {
   const { state, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
   const { language } = useLanguage();
+  const { cart, saveCart, clearCart } = useCart();
+  const registerFormLabels = useTranslations('RegisterForm');
   const router = useRouter();
 
   return (
@@ -53,11 +59,12 @@ export default function RegisterPage() {
 
               <CardContent>
                 <RegisterForm
-                  graphqlClient={graphqlClient}
+                  labels={registerFormLabels}
                   title=""
                   requiredFields={['firstName', 'lastName']}
                   onLoginClick={() => router.push(localizeHref('/login', language))}
                   automaticLogin={true}
+                  cart={cart as Cart | null}
                   countries={{
                     'NL': 'Netherlands',
                     'BE': 'Belgium',
@@ -66,27 +73,78 @@ export default function RegisterPage() {
                     'UK': 'United Kingdom',
                     'US': 'United States'
                   }}
-                  afterRegistration={(user, accessToken, refreshToken, expiresAt) => {
-                    const registeredUser = stripLeadingUnderscores(user);
-
-                    localStorage.setItem('user', JSON.stringify(registeredUser));
-                    updateUser(registeredUser);
-
-                    if ((registeredUser as Contact).company) {
-                      setSelectedCompany((registeredUser as Contact).company as Company);
+                  afterRegistration={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
+                    // No token means the form was used with `automaticLogin: false`.
+                    // The user exists server-side but isn't signed in here — send
+                    // them to the login page.
+                    if (!accessToken) {
+                      router.push(localizeHref('/login', language));
+                      return;
                     }
 
-                    if (accessToken && refreshToken && expiresAt) {
-                      localStorage.setItem('accessToken', accessToken);
-                      localStorage.setItem('refreshToken', refreshToken);
-                      localStorage.setItem('expiresAt', expiresAt);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    updateUser(user);
+
+                    const company = (user as Contact).company;
+                    if (company) {
+                      setSelectedCompany(company as Company);
                     }
+
+                    // Persist the token in the httpOnly cookie (server-side),
+                    // not localStorage. Survives reloads via the proxy.
+                    await fetch('/api/auth/session', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ accessToken, refreshToken }),
+                    });
 
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(new CustomEvent('userLoggedIn'));
                     }
 
-                    router.push(localizeHref('/account', language))
+                    let targetCart = await fetchActiveCart({
+                      services,
+                      user: user as Contact | Customer,
+                      companyId: company?.companyId,
+                      language,
+                      imageSearchFilters: config.imageSearchFiltersGrid,
+                      imageVariantFilters: config.imageVariantFiltersSmall,
+                    });
+
+                    if (anonymousCart?.items?.length) {
+                      if (!targetCart) {
+                        targetCart = await initCart({
+                          services,
+                          user: user as Contact | Customer,
+                          companyId: company?.companyId,
+                          language,
+                          imageSearchFilters: config.imageSearchFiltersGrid,
+                          imageVariantFilters: config.imageVariantFiltersSmall,
+                        });
+                      }
+                      const merged = await mergeAnonymousCart({
+                        services,
+                        targetCartId: targetCart.cartId,
+                        anonymousCart,
+                        language,
+                        imageSearchFilters: config.imageSearchFiltersGrid,
+                        imageVariantFilters: config.imageVariantFiltersSmall,
+                      });
+                      if (merged) targetCart = merged;
+
+                      if (anonymousCart.cartId && anonymousCart.cartId !== targetCart.cartId) {
+                        try {
+                          await services.cart.deleteCart({ id: anonymousCart.cartId });
+                        } catch (e) {
+                          console.error('[auth] Failed to delete anonymous cart', e);
+                        }
+                      }
+                    }
+
+                    if (targetCart) saveCart(targetCart);
+                    else clearCart();
+
+                    router.push(localizeHref('/account', language));
                   }}
                 />
               </CardContent>

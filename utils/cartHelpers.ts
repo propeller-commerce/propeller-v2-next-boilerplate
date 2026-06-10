@@ -1,4 +1,4 @@
-import { Cart } from 'propeller-sdk-v2';
+import { Cart } from '@propeller-commerce/propeller-sdk-v2';
 
 /**
  * Recursively strips underscore-prefixed keys from SDK class instances
@@ -26,13 +26,13 @@ export const serializeCart = (cart: Cart): string => {
   const cleanCart = {
     cartId: cart.cartId,
     channelId: cart.channelId,
-    shopId: cart.shopId,
     contactId: cart.contactId,
     customerId: cart.customerId,
     companyId: cart.companyId,
     notes: cart.notes,
     reference: cart.reference,
     items: deepPlain(cart.items),
+    bonusItems: deepPlain(cart.bonusItems),
     total: deepPlain(cart.total),
     invoiceAddress: deepPlain(cart.invoiceAddress),
     deliveryAddress: deepPlain(cart.deliveryAddress),
@@ -44,6 +44,7 @@ export const serializeCart = (cart: Cart): string => {
     carriers: deepPlain(cart.carriers),
     actionCode: cart.actionCode,
     vouchers: deepPlain(cart.vouchers),
+    paymentData: deepPlain(cart.paymentData),
     postageData: deepPlain(cart.postageData),
     taxLevels: deepPlain(cart.taxLevels),
   };
@@ -57,9 +58,30 @@ export const serializeCart = (cart: Cart): string => {
 export const deserializeCart = (cartJson: string): Cart | null => {
   try {
     const cartData = JSON.parse(cartJson);
-    return new Cart(cartData);
+    return cartData as Cart;
   } catch (error) {
     console.error('Failed to deserialize cart:', error);
     return null;
   }
+};
+
+/**
+ * Restore the manager's own cart after they finish acting on a requester's
+ * authorization cart.
+ *
+ * When a manager accepts an authorization request, their own cart is parked in
+ * `manager_cart` (see the account/authorization-requests page) and the
+ * requester's cart is loaded. Whether the manager completes that cart by
+ * placing the order OR by submitting it for further authorization, control of
+ * the storefront returns to the manager — so their parked cart must come back.
+ *
+ * Returns the restored Cart when one was parked (caller should saveCart it),
+ * or `null` when there was nothing to restore (caller should clear).
+ */
+export const restoreManagerCart = (): Cart | null => {
+  if (typeof window === 'undefined') return null;
+  const parked = localStorage.getItem('manager_cart');
+  if (!parked) return null;
+  localStorage.removeItem('manager_cart');
+  return deserializeCart(parked);
 };

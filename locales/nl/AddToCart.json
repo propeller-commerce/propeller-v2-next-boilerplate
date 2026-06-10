@@ -1,0 +1,14 @@
+{
+  "add": "Toevoegen",
+  "addedToCart": "toegevoegd aan winkelwagen",
+  "adding": "Toevoegen...",
+  "continueShopping": "Verder winkelen",
+  "errorAdding": "Artikel kon niet worden toegevoegd aan winkelwagen",
+  "modalTitle": "Toegevoegd aan winkelwagen",
+  "noCartId": "Geen winkelwagen-ID opgegeven",
+  "outOfStock": "Onvoldoende voorraad beschikbaar",
+  "proceedToCheckout": "Naar afrekenen",
+  "quantity": "Aantal",
+  "requestQuoteButton": "Offerte aanvragen",
+  "surcharges": "Aanvullende toeslagen:"
+}

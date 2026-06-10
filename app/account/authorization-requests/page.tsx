@@ -4,17 +4,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
-import PurchaseAuthorizationRequests from '@/components/propeller/PurchaseAuthorizationRequests';
+import { PurchaseAuthorizationRequests } from 'propeller-v2-react-ui';
 import { serializeCart } from '@/utils/cartHelpers';
-import { Contact, Customer, Cart } from 'propeller-sdk-v2';
+import { Contact, Customer, Cart } from '@propeller-commerce/propeller-sdk-v2';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function AuthorizationRequestsPage() {
     const { state } = useAuth();
     const { selectedCompany } = useCompany();
     const { cart, saveCart } = useCart();
     const router = useRouter();
+    const purchaseAuthorizationRequestsLabels = useTranslations('PurchaseAuthorizationRequests');
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
         u !== null && 'contactId' in u;
@@ -32,10 +32,6 @@ export default function AuthorizationRequestsPage() {
                 </h1>
             </div>
             <PurchaseAuthorizationRequests
-                graphqlClient={graphqlClient}
-                user={state.user}
-                companyId={companyId}
-                configuration={config}
                 afterAcceptRequest={(acceptedCart: Cart) => {
                     if (cart) {
                         localStorage.setItem('manager_cart', serializeCart(cart));
@@ -43,30 +39,7 @@ export default function AuthorizationRequestsPage() {
                     saveCart(acceptedCart);
                     router.push('/cart');
                 }}
-                labels={{
-                    title: 'Authorization Requests',
-                    colId: '#',
-                    colDate: 'Date',
-                    colQuantity: 'Quantity',
-                    colTotal: 'Total',
-                    colRequestedBy: 'Requested by',
-                    colActions: 'Actions',
-                    view: 'View',
-                    modalTitle: 'Authorization Request',
-                    requesterInfo: 'Requester',
-                    itemsTitle: 'Items',
-                    itemProduct: 'Product',
-                    itemQty: 'Qty',
-                    itemUnitPrice: 'Unit price',
-                    itemTotal: 'Total',
-                    totalExclVat: 'Total excl. VAT:',
-                    totalVat: 'VAT:',
-                    total: 'Total:',
-                    cancel: 'Cancel',
-                    acceptRequest: 'Accept request',
-                    accepting: 'Accepting...',
-                    empty: 'No pending authorization requests',
-                }}
+                labels={purchaseAuthorizationRequestsLabels}
             />
         </div>
     );

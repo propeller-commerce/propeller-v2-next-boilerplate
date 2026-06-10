@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import Header from '@/components/layout/Header';
+import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
 import { getPage, getAllPageSlugs } from '@/lib/cms';
@@ -27,7 +27,7 @@ export default async function CmsPage({ params }: CmsPageProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <HeaderServer />
       <main className="flex-1">
         {page.blocks.length > 0 ? (
           <DynamicBlockRenderer blocks={page.blocks} />

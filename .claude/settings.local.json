@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/laragon/www/npm/propeller-sdk-v2/**)",
+      "Bash(git commit:*)",
+      "Read(//d/laragon/www/node_modules/propeller-sdk-v2/**)",
+      "Bash(grep -r \"sendPasswordReset\\\\|login\\(\" node_modules/propeller-sdk-v2/src/services/LoginService*)",
+      "Bash(grep -r \"addFavoriteList\\\\|deleteFavoriteList\\\\|updateFavoriteList\\\\|createFavoriteList\" node_modules/propeller-sdk-v2/src/services/FavoriteListService*)",
+      "Bash(grep -r \"sendPasswordReset\\\\|login\\\\b\" d:/laragon/www/npm/propeller-sdk-v2/src/services/Login*)",
+      "Bash(grep -n \"sendPassword\\\\|resetPassword\\\\|forgotPassword\" d:/laragon/www/propeller-next/node_modules/propeller-sdk-v2/dist/service/*.d.ts)",
+      "Read(//d/laragon/www/propeller-next/**)",
+      "Bash(sed -i 's/imageSearchFilters,$/imageSearchFilters: imageSearchFilters as MediaImageProductSearchInput,/g; s/imageVariantFilters,$/imageVariantFilters: imageVariantFilters as TransformationsInput,/g' composables/shared/utils/cartInit.ts)",
+      "Bash(sed -i 's/imageSearchFilters: configuration?\\\\.imageSearchFiltersGrid,/imageSearchFilters: configuration?.imageSearchFiltersGrid as MediaImageProductSearchInput,/g; s/imageVariantFilters: configuration?\\\\.imageVariantFiltersSmall,/imageVariantFilters: configuration?.imageVariantFiltersSmall as TransformationsInput,/g' composables/react/useCart.ts)",
+      "Bash(xargs cat:*)",
+      "Bash(xargs head:*)",
+      "Bash(npx tsc *)",
+      "Bash(awk -F: 'NF>1 { s=$NF; while \\(match\\(s, /\\(gray|red|green|blue|yellow|amber|orange|purple|violet|indigo|pink|rose|emerald|teal|cyan|sky|slate|zinc|neutral|stone|lime|fuchsia\\)-[0-9]+/\\)\\) { print substr\\(s, RSTART, RLENGTH\\); s = substr\\(s, RSTART+RLENGTH\\) } }' 'C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\ce22f3fd-5ae4-43db-bd75-15c278cab9da\\\\tool-results\\\\toolu_01CbC9zKiiXcz8JGyVxcWnPT.txt')",
+      "Bash(awk -F: 'NF>1 { s=$NF; while \\(match\\(s, /rounded-\\(sm|md|lg|xl|2xl|3xl|full|none\\)/\\)\\) { print substr\\(s, RSTART, RLENGTH\\); s = substr\\(s, RSTART+RLENGTH\\) } }' 'C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\ce22f3fd-5ae4-43db-bd75-15c278cab9da\\\\tool-results\\\\toolu_01Nf39QTA4o94uRNNd2ivvo1.txt')",
+      "Bash(npm run *)"
+    ],
+    "additionalDirectories": [
+      "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"
+    ]
+  }
+}

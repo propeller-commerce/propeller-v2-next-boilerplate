@@ -1,6 +1,6 @@
+import { Fit, Format } from '@propeller-commerce/propeller-sdk-v2';
 // Default values and constants for the application
 // These will be used with propeller-sdk-v2 package when available
-import { Enums } from 'propeller-sdk-v2';
 
 // Image search filters for different use cases
 export const imageSearchFilters = {
@@ -19,10 +19,10 @@ export const imageVariantFiltersSmall = {
     {
       name: 'thumb',
       transformation: {
-        format: Enums.Format.WEBP,
+        format: Format.WEBP,
         height: 100,
         width: 100,
-        fit: Enums.Fit.BOUNDS,
+        fit: Fit.BOUNDS,
       },
     },
   ],
@@ -33,10 +33,10 @@ export const imageVariantFiltersMedium = {
     {
       name: 'grid',
       transformation: {
-        format: Enums.Format.WEBP,
+        format: Format.WEBP,
         height: 300,
         width: 300,
-        fit: Enums.Fit.BOUNDS,
+        fit: Fit.BOUNDS,
       },
     },
   ],
@@ -47,10 +47,10 @@ export const imageVariantFiltersLarge = {
     {
       name: 'large',
       transformation: {
-        format: Enums.Format.WEBP,
+        format: Format.WEBP,
         height: 800,
         width: 800,
-        fit: Enums.Fit.BOUNDS,
+        fit: Fit.BOUNDS,
       },
     },
   ],
@@ -246,19 +246,3 @@ export const cacheSettings = {
   staticContentTTL: 86400000, // 24 hours in milliseconds
 };
 
-// Helper for object key cleanup — recursively strips underscore-prefixed keys
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const stripLeadingUnderscores = (obj: unknown): any => {
-  if (obj === null || obj === undefined) return obj;
-  if (Array.isArray(obj)) return obj.map(stripLeadingUnderscores);
-  if (typeof obj === 'object') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: Record<string, any> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      const newKey = key.startsWith('_') ? key.slice(1) : key;
-      result[newKey] = stripLeadingUnderscores(value);
-    }
-    return result;
-  }
-  return obj;
-}

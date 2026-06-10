@@ -1,0 +1,12 @@
+{
+  "email": "Email",
+  "emailPlaceholder": "name@example.com",
+  "forgotPassword": "Forgot password?",
+  "guestCheckoutLink": "Continue as Guest",
+  "loggingIn": "Logging in...",
+  "password": "Password",
+  "passwordPlaceholder": "••••••••",
+  "noAccount": "Don't have an account?",
+  "registerLink": "Create an Account",
+  "registerText": "Don't have an account?"
+}

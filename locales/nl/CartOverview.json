@@ -1,0 +1,15 @@
+{
+  "carrier": "Vervoerder:",
+  "deliveryAddress": "Bezorgadres",
+  "deliveryDate": "Bezorgdatum:",
+  "invoiceAddress": "Factuuradres",
+  "notesLabel": "Ordernotities (optioneel)",
+  "notesPlaceholder": "Speciale instructies of opmerkingen",
+  "payment": "Betaling:",
+  "processing": "Verwerken...",
+  "purchaseButton": "Bestelling plaatsen",
+  "referenceLabel": "Referentie (optioneel)",
+  "referencePlaceholder": "Uw referentienummer",
+  "termsLink": "Algemene voorwaarden",
+  "termsPrefix": "Ik ga akkoord met de"
+}

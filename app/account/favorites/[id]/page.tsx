@@ -6,14 +6,14 @@ import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
-import { Contact, Customer, FavoriteListService, type FavoriteList } from 'propeller-sdk-v2';
+import { type FavoriteList } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
-import { usePrice } from '@/context/PriceContext';
+import { useFavorites } from 'propeller-v2-react-ui';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import FavoriteListDetails from '@/components/propeller/FavoriteListDetails';
+import { FavoriteListDetails } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function FavoriteListPage() {
   const { state: authState, refreshUser } = useAuth();
@@ -21,28 +21,38 @@ export default function FavoriteListPage() {
   const params = useParams();
   const listId = params?.id as string;
   const { language } = useLanguage();
-  const { includeTax } = usePrice();
+  const favoriteListDetailsLabels = useTranslations('FavoriteListDetails');
 
   const [listName, setListName] = useState('');
+
+  const { removeFromList } = useFavorites({ graphqlClient, user: authState.user });
 
   function handleListLoaded(list: FavoriteList) {
     setListName(list?.name || '');
   }
 
   async function handleItemDelete(itemId: string, itemType?: string) {
-    try {
-      const service = new FavoriteListService(graphqlClient);
-      const numericId = Number(itemId);
-      const input = itemType === 'cluster'
-        ? { clusterIds: [numericId] }
-        : { productIds: [numericId] };
-      await service.removeFavoriteListItems(listId, input);
-      toast.success('Item removed from list');
-      refreshUser();
-    } catch (error) {
-      console.error('Error removing item from list:', error);
-      toast.error('Failed to remove item');
-    }
+    const numericId = Number(itemId);
+    await removeFromList(
+      listId,
+      itemType === 'cluster' ? undefined : numericId,
+      itemType === 'cluster' ? numericId : undefined,
+    );
+    toast.success('Item removed from list');
+    refreshUser();
+  }
+
+  async function handleItemsDelete(items: { id: string; type: 'product' | 'cluster' }[]) {
+    if (items.length === 0) return;
+    const productIds = items.filter((i) => i.type === 'product').map((i) => Number(i.id));
+    const clusterIds = items.filter((i) => i.type === 'cluster').map((i) => Number(i.id));
+    await removeFromList(
+      listId,
+      productIds.length ? productIds : undefined,
+      clusterIds.length ? clusterIds : undefined,
+    );
+    toast.success(items.length === 1 ? 'Item removed from list' : `${items.length} items removed from list`);
+    refreshUser();
   }
 
   if (!authState.isAuthenticated) return null;
@@ -59,12 +69,12 @@ export default function FavoriteListPage() {
       </div>
 
       <FavoriteListDetails
-        graphqlClient={graphqlClient}
-        user={authState.user as Contact | Customer}
+        labels={favoriteListDetailsLabels}
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
+        onItemsDelete={handleItemsDelete}
+        onItemAdded={() => refreshUser()}
         onListLoaded={handleListLoaded}
-        configuration={config}
         cartId={cart?.cartId}
         createCart={true}
         onCartCreated={(newCart) => saveCart(newCart)}
@@ -74,7 +84,6 @@ export default function FavoriteListPage() {
         showStockComponent={true}
         showAvailability={false}
         showStock={true}
-        includeTax={includeTax}
       />
     </div>
   );

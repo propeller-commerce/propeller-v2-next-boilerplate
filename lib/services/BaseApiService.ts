@@ -97,11 +97,14 @@ export abstract class BaseApiService {
                 ...headers
             };
 
-            console.log('Updating GraphQL client headers:', {
-                existing: currentConfig.headers,
-                new: headers,
-                merged: mergedHeaders
-            });
+            if (process.env.NODE_ENV !== 'production') {
+                // Headers include the Authorization bearer — dev-only.
+                console.log('Updating GraphQL client headers:', {
+                    existing: currentConfig.headers,
+                    new: headers,
+                    merged: mergedHeaders
+                });
+            }
 
             graphqlClient.updateConfig({ headers: mergedHeaders });
         } catch (error) {

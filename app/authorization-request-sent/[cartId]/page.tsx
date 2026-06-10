@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
-import { CartMainItem } from 'propeller-sdk-v2';
+import { CartMainItem } from '@propeller-commerce/propeller-sdk-v2';
 
 export default function AuthorizationRequestSentPage() {
     const params = useParams();

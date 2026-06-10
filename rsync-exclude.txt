@@ -1,6 +1,3 @@
-# Exclude specific files
-.env
-
 # Exclude directories
 src/i18n
 public/uploads

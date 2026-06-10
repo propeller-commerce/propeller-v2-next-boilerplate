@@ -1,48 +1,20 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useCompany } from '@/context/CompanyContext';
 import { useRouter } from 'next/navigation';
-import { localizeHref } from '@/data/config';
+import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { graphqlClient } from '@/lib/api';
-import OrderList from '@/components/propeller/OrderList';
-import { Contact, Customer, Company } from 'propeller-sdk-v2';
+import { OrderList } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 
 export default function OrdersPage() {
   const { state } = useAuth();
-  const { selectedCompany } = useCompany();
   const router = useRouter();
   const { language } = useLanguage();
-
-  const isContact = (u: Contact | Customer | null): u is Contact =>
-    u !== null && 'company' in u;
-
-  /** Resolve the active company for a Contact user (respects company switcher) */
-  const getActiveCompany = (): Company | null => {
-    if (!state.user || !isContact(state.user)) return null;
-    return (selectedCompany) ?? null;
-  };
-
-  const companyId = getActiveCompany()?.companyId;
+  const labels = useTranslations('OrderList');
 
   if (!state.isAuthenticated) return null;
-
-  const paginationLabels = {
-    view: 'Weergave',
-    previous: 'Vorige',
-    next: 'Volgende',
-    showingPage: 'Pagina',
-    of: 'van',
-    noOrders: 'Geen orders',
-    loading: 'Laden',
-    order: 'Order',
-    date: 'Datum',
-    status: 'Status',
-    total: 'Totaal',
-    action: 'Actie',
-  };
 
   const ordersColumnConf = {
     id: '#',
@@ -60,17 +32,15 @@ export default function OrdersPage() {
       </div>
       <div className="bg-card shadow-sm">
         <OrderList
-          graphqlClient={graphqlClient}
-          user={state.user}
-          companyId={companyId}
           showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/orders/${orderId}`, language))}
-          labels={paginationLabels}
+          labels={labels}
           rowsClickable={true}
           searchFields={['term', 'createdAt', 'price']}
           columnConfig={ordersColumnConf}
           columns={columns}
           enableSearch={true}
+          channelIds={[config.channelId]}
         />
       </div>
     </div>

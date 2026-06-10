@@ -1,35 +1,31 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
-import { Base64File, Order, OrderItem, OrderService, OrderQueryVariables } from 'propeller-sdk-v2';
-import OrderSummary from '@/components/propeller/OrderSummary';
-import QuoteActions from '@/components/propeller/QuoteActions';
+import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
+import { useOrders } from 'propeller-v2-react-ui';
+import { OrderSummary } from 'propeller-v2-react-ui';
+import { QuoteActions } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import OrderItemCard from '@/components/propeller/OrderItemCard';
-import OrderTotals from '@/components/propeller/OrderTotals';
+import { OrderItemCard } from 'propeller-v2-react-ui';
+import { OrderBonusItems } from 'propeller-v2-react-ui';
+import { OrderTotals } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
 
-const COUNTRIES = [
-    { code: 'NL', name: 'Netherlands' },
-    { code: 'BE', name: 'Belgium' },
-    { code: 'DE', name: 'Germany' },
-    { code: 'FR', name: 'France' },
-    { code: 'UK', name: 'United Kingdom' },
-    { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
     const { state } = useAuth();
     const router = useRouter();
-    const { cart: contextCart, getCart } = useCart();
     const { language } = useLanguage();
     const params = useParams();
     const quoteId = params.id as string;
@@ -37,34 +33,23 @@ export default function QuoteDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const { getOrderById, downloadQuotePdf } = useOrders({
+        graphqlClient,
+        user: state.user,
+        language,
+        configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+    });
+
     useEffect(() => {
         const fetchQuoteDetails = async () => {
-            try {
-                setLoading(true);
-                const orderService = new OrderService(graphqlClient);
-
-                const variables: OrderQueryVariables = {
-                    orderId: Number(quoteId),
-                    imageSearchFilters: imageSearchFiltersGrid,
-                    imageVariantFilters: imageVariantFiltersSmall,
-                    language: 'NL'
-                };
-
-                const quoteResponse = await orderService.getOrder(variables);
-
-                if (quoteResponse) {
-                    setQuote(quoteResponse);
-                } else {
-                    console.error('No quote data found in response');
-                    setError('Quote not found');
-                }
-
-            } catch (err) {
-                console.error('Error fetching quote details:', err);
-                setError('Failed to load quote details');
-            } finally {
-                setLoading(false);
+            setLoading(true);
+            const result = await getOrderById(Number(quoteId));
+            if (result.success && result.order) {
+                setQuote(result.order);
+            } else {
+                setError(result.error ?? 'Quote not found');
             }
+            setLoading(false);
         };
 
         if (quoteId) {
@@ -76,69 +61,43 @@ export default function QuoteDetailPage() {
         router.push(localizeHref(`/checkout/thank-you/${acceptedQuote.id}`, language));
     };
 
+    // PDF download UX state — shows "Downloading..." while the request is in
+    // flight, then a success or error toast based on the result. Mirrors the
+    // pattern OrderActions uses for the order-confirmation PDF.
+    const orderSummaryLabels = useTranslations('OrderSummary');
+    const quoteActionsLabels = useTranslations('QuoteActions');
+    const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+    const orderTotalsLabels = useTranslations('OrderTotals');
+    const orderItemCardLabels = useTranslations('OrderItemCard');
+    const errorPagesLabels = useTranslations('ErrorPages');
+
+    const [downloading, setDownloading] = useState(false);
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    const showDownloadToast = (message: string, type: 'success' | 'error') => {
+        setToastMessage(message);
+        setToastType(type);
+        setToastVisible(true);
+        setTimeout(() => setToastVisible(false), 4000);
+    };
+
     const handleDownloadPDF = async () => {
-        if (!quoteId) {
-            console.error('No quote ID available for PDF download');
-            return;
-        }
-
+        if (downloading) return;
+        setDownloading(true);
         try {
-            const orderService = new OrderService(graphqlClient);
-            const pdfResponse = await orderService.getOrderPDF(Number(quoteId));
-
-            if (pdfResponse) {
-                if (typeof pdfResponse === 'object' && (pdfResponse as Base64File).base64) {
-                    const response = pdfResponse as Base64File;
-                    const byteCharacters = atob(response.base64);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-
-                    const contentType = response.contentType || 'application/pdf';
-                    const fileName = response.fileName || `quote-${quoteId}.pdf`;
-                    const blob = new Blob([byteArray], { type: contentType });
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
-                } else if (typeof pdfResponse === 'string') {
-                    const byteCharacters = atob(pdfResponse);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-
-                    const blob = new Blob([byteArray], { type: 'application/pdf' });
-                    const fileName = `quote-${quoteId}.pdf`;
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                }
-                console.log('PDF download initiated successfully');
+            const result = await downloadQuotePdf(Number(quoteId));
+            if (result?.success) {
+                showDownloadToast('PDF downloaded successfully', 'success');
             } else {
-                console.error('Invalid PDF response:', pdfResponse);
-                alert('Failed to download PDF: Invalid response from server');
+                showDownloadToast(result?.error || 'Failed to download PDF', 'error');
             }
-        } catch (error) {
-            console.error('Error downloading PDF:', error);
-            alert('Failed to download PDF. Please try again.');
+        } catch (e) {
+            console.error('Error downloading quote PDF:', e);
+            showDownloadToast('Failed to download PDF', 'error');
+        } finally {
+            setDownloading(false);
         }
     };
 
@@ -168,12 +127,11 @@ export default function QuoteDetailPage() {
             )}
 
             {error && (
-                <Card className="p-8 text-center">
-                    <p className="text-destructive mb-4">{error}</p>
-                    <Link href={localizeHref('/account/quotes', language)} className="text-primary hover:underline">
-                        Return to Quotes
-                    </Link>
-                </Card>
+                <AccessErrorView
+                    kind={classifyApiError(error)}
+                    backHref="/account/quotes"
+                    backLabel={errorPagesLabels.backToQuotes}
+                />
             )}
 
             {!loading && !error && quote && (
@@ -183,20 +141,20 @@ export default function QuoteDetailPage() {
                         <div className="flex-1">
                             <OrderSummary
                                 order={quote}
-                                labels={{ orderNumber: 'Quote Number', orderDate: 'Quote Date' }}
+                                labels={orderSummaryLabels}
                                 countries={COUNTRIES}
                             />
                         </div>
                         <div className="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
                             <QuoteActions
-                                graphqlClient={graphqlClient}
                                 quote={quote}
+                                labels={quoteActionsLabels}
                                 afterAccept={handleAfterAccept}
                                 showTermsAndConditions={true}
                                 onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                             />
-                            <Button variant="link" size="sm" onClick={handleDownloadPDF}>
-                                Download Quote (PDF)
+                            <Button variant="link" size="sm" onClick={handleDownloadPDF} disabled={downloading}>
+                                {downloading ? 'Downloading...' : 'Download Quote (PDF)'}
                             </Button>
                         </div>
                     </Card>
@@ -236,6 +194,7 @@ export default function QuoteDetailPage() {
                                                     orderItem={item}
                                                     showDiscount={true}
                                                     childItems={childMap.get(item.id) || []}
+                                                    labels={orderItemCardLabels}
                                                 />
                                             ))}
                                         </table>
@@ -246,74 +205,53 @@ export default function QuoteDetailPage() {
                         })()}
 
                         {/* Bonus Items */}
-                        {(() => {
-                            const bonusItems = quote.items?.filter((item: OrderItem) =>
-                                item.class === "product" && item.isBonus === "Y"
-                            );
-
-                            if (bonusItems?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                <thead className="bg-gray-50 border-b">
-                                                    <tr>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                                                    </tr>
-                                                </thead>
-                                                {bonusItems.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
-
-                        {/* Surcharges */}
-                        {(() => {
-                            const surcharges = quote.items?.filter((item: OrderItem) => item.class === "surcharge");
-
-                            if (surcharges?.length > 0) {
-                                return (
-                                    <div className="mb-8">
-                                        <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-                                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                                            <table className="w-full">
-                                                {surcharges.map((item: OrderItem) => (
-                                                    <OrderItemCard
-                                                        key={item.id}
-                                                        orderItem={item}
-                                                        titleLinkable={false}
-                                                        showImage={false}
-                                                        showSku={false}
-                                                    />
-                                                ))}
-                                            </table>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })()}
+                        <OrderBonusItems order={quote} labels={orderBonusItemsLabels} />
                     </div>
 
                     {/* Quote Bottom Totals */}
                     <div className="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t md:border-none">
-                        <OrderTotals order={quote} />
+                        <OrderTotals order={quote} labels={orderTotalsLabels} />
                     </div>
                 </div>
             )}
+
+            {/* PDF download toast (success / error feedback) */}
+            {toastVisible ? (
+                <div
+                    className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${
+                        toastType === 'success'
+                            ? 'bg-success border border-success text-success-foreground'
+                            : 'bg-destructive border border-destructive text-destructive-foreground'
+                    }`}
+                    data-toast-type={toastType}
+                >
+                    <div className="flex-shrink-0 w-5 h-5 mt-0.5">
+                        {toastType === 'success' ? (
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        ) : (
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                                />
+                            </svg>
+                        )}
+                    </div>
+                    <p className="flex-1 text-sm font-medium">{toastMessage}</p>
+                    <button
+                        type="button"
+                        className="flex-shrink-0 rounded focus:outline-none hover:opacity-80"
+                        onClick={() => setToastVisible(false)}
+                    >
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-4 w-4" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            ) : null}
         </div>
     );
 }
-

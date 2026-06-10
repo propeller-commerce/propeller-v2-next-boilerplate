@@ -1,0 +1,13 @@
+{
+  "carrier": "Carrier:",
+  "deliveryAddress": "Delivery Address",
+  "deliveryDate": "Delivery Date:",
+  "invoiceAddress": "Invoice Address",
+  "orderDate": "Order Date",
+  "orderNumber": "Order Number",
+  "payment": "Payment:",
+  "reference": "Reference:",
+  "remarks": "Remarks:",
+  "status": "Status",
+  "total": "Total"
+}

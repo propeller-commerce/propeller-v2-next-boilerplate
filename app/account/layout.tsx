@@ -2,7 +2,7 @@
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import AccountIconAndMenu from '@/components/propeller/AccountIconAndMenu';
+import { AccountIconAndMenu } from 'propeller-v2-react-ui';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -10,7 +10,8 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
-import { Contact, Customer, Enums } from 'propeller-sdk-v2';
+import { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function AccountLayout({
     children,
@@ -22,6 +23,8 @@ export default function AccountLayout({
     const router = useRouter();
     const pathname = usePathname();
     const { language } = useLanguage();
+    const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
+    const loginFormLabels = useTranslations('LoginForm');
 
     // Protect account routes — wait for auth to finish loading before checking
     useEffect(() => {
@@ -44,9 +47,10 @@ export default function AccountLayout({
                         <aside className="w-full lg:w-72 flex-shrink-0">
                             <Card className="overflow-hidden border-border bg-card shadow-sm sticky top-24">
                                 <AccountIconAndMenu
+                                    labels={accountIconAndMenuLabels}
+                                    loginFormLabels={loginFormLabels}
                                     variant="sidebar"
                                     currentPath={pathname}
-                                    user={state.user}
                                     onMenuItemClick={(href) => router.push(localizeHref(href, language))}
                                     onLogoutClick={() => logout()}
                                     menuLinks={[

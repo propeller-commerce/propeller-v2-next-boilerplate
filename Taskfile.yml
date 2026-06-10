@@ -27,23 +27,23 @@ tasks:
     desc: "Builds the frontend application."
     dir: "{{.BUILD_PATH}}/source"
     cmds:
-      - set -e
-      - cd {{.BUILD_PATH}}/source
+      - echo "$ENV_FILE" > .env
       - npm install
       - NODE_ENV=production npm run build
       - echo "Cleaning old build artifacts..."
       - sudo rm -rf {{.DEPLOY_PATH}}/.next
       - echo "Copying files to {{.DEPLOY_PATH}}"
-      - sudo rsync -a --delete --exclude-from="rsync-exclude.txt" {{.BUILD_PATH}}/source/ {{.DEPLOY_PATH}}/
-      - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
+      - sudo rsync -a --delete --exclude-from="rsync-exclude.txt" --exclude=cms/ {{.BUILD_PATH}}/source/ {{.DEPLOY_PATH}}/
+      - sudo chown -R {{.OWNER}}:{{.OWNER}} {{.DEPLOY_PATH}}
 
   build-cms:
     desc: "Builds the Strapi CMS. Rebuilds only when cms/ directory has changed."
     dir: "{{.BUILD_PATH}}/source/cms"
     cmds:
-      - set -e
+      - echo "$ENV_FILE_CMS" > .env
       - |
-        if [ ! -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then
+        strapi_exists=$(sudo sh -c 'if [ ! -d "{{.DEPLOY_PATH}}/cms/.strapi" ]; then echo "false"; fi')
+        if [ "$strapi_exists" == "false" ]; then
           echo "Strapi does not exist, building..."
           npm install
           NODE_ENV=production npm run build
@@ -56,7 +56,7 @@ tasks:
         else
           echo "No CMS changes, skipping build."
         fi
-      - sudo chown {{.OWNER}}:{{.OWNER}} -R {{.DEPLOY_PATH}}
+      - sudo chown -R {{.OWNER}}:{{.OWNER}} {{.DEPLOY_PATH}}
 
   deploy-frontend:
     desc: "Deploy the frontend"
@@ -83,13 +83,14 @@ tasks:
     desc: "Starting the application."
     dir: "{{.DEPLOY_PATH}}"
     cmds:
-      - unset name; PORT={{.APP_PORT}} pm2 start npm --name frontend -- run start -- --hostname 127.0.0.1
+      - unset name; pm2 start npm --name frontend -- run start -- --hostname 127.0.0.1
       - cd cms
       - pm2 delete cms || true
-      - PORT={{.$CMS_PORT}} NODE_ENV=production pm2 start npm --name cms -- run start -- --hostname 127.0.0.1
+      - unset name; NODE_ENV=production pm2 start npm --name cms -- run start
 
   stop:
     desc: "Stopping the application."
     dir: "{{.DEPLOY_PATH}}"
     cmds:
       - pm2 delete frontend || true
+      - pm2 delete cms || true

@@ -7,30 +7,29 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CartSummary from '@/components/propeller/CartSummary';
-import AddressCard from '@/components/propeller/AddressCard';
+import { CartSummary } from 'propeller-v2-react-ui';
+import { AddressCard } from 'propeller-v2-react-ui';
 
-import { cartService, orderService, graphqlClient } from '@/lib/api';
+import { graphqlClient } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Cart, CartUpdateAddressInput, CartUpdateInput, AddressService, Contact, Customer, Company } from 'propeller-sdk-v2';
-import { deserializeCart, serializeCart } from '@/utils/cartHelpers';
-import CartPaymethods from '@/components/propeller/CartPaymethods';
-import AddressSelector from '@/components/propeller/AddressSelector';
-import CartCarriers from '@/components/propeller/CartCarriers';
-import DeliveryDate from '@/components/propeller/DeliveryDate';
-import CartOverview from '@/components/propeller/CartOverview';
-import ItemsOverview from '@/components/propeller/ItemsOverview';
+import { useCompany } from '@/context/CompanyContext';
+import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from '@propeller-commerce/propeller-sdk-v2';
+import { useCheckout } from 'propeller-v2-react-ui';
+import { restoreManagerCart } from '@/utils/cartHelpers';
+import { CartPaymethods } from 'propeller-v2-react-ui';
+import { AddressSelector } from 'propeller-v2-react-ui';
+import { CartCarriers } from 'propeller-v2-react-ui';
+import { DeliveryDate } from 'propeller-v2-react-ui';
+import { CartOverview } from 'propeller-v2-react-ui';
+import { ItemsOverview } from 'propeller-v2-react-ui';
+import { CartBonusItems } from 'propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import { Enums } from 'propeller-sdk-v2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
-
-const CartAddressType = {
-  INVOICE: Enums.CartAddressType.INVOICE,
-  DELIVERY: Enums.CartAddressType.DELIVERY
-}
+import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
 
 interface CheckoutState {
   currentStep: number;
@@ -44,22 +43,15 @@ interface CheckoutState {
   step3Submitted: boolean;
 }
 
-const COUNTRIES = [
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-];
-
+// COUNTRIES imported from shared utils
 function CheckoutPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
-  const { cart: contextCart, getCart } = useCart();
+  const { cart: contextCart, getCart, clearCart, saveCart } = useCart();
   const { state: authState, refreshUser } = useAuth();
+  const { selectedCompany } = useCompany();
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
     cart: null,
@@ -73,42 +65,29 @@ function CheckoutPageInner() {
   });
   const sameAsInvoiceRef = useRef(false);
   const orderPlacedRef = useRef(false);
+  // One-shot guard for the step-3 auto-advance: we only auto-skip step 3 the
+  // FIRST time we enter it for a given cart. Otherwise clicking Back from step 4
+  // (or expanding the step-3 header) would immediately push the user right back
+  // to step 4, making step 3 unreachable in single-option carts.
+  const autoAdvancedCartIdRef = useRef<string | null>(null);
   const [quoteReference, setQuoteReference] = useState('');
   const [quoteNotes, setQuoteNotes] = useState('');
 
   useEffect(() => {
-    // Wait for auth to finish hydrating before initializing checkout
-    // This prevents the flash where addresses aren't loaded yet
+    // Wait for auth to finish hydrating before initializing checkout.
+    // `isLoading` alone is not enough: since Phase A-bis it flips to false
+    // at the thin-hint paint step, while `authState.user` (the full
+    // Contact, with addresses + company) is still null until getViewer()
+    // resolves. Pre-populating cart addresses needs the full user, so for
+    // an authenticated visitor we also wait for `authState.user`.
     if (authState.isLoading) return;
-
-    /** Get the user's default address of a given type */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getUserDefaultAddress = (type: 'invoice' | 'delivery'): any | null => {
-      const user = authState.user;
-      if (!user) return null;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let addresses: any[] = [];
-      if (isContact(user)) {
-        const company = getActiveCompany();
-        if (company) addresses = company.addresses || [];
-      } else if (isCustomer(user)) {
-        addresses = user.addresses || [];
-      }
-
-      const addressType = type === 'invoice' ? Enums.AddressType.invoice : Enums.AddressType.delivery;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        || addresses.find((a: any) => a.type === addressType)
-        || null;
-    };
+    if (authState.isAuthenticated && !authState.user) return;
 
     const initializeCheckout = async () => {
       let cartToUse = contextCart;
       if (!cartToUse) {
-        const cartData = localStorage.getItem('cart');
-        if (cartData) cartToUse = deserializeCart(cartData);
+        const cartData = contextCart;
+        if (cartData) cartToUse = cartData;
       }
 
       if (!cartToUse || !cartToUse.items || cartToUse.items.length === 0) {
@@ -124,72 +103,8 @@ function CheckoutPageInner() {
 
         // If user is logged in and cart is missing addresses, pre-populate from user's defaults
         if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
-          try {
-            // Ensure CartService mutations are loaded before calling updateCartAddress
-            await cartService.initializeService();
-            let updatedCart = cartToUse;
-
-            if (!hasInvoiceAddress) {
-              const defaultInvoice = getUserDefaultAddress('invoice');
-              if (defaultInvoice) {
-                const input: CartUpdateAddressInput = {
-                  type: Enums.CartAddressType.INVOICE,
-                  firstName: defaultInvoice.firstName || '',
-                  lastName: defaultInvoice.lastName || '',
-                  street: defaultInvoice.street || '',
-                  postalCode: defaultInvoice.postalCode || '',
-                  city: defaultInvoice.city || '',
-                  company: defaultInvoice.company,
-                  gender: defaultInvoice.gender,
-                  middleName: defaultInvoice.middleName,
-                  number: defaultInvoice.number,
-                  numberExtension: defaultInvoice.numberExtension,
-                  country: defaultInvoice.country,
-                  email: defaultInvoice.email,
-                  mobile: defaultInvoice.mobile,
-                  phone: defaultInvoice.phone,
-                };
-                updatedCart = await cartService.updateCartAddress({
-                  id: updatedCart.cartId,
-                  input,
-                  imageVariantFilters: imageVariantFiltersSmall,
-                  imageSearchFilters: imageSearchFiltersGrid,
-                  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-                });
-              }
-            }
-
-            if (!hasDeliveryAddress) {
-              const defaultDelivery = getUserDefaultAddress('delivery');
-              if (defaultDelivery) {
-                const input: CartUpdateAddressInput = {
-                  type: Enums.CartAddressType.DELIVERY,
-                  firstName: defaultDelivery.firstName || '',
-                  lastName: defaultDelivery.lastName || '',
-                  street: defaultDelivery.street || '',
-                  postalCode: defaultDelivery.postalCode || '',
-                  city: defaultDelivery.city || '',
-                  company: defaultDelivery.company,
-                  gender: defaultDelivery.gender,
-                  middleName: defaultDelivery.middleName,
-                  number: defaultDelivery.number,
-                  numberExtension: defaultDelivery.numberExtension,
-                  country: defaultDelivery.country,
-                  email: defaultDelivery.email,
-                  mobile: defaultDelivery.mobile,
-                  phone: defaultDelivery.phone,
-                };
-                updatedCart = await cartService.updateCartAddress({
-                  id: updatedCart.cartId,
-                  input,
-                  imageVariantFilters: imageVariantFiltersSmall,
-                  imageSearchFilters: imageSearchFiltersGrid,
-                  language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-                });
-              }
-            }
-
-            localStorage.setItem('cart', serializeCart(updatedCart));
+          try {            const updatedCart = await populateCartAddresses(cartToUse);
+            saveCart(updatedCart);
             cartToUse = updatedCart;
           } catch (error) {
             console.error('Error pre-populating cart addresses:', error);
@@ -231,85 +146,39 @@ function CheckoutPageInner() {
   }, [state.currentStep]);
 
   const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
-  const isCustomer = (u: Contact | Customer | null): u is Customer => u !== null && 'customerId' in u;
 
   const getActiveCompany = (): Company | null => {
     const user = authState.user;
     if (!user || !isContact(user)) return null;
-    const stored = localStorage.getItem('selected_company_id');
+    const stored = selectedCompany?.companyId;
     if (stored) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const companiesRaw = (user as any).companies;
-      const items = (companiesRaw?.items ?? companiesRaw?._items ?? companiesRaw) as Company[] | undefined;
+      const items = user.companies?.items;
       if (Array.isArray(items)) {
-        const found = items.find((c: Company) => c.companyId === parseInt(stored, 10));
+        const found = items.find((c: Company) => c.companyId === stored);
         if (found) return found;
       }
     }
-    return (user.company as Company | undefined) ?? null;
+    return user.company ?? null;
   };
 
-  /** Update the user's account address and refresh user data from API */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateUserAddress = async (addressData: any, type: string) => {
-    const user = authState.user;
-    if (!user) return;
+  const addressCardLabels = useTranslations('AddressCard');
+  const addressSelectorLabels = useTranslations('AddressSelector');
+  const cartPaymethodsLabels = useTranslations('CartPaymethods');
+  const cartCarriersLabels = useTranslations('CartCarriers');
+  const deliveryDateLabels = useTranslations('DeliveryDate');
+  const cartOverviewLabels = useTranslations('CartOverview');
+  const itemsOverviewLabels = useTranslations('ItemsOverview');
+  const cartBonusItemsLabels = useTranslations('CartBonusItems');
+  const cartSummaryLabels = useTranslations('CartSummary');
+  const t = useTranslations('CheckoutPage');
 
-    const addressService = new AddressService(graphqlClient);
-    const addressType = type === CartAddressType.INVOICE ? Enums.AddressType.invoice : Enums.AddressType.delivery;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let addresses: any[] = [];
-    const company = isContact(user) ? getActiveCompany() : null;
-    if (isContact(user)) {
-      if (!company) return;
-      addresses = company.addresses || [];
-    } else if (isCustomer(user)) {
-      addresses = user.addresses || [];
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const matchedAddr = addresses.find((a: any) => a.type === addressType && a.isDefault === 'Y')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      || addresses.find((a: any) => a.type === addressType);
-
-    if (!matchedAddr?.id) return;
-
-    try {
-      const commonFields = {
-        id: Number(matchedAddr.id),
-        company: addressData.company,
-        gender: addressData.gender,
-        firstName: addressData.firstName,
-        middleName: addressData.middleName,
-        lastName: addressData.lastName,
-        email: addressData.email,
-        street: addressData.street,
-        number: addressData.number,
-        numberExtension: addressData.numberExtension,
-        postalCode: addressData.postalCode,
-        city: addressData.city,
-        country: addressData.country,
-        isDefault: matchedAddr.isDefault,
-      };
-
-      if (isContact(user) && company) {
-        await addressService.updateCompanyAddress({
-          ...commonFields,
-          companyId: company.companyId,
-        });
-      } else if (isCustomer(user)) {
-        await addressService.updateCustomerAddress({
-          ...commonFields,
-          customerId: user.customerId,
-        });
-      }
-
-      await refreshUser();
-    } catch (error) {
-      console.error('Error updating user address:', error);
-    }
-  };
+  const { populateCartAddresses, updateCartAddress, updateCartShipping, placeOrder } = useCheckout({
+    graphqlClient,
+    user: authState.user,
+    companyId: getActiveCompany()?.companyId,
+    language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+    configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddressSubmit = async (addressData: any, type: string, advance = true) => {
@@ -317,14 +186,14 @@ function CheckoutPageInner() {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const d = addressData as Record<string, string | boolean | undefined>;
       const input: CartUpdateAddressInput = {
-        type: type as Enums.CartAddressType,
+        type: type as CartAddressType,
         firstName: (d.firstName as string) || '',
         lastName: (d.lastName as string) || '',
         street: (d.street as string) || '',
         postalCode: (d.postalCode as string) || '',
         city: (d.city as string) || '',
         company: d.company as string | undefined,
-        gender: d.gender as Enums.Gender | undefined,
+        gender: d.gender as Gender | undefined,
         middleName: d.middleName as string | undefined,
         number: d.number as string | undefined,
         numberExtension: d.numberExtension as string | undefined,
@@ -333,45 +202,20 @@ function CheckoutPageInner() {
         mobile: d.mobile as string | undefined,
         phone: d.phone as string | undefined,
         notes: d.notes as string | undefined,
-        icp: d.icp as Enums.YesNo | undefined,
+        icp: d.icp as YesNo | undefined,
       };
 
-      const variables = {
-        id: state.cart!.cartId,
-        input: input,
-        imageVariantFilters: imageVariantFiltersSmall,
-        imageSearchFilters: imageSearchFiltersGrid,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-      };
-
-      const updatedCart = await cartService.updateCartAddress(variables);
-      localStorage.setItem('cart', serializeCart(updatedCart));
-
-      // When editing an existing address and user is logged in, also update user's account address
-      if (!advance && authState.isAuthenticated) {
-        await updateUserAddress(addressData, type);
-      }
+      const updatedCart = await updateCartAddress(state.cart!.cartId, input);
+      saveCart(updatedCart);
 
       // Anonymous user: if "same as invoice" is checked, also save as delivery address
       if (advance && type === CartAddressType.INVOICE && !authState.isAuthenticated && sameAsInvoiceRef.current) {
-        const deliveryInput: CartUpdateAddressInput = {
+        const cartWithDelivery = await updateCartAddress(updatedCart.cartId, {
           ...input,
-          type: Enums.CartAddressType.DELIVERY,
-        };
-        const cartWithDelivery = await cartService.updateCartAddress({
-          id: updatedCart.cartId,
-          input: deliveryInput,
-          imageVariantFilters: imageVariantFiltersSmall,
-          imageSearchFilters: imageSearchFiltersGrid,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
+          type: CartAddressType.DELIVERY,
         });
-        localStorage.setItem('cart', serializeCart(cartWithDelivery));
-        setState(prev => ({
-          ...prev,
-          cart: cartWithDelivery,
-          currentStep: 3, // Skip delivery step
-          loading: false
-        }));
+        saveCart(cartWithDelivery);
+        setState(prev => ({ ...prev, cart: cartWithDelivery, currentStep: 3, loading: false }));
         return;
       }
 
@@ -401,8 +245,84 @@ function CheckoutPageInner() {
     }
   };
 
+  // First available delivery date — tomorrow, skipping weekends. Mirrors the
+  // tile-0 logic inside the `DeliveryDate` component (`computeUpcomingDates(1,
+  // true)` + `toApiDate`) so an auto-advance picks the same date the user would
+  // have seen highlighted on the quick-pick row. ISO `YYYY-MM-DDT00:00:00Z`.
+  const computeFirstDeliveryDate = (): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}T00:00:00Z`;
+  };
+
+  // Auto-advance step 3 → 4 when the cart offers only ONE payment method and at
+  // most ONE carrier. Preselects payment + carrier (if any) + the first
+  // available delivery date, persists via `updateCartShipping`, then jumps to
+  // step 4. One-shot per cart (see `autoAdvancedCartIdRef`) so Back from step 4
+  // still works. If a precondition isn't met (no payments yet, multi-option,
+  // quote mode) we fall through to the normal step-3 UI.
+  useEffect(() => {
+    if (state.currentStep !== 3) return;
+    if (isQuoteMode) return;
+    const cart = state.cart;
+    if (!cart?.cartId) return;
+    if (autoAdvancedCartIdRef.current === cart.cartId) return;
+    const payMethods = cart.payMethods ?? [];
+    const carriers = cart.carriers ?? [];
+    if (payMethods.length !== 1) return;
+    if (carriers.length > 1) return;
+    const onlyPayment = payMethods[0]?.code;
+    const onlyCarrier = carriers[0]?.name;
+    if (!onlyPayment) return;
+    // Use the cart's stored requestDate when present, else the first available;
+    // matches what the `DeliveryDate` component would render as preselected.
+    const requestDate =
+      (cart.postageData?.requestDate as string | undefined) || computeFirstDeliveryDate();
+    autoAdvancedCartIdRef.current = cart.cartId;
+    (async () => {
+      try {
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+        const input: CartUpdateInput = {
+          paymentData: { method: onlyPayment },
+          postageData: {
+            ...(onlyCarrier && { carrier: onlyCarrier }),
+            requestDate,
+          },
+        };
+        const updatedCart = await updateCartShipping(cart.cartId, input);
+        saveCart(updatedCart);
+        setState((prev) => ({
+          ...prev,
+          cart: updatedCart,
+          selectedPayment: onlyPayment,
+          selectedCarrier: onlyCarrier ?? '',
+          selectedDeliveryDate: requestDate,
+          currentStep: 4,
+          loading: false,
+        }));
+      } catch (error) {
+        // On failure, release the one-shot guard so the user can try Continue
+        // manually. The normal step-3 UI is still rendered.
+        autoAdvancedCartIdRef.current = null;
+        console.error(error);
+        setState((prev) => ({ ...prev, error: 'Failed to update cart', loading: false }));
+      }
+    })();
+    // updateCartShipping/saveCart are stable from their contexts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentStep, state.cart, isQuoteMode]);
+
   const handleStep3Continue = async () => {
-    if (!state.selectedPayment || !state.selectedCarrier || !state.selectedDeliveryDate) {
+    // A carrier is only required when the cart actually offers one. Some carts
+    // (e.g. digital-only or business-rule configs) return no carriers; in that
+    // case CartCarriers shows "No carriers available." and never fires a
+    // selection, so requiring one here would dead-end the checkout.
+    const hasCarriers = (state.cart?.carriers?.length ?? 0) > 0;
+    if (!state.selectedPayment || (hasCarriers && !state.selectedCarrier) || !state.selectedDeliveryDate) {
       setState(prev => ({ ...prev, step3Submitted: true }));
       return;
     }
@@ -411,18 +331,14 @@ function CheckoutPageInner() {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const input: CartUpdateInput = {
         paymentData: { method: state.selectedPayment },
-        postageData: { carrier: state.selectedCarrier, requestDate: state.selectedDeliveryDate }
+        postageData: {
+          ...(state.selectedCarrier && { carrier: state.selectedCarrier }),
+          requestDate: state.selectedDeliveryDate,
+        }
       };
 
-      const updatedCart = await cartService.updateCart({
-        id: state.cart!.cartId,
-        input: input,
-        imageVariantFilters: imageVariantFiltersSmall,
-        imageSearchFilters: imageSearchFiltersGrid,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-      });
-
-      localStorage.setItem('cart', serializeCart(updatedCart));
+      const updatedCart = await updateCartShipping(state.cart!.cartId, input);
+      saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
     } catch (error) {
       console.error(error);
@@ -431,65 +347,31 @@ function CheckoutPageInner() {
   };
 
   const handlePlaceOrder = async (reference?: string, notes?: string) => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      orderPlacedRef.current = true;
-      if (reference || notes) {
-        await cartService.updateCart({
-          id: state.cart!.cartId,
-          input: { reference: reference || undefined, notes: notes || undefined },
-          imageVariantFilters: imageVariantFiltersSmall,
-          imageSearchFilters: imageSearchFiltersGrid,
-          language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-        });
-      }
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    orderPlacedRef.current = true;
 
-      const orderStatus = isQuoteMode ? 'REQUEST' : 'NEW';
-      const response = await cartService.processCart({
-        id: state.cart!.cartId,
-        input: { orderStatus: orderStatus as string, language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL' }
-      });
+    const result = await placeOrder({
+      cartId: state.cart!.cartId,
+      orderStatus: isQuoteMode ? 'REQUEST' : 'NEW',
+      reference,
+      notes,
+      isQuoteMode,
+    });
 
-      if (response?.cartOrderId) {
-        const orderId = response.cartOrderId;
-        const orderServiceResponse = await orderService.setOrderStatus({
-          orderId: orderId,
-          status: orderStatus as string,
-          payStatus: Enums.PaymentStatuses.OPEN,
-          sendOrderConfirmationEmail: isQuoteMode ? false : true,
-          addPDFAttachment: isQuoteMode ? false : true,
-          triggerOrderSendConfirmEvent: isQuoteMode ? false : true,
-          deleteCart: true
-        });
-
-        if (orderServiceResponse?.id === orderId) {
-          if (isQuoteMode) {
-            await orderService.triggerQuoteSendRequest({
-              orderId: orderId,
-              language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-            });
-          }
-
-          localStorage.removeItem('cart');
-          const managerCart = localStorage.getItem('manager_cart');
-          if (managerCart) {
-            localStorage.setItem('cart', managerCart);
-            localStorage.removeItem('manager_cart');
-          }
-          if (getCart) await getCart();
-        }
-        const thankYouUrl = isQuoteMode
-          ? localizeHref(`/checkout/thank-you/${orderId}`, language) + '?mode=quote'
-          : localizeHref(`/checkout/thank-you/${orderId}`, language);
-        router.push(thankYouUrl);
-      } else {
-        throw new Error("No Order ID returned");
-      }
-
-    } catch (error) {
-      console.error(error);
+    if (result.ok) {
+      // Restore the manager's parked cart if they were acting on a requester's
+      // authorization cart; otherwise clear.
+      const parked = restoreManagerCart();
+      if (parked) saveCart(parked); else clearCart();
+      if (getCart) await getCart();
+      const thankYouUrl = isQuoteMode
+        ? localizeHref(`/checkout/thank-you/${result.data.orderId}`, language) + '?mode=quote'
+        : localizeHref(`/checkout/thank-you/${result.data.orderId}`, language);
+      router.push(thankYouUrl);
+    } else {
       orderPlacedRef.current = false;
-      setState(prev => ({ ...prev, error: isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order', loading: false }));
+      const fallback = isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order';
+      setState(prev => ({ ...prev, error: result.error || fallback, loading: false }));
     }
   };
 
@@ -503,7 +385,7 @@ function CheckoutPageInner() {
 
             {/* Skeleton step indicator */}
             <div className="flex justify-between max-w-2xl mb-8 px-2">
-              {['Details', 'Shipping', 'Payment', 'Review'].map((label, i) => (
+              {[t.stepDetails, t.stepShipping, t.stepPayment, t.stepReview].map((label, i) => (
                 <React.Fragment key={label}>
                   {i > 0 && <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />}
                   <div className="flex items-center gap-2 text-muted-foreground/50">
@@ -603,17 +485,17 @@ function CheckoutPageInner() {
 
           {/* Progress Stages (Simplified) */}
           <div className="flex justify-between max-w-2xl mb-8 px-2">
-            <StepIndicator step={1} currentStep={state.currentStep} title="Details" />
+            <StepIndicator step={1} currentStep={state.currentStep} title={t.stepDetails} />
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={2} currentStep={state.currentStep} title="Shipping" />
+            <StepIndicator step={2} currentStep={state.currentStep} title={t.stepShipping} />
             {!isQuoteMode && (
               <>
                 <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-                <StepIndicator step={3} currentStep={state.currentStep} title="Payment" />
+                <StepIndicator step={3} currentStep={state.currentStep} title={t.stepPayment} />
               </>
             )}
             <div className="flex-1 border-t-2 border-dashed border-muted mx-4 mt-4" />
-            <StepIndicator step={isQuoteMode ? 3 : 4} currentStep={state.currentStep} title="Review" />
+            <StepIndicator step={isQuoteMode ? 3 : 4} currentStep={state.currentStep} title={t.stepReview} />
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
@@ -628,10 +510,10 @@ function CheckoutPageInner() {
               <Card className={`${state.currentStep === 1 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 1 && setState(prev => ({ ...prev, currentStep: 1 }))}>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">1. Invoice Address</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step1Title}</CardTitle>
                     {state.currentStep > 1 && state.cart?.invoiceAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number}, {state.cart.invoiceAddress.city}
+                        {state.cart.invoiceAddress.street} {state.cart.invoiceAddress.number} {state.cart.invoiceAddress.numberExtension}, {state.cart.invoiceAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -647,6 +529,7 @@ function CheckoutPageInner() {
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE, false)}
                           countries={COUNTRIES}
+                          labels={addressCardLabels}
                         />
                         <Button onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>
                           Confirm Invoice Address
@@ -663,6 +546,7 @@ function CheckoutPageInner() {
                           beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
                           countries={COUNTRIES}
+                          labels={addressCardLabels}
                         />
                         {!authState.isAuthenticated && (
                           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -672,7 +556,7 @@ function CheckoutPageInner() {
                               onChange={(e) => { sameAsInvoiceRef.current = e.target.checked; setState(prev => ({ ...prev, sameAsInvoice: e.target.checked })); }}
                               className="rounded border-gray-300 text-primary focus:ring-primary"
                             />
-                            Delivery address same as invoice address
+                            {t.deliverySameAsInvoice}
                           </label>
                         )}
                       </div>
@@ -685,10 +569,10 @@ function CheckoutPageInner() {
               <Card className={`${state.currentStep === 2 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 2 && setState(prev => ({ ...prev, currentStep: 2 }))}>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">2. Shipping Address</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step2Title}</CardTitle>
                     {state.currentStep > 2 && state.cart?.deliveryAddress?.street && (
                       <Badge variant="outline" className="text-muted-foreground font-normal">
-                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number}, {state.cart.deliveryAddress.city}
+                        {state.cart.deliveryAddress.street} {state.cart.deliveryAddress.number} {state.cart.deliveryAddress.numberExtension}, {state.cart.deliveryAddress.city}
                       </Badge>
                     )}
                   </div>
@@ -704,6 +588,7 @@ function CheckoutPageInner() {
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
                           countries={COUNTRIES}
+                          labels={addressCardLabels}
                         />
                         <div className="flex items-center gap-4">
                           <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
@@ -711,11 +596,11 @@ function CheckoutPageInner() {
                           {authState.isAuthenticated && (
                             <AddressSelector
                               user={authState.user}
-                              companyId={getActiveCompany()?.companyId}
-                              addressType={Enums.AddressType.delivery}
+                              addressType={AddressType.delivery}
                               onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
                               countries={COUNTRIES}
                               className="ml-auto"
+                              labels={addressSelectorLabels}
                             />
                           )}
                         </div>
@@ -730,6 +615,7 @@ function CheckoutPageInner() {
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY)}
                         countries={COUNTRIES}
+                        labels={addressCardLabels}
                       />
                     )}
                   </CardContent>
@@ -739,7 +625,7 @@ function CheckoutPageInner() {
               {/* Step 3: Payment & Delivery Method (normal mode only) */}
               {!isQuoteMode && <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                 <CardHeader className="cursor-pointer" onClick={() => state.currentStep > 3 && setState(prev => ({ ...prev, currentStep: 3 }))}>
-                  <CardTitle className="text-lg flex items-center gap-2">3. Payment & Delivery</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">{t.step3PaymentTitle}</CardTitle>
                 </CardHeader>
                 {state.currentStep === 3 && (
                   <CardContent className="space-y-8 animate-in slide-in-from-top-2">
@@ -750,22 +636,23 @@ function CheckoutPageInner() {
                         <p className="text-sm text-destructive">Please select a payment method</p>
                       )}
                       <CartPaymethods
-                        user={authState.user}
                         cart={state.cart}
                         onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
+                        labels={cartPaymethodsLabels}
                       />
                     </div>
 
                     {/* Carrier */}
                     <div className="space-y-3">
                       <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Truck className="w-4 h-4" /> Carrier</h3>
-                      {state.step3Submitted && !state.selectedCarrier && (
+                      {state.step3Submitted && (state.cart?.carriers?.length ?? 0) > 0 && !state.selectedCarrier && (
                         <p className="text-sm text-destructive">Please select a carrier</p>
                       )}
                       <CartCarriers
                         cart={state.cart}
                         showPrice={false}
                         onCarrierSelect={(carrier) => setState(prev => ({ ...prev, selectedCarrier: carrier.name }))}
+                        labels={cartCarriersLabels}
                       />
                     </div>
 
@@ -776,7 +663,10 @@ function CheckoutPageInner() {
                         <p className="text-sm text-destructive">Please select a delivery date</p>
                       )}
                       <DeliveryDate
+                        cart={state.cart}
+                        initialDate={state.cart?.postageData?.requestDate as string | undefined}
                         onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
+                        labels={deliveryDateLabels}
                       />
                     </div>
 
@@ -792,15 +682,15 @@ function CheckoutPageInner() {
               {!isQuoteMode && (
                 <Card className={`${state.currentStep === 4 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">4. Review & Place Order</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step4Title}</CardTitle>
                   </CardHeader>
                   {state.currentStep === 4 && (
                     <CardContent className="animate-in slide-in-from-top-2">
                       <CartOverview
-                        graphqlClient={graphqlClient}
                         cart={state.cart}
                         onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                         onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
+                        labels={cartOverviewLabels}
                       />
                     </CardContent>
                   )}
@@ -811,7 +701,7 @@ function CheckoutPageInner() {
               {isQuoteMode && (
                 <Card className={`${state.currentStep === 3 ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">3. Quote Details</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">{t.step3QuoteTitle}</CardTitle>
                   </CardHeader>
                   {state.currentStep === 3 && (
                     <CardContent className="space-y-6 animate-in slide-in-from-top-2">
@@ -821,8 +711,9 @@ function CheckoutPageInner() {
                           id="quote-reference"
                           type="text"
                           value={quoteReference}
-                          onChange={(e) => setQuoteReference(e.target.value)}
+                          onChange={(e) => setQuoteReference(e.target.value.slice(0, 255))}
                           placeholder="Your reference (optional)"
+                          maxLength={255}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </div>
@@ -831,9 +722,10 @@ function CheckoutPageInner() {
                         <textarea
                           id="quote-notes"
                           value={quoteNotes}
-                          onChange={(e) => setQuoteNotes(e.target.value)}
+                          onChange={(e) => setQuoteNotes(e.target.value.slice(0, 255))}
                           placeholder="Additional notes for your quote request (optional)"
                           rows={4}
+                          maxLength={255}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                         />
                       </div>
@@ -854,14 +746,18 @@ function CheckoutPageInner() {
                 {/* Cart Items */}
                 <Card className="border-none">
                   <CardHeader className='p-0 px-6 pt-6'>
-                    <CardTitle className="text-lg">Cart Items</CardTitle>
+                    <CardTitle className="text-lg">{t.cartItemsTitle}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ItemsOverview
                       cart={state.cart}
                       showAvailability={false}
                       itemNameClickable={false}
+                      labels={itemsOverviewLabels}
                     />
+                    {/* Bonus items — free items added via incentives.
+                        currency/includeTax/language resolve from PropellerProvider. */}
+                    <CartBonusItems cart={state.cart} labels={cartBonusItemsLabels} />
                   </CardContent>
                 </Card>
 
@@ -871,8 +767,17 @@ function CheckoutPageInner() {
                     {state.cart && (
                       <CartSummary
                         cart={state.cart}
-                        title="Order Summary"
+                        title={t.orderSummaryTitle}
                         showCheckoutButton={false}
+                        afterRequestAuthorization={(updatedCart) => {
+                          // If a manager parked their own cart to act on this
+                          // request, hand it back; otherwise clear.
+                          const parked = restoreManagerCart();
+                          if (parked) saveCart(parked); else clearCart();
+                          router.push(localizeHref(`/authorization-request-sent/${updatedCart.cartId}`, language));
+                        }}
+                        onError={(err) => console.error('Authorization request failed:', err)}
+                        labels={cartSummaryLabels}
                       />
                     )}
                   </CardContent>

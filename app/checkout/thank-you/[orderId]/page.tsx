@@ -7,19 +7,18 @@ import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
-import { orderService } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useOrders } from 'propeller-v2-react-ui';
+import { graphqlClient } from '@/lib/api';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import OrderSummary from '@/components/propeller/OrderSummary';
-import { OrderItem } from 'propeller-sdk-v2';
-import OrderItemCard from '@/components/propeller/OrderItemCard';
-import OrderTotals from '@/components/propeller/OrderTotals';
-
-interface OrderDetails {
-  orderId: string;
-  order: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  items?: OrderItem[];
-}
+import { OrderSummary } from 'propeller-v2-react-ui';
+import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
+import { OrderItemCard } from 'propeller-v2-react-ui';
+import { OrderBonusItems } from 'propeller-v2-react-ui';
+import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
 
 function ThankYouPageInner() {
   const params = useParams();
@@ -28,36 +27,31 @@ function ThankYouPageInner() {
   const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
   const { state: authState } = useAuth();
-  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const orderSummaryLabels = useTranslations('OrderSummary');
+  const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+  const orderItemCardLabels = useTranslations('OrderItemCard');
+
+  const { getOrderById } = useOrders({
+    graphqlClient,
+    user: authState.user,
+    language,
+    configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+  });
+
   const fetchOrderDetails = useCallback(async () => {
     if (!orderId) return;
-
-    try {
-      setLoading(true);
-
-      const variables = {
-        orderId: Number(orderId),
-        imageSearchFilters: imageSearchFiltersGrid,
-        imageVariantFilters: imageVariantFiltersSmall,
-        language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL'
-      };
-
-      const order = await orderService.getOrder(variables);
-
-      setOrderDetails({
-        orderId: orderId,
-        order: order,
-        items: order.items || [],
-      });
-    } catch (err) {
-      console.error('Failed to fetch order details:', err);
-      setError('Failed to load order details');
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const result = await getOrderById(Number(orderId));
+    if (result.success && result.order) {
+      setOrder(result.order);
+    } else {
+      setError(result.error ?? 'Failed to load order details');
     }
+    setLoading(false);
   }, [orderId]);
 
   useEffect(() => {
@@ -83,10 +77,8 @@ function ThankYouPageInner() {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-12 text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Oops! Something went wrong</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Link href={localizeHref('/', language)} className="px-6 py-2 bg-primary text-white rounded hover:bg-primary/80">Return to Home</Link>
+        <main className="flex-1 container mx-auto px-4 py-12">
+          <AccessErrorView kind={classifyApiError(error)} />
         </main>
         <Footer />
       </div>
@@ -115,13 +107,15 @@ function ThankYouPageInner() {
             </p>
           </div>
 
-          {orderDetails && (
+          {order && (
             <div className="space-y-8">
               {/* Order Summary */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <OrderSummary
-                  order={orderDetails.order}
+                  order={order}
+                  countries={COUNTRIES}
                   title="Order Summary"
+                  labels={orderSummaryLabels}
                 />
               </div>
 
@@ -131,7 +125,7 @@ function ThankYouPageInner() {
 
                   {/* Regular Products (grouped parent/child) */}
                   {(() => {
-                      const allProducts = orderDetails.order.items?.filter((item: OrderItem) =>
+                      const allProducts = order.items?.filter((item: OrderItem) =>
                           item.class === "product" && item.isBonus === "N"
                       ) || [];
                       const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
@@ -158,6 +152,7 @@ function ThankYouPageInner() {
                                               key={item.id}
                                               orderItem={item}
                                               childItems={childMap.get(item.id) || []}
+                                              labels={orderItemCardLabels}
                                           />
                                       ))}
                                   </table>
@@ -168,66 +163,8 @@ function ThankYouPageInner() {
                   })()}
 
                   {/* Bonus Items */}
-                  {(() => {
-                      const bonusItems = orderDetails.order.items?.filter((item: OrderItem) =>
-                          item.class === "product" && item.isBonus === "Y"
-                      );
-
-                      if (bonusItems?.length > 0) {
-                          return (
-                              <div className="mb-8">
-                                  <h3 className="text-lg font-bold mb-3 text-gray-800">Bonus Items</h3>
-                                  <div className="bg-white rounded-lg shadow overflow-hidden">
-                                      <table className="w-full">
-                                          <thead className="bg-gray-50 border-b">
-                                              <tr>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                                                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
-                                              </tr>
-                                          </thead>
-                                          {bonusItems.map((item: OrderItem) => (
-                                              <OrderItemCard
-                                                  key={item.id}
-                                                  orderItem={item}
-                                                  titleLinkable={false}
-                                              />
-                                          ))}
-                                      </table>
-                                  </div>
-                              </div>
-                          );
-                      }
-                      return null;
-                  })()}
-
-                  {/* Surcharges */}
-                  {(() => {
-                      const surcharges = orderDetails.order.items?.filter((item: OrderItem) => item.class === "surcharge");
-
-                      if (surcharges?.length > 0) {
-                          return (
-                              <div className="mb-8">
-                                  <h3 className="text-lg font-bold mb-3 text-gray-800">Surcharges</h3>
-                                  <div className="bg-white rounded-lg shadow overflow-hidden">
-                                      <table className="w-full">
-                                          {surcharges.map((item: OrderItem) => (
-                                              <OrderItemCard
-                                                  key={item.id}
-                                                  orderItem={item}
-                                                  titleLinkable={false}
-                                                  showImage={false}
-                                                  showSku={false}
-                                              />
-                                          ))}
-                                      </table>
-                                  </div>
-                              </div>
-                          );
-                      }
-                      return null;
-                  })()}
-              </div>  
+                  <OrderBonusItems order={order} labels={orderBonusItemsLabels} />
+              </div>
 
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">

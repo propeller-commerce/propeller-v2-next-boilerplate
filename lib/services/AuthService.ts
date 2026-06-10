@@ -1,26 +1,8 @@
-import { LoginService, UserService, LoginInput } from 'propeller-sdk-v2';
-import { graphqlClient } from '../api';
+import { LoginService, UserService, LoginInput } from '@propeller-commerce/propeller-sdk-v2';
+import { graphqlClient, toPlain } from '../api';
+import { pickUserHint } from '../userHint';
 import toast from 'react-hot-toast';
-import { ViewerInput } from 'propeller-sdk-v2/dist/service/UserService';
-
-/**
- * Recursively converts an SDK class instance (or any nested object/array) to a
- * plain object, stripping the leading underscore that the SDK uses for private
- * backing fields (e.g. _items → items, _firstName → firstName).
- */
-function deepPlain(value: unknown): unknown {
-    if (value === null || value === undefined) return value;
-    if (Array.isArray(value)) return value.map(deepPlain);
-    if (typeof value === 'object') {
-        const result: Record<string, unknown> = {};
-        for (const key of Object.keys(value as object)) {
-            const cleanKey = key.startsWith('_') ? key.slice(1) : key;
-            result[cleanKey] = deepPlain((value as Record<string, unknown>)[key]);
-        }
-        return result;
-    }
-    return value;
-}
+import { ViewerInput } from '@propeller-commerce/propeller-sdk-v2';
 
 export class AuthService {
     private loginService: LoginService;
@@ -84,15 +66,22 @@ export class AuthService {
                 };
             }
 
-            // Store tokens and user data
+            // Persist the token in an httpOnly cookie (server-side) instead of
+            // localStorage — JS can no longer read it, closing the XSS
+            // token-theft hole. The in-memory graphqlClient header (set above)
+            // keeps this page session working; the cookie keeps auth alive
+            // across reloads via the /api/graphql proxy.
             if (typeof window !== 'undefined') {
-                localStorage.setItem('accessToken', accessToken);
-                localStorage.setItem('refreshToken', refreshToken);
-                localStorage.setItem('user', JSON.stringify(deepPlain(user)));
-            }
-
-            // Dispatch event for AuthContext
-            if (typeof window !== 'undefined') {
+                await fetch('/api/auth/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken, refreshToken }),
+                });
+                // Persist ONLY the thin render hint (id, type, name,
+                // companyId) — never the full Contact. The full profile is
+                // re-fetched via getViewer() on mount; see lib/userHint.ts.
+                const hint = pickUserHint(toPlain(user));
+                if (hint) localStorage.setItem('user', JSON.stringify(hint));
                 window.dispatchEvent(new CustomEvent('userLoggedIn'));
             }
 
@@ -111,25 +100,19 @@ export class AuthService {
      */
     async logout(): Promise<void> {
         try {
-            // Clear auth header
+            // Clear the in-memory SDK token for this page session.
+            graphqlClient.clearAccessToken();
             const currentConfig = graphqlClient.getConfig();
             const newHeaders = { ...currentConfig.headers };
             delete newHeaders['Authorization'];
+            graphqlClient.updateConfig({ headers: newHeaders });
 
-            graphqlClient.updateConfig({
-                headers: newHeaders
-            });
-
-            // Clear localStorage
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
+                // Clear the httpOnly auth cookie server-side.
+                await fetch('/api/auth/logout', { method: 'POST' });
+                // Only the non-sensitive render hints live in localStorage now.
                 localStorage.removeItem('user');
                 localStorage.removeItem('cart');
-            }
-
-            // Dispatch event for AuthContext
-            if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('userLoggedOut'));
             }
 

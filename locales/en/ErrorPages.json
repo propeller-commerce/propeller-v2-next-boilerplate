@@ -1,0 +1,13 @@
+{
+  "backToHome": "Back to home",
+  "backToOrders": "Back to my orders",
+  "backToQuoteRequests": "Back to my quote requests",
+  "backToQuotes": "Back to my quotes",
+  "genericErrorMessage": "We hit an unexpected error. Please try again, or go back to the previous page.",
+  "genericErrorTitle": "Something went wrong",
+  "notAuthorizedMessage": "You don't have permission to view this page. If you think this is a mistake, try signing in with a different account.",
+  "notAuthorizedTitle": "Access denied",
+  "notFoundMessage": "We couldn't find what you were looking for.",
+  "notFoundTitle": "Not found",
+  "signInButton": "Sign in"
+}

@@ -1,0 +1,238 @@
+'use client';
+
+/**
+ * ──────────────────────────────────────────────────────────────────────────
+ * LEGACY CSR variant of the Product detail page.
+ *
+ * The original fully client-side PDP — restored from commit c5652f2 (the
+ * last `'use client'` version, immediately before the C0 work turned the
+ * canonical PDP into a Server Component). Reachable at
+ * `/csr/product/[productId]/[slug]`.
+ *
+ * The CANONICAL page is the hybrid-SSR version at
+ * `app/product/[productId]/[slug]/page.tsx` (server-rendered above-the-fold
+ * + client islands).
+ *
+ * NOTE: this is NOT a verbatim `git show` restore. c5652f2 predates the
+ * Phase E package extraction, so its `@/components/propeller/...` and
+ * `@/composables/shared/utils/...` imports no longer resolve. The component
+ * *logic* is verbatim; only the import lines were relinked to the current
+ * `propeller-v2-react-ui` package. Unlike the canonical PDP, the pure
+ * display components are imported from the package main entry (not
+ * `/pure`) — this page is a single `"use client"` boundary by design.
+ *
+ * Do not add features here — change the SSR page. This copy exists only so
+ * the pre-SSR behaviour stays observable side-by-side.
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import { useCart } from '@/context/CartContext';
+import { imageSearchFilters, imageVariantFiltersLarge } from '@/data/defaults';
+import { Card } from '@/components/ui/Card';
+import { CrossupsellType, Product, ProductPrice as ProductPriceSDK } from '@propeller-commerce/propeller-sdk-v2';
+import {
+  AddToCart,
+  ItemStock,
+  ProductInfo,
+  ProductGallery,
+  ProductPrice,
+  ProductShortDescription,
+  ProductBulkPrices,
+  Breadcrumbs,
+  ProductTabs,
+  ProductSlider,
+  ProductBundles,
+  AddToFavorite,
+} from 'propeller-v2-react-ui';
+import { usePrice } from '@/context/PriceContext';
+import { graphqlClient } from '@/lib/api';
+import { useTranslations } from '@/lib/i18n/client';
+import { useAuth } from '@/context/AuthContext';
+import { config, localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
+import { getLanguageString } from 'propeller-v2-react-ui/shared';
+
+export default function ProductPage() {
+  const params = useParams();
+  const { state, refreshUser } = useAuth();
+  const productId = parseInt(params.productId as string);
+  const [product, setProduct] = useState<Product | null>(null);
+  const { cart, saveCart } = useCart();
+  const router = useRouter();
+  const { includeTax } = usePrice();
+  const { language } = useLanguage();
+  const bulkPricesLabels = useTranslations('ProductBulkPrices');
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
+  const itemStockLabels = useTranslations('ItemStock');
+  const addToCartLabels = useTranslations('AddToCart');
+  const addToFavoriteLabels = useTranslations('AddToFavorite');
+  const productTabsLabels = useTranslations('ProductTabs');
+  const productBundlesLabels = useTranslations('ProductBundles');
+  const productSliderLabels = useTranslations('ProductSlider');
+  const productGalleryLabels = useTranslations('ProductGallery');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const productPriceLabels = useTranslations('ProductPrice');
+  const images: string[] = product?.media?.images?.items
+    ?.map(image => image.imageVariants?.[0]?.url)
+    .filter((url): url is string => !!url) ?? [];
+
+  const price = product?.price as ProductPriceSDK;
+
+  // Update URL slug when language or product changes — use history.replaceState
+  // to avoid a Next.js re-render cascade that would trigger a second API fetch.
+  useEffect(() => {
+    if (!product) return;
+    const match = product.slugs?.find((s: { language?: string; value?: string }) => s.language === language);
+    const slug = match?.value || product.slugs?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (slug && slug !== currentSlug) {
+      window.history.replaceState(null, '', localizeHref(`/csr/product/${productId}/${slug}`, language));
+    }
+  }, [product, language, productId]);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+      <main className="flex-1 py-12">
+        <div className="container-width max-w-5xl">
+          <div className="propeller-breadcrumbs mb-6">
+            <Breadcrumbs
+              categoryPath={product?.categoryPath || []}
+              currentCategory={product?.category || undefined}
+              currentLabel={product ? getLanguageString(product.names, language, '') : undefined}
+              labels={breadcrumbsLabels}
+            />
+          </div>
+
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            {/* Left: Image Gallery */}
+            <div className="bg-white rounded-lg shadow p-6">
+              {/* Gallery Column */}
+              <ProductGallery images={images} labels={productGalleryLabels} />
+            </div>
+
+            {/* Details Column */}
+            <div className="flex flex-col">
+              <div className="mb-6">
+                <ProductInfo
+                  productId={productId}
+                  imageSearchFilters={imageSearchFilters}
+                  imageVariantFilters={imageVariantFiltersLarge}
+                  onProductLoaded={setProduct}
+                />
+
+                <ProductPrice price={price} />
+                <div className="mt-6">
+                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ ...bulkPricesLabels, title: '' }} />
+                </div>
+                <div className="mt-6">
+                  <ProductShortDescription product={product as Product} />
+                </div>
+
+                {product?.inventory && (
+                  <div className="mt-4">
+                    <ItemStock inventory={product.inventory} showAvailability={false} labels={itemStockLabels} />
+                  </div>
+                )}
+              </div>
+
+              {product && (
+                <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
+                  <div className="flex items-center gap-2">
+                    <AddToCart
+                      product={product}
+                      cartId={cart?.cartId}
+                      createCart={true}
+                      onCartCreated={(cart) => {
+                        saveCart(cart);
+                      }}
+                      className='flex items-center w-full gap-2'
+                      showModal={true}
+                      afterAddToCart={(cart) => {
+                        saveCart(cart);
+                      }}
+                      onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+                      onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+                      labels={addToCartLabels} />
+                    <AddToFavorite
+                      productId={product.productId}
+                      onFavoriteChanged={refreshUser}
+                      labels={addToFavoriteLabels}
+                    />
+                  </div>
+                </Card>
+              )}
+
+            </div>
+          </div>
+          <ProductTabs product={product as Product} productId={productId} labels={productTabsLabels} />
+          <div className="my-6">
+            <ProductBundles
+              productId={productId}
+              cartId={cart?.cartId}
+              taxZone="NL"
+              createCart={true}
+              showModal={true}
+              onCartCreated={(newCart) => saveCart(newCart)}
+              afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
+              onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+              labels={productBundlesLabels}
+            />
+          </div>
+          <ProductSlider
+            crossUpsellTypes={[CrossupsellType.ACCESSORIES]}
+            productId={productId}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
+          />
+          <ProductSlider
+            crossUpsellTypes={[CrossupsellType.RELATED]}
+            productId={productId}
+            taxZone="NL"
+            showAvailability={false}
+            showStock={true}
+            cartId={cart?.cartId}
+            createCart={true}
+            onCartCreated={(newCart) => saveCart(newCart)}
+            afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            showModal={true}
+            onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+            onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+            onProductClick={(p) => router.push(config.urls.getProductUrl(p, language))}
+            onClusterClick={(c) => router.push(config.urls.getClusterUrl(c, language))}
+            labels={productSliderLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
+          />
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}

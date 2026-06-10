@@ -57,15 +57,18 @@ mirror_to_github:
     - git --version
   script:
     - echo "Mirroring to GitHub (scrubbed)..."
-    - test -n "${GITHUB_TOKEN}" || { echo "GITHUB_TOKEN is empty (is the branch protected?); aborting."; exit 1; }
+    - 'GHTOKEN=$(printf "%s" "${GITHUB_TOKEN}" | tr -d " \t\r\n")'
+    - test -n "${GHTOKEN}" || { echo "GITHUB_TOKEN is empty (is the branch protected?); aborting."; exit 1; }
+    - 'echo "token length: $(printf "%s" "${GHTOKEN}" | wc -c)"'
     - git config --global user.email "ci@propeller-commerce.com"
     - git config --global user.name "GitLab CI"
-    - git remote add github https://x-access-token:${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
+    - 'AUTH_HEADER="Authorization: Basic $(printf "x-access-token:%s" "${GHTOKEN}" | base64 | tr -d "\n")"'
+    - git remote add github https://github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
     - git fetch origin --unshallow || git fetch origin || true
     - git rm -r --cached --ignore-unmatch .claude CLAUDE.md frontend/CLAUDE.md memory Taskfile.yml >/dev/null 2>&1 || true
     - 'git commit -m "chore(mirror): strip private dev files for public mirror" --no-verify || echo "nothing to scrub"'
-    - git push --no-thin github HEAD:refs/heads/master --force
-    - git push --no-thin github --tags --force
+    - git -c http.extraheader="${AUTH_HEADER}" push --no-thin github HEAD:refs/heads/master --force
+    - git -c http.extraheader="${AUTH_HEADER}" push --no-thin github --tags --force
   when: on_success
   allow_failure: false
 
@@ -91,10 +94,12 @@ release_to_github:
     - 'echo "package.json version: ${VERSION}"'
     - test -n "$VERSION" || { echo "Could not parse version; aborting."; exit 1; }
     - TAG="v${VERSION}"
-    - test -n "${GITHUB_TOKEN}" || { echo "GITHUB_TOKEN is empty; aborting."; exit 1; }
-    - git remote add github https://x-access-token:${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
+    - 'GHTOKEN=$(printf "%s" "${GITHUB_TOKEN}" | tr -d " \t\r\n")'
+    - test -n "${GHTOKEN}" || { echo "GITHUB_TOKEN is empty; aborting."; exit 1; }
+    - 'AUTH_HEADER="Authorization: Basic $(printf "x-access-token:%s" "${GHTOKEN}" | base64 | tr -d "\n")"'
+    - git remote add github https://github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
     - |
-      if git ls-remote --tags github "refs/tags/${TAG}" | grep -q "${TAG}"; then
+      if git -c http.extraheader="${AUTH_HEADER}" ls-remote --tags github "refs/tags/${TAG}" | grep -q "${TAG}"; then
         echo "Tag ${TAG} already on GitHub - release already cut, nothing to do.";
         exit 0;
       fi
@@ -114,13 +119,13 @@ release_to_github:
     - git config --global user.email "ci@propeller-commerce.com"
     - git config --global user.name "GitLab CI"
     - git tag -a "${TAG}" -m "Release ${TAG}" || true
-    - git push --no-thin github "refs/tags/${TAG}"
+    - git -c http.extraheader="${AUTH_HEADER}" push --no-thin github "refs/tags/${TAG}"
     - |
       PAYLOAD=$(jq -n --arg tag "$TAG" --arg name "$TAG" \
         --rawfile body RELEASE_BODY.md \
         '{tag_name:$tag, name:$name, body:$body, draft:false, prerelease:false}')
       HTTP=$(curl -sS -o resp.json -w "%{http_code}" -X POST \
-        -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Authorization: token ${GHTOKEN}" \
         -H "Accept: application/vnd.github+json" \
         https://api.github.com/repos/propeller-commerce/propeller-v2-next-boilerplate/releases \
         -d "$PAYLOAD")

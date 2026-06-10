@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { graphqlClient } from '@/lib/api';
-import { useMenu, type MenuCategory } from 'propeller-v2-react-ui';
+import { useMenu, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';

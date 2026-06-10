@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { ForgotPassword } from 'propeller-v2-react-ui';
+import { ForgotPassword } from '@propeller-commerce/propeller-v2-react-ui';
 import { localizeHref } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import { useLanguage } from '@/context/LanguageContext';

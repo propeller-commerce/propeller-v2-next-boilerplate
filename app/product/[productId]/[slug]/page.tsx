@@ -36,13 +36,13 @@ import {
   ProductShortDescription,
   ItemStock,
   ProductJsonLd,
-} from 'propeller-v2-react-ui/pure';
+} from '@propeller-commerce/propeller-v2-react-ui/pure';
 // ProductGallery is interactive (Swiper, state) — stays on the client entry.
-import { ProductGallery } from 'propeller-v2-react-ui';
+import { ProductGallery } from '@propeller-commerce/propeller-v2-react-ui';
 import { fetchProduct, getServerInfra, getAnonymousInfra } from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { config } from '@/data/config';
-import { getLanguageString } from 'propeller-v2-react-ui/shared';
+import { getLanguageString } from '@propeller-commerce/propeller-v2-react-ui/shared';
 import {
   resolveSeoTitle,
   resolveSeoDescription,

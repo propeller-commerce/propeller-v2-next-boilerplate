@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { config, localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { OrderList } from 'propeller-v2-react-ui';
+import { OrderList } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
 
 

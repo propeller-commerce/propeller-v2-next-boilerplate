@@ -5,7 +5,7 @@
  *
  * NOT linked from anywhere in the live navigation.
  */
-import { Breadcrumbs } from 'propeller-v2-react-ui';
+import { Breadcrumbs } from '@propeller-commerce/propeller-v2-react-ui';
 
 export default function StylingTestPage() {
   return (

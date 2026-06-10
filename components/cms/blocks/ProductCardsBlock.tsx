@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { CmsProductCards } from '@/lib/cms/types';
 import { useTranslations } from '@/lib/i18n/client';
-import { ProductSlider } from 'propeller-v2-react-ui';
+import { ProductSlider } from '@propeller-commerce/propeller-v2-react-ui';
 import { useCart } from '@/context/CartContext';
 
 export default function ProductCardsBlock({ block }: { block: CmsProductCards }) {

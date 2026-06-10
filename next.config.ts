@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   // Turbopack's RSC analyzer needs the source pulled into the same build
   // graph) and widen the file-tracing root so symlinks outside this repo
   // aren't pruned at build time.
-  transpilePackages: ['propeller-v2-react-ui'],
+  transpilePackages: ['@propeller-commerce/propeller-v2-react-ui'],
   outputFileTracingRoot: resolve(__dirname, '..', '..'),
   images: {
     dangerouslyAllowLocalIP: true,

@@ -48,14 +48,14 @@ import {
   ProductSlider,
   ProductBundles,
   AddToFavorite,
-} from 'propeller-v2-react-ui';
+} from '@propeller-commerce/propeller-v2-react-ui';
 import { usePrice } from '@/context/PriceContext';
 import { graphqlClient } from '@/lib/api';
 import { useTranslations } from '@/lib/i18n/client';
 import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { getLanguageString } from 'propeller-v2-react-ui/shared';
+import { getLanguageString } from '@propeller-commerce/propeller-v2-react-ui/shared';
 
 export default function ProductPage() {
   const params = useParams();

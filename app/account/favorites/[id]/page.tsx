@@ -8,11 +8,11 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
 import { type FavoriteList } from '@propeller-commerce/propeller-sdk-v2';
 import { graphqlClient } from '@/lib/api';
-import { useFavorites } from 'propeller-v2-react-ui';
+import { useFavorites } from '@propeller-commerce/propeller-v2-react-ui';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { FavoriteListDetails } from 'propeller-v2-react-ui';
+import { FavoriteListDetails } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
 
 export default function FavoriteListPage() {

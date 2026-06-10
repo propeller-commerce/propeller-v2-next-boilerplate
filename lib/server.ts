@@ -77,7 +77,7 @@ import {
   SortOrder,
   ProductSearchableField,
 } from '@propeller-commerce/propeller-sdk-v2';
-import { createServices, toPlain, type Services, type MenuCategory } from 'propeller-v2-react-ui/shared';
+import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
 
 // ── Cache control: tags + revalidate window ─────────────────────────────────
 // (see `tagFor` below and the `cacheable` flag on `ServerInfra`)

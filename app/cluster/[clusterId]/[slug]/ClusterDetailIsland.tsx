@@ -33,7 +33,7 @@ import {
   AddToFavorite,
   ProductTabs,
   ProductSlider,
-} from 'propeller-v2-react-ui';
+} from '@propeller-commerce/propeller-v2-react-ui';
 import {
   Cart,
   Cluster,

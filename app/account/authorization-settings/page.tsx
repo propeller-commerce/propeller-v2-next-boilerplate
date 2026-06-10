@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { PurchaseAuthorizationConfigurator } from 'propeller-v2-react-ui';
+import { PurchaseAuthorizationConfigurator } from '@propeller-commerce/propeller-v2-react-ui';
 import { Contact, Customer, Company } from '@propeller-commerce/propeller-sdk-v2';
 import { orderEditorGraphqlClient } from '@/lib/api';
 import { useTranslations } from '@/lib/i18n/client';

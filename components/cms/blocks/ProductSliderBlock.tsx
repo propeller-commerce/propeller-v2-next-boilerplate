@@ -1,6 +1,6 @@
 'use client';
 
-import { ProductSlider } from 'propeller-v2-react-ui';
+import { ProductSlider } from '@propeller-commerce/propeller-v2-react-ui';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';

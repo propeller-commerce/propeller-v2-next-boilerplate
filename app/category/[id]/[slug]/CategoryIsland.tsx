@@ -35,7 +35,7 @@ import {
   GridPagination,
   CategoryDescription,
   Breadcrumbs,
-} from 'propeller-v2-react-ui';
+} from '@propeller-commerce/propeller-v2-react-ui';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';

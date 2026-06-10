@@ -25,7 +25,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
-import { GridTitle, ItemListJsonLd } from 'propeller-v2-react-ui/pure';
+import { GridTitle, ItemListJsonLd } from '@propeller-commerce/propeller-v2-react-ui/pure';
 import {
   getListingInfra,
   getAnonymousInfra,

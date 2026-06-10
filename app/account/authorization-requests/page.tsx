@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { PurchaseAuthorizationRequests } from 'propeller-v2-react-ui';
+import { PurchaseAuthorizationRequests } from '@propeller-commerce/propeller-v2-react-ui';
 import { serializeCart } from '@/utils/cartHelpers';
 import { Contact, Customer, Cart } from '@propeller-commerce/propeller-sdk-v2';
 import { useTranslations } from '@/lib/i18n/client';

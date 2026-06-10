@@ -6,7 +6,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode, use
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
 import { graphqlClient } from '@/lib/api';
-import { toPlain } from 'propeller-v2-react-ui';
+import { toPlain } from '@propeller-commerce/propeller-v2-react-ui';
 import { localizeHref } from '@/data/config';
 import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
 

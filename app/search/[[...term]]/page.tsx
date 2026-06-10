@@ -19,7 +19,7 @@
 import { Suspense } from 'react';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
-import { GridTitle, ItemListJsonLd } from 'propeller-v2-react-ui/pure';
+import { GridTitle, ItemListJsonLd } from '@propeller-commerce/propeller-v2-react-ui/pure';
 import {
   ProductSortField,
   type Product,

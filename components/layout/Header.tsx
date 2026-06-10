@@ -9,24 +9,24 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import type { MenuCategory } from 'propeller-v2-react-ui/shared';
-import { SearchBar } from 'propeller-v2-react-ui';
-import { Menu as PropellerMenu } from 'propeller-v2-react-ui';
-import { PriceToggle } from 'propeller-v2-react-ui';
+import type { MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
+import { SearchBar } from '@propeller-commerce/propeller-v2-react-ui';
+import { Menu as PropellerMenu } from '@propeller-commerce/propeller-v2-react-ui';
+import { PriceToggle } from '@propeller-commerce/propeller-v2-react-ui';
 import { services } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import { restoreManagerCart } from '@/utils/cartHelpers';
-import { CartIconAndSidebar } from 'propeller-v2-react-ui';
-import { AccountIconAndMenu } from 'propeller-v2-react-ui';
-import { CompanySwitcher } from 'propeller-v2-react-ui';
+import { CartIconAndSidebar } from '@propeller-commerce/propeller-v2-react-ui';
+import { AccountIconAndMenu } from '@propeller-commerce/propeller-v2-react-ui';
+import { CompanySwitcher } from '@propeller-commerce/propeller-v2-react-ui';
 import { useCompany } from '@/context/CompanyContext';
 import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
-import { fetchActiveCart as fetchActiveCartShared } from 'propeller-v2-react-ui';
-import { mergeAnonymousCart } from 'propeller-v2-react-ui';
-import { initCart } from 'propeller-v2-react-ui';
+import { fetchActiveCart as fetchActiveCartShared } from '@propeller-commerce/propeller-v2-react-ui';
+import { mergeAnonymousCart } from '@propeller-commerce/propeller-v2-react-ui';
+import { initCart } from '@propeller-commerce/propeller-v2-react-ui';
 
 /**
  * Props for the Header.

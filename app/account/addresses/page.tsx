@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { graphqlClient } from '@/lib/api';
-import { AddressCard } from 'propeller-v2-react-ui';
+import { AddressCard } from '@propeller-commerce/propeller-v2-react-ui';
 import { Address, AddressType, Company, Contact, Customer, YesNo } from '@propeller-commerce/propeller-sdk-v2';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
-import { useAddress, type AddressInput } from 'propeller-v2-react-ui';
-import { COUNTRIES } from 'propeller-v2-react-ui';
+import { useAddress, type AddressInput } from '@propeller-commerce/propeller-v2-react-ui';
+import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
 
 // COUNTRIES imported from shared utils

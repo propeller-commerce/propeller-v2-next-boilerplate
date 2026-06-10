@@ -1,5 +1,5 @@
 import { registry } from '@/locales/_registry';
-import type { TranslationProvider } from 'propeller-v2-react-ui';
+import type { TranslationProvider } from '@propeller-commerce/propeller-v2-react-ui';
 
 export function createFileProvider(): TranslationProvider {
   return {

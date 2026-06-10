@@ -31,7 +31,7 @@ import {
   PropellerProvider,
   type PropellerDeps,
   type PropellerScope,
-} from 'propeller-v2-react-ui';
+} from '@propeller-commerce/propeller-v2-react-ui';
 
 // Tier 1 deps are module-constant — graphqlClient/services/config never
 // change at runtime, so hoist outside the component to avoid a fresh object

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
-import { FavoriteLists } from 'propeller-v2-react-ui';
+import { FavoriteLists } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
 
 export default function FavoritesPage() {

@@ -27,7 +27,7 @@
  */
 
 import { GraphQLClient, type GraphQLClientConfig } from '@propeller-commerce/propeller-sdk-v2';
-import { createServices, toPlain, type Services } from 'propeller-v2-react-ui';
+import { createServices, toPlain, type Services } from '@propeller-commerce/propeller-v2-react-ui';
 
 const config: GraphQLClientConfig = {
   // Point at our own Next.js proxy. The route handler at

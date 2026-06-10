@@ -42,6 +42,11 @@ deploy:
 # Requires CI/CD variable GITHUB_TOKEN (repo scope), Masked + Protected.
 mirror_to_github:
   stage: mirror
+  # Decouple from the deploy pipeline: an empty `needs` makes this job start
+  # immediately at pipeline creation instead of waiting for the source/build/
+  # deploy stages (which run `devbox` on self-hosted runners and may not run
+  # on every push). The mirror must publish regardless of the deploy outcome.
+  needs: []
   image:
     name: alpine/git:latest
     entrypoint: [""]

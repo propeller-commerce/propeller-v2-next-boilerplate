@@ -51,16 +51,16 @@ mirror_to_github:
     name: alpine/git:latest
     entrypoint: [""]
   only:
-    - develop
     - master
     - main
   before_script:
     - git --version
   script:
     - echo "Mirroring to GitHub (scrubbed)..."
+    - test -n "${GITHUB_TOKEN}" || { echo "GITHUB_TOKEN is empty (is the branch protected?); aborting."; exit 1; }
     - git config --global user.email "ci@propeller-commerce.com"
     - git config --global user.name "GitLab CI"
-    - git remote add github https://${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
+    - git remote add github https://x-access-token:${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
     - git fetch origin --unshallow || git fetch origin || true
     - git rm -r --cached --ignore-unmatch .claude CLAUDE.md frontend/CLAUDE.md memory Taskfile.yml >/dev/null 2>&1 || true
     - 'git commit -m "chore(mirror): strip private dev files for public mirror" --no-verify || echo "nothing to scrub"'
@@ -91,7 +91,8 @@ release_to_github:
     - 'echo "package.json version: ${VERSION}"'
     - test -n "$VERSION" || { echo "Could not parse version; aborting."; exit 1; }
     - TAG="v${VERSION}"
-    - git remote add github https://${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
+    - test -n "${GITHUB_TOKEN}" || { echo "GITHUB_TOKEN is empty; aborting."; exit 1; }
+    - git remote add github https://x-access-token:${GITHUB_TOKEN}@github.com/propeller-commerce/propeller-v2-next-boilerplate.git || true
     - |
       if git ls-remote --tags github "refs/tags/${TAG}" | grep -q "${TAG}"; then
         echo "Tag ${TAG} already on GitHub - release already cut, nothing to do.";

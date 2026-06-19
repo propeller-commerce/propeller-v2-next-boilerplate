@@ -28,7 +28,7 @@ import {
 import {
   ProductGrid,
   GridToolbar,
-  GridFilters,
+  GridFiltersPanel,
   GridPagination,
 } from '@propeller-commerce/propeller-v2-react-ui';
 import { config, localizeHref } from '@/data/config';
@@ -327,27 +327,24 @@ export default function SearchIsland({
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
-      {/* Filters Sidebar — hidden when the search returned no results. */}
+      {/* Filters: inline sidebar at lg+, slide-in drawer below lg. Hidden when
+          the search returned no results. */}
       {!hasNoResults ? (
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <GridFilters
-            filters={gridFilters}
-            priceMin={priceBoundsMin}
-            priceMax={priceBoundsMax}
-            onFilterChange={handleFilterChange}
-            onPriceChange={handlePriceRangeChange}
-            onClearFilters={clearAllFilters}
-            isMobile={false}
-            collapsed={true}
-            clearSignal={clearSignal}
-            activeTextFilters={filters}
-            activePriceMin={minPrice}
-            activePriceMax={maxPrice}
-            isLoading={filtersLoading}
-            className=""
-            labels={gridFiltersLabels}
-          />
-        </aside>
+        <GridFiltersPanel
+          filters={gridFilters}
+          priceMin={priceBoundsMin}
+          priceMax={priceBoundsMax}
+          onFilterChange={handleFilterChange}
+          onPriceChange={handlePriceRangeChange}
+          onClearFilters={clearAllFilters}
+          collapsed={true}
+          clearSignal={clearSignal}
+          activeTextFilters={filters}
+          activePriceMin={minPrice}
+          activePriceMax={maxPrice}
+          isLoading={filtersLoading}
+          labels={gridFiltersLabels}
+        />
       ) : null}
 
       {/* Products Grid */}

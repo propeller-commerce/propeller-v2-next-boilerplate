@@ -31,7 +31,7 @@ import {
 import {
   ProductGrid,
   GridToolbar,
-  GridFilters,
+  GridFiltersPanel,
   GridPagination,
   CategoryDescription,
   Breadcrumbs,
@@ -383,26 +383,22 @@ export default function CategoryIsland({
       <CategoryDescription category={category} language={language} />
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Filters Sidebar */}
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <GridFilters
-            filters={gridFilters}
-            priceMin={priceBoundsMin}
-            priceMax={priceBoundsMax}
-            onFilterChange={handleFilterChange}
-            onPriceChange={handlePriceRangeChange}
-            onClearFilters={clearAllFilters}
-            isMobile={false}
-            collapsed={true}
-            clearSignal={clearSignal}
-            activeTextFilters={filters}
-            activePriceMin={minPrice}
-            activePriceMax={maxPrice}
-            isLoading={filtersLoading}
-            className=""
-            labels={gridFiltersLabels}
-          />
-        </aside>
+        {/* Filters: inline sidebar at lg+, slide-in drawer below lg */}
+        <GridFiltersPanel
+          filters={gridFilters}
+          priceMin={priceBoundsMin}
+          priceMax={priceBoundsMax}
+          onFilterChange={handleFilterChange}
+          onPriceChange={handlePriceRangeChange}
+          onClearFilters={clearAllFilters}
+          collapsed={true}
+          clearSignal={clearSignal}
+          activeTextFilters={filters}
+          activePriceMin={minPrice}
+          activePriceMax={maxPrice}
+          isLoading={filtersLoading}
+          labels={gridFiltersLabels}
+        />
 
         {/* Products Grid */}
         <div className="flex-1 w-full">

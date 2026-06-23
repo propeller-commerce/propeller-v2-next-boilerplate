@@ -1,6 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
 @import "tailwindcss";
 
+/* Safelist the responsive grid-column utilities the package's ProductGrid emits
+   dynamically from its `columns` prop (`grid-cols-2 lg:grid-cols-{N}`). The
+   package ships precompiled CSS with only grid-cols-1/2/3 and NO `lg:` variants,
+   and Tailwind doesn't scan node_modules JS — so `lg:grid-cols-3` (the catalog
+   grid) silently fell back to 2 columns and the grid mis-rendered. `@source
+   inline(...)` forces these utilities into the host build regardless of where
+   the class string lives. */
+@source inline("grid-cols-{1,2,3,4} lg:grid-cols-{1,2,3,4} md:grid-cols-{1,2,3,4}");
+
 :root {
   /* Base */
   --background: #ffffff;

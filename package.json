@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.4.9",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.4.12",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",

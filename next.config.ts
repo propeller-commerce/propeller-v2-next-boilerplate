@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.stream.prepr.io',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.ctfassets.net',
+      },
     ],
   },
 };

@@ -23,8 +23,8 @@
   "dependencies": {
     "@contentful/rich-text-html-renderer": "^17.2.2",
     "@contentful/rich-text-types": "^17.2.7",
-    "@propeller-commerce/propeller-sdk-v2": "^0.11.1",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.4.12",
+    "@propeller-commerce/propeller-sdk-v2": "^0.11.3",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.4.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",

@@ -423,6 +423,11 @@ function CheckoutPageInner() {
    * the hosted-checkout URL to redirect to. Returns null on failure (caller
    * surfaces the error and keeps the cart). The amount is the VAT-inclusive
    * total the shopper pays — `total.totalNet` in the SDK's (inverted) naming.
+   *
+   * Stashes the Mollie payment id in sessionStorage keyed by orderId so the
+   * thank-you page can look up the LIVE payment status on return (Mollie always
+   * redirects to the same URL regardless of outcome, so the page must resolve
+   * open / paid / failed / canceled / expired itself).
    */
   const startMolliePayment = async (orderId: number): Promise<string | null> => {
     try {
@@ -439,21 +444,26 @@ function CheckoutPageInner() {
           currency: process.env.NEXT_PUBLIC_CURRENCY_CODE || 'EUR',
           method: state.selectedPayment,
           description: `Order ${orderId}`,
-          // `clearCart=1` tells the thank-you page to clear the local cart on
-          // return — the Mollie redirect leaves the site, so the checkout never
-          // got to clear it here. Other (non-PSP) paths clear the cart inline
-          // and must NOT re-clear on thank-you (it would wipe a restored
-          // manager/authorization cart).
+          // `psp=mollie` marks this as a PSP return so the thank-you page
+          // resolves the real payment outcome (and only then clears the cart).
           redirectUrl:
             (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, '') +
             localizeHref(`/checkout/thank-you/${orderId}`, language) +
-            '?clearCart=1',
+            '?psp=mollie',
           ...(authState.user?.userId ? { userId: Number(authState.user.userId) } : {}),
         }),
       });
 
       if (!res.ok) return null;
-      const data = (await res.json()) as { checkoutUrl?: string };
+      const data = (await res.json()) as { checkoutUrl?: string; paymentId?: string };
+      // Stash the payment id so the return page can query its live status.
+      if (data.paymentId && typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem(`mollie_payment_${orderId}`, data.paymentId);
+        } catch {
+          /* sessionStorage unavailable (private mode quota) — page falls back to order status */
+        }
+      }
       return data.checkoutUrl ?? null;
     } catch (e) {
       console.error('startMolliePayment failed', e);

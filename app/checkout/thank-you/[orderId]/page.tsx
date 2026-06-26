@@ -21,50 +21,45 @@ import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
 
-/** Order statuses that mean the order is settled / paid. */
-const PAID_ORDER_STATUSES = new Set(['NEW', 'CONFIRMED', 'VALIDATED', 'COMPLETE']);
-/** Payment data statuses that mean the payment succeeded. */
-const PAID_PAYMENT_STATUSES = new Set(['PAID', 'AUTHORIZED']);
+/**
+ * Live Mollie status → how the thank-you page should behave.
+ *  - settled (open/pending/authorized/paid) → success UI, clear the cart
+ *  - failed/canceled/expired               → failure UI, keep the cart
+ * Mirrors `isSettledStatus` in the Mollie package.
+ */
+const SETTLED_MOLLIE_STATUSES = new Set(['open', 'pending', 'authorized', 'paid']);
+const FAILED_MOLLIE_STATUSES = new Set(['failed', 'canceled', 'cancelled', 'expired']);
 
-/** Derive a payment outcome from a loaded order. */
-function orderPaymentOutcome(order: Order | null): 'paid' | 'unpaid' | 'unknown' {
-  if (!order) return 'unknown';
-  const payStatus = (order.paymentData?.status || '').toUpperCase();
-  if (payStatus) {
-    if (PAID_PAYMENT_STATUSES.has(payStatus)) return 'paid';
-    // An explicit non-paid payment status (FAILED/EXPIRED/CANCELLED/OPEN/PENDING)
-    return 'unpaid';
-  }
-  // Fall back to the order status when paymentData has no status yet.
-  const status = (order.status || '').toUpperCase();
-  if (PAID_ORDER_STATUSES.has(status)) return 'paid';
-  if (status === 'UNFINISHED') return 'unpaid';
-  return 'unknown';
+/** Shape returned by GET /api/mollie/payment-status. */
+interface MollieStatusResponse {
+  ok: boolean;
+  status?: string;
+  settled?: boolean;
+  error?: string;
 }
 
-// How long to keep polling for the webhook to land before treating a PSP return
-// as failed. Mollie's webhook is async, so a freshly-paid order can still read
-// UNFINISHED for a moment when the shopper returns.
-const PSP_POLL_ATTEMPTS = 6;
-const PSP_POLL_INTERVAL_MS = 2000;
+type PaymentState = 'none' | 'resolving' | 'success' | 'failed';
 
 function ThankYouPageInner() {
   const params = useParams();
   const orderId = params?.orderId as string;
   const searchParams = useSearchParams();
   const isQuoteMode = searchParams?.get('mode') === 'quote';
-  // The Mollie redirect adds `?clearCart=1` — it marks a PSP return, so we
-  // resolve the payment outcome (and only then clear the cart / pick the UI).
+  // The Mollie redirect adds `?psp=mollie` — it marks a PSP return, so we look
+  // up the LIVE Mollie payment status and pick the UI / cart action from that.
   // Non-PSP paths omit it and are treated as already-successful placements.
-  const isPspReturn = searchParams?.get('clearCart') === '1';
+  const isPspReturn = searchParams?.get('psp') === 'mollie';
   const { language } = useLanguage();
   const { state: authState } = useAuth();
   const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // For a PSP return, whether we're still waiting for the webhook to resolve.
-  const [pspPending, setPspPending] = useState(isPspReturn);
+  // PSP payment state, resolved from the live Mollie status on return.
+  const [paymentState, setPaymentState] = useState<PaymentState>(
+    isPspReturn ? 'resolving' : 'none'
+  );
+  const [mollieStatus, setMollieStatus] = useState<string | null>(null);
   const cartClearedRef = useRef(false);
 
   const orderSummaryLabels = useTranslations('OrderSummary');
@@ -94,63 +89,85 @@ function ThankYouPageInner() {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
 
-  // PSP return: the order may read UNFINISHED for a moment while the webhook is
-  // still in flight. Poll a few times before concluding the payment failed.
+  // PSP return: resolve the real outcome from the LIVE Mollie status. Mollie
+  // redirects to the same URL whatever happened, so the order status alone can't
+  // tell open from failed — we ask Mollie directly (via our server route) using
+  // the payment id stashed by checkout in sessionStorage.
   useEffect(() => {
     if (!isPspReturn) return;
-    if (!order) return;
-    if (orderPaymentOutcome(order) === 'paid') {
-      setPspPending(false);
+    let cancelled = false;
+
+    const paymentId =
+      typeof window !== 'undefined'
+        ? window.sessionStorage.getItem(`mollie_payment_${orderId}`)
+        : null;
+
+    // No stashed payment id (e.g. returned on another device) — fall back to the
+    // order status as a best-effort signal.
+    if (!paymentId) {
+      const status = (order?.paymentData?.status || order?.status || '').toUpperCase();
+      if (status === 'PAID' || status === 'NEW' || status === 'AUTHORIZED') {
+        setPaymentState('success');
+      } else if (order) {
+        // Order loaded but not paid and we can't query Mollie → treat as failed.
+        setPaymentState('failed');
+      }
       return;
     }
-    // Still unpaid — keep polling up to a bounded number of attempts.
-    let attempts = 0;
-    let cancelled = false;
-    const tick = async () => {
-      if (cancelled) return;
-      attempts += 1;
-      const result = await getOrderById(Number(orderId));
-      if (cancelled) return;
-      if (result.success && result.order) {
-        setOrder(result.order);
-        if (orderPaymentOutcome(result.order) === 'paid') {
-          setPspPending(false);
-          return;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/mollie/payment-status?paymentId=${encodeURIComponent(paymentId)}`
+        );
+        const data = (await res.json()) as MollieStatusResponse;
+        if (cancelled) return;
+        const status = (data.status || '').toLowerCase();
+        setMollieStatus(status || null);
+        if (data.ok && (data.settled || SETTLED_MOLLIE_STATUSES.has(status))) {
+          setPaymentState('success');
+          // One-time use — clear the stash so a refresh doesn't re-query.
+          try {
+            window.sessionStorage.removeItem(`mollie_payment_${orderId}`);
+          } catch {
+            /* ignore */
+          }
+        } else if (FAILED_MOLLIE_STATUSES.has(status) || (data.ok && data.settled === false)) {
+          setPaymentState('failed');
+        } else {
+          // Couldn't resolve cleanly — don't wrongly clear the cart; show failed
+          // so the shopper can retry rather than a misleading success.
+          setPaymentState('failed');
         }
+      } catch {
+        if (!cancelled) setPaymentState('failed');
       }
-      if (attempts >= PSP_POLL_ATTEMPTS) {
-        setPspPending(false); // give up — treat as unpaid (failed/cancelled)
-        return;
-      }
-      setTimeout(tick, PSP_POLL_INTERVAL_MS);
-    };
-    const id = setTimeout(tick, PSP_POLL_INTERVAL_MS);
+    })();
+
     return () => {
       cancelled = true;
-      clearTimeout(id);
     };
-    // Only (re)start the poll loop when the order first loads on a PSP return.
+    // Re-run when the order id changes or the order first loads (for the
+    // no-payment-id fallback branch).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPspReturn, order?.id]);
+  }, [isPspReturn, orderId, order?.id]);
 
-  const outcome = orderPaymentOutcome(order);
-  // On a PSP return, "failed" = resolved (not pending) AND not paid.
-  const paymentFailed = isPspReturn && !pspPending && outcome !== 'paid';
-
-  // Clear the local cart only on a CONFIRMED-successful order. The Mollie flow
-  // redirects off-site and returns with `?clearCart=1`, so checkout never got to
-  // clear the cart — but we must NOT clear it on a failed/cancelled payment, or
-  // the shopper can't retry the still-UNFINISHED order. Non-PSP returns clear
-  // inline in checkout and omit the flag, so we leave their cart alone here (it
-  // also avoids wiping a restored manager/authorization cart).
+  // Clear the local cart only on a CONFIRMED-settled payment. The Mollie flow
+  // redirects off-site and returns with `?psp=mollie`, so checkout never got to
+  // clear the cart — but we must NOT clear it on a failed/canceled/expired
+  // payment, or the shopper can't retry the still-UNFINISHED order. Non-PSP
+  // returns clear inline in checkout and omit the flag, so we leave their cart
+  // alone here (also avoids wiping a restored manager/authorization cart).
   useEffect(() => {
     if (!isPspReturn) return;
     if (cartClearedRef.current) return;
-    if (order && outcome === 'paid') {
+    if (paymentState === 'success') {
       cartClearedRef.current = true;
       clearCart();
     }
-  }, [isPspReturn, order, outcome, clearCart]);
+  }, [isPspReturn, paymentState, clearCart]);
+
+  const paymentFailed = isPspReturn && paymentState === 'failed';
 
   if (loading) {
     return (
@@ -179,8 +196,8 @@ function ThankYouPageInner() {
     );
   }
 
-  // PSP return, payment not yet confirmed — still waiting on the webhook.
-  if (isPspReturn && pspPending && outcome !== 'paid') {
+  // PSP return, still resolving the live Mollie status.
+  if (isPspReturn && paymentState === 'resolving') {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
@@ -194,7 +211,7 @@ function ThankYouPageInner() {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Confirming your payment…</h1>
             <p className="text-lg text-gray-600">
-              We&apos;re waiting for your payment to be confirmed. This usually only takes a few seconds.
+              We&apos;re checking your payment status. This only takes a moment.
             </p>
           </div>
         </main>
@@ -217,9 +234,19 @@ function ThankYouPageInner() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Payment not completed</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              {mollieStatus === 'canceled' || mollieStatus === 'cancelled'
+                ? 'Payment canceled'
+                : mollieStatus === 'expired'
+                ? 'Payment expired'
+                : 'Payment not completed'}
+            </h1>
             <p className="text-lg text-gray-600 mb-2">
-              Your payment was not completed, so your order has not been finalized.
+              {mollieStatus === 'canceled' || mollieStatus === 'cancelled'
+                ? 'You canceled the payment, so your order has not been finalized.'
+                : mollieStatus === 'expired'
+                ? 'The payment expired before it was completed, so your order has not been finalized.'
+                : 'Your payment was not completed, so your order has not been finalized.'}
             </p>
             <p className="text-gray-600 mb-10">
               Your items are still in your cart — you can try the payment again.

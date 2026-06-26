@@ -439,9 +439,15 @@ function CheckoutPageInner() {
           currency: process.env.NEXT_PUBLIC_CURRENCY_CODE || 'EUR',
           method: state.selectedPayment,
           description: `Order ${orderId}`,
+          // `clearCart=1` tells the thank-you page to clear the local cart on
+          // return — the Mollie redirect leaves the site, so the checkout never
+          // got to clear it here. Other (non-PSP) paths clear the cart inline
+          // and must NOT re-clear on thank-you (it would wipe a restored
+          // manager/authorization cart).
           redirectUrl:
             (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, '') +
-            localizeHref(`/checkout/thank-you/${orderId}`, language),
+            localizeHref(`/checkout/thank-you/${orderId}`, language) +
+            '?clearCart=1',
           ...(authState.user?.userId ? { userId: Number(authState.user.userId) } : {}),
         }),
       });

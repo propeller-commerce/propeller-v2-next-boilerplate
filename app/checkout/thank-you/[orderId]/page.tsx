@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCart } from '@/context/CartContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
@@ -25,11 +26,17 @@ function ThankYouPageInner() {
   const orderId = params?.orderId as string;
   const searchParams = useSearchParams();
   const isQuoteMode = searchParams?.get('mode') === 'quote';
+  // The Mollie redirect adds `?clearCart=1` so we know to clear the local cart
+  // on return (the off-site PSP hop meant checkout never cleared it). Other
+  // paths clear inline and omit this, so a restored manager cart isn't wiped.
+  const shouldClearCart = searchParams?.get('clearCart') === '1';
   const { language } = useLanguage();
   const { state: authState } = useAuth();
+  const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cartClearedRef = useRef(false);
 
   const orderSummaryLabels = useTranslations('OrderSummary');
   const orderBonusItemsLabels = useTranslations('OrderBonusItems');
@@ -57,6 +64,20 @@ function ThankYouPageInner() {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
+
+  // Clear the local cart on a PSP (Mollie) return. The Mollie flow redirects
+  // off-site and comes back here with `?clearCart=1`, so the checkout never got
+  // to clear the local cart (localStorage + state). Non-PSP paths clear inline
+  // and omit the flag — we must not re-clear here, or a restored
+  // manager/authorization cart would be wiped. We clear once the order has
+  // confirmed loading, so a bad/random orderId doesn't drop a valid cart.
+  useEffect(() => {
+    if (!shouldClearCart) return;
+    if (order && !cartClearedRef.current) {
+      cartClearedRef.current = true;
+      clearCart();
+    }
+  }, [order, shouldClearCart, clearCart]);
 
   if (loading) {
     return (

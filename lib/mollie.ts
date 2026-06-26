@@ -17,7 +17,47 @@
 import 'server-only';
 
 import { MollieProvider } from '@propeller-commerce/propeller-v2-mollie';
-import { createServerClient } from '@/lib/server';
+import { GraphQLClient, type GraphQLClientConfig } from '@propeller-commerce/propeller-sdk-v2';
+
+/**
+ * Mutations the backend gates behind the order-editor API key. In `direct`
+ * mode the SDK routes these to `orderEditorApiKey` instead of `apiKey`.
+ *
+ * The SDK's built-in list (orderSetStatus, passwordResetLink,
+ * triggerQuoteSendRequest, triggerOrderSendConfirm) does NOT include the
+ * payment mutations, but our backend requires the order-editor key for them too
+ * — otherwise `paymentCreate`/`paymentUpdate` 403 with "Forbidden resource".
+ * `orderEditorMutations` REPLACES the default list, so we include the defaults
+ * plus the payment mutations.
+ */
+const MOLLIE_ORDER_EDITOR_MUTATIONS = [
+  // SDK defaults (must be repeated — this option replaces, not extends):
+  'orderSetStatus',
+  'passwordResetLink',
+  'triggerQuoteSendRequest',
+  'triggerOrderSendConfirm',
+  // Payment mutations the Mollie flow issues, gated the same way:
+  'paymentCreate',
+  'paymentUpdate',
+];
+
+/**
+ * Build the Propeller SDK client the Mollie flow uses. Server-to-server
+ * (`direct` mode) with the order-editor key — and with the payment mutations
+ * added to the order-editor set so they authenticate with that key. No bearer
+ * token: these run as the server, not a logged-in user.
+ */
+function createMollieGraphqlClient(): GraphQLClient {
+  const config: GraphQLClientConfig = {
+    endpoint: process.env.BOILERPLATE_GRAPHQL_ENDPOINT || '',
+    apiKey: process.env.BOILERPLATE_API_KEY || '',
+    orderEditorApiKey: process.env.BOILERPLATE_ORDER_EDITOR_API_KEY || '',
+    securityMode: 'direct',
+    timeout: 30000,
+    orderEditorMutations: MOLLIE_ORDER_EDITOR_MUTATIONS,
+  };
+  return new GraphQLClient(config);
+}
 
 /**
  * Whether Mollie is the active payment provider. Gated so a shop without Mollie
@@ -59,11 +99,10 @@ export function mollieWebhookUrl(): string {
 /**
  * Build a fresh `MollieProvider`.
  *
- * A new instance per request is fine (cheap): `createServerClient()` returns a
- * fresh client anyway (it closes over a per-request cookie snapshot), and the
- * Mollie client is a thin HTTP wrapper. The provider needs no auth cookie — its
- * mutations run with the server `BOILERPLATE_API_KEY` / `…_ORDER_EDITOR_API_KEY`,
- * so we don't pass a bearer token.
+ * A new instance per request is fine (cheap): the client is a thin HTTP
+ * wrapper. The provider needs no auth cookie — its mutations run with the server
+ * `BOILERPLATE_API_KEY` / `…_ORDER_EDITOR_API_KEY`, so we don't pass a bearer
+ * token.
  *
  * @throws if Mollie keys are missing (caller should guard with `isMollieEnabled`).
  */
@@ -75,9 +114,9 @@ export function getMollieProvider(): MollieProvider {
   return new MollieProvider(
     { liveApiKey, testApiKey, testMode },
     {
-      // Server SDK client in `direct` mode — carries BOILERPLATE_ORDER_EDITOR_API_KEY,
-      // which the webhook's order-status mutations require.
-      client: createServerClient(),
+      // `direct`-mode client whose order-editor set includes paymentCreate/
+      // paymentUpdate, so all of Mollie's mutations use the order-editor key.
+      client: createMollieGraphqlClient(),
       webhookUrl: mollieWebhookUrl(),
     }
   );

@@ -22,12 +22,18 @@ import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
 
 /**
- * Live Mollie status → how the thank-you page should behave.
- *  - settled (open/pending/authorized/paid) → success UI, clear the cart
- *  - failed/canceled/expired               → failure UI, keep the cart
- * Mirrors `isSettledStatus` in the Mollie package.
+ * Live Mollie status → how the thank-you page should behave. THREE outcomes:
+ *  - paid / authorized      → success UI, CLEAR the cart. The payment is captured
+ *    and the webhook will (or already did) finalize the order server-side
+ *    (setOrderStatus + deleteCart), so the local cart must go too.
+ *  - open / pending         → pending UI, KEEP the cart. The payment isn't
+ *    resolved yet and the order is still UNFINISHED — nothing has been finalized
+ *    server-side, so clearing the local cart would desync it from the live
+ *    backend cart (adding a product would silently reuse the same order's cart).
+ *  - failed/canceled/expired → failure UI, KEEP the cart so the shopper retries.
  */
-const SETTLED_MOLLIE_STATUSES = new Set(['open', 'pending', 'authorized', 'paid']);
+const SUCCESS_MOLLIE_STATUSES = new Set(['paid', 'authorized']);
+const PENDING_MOLLIE_STATUSES = new Set(['open', 'pending']);
 const FAILED_MOLLIE_STATUSES = new Set(['failed', 'canceled', 'cancelled', 'expired']);
 
 /** Shape returned by GET /api/mollie/payment-status. */
@@ -38,7 +44,7 @@ interface MollieStatusResponse {
   error?: string;
 }
 
-type PaymentState = 'none' | 'resolving' | 'success' | 'failed';
+type PaymentState = 'none' | 'resolving' | 'success' | 'pending' | 'failed';
 
 function ThankYouPageInner() {
   const params = useParams();
@@ -60,6 +66,7 @@ function ThankYouPageInner() {
     isPspReturn ? 'resolving' : 'none'
   );
   const [mollieStatus, setMollieStatus] = useState<string | null>(null);
+  const [rechecking, setRechecking] = useState(false);
   const cartClearedRef = useRef(false);
 
   const orderSummaryLabels = useTranslations('OrderSummary');
@@ -103,14 +110,14 @@ function ThankYouPageInner() {
         : null;
 
     // No stashed payment id (e.g. returned on another device) — fall back to the
-    // order status as a best-effort signal.
+    // order status as a best-effort signal. Only a fully-paid order is a success
+    // here; an UNFINISHED order is still pending (keep the cart), not failed.
     if (!paymentId) {
       const status = (order?.paymentData?.status || order?.status || '').toUpperCase();
       if (status === 'PAID' || status === 'NEW' || status === 'AUTHORIZED') {
         setPaymentState('success');
       } else if (order) {
-        // Order loaded but not paid and we can't query Mollie → treat as failed.
-        setPaymentState('failed');
+        setPaymentState('pending');
       }
       return;
     }
@@ -124,23 +131,30 @@ function ThankYouPageInner() {
         if (cancelled) return;
         const status = (data.status || '').toLowerCase();
         setMollieStatus(status || null);
-        if (data.ok && (data.settled || SETTLED_MOLLIE_STATUSES.has(status))) {
+        if (data.ok && SUCCESS_MOLLIE_STATUSES.has(status)) {
+          // Captured → the order gets finalized server-side. Clear the cart and
+          // the one-time stash so a refresh doesn't re-query.
           setPaymentState('success');
-          // One-time use — clear the stash so a refresh doesn't re-query.
           try {
             window.sessionStorage.removeItem(`mollie_payment_${orderId}`);
           } catch {
             /* ignore */
           }
-        } else if (FAILED_MOLLIE_STATUSES.has(status) || (data.ok && data.settled === false)) {
+        } else if (data.ok && PENDING_MOLLIE_STATUSES.has(status)) {
+          // Still open/pending → keep the cart; nothing is finalized yet. Keep
+          // the stash so a re-check (refresh) can pick up the resolved status.
+          setPaymentState('pending');
+        } else if (FAILED_MOLLIE_STATUSES.has(status)) {
           setPaymentState('failed');
         } else {
-          // Couldn't resolve cleanly — don't wrongly clear the cart; show failed
-          // so the shopper can retry rather than a misleading success.
-          setPaymentState('failed');
+          // Unknown/unreachable status — don't wrongly clear the cart. Show
+          // pending so the shopper can re-check rather than a misleading state.
+          setPaymentState('pending');
         }
       } catch {
-        if (!cancelled) setPaymentState('failed');
+        // Couldn't reach the status route — keep the cart, let the shopper retry
+        // the check rather than wiping their cart on a transient network error.
+        if (!cancelled) setPaymentState('pending');
       }
     })();
 
@@ -152,10 +166,12 @@ function ThankYouPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPspReturn, orderId, order?.id]);
 
-  // Clear the local cart only on a CONFIRMED-settled payment. The Mollie flow
-  // redirects off-site and returns with `?psp=mollie`, so checkout never got to
-  // clear the cart — but we must NOT clear it on a failed/canceled/expired
-  // payment, or the shopper can't retry the still-UNFINISHED order. Non-PSP
+  // Clear the local cart ONLY on a captured payment (paymentState 'success' =
+  // paid/authorized). The Mollie flow redirects off-site and returns with
+  // `?psp=mollie`, so checkout never got to clear the cart — but we must NOT
+  // clear it while open/pending (order not finalized server-side; clearing would
+  // desync the local cart from the live backend cart) or on failed/canceled/
+  // expired (shopper must be able to retry the still-UNFINISHED order). Non-PSP
   // returns clear inline in checkout and omit the flag, so we leave their cart
   // alone here (also avoids wiping a restored manager/authorization cart).
   useEffect(() => {
@@ -167,7 +183,49 @@ function ThankYouPageInner() {
     }
   }, [isPspReturn, paymentState, clearCart]);
 
+  // Manual re-check for a pending (open) payment — the shopper clicks "Check
+  // payment status" and we re-query Mollie. Resolves to success / failed / still
+  // pending. On success the cart-clearing effect above fires off paymentState.
+  const recheckStatus = useCallback(async () => {
+    const paymentId =
+      typeof window !== 'undefined'
+        ? window.sessionStorage.getItem(`mollie_payment_${orderId}`)
+        : null;
+    if (!paymentId) {
+      // Lost the id (refresh on another device) — fall back to a fresh order read.
+      await fetchOrderDetails();
+      return;
+    }
+    setRechecking(true);
+    try {
+      const res = await fetch(
+        `/api/mollie/payment-status?paymentId=${encodeURIComponent(paymentId)}`
+      );
+      const data = (await res.json()) as MollieStatusResponse;
+      const status = (data.status || '').toLowerCase();
+      setMollieStatus(status || null);
+      if (data.ok && SUCCESS_MOLLIE_STATUSES.has(status)) {
+        setPaymentState('success');
+        try {
+          window.sessionStorage.removeItem(`mollie_payment_${orderId}`);
+        } catch {
+          /* ignore */
+        }
+      } else if (FAILED_MOLLIE_STATUSES.has(status)) {
+        setPaymentState('failed');
+      } else {
+        // Still open/pending (or unknown) — stay on the pending screen.
+        setPaymentState('pending');
+      }
+    } catch {
+      // Leave it pending on a transient error.
+    } finally {
+      setRechecking(false);
+    }
+  }, [orderId, fetchOrderDetails]);
+
   const paymentFailed = isPspReturn && paymentState === 'failed';
+  const paymentPending = isPspReturn && paymentState === 'pending';
 
   if (loading) {
     return (
@@ -263,6 +321,53 @@ function ThankYouPageInner() {
                 className="px-8 py-3 bg-white border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition text-center"
               >
                 Back to Cart
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // PSP return, payment still OPEN/PENDING. The order is UNFINISHED, nothing has
+  // been finalized server-side, and the cart is preserved — the shopper can
+  // re-check the status (Mollie may still be processing) or pick up the order
+  // later. Distinct from both success and failure.
+  if (paymentPending) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-12">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Your payment is still open</h1>
+            <p className="text-lg text-gray-600 mb-2">
+              We haven&apos;t received confirmation of your payment yet. This can take a
+              moment while your bank or payment provider processes it.
+            </p>
+            <p className="text-gray-600 mb-10">
+              Your order isn&apos;t finalized yet and your items are still in your cart.
+              Check the status again in a moment, or come back later.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                type="button"
+                onClick={recheckStatus}
+                disabled={rechecking}
+                className="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/80 transition text-center disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {rechecking ? 'Checking…' : 'Check payment status'}
+              </button>
+              <Link
+                href={localizeHref('/checkout', language)}
+                className="px-8 py-3 bg-white border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition text-center"
+              >
+                Back to Checkout
               </Link>
             </div>
           </div>

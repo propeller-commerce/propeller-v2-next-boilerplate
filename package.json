@@ -25,7 +25,7 @@
     "@contentful/rich-text-types": "^17.2.7",
     "@propeller-commerce/propeller-sdk-v2": "^0.11.3",
     "@propeller-commerce/propeller-v2-mollie": "file:../npm/propeller-v2-mollie",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.4.13",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.4.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",

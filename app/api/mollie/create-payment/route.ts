@@ -28,6 +28,7 @@
 
 import { NextResponse } from 'next/server';
 import { getMollieProvider, isMollieEnabled } from '@/lib/mollie';
+import { isOnAccountMethod } from '@/lib/payments';
 
 interface CreatePaymentBody {
   orderId: number;
@@ -67,6 +68,16 @@ export async function POST(req: Request) {
 
   if (!isValid(body)) {
     return NextResponse.json({ error: 'missing or invalid fields' }, { status: 400 });
+  }
+
+  // Defense in depth: on-account methods must never reach the PSP. The client
+  // already skips Mollie for these, but guard server-side too in case the route
+  // is called directly.
+  if (isOnAccountMethod(body.method)) {
+    return NextResponse.json(
+      { error: 'on-account method does not use a PSP' },
+      { status: 400 }
+    );
   }
 
   try {

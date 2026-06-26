@@ -11,6 +11,7 @@ import { CartSummary } from '@propeller-commerce/propeller-v2-react-ui';
 import { AddressCard } from '@propeller-commerce/propeller-v2-react-ui';
 
 import { graphqlClient } from '@/lib/api';
+import { isOnAccountMethod } from '@/lib/payments';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from '@propeller-commerce/propeller-sdk-v2';
@@ -350,25 +351,40 @@ function CheckoutPageInner() {
     setState(prev => ({ ...prev, loading: true, error: null }));
     orderPlacedRef.current = true;
 
+    // Decide the PSP path up front. An order only goes through Mollie when
+    // Mollie is enabled, it's a real order (not a quote), and the method isn't
+    // on-account (e.g. REKENING / ON_ACCOUNT, which settle outside the PSP).
+    const mollieEnabled =
+      (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER || '').toLowerCase() === 'mollie';
+    const onAccount = isOnAccountMethod(state.selectedPayment);
+    const goesThroughMollie = !isQuoteMode && !onAccount && mollieEnabled;
+
+    // Order status at placement:
+    //  - quote          → REQUEST
+    //  - via Mollie      → UNFINISHED (the webhook sets the final status)
+    //  - on-account /    → NEW (settled immediately; also the fallback when
+    //    Mollie disabled       Mollie is off, so an order is never stranded
+    //                          in UNFINISHED with no payment to finish it)
+    const orderStatus = isQuoteMode ? 'REQUEST' : goesThroughMollie ? 'UNFINISHED' : 'NEW';
+
     const result = await placeOrder({
       cartId: state.cart!.cartId,
-      orderStatus: isQuoteMode ? 'REQUEST' : 'NEW',
+      orderStatus,
       reference,
       notes,
       isQuoteMode,
+      // A Mollie order is finalized later by the payment webhook (on paid):
+      // don't send the confirmation email / clear the cart at placement.
+      ...(goesThroughMollie ? { finalizeOrder: false } : {}),
     });
 
     if (result.ok) {
       const orderId = result.data.orderId;
 
-      // PSP step: for a real order (not a quote) when Mollie is the active
-      // provider, create the Mollie payment and hand the shopper off to the
-      // hosted checkout. The cart is only cleared after we have a checkout URL
-      // — if payment-start fails we keep the cart so the user can retry.
-      const mollieEnabled =
-        (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER || '').toLowerCase() === 'mollie';
-
-      if (!isQuoteMode && mollieEnabled) {
+      // PSP step: hand the shopper off to Mollie's hosted checkout. The cart is
+      // only cleared after we have a checkout URL — if payment-start fails we
+      // keep the cart so they can retry.
+      if (goesThroughMollie) {
         const checkoutUrl = await startMolliePayment(orderId);
         if (checkoutUrl) {
           // Hand off to Mollie. The webhook reconciles the order/payment state;

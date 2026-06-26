@@ -34,8 +34,25 @@ function siteOrigin(): string {
   return raw.replace(/\/$/, '');
 }
 
-/** Absolute URL Mollie POSTs webhooks to. Must be publicly reachable. */
+/**
+ * Absolute URL Mollie POSTs webhooks to. Must be publicly reachable over HTTPS
+ * (Mollie can't reach localhost/LAN IPs).
+ *
+ * Prefers an explicit `MOLLIE_WEBHOOK_URL` override so the webhook can point at
+ * a tunnel (ngrok / cloudflared) while the shopper-facing redirect stays on the
+ * normal `NEXT_PUBLIC_SITE_URL`. If the override is just an origin (no path), we
+ * append `/api/mollie/webhook`; if it already includes a path, it's used as-is.
+ * Falls back to `NEXT_PUBLIC_SITE_URL` + the route path.
+ */
 export function mollieWebhookUrl(): string {
+  const override = (process.env.MOLLIE_WEBHOOK_URL || '').trim();
+  if (override) {
+    // If the override already targets the webhook path, use it verbatim;
+    // otherwise treat it as an origin and append the route.
+    return /\/api\/mollie\/webhook\/?$/.test(override)
+      ? override
+      : `${override.replace(/\/$/, '')}/api/mollie/webhook`;
+  }
   return `${siteOrigin()}/api/mollie/webhook`;
 }
 

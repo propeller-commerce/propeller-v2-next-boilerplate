@@ -11,6 +11,7 @@ import { CartSummary } from '@propeller-commerce/propeller-v2-react-ui';
 import { AddressCard } from '@propeller-commerce/propeller-v2-react-ui';
 
 import { graphqlClient } from '@/lib/api';
+import { isOnAccountMethod } from '@/lib/payments';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { AddressType, Cart, CartAddressType, CartUpdateAddressInput, CartUpdateInput, Company, Contact, Customer, Gender, YesNo } from '@propeller-commerce/propeller-sdk-v2';
@@ -350,28 +351,123 @@ function CheckoutPageInner() {
     setState(prev => ({ ...prev, loading: true, error: null }));
     orderPlacedRef.current = true;
 
+    // Decide the PSP path up front. An order only goes through Mollie when
+    // Mollie is enabled, it's a real order (not a quote), and the method isn't
+    // on-account (e.g. REKENING / ON_ACCOUNT, which settle outside the PSP).
+    const mollieEnabled =
+      (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER || '').toLowerCase() === 'mollie';
+    const onAccount = isOnAccountMethod(state.selectedPayment);
+    const goesThroughMollie = !isQuoteMode && !onAccount && mollieEnabled;
+
+    // Order status at placement:
+    //  - quote          → REQUEST
+    //  - via Mollie      → UNFINISHED (the webhook sets the final status)
+    //  - on-account /    → NEW (settled immediately; also the fallback when
+    //    Mollie disabled       Mollie is off, so an order is never stranded
+    //                          in UNFINISHED with no payment to finish it)
+    const orderStatus = isQuoteMode ? 'REQUEST' : goesThroughMollie ? 'UNFINISHED' : 'NEW';
+
     const result = await placeOrder({
       cartId: state.cart!.cartId,
-      orderStatus: isQuoteMode ? 'REQUEST' : 'NEW',
+      orderStatus,
       reference,
       notes,
       isQuoteMode,
+      // A Mollie order is finalized later by the payment webhook (on paid):
+      // don't send the confirmation email / clear the cart at placement.
+      ...(goesThroughMollie ? { finalizeOrder: false } : {}),
     });
 
     if (result.ok) {
+      const orderId = result.data.orderId;
+
+      // PSP step: hand the shopper off to Mollie's hosted checkout. The cart is
+      // only cleared after we have a checkout URL — if payment-start fails we
+      // keep the cart so they can retry.
+      if (goesThroughMollie) {
+        const checkoutUrl = await startMolliePayment(orderId);
+        if (checkoutUrl) {
+          // Hand off to Mollie. The webhook reconciles the order/payment state;
+          // the redirectUrl returns the shopper to the thank-you page.
+          window.location.href = checkoutUrl;
+          return;
+        }
+        // Payment-start failed — surface the error, keep the cart, let them retry.
+        orderPlacedRef.current = false;
+        setState(prev => ({
+          ...prev,
+          error: 'Could not start the payment. Please try again.',
+          loading: false,
+        }));
+        return;
+      }
+
       // Restore the manager's parked cart if they were acting on a requester's
       // authorization cart; otherwise clear.
       const parked = restoreManagerCart();
       if (parked) saveCart(parked); else clearCart();
       if (getCart) await getCart();
       const thankYouUrl = isQuoteMode
-        ? localizeHref(`/checkout/thank-you/${result.data.orderId}`, language) + '?mode=quote'
-        : localizeHref(`/checkout/thank-you/${result.data.orderId}`, language);
+        ? localizeHref(`/checkout/thank-you/${orderId}`, language) + '?mode=quote'
+        : localizeHref(`/checkout/thank-you/${orderId}`, language);
       router.push(thankYouUrl);
     } else {
       orderPlacedRef.current = false;
       const fallback = isQuoteMode ? 'Failed to submit quote request' : 'Failed to place order';
       setState(prev => ({ ...prev, error: result.error || fallback, loading: false }));
+    }
+  };
+
+  /**
+   * Ask our server to create a Mollie payment for the placed order and return
+   * the hosted-checkout URL to redirect to. Returns null on failure (caller
+   * surfaces the error and keeps the cart). The amount is the VAT-inclusive
+   * total the shopper pays — `total.totalNet` in the SDK's (inverted) naming.
+   *
+   * Stashes the Mollie payment id in sessionStorage keyed by orderId so the
+   * thank-you page can look up the LIVE payment status on return (Mollie always
+   * redirects to the same URL regardless of outcome, so the page must resolve
+   * open / paid / failed / canceled / expired itself).
+   */
+  const startMolliePayment = async (orderId: number): Promise<string | null> => {
+    try {
+      const total = state.cart?.total;
+      const amount = total?.totalNet ?? total?.totalGross;
+      if (amount === undefined) return null;
+
+      const res = await fetch('/api/mollie/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          amount,
+          currency: process.env.NEXT_PUBLIC_CURRENCY_CODE || 'EUR',
+          method: state.selectedPayment,
+          description: `Order ${orderId}`,
+          // `psp=mollie` marks this as a PSP return so the thank-you page
+          // resolves the real payment outcome (and only then clears the cart).
+          redirectUrl:
+            (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, '') +
+            localizeHref(`/checkout/thank-you/${orderId}`, language) +
+            '?psp=mollie',
+          ...(authState.user?.userId ? { userId: Number(authState.user.userId) } : {}),
+        }),
+      });
+
+      if (!res.ok) return null;
+      const data = (await res.json()) as { checkoutUrl?: string; paymentId?: string };
+      // Stash the payment id so the return page can query its live status.
+      if (data.paymentId && typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem(`mollie_payment_${orderId}`, data.paymentId);
+        } catch {
+          /* sessionStorage unavailable (private mode quota) — page falls back to order status */
+        }
+      }
+      return data.checkoutUrl ?? null;
+    } catch (e) {
+      console.error('startMolliePayment failed', e);
+      return null;
     }
   };
 

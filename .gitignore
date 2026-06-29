@@ -38,6 +38,9 @@ yarn-error.log*
 !.env.local.example
 !.env.example
 
+# npm auth token (registry _authToken) — never commit
+.npmrc
+
 # vercel
 .vercel
 

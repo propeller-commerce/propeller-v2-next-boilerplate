@@ -36,6 +36,18 @@ const SUCCESS_MOLLIE_STATUSES = new Set(['paid', 'authorized']);
 const PENDING_MOLLIE_STATUSES = new Set(['open', 'pending']);
 const FAILED_MOLLIE_STATUSES = new Set(['failed', 'canceled', 'cancelled', 'expired']);
 
+// Mollie redirects the shopper back the instant they finish the hosted
+// checkout, but it flips the payment to `paid` and fires the webhook a beat
+// later (async). So the first status check on return very often still reads
+// `open` even though the payment succeeds seconds later — stranding the shopper
+// on the "payment still open" screen. Auto-poll a bounded number of times
+// before settling on the pending UI: this resolves the common redirect⇄webhook
+// race without an unbounded loop. `failed`/`canceled`/`expired` resolve
+// immediately (no poll); genuinely slow methods fall through to the pending
+// screen with its manual "Check payment status" button intact.
+const PENDING_POLL_ATTEMPTS = 5; // total status checks before showing pending
+const PENDING_POLL_INTERVAL_MS = 2000; // ~8s of polling across the 5 attempts
+
 /** Shape returned by GET /api/mollie/payment-status. */
 interface MollieStatusResponse {
   ok: boolean;
@@ -103,6 +115,7 @@ function ThankYouPageInner() {
   useEffect(() => {
     if (!isPspReturn) return;
     let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
     const paymentId =
       typeof window !== 'undefined'
@@ -122,44 +135,75 @@ function ThankYouPageInner() {
       return;
     }
 
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const t = setTimeout(resolve, ms);
+        timers.push(t);
+      });
+
+    // Poll the live status, retrying while still `open`/`pending` to absorb the
+    // redirect⇄webhook race (see PENDING_POLL_* above). Resolves as soon as the
+    // status is terminal (paid/authorized/failed/canceled/expired); otherwise
+    // settles on `pending` after PENDING_POLL_ATTEMPTS.
     (async () => {
-      try {
-        const res = await fetch(
-          `/api/mollie/payment-status?paymentId=${encodeURIComponent(paymentId)}`
-        );
-        const data = (await res.json()) as MollieStatusResponse;
-        if (cancelled) return;
-        const status = (data.status || '').toLowerCase();
-        setMollieStatus(status || null);
-        if (data.ok && SUCCESS_MOLLIE_STATUSES.has(status)) {
-          // Captured → the order gets finalized server-side. Clear the cart and
-          // the one-time stash so a refresh doesn't re-query.
-          setPaymentState('success');
-          try {
-            window.sessionStorage.removeItem(`mollie_payment_${orderId}`);
-          } catch {
-            /* ignore */
+      for (let attempt = 1; attempt <= PENDING_POLL_ATTEMPTS; attempt++) {
+        try {
+          const res = await fetch(
+            `/api/mollie/payment-status?paymentId=${encodeURIComponent(paymentId)}`
+          );
+          const data = (await res.json()) as MollieStatusResponse;
+          if (cancelled) return;
+          const status = (data.status || '').toLowerCase();
+          setMollieStatus(status || null);
+
+          if (data.ok && SUCCESS_MOLLIE_STATUSES.has(status)) {
+            // Captured → the order gets finalized server-side. Clear the cart and
+            // the one-time stash so a refresh doesn't re-query.
+            setPaymentState('success');
+            try {
+              window.sessionStorage.removeItem(`mollie_payment_${orderId}`);
+            } catch {
+              /* ignore */
+            }
+            return;
           }
-        } else if (data.ok && PENDING_MOLLIE_STATUSES.has(status)) {
-          // Still open/pending → keep the cart; nothing is finalized yet. Keep
-          // the stash so a re-check (refresh) can pick up the resolved status.
+          if (FAILED_MOLLIE_STATUSES.has(status)) {
+            // Terminal failure — no point polling further.
+            setPaymentState('failed');
+            return;
+          }
+          // Still open/pending (or unknown/unreachable). If we have attempts
+          // left, wait and re-check — the webhook is likely mid-flight. Stay in
+          // `resolving` so the shopper sees a spinner, not a premature "open".
+          if (attempt < PENDING_POLL_ATTEMPTS) {
+            await sleep(PENDING_POLL_INTERVAL_MS);
+            if (cancelled) return;
+            continue;
+          }
+          // Exhausted attempts → settle on pending. Keep the cart and the stash
+          // so a manual re-check (or refresh) can still pick up the resolved
+          // status later.
           setPaymentState('pending');
-        } else if (FAILED_MOLLIE_STATUSES.has(status)) {
-          setPaymentState('failed');
-        } else {
-          // Unknown/unreachable status — don't wrongly clear the cart. Show
-          // pending so the shopper can re-check rather than a misleading state.
+          return;
+        } catch {
+          // Couldn't reach the status route. Retry if attempts remain; otherwise
+          // keep the cart and let the shopper retry rather than wiping it on a
+          // transient network error.
+          if (cancelled) return;
+          if (attempt < PENDING_POLL_ATTEMPTS) {
+            await sleep(PENDING_POLL_INTERVAL_MS);
+            if (cancelled) return;
+            continue;
+          }
           setPaymentState('pending');
+          return;
         }
-      } catch {
-        // Couldn't reach the status route — keep the cart, let the shopper retry
-        // the check rather than wiping their cart on a transient network error.
-        if (!cancelled) setPaymentState('pending');
       }
     })();
 
     return () => {
       cancelled = true;
+      timers.forEach(clearTimeout);
     };
     // Re-run when the order id changes or the order first loads (for the
     // no-payment-id fallback branch).

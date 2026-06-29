@@ -205,10 +205,41 @@ function ThankYouPageInner() {
       cancelled = true;
       timers.forEach(clearTimeout);
     };
-    // Re-run when the order id changes or the order first loads (for the
-    // no-payment-id fallback branch).
+    // Resolve from the LIVE Mollie status. Intentionally does NOT depend on the
+    // order load (`order?.id`) — re-running mid-poll would cancel and restart
+    // the bounded poll, which can leave it stranded. The backend order is the
+    // authoritative override below; this path just gives the fastest signal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPspReturn, orderId, order?.id]);
+  }, [isPspReturn, orderId]);
+
+  // Authoritative override: once the order loads, a PAID/AUTHORIZED backend
+  // order means the webhook already confirmed AND finalized the payment — that's
+  // the source of truth, regardless of what the (async, occasionally lagging)
+  // live Mollie poll returned. Promote to success so a confirmed-paid order can
+  // never strand the shopper on the "payment still open" screen. Only ever
+  // upgrades toward success; never downgrades a already-resolved success.
+  useEffect(() => {
+    if (!isPspReturn || !order) return;
+    const orderStatus = (order.paymentData?.status || order.status || '').toUpperCase();
+    if (orderStatus === 'PAID' || orderStatus === 'AUTHORIZED') {
+      setPaymentState('success');
+      try {
+        window.sessionStorage.removeItem(`mollie_payment_${orderId}`);
+      } catch {
+        /* ignore */
+      }
+    } else {
+      // Order loaded but not yet paid. If the live-status poll is still spinning
+      // (`resolving`) with nothing stashed to poll, settle on pending so the UI
+      // never hangs on the spinner. Never downgrade an already-resolved state.
+      const hasStash =
+        typeof window !== 'undefined' &&
+        !!window.sessionStorage.getItem(`mollie_payment_${orderId}`);
+      if (!hasStash) {
+        setPaymentState((prev) => (prev === 'resolving' ? 'pending' : prev));
+      }
+    }
+  }, [isPspReturn, order, orderId]);
 
   // Clear the local cart ONLY on a captured payment (paymentState 'success' =
   // paid/authorized). The Mollie flow redirects off-site and returns with

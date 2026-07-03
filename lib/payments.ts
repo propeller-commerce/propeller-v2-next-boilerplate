@@ -38,11 +38,36 @@ export function onAccountMethods(): string[] {
  * case-insensitive.
  *
  * Used to decide both the placement order status (on-account → NEW; PSP →
- * UNFINISHED until the webhook resolves it) and whether to start a Mollie
- * payment at all. The full decision (which also accounts for whether Mollie is
- * enabled and quote mode) lives in the checkout page.
+ * UNFINISHED until the webhook resolves it) and whether to start a PSP payment
+ * at all. The full decision (which also accounts for whether a PSP is enabled
+ * and quote mode) lives in the checkout page.
  */
 export function isOnAccountMethod(method: string | undefined | null): boolean {
   if (!method) return false;
   return onAccountMethods().includes(method.trim().toUpperCase());
+}
+
+/**
+ * The active PSP slug, from `NEXT_PUBLIC_PAYMENT_PROVIDER` — `'mollie'` |
+ * `'multisafepay'` | `null` (no PSP). Only one PSP is active at a time.
+ *
+ * The slug is also the URL segment for the host routes (`/api/<slug>/…`, except
+ * `multisafepay` which uses `/api/msp/…` — see `pspApiBase`) and the `?psp=`
+ * return-marker value on the thank-you redirect. Shared by client + server.
+ */
+export type PspProvider = 'mollie' | 'multisafepay';
+
+export function activePspProvider(): PspProvider | null {
+  const p = (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER || '').trim().toLowerCase();
+  return p === 'mollie' || p === 'multisafepay' ? p : null;
+}
+
+/** API route base for a PSP: mollie → `/api/mollie`, multisafepay → `/api/msp`. */
+export function pspApiBase(provider: PspProvider): string {
+  return provider === 'multisafepay' ? '/api/msp' : '/api/mollie';
+}
+
+/** sessionStorage key the checkout stashes the PSP payment id under, per order. */
+export function pspStashKey(provider: PspProvider, orderId: number | string): string {
+  return `${provider}_payment_${orderId}`;
 }

@@ -23,9 +23,10 @@
   "dependencies": {
     "@contentful/rich-text-html-renderer": "^17.2.2",
     "@contentful/rich-text-types": "^17.2.7",
-    "@propeller-commerce/propeller-sdk-v2": "^0.11.3",
-    "@propeller-commerce/propeller-v2-mollie": "^0.2.2",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.4.14",
+    "@propeller-commerce/propeller-sdk-v2": "^0.12.0",
+    "@propeller-commerce/propeller-v2-mollie": "^0.2.3",
+    "@propeller-commerce/propeller-v2-msp": "^0.1.1",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.4.15",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",

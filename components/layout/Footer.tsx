@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { useGlobal } from '@/context/GlobalContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function Footer() {
   const globalData = useGlobal();
   const { language } = useLanguage();
+  const t = useTranslations('Footer');
 
   // Fallback data when CMS is not available
-  const description = globalData?.footerDescription ||
-    'Your trusted destination for premium electronics. Quality products, fast shipping, and exceptional support.';
+  const description = globalData?.footerDescription || t.description;
   const email = globalData?.footerEmail || 'info@propeller.com';
   const phone = globalData?.footerPhone || '+1 234 567 890';
   const copyright = globalData?.copyrightText ||
@@ -52,28 +53,28 @@ export default function Footer() {
           ) : (
             <>
               <div>
-                <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Shop</h4>
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">{t.shopTitle}</h4>
                 <ul className="space-y-3 text-sm text-slate-400">
-                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">All Products</Link></li>
-                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">Featured</Link></li>
-                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">New Arrivals</Link></li>
+                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">{t.allProducts}</Link></li>
+                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">{t.featured}</Link></li>
+                  <li><Link href={localizeHref("/", language)} className="hover:text-white transition-colors">{t.newArrivals}</Link></li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Support</h4>
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">{t.supportTitle}</h4>
                 <ul className="space-y-3 text-sm text-slate-400">
-                  <li><Link href={localizeHref("/account", language)} className="hover:text-white transition-colors">My Account</Link></li>
-                  <li><Link href={localizeHref("/terms-conditions", language)} className="hover:text-white transition-colors">Terms & Conditions</Link></li>
-                  <li><Link href={localizeHref("/privacy", language)} className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                  <li><Link href={localizeHref("/returns", language)} className="hover:text-white transition-colors">Returns</Link></li>
+                  <li><Link href={localizeHref("/account", language)} className="hover:text-white transition-colors">{t.myAccount}</Link></li>
+                  <li><Link href={localizeHref("/terms-conditions", language)} className="hover:text-white transition-colors">{t.termsConditions}</Link></li>
+                  <li><Link href={localizeHref("/privacy", language)} className="hover:text-white transition-colors">{t.privacyPolicy}</Link></li>
+                  <li><Link href={localizeHref("/returns", language)} className="hover:text-white transition-colors">{t.returns}</Link></li>
                 </ul>
               </div>
             </>
           )}
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Contact</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">{t.contactTitle}</h4>
             <ul className="space-y-3 text-sm text-slate-400">
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 mt-0.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>

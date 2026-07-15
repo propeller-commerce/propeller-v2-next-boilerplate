@@ -116,6 +116,7 @@ function ThankYouPageInner() {
   const orderSummaryLabels = useTranslations('OrderSummary');
   const orderBonusItemsLabels = useTranslations('OrderBonusItems');
   const orderItemCardLabels = useTranslations('OrderItemCard');
+  const t = useTranslations('CheckoutThankYou');
 
   const { getOrderById } = useOrders({
     graphqlClient,
@@ -167,8 +168,8 @@ function ThankYouPageInner() {
 
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
-        const t = setTimeout(resolve, ms);
-        timers.push(t);
+        const timer = setTimeout(resolve, ms);
+        timers.push(timer);
       });
 
     // Poll the live status, retrying while still `open`/`pending` to absorb the
@@ -396,33 +397,33 @@ function ThankYouPageInner() {
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               {pspStatus === 'canceled' || pspStatus === 'cancelled'
-                ? 'Payment canceled'
+                ? t.paymentCanceledTitle
                 : pspStatus === 'expired'
-                ? 'Payment expired'
-                : 'Payment not completed'}
+                ? t.paymentExpiredTitle
+                : t.paymentNotCompletedTitle}
             </h1>
             <p className="text-lg text-gray-600 mb-2">
               {pspStatus === 'canceled' || pspStatus === 'cancelled'
-                ? 'You canceled the payment, so your order has not been finalized.'
+                ? t.paymentCanceledText
                 : pspStatus === 'expired'
-                ? 'The payment expired before it was completed, so your order has not been finalized.'
-                : 'Your payment was not completed, so your order has not been finalized.'}
+                ? t.paymentExpiredText
+                : t.paymentNotCompletedText}
             </p>
             <p className="text-gray-600 mb-10">
-              Your items are still in your cart — you can try the payment again.
+              {t.itemsStillInCart}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href={localizeHref('/checkout', language)}
                 className="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/80 transition text-center"
               >
-                Try Again
+                {t.tryAgain}
               </Link>
               <Link
                 href={localizeHref('/cart', language)}
                 className="px-8 py-3 bg-white border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition text-center"
               >
-                Back to Cart
+                {t.backToCart}
               </Link>
             </div>
           </div>
@@ -447,14 +448,12 @@ function ThankYouPageInner() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Your payment is still open</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">{t.paymentPendingTitle}</h1>
             <p className="text-lg text-gray-600 mb-2">
-              We haven&apos;t received confirmation of your payment yet. This can take a
-              moment while your bank or payment provider processes it.
+              {t.paymentPendingText1}
             </p>
             <p className="text-gray-600 mb-10">
-              Your order isn&apos;t finalized yet and your items are still in your cart.
-              Check the status again in a moment, or come back later.
+              {t.paymentPendingText2}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
@@ -463,13 +462,13 @@ function ThankYouPageInner() {
                 disabled={rechecking}
                 className="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/80 transition text-center disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {rechecking ? 'Checking…' : 'Check payment status'}
+                {rechecking ? t.checking : t.checkPaymentStatus}
               </button>
               <Link
                 href={localizeHref('/checkout', language)}
                 className="px-8 py-3 bg-white border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition text-center"
               >
-                Back to Checkout
+                {t.backToCheckout}
               </Link>
             </div>
           </div>
@@ -492,12 +491,12 @@ function ThankYouPageInner() {
               </svg>
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              {isQuoteMode ? 'Thank You for Your Quote Request!' : 'Thank You for Your Order!'}
+              {isQuoteMode ? t.thankYouQuoteTitle : t.thankYouOrderTitle}
             </h1>
             <p className="text-lg text-gray-600">
               {isQuoteMode
-                ? 'Your quote request has been successfully submitted. We will get back to you shortly.'
-                : 'Your order has been successfully placed and is being processed.'}
+                ? t.thankYouQuoteText
+                : t.thankYouOrderText}
             </p>
           </div>
 
@@ -508,14 +507,14 @@ function ThankYouPageInner() {
                 <OrderSummary
                   order={order}
                   countries={COUNTRIES}
-                  title="Order Summary"
+                  title={t.orderSummaryTitle}
                   labels={orderSummaryLabels}
                 />
               </div>
 
               {/* Order Overview */}
               <div className="pt-10">
-                  <h2 className="text-2xl font-bold mb-6">Order Overview</h2>
+                  <h2 className="text-2xl font-bold mb-6">{t.orderOverviewTitle}</h2>
 
                   {/* Regular Products (grouped parent/child) */}
                   {(() => {

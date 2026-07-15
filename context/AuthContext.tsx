@@ -9,6 +9,7 @@ import { graphqlClient } from '@/lib/api';
 import { toPlain } from '@propeller-commerce/propeller-v2-react-ui';
 import { localizeHref } from '@/data/config';
 import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
+import { getTranslations } from '@/lib/i18n/server';
 
 type User = Contact | Customer;
 
@@ -248,7 +249,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Dispatch custom event for other components
       window.dispatchEvent(new CustomEvent('userLoggedIn'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Login failed';
+      const locale = typeof window !== 'undefined'
+        ? localStorage.getItem('preferred_language') || 'NL'
+        : 'NL';
+      const fallback = getTranslations(locale, 'AuthPages').loginFailed || 'Login failed';
+      const message = error instanceof Error ? error.message : fallback;
       dispatch({ type: 'AUTH_FAILURE', payload: message });
       throw error;
     }

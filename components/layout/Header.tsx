@@ -72,6 +72,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
   const loginFormLabels = useTranslations('LoginForm');
   const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+  const accountLabels = useTranslations('Account');
 
   const [searchClearSignal, setSearchClearSignal] = useState(0);
   const lastPathnameRef = useRef<string | null>(null);
@@ -405,15 +406,15 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     onRegisterClick={() => router.push(localizeHref('/register', language))}
                     accountHeaderLoginForm={true}
                     menuLinks={[
-                      { label: 'Dashboard', href: localizeHref('/account', language) },
-                      { label: 'Addresses', href: localizeHref('/account/addresses', language) },
-                      { label: 'Orders', href: localizeHref('/account/orders', language) },
-                      { label: 'Quotes', href: localizeHref('/account/quotes', language) },
-                      { label: 'Quote requests', href: localizeHref('/account/quote-requests', language) },
-                      { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                      { label: accountLabels.navDashboard, href: localizeHref('/account', language) },
+                      { label: accountLabels.navAddresses, href: localizeHref('/account/addresses', language) },
+                      { label: accountLabels.navOrders, href: localizeHref('/account/orders', language) },
+                      { label: accountLabels.navQuotes, href: localizeHref('/account/quotes', language) },
+                      { label: accountLabels.navQuoteRequests, href: localizeHref('/account/quote-requests', language) },
+                      { label: accountLabels.navFavorites, href: localizeHref('/account/favorites', language) },
                       ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
-                        { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
-                        { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', language) },
+                        { label: accountLabels.navAuthorizationSettings, href: localizeHref('/account/authorization-settings', language) },
+                        { label: accountLabels.navAuthorizationRequests, href: localizeHref('/account/authorization-requests', language) },
                       ] : []),
                     ]}
                   />

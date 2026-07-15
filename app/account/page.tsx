@@ -13,13 +13,14 @@ export default function AccountPage() {
   const { selectedCompany } = useCompany();
   const user = state.user;
   const userDetailsLabels = useTranslations('UserDetails');
+  const t = useTranslations('Account');
 
   if (!state.isAuthenticated || !user) return null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t.dashboardTitle}</h1>
       </div>
 
       <UserDetails

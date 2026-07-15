@@ -13,15 +13,16 @@ export default function QuoteRequestsPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const labels = useTranslations('OrderList');
+  const t = useTranslations('Account');
 
   if (!state.isAuthenticated) return null;
 
   const ordersColumnConf = {
     id: '#',
-    date: 'Datum',
-    status: 'Status',
-    validUntil: 'Geldig tot',
-    total: 'Totaal',
+    date: t.colDate,
+    status: t.colStatus,
+    validUntil: t.colValidUntil,
+    total: t.colTotal,
   }
 
   const columns = ['id', 'date', 'status', 'total'];
@@ -29,7 +30,7 @@ export default function QuoteRequestsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Quote requests</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t.quoteRequestsTitle}</h1>
       </div>
       <div className="bg-card shadow-sm">
         <OrderList

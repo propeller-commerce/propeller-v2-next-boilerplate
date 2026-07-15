@@ -25,6 +25,7 @@ export default function AccountLayout({
     const { language } = useLanguage();
     const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
     const loginFormLabels = useTranslations('LoginForm');
+    const t = useTranslations('Account');
 
     // Protect account routes — wait for auth to finish loading before checking
     useEffect(() => {
@@ -54,15 +55,15 @@ export default function AccountLayout({
                                     onMenuItemClick={(href) => router.push(localizeHref(href, language))}
                                     onLogoutClick={() => logout()}
                                     menuLinks={[
-                                        { label: 'Dashboard', href: localizeHref('/account', language) },
-                                        { label: 'Addresses', href: localizeHref('/account/addresses', language) },
-                                        { label: 'Orders', href: localizeHref('/account/orders', language) },
-                                        { label: 'Quotes', href: localizeHref('/account/quotes', language) },
-                                        { label: 'Quote requests', href: localizeHref('/account/quote-requests', language) },
-                                        { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                                        { label: t.navDashboard, href: localizeHref('/account', language) },
+                                        { label: t.navAddresses, href: localizeHref('/account/addresses', language) },
+                                        { label: t.navOrders, href: localizeHref('/account/orders', language) },
+                                        { label: t.navQuotes, href: localizeHref('/account/quotes', language) },
+                                        { label: t.navQuoteRequests, href: localizeHref('/account/quote-requests', language) },
+                                        { label: t.navFavorites, href: localizeHref('/account/favorites', language) },
                                         ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
-                                            { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
-                                            { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', language) },
+                                            { label: t.navAuthorizationSettings, href: localizeHref('/account/authorization-settings', language) },
+                                            { label: t.navAuthorizationRequests, href: localizeHref('/account/authorization-requests', language) },
                                         ] : []),
                                     ]}
                                 />

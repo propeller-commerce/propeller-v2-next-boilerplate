@@ -82,9 +82,9 @@ export default function AddressesPage() {
     const result = await updateAddress(Number(address.id), address as Partial<AddressInput>);
     if (result.success) {
       await refreshUser();
-      toast.success('Address updated successfully');
+      toast.success(t.addressUpdated);
     } else {
-      toast.error('Failed to update address');
+      toast.error(t.addressUpdateFailed);
     }
   };
 
@@ -92,9 +92,9 @@ export default function AddressesPage() {
     const result = await deleteAddress(Number(address.id));
     if (result.success) {
       await refreshUser();
-      toast.success('Address deleted successfully');
+      toast.success(t.addressDeleted);
     } else {
-      toast.error('Failed to delete address');
+      toast.error(t.addressDeleteFailed);
     }
   };
 
@@ -102,9 +102,9 @@ export default function AddressesPage() {
     const result = await setDefaultAddress(Number(address.id));
     if (result.success) {
       await refreshUser();
-      toast.success('Address set as default');
+      toast.success(t.addressSetDefault);
     } else {
-      toast.error('Failed to set default address');
+      toast.error(t.addressSetDefaultFailed);
     }
   };
 
@@ -131,10 +131,10 @@ export default function AddressesPage() {
     const result = await createAddress(input);
     if (result.success) {
       await refreshUser();
-      toast.success('Address created successfully');
+      toast.success(t.addressCreated);
       setShowAddModal(false);
     } else {
-      toast.error('Failed to create address');
+      toast.error(t.addressCreateFailed);
     }
   };
 

@@ -39,7 +39,7 @@ export default function FavoriteListPage() {
       itemType === 'cluster' ? undefined : numericId,
       itemType === 'cluster' ? numericId : undefined,
     );
-    toast.success('Item removed from list');
+    toast.success(t.itemRemovedFromList);
     refreshUser();
   }
 
@@ -52,7 +52,7 @@ export default function FavoriteListPage() {
       productIds.length ? productIds : undefined,
       clusterIds.length ? clusterIds : undefined,
     );
-    toast.success(items.length === 1 ? 'Item removed from list' : `${items.length} items removed from list`);
+    toast.success(items.length === 1 ? t.itemRemovedFromList : t.itemsRemovedFromList.replace('{count}', String(items.length)));
     refreshUser();
   }
 

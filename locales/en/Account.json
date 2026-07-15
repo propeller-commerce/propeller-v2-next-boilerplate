@@ -41,5 +41,17 @@
   "additionalDeliveryAddresses": "Additional Delivery Addresses",
   "addNew": "Add New",
   "noAdditionalBillingAddresses": "No additional billing addresses.",
-  "noAdditionalDeliveryAddresses": "No additional delivery addresses."
+  "noAdditionalDeliveryAddresses": "No additional delivery addresses.",
+  "addressUpdated": "Address updated successfully",
+  "addressUpdateFailed": "Failed to update address",
+  "addressDeleted": "Address deleted successfully",
+  "addressDeleteFailed": "Failed to delete address",
+  "addressSetDefault": "Address set as default",
+  "addressSetDefaultFailed": "Failed to set default address",
+  "addressCreated": "Address created successfully",
+  "addressCreateFailed": "Failed to create address",
+  "itemRemovedFromList": "Item removed from list",
+  "itemsRemovedFromList": "{count} items removed from list",
+  "pdfDownloaded": "PDF downloaded successfully",
+  "pdfDownloadFailed": "Failed to download PDF"
 }

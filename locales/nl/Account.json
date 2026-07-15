@@ -41,5 +41,17 @@
   "additionalDeliveryAddresses": "Extra bezorgadressen",
   "addNew": "Nieuw toevoegen",
   "noAdditionalBillingAddresses": "Geen extra factuuradressen.",
-  "noAdditionalDeliveryAddresses": "Geen extra bezorgadressen."
+  "noAdditionalDeliveryAddresses": "Geen extra bezorgadressen.",
+  "addressUpdated": "Adres succesvol bijgewerkt",
+  "addressUpdateFailed": "Adres bijwerken mislukt",
+  "addressDeleted": "Adres succesvol verwijderd",
+  "addressDeleteFailed": "Adres verwijderen mislukt",
+  "addressSetDefault": "Adres ingesteld als standaard",
+  "addressSetDefaultFailed": "Standaardadres instellen mislukt",
+  "addressCreated": "Adres succesvol aangemaakt",
+  "addressCreateFailed": "Adres aanmaken mislukt",
+  "itemRemovedFromList": "Item uit lijst verwijderd",
+  "itemsRemovedFromList": "{count} items uit lijst verwijderd",
+  "pdfDownloaded": "PDF succesvol gedownload",
+  "pdfDownloadFailed": "PDF downloaden mislukt"
 }

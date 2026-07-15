@@ -8,12 +8,14 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { CartMainItem } from '@propeller-commerce/propeller-sdk-v2';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function AuthorizationRequestSentPage() {
     const params = useParams();
     const cartId = params?.cartId as string;
     const { cart } = useCart();
     const { language } = useLanguage();
+    const t = useTranslations('AuthorizationRequestSent');
 
     const items: CartMainItem[] = cart?.items || [];
     const total = cart?.total?.totalNet ?? 0;
@@ -35,12 +37,12 @@ export default function AuthorizationRequestSentPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h1 className="text-4xl font-bold text-gray-900 mb-4">Authorization Request Sent!</h1>
+                        <h1 className="text-4xl font-bold text-gray-900 mb-4">{t.title}</h1>
                         <p className="text-lg text-gray-600">
-                            Your request has been submitted. An authorization manager will review it shortly.
+                            {t.description}
                         </p>
                         {cartId && (
-                            <p className="text-sm text-gray-400 mt-2">Reference: {cartId}</p>
+                            <p className="text-sm text-gray-400 mt-2">{t.reference} {cartId}</p>
                         )}
                     </div>
 
@@ -49,19 +51,19 @@ export default function AuthorizationRequestSentPage() {
                             {/* Cart items */}
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-100">
-                                    <h2 className="text-xl font-bold text-gray-900">Cart Summary</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">{t.cartSummary}</h2>
                                 </div>
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-100">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 w-2/3">Product</th>
-                                            <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">Qty</th>
-                                            <th className="px-6 py-3 text-right text-sm font-medium text-gray-500">Total</th>
+                                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 w-2/3">{t.colProduct}</th>
+                                            <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">{t.colQty}</th>
+                                            <th className="px-6 py-3 text-right text-sm font-medium text-gray-500">{t.colTotal}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
                                         {items.map((item) => {
-                                            const name = item.product?.names?.[0]?.value || 'Product';
+                                            const name = item.product?.names?.[0]?.value || t.colProduct;
                                             const sku = item.product?.sku;
                                             const imageUrl = item.product?.media?.images?.items?.[0]?.imageVariants?.[0]?.url;
                                             const itemTotal = item.totalSumNet ?? 0;
@@ -100,17 +102,17 @@ export default function AuthorizationRequestSentPage() {
                                 {/* Totals */}
                                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-2">
                                     <div className="flex justify-between text-sm text-gray-600">
-                                        <span>Total excl. VAT:</span>
+                                        <span>{t.totalExclVat}</span>
                                         <span>{formatPrice(totalExclVat)}</span>
                                     </div>
                                     {totalVat > 0 && (
                                         <div className="flex justify-between text-sm text-gray-600">
-                                            <span>VAT:</span>
+                                            <span>{t.vat}</span>
                                             <span>{formatPrice(totalVat)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-200">
-                                        <span>Total:</span>
+                                        <span>{t.total}</span>
                                         <span>{formatPrice(total)}</span>
                                     </div>
                                 </div>
@@ -124,12 +126,12 @@ export default function AuthorizationRequestSentPage() {
                             href={localizeHref('/', language)}
                             className="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/80 transition text-center"
                         >
-                            Continue Shopping
+                            {t.continueShopping}
                         </Link>
                     </div>
 
                     <div className="text-center text-gray-500 pt-6 text-sm">
-                        <p>You will be notified once your authorization request has been reviewed.</p>
+                        <p>{t.notified}</p>
                     </div>
                 </div>
             </main>

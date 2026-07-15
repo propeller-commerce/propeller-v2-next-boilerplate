@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
 import { getArticle, getAllArticleSlugs } from '@/lib/cms';
+import { getTranslations } from '@/lib/i18n/server';
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -26,11 +28,14 @@ export async function generateStaticParams() {
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = await getArticle(slug);
+  const [article, store] = await Promise.all([getArticle(slug), cookies()]);
 
   if (!article) {
     notFound();
   }
+
+  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  const t = getTranslations(locale, 'Blog');
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -116,7 +121,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m15 18-6-6 6-6" />
                 </svg>
-                Back to blog
+                {t.backToBlog}
               </Link>
             </div>
           </div>

@@ -22,6 +22,7 @@ export default function FavoriteListPage() {
   const listId = params?.id as string;
   const { language } = useLanguage();
   const favoriteListDetailsLabels = useTranslations('FavoriteListDetails');
+  const t = useTranslations('Account');
 
   const [listName, setListName] = useState('');
 
@@ -38,7 +39,7 @@ export default function FavoriteListPage() {
       itemType === 'cluster' ? undefined : numericId,
       itemType === 'cluster' ? numericId : undefined,
     );
-    toast.success('Item removed from list');
+    toast.success(t.itemRemovedFromList);
     refreshUser();
   }
 
@@ -51,7 +52,7 @@ export default function FavoriteListPage() {
       productIds.length ? productIds : undefined,
       clusterIds.length ? clusterIds : undefined,
     );
-    toast.success(items.length === 1 ? 'Item removed from list' : `${items.length} items removed from list`);
+    toast.success(items.length === 1 ? t.itemRemovedFromList : t.itemsRemovedFromList.replace('{count}', String(items.length)));
     refreshUser();
   }
 
@@ -61,10 +62,10 @@ export default function FavoriteListPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild className="gap-2">
-          <Link href={localizeHref('/account/favorites', language)}>← Back to Lists</Link>
+          <Link href={localizeHref('/account/favorites', language)}>← {t.backToLists}</Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          {listName || 'Loading...'}
+          {listName || t.loading}
         </h1>
       </div>
 

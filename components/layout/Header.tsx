@@ -72,6 +72,8 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
   const loginFormLabels = useTranslations('LoginForm');
   const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+  const accountLabels = useTranslations('Account');
+  const headerLabels = useTranslations('Header');
 
   const [searchClearSignal, setSearchClearSignal] = useState(0);
   const lastPathnameRef = useRef<string | null>(null);
@@ -116,7 +118,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const showAccount = globalData?.showAccount ?? true;
   const showCart = globalData?.showCart ?? true;
   const showCategoriesMenu = globalData?.showCategoriesMenu ?? true;
-  const categoriesMenuLabel = globalData?.categoriesMenuLabel || 'Browse Categories';
+  const categoriesMenuLabel = globalData?.categoriesMenuLabel || headerLabels.browseCategories;
   const topBarAnnouncementEnabled = globalData?.topBarAnnouncementEnabled ?? false;
 
 
@@ -221,7 +223,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                       onClick={() => setShowLangMenu((s) => !s)}
                       aria-haspopup="listbox"
                       aria-expanded={showLangMenu}
-                      aria-label="Select language"
+                      aria-label={headerLabels.selectLanguage}
                       className="flex items-center gap-1.5 px-2 py-1 rounded-control text-xs font-medium hover:bg-white/10 transition-colors"
                     >
                       <Globe className="w-3.5 h-3.5" />
@@ -309,6 +311,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
                     labels={searchBarLabels}
+                    placeholder={searchBarLabels.placeholder}
                     clearSignal={searchClearSignal}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
@@ -405,15 +408,15 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     onRegisterClick={() => router.push(localizeHref('/register', language))}
                     accountHeaderLoginForm={true}
                     menuLinks={[
-                      { label: 'Dashboard', href: localizeHref('/account', language) },
-                      { label: 'Addresses', href: localizeHref('/account/addresses', language) },
-                      { label: 'Orders', href: localizeHref('/account/orders', language) },
-                      { label: 'Quotes', href: localizeHref('/account/quotes', language) },
-                      { label: 'Quote requests', href: localizeHref('/account/quote-requests', language) },
-                      { label: 'Favorites', href: localizeHref('/account/favorites', language) },
+                      { label: accountLabels.navDashboard, href: localizeHref('/account', language) },
+                      { label: accountLabels.navAddresses, href: localizeHref('/account/addresses', language) },
+                      { label: accountLabels.navOrders, href: localizeHref('/account/orders', language) },
+                      { label: accountLabels.navQuotes, href: localizeHref('/account/quotes', language) },
+                      { label: accountLabels.navQuoteRequests, href: localizeHref('/account/quote-requests', language) },
+                      { label: accountLabels.navFavorites, href: localizeHref('/account/favorites', language) },
                       ...(isAuthManagerForCompany(state.user, selectedCompany?.companyId) ? [
-                        { label: 'Authorization settings', href: localizeHref('/account/authorization-settings', language) },
-                        { label: 'Authorization requests', href: localizeHref('/account/authorization-requests', language) },
+                        { label: accountLabels.navAuthorizationSettings, href: localizeHref('/account/authorization-settings', language) },
+                        { label: accountLabels.navAuthorizationRequests, href: localizeHref('/account/authorization-requests', language) },
                       ] : []),
                     ]}
                   />
@@ -519,9 +522,9 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                   ))
                 ) : (
                   <>
-                    <Link href={localizeHref('/new-arrivals', language)} className="hover:text-foreground transition-colors">New Arrivals</Link>
-                    <Link href={localizeHref('/best-sellers', language)} className="hover:text-foreground transition-colors">Best Sellers</Link>
-                    <Link href={localizeHref('/sale', language)} className="hover:text-foreground transition-colors text-destructive">Sale</Link>
+                    <Link href={localizeHref('/new-arrivals', language)} className="hover:text-foreground transition-colors">{headerLabels.newArrivals}</Link>
+                    <Link href={localizeHref('/best-sellers', language)} className="hover:text-foreground transition-colors">{headerLabels.bestSellers}</Link>
+                    <Link href={localizeHref('/sale', language)} className="hover:text-foreground transition-colors text-destructive">{headerLabels.sale}</Link>
                   </>
                 )}
               </div>
@@ -536,6 +539,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
               <div className="p-4 border-b border-border">
                 <SearchBar
                   labels={searchBarLabels}
+                  placeholder={searchBarLabels.placeholder}
                   clearSignal={searchClearSignal}
                   onSubmit={(term) => {
                     setShowMobileMenu(false);
@@ -586,9 +590,9 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 ))
               ) : (
                 <>
-                  <Link href={localizeHref('/new-arrivals', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>New Arrivals</Link>
-                  <Link href={localizeHref('/best-sellers', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>Best Sellers</Link>
-                  <Link href={localizeHref('/sale', language)} className="block px-4 py-3 text-sm font-medium text-destructive" onClick={() => setShowMobileMenu(false)}>Sale</Link>
+                  <Link href={localizeHref('/new-arrivals', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>{headerLabels.newArrivals}</Link>
+                  <Link href={localizeHref('/best-sellers', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>{headerLabels.bestSellers}</Link>
+                  <Link href={localizeHref('/sale', language)} className="block px-4 py-3 text-sm font-medium text-destructive" onClick={() => setShowMobileMenu(false)}>{headerLabels.sale}</Link>
                 </>
               )}
             </div>

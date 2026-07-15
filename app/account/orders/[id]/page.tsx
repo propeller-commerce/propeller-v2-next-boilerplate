@@ -46,6 +46,7 @@ export default function OrderDetailPage() {
     const orderBonusItemsLabels = useTranslations('OrderBonusItems');
     const orderTotalsLabels = useTranslations('OrderTotals');
     const orderItemCardLabels = useTranslations('OrderItemCard');
+    const t = useTranslations('Account');
 
     const { getOrderById } = useOrders({
         graphqlClient,
@@ -85,9 +86,9 @@ export default function OrderDetailPage() {
                         onClick={() => router.back()}
                         className="gap-2"
                     >
-                        ← Back
+                        ← {t.back}
                     </Button>
-                    <h1 className="text-3xl font-bold tracking-tight">Order Details</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">{t.orderDetailsTitle}</h1>
                 </div>
             </div>
             {loading && (
@@ -128,7 +129,7 @@ export default function OrderDetailPage() {
 
                     {/* Order Overview */}
                     <div className="pt-10">
-                        <h2 className="text-2xl font-bold mb-6">Order Overview</h2>
+                        <h2 className="text-2xl font-bold mb-6">{t.orderOverviewTitle}</h2>
 
                         {/* Regular Products (grouped parent/child) */}
                         {(() => {
@@ -149,9 +150,9 @@ export default function OrderDetailPage() {
                                         <table className="w-full">
                                             <thead className="bg-gray-50 border-b">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 w-2/3">Product</th>
-                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">Quantity</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
+                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 w-2/3">{t.colProduct}</th>
+                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">{t.colQuantity}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colPrice}</th>
                                                 </tr>
                                             </thead>
                                             {parentItems.map((item: OrderItem) => (

@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Afrekenen",
   "cartItemsTitle": "Winkelwagen",
   "deliverySameAsInvoice": "Bezorgadres is hetzelfde als factuuradres",
   "orderSummaryTitle": "Bestelsamenvatting",
@@ -10,5 +11,21 @@
   "stepDetails": "Gegevens",
   "stepPayment": "Betaling",
   "stepReview": "Controleren",
-  "stepShipping": "Verzending"
+  "stepShipping": "Verzending",
+  "confirmInvoiceAddress": "Factuuradres bevestigen",
+  "confirmDeliveryAddress": "Bezorgadres bevestigen",
+  "paymentMethodHeading": "Betaalmethode",
+  "carrierHeading": "Vervoerder",
+  "deliveryDateHeading": "Bezorgdatum",
+  "continueToReview": "Doorgaan naar controleren",
+  "back": "Terug",
+  "reference": "Referentie",
+  "notes": "Opmerkingen",
+  "referencePlaceholder": "Uw referentie (optioneel)",
+  "notesPlaceholder": "Aanvullende opmerkingen voor uw offerteaanvraag (optioneel)",
+  "placeQuoteRequest": "Offerteaanvraag plaatsen",
+  "selectPaymentError": "Selecteer een betaalmethode",
+  "selectCarrierError": "Selecteer een vervoerder",
+  "selectDeliveryDateError": "Selecteer een bezorgdatum",
+  "paymentStartError": "Kon de betaling niet starten. Probeer het opnieuw."
 }

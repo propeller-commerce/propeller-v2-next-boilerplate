@@ -1,0 +1,12 @@
+{
+  "alreadyLoggedIn": "Already logged in",
+  "alreadyLoggedInDesc": "You are already signed in to your account.",
+  "goToAccount": "Go to My Account",
+  "goToHome": "Go to Home",
+  "welcomeBack": "Welcome back",
+  "welcomeBackDesc": "Enter your credentials to access your account",
+  "createAccount": "Create account",
+  "createAccountDesc": "Fill in the details below to create your account",
+  "backToLogin": "Back to Login",
+  "loginFailed": "Login failed"
+}

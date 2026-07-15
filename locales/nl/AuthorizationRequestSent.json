@@ -1,0 +1,14 @@
+{
+  "title": "Autorisatieaanvraag verzonden!",
+  "description": "Uw aanvraag is ingediend. Een autorisatiemanager beoordeelt deze binnenkort.",
+  "reference": "Referentie:",
+  "cartSummary": "Winkelwagenoverzicht",
+  "colProduct": "Product",
+  "colQty": "Aantal",
+  "colTotal": "Totaal",
+  "totalExclVat": "Totaal excl. btw:",
+  "vat": "Btw:",
+  "total": "Totaal:",
+  "continueShopping": "Verder winkelen",
+  "notified": "U ontvangt bericht zodra uw autorisatieaanvraag is beoordeeld."
+}

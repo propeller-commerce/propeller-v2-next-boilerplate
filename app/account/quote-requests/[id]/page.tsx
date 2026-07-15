@@ -37,6 +37,7 @@ export default function QuoteDetailPage() {
     const orderTotalsLabels = useTranslations('OrderTotals');
     const orderItemCardLabels = useTranslations('OrderItemCard');
     const errorPagesLabels = useTranslations('ErrorPages');
+    const t = useTranslations('Account');
 
     const { getOrderById } = useOrders({
         graphqlClient,
@@ -74,9 +75,9 @@ export default function QuoteDetailPage() {
                         onClick={() => router.back()}
                         className="gap-2"
                     >
-                        ← Back
+                        ← {t.back}
                     </Button>
-                    <h1 className="text-3xl font-bold tracking-tight">Request details</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">{t.requestDetailsTitle}</h1>
                 </div>
             </div>
 
@@ -110,7 +111,7 @@ export default function QuoteDetailPage() {
 
                     {/* Quote Overview */}
                     <div className="pt-10">
-                        <h2 className="text-2xl font-bold mb-6 mt-6">Quote Overview</h2>
+                        <h2 className="text-2xl font-bold mb-6 mt-6">{t.quoteOverviewTitle}</h2>
 
                         {/* Regular Products (grouped parent/child) */}
                         {(() => {
@@ -131,10 +132,10 @@ export default function QuoteDetailPage() {
                                         <table className="w-full">
                                             <thead className="bg-gray-50 border-b">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Products</th>
-                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">Quantity</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Discount</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
+                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">{t.colProducts}</th>
+                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">{t.colQuantity}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colDiscount}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colPrice}</th>
                                                 </tr>
                                             </thead>
                                             {parentItems.map((item: OrderItem) => (

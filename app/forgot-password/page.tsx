@@ -11,6 +11,7 @@ import { useLanguage } from '@/context/LanguageContext';
 export default function ForgotPasswordPage() {
   const { language } = useLanguage();
   const forgotPasswordLabels = useTranslations('ForgotPassword');
+  const t = useTranslations('AuthPages');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -21,7 +22,7 @@ export default function ForgotPasswordPage() {
 
           <div className="mt-6 text-center">
             <Link href={localizeHref('/login', language)} className="text-primary hover:underline">
-              Back to Login
+              {t.backToLogin}
             </Link>
           </div>
         </div>

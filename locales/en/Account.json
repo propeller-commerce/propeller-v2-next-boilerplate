@@ -53,5 +53,7 @@
   "itemRemovedFromList": "Item removed from list",
   "itemsRemovedFromList": "{count} items removed from list",
   "pdfDownloaded": "PDF downloaded successfully",
-  "pdfDownloadFailed": "Failed to download PDF"
+  "pdfDownloadFailed": "Failed to download PDF",
+  "authorizationSettingsTitle": "Authorization Settings",
+  "authorizationRequestsTitle": "Authorization Requests"
 }

@@ -53,5 +53,7 @@
   "itemRemovedFromList": "Item uit lijst verwijderd",
   "itemsRemovedFromList": "{count} items uit lijst verwijderd",
   "pdfDownloaded": "PDF succesvol gedownload",
-  "pdfDownloadFailed": "PDF downloaden mislukt"
+  "pdfDownloadFailed": "PDF downloaden mislukt",
+  "authorizationSettingsTitle": "Autorisatie-instellingen",
+  "authorizationRequestsTitle": "Autorisatieaanvragen"
 }

@@ -19,5 +19,14 @@
   "paymentPendingText2": "Your order isn't finalized yet and your items are still in your cart. Check the status again in a moment, or come back later.",
   "checking": "Checking…",
   "checkPaymentStatus": "Check payment status",
-  "backToCheckout": "Back to Checkout"
+  "backToCheckout": "Back to Checkout",
+  "confirmingTitle": "Confirming your payment…",
+  "confirmingText": "We're checking your payment status. This only takes a moment.",
+  "colProduct": "Product",
+  "colQuantity": "Quantity",
+  "colPrice": "Price",
+  "viewOrderHistory": "View Order History",
+  "continueShopping": "Continue Shopping",
+  "questionsBefore": "If you have any questions about your order, please",
+  "contactLink": "contact our customer service team"
 }

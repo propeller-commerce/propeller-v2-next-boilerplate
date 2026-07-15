@@ -14,6 +14,7 @@ export default function AuthorizationSettingsPage() {
     const { selectedCompany } = useCompany();
     const { language } = useLanguage();
     const purchaseAuthorizationConfiguratorLabels = useTranslations('PurchaseAuthorizationConfigurator');
+    const t = useTranslations('Account');
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
         u !== null && 'contactId' in u;
@@ -32,7 +33,7 @@ export default function AuthorizationSettingsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">
-                    Authorization Settings
+                    {t.authorizationSettingsTitle}
                 </h1>
             </div>
             <PurchaseAuthorizationConfigurator

@@ -72,7 +72,7 @@ export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
         <div className="absolute inset-0 z-0">
           <Image
             src="/hero-banner.png"
-            alt="Industrial Background"
+            alt={t.heroImageAlt}
             fill
             className="object-cover"
             priority

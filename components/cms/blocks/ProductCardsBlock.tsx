@@ -14,6 +14,7 @@ export default function ProductCardsBlock({ block }: { block: CmsProductCards })
   const addToCartLabels = useTranslations('AddToCart');
   const itemStockLabels = useTranslations('ItemStock');
   const productPriceLabels = useTranslations('ProductPrice');
+  const cmsBlocksLabels = useTranslations('CmsBlocks');
 
   const productIds = block.products
     .map((p) => typeof p.productId === 'string' ? parseInt(p.productId, 10) : p.productId)
@@ -50,7 +51,7 @@ export default function ProductCardsBlock({ block }: { block: CmsProductCards })
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
           />
         ) : (
-          <p className="text-muted-foreground text-center">No products configured.</p>
+          <p className="text-muted-foreground text-center">{cmsBlocksLabels.noProductsConfigured}</p>
         )}
       </div>
     </section>

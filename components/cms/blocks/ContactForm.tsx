@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import type { CmsContactForm } from '@/lib/cms/types';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function ContactForm({ block }: { block: CmsContactForm }) {
+  const t = useTranslations('ContactForm');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const hasSplitLayout = !!(block.phone || block.email);
@@ -30,27 +32,27 @@ export default function ContactForm({ block }: { block: CmsContactForm }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="contact-name" className="text-sm font-medium">Name</label>
-            <Input id="contact-name" name="name" required placeholder="Your name" />
+            <label htmlFor="contact-name" className="text-sm font-medium">{t.name}</label>
+            <Input id="contact-name" name="name" required placeholder={t.namePlaceholder} />
           </div>
           <div className="space-y-2">
-            <label htmlFor="contact-email" className="text-sm font-medium">Email</label>
-            <Input id="contact-email" name="email" type="email" required placeholder="your@email.com" />
+            <label htmlFor="contact-email" className="text-sm font-medium">{t.email}</label>
+            <Input id="contact-email" name="email" type="email" required placeholder={t.emailPlaceholder} />
           </div>
         </div>
         <div className="space-y-2">
-          <label htmlFor="contact-message" className="text-sm font-medium">Message</label>
+          <label htmlFor="contact-message" className="text-sm font-medium">{t.message}</label>
           <textarea
             id="contact-message"
             name="message"
             required
             rows={4}
-            placeholder="Your message..."
+            placeholder={t.messagePlaceholder}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
         <Button type="submit" size="lg" className="w-full" isLoading={loading}>
-          Send Message
+          {t.send}
         </Button>
       </form>
     </div>

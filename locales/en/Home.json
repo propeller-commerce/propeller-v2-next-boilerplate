@@ -12,5 +12,6 @@
   "secureCheckoutTitle": "Secure Checkout",
   "secureCheckoutText": "Protected by SSL encryption",
   "shopByCategory": "Shop by Category",
-  "categorySubtitle": "Browse our wide range of premium components and peripherals."
+  "categorySubtitle": "Browse our wide range of premium components and peripherals.",
+  "heroImageAlt": "Industrial Background"
 }

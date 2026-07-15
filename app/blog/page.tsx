@@ -1,8 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { getArticles } from '@/lib/cms';
+import { getTranslations } from '@/lib/i18n/server';
 import type { CmsArticle } from '@/lib/cms/types';
 
 function formatDate(dateString: string | null) {
@@ -14,7 +16,7 @@ function formatDate(dateString: string | null) {
   });
 }
 
-function ArticleCard({ article }: { article: CmsArticle }) {
+function ArticleCard({ article, readMoreLabel }: { article: CmsArticle; readMoreLabel: string }) {
   return (
     <Link
       href={`/blog/${article.slug}`}
@@ -79,7 +81,7 @@ function ArticleCard({ article }: { article: CmsArticle }) {
           <p className="line-clamp-3 text-sm text-muted-foreground mb-4 flex-1">{article.description}</p>
         )}
         <span className="text-primary font-medium text-sm inline-flex items-center gap-1 mt-auto">
-          Lees meer
+          {readMoreLabel}
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
@@ -90,7 +92,9 @@ function ArticleCard({ article }: { article: CmsArticle }) {
 }
 
 export default async function BlogPage() {
-  const articles = await getArticles();
+  const [articles, store] = await Promise.all([getArticles(), cookies()]);
+  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  const t = getTranslations(locale, 'Blog');
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -98,15 +102,15 @@ export default async function BlogPage() {
       <main className="flex-1">
         <section className="py-12">
           <div className="container-width">
-            <h1 className="mb-8 text-3xl font-bold">Blog</h1>
+            <h1 className="mb-8 text-3xl font-bold">{t.title}</h1>
             {articles.length > 0 ? (
               <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                 {articles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
+                  <ArticleCard key={article.id} article={article} readMoreLabel={t.readMore} />
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">No articles published yet.</p>
+              <p className="text-muted-foreground">{t.noArticles}</p>
             )}
           </div>
         </section>

@@ -370,9 +370,9 @@ function ThankYouPageInner() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Confirming your payment…</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{t.confirmingTitle}</h1>
             <p className="text-lg text-gray-600">
-              We&apos;re checking your payment status. This only takes a moment.
+              {t.confirmingText}
             </p>
           </div>
         </main>
@@ -535,9 +535,9 @@ function ThankYouPageInner() {
                                   <table className="w-full">
                                       <thead className="bg-gray-50 border-b">
                                           <tr>
-                                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 w-2/3">Product</th>
-                                              <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">Quantity</th>
-                                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
+                                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 w-2/3">{t.colProduct}</th>
+                                              <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">{t.colQuantity}</th>
+                                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colPrice}</th>
                                           </tr>
                                       </thead>
                                       {parentItems.map((item: OrderItem) => (
@@ -566,19 +566,19 @@ function ThankYouPageInner() {
                     href={localizeHref('/account/orders', language)}
                     className="px-8 py-3 bg-white border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition text-center"
                   >
-                    View Order History
+                    {t.viewOrderHistory}
                   </Link>
                 )}
                 <Link
                   href={localizeHref('/', language)}
                   className="px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/80 transition text-center"
                 >
-                  Continue Shopping
+                  {t.continueShopping}
                 </Link>
               </div>
 
               <div className="text-center text-gray-500 pt-4">
-                <p>If you have any questions about your order, please <Link href={localizeHref('/contact', language)} className="text-primary hover:underline">contact our customer service team</Link>.</p>
+                <p>{t.questionsBefore} <Link href={localizeHref('/contact', language)} className="text-primary hover:underline">{t.contactLink}</Link>.</p>
               </div>
             </div>
           )}

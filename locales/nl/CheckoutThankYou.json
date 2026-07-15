@@ -19,5 +19,14 @@
   "paymentPendingText2": "Uw bestelling is nog niet afgerond en uw artikelen staan nog in uw winkelwagen. Controleer de status zo meteen opnieuw, of kom later terug.",
   "checking": "Bezig met controleren…",
   "checkPaymentStatus": "Betaalstatus controleren",
-  "backToCheckout": "Terug naar afrekenen"
+  "backToCheckout": "Terug naar afrekenen",
+  "confirmingTitle": "Uw betaling wordt bevestigd…",
+  "confirmingText": "We controleren uw betaalstatus. Dit duurt maar even.",
+  "colProduct": "Product",
+  "colQuantity": "Aantal",
+  "colPrice": "Prijs",
+  "viewOrderHistory": "Bestelgeschiedenis bekijken",
+  "continueShopping": "Verder winkelen",
+  "questionsBefore": "Als u vragen heeft over uw bestelling, neem dan",
+  "contactLink": "contact op met onze klantenservice"
 }

@@ -132,8 +132,6 @@ export default function Header({ menuTree }: HeaderProps = {}) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
-    setIncludeTax(config.includeVAT);
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };

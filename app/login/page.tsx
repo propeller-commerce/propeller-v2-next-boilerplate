@@ -14,6 +14,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { localizeHref, config } from '@/data/config';
+import { pickUserHint } from '@/lib/userHint';
 import { fetchActiveCart } from '@propeller-commerce/propeller-v2-react-ui';
 import { mergeAnonymousCart } from '@propeller-commerce/propeller-v2-react-ui';
 import { initCart } from '@propeller-commerce/propeller-v2-react-ui';
@@ -68,7 +69,11 @@ export default function LoginPage() {
                   onForgotPasswordClick={() => router.push(localizeHref('/forgot-password', language))}
                   onRegisterClick={() => router.push(localizeHref('/register', language))}
                   afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
-                    localStorage.setItem('user', JSON.stringify(user));
+                    // Persist ONLY the thin hint — never the PII-bearing Contact.
+                    // Matches AuthService/refreshUser/updateUser; full profile is
+                    // re-fetched via getViewer() on mount. See lib/userHint.ts.
+                    const hint = pickUserHint(user);
+                    if (hint) localStorage.setItem('user', JSON.stringify(hint));
                     updateUser(user);
 
                     const company = (user as Contact).company;

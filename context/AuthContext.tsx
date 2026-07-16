@@ -9,6 +9,7 @@ import { graphqlClient } from '@/lib/api';
 import { toPlain } from '@propeller-commerce/propeller-v2-react-ui';
 import { localizeHref } from '@/data/config';
 import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
+import { classifyApiError } from '@/lib/errors';
 
 type User = Contact | Customer;
 
@@ -154,6 +155,15 @@ interface AuthProviderProps {
 // can go away.
 const sanitizeUser = (data: unknown): User => toPlain(data) as User;
 
+// Cross-tab auth signal. A same-document CustomEvent never crosses tabs, so
+// logging out (or in) in one tab left the others showing stale auth UI until
+// their next 401. BroadcastChannel reaches every same-origin tab. Guarded for
+// SSR / older browsers — null there, and every use is optional-chained.
+const authChannel: BroadcastChannel | null =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('auth')
+    : null;
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
@@ -245,8 +255,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       });
 
-      // Dispatch custom event for other components
+      // Same-tab signal + cross-tab broadcast so other tabs pick up the
+      // new session instead of staying logged-out until their next mount.
       window.dispatchEvent(new CustomEvent('userLoggedIn'));
+      authChannel?.postMessage('login');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
       dispatch({ type: 'AUTH_FAILURE', payload: message });
@@ -279,8 +291,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     dispatch({ type: 'AUTH_LOGOUT' });
 
-    // Dispatch custom event for other components
+    // Same-tab signal for other components in THIS document.
     window.dispatchEvent(new CustomEvent('userLoggedOut'));
+    // Cross-tab signal — reaches other tabs, which the same-document
+    // CustomEvent never does. Other tabs clear their session on receipt.
+    authChannel?.postMessage('logout');
 
     // Redirect to home
     router.push(localizeHref('/', lang));
@@ -373,6 +388,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (e) {
       console.error('Error refreshing user data:', e);
+      // If getViewer() failed with an auth error, the session is dead — the
+      // refresh token lapsed while the access_token cookie lingered, so
+      // /api/auth/me still reports "authenticated" from cookie presence and
+      // the app would otherwise paint logged-in from the localStorage hint
+      // while every data call 401s, with no recovery. Fall back to a clean
+      // logged-out state. Non-auth failures (network blip) are left alone so
+      // a transient error doesn't sign the user out.
+      if (classifyApiError(e) === 'forbidden') {
+        if (typeof window !== 'undefined') {
+          for (const key of ['user', 'cart', 'selected_company', 'accessToken', 'access_token', 'refreshToken', 'refresh_token', 'expiresAt']) {
+            localStorage.removeItem(key);
+          }
+          // Clear the httpOnly cookies server-side too, so a reload doesn't
+          // re-enter this same stuck state.
+          fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+        }
+        dispatch({ type: 'AUTH_LOGOUT' });
+      }
     }
   }, []);
 
@@ -422,9 +455,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.addEventListener('userLoggedIn', handleUserLoggedIn);
     window.addEventListener('userLoggedOut', handleUserLoggedOut);
 
+    // Cross-tab: another tab logged in/out. Route to the same handlers so a
+    // logout elsewhere clears this tab's session (and a login elsewhere
+    // hydrates it) without waiting for the next 401 or a reload.
+    const handleChannel = (e: MessageEvent) => {
+      if (e.data === 'logout') handleUserLoggedOut();
+      else if (e.data === 'login') handleUserLoggedIn();
+    };
+    authChannel?.addEventListener('message', handleChannel);
+
     return () => {
       window.removeEventListener('userLoggedIn', handleUserLoggedIn);
       window.removeEventListener('userLoggedOut', handleUserLoggedOut);
+      authChannel?.removeEventListener('message', handleChannel);
     };
   }, []);
 

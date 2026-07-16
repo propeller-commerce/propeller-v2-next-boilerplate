@@ -66,6 +66,13 @@ function CheckoutPageInner() {
   });
   const sameAsInvoiceRef = useRef(false);
   const orderPlacedRef = useRef(false);
+  // Idempotency guard for the PSP retry path: processCart converts the cart to
+  // an order server-side, and a payment-start failure keeps the cart for retry.
+  // Without this, a second Place Order click re-runs processCart on the SAME
+  // cart and (if the backend isn't idempotent) strands another UNFINISHED
+  // order. We remember the orderId processCart already produced for this cart
+  // and, on retry, skip straight to starting payment for that same order.
+  const placedOrderRef = useRef<{ cartId: string; orderId: number } | null>(null);
   // One-shot guard for the step-3 auto-advance: we only auto-skip step 3 the
   // FIRST time we enter it for a given cart. Otherwise clicking Back from step 4
   // (or expanding the step-3 header) would immediately push the user right back
@@ -367,19 +374,35 @@ function CheckoutPageInner() {
     //                          UNFINISHED with no payment to finish it)
     const orderStatus = isQuoteMode ? 'REQUEST' : goesThroughPsp ? 'UNFINISHED' : 'NEW';
 
-    const result = await placeOrder({
-      cartId: state.cart!.cartId,
-      orderStatus,
-      reference,
-      notes,
-      isQuoteMode,
-      // A PSP order is finalized later by the payment webhook (on paid): don't
-      // send the confirmation email / clear the cart at placement.
-      ...(goesThroughPsp ? { finalizeOrder: false } : {}),
-    });
+    const cartId = state.cart!.cartId;
+
+    // Retry after a payment-start failure: this cart was already converted to
+    // an order by a prior processCart. Reuse that orderId and re-run only the
+    // PSP hand-off instead of processing the cart again (which would strand a
+    // duplicate UNFINISHED order on a non-idempotent backend).
+    const alreadyPlaced =
+      goesThroughPsp && placedOrderRef.current?.cartId === cartId
+        ? placedOrderRef.current.orderId
+        : null;
+
+    const result = alreadyPlaced
+      ? ({ ok: true, data: { orderId: alreadyPlaced } } as const)
+      : await placeOrder({
+          cartId,
+          orderStatus,
+          reference,
+          notes,
+          isQuoteMode,
+          // A PSP order is finalized later by the payment webhook (on paid): don't
+          // send the confirmation email / clear the cart at placement.
+          ...(goesThroughPsp ? { finalizeOrder: false } : {}),
+        });
 
     if (result.ok) {
       const orderId = result.data.orderId;
+      // Remember the order this cart produced so a payment-start retry reuses
+      // it. Only PSP orders keep the cart around to retry against.
+      if (goesThroughPsp) placedOrderRef.current = { cartId, orderId };
 
       // PSP step: hand the shopper off to the PSP's hosted checkout. The cart is
       // only cleared after we have a checkout URL — if payment-start fails we

@@ -25,6 +25,7 @@ export default function LoginPage() {
   const { language, setLanguage } = useLanguage();
   const { cart, saveCart, clearCart } = useCart();
   const loginFormLabels = useTranslations('LoginForm');
+  const t = useTranslations('AuthPages');
   const router = useRouter();
 
 
@@ -36,26 +37,26 @@ export default function LoginPage() {
           {state.isAuthenticated ? (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">Already logged in</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t.alreadyLoggedIn}</CardTitle>
                 <CardDescription>
-                  You are already signed in to your account.
+                  {t.alreadyLoggedInDesc}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <Button className="w-full" onClick={() => router.push(localizeHref('/account', language))}>
-                  Go to My Account
+                  {t.goToAccount}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => router.push(localizeHref('/', language))}>
-                  Go to Home
+                  {t.goToHome}
                 </Button>
               </CardContent>
             </>
           ) : (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t.welcomeBack}</CardTitle>
                 <CardDescription>
-                  Enter your credentials to access your account
+                  {t.welcomeBackDesc}
                 </CardDescription>
               </CardHeader>
 

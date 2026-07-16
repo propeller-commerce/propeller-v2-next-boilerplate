@@ -15,6 +15,7 @@ export default function AuthorizationRequestsPage() {
     const { cart, saveCart } = useCart();
     const router = useRouter();
     const purchaseAuthorizationRequestsLabels = useTranslations('PurchaseAuthorizationRequests');
+    const t = useTranslations('Account');
 
     const isContact = (u: Contact | Customer | null): u is Contact =>
         u !== null && 'contactId' in u;
@@ -28,7 +29,7 @@ export default function AuthorizationRequestsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">
-                    Authorization Requests
+                    {t.authorizationRequestsTitle}
                 </h1>
             </div>
             <PurchaseAuthorizationRequests

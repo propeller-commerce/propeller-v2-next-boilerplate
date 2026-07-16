@@ -26,6 +26,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/i18n/client';
+import { getTranslations } from '@/lib/i18n/server';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart } from '@propeller-commerce/propeller-v2-react-ui';
@@ -180,6 +181,7 @@ function ProductSurcharges({
 }) {
   const list = (surcharges ?? []).filter((s) => s.enabled !== false);
   if (list.length === 0) return null;
+  const t = getTranslations(language, 'ProductDetail');
 
   // Localized surcharge name — match the active language, else the first entry.
   const surchargeName = (s: Surcharge): string =>
@@ -195,7 +197,7 @@ function ProductSurcharges({
 
   return (
     <div className="propeller-product-surcharges mt-2 text-sm text-muted-foreground">
-      <span className="font-medium">Additional surcharges:</span>
+      <span className="font-medium">{t.additionalSurcharges}</span>
       <ul className="propeller-product-surcharges__list mt-1 space-y-0.5">
         {list.map((s) => (
           <li key={s.id} className="propeller-product-surcharges__item">

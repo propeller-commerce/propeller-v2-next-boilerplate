@@ -1,0 +1,9 @@
+{
+  "name": "Naam",
+  "namePlaceholder": "Uw naam",
+  "email": "E-mail",
+  "emailPlaceholder": "uw@email.com",
+  "message": "Bericht",
+  "messagePlaceholder": "Uw bericht...",
+  "send": "Bericht verzenden"
+}

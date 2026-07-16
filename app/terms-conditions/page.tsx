@@ -1,13 +1,19 @@
+import { cookies } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
+import { getTranslations } from '@/lib/i18n/server';
 
-export default function TermsConditionsPage() {
+export default async function TermsConditionsPage() {
+  const store = await cookies();
+  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  const t = getTranslations(locale, 'StaticPages');
+
   return (
     <div className="min-h-screen flex flex-col">
       <HeaderServer />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
-          <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>
+          <h1 className="text-3xl font-bold mb-6">{t.termsTitle}</h1>
           
           <div className="prose max-w-none">
             <h2 className="text-2xl font-bold mt-6 mb-4">1. Introduction</h2>

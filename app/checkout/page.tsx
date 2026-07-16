@@ -419,7 +419,7 @@ function CheckoutPageInner() {
         orderPlacedRef.current = false;
         setState(prev => ({
           ...prev,
-          error: 'Could not start the payment. Please try again.',
+          error: t.paymentStartError,
           loading: false,
         }));
         return;
@@ -506,7 +506,7 @@ function CheckoutPageInner() {
         <Header />
         <main className="flex-1 py-8">
           <div className="container-width max-w-7xl">
-            <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+            <h1 className="text-3xl font-bold mb-8">{t.pageTitle}</h1>
 
             {/* Skeleton step indicator */}
             <div className="flex justify-between max-w-2xl mb-8 px-2">
@@ -606,7 +606,7 @@ function CheckoutPageInner() {
       <Header />
       <main className="flex-1 py-8">
         <div className="container-width max-w-7xl">
-          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+          <h1 className="text-3xl font-bold mb-8">{t.pageTitle}</h1>
 
           {/* Progress Stages (Simplified) */}
           <div className="flex justify-between max-w-2xl mb-8 px-2">
@@ -657,7 +657,7 @@ function CheckoutPageInner() {
                           labels={addressCardLabels}
                         />
                         <Button onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>
-                          Confirm Invoice Address
+                          {t.confirmInvoiceAddress}
                         </Button>
                       </div>
                     ) : (
@@ -716,8 +716,8 @@ function CheckoutPageInner() {
                           labels={addressCardLabels}
                         />
                         <div className="flex items-center gap-4">
-                          <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>Back</Button>
-                          <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>Confirm Delivery Address</Button>
+                          <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 1 }))}>{t.back}</Button>
+                          <Button onClick={() => setState(prev => ({ ...prev, currentStep: 3 }))}>{t.confirmDeliveryAddress}</Button>
                           {authState.isAuthenticated && (
                             <AddressSelector
                               user={authState.user}
@@ -756,9 +756,9 @@ function CheckoutPageInner() {
                   <CardContent className="space-y-8 animate-in slide-in-from-top-2">
                     {/* Payment */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><CreditCard className="w-4 h-4" /> Payment Method</h3>
+                      <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><CreditCard className="w-4 h-4" /> {t.paymentMethodHeading}</h3>
                       {state.step3Submitted && !state.selectedPayment && (
-                        <p className="text-sm text-destructive">Please select a payment method</p>
+                        <p className="text-sm text-destructive">{t.selectPaymentError}</p>
                       )}
                       <CartPaymethods
                         cart={state.cart}
@@ -769,9 +769,9 @@ function CheckoutPageInner() {
 
                     {/* Carrier */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Truck className="w-4 h-4" /> Carrier</h3>
+                      <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Truck className="w-4 h-4" /> {t.carrierHeading}</h3>
                       {state.step3Submitted && (state.cart?.carriers?.length ?? 0) > 0 && !state.selectedCarrier && (
-                        <p className="text-sm text-destructive">Please select a carrier</p>
+                        <p className="text-sm text-destructive">{t.selectCarrierError}</p>
                       )}
                       <CartCarriers
                         cart={state.cart}
@@ -783,9 +783,9 @@ function CheckoutPageInner() {
 
                     {/* Delivery Date */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Calendar className="w-4 h-4" /> Delivery Date</h3>
+                      <h3 className="font-semibold text-sm uppercase tracking-wide flex items-center gap-2"><Calendar className="w-4 h-4" /> {t.deliveryDateHeading}</h3>
                       {state.step3Submitted && !state.selectedDeliveryDate && (
-                        <p className="text-sm text-destructive">Please select a delivery date</p>
+                        <p className="text-sm text-destructive">{t.selectDeliveryDateError}</p>
                       )}
                       <DeliveryDate
                         cart={state.cart}
@@ -796,8 +796,8 @@ function CheckoutPageInner() {
                     </div>
 
                     <div className="flex gap-4 pt-4">
-                      <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>Back</Button>
-                      <Button onClick={handleStep3Continue} isLoading={state.loading}>Continue to Review</Button>
+                      <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>{t.back}</Button>
+                      <Button onClick={handleStep3Continue} isLoading={state.loading}>{t.continueToReview}</Button>
                     </div>
                   </CardContent>
                 )}
@@ -831,33 +831,33 @@ function CheckoutPageInner() {
                   {state.currentStep === 3 && (
                     <CardContent className="space-y-6 animate-in slide-in-from-top-2">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-reference">Reference</label>
+                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-reference">{t.reference}</label>
                         <input
                           id="quote-reference"
                           type="text"
                           value={quoteReference}
                           onChange={(e) => setQuoteReference(e.target.value.slice(0, 255))}
-                          placeholder="Your reference (optional)"
+                          placeholder={t.referencePlaceholder}
                           maxLength={255}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-notes">Notes</label>
+                        <label className="text-sm font-medium text-gray-700" htmlFor="quote-notes">{t.notes}</label>
                         <textarea
                           id="quote-notes"
                           value={quoteNotes}
                           onChange={(e) => setQuoteNotes(e.target.value.slice(0, 255))}
-                          placeholder="Additional notes for your quote request (optional)"
+                          placeholder={t.notesPlaceholder}
                           rows={4}
                           maxLength={255}
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                         />
                       </div>
                       <div className="flex gap-4 pt-2">
-                        <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>Back</Button>
+                        <Button variant="outline" onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>{t.back}</Button>
                         <Button onClick={() => handlePlaceOrder(quoteReference || undefined, quoteNotes || undefined)} isLoading={state.loading}>
-                          Place Quote Request
+                          {t.placeQuoteRequest}
                         </Button>
                       </div>
                     </CardContent>

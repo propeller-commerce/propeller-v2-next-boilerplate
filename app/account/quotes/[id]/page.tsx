@@ -70,6 +70,7 @@ export default function QuoteDetailPage() {
     const orderTotalsLabels = useTranslations('OrderTotals');
     const orderItemCardLabels = useTranslations('OrderItemCard');
     const errorPagesLabels = useTranslations('ErrorPages');
+    const t = useTranslations('Account');
 
     const [downloading, setDownloading] = useState(false);
     const [toastVisible, setToastVisible] = useState(false);
@@ -89,13 +90,13 @@ export default function QuoteDetailPage() {
         try {
             const result = await downloadQuotePdf(Number(quoteId));
             if (result?.success) {
-                showDownloadToast('PDF downloaded successfully', 'success');
+                showDownloadToast(t.pdfDownloaded, 'success');
             } else {
-                showDownloadToast(result?.error || 'Failed to download PDF', 'error');
+                showDownloadToast(result?.error || t.pdfDownloadFailed, 'error');
             }
         } catch (e) {
             console.error('Error downloading quote PDF:', e);
-            showDownloadToast('Failed to download PDF', 'error');
+            showDownloadToast(t.pdfDownloadFailed, 'error');
         } finally {
             setDownloading(false);
         }
@@ -113,9 +114,9 @@ export default function QuoteDetailPage() {
                         onClick={() => router.back()}
                         className="gap-2"
                     >
-                        ← Back
+                        ← {t.back}
                     </Button>
-                    <h1 className="text-3xl font-bold tracking-tight">Quote Details</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">{t.quoteDetailsTitle}</h1>
                 </div>
             </div>
 
@@ -154,14 +155,14 @@ export default function QuoteDetailPage() {
                                 onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                             />
                             <Button variant="link" size="sm" onClick={handleDownloadPDF} disabled={downloading}>
-                                {downloading ? 'Downloading...' : 'Download Quote (PDF)'}
+                                {downloading ? t.downloading : t.downloadQuotePdf}
                             </Button>
                         </div>
                     </Card>
 
                     {/* Quote Overview */}
                     <div className="pt-10">
-                        <h2 className="text-2xl font-bold mb-6 mt-6">Quote Overview</h2>
+                        <h2 className="text-2xl font-bold mb-6 mt-6">{t.quoteOverviewTitle}</h2>
 
                         {/* Regular Products (grouped parent/child) */}
                         {(() => {
@@ -182,10 +183,10 @@ export default function QuoteDetailPage() {
                                         <table className="w-full">
                                             <thead className="bg-gray-50 border-b">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">Products</th>
-                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">Quantity</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Discount</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">Price</th>
+                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">{t.colProducts}</th>
+                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">{t.colQuantity}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colDiscount}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colPrice}</th>
                                                 </tr>
                                             </thead>
                                             {parentItems.map((item: OrderItem) => (

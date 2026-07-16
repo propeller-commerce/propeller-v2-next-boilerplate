@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Checkout",
   "cartItemsTitle": "Cart Items",
   "deliverySameAsInvoice": "Delivery address same as invoice address",
   "orderSummaryTitle": "Order Summary",
@@ -10,5 +11,21 @@
   "stepDetails": "Details",
   "stepPayment": "Payment",
   "stepReview": "Review",
-  "stepShipping": "Shipping"
+  "stepShipping": "Shipping",
+  "confirmInvoiceAddress": "Confirm Invoice Address",
+  "confirmDeliveryAddress": "Confirm Delivery Address",
+  "paymentMethodHeading": "Payment Method",
+  "carrierHeading": "Carrier",
+  "deliveryDateHeading": "Delivery Date",
+  "continueToReview": "Continue to Review",
+  "back": "Back",
+  "reference": "Reference",
+  "notes": "Notes",
+  "referencePlaceholder": "Your reference (optional)",
+  "notesPlaceholder": "Additional notes for your quote request (optional)",
+  "placeQuoteRequest": "Place Quote Request",
+  "selectPaymentError": "Please select a payment method",
+  "selectCarrierError": "Please select a carrier",
+  "selectDeliveryDateError": "Please select a delivery date",
+  "paymentStartError": "Could not start the payment. Please try again."
 }

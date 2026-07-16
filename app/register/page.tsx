@@ -25,6 +25,7 @@ export default function RegisterPage() {
   const { language } = useLanguage();
   const { cart, saveCart, clearCart } = useCart();
   const registerFormLabels = useTranslations('RegisterForm');
+  const t = useTranslations('AuthPages');
   const router = useRouter();
 
   return (
@@ -35,26 +36,26 @@ export default function RegisterPage() {
           {state.isAuthenticated ? (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">Already logged in</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t.alreadyLoggedIn}</CardTitle>
                 <CardDescription>
-                  You are already signed in to your account.
+                  {t.alreadyLoggedInDesc}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <Button className="w-full" onClick={() => router.push(localizeHref('/account', language))}>
-                  Go to My Account
+                  {t.goToAccount}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => router.push(localizeHref('/', language))}>
-                  Go to Home
+                  {t.goToHome}
                 </Button>
               </CardContent>
             </>
           ) : (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">Create account</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t.createAccount}</CardTitle>
                 <CardDescription>
-                  Fill in the details below to create your account
+                  {t.createAccountDesc}
                 </CardDescription>
               </CardHeader>
 

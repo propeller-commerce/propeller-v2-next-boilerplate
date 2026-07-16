@@ -13,14 +13,15 @@ export default function OrdersPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const labels = useTranslations('OrderList');
+  const t = useTranslations('Account');
 
   if (!state.isAuthenticated) return null;
 
   const ordersColumnConf = {
     id: '#',
-    date: 'Datum',
-    status: 'Status',
-    total: 'Totaal',
+    date: t.colDate,
+    status: t.colStatus,
+    total: t.colTotal,
   }
 
   const columns = ['id', 'date', 'status', 'total'];
@@ -28,7 +29,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Order History</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t.ordersTitle}</h1>
       </div>
       <div className="bg-card shadow-sm">
         <OrderList

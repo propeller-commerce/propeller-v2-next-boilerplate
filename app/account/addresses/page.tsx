@@ -44,6 +44,7 @@ export default function AddressesPage() {
   const resolvedCompanyId = getActiveCompany()?.companyId;
 
   const addressCardLabels = useTranslations('AddressCard');
+  const t = useTranslations('Account');
 
   const { createAddress, updateAddress, deleteAddress, setDefaultAddress } = useAddress({
     graphqlClient,
@@ -81,9 +82,9 @@ export default function AddressesPage() {
     const result = await updateAddress(Number(address.id), address as Partial<AddressInput>);
     if (result.success) {
       await refreshUser();
-      toast.success('Address updated successfully');
+      toast.success(t.addressUpdated);
     } else {
-      toast.error('Failed to update address');
+      toast.error(t.addressUpdateFailed);
     }
   };
 
@@ -91,9 +92,9 @@ export default function AddressesPage() {
     const result = await deleteAddress(Number(address.id));
     if (result.success) {
       await refreshUser();
-      toast.success('Address deleted successfully');
+      toast.success(t.addressDeleted);
     } else {
-      toast.error('Failed to delete address');
+      toast.error(t.addressDeleteFailed);
     }
   };
 
@@ -101,9 +102,9 @@ export default function AddressesPage() {
     const result = await setDefaultAddress(Number(address.id));
     if (result.success) {
       await refreshUser();
-      toast.success('Address set as default');
+      toast.success(t.addressSetDefault);
     } else {
-      toast.error('Failed to set default address');
+      toast.error(t.addressSetDefaultFailed);
     }
   };
 
@@ -130,10 +131,10 @@ export default function AddressesPage() {
     const result = await createAddress(input);
     if (result.success) {
       await refreshUser();
-      toast.success('Address created successfully');
+      toast.success(t.addressCreated);
       setShowAddModal(false);
     } else {
-      toast.error('Failed to create address');
+      toast.error(t.addressCreateFailed);
     }
   };
 
@@ -146,7 +147,7 @@ export default function AddressesPage() {
   return (
     <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Addresses</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t.addressesTitle}</h1>
       </div>
 
       {/* Default Addresses */}
@@ -154,7 +155,7 @@ export default function AddressesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-md">Default Billing Address</h2>
+              <h2 className="font-semibold text-md">{t.defaultBillingAddress}</h2>
             </div>
             {defaultAddresses.invoice ? (
               <AddressCard
@@ -169,14 +170,14 @@ export default function AddressesPage() {
               />
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
-                <p className="text-sm text-muted-foreground">No default invoice address</p>
-                <Button variant="link" onClick={() => handleAddAddress(AddressType.invoice)}>Add One</Button>
+                <p className="text-sm text-muted-foreground">{t.noDefaultInvoiceAddress}</p>
+                <Button variant="link" onClick={() => handleAddAddress(AddressType.invoice)}>{t.addOne}</Button>
               </div>
             )}
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-md">Default Delivery Address</h2>
+              <h2 className="font-semibold text-md">{t.defaultDeliveryAddress}</h2>
             </div>
             {defaultAddresses.delivery ? (
               <AddressCard
@@ -191,8 +192,8 @@ export default function AddressesPage() {
               />
             ) : (
               <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
-                <p className="text-sm text-muted-foreground">No default delivery address</p>
-                <Button variant="link" onClick={() => handleAddAddress(AddressType.delivery)}>Add One</Button>
+                <p className="text-sm text-muted-foreground">{t.noDefaultDeliveryAddress}</p>
+                <Button variant="link" onClick={() => handleAddAddress(AddressType.delivery)}>{t.addOne}</Button>
               </div>
             )}
           </div>
@@ -202,10 +203,10 @@ export default function AddressesPage() {
       {/* Billing Addresses */}
       <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Additional Billing Addresses</h2>
+          <h2 className="text-xl font-semibold">{t.additionalBillingAddresses}</h2>
           <Button size="sm" onClick={() => handleAddAddress(AddressType.invoice)}>
             <Plus className="w-4 h-4 mr-2" />
-            Add New
+            {t.addNew}
           </Button>
         </div>
         {billingAddresses.length > 0 ? (
@@ -223,17 +224,17 @@ export default function AddressesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground italic text-sm">No additional billing addresses.</p>
+          <p className="text-muted-foreground italic text-sm">{t.noAdditionalBillingAddresses}</p>
         )}
       </div>
 
       {/* Delivery Addresses */}
       <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Additional Delivery Addresses</h2>
+          <h2 className="text-xl font-semibold">{t.additionalDeliveryAddresses}</h2>
           <Button size="sm" onClick={() => handleAddAddress(AddressType.delivery)}>
             <Plus className="w-4 h-4 mr-2" />
-            Add New
+            {t.addNew}
           </Button>
         </div>
         {deliveryAddresses.length > 0 ? (
@@ -251,7 +252,7 @@ export default function AddressesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground italic text-sm">No additional delivery addresses.</p>
+          <p className="text-muted-foreground italic text-sm">{t.noAdditionalDeliveryAddresses}</p>
         )}
       </div>
 

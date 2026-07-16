@@ -12,12 +12,13 @@ export default function FavoritesPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const favoriteListsLabels = useTranslations('FavoriteLists');
+  const t = useTranslations('Account');
 
   if (!authState.isAuthenticated) return null;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">My Favorites</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t.favoritesTitle}</h1>
 
       <FavoriteLists
         labels={favoriteListsLabels}

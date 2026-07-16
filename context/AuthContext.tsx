@@ -369,6 +369,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userService = new UserService(graphqlClient);
       const viewerData = await userService.getViewer({});
+      // A stale/invalid Bearer does NOT error upstream — `viewer` resolves as
+      // a bare anonymous `User` (neither Contact nor Customer) with HTTP 200.
+      // Accepting it would put a userId-less object into `state.user`: the UI
+      // paints logged-in while every user-scoped query (orders, favorites)
+      // runs with userId 0 and returns nothing. Treat it as a dead session.
+      const isRealUser =
+        !!viewerData &&
+        (('contactId' in viewerData && (viewerData as Contact).contactId) ||
+          ('customerId' in viewerData && (viewerData as Customer).customerId));
+      if (!isRealUser && viewerData) {
+        throw new Error('Unauthorized: viewer resolved anonymous — session expired');
+      }
       if (viewerData) {
         const plain = toPlain(viewerData) as User;
         // localStorage gets ONLY the thin hint. The full profile lives in

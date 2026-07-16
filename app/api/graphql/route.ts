@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
     //    always wins here, so the header is inert for every subsequent request.
     const cookieToken = request.cookies.get('access_token')?.value;
     const authHeader = request.headers.get('authorization');
-    const initialBearer =
+    let initialBearer =
       cookieToken ?? (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
 
     // Guest sessions are the ones the ORDER_EDITOR_QUERIES gate cares about.
@@ -328,6 +328,30 @@ export async function POST(request: NextRequest) {
     // signal we want here: no cookie ⇒ anonymous request ⇒ guest-only routing
     // is permitted to escalate the `order` query to the order-editor key.
     const isAnonymous = !hasSessionCookie;
+
+    let refreshSetCookies: string[] = [];
+
+    // Proactive refresh for a stale session. The upstream does NOT 401 an
+    // expired/invalid Bearer — it silently resolves the request as anonymous
+    // (HTTP 200, `viewer` → bare `User`). So the 401-refresh below never fires
+    // for ordinary token expiry, and a logged-in session silently degrades to
+    // anonymous once the access JWT's 60-min `exp` passes inside the 8h cookie
+    // window: getViewer() stops returning the Contact, `state.user` starves,
+    // and user-scoped queries (orders, quotes, favorites) come back empty
+    // while the UI still paints logged-in. Detect the expiry HERE — the one
+    // choke point every client call passes through — and refresh before the
+    // first upstream attempt. Shares the single-flight tryRefresh, so a page
+    // firing N parallel queries with a stale token still does ONE refresh.
+    if (cookieToken && !looksLikeValidJwt(cookieToken)) {
+      const refreshed = await tryRefresh(request);
+      if (refreshed) {
+        refreshSetCookies = refreshed.setCookies;
+        initialBearer = refreshed.newAccessToken;
+      }
+      // If the refresh failed the refresh_token is dead too — fall through
+      // with the stale Bearer; upstream treats it as anonymous, and the
+      // client-side session-expiry handling (refreshUser) takes over.
+    }
 
     // First attempt.
     let response = await callUpstream(
@@ -337,7 +361,6 @@ export async function POST(request: NextRequest) {
       orderEditorOptIn,
       isAnonymous,
     );
-    let refreshSetCookies: string[] = [];
 
     // 401-refresh-retry: ONLY when we had a cookie token (a logged-in session
     // that may have just expired). If the request came in anonymously, no

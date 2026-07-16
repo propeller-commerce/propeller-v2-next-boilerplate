@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { looksLikeValidJwt } from '@/lib/jwt';
 
 const GRAPHQL_ENDPOINT = process.env.BOILERPLATE_GRAPHQL_ENDPOINT || '';
 const API_KEY = process.env.BOILERPLATE_API_KEY || '';
@@ -172,15 +173,22 @@ async function callUpstream(
   });
 }
 
-/**
- * Attempts a refresh by calling our own /api/auth/refresh route, forwarding
- * the incoming request's cookies so the refresh_token is available. Returns
- * the new access_token value on success (also written to a Set-Cookie which
- * we'll forward to the client below), or null on failure.
- */
-async function tryRefresh(
-  request: NextRequest,
-): Promise<{ newAccessToken: string; setCookies: string[] } | null> {
+type RefreshResult = { newAccessToken: string; setCookies: string[] } | null;
+
+// Single-flight refresh. When a page fires several parallel GraphQL queries
+// with an expired access token, each gets a 401 and would independently POST
+// /api/auth/refresh. Because that route ROTATES the refresh_token on every
+// call, if the upstream invalidates the old refresh token on first use only
+// one refresh survives and the rest 401 with a now-dead token — breaking
+// those UI sections despite a valid session. Deduping on the refresh_token
+// value means all concurrent 401s from the same session await one refresh and
+// share its result (new access token + Set-Cookie headers).
+// ponytail: in-memory map, per-instance. Fine for the single-instance
+// boilerplate default; behind N instances each dedupes its own slice, which
+// only reduces the win, never breaks correctness.
+const inflightRefreshes = new Map<string, Promise<RefreshResult>>();
+
+async function doRefresh(request: NextRequest): Promise<RefreshResult> {
   // Build absolute URL — fetch() in route handlers needs it.
   const url = new URL('/api/auth/refresh', request.url);
   const refreshRes = await fetch(url, {
@@ -204,14 +212,40 @@ async function tryRefresh(
   return { newAccessToken, setCookies };
 }
 
+/**
+ * Attempts a refresh by calling our own /api/auth/refresh route, forwarding
+ * the incoming request's cookies. Concurrent calls carrying the same
+ * refresh_token share a single in-flight refresh (see inflightRefreshes).
+ * Returns the new access_token + Set-Cookie headers on success, or null.
+ */
+async function tryRefresh(request: NextRequest): Promise<RefreshResult> {
+  const refreshToken = request.cookies.get('refresh_token')?.value;
+  // No refresh token to key on — just run it (nothing to dedupe against).
+  if (!refreshToken) return doRefresh(request);
+
+  const existing = inflightRefreshes.get(refreshToken);
+  if (existing) return existing;
+
+  const promise = doRefresh(request).finally(() => {
+    inflightRefreshes.delete(refreshToken);
+  });
+  inflightRefreshes.set(refreshToken, promise);
+  return promise;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // ── Rate limit (per-IP, anon vs auth) ────────────────────────────────
-    // Auth status is determined by cookie presence; we check before parsing
-    // the body so a flood of malformed requests still gets rate-limited.
-    const hasSessionCookie = !!request.cookies.get('access_token')?.value;
+    // We check before parsing the body so a flood of malformed requests still
+    // gets rate-limited.
+    const sessionCookie = request.cookies.get('access_token')?.value;
+    const hasSessionCookie = !!sessionCookie;
+    // The higher auth tier is gated on a token that at least parses as a
+    // non-expired JWT — not raw cookie presence, which a raw HTTP client can
+    // forge with any `access_token=x` value to claim the auth ceiling.
+    const hasAuthToken = looksLikeValidJwt(sessionCookie);
     const ip = clientIp(request);
-    const limit = hasSessionCookie ? RATE_LIMIT_AUTH : RATE_LIMIT_ANON;
+    const limit = hasAuthToken ? RATE_LIMIT_AUTH : RATE_LIMIT_ANON;
     if (isRateLimited(ip, limit)) {
       return NextResponse.json({ error: 'rate limit exceeded' }, { status: 429 });
     }

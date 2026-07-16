@@ -20,6 +20,7 @@ import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
+import { restoreManagerCart } from '@/utils/cartHelpers';
 
 /**
  * Live PSP status → how the thank-you page should behave. THREE outcomes:
@@ -101,7 +102,7 @@ function ThankYouPageInner() {
   const stashKey = `${pspProvider ?? 'mollie'}_payment_${orderId}`;
   const { language } = useLanguage();
   const { state: authState } = useAuth();
-  const { clearCart } = useCart();
+  const { clearCart, saveCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -284,9 +285,14 @@ function ThankYouPageInner() {
     if (cartClearedRef.current) return;
     if (paymentState === 'success') {
       cartClearedRef.current = true;
-      clearCart();
+      // Mirror every non-PSP completion path (checkout/cart pages): if a
+      // manager paid a requester's authorization cart by card, their own cart
+      // was parked in `manager_cart` — restore it instead of clearing, else
+      // it's orphaned. No parked cart ⇒ ordinary clear.
+      const parked = restoreManagerCart();
+      if (parked) saveCart(parked); else clearCart();
     }
-  }, [isPspReturn, paymentState, clearCart]);
+  }, [isPspReturn, paymentState, clearCart, saveCart]);
 
   // Manual re-check for a pending payment — the shopper clicks "Check payment
   // status" and we re-query the PSP. Resolves to success / failed / still

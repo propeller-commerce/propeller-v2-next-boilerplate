@@ -26,7 +26,7 @@
     "@propeller-commerce/propeller-sdk-v2": "^0.12.1",
     "@propeller-commerce/propeller-v2-mollie": "^0.2.3",
     "@propeller-commerce/propeller-v2-msp": "^0.1.1",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.4.21",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.4.22",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",

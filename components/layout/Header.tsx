@@ -69,6 +69,9 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const companySwitcherLabels = useTranslations('CompanySwitcher');
   const priceToggleLabels = useTranslations('PriceToggle');
   const searchBarLabels = useTranslations('SearchBar');
+  // Reuse the ProductPrice namespace for the autosuggest's incl./excl. VAT
+  // suffix, so the dropdown labels match the PLP/PDP price labels exactly.
+  const productPriceLabels = useTranslations('ProductPrice');
   const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
   const loginFormLabels = useTranslations('LoginForm');
   const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
@@ -309,6 +312,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 <div className="hidden lg:block flex-1 max-w-2xl">
                   <SearchBar
                     labels={searchBarLabels}
+                    priceLabels={productPriceLabels}
                     placeholder={searchBarLabels.placeholder}
                     clearSignal={searchClearSignal}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
@@ -537,6 +541,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
               <div className="p-4 border-b border-border">
                 <SearchBar
                   labels={searchBarLabels}
+                  priceLabels={productPriceLabels}
                   placeholder={searchBarLabels.placeholder}
                   clearSignal={searchClearSignal}
                   onSubmit={(term) => {

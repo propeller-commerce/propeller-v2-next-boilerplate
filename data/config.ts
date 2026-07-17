@@ -12,6 +12,12 @@ import {
 
 const DEFAULT_LANG = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
 const BASE_CATEGORY_ID = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10);
+// Channel orders/quotes are placed on for THIS environment. The account
+// order/quote lists filter by `channelIds: [channelId]`, so a wrong value makes
+// those pages permanently empty (the query succeeds but matches nothing).
+// Default 1 is the common tenant channel; set NEXT_PUBLIC_CHANNEL_ID per
+// environment when it differs (e.g. this app's staging target sets it to 621).
+const CHANNEL_ID = parseInt(process.env.NEXT_PUBLIC_CHANNEL_ID || '1', 10);
 /**
  * Returns the URL prefix for a given language.
  * Default language (NL) gets no prefix; others get '/en', '/de', etc.
@@ -113,7 +119,7 @@ export const PORTAL_MODE = {
 
 export const config = {
   baseCategoryId: BASE_CATEGORY_ID,
-  channelId: 621,
+  channelId: CHANNEL_ID,
   anonymousId: 71,
   language: DEFAULT_LANG,
   currency: '€',

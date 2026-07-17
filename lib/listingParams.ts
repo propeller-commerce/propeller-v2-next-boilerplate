@@ -21,7 +21,7 @@ import {
   type ProductTextFilterInput,
 } from '@propeller-commerce/propeller-sdk-v2';
 
-/** Reserved query keys — everything else is an attribute filter. */
+/** Reserved query keys — handled explicitly, never treated as a filter. */
 const RESERVED_KEYS = [
   'page',
   'minPrice',
@@ -30,6 +30,26 @@ const RESERVED_KEYS = [
   'sortField',
   'sortOrder',
 ] as const;
+
+/**
+ * Marketing / tracking query params that ad, email and social platforms append
+ * to landing URLs. They are NOT facet filters and must be ignored, or the
+ * listing filters on a non-existent attribute and returns zero products (every
+ * paid/email/social click would land on an empty page). Matched by exact key or
+ * by the `utm_` prefix. This is a defensive belt on top of the structural check
+ * below (a real facet value is always a JSON array); either alone fixes the bug.
+ */
+const TRACKING_KEYS = new Set([
+  'gclid',    // Google Ads auto-tagging
+  'fbclid',   // Facebook / Meta
+  'msclkid',  // Microsoft Ads
+  'mc_cid',   // Mailchimp campaign id
+  'mc_eid',   // Mailchimp recipient id
+]);
+
+function isTrackingKey(key: string): boolean {
+  return TRACKING_KEYS.has(key) || key.toLowerCase().startsWith('utm_');
+}
 
 /** The parsed, typed listing state derived from a URL query string. */
 export interface ListingParams {
@@ -90,12 +110,25 @@ export function parseListingParams(
   const filters: Record<string, string[]> = {};
   for (const [key, value] of entries) {
     if ((RESERVED_KEYS as readonly string[]).includes(key)) continue;
+    // Ignore marketing/tracking params (gclid, utm_*, fbclid, …). Without this
+    // an ad/email/social click filtered on a bogus attribute → zero products.
+    if (isTrackingKey(key)) continue;
+    // A real facet param's value is ALWAYS a JSON-stringified string array —
+    // that is how the app encodes filters (see CategoryIsland/SearchIsland:
+    // `searchParams.set(key, JSON.stringify(values))`). Anything that doesn't
+    // parse to an array wasn't produced by this app (a stray/unknown param), so
+    // drop it rather than manufacture a filter that matches nothing. This is the
+    // core fix: the old `catch { filters[key] = [value] }` turned every unknown
+    // scalar param into an empty-listing filter.
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(value);
-      filters[key] = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
+      parsed = JSON.parse(value);
     } catch {
-      filters[key] = [value];
+      continue;
     }
+    if (!Array.isArray(parsed)) continue;
+    const values = parsed.map(String).filter((v) => v.length > 0);
+    if (values.length > 0) filters[key] = values;
   }
 
   const minPriceRaw = get('minPrice');

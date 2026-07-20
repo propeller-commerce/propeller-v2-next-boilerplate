@@ -8,6 +8,14 @@ interface CmsPageProps {
   params: Promise<{ slug: string[] }>;
 }
 
+// This catch-all is the lowest-priority route, so every unmatched path lands
+// here. `generateStaticParams` prerenders the known CMS slugs; any other path
+// must render on-demand so it can resolve to `notFound()` (the branded 404).
+// Without forcing dynamic, Next statically evaluates the miss and the render
+// throws DYNAMIC_SERVER_USAGE (via <HeaderServer/>'s request-scoped menu
+// fetch), surfacing as a raw 500 instead of a 404.
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   const slugs = await getAllPageSlugs();
   return slugs

@@ -169,6 +169,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={countries}
+                showTypeBadge={false}
                 labels={addressCardLabels}
               />
             ) : (
@@ -191,6 +192,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={countries}
+                showTypeBadge={false}
                 labels={addressCardLabels}
               />
             ) : (
@@ -222,6 +224,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={countries}
+                showTypeBadge={false}
                 labels={addressCardLabels}
               />
             ))}
@@ -250,6 +253,7 @@ export default function AddressesPage() {
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
                 countries={countries}
+                showTypeBadge={false}
                 labels={addressCardLabels}
               />
             ))}

@@ -13,6 +13,7 @@ export default function QuotesPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const labels = useTranslations('OrderList');
+  const orderStatusLabels = useTranslations('OrderStatus');
   const t = useTranslations('Account');
 
   if (!state.isAuthenticated) return null;
@@ -39,6 +40,7 @@ export default function QuotesPage() {
           onOrderClick={(orderId) => router.push(localizeHref(`/account/quotes/${orderId}`, language))}
           orderStatus={["QUOTATION"]}
           labels={labels}
+          statusLabels={orderStatusLabels}
           rowsClickable={true}
           searchFields={['term', 'createdAt', 'price']}
           columnConfig={ordersColumnConf}

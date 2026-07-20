@@ -4,9 +4,9 @@
   "forgotPassword": "Forgot password?",
   "guestCheckoutLink": "Continue as Guest",
   "loggingIn": "Logging in...",
+  "noAccount": "Don't have an account? {link}",
   "password": "Password",
   "passwordPlaceholder": "••••••••",
-  "noAccount": "Don't have an account?",
   "registerLink": "Create an Account",
   "registerText": "Don't have an account?"
 }

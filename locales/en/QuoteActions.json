@@ -2,6 +2,7 @@
   "acceptButton": "Accept Quotation",
   "expiredMessage": "This quote has expired.",
   "processing": "Processing...",
+  "termsConsent": "I agree to the {link}",
   "termsLink": "Terms and Conditions",
   "termsPrefix": "I agree to the"
 }

@@ -10,6 +10,7 @@
   "purchaseButton": "Bestelling plaatsen",
   "referenceLabel": "Referentie (optioneel)",
   "referencePlaceholder": "Uw referentienummer",
+  "termsConsent": "Ik ga akkoord met de {link}",
   "termsLink": "Algemene voorwaarden",
   "termsPrefix": "Ik ga akkoord met de"
 }

@@ -41,6 +41,8 @@ export default function OrderDetailPage() {
     const companyId = (selectedCompany as Company | null)?.companyId;
 
     const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderStatusLabels = useTranslations('OrderStatus');
+    const paymethodNames = useTranslations('PaymethodNames');
     const orderActionsLabels = useTranslations('OrderActions');
     const orderShipmentsLabels = useTranslations('OrderShipments');
     const orderBonusItemsLabels = useTranslations('OrderBonusItems');
@@ -107,7 +109,7 @@ export default function OrderDetailPage() {
                     {/* Order Summary + Addresses + Delivery Info */}
                     <Card className="p-6">
                         <div className="flex-1">
-                            <OrderSummary order={order} labels={orderSummaryLabels} countries={getCountries(language)} />
+                            <OrderSummary order={order} labels={orderSummaryLabels} statusLabels={orderStatusLabels} paymethodLabels={paymethodNames} countries={getCountries(language)} />
                         </div>
                         <OrderActions
                             order={order}

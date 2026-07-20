@@ -115,6 +115,8 @@ function ThankYouPageInner() {
   const cartClearedRef = useRef(false);
 
   const orderSummaryLabels = useTranslations('OrderSummary');
+  const orderStatusLabels = useTranslations('OrderStatus');
+  const paymethodNames = useTranslations('PaymethodNames');
   const orderBonusItemsLabels = useTranslations('OrderBonusItems');
   const orderItemCardLabels = useTranslations('OrderItemCard');
   const t = useTranslations('CheckoutThankYou');
@@ -515,6 +517,8 @@ function ThankYouPageInner() {
                   countries={getCountries(language)}
                   title={t.orderSummaryTitle}
                   labels={orderSummaryLabels}
+                  statusLabels={orderStatusLabels}
+                  paymethodLabels={paymethodNames}
                 />
               </div>
 

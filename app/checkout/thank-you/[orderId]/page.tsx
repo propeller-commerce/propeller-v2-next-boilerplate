@@ -515,8 +515,10 @@ function ThankYouPageInner() {
                 <OrderSummary
                   order={order}
                   countries={getCountries(language)}
-                  title={t.orderSummaryTitle}
-                  labels={orderSummaryLabels}
+                  title={isQuoteMode ? t.quoteSummaryTitle : t.orderSummaryTitle}
+                  labels={isQuoteMode
+                    ? { ...orderSummaryLabels, orderNumber: t.quoteNumber, orderDate: t.quoteDate }
+                    : orderSummaryLabels}
                   statusLabels={orderStatusLabels}
                   paymethodLabels={paymethodNames}
                 />
@@ -524,7 +526,7 @@ function ThankYouPageInner() {
 
               {/* Order Overview */}
               <div className="pt-10">
-                  <h2 className="text-2xl font-bold mb-6">{t.orderOverviewTitle}</h2>
+                  <h2 className="text-2xl font-bold mb-6">{isQuoteMode ? t.quoteOverviewTitle : t.orderOverviewTitle}</h2>
 
                   {/* Regular Products (grouped parent/child) */}
                   {(() => {
@@ -573,10 +575,10 @@ function ThankYouPageInner() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
                 {authState.isAuthenticated && (
                   <Link
-                    href={localizeHref('/account/orders', language)}
+                    href={localizeHref(isQuoteMode ? '/account/quotes' : '/account/orders', language)}
                     className="px-8 py-3 bg-white border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition text-center"
                   >
-                    {t.viewOrderHistory}
+                    {isQuoteMode ? t.viewQuoteHistory : t.viewOrderHistory}
                   </Link>
                 )}
                 <Link

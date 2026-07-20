@@ -39,7 +39,7 @@ export default function QuoteRequestsPage() {
           showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/quote-requests/${orderId}`, language))}
           orderStatus={["REQUEST"]}
-          labels={labels}
+          labels={{ ...labels, noOrders: t.noQuotes }}
           statusLabels={orderStatusLabels}
           rowsClickable={true}
           // searchFields={['term', 'createdAt', 'price']}

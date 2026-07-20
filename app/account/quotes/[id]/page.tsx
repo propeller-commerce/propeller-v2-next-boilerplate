@@ -144,7 +144,11 @@ export default function QuoteDetailPage() {
                         <div className="flex-1">
                             <OrderSummary
                                 order={quote}
-                                labels={orderSummaryLabels}
+                                labels={{
+                                    ...orderSummaryLabels,
+                                    orderNumber: t.issuedQuoteNumber,
+                                    orderDate: t.issuedQuoteDate,
+                                }}
                                 statusLabels={orderStatusLabels}
                                 paymethodLabels={paymethodNames}
                                 countries={getCountries(language)}

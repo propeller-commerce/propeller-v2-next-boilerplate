@@ -14,6 +14,8 @@
   "from": "van",
   "perPage": " per pagina",
   "price": "Prijs",
+  "productPlural": "Producten",
+  "productSingular": "Product",
   "products": " Producten",
   "results": "resultaten",
   "switchToGrid": "Schakel naar rasterweergave",

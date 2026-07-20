@@ -14,6 +14,8 @@
   "from": "from",
   "perPage": " per page",
   "price": "Price",
+  "productPlural": "Products",
+  "productSingular": "Product",
   "products": " Products",
   "results": "results",
   "switchToGrid": "Switch to grid view",

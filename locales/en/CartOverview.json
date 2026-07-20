@@ -10,6 +10,7 @@
   "purchaseButton": "Place Order",
   "referenceLabel": "Reference (Optional)",
   "referencePlaceholder": "Your reference number",
+  "termsConsent": "I agree to the {link}",
   "termsLink": "Terms and Conditions",
   "termsPrefix": "I agree to the"
 }

@@ -13,6 +13,7 @@ export default function OrdersPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const labels = useTranslations('OrderList');
+  const orderStatusLabels = useTranslations('OrderStatus');
   const t = useTranslations('Account');
 
   if (!state.isAuthenticated) return null;
@@ -36,6 +37,7 @@ export default function OrdersPage() {
           showCompanyOrders={false}
           onOrderClick={(orderId) => router.push(localizeHref(`/account/orders/${orderId}`, language))}
           labels={labels}
+          statusLabels={orderStatusLabels}
           rowsClickable={true}
           searchFields={['term', 'createdAt', 'price']}
           columnConfig={ordersColumnConf}

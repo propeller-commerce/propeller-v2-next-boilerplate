@@ -33,6 +33,8 @@ export default function QuoteDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderStatusLabels = useTranslations('OrderStatus');
+    const paymethodNames = useTranslations('PaymethodNames');
     const orderBonusItemsLabels = useTranslations('OrderBonusItems');
     const orderTotalsLabels = useTranslations('OrderTotals');
     const orderItemCardLabels = useTranslations('OrderItemCard');
@@ -104,6 +106,8 @@ export default function QuoteDetailPage() {
                             <OrderSummary
                                 order={quote}
                                 labels={orderSummaryLabels}
+                                statusLabels={orderStatusLabels}
+                                paymethodLabels={paymethodNames}
                                 countries={getCountries(language)}
                             />
                         </div>

@@ -65,6 +65,8 @@ export default function QuoteDetailPage() {
     // flight, then a success or error toast based on the result. Mirrors the
     // pattern OrderActions uses for the order-confirmation PDF.
     const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderStatusLabels = useTranslations('OrderStatus');
+    const paymethodNames = useTranslations('PaymethodNames');
     const quoteActionsLabels = useTranslations('QuoteActions');
     const orderBonusItemsLabels = useTranslations('OrderBonusItems');
     const orderTotalsLabels = useTranslations('OrderTotals');
@@ -143,6 +145,8 @@ export default function QuoteDetailPage() {
                             <OrderSummary
                                 order={quote}
                                 labels={orderSummaryLabels}
+                                statusLabels={orderStatusLabels}
+                                paymethodLabels={paymethodNames}
                                 countries={getCountries(language)}
                             />
                         </div>

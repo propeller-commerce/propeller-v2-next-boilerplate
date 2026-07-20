@@ -116,6 +116,7 @@ export default function SearchIsland({
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const { includeTax } = usePrice();
+  const searchLabels = useTranslations('Search');
   const gridPaginationLabels = useTranslations('GridPagination');
   const gridFiltersLabels = useTranslations('GridFilters');
   const gridToolbarLabels = useTranslations('GridToolbar');
@@ -391,17 +392,17 @@ export default function SearchIsland({
               />
             </svg>
             <h2 className="text-xl font-semibold text-foreground mb-2">
-              No products found for &quot;{term}&quot;
+              {searchLabels.emptyTitle || 'No products found for'} &quot;{term}&quot;
             </h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              Try adjusting your search term, or browse our products from the homepage.
+              {searchLabels.emptyBrowse || 'Try adjusting your search term, or browse our products from the homepage.'}
             </p>
             <button
               type="button"
               className="inline-flex items-center justify-center px-4 py-2 rounded-control bg-primary text-primary-foreground hover:bg-primary/90 transition font-medium text-sm"
               onClick={() => router.push(localizeHref('/', language))}
             >
-              Go to homepage
+              {searchLabels.emptyGoHome || 'Go to homepage'}
             </button>
           </div>
         ) : null}

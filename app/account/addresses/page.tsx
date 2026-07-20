@@ -10,12 +10,15 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { useAddress, type AddressInput } from '@propeller-commerce/propeller-v2-react-ui';
-import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import { useLanguage } from '@/context/LanguageContext';
+import { getCountries } from '@/data/countries';
 
-// COUNTRIES imported from shared utils
 export default function AddressesPage() {
   const { state: authState, refreshUser } = useAuth();
+  const { language } = useLanguage();
+  // Localized country list (Dutch names on NL) for the address dropdowns.
+  const countries = getCountries(language);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<AddressType>(AddressType.invoice);
   const { selectedCompany } = useCompany();
@@ -165,7 +168,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
-                countries={COUNTRIES}
+                countries={countries}
                 labels={addressCardLabels}
               />
             ) : (
@@ -187,7 +190,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
-                countries={COUNTRIES}
+                countries={countries}
                 labels={addressCardLabels}
               />
             ) : (
@@ -218,7 +221,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
-                countries={COUNTRIES}
+                countries={countries}
                 labels={addressCardLabels}
               />
             ))}
@@ -246,7 +249,7 @@ export default function AddressesPage() {
                 onEdit={handleEditAddress}
                 onDelete={handleDeleteAddress}
                 onSetDefault={handleSetDefault}
-                countries={COUNTRIES}
+                countries={countries}
                 labels={addressCardLabels}
               />
             ))}
@@ -264,7 +267,7 @@ export default function AddressesPage() {
           onEdit={handleSaveNewAddress}
           onCancel={() => setShowAddModal(false)}
           enableActions={false}
-          countries={COUNTRIES}
+          countries={countries}
           labels={addressCardLabels}
         />
       )}

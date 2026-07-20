@@ -75,6 +75,9 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const accountIconAndMenuLabels = useTranslations('AccountIconAndMenu');
   const loginFormLabels = useTranslations('LoginForm');
   const cartIconAndSidebarLabels = useTranslations('CartIconAndSidebar');
+  // Forwarded to the mini-cart's inner CartItem rows (e.g. the "Aantal:" qty
+  // prefix) — the sidebar labels don't cover the line items.
+  const cartItemLabels = useTranslations('CartItem');
   const accountLabels = useTranslations('Account');
   const headerLabels = useTranslations('Header');
 
@@ -212,8 +215,14 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 {showVatToggle && (
                   <PriceToggle
                     labels={priceToggleLabels}
-                    inclExclVatSwitched={setIncludeTax}
-                    initialState={config.includeVAT}
+                    // Controlled: reflect the LIVE persisted state (the
+                    // price_include_tax cookie, via PriceContext) so the label +
+                    // aria-checked match the actual mode on load. Using
+                    // `initialState={config.includeVAT}` froze the toggle at the
+                    // config default and ignored the cookie — the control lied
+                    // about the mode for excl.-VAT users.
+                    value={includeTax}
+                    onChange={setIncludeTax}
                   />
                 )}
 
@@ -428,6 +437,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 {showCart && (
                   <CartIconAndSidebar
                     labels={cartIconAndSidebarLabels}
+                    cartItemLabels={cartItemLabels}
                     cart={cart as Cart}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}

@@ -3,6 +3,7 @@
   "applying": "Applying...",
   "errorApply": "Failed to apply action code. Please try again.",
   "errorRemove": "Failed to remove action code. Please try again.",
+  "invalidActionCode": "This action code is not found. Please add a valid action code.",
   "placeholder": "Enter action code",
   "remove": "Remove",
   "title": "Action code"

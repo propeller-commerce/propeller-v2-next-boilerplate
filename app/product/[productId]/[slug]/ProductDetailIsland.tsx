@@ -139,6 +139,10 @@ export function ProductPriceIsland({
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const bulkPricesLabels = useTranslations('ProductBulkPrices');
+  // The main PDP price block must carry the ProductPrice labels so the incl./
+  // excl. VAT suffix reads in the active locale (NL: "incl. BTW"/"excl. BTW");
+  // without it the block fell back to the English "incl. VAT"/"excl. VAT".
+  const productPriceLabels = useTranslations('ProductPrice');
   return (
     <>
       <ProductPrice
@@ -147,6 +151,7 @@ export function ProductPriceIsland({
         user={user}
         portalMode={portalMode}
         currency={config.currency}
+        labels={productPriceLabels}
       />
       <ProductSurcharges surcharges={surcharges} language={language} />
       <div className="mt-6">

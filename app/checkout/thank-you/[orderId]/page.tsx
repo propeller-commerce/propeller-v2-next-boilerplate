@@ -16,7 +16,7 @@ import { OrderSummary } from '@propeller-commerce/propeller-v2-react-ui';
 import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
 import { OrderItemCard } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderBonusItems } from '@propeller-commerce/propeller-v2-react-ui';
-import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
+import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
@@ -512,7 +512,7 @@ function ThankYouPageInner() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <OrderSummary
                   order={order}
-                  countries={COUNTRIES}
+                  countries={getCountries(language)}
                   title={t.orderSummaryTitle}
                   labels={orderSummaryLabels}
                 />

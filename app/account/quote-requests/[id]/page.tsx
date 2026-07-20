@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { OrderItemCard } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderBonusItems } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderTotals } from '@propeller-commerce/propeller-v2-react-ui';
-import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
+import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
@@ -104,7 +104,7 @@ export default function QuoteDetailPage() {
                             <OrderSummary
                                 order={quote}
                                 labels={orderSummaryLabels}
-                                countries={COUNTRIES}
+                                countries={getCountries(language)}
                             />
                         </div>
                     </Card>

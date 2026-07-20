@@ -20,7 +20,7 @@ import { OrderBonusItems } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderTotals } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderActions } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderShipments } from '@propeller-commerce/propeller-v2-react-ui';
-import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
+import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
@@ -107,7 +107,7 @@ export default function OrderDetailPage() {
                     {/* Order Summary + Addresses + Delivery Info */}
                     <Card className="p-6">
                         <div className="flex-1">
-                            <OrderSummary order={order} labels={orderSummaryLabels} countries={COUNTRIES} />
+                            <OrderSummary order={order} labels={orderSummaryLabels} countries={getCountries(language)} />
                         </div>
                         <OrderActions
                             order={order}

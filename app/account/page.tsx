@@ -4,13 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { UserDetails } from '@propeller-commerce/propeller-v2-react-ui';
-import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import { useLanguage } from '@/context/LanguageContext';
+import { getCountries } from '@/data/countries';
 
-// COUNTRIES imported from shared utils
 export default function AccountPage() {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
+  const { language } = useLanguage();
   const user = state.user;
   const userDetailsLabels = useTranslations('UserDetails');
   const t = useTranslations('Account');
@@ -29,7 +30,7 @@ export default function AccountPage() {
         listAllContactCompanies={false}
         showDefaultInvoiceAddress={true}
         showDefaultDeliveryAddress={true}
-        countries={COUNTRIES}
+        countries={getCountries(language)}
         labels={userDetailsLabels}
       />
     </div>

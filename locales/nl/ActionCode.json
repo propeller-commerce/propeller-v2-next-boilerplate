@@ -3,6 +3,7 @@
   "applying": "Toepassen...",
   "errorApply": "Actiecode kon niet worden toegepast. Probeer het opnieuw.",
   "errorRemove": "Actiecode kon niet worden verwijderd. Probeer het opnieuw.",
+  "invalidActionCode": "Deze actiecode is niet gevonden. Voer een geldige actiecode in.",
   "placeholder": "Voer actiecode in",
   "remove": "Verwijderen",
   "title": "Actiecode"

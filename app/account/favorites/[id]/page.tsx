@@ -22,6 +22,13 @@ export default function FavoriteListPage() {
   const listId = params?.id as string;
   const { language } = useLanguage();
   const favoriteListDetailsLabels = useTranslations('FavoriteListDetails');
+  // The detail cards embed ItemStock (stock badge) + AddToCart (Add button) +
+  // FavoriteListItem (item chrome) — each needs its own label map or it falls
+  // back to English ("In stock (20pcs)", "Add"). The NL locale files already
+  // carry the right strings; they just weren't being passed through.
+  const itemStockLabels = useTranslations('ItemStock');
+  const addToCartLabels = useTranslations('AddToCart');
+  const favoriteListItemLabels = useTranslations('FavoriteListItem');
   const t = useTranslations('Account');
 
   const [listName, setListName] = useState('');
@@ -71,6 +78,9 @@ export default function FavoriteListPage() {
 
       <FavoriteListDetails
         labels={favoriteListDetailsLabels}
+        stockLabels={itemStockLabels}
+        addToCartLabels={addToCartLabels}
+        itemLabels={favoriteListItemLabels}
         favoriteListId={listId}
         onItemDelete={handleItemDelete}
         onItemsDelete={handleItemsDelete}

@@ -4,6 +4,7 @@
   "includedOptions": "Included Options:",
   "notes": "Notes",
   "notesPlaceholder": "Add a note for this item...",
+  "qtyPrefix": "Qty:",
   "surcharges": "Additional surcharges:",
   "updating": "Updating..."
 }

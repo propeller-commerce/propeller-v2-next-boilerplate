@@ -26,6 +26,7 @@ import {
   type ProductsResponse,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { getListingInfra, fetchSearch, fetchCategory } from '@/lib/server';
+import { getTranslations } from '@/lib/i18n/server';
 import { buildJsonLdContext } from '@/lib/seo';
 import { config } from '@/data/config';
 import {
@@ -93,9 +94,10 @@ export default async function SearchPage({
     );
   }
 
+  const searchLabels = getTranslations(infra.language, 'Search');
   const heading = isAllProducts
-    ? 'All products'
-    : `Search results for "${term}"`;
+    ? (searchLabels.allProducts || 'All products')
+    : `${searchLabels.resultsFor || 'Search results for'} "${term}"`;
 
   const jsonLdContext = buildJsonLdContext(infra);
   const firstPageItems = (initialProducts?.items ?? []) as Product[];

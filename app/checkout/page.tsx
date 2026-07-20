@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Check, Truck, CreditCard, Calendar } from 'lucide-react';
-import { COUNTRIES } from '@propeller-commerce/propeller-v2-react-ui';
+import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 
 interface CheckoutState {
@@ -50,6 +50,8 @@ function CheckoutPageInner() {
   const searchParams = useSearchParams();
   const isQuoteMode = searchParams?.get('mode') === 'quote';
   const { language } = useLanguage();
+  // Localized country list (Dutch names on NL) for the address forms.
+  const countries = getCountries(language);
   const { cart: contextCart, getCart, clearCart, saveCart } = useCart();
   const { state: authState, refreshUser } = useAuth();
   const { selectedCompany } = useCompany();
@@ -172,6 +174,10 @@ function CheckoutPageInner() {
   const addressCardLabels = useTranslations('AddressCard');
   const addressSelectorLabels = useTranslations('AddressSelector');
   const cartPaymethodsLabels = useTranslations('CartPaymethods');
+  // Code→localized name overrides for payment methods whose backend `name` is
+  // un-localized English (e.g. "On pickup"/"On account"). Keyed by lower-cased
+  // method code; unknown codes fall back to the backend name.
+  const paymethodNames = useTranslations('PaymethodNames');
   const cartCarriersLabels = useTranslations('CartCarriers');
   const deliveryDateLabels = useTranslations('DeliveryDate');
   const cartOverviewLabels = useTranslations('CartOverview');
@@ -653,7 +659,7 @@ function CheckoutPageInner() {
                           enableDelete={false}
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE, false)}
-                          countries={COUNTRIES}
+                          countries={countries}
                           labels={addressCardLabels}
                         />
                         <Button onClick={() => setState(prev => ({ ...prev, currentStep: 2 }))}>
@@ -670,7 +676,7 @@ function CheckoutPageInner() {
                           showIcp={false}
                           beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.INVOICE)}
-                          countries={COUNTRIES}
+                          countries={countries}
                           labels={addressCardLabels}
                         />
                         {!authState.isAuthenticated && (
@@ -712,7 +718,7 @@ function CheckoutPageInner() {
                           enableDelete={false}
                           enableSetDefault={false}
                           onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY, false)}
-                          countries={COUNTRIES}
+                          countries={countries}
                           labels={addressCardLabels}
                         />
                         <div className="flex items-center gap-4">
@@ -723,7 +729,7 @@ function CheckoutPageInner() {
                               user={authState.user}
                               addressType={AddressType.delivery}
                               onAddressSelected={(address) => handleAddressSubmit(address, CartAddressType.DELIVERY, true)}
-                              countries={COUNTRIES}
+                              countries={countries}
                               className="ml-auto"
                               labels={addressSelectorLabels}
                             />
@@ -739,7 +745,7 @@ function CheckoutPageInner() {
                         showIcp={false}
                         beforeSave={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                         onEdit={(addr) => handleAddressSubmit(addr, CartAddressType.DELIVERY)}
-                        countries={COUNTRIES}
+                        countries={countries}
                         labels={addressCardLabels}
                       />
                     )}
@@ -764,6 +770,7 @@ function CheckoutPageInner() {
                         cart={state.cart}
                         onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
                         labels={cartPaymethodsLabels}
+                        paymethodLabels={paymethodNames}
                       />
                     </div>
 

@@ -15,7 +15,7 @@ import { Menu as PropellerMenu } from '@propeller-commerce/propeller-v2-react-ui
 import { PriceToggle } from '@propeller-commerce/propeller-v2-react-ui';
 import { services } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { Menu as MenuIcon, ChevronDown, Check, Globe } from 'lucide-react';
+import { Menu as MenuIcon, ChevronDown, Check, Globe, Search as SearchIcon, X as XIcon } from 'lucide-react';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import { restoreManagerCart } from '@/utils/cartHelpers';
@@ -59,9 +59,14 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const [showMainMenu, setShowMainMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  // Mobile (< md): search collapses to an icon that expands the bar.
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  // Drives the fade/slide-in: flipped true on the frame after the panel mounts.
+  const [mobileSearchIn, setMobileSearchIn] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   // Bumped on every route change away from the search results page so the
   // SearchBar(s) reset their input. This is what gives users an empty search
@@ -163,6 +168,46 @@ export default function Header({ menuTree }: HeaderProps = {}) {
       document.removeEventListener('keydown', handleKey);
     };
   }, [showLangMenu]);
+
+  // Mobile search (< md): focus the input when it expands, and close it on
+  // outside click / Escape. Focus targets the SearchBar's internal input by
+  // its package class so we don't need an autoFocus prop on the component.
+  useEffect(() => {
+    if (!showMobileSearch) {
+      setMobileSearchIn(false);
+      return;
+    }
+    // Start hidden, then flip to visible next frame so the transition runs.
+    const raf = requestAnimationFrame(() => setMobileSearchIn(true));
+    const input = mobileSearchRef.current?.querySelector<HTMLInputElement>(
+      'input.propeller-search-bar__input',
+    );
+    input?.focus();
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)) {
+        setShowMobileSearch(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowMobileSearch(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showMobileSearch]);
+
+  // Collapse the mobile search once the viewport reaches md (where the full bar
+  // is always visible), so it can't get stuck open after resizing up.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const handle = () => setShowMobileSearch(false);
+    mq.addEventListener('change', handle);
+    return () => mq.removeEventListener('change', handle);
+  }, []);
 
   // Logo: CMS image or fallback
   const logoSrc = globalData?.logo?.url || '/propeller_logo.webp';
@@ -318,7 +363,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
 
               {/* Search Bar */}
               {showSearch && (
-                <div className="hidden lg:block flex-1 max-w-2xl">
+                <div className="hidden md:block flex-1 max-w-2xl">
                   <SearchBar
                     labels={searchBarLabels}
                     priceLabels={productPriceLabels}
@@ -335,6 +380,20 @@ export default function Header({ menuTree }: HeaderProps = {}) {
 
               {/* Right Section */}
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                {/* Mobile search toggle — icon only below md; expands the bar
+                    as an overlay row (see below). The full bar is always
+                    visible from md up, so this is hidden there. */}
+                {showSearch && (
+                  <button
+                    type="button"
+                    className="md:hidden text-white p-2"
+                    aria-label={searchBarLabels.placeholder || 'Search'}
+                    aria-expanded={showMobileSearch}
+                    onClick={() => setShowMobileSearch((s) => !s)}
+                  >
+                    {showMobileSearch ? <XIcon className="w-6 h-6" /> : <SearchIcon className="w-6 h-6" />}
+                  </button>
+                )}
                 {/* User Menu */}
                 {showAccount && (
                   <AccountIconAndMenu
@@ -469,6 +528,40 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 )}
               </div>
             </div>
+
+            {/* Mobile expanding search — revealed by the icon toggle above.
+                Below md only; from md up the always-visible bar handles search.
+                Fades + slides in via an opacity/translate transition that flips
+                on the frame after mount (mobileSearchIn). No height clipping, so
+                the autosuggest dropdown (absolute top-full) is never cut off. */}
+            {showSearch && showMobileSearch && (
+              <div
+                ref={mobileSearchRef}
+                className={cn(
+                  'md:hidden pb-4 transition-all duration-300 ease-out motion-reduce:transition-none',
+                  mobileSearchIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
+                )}
+              >
+                <SearchBar
+                  labels={searchBarLabels}
+                  priceLabels={productPriceLabels}
+                  placeholder={searchBarLabels.placeholder}
+                  clearSignal={searchClearSignal}
+                  onSubmit={(term) => {
+                    setShowMobileSearch(false);
+                    router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language));
+                  }}
+                  onResultClick={(result) => {
+                    setShowMobileSearch(false);
+                    if (result.url) router.push(result.url);
+                  }}
+                  onViewAllClick={(term) => {
+                    setShowMobileSearch(false);
+                    router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language));
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -546,29 +639,8 @@ export default function Header({ menuTree }: HeaderProps = {}) {
         {/* Mobile slide-down menu */}
         {showMobileMenu && (
           <div className="md:hidden bg-background border-t border-border overflow-y-auto max-h-[calc(100vh-64px)]">
-            {/* Mobile search */}
-            {showSearch && (
-              <div className="p-4 border-b border-border">
-                <SearchBar
-                  labels={searchBarLabels}
-                  priceLabels={productPriceLabels}
-                  placeholder={searchBarLabels.placeholder}
-                  clearSignal={searchClearSignal}
-                  onSubmit={(term) => {
-                    setShowMobileMenu(false);
-                    router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language));
-                  }}
-                  onResultClick={(result) => {
-                    setShowMobileMenu(false);
-                    if (result.url) router.push(result.url);
-                  }}
-                  onViewAllClick={(term) => {
-                    setShowMobileMenu(false);
-                    router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language));
-                  }}
-                />
-              </div>
-            )}
+            {/* Search moved out of the hamburger — it now lives behind the
+                dedicated search icon in the header row (see showMobileSearch). */}
 
             {/* Mobile categories — same pre-fetched tree as the desktop
                 instance. The `state.isLoading` gate is gone for the same

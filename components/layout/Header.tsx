@@ -373,7 +373,9 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
                     }}
+                    getResultHref={(result) => result.url || '#'}
                     onViewAllClick={(term) => router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language))}
+                    getViewAllHref={(term) => localizeHref(`/search/${encodeURIComponent(term)}`, language)}
                   />
                 </div>
               )}
@@ -555,10 +557,12 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     setShowMobileSearch(false);
                     if (result.url) router.push(result.url);
                   }}
+                  getResultHref={(result) => result.url || '#'}
                   onViewAllClick={(term) => {
                     setShowMobileSearch(false);
                     router.push(localizeHref(`/search/${encodeURIComponent(term)}`, language));
                   }}
+                  getViewAllHref={(term) => localizeHref(`/search/${encodeURIComponent(term)}`, language)}
                 />
               </div>
             )}

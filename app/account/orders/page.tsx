@@ -1,22 +1,35 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { OrderList } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import { orderFilterFromParams, orderFilterToQueryString } from '@/lib/orderFilters';
 
 
 export default function OrdersPage() {
   const { state } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { language } = useLanguage();
   const labels = useTranslations('OrderList');
   const orderStatusLabels = useTranslations('OrderStatus');
   const t = useTranslations('Account');
 
   if (!state.isAuthenticated) return null;
+
+  // Seed the filter form from the URL so a shared/bookmarked filtered view
+  // restores on reload; write filters back to the URL when they change.
+  const initialSearchForm = orderFilterFromParams(
+    new URLSearchParams(searchParams?.toString() ?? ''),
+  );
+  const persistFilters = (form: typeof initialSearchForm) => {
+    const qs = orderFilterToQueryString(form);
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   const ordersColumnConf = {
     id: '#',
@@ -44,6 +57,8 @@ export default function OrdersPage() {
           columns={columns}
           enableSearch={true}
           channelIds={[config.channelId]}
+          initialSearchForm={initialSearchForm}
+          onSearchApply={persistFilters}
         />
       </div>
     </div>

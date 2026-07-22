@@ -1,7 +1,7 @@
 // Default configuration for the application
 // These will be used with project wide
 
-import { Category, Cluster, Product } from '@propeller-commerce/propeller-sdk-v2';
+import { Category, Cluster, LocalizedString, Product } from '@propeller-commerce/propeller-sdk-v2';
 import {
   imageSearchFilters,
   imageSearchFiltersGrid,
@@ -138,9 +138,37 @@ export const config = {
   productTrackAttributes: [],
   categoryTrackAttributes: [],
   clusterTrackAttributes: [],
-  companyTrackAttributes: [],
+  companyTrackAttributes: ['MY_INSTALLATIONS'],
   contactTrackAttributes: [],
   customerTrackAttributes: [],
+  /**
+   * Spare-parts machines.
+   *
+   * `source` is the external system the machine ids in the `MY_INSTALLATIONS`
+   * company track attribute belong to — it pairs with each id as
+   * `machine(source:, sourceId:)`. Leave unset to disable the machines root
+   * (the page then renders its empty state).
+   *
+   * `language` is the language the MACHINE TREE is maintained in, which is
+   * usually not the storefront language: `machine(slug:, language:)` is
+   * language-scoped and errors with "No machine found for slug and language"
+   * when the machine has no name/slug in that language. Machine trees are
+   * typically authored once, in English, while the spare parts themselves are
+   * localized — so the tree resolves in `machines.language` and the parts in
+   * the active storefront language. (The WP reference hardcodes this same
+   * split; see MachineModel::get_machines.)
+   */
+  machines: {
+    // NEXT_PUBLIC_ variant so the (currently CSR) machine pages can read the
+    // source in the browser; falls back to the server-only var.
+    source:
+      process.env.NEXT_PUBLIC_BOILERPLATE_MACHINE_SOURCE ||
+      process.env.BOILERPLATE_MACHINE_SOURCE,
+    language:
+      process.env.NEXT_PUBLIC_BOILERPLATE_MACHINE_LANGUAGE ||
+      process.env.BOILERPLATE_MACHINE_LANGUAGE ||
+      'EN',
+  },
   contactPAConfigInput: [],
   includeVAT: true,
   enableRegistration: true,
@@ -166,14 +194,14 @@ export const config = {
     /** Generate a canonical cluster URL from a Cluster object. */
     getClusterUrl(cluster: Cluster, language?: string): string {
       const slugs = cluster?.slugs || cluster?.defaultProduct?.slugs;
-      const slug = (language && slugs?.find((s: any) => s.language === language)?.value)
+      const slug = (language && slugs?.find((s: LocalizedString) => s.language === language)?.value)
         || slugs?.[0]?.value || '';
       return buildEntityUrl('cluster', cluster?.clusterId, slug, this.pattern, language);
     },
 
     /** Generate a canonical category URL from a Category object. */
     getCategoryUrl(category: Category, language?: string): string {
-      const slug = (language && category?.slug?.find((s: any) => s.language === language)?.value)
+      const slug = (language && category?.slug?.find((s: LocalizedString) => s.language === language)?.value)
         || category?.slug?.[0]?.value || '';
       return buildEntityUrl('category', category?.categoryId, slug, this.pattern, language);
     },

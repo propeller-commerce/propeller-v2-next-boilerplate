@@ -50,18 +50,39 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
   const { includeTax } = usePrice();
   const { language } = useLanguage();
 
+  // The selected company can be a STALE `selected_company` left in localStorage
+  // by a previously logged-in identity — CompanyContext hydrates it
+  // synchronously, before the current user is known. Sending a companyId the
+  // signed-in contact isn't a member of makes PricingV2 reject the request
+  // ("Provided companyId N does not match the contact's companies") until
+  // CompanyContext's `userRefreshed` reconciler catches up — one render too late,
+  // so the first catalog/parts fetch errors. Only expose a company the current
+  // user actually belongs to; otherwise fall back to their default. Same
+  // validation `resolveInstallationIds` already applies to the machine sourceIds.
+  const companyId = useMemo<number | undefined>(() => {
+    const selId = selectedCompany?.companyId;
+    const u = state.user as
+      | { company?: { companyId?: number }; companies?: { items?: { companyId?: number }[] } }
+      | null;
+    // Anonymous / user not resolved yet: no contact to mismatch, keep the selection.
+    if (!u) return selId;
+    const candidates = [...(u.companies?.items ?? []), ...(u.company ? [u.company] : [])];
+    if (selId != null && candidates.some((c) => c?.companyId === selId)) return selId;
+    return u.company?.companyId ?? undefined;
+  }, [selectedCompany?.companyId, state.user]);
+
   // Tier 2 scope — only the 4 reactive store values are deps; the memo keeps
   // the context value stable across unrelated parent renders so scope
   // consumers only re-render on intentional cache-busts.
   const scope = useMemo<PropellerScope>(
     () => ({
       user: state.user,
-      companyId: selectedCompany?.companyId,
+      companyId,
       language,
       includeTax,
       portalMode: config.portal.mode,
     }),
-    [state.user, selectedCompany?.companyId, language, includeTax]
+    [state.user, companyId, language, includeTax]
   );
 
   // When the active company changes, ask Next to re-run the current Server

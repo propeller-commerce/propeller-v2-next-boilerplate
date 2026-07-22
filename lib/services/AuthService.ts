@@ -2,7 +2,8 @@ import { LoginService, UserService, LoginInput } from '@propeller-commerce/prope
 import { graphqlClient, toPlain } from '../api';
 import { pickUserHint } from '../userHint';
 import toast from 'react-hot-toast';
-import { ViewerInput } from '@propeller-commerce/propeller-sdk-v2';
+import { ViewerInput, ViewerVariables } from '@propeller-commerce/propeller-sdk-v2';
+import { config } from '@/data/config';
 
 export class AuthService {
     private loginService: LoginService;
@@ -47,9 +48,20 @@ export class AuthService {
             // Get viewer data
             let user = null;
             try {
-                const input: ViewerInput = {};
+                const input: ViewerVariables = {
+                    companyAttributesInput: {
+                        attributeDescription: {
+                            names: config.companyTrackAttributes
+                        }
+                    },
+                    customerAttributesInput: {
+                        attributeDescription: {
+                            names: config.customerTrackAttributes
+                        }
+                    }
+                };
                 // Pass empty object as argument if required by the SDK
-                const viewerResponse: any = await this.userService.getViewer({});
+                const viewerResponse: any = await this.userService.getViewer(input);
                 console.log('Viewer data received:', viewerResponse);
 
                 if (viewerResponse?.data) {

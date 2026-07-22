@@ -72,10 +72,14 @@ import {
   type ProductTextFilterInput,
   type ProductPriceFilterInput,
   type ClusterConfigSetting,
+  type SparePartsMachine,
+  type SparePartsMachineProductSearchInput,
+  type AttributeResultSearchInput,
   ProductStatus,
   ProductSortField,
   SortOrder,
   ProductSearchableField,
+  machineService,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
 
@@ -99,7 +103,7 @@ export const ANONYMOUS_CACHE_TTL_SECONDS = 300;
  */
 export const TAG_CATALOG = 'catalog';
 
-type CacheableEntity = 'product' | 'category' | 'cluster' | 'menu' | 'search';
+type CacheableEntity = 'product' | 'category' | 'cluster' | 'menu' | 'search' | 'machine';
 
 /**
  * Constructs a Next.js cache tag for a cacheable entity. Single source of
@@ -116,6 +120,7 @@ import {
   imageVariantFiltersMedium,
   imageVariantFiltersLarge,
 } from '@/data/defaults';
+import { config } from '@/data/config';
 
 /** Statuses the storefront grid shows — mirrors the client `useProductSearch`. */
 const STOREFRONT_STATUSES: ProductStatus[] = [
@@ -331,7 +336,13 @@ export interface ServerInfra {
 const cachedGetViewer = cache(
   async (services: Services): Promise<Contact | Customer | null> => {
     try {
-      const viewer = await services.user.getViewer({});
+      // Ask the viewer to include the company track attributes (machine
+      // installations etc.). Without `companyAttributesInput` the SDK viewer
+      // selects `company.attributes(input: $companyAttributesInput)` with a
+      // null input and the backend returns no items — so `fetchRootMachines`
+      // (which reads the ids off `user.company.attributes`) would see nothing.
+      // Scoped to the configured names so we don't drag the whole attribute set.
+      const viewer = await services.user.getViewer(viewerVariablesWithTrackAttrs());
       return viewer ? ((toPlain(viewer) as unknown) as Contact | Customer) : null;
     } catch {
       // Expired or otherwise invalid token — render anonymously. The client
@@ -340,6 +351,34 @@ const cachedGetViewer = cache(
     }
   }
 );
+
+/**
+ * Viewer variables that pull the configured company track attributes into
+ * `user.company.attributes` AND `user.companies.items[].attributes`. Empty
+ * (`{}`) when no attributes are configured, so this is a no-op for tenants not
+ * using them.
+ *
+ * The `companies` list is loaded (with the same attribute input) so a multi-
+ * company contact who switched companies can have the SELECTED company's
+ * attributes read server-side — the switcher persists the pick in the
+ * `selected_company_id` cookie, mirrored here into `resolveCompanyId`. Without
+ * the list, only the default company's attributes are available and `/machines`
+ * would ignore the switch.
+ */
+function viewerVariablesWithTrackAttrs(): {
+  companyAttributesInput?: AttributeResultSearchInput;
+  contactCompaniesSearchInput?: { page: number; offset: number };
+} {
+  const names = config.companyTrackAttributes ?? [];
+  if (names.length === 0) return {};
+  const companyAttributesInput: AttributeResultSearchInput = {
+    attributeDescription: { names: [...names] },
+    page: 1,
+    offset: names.length,
+  };
+  // offset 50: contacts belong to a handful of companies, not thousands.
+  return { companyAttributesInput, contactCompaniesSearchInput: { page: 1, offset: 50 } };
+}
 
 /**
  * Mark the GraphQL client + services as server-only. If a Server Component
@@ -566,13 +605,20 @@ export interface ListingFetchOptions {
 }
 
 /**
- * Build the optional `textFilters` / `price` slice of a
- * `CategoryProductSearchInput` from listing options. Mirrors the client
- * `useProductSearch` listing path. Price defaults match the client's
- * (`from: 0`, `to: 999999`).
+ * The `textFilters` / `price` pair is shared verbatim by every product-search
+ * input the storefront builds (`CategoryProductSearchInput`,
+ * `SparePartsMachineProductSearchInput`, …), so `buildFilterInput` returns just
+ * that slice and each caller spreads it into its own input type.
  */
-function buildFilterInput(opts: ListingFetchOptions): Partial<CategoryProductSearchInput> {
-  const slice: Partial<CategoryProductSearchInput> = {};
+type ListingFilterSlice = Pick<CategoryProductSearchInput, 'textFilters' | 'price'>;
+
+/**
+ * Build the optional `textFilters` / `price` slice of a product-search input
+ * from listing options. Mirrors the client `useProductSearch` listing path.
+ * Price defaults match the client's (`from: 0`, `to: 999999`).
+ */
+function buildFilterInput(opts: ListingFetchOptions): ListingFilterSlice {
+  const slice: ListingFilterSlice = {};
   if (opts.textFilters?.length) slice.textFilters = opts.textFilters;
   if (opts.priceFilterMin !== undefined || opts.priceFilterMax !== undefined) {
     const price: ProductPriceFilterInput = {
@@ -904,4 +950,190 @@ export async function fetchMenu(
     // the whole layout render. The client `<Menu>` shows its empty state.
     return [];
   }
+}
+
+// ── Machines / spare parts ──────────────────────────────────────────────────
+
+// MACHINE_MAX_DEPTH lives in lib/machines.ts (runtime-agnostic — the client
+// pages import it too) and is re-exported here for the server call sites.
+export { MACHINE_MAX_DEPTH } from '@/lib/machines';
+import { readAttributeStringValues } from '@/lib/machines';
+
+/**
+ * Name of the company track attribute holding the contact's machine
+ * ("installation") source-ids, as a comma-separated list. Must also appear in
+ * `config.companyTrackAttributes` — that list is what the tenant opts in with,
+ * mirroring WP's `PROPELLER_COMPANY_TRACK_ATTR`.
+ */
+const MACHINE_INSTALLATIONS_ATTRIBUTE = 'MY_INSTALLATIONS';
+
+/**
+ * Fetch a single machine WITH the (possibly filtered) page of its spare parts —
+ * the shape the machine page needs to server-render real cards in the initial
+ * HTML. Returns `null` when the machine doesn't exist; throws on other failures.
+ *
+ * The parts input mirrors `fetchCategory`'s `categoryProductSearchInput` so a
+ * machine's parts list behaves exactly like a category listing.
+ *
+ * NOTE `machineService(...)` rather than `infra.services.machine` — the
+ * package's `createServices` bundle has no machine entry (it lives in
+ * `propeller-v2-core-ui`), so the SDK factory is called directly against the
+ * per-request client.
+ * ponytail: swap to `infra.services.machine` if core-ui ever ships it.
+ */
+export async function fetchMachine(
+  infra: ServerInfra,
+  slug: string,
+  opts: ListingFetchOptions & { term?: string } = {}
+): Promise<SparePartsMachine | null> {
+  // Two languages, deliberately. `machine(slug:, language:)` is language-scoped
+  // and hard-errors ("No machine found for slug and language") when the machine
+  // isn't authored in that language — machine trees are typically EN-only while
+  // the parts are localized. So the TREE resolves in `config.machines.language`
+  // and the PARTS list in the storefront language. Mirrors the WP reference's
+  // `$language = "EN"` / `$parts_language` split.
+  const machineLang = config.machines?.language || 'EN';
+  const lang = opts.language ?? infra.language;
+  const sortField = opts.sortField ?? ProductSortField.NAME;
+  const sortOrder = opts.sortOrder ?? SortOrder.ASC;
+  const userId = resolveUserId(infra.user);
+  const companyId = resolveCompanyId(infra);
+
+  // `language` / `page` / `offset` / `statuses` are NON_NULL on
+  // SparePartsMachineProductSearchInput — passing the input at all means
+  // passing all four, or the query fails validation upstream.
+  const sparePartsMachineProductSearchInput: SparePartsMachineProductSearchInput = {
+    language: lang,
+    page: opts.page ?? 1,
+    offset: opts.offset ?? 12,
+    statuses: STOREFRONT_STATUSES,
+    hidden: false,
+    sortInputs: [{ field: sortField, order: sortOrder }],
+    ...(opts.term ? { term: opts.term } : {}),
+    ...buildFilterInput(opts),
+    ...(userId !== undefined && { userId }),
+    ...(companyId !== undefined && { companyId }),
+  };
+
+  try {
+    // Variable order locked in for Next.js cache-key keying — see the note in
+    // `fetchProduct`. Don't reorder the keys below casually.
+    const result = await machineService(infra.client).getMachine(
+      {
+        slug,
+        // The machine tree's own language — NOT the storefront's. See above.
+        language: machineLang,
+        sparePartsMachineProductSearchInput,
+        // Ask the backend for the attribute filter facets so the grid filter
+        // sidebar has data on first paint. Without this the response's
+        // `filters` array is empty — same trap as `fetchCategory`.
+        filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
+        imageSearchFilters: imageSearchFiltersGrid,
+        imageVariantFilters: imageVariantFiltersMedium,
+      },
+      cacheOptions(infra, [TAG_CATALOG, tagFor('machine'), tagFor('machine', slug)])
+    );
+    return result ? (toPlain(result) as SparePartsMachine) : null;
+  } catch (e) {
+    // Same swallow as `fetchCategory`: the known `Product.slugs` backend break
+    // surfaces as "null for non-nullable" and reaches us through the spare
+    // parts' Product/Cluster resolution. Genuine "not found" → null too.
+    if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+/**
+ * Read the logged-in contact's machine ("installation") ids off the company
+ * track attribute already loaded on `infra.user` by the viewer query.
+ *
+ * Mirrors the WP reference: `UserController::process_company_attributes()` walks
+ * the company's `attributes`, finds the ones named in the configured track-attr
+ * list, and stashes each `get_value()` in the session; `MachineController` then
+ * reads `MY_INSTALLATIONS` and splits it on commas into machine source-ids. The
+ * value is a comma-separated id list, e.g. `"M-1001,M-1002"`.
+ *
+ * We don't probe: `getServerInfra` already asked the viewer for these attributes
+ * (see `viewerVariablesWithTrackAttrs`), so this is a pure read off `user`.
+ * The value is read from the concrete typed shape (`textValues[].values` for a
+ * TEXT attr, `enumValues` for ENUM) via `readAttributeStringValues` — NOT the
+ * SDK's `.value` convenience field, which is a TS-only shim the transport does
+ * not populate at runtime.
+ */
+function readCompanyTrackAttribute(
+  company: Contact['company'] | undefined,
+  attributeName: string
+): string[] {
+  const items = company?.attributes?.items ?? [];
+  const match = items.find((i) => i.attributeDescription?.name === attributeName);
+  return readAttributeStringValues(match?.value);
+}
+
+/**
+ * The company whose track attributes apply for this request: the one the user
+ * switched to (`selected_company_id` cookie → `infra.selectedCompanyId`), else
+ * the contact's default. Same precedence as `resolveCompanyId` so the machine
+ * root and the product listings agree on which company they're scoped to.
+ * Returns `undefined` for anonymous visitors and customers (no company).
+ */
+function resolveSelectedCompany(infra: ServerInfra): Contact['company'] | undefined {
+  const user = infra.user;
+  if (!user || !('contactId' in user)) return undefined;
+  const contact = user as Contact;
+  const selectedId = infra.selectedCompanyId;
+  if (selectedId !== undefined) {
+    const match = contact.companies?.items?.find((c) => c?.companyId === selectedId);
+    if (match) return match;
+  }
+  return contact.company;
+}
+
+/**
+ * The machine tree's root level: the installations belonging to the logged-in
+ * contact's company.
+ *
+ * Two steps, mirroring WP: read the id list off the `MY_INSTALLATIONS` company
+ * track attribute (loaded on the viewer), then resolve each id to a machine via
+ * the `source`/`sourceId` pair. WP builds one aliased mega-query
+ * (`machine_1: machine(...) machine_2: machine(...)`); we issue the same calls
+ * in parallel, which needs no runtime query-string building.
+ *
+ * Returns `[]` for anonymous visitors and for contacts whose company has no
+ * installations — the page renders its empty state rather than erroring.
+ */
+export async function fetchRootMachines(infra: ServerInfra): Promise<SparePartsMachine[]> {
+  const source = config.machines?.source;
+  const trackedAttributes: readonly string[] = config.companyTrackAttributes ?? [];
+  // No configured source, or the tenant hasn't opted the attribute in → the
+  // feature isn't wired here. Don't guess.
+  if (!source || !trackedAttributes.includes(MACHINE_INSTALLATIONS_ATTRIBUTE)) return [];
+
+  const company = resolveSelectedCompany(infra);
+  const ids = readCompanyTrackAttribute(company, MACHINE_INSTALLATIONS_ATTRIBUTE);
+  if (ids.length === 0) return [];
+
+  const machines = await Promise.all(
+    ids.map(async (sourceId) => {
+      try {
+        const result = await machineService(infra.client).getMachine(
+          {
+            source,
+            sourceId,
+            // Machine-tree language, not the storefront's — see `fetchMachine`.
+            language: config.machines?.language || 'EN',
+            imageSearchFilters: imageSearchFiltersGrid,
+            imageVariantFilters: imageVariantFiltersMedium,
+          },
+          cacheOptions(infra, [TAG_CATALOG, tagFor('machine'), tagFor('machine', sourceId)])
+        );
+        return result ? (toPlain(result) as SparePartsMachine) : null;
+      } catch {
+        // One bad/stale id shouldn't blank the whole list.
+        return null;
+      }
+    })
+  );
+  return machines.filter((m): m is SparePartsMachine => m !== null);
 }

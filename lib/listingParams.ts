@@ -113,6 +113,50 @@ export function parseListingParams(
 }
 
 /**
+ * Encode listing state back into a URL query string — the inverse of
+ * `parseListingParams`, omitting anything at its default so URLs stay clean
+ * (`page` only when > 1, `sortField`/`sortOrder`/`offset` only when non-default).
+ * Accepts the widened `sortField`/`sortOrder` string unions so both
+ * `ListingParams` (category) and `MachineListingState` (machines) can be encoded.
+ *
+ * `term` is optional — machine parts have an in-node search; category/search
+ * carry it in their own routes.
+ */
+export function buildListingSearchParams(
+  listing: {
+    page: number;
+    offset: number;
+    sortField: ProductSortField | string;
+    sortOrder: SortOrder | string;
+    filters: Record<string, string[]>;
+    minPrice?: number;
+    maxPrice?: number;
+    term?: string;
+  },
+  opts: {
+    defaultSortField: ProductSortField | string;
+    defaultSortOrder?: SortOrder | string;
+    defaultOffset?: number;
+  }
+): string {
+  const { defaultSortField, defaultSortOrder = SortOrder.DESC, defaultOffset = 12 } = opts;
+  const sp = new URLSearchParams();
+
+  if (listing.page > 1) sp.set('page', String(listing.page));
+  for (const [key, values] of Object.entries(listing.filters)) {
+    if (values.length > 0) sp.set(key, JSON.stringify(values));
+  }
+  if (listing.minPrice !== undefined) sp.set('minPrice', String(listing.minPrice));
+  if (listing.maxPrice !== undefined) sp.set('maxPrice', String(listing.maxPrice));
+  if (listing.offset !== defaultOffset) sp.set('offset', String(listing.offset));
+  if (listing.sortField !== defaultSortField) sp.set('sortField', String(listing.sortField));
+  if (listing.sortOrder !== defaultSortOrder) sp.set('sortOrder', String(listing.sortOrder));
+  if (listing.term) sp.set('term', listing.term);
+
+  return sp.toString();
+}
+
+/**
  * Convert the parsed `filters` map into the SDK's `ProductTextFilterInput[]`
  * — the shape `fetchCategory` / `fetchSearch` need for the server-side
  * filtered fetch. Empty selections are dropped.

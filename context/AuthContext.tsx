@@ -1,13 +1,13 @@
 'use client';
 
 // 'use client' is already at the top of the file, this replacement starts after line 1.
-import { Contact, Customer, PurchaseRole, UserService } from '@propeller-commerce/propeller-sdk-v2';
+import { Contact, Customer, PurchaseRole, UserService, type ViewerVariables } from '@propeller-commerce/propeller-sdk-v2';
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/AuthService';
 import { graphqlClient } from '@/lib/api';
 import { toPlain } from '@propeller-commerce/propeller-v2-react-ui';
-import { localizeHref } from '@/data/config';
+import { config, localizeHref } from '@/data/config';
 import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
 import { classifyApiError } from '@/lib/errors';
 import { getTranslations } from '@/lib/i18n/server';
@@ -368,7 +368,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const userService = new UserService(graphqlClient);
-      const viewerData = await userService.getViewer({});
+      const viewerData = await userService.getViewer({
+        companyAttributesInput: {
+          attributeDescription: {
+            names: config.companyTrackAttributes
+          }
+        },
+        customerAttributesInput: {
+          attributeDescription: {
+            names: config.customerTrackAttributes
+          }
+        }
+      } as ViewerVariables);
       if (viewerData) {
         const plain = toPlain(viewerData) as User;
         // localStorage gets ONLY the thin hint. The full profile lives in

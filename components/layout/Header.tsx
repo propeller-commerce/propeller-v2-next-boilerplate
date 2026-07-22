@@ -121,6 +121,10 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const categoriesMenuLabel = globalData?.categoriesMenuLabel || headerLabels.browseCategories;
   const topBarAnnouncementEnabled = globalData?.topBarAnnouncementEnabled ?? false;
 
+  // The machines / spare-parts area is gated to logged-in contacts, so its nav
+  // entry only shows for them. Mirrors the CompanySwitcher's contact check.
+  const isContact = !!(state.isAuthenticated && state.user && 'contactId' in state.user);
+
 
   // Close main menu on outside click
   useEffect(() => {
@@ -505,6 +509,11 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 "flex items-center gap-6 text-sm font-medium text-muted-foreground",
                 showCategoriesMenu ? "ml-6" : "ml-0"
               )}>
+                {isContact && (
+                  <Link href={localizeHref('/machines', language)} className="hover:text-foreground transition-colors">
+                    Machines
+                  </Link>
+                )}
                 {globalData?.navLinks && globalData.navLinks.length > 0 ? (
                   globalData.navLinks.map((link, i) => (
                     <Link
@@ -572,6 +581,15 @@ export default function Header({ menuTree }: HeaderProps = {}) {
 
             {/* Mobile nav links */}
             <div className="border-t border-border divide-y divide-border">
+              {isContact && (
+                <Link
+                  href={localizeHref('/machines', language)}
+                  className="block px-4 py-3 text-sm font-medium text-foreground"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Machines
+                </Link>
+              )}
               {globalData?.navLinks && globalData.navLinks.length > 0 ? (
                 globalData.navLinks.map((link, i) => (
                   <Link

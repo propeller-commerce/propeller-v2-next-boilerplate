@@ -58,7 +58,11 @@ export class AuthService {
                         attributeDescription: {
                             names: config.customerTrackAttributes
                         }
-                    }
+                    },
+                    // Always paginate the viewer's companies + purchase-auth
+                    // configs (see data/config.ts — objects, never `[]`).
+                    contactPAConfigInput: config.contactPAConfigInput,
+                    contactCompaniesSearchInput: config.contactCompaniesSearchInput
                 };
                 // Pass empty object as argument if required by the SDK
                 const viewerResponse: any = await this.userService.getViewer(input);

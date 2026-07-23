@@ -380,7 +380,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           attributeDescription: {
             names: config.customerTrackAttributes
           }
-        }
+        },
+        // Always paginate the viewer's companies + purchase-auth configs
+        // (see data/config.ts — objects, never `[]`).
+        contactPAConfigInput: config.contactPAConfigInput,
+        contactCompaniesSearchInput: config.contactCompaniesSearchInput
       } as ViewerVariables);
       // A stale/invalid Bearer does NOT error upstream — `viewer` resolves as
       // a bare anonymous `User` (neither Contact nor Customer) with HTTP 200.

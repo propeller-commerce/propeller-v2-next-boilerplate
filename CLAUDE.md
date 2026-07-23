@@ -51,6 +51,13 @@ Full design: see memory note `project-anonymous-ssr-caching`.
 
 Edit components / composables / contexts in the package repo, not here.
 
+## Releasing across repos
+
+Shipping an SDK / UI / payment-package change to the apps is a fixed
+bottom-up ritual (packages→npm, then apps re-pin). Don't improvise it —
+invoke the **`propeller-release`** skill. It carries the full package map,
+release order, the SDK-peer `*` ERESOLVE trap, and per-repo quirks.
+
 ## Memory
 
 Project memory lives at

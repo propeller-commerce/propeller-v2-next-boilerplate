@@ -169,7 +169,14 @@ export const config = {
       process.env.BOILERPLATE_MACHINE_LANGUAGE ||
       'EN',
   },
-  contactPAConfigInput: [],
+  // Viewer pagination inputs — MUST be GraphQL input *objects*, never `[]`.
+  // The viewer query selects `purchaseAuthorizationConfigs(input:)` and
+  // `companies(input:)`; an empty array is truthy but the backend rejects it
+  // ("Expected type ContactPurchaseAuthorizationConfigSearchInput to be an
+  // object"). Present on every viewer fetch so a multi-company / multi-PA
+  // contact isn't truncated by the server default page.
+  contactPAConfigInput: { page: 1, offset: 50 },
+  contactCompaniesSearchInput: { page: 1, offset: 50 },
   includeVAT: true,
   enableRegistration: true,
   enableGuestCheckout: false,

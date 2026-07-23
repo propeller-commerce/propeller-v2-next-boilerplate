@@ -368,16 +368,23 @@ const cachedGetViewer = cache(
 function viewerVariablesWithTrackAttrs(): {
   companyAttributesInput?: AttributeResultSearchInput;
   contactCompaniesSearchInput?: { page: number; offset: number };
+  contactPAConfigInput?: { page: number; offset: number };
 } {
   const names = config.companyTrackAttributes ?? [];
-  if (names.length === 0) return {};
+  // Companies + purchase-auth configs are paginated on every viewer fetch (see
+  // data/config.ts — objects, never `[]`), independent of track attributes, so
+  // a multi-company / multi-PA contact isn't truncated by the server default.
+  const base = {
+    contactCompaniesSearchInput: config.contactCompaniesSearchInput,
+    contactPAConfigInput: config.contactPAConfigInput,
+  };
+  if (names.length === 0) return base;
   const companyAttributesInput: AttributeResultSearchInput = {
     attributeDescription: { names: [...names] },
     page: 1,
     offset: names.length,
   };
-  // offset 50: contacts belong to a handful of companies, not thousands.
-  return { companyAttributesInput, contactCompaniesSearchInput: { page: 1, offset: 50 } };
+  return { ...base, companyAttributesInput };
 }
 
 /**

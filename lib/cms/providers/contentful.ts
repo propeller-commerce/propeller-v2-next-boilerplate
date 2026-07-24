@@ -186,6 +186,7 @@ function normalizeBlock(raw: any): CmsBlock | null {
         _type: 'hero-banner',
         title: raw.title || '',
         subtitle: raw.subtitle || null,
+        description: raw.description || null,
         image: normalizeImage(raw.image),
         ctaText: raw.ctaText || null,
         ctaUrl: raw.ctaUrl || null,

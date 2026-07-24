@@ -21,11 +21,30 @@ export interface CmsHeroBanner {
   _type: 'hero-banner';
   title: string;
   subtitle: string | null;
+  description: string | null;
   image: CmsImage | null;
   ctaText: string | null;
   ctaUrl: string | null;
   secondaryCtaText: string | null;
   secondaryCtaUrl: string | null;
+  /** Prepr adaptive-content variant key (_context.variant_key) — drives
+   *  impression tracking via data-prepr-variant-key. Null when not personalized. */
+  variantKey?: string | null;
+}
+
+export interface CmsCardActionItem {
+  title: string;
+  description: string | null;
+  image: CmsImage | null;
+  icon: CmsImage | null;
+  buttonText: string | null;
+  buttonUrl: string | null;
+}
+
+export interface CmsCardActions {
+  _type: 'card-actions';
+  title: string | null;
+  items: CmsCardActionItem[];
 }
 
 export interface CmsRichText {
@@ -125,6 +144,9 @@ export interface CmsProductCards {
   products: CmsProductCard[];
   buttonText: string | null;
   buttonUrl: string | null;
+  /** Prepr adaptive-content variant key (_context.variant_key) — drives
+   *  impression tracking via data-prepr-variant-key. Null when not personalized. */
+  variantKey?: string | null;
 }
 
 export interface CmsPostCards {
@@ -163,7 +185,8 @@ export type CmsBlock =
   | CmsFaq
   | CmsProductCards
   | CmsPostCards
-  | CmsStatic;
+  | CmsStatic
+  | CmsCardActions;
 
 // ── Article / Blog ──
 

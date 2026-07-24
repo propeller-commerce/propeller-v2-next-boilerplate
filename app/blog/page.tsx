@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
+import { cookies, draftMode } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { getArticles } from '@/lib/cms';
@@ -92,8 +92,9 @@ function ArticleCard({ article, readMoreLabel }: { article: CmsArticle; readMore
 }
 
 export default async function BlogPage() {
-  const [articles, store] = await Promise.all([getArticles(), cookies()]);
+  const [store, { isEnabled: preview }] = await Promise.all([cookies(), draftMode()]);
   const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  const articles = await getArticles(locale, { preview });
   const t = getTranslations(locale, 'Blog');
 
   return (

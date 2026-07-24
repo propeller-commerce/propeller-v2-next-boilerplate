@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { getPage } from '@/lib/cms';
 import type { CmsPage } from '@/lib/cms/types';
 import type { Contact, Company, AttributeResult } from '@propeller-commerce/propeller-sdk-v2';
@@ -64,35 +65,44 @@ interface PersonalizedPageProps {
  * Initially renders the server-provided default page, then re-fetches
  * with the user's segments if they're logged in with a matching group.
  */
+const DEFAULT_LANGUAGE = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+
 export default function PersonalizedPage({ defaultPage, slug }: PersonalizedPageProps) {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
+  const { language } = useLanguage();
   const [page, setPage] = useState<CmsPage | null>(defaultPage);
 
   useEffect(() => {
     if (state.isLoading) return;
-    if (!state.isAuthenticated || !state.user) {
-      // Not logged in — use default page
+
+    const segments =
+      state.isAuthenticated && state.user
+        ? getUserSegments(state.user, selectedCompany)
+        : [];
+
+    // `defaultPage` is the server render in the default locale with no segments.
+    // Re-fetch client-side only when something actually differs from it: a
+    // non-default language (the switcher swaps the URL client-side without a
+    // navigation, so the server render stays stale) or user group segments.
+    const isDefaultLocale = language.toUpperCase() === DEFAULT_LANGUAGE.toUpperCase();
+    if (isDefaultLocale && segments.length === 0) {
       setPage(defaultPage);
       return;
     }
 
-    const segments = getUserSegments(state.user, selectedCompany);
-    if (segments.length === 0) {
-      // No segments — use default page
-      setPage(defaultPage);
-      return;
-    }
-
-    // Re-fetch page with user's segments for personalization
-    getPage(slug, { segments }).then((personalizedPage) => {
-      if (personalizedPage) {
-        setPage(personalizedPage);
+    let cancelled = false;
+    getPage(slug, { locale: language, segments }).then((nextPage) => {
+      if (!cancelled && nextPage) {
+        setPage(nextPage);
       }
     }).catch(() => {
-      // Fallback to default on error
+      // Fallback to the server-rendered default on error
     });
-  }, [state.isLoading, state.isAuthenticated, state.user, selectedCompany, slug, defaultPage]);
+    return () => {
+      cancelled = true;
+    };
+  }, [state.isLoading, state.isAuthenticated, state.user, selectedCompany, slug, defaultPage, language]);
 
   if (!page || page.blocks.length === 0) return null;
 

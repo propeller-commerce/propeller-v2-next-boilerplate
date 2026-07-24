@@ -1,16 +1,25 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
+import { cookies, draftMode } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
-import { getArticle, getAllArticleSlugs } from '@/lib/cms';
+import PreprTrack from '@/components/cms/PreprTrack';
+import { getArticle } from '@/lib/cms';
+import { readForwardedPreprHeaders } from '@/lib/preprHeaders';
 import { getTranslations } from '@/lib/i18n/server';
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }
+
+// Blog posts render on-demand: the content is CMS-driven (and, under Prepr,
+// can be previewed/personalized via draftMode + forwarded headers), and a
+// malformed CMS post slug must resolve to notFound() rather than break a static
+// prerender. Forcing dynamic also keeps draftMode() from opting the route into
+// a static/dynamic conflict.
+export const dynamic = 'force-dynamic';
 
 function formatDate(dateString: string | null) {
   if (!dateString) return '';
@@ -21,20 +30,18 @@ function formatDate(dateString: string | null) {
   });
 }
 
-export async function generateStaticParams() {
-  const slugs = await getAllArticleSlugs();
-  return slugs.map((slug) => ({ slug }));
-}
-
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const [article, store] = await Promise.all([getArticle(slug), cookies()]);
+  const [store, { isEnabled: preview }] = await Promise.all([cookies(), draftMode()]);
+  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  // In preview, forward the segment switch (?prepr_preview_segment) so editors
+  // can preview a post's adaptive content for each segment. Empty off-Prepr.
+  const extraHeaders = preview ? await readForwardedPreprHeaders() : undefined;
+  const article = await getArticle(slug, locale, { preview, extraHeaders });
 
   if (!article) {
     notFound();
   }
-
-  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
   const t = getTranslations(locale, 'Blog');
 
   return (
@@ -126,6 +133,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
           </div>
         </article>
+        {article.id && <PreprTrack itemId={article.id} />}
       </main>
       <Footer />
     </div>

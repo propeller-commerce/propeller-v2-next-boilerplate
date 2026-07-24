@@ -20,6 +20,7 @@ import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
+import { trackPreprEvent } from '@/lib/preprEvent';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 
 /**
@@ -143,6 +144,18 @@ function ThankYouPageInner() {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
+
+  // Quote requested = conversion. Prepr correlates it to the personalized
+  // variants (Hero / Featured Products) the visitor saw on the way here. Fires
+  // once per confirmed quote; only in quote mode (a PSP purchase isn't tracked
+  // here — its success is resolved asynchronously below). No-ops off-Prepr.
+  const quoteTrackedRef = useRef(false);
+  useEffect(() => {
+    if (isQuoteMode && orderId && !quoteTrackedRef.current) {
+      quoteTrackedRef.current = true;
+      trackPreprEvent('QuoteRequest');
+    }
+  }, [isQuoteMode, orderId]);
 
   // PSP return: resolve the real outcome from the LIVE PSP status. The PSP
   // redirects to the same URL whatever happened, so the order status alone can't

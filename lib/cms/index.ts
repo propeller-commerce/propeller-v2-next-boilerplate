@@ -52,4 +52,5 @@ export const resolveImageUrl = cms.resolveImageUrl.bind(cms);
 
 // Re-export the provider instance and types
 export { cms };
-export type { CmsProvider, CmsPageOptions } from './core';
+export { HOME_SLUGS, isHomeSlug } from './core';
+export type { CmsProvider, CmsPageOptions, CmsArticleOptions } from './core';

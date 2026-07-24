@@ -42,6 +42,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
 import { config, localizeHref } from '@/data/config';
+import { trackPreprEvent } from '@/lib/preprEvent';
 
 export interface ProductDetailIslandProps {
   /** Server-fetched product. Plain JSON (already `toPlain`'d). */
@@ -95,7 +96,12 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
           onCartCreated={(c: Cart) => saveCart(c)}
           className="flex items-center w-full gap-2"
           showModal={true}
-          afterAddToCart={(c: Cart) => saveCart(c)}
+          afterAddToCart={(c: Cart) => {
+            saveCart(c);
+            // Conversion signal for personalization: Prepr correlates it to the
+            // adaptive variants this visitor saw on the way here. No-ops off-Prepr.
+            trackPreprEvent('AddToCart');
+          }}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
           labels={addToCartLabels}

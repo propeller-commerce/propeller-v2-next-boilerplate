@@ -349,6 +349,7 @@ export function SparePartsLiveIsland({
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const addToCartLabels = useTranslations('AddToCart');
+  const splLabels = useTranslations('SpareParts');
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -375,6 +376,8 @@ export function SparePartsLiveIsland({
       {visible ? (
         <SparePartsLive
           publicationId={publicationId}
+          className="propeller-spl"
+          labels={splLabels}
           hostProductName={productName}
           hostProductSku={productSku}
           onProductClick={(p: Product) => router.push(config.urls.getProductUrl(p, language))}

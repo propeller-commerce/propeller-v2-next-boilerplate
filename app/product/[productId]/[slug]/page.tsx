@@ -54,7 +54,9 @@ import AddToCartIsland, {
   ProductBelowFoldIsland,
   ProductBreadcrumbsIsland,
   ProductPriceIsland,
+  SparePartsLiveIsland,
 } from './ProductDetailIsland';
+import { isSplEnabled, splProductAttribute, resolveSplPublicationId } from '@/lib/spl';
 
 interface RouteParams {
   productId: string;
@@ -120,8 +122,18 @@ export default async function ProductPage({
   if (!Number.isFinite(productId)) notFound();
 
   const infra = await getServerInfra();
-  const product = await fetchProduct(infra, productId, infra.language);
+  const splEnabled = isSplEnabled();
+  // When SPL is on, also request the publication-id track attribute so we can
+  // gate the parts panel — rides the existing product fetch (no extra call).
+  const product = await fetchProduct(
+    infra,
+    productId,
+    infra.language,
+    splEnabled ? [splProductAttribute()] : undefined
+  );
   if (!product) notFound();
+
+  const splPublicationId = splEnabled ? resolveSplPublicationId(product) : null;
 
   const itemStockLabels = getTranslations(infra.language, 'ItemStock');
   const productGalleryLabels = getTranslations(infra.language, 'ProductGallery');
@@ -199,6 +211,16 @@ export default async function ProductPage({
 
           {/* Below-the-fold — tabs, bundles, cross-sells (all client). */}
           <ProductBelowFoldIsland product={product} productId={productId} />
+
+          {/* SpareParts Live parts panel — only for products carrying the SPL
+              publication attribute. Lazy client island (loads on scroll). */}
+          {splPublicationId ? (
+            <SparePartsLiveIsland
+              publicationId={splPublicationId}
+              productName={title}
+              productSku={product.sku}
+            />
+          ) : null}
         </div>
       </main>
       <Footer />

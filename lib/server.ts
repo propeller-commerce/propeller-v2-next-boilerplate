@@ -561,7 +561,8 @@ function cacheOptions(
 export async function fetchProduct(
   infra: ServerInfra,
   productId: number,
-  language?: string
+  language?: string,
+  attributeNames?: string[]
 ): Promise<Product | null> {
   try {
     const result = await infra.services.product.getProduct(
@@ -570,6 +571,11 @@ export async function fetchProduct(
         language: language ?? infra.language,
         imageSearchFilters,
         imageVariantFilters: imageVariantFiltersLarge,
+        // Optional track-attribute selection (e.g. the SPL publication id). Kept
+        // last so the base cache key is unchanged when no names are requested.
+        ...(attributeNames && attributeNames.length
+          ? { attributeResultSearchInput: { attributeDescription: { names: attributeNames } } }
+          : {}),
       },
       cacheOptions(infra, [TAG_CATALOG, tagFor('product'), tagFor('product', productId)])
     );

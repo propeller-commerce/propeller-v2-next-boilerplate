@@ -23,8 +23,10 @@
  * useEffect + useRouter + useLanguage that only work on the client.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import '@propeller-commerce/propeller-v2-spl/styles.css';
 import { useTranslations } from '@/lib/i18n/client';
 import { getTranslations } from '@/lib/i18n/server';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
@@ -318,5 +320,85 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
         />
       ))}
     </>
+  );
+}
+
+/**
+ * SpareParts Live parts panel — a lazy, below-the-fold client island.
+ *
+ * The panel (and its `@panzoom/panzoom` dependency) is code-split via
+ * `next/dynamic` (`ssr:false` — it's CSR, fetching through `/api/spl/*`) and
+ * only mounts once it scrolls into view, so it stays off the PDP critical path.
+ * Callbacks are wired here on the client (the Server Component passes only
+ * serializable primitives); the product buy control reuses react-ui
+ * `<AddToCart>` for full storefront parity (qty, cart, price-on-request → quote,
+ * modal).
+ */
+const SparePartsLive = dynamic(
+  () => import('@propeller-commerce/propeller-v2-spl').then((m) => m.SparePartsLive),
+  {
+    ssr: false,
+    loading: () => <div className="spl__skeleton spl__skeleton--canvas" aria-busy="true" />,
+  }
+);
+
+export function SparePartsLiveIsland({
+  publicationId,
+  productName,
+  productSku,
+}: {
+  publicationId: string;
+  productName?: string;
+  productSku?: string;
+}) {
+  const router = useRouter();
+  const { cart, saveCart } = useCart();
+  const { language } = useLanguage();
+  const addToCartLabels = useTranslations('AddToCart');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  // Defer mounting the panel until it's near the viewport.
+  useEffect(() => {
+    if (visible) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+
+  return (
+    <div ref={containerRef} className="mt-8">
+      {visible ? (
+        <SparePartsLive
+          publicationId={publicationId}
+          hostProductName={productName}
+          hostProductSku={productSku}
+          onProductClick={(p: Product) => router.push(config.urls.getProductUrl(p, language))}
+          renderProductActions={(p: Product) => (
+            <AddToCart
+              product={p}
+              cartId={cart?.cartId}
+              createCart={true}
+              showModal={true}
+              onCartCreated={(c: Cart) => saveCart(c)}
+              afterAddToCart={(c: Cart) => saveCart(c)}
+              onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
+              onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
+              labels={addToCartLabels}
+            />
+          )}
+        />
+      ) : null}
+    </div>
   );
 }

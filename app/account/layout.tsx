@@ -27,22 +27,30 @@ export default function AccountLayout({
     const loginFormLabels = useTranslations('LoginForm');
     const t = useTranslations('Account');
 
-    // Protect account routes — wait for auth to finish loading before checking
+    // Protect account routes — wait for auth to finish loading before checking.
+    // Hard `window.location.replace` (not the App-Router `router.push`): during a
+    // logout the auth context dispatches while this layout is mid-render, and the
+    // client-side navigation was being dropped in that window (stuck on a blank
+    // screen, never reaching /login). A full-document navigation is immune to
+    // that race. Covers logout-while-on-page — the effect re-runs when
+    // isAuthenticated flips.
+    const authed = !state.isLoading && state.isAuthenticated;
     useEffect(() => {
         if (!state.isLoading && !state.isAuthenticated) {
-            router.push(localizeHref('/login', language));
+            window.location.replace(localizeHref('/login', language));
         }
-    }, [state.isLoading, state.isAuthenticated, router, language]);
-
-    if (state.isLoading || !state.isAuthenticated) {
-        return null;
-    }
+    }, [state.isLoading, state.isAuthenticated, language]);
 
     return (
         <div className="min-h-screen flex flex-col bg-muted/20">
             <Header />
             <main className="flex-1 py-8">
                 <div className="container-width max-w-7xl">
+                    {!authed ? (
+                        <div className="flex items-center justify-center py-24">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                        </div>
+                    ) : (
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Sidebar Navigation */}
                         <aside className="w-full lg:w-72 flex-shrink-0">
@@ -75,6 +83,7 @@ export default function AccountLayout({
                             {children}
                         </div>
                     </div>
+                    )}
                 </div>
             </main>
             <Footer />

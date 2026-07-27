@@ -18,6 +18,7 @@ import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
 import { Toaster } from "react-hot-toast";
 import { cookies } from "next/headers";
 import { getGlobal } from "@/lib/cms";
+import { CmsAdapterProvider } from "@propeller-commerce/propeller-v2-cms-react";
 import { PREPR_ENABLED } from "@/lib/preprEvent";
 import PreprSegmentsSync from "@/components/cms/PreprSegmentsSync";
 import PreprPreviewBar from "@/components/cms/PreprPreviewBar";
@@ -63,6 +64,11 @@ export default async function RootLayout({
           </Script>
         ) : null}
         {PREPR_ENABLED ? <PreprPreviewBar /> : null}
+        {/* CMS adapter for client islands' optional `useCms()`. nextDemo fetches
+            all CMS content server-side (Server Components call getPage/getArticle
+            directly), so no client adapter is supplied — `null` is the documented
+            value for server-fetched shops; `useCms()` returns null on the client. */}
+        <CmsAdapterProvider adapter={null}>
         <AuthProvider>
           <CompanyProvider>
             {PREPR_ENABLED ? <PreprSegmentsSync /> : null}
@@ -82,6 +88,7 @@ export default async function RootLayout({
             </PriceProvider>
           </CompanyProvider>
         </AuthProvider>
+        </CmsAdapterProvider>
       </body>
     </html>
   );

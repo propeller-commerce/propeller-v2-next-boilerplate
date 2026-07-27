@@ -127,3 +127,54 @@ body {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 }
+
+/* ── SpareParts Live (propeller-v2-spl) ──────────────────────────────
+   Restyle the third-party panel the same way we restyle react-ui: drive
+   its own `--spl-*` design tokens from the storefront's theme tokens so
+   the panel re-skins with the rest of the shop (change --primary once and
+   both move together). `.propeller-spl` is the className we pass to
+   <SparePartsLive>; scoping the overrides under it beats the package's
+   built-in `.spl` defaults on specificity, regardless of CSS import order.
+
+   The scroll-column rule reserves the scrollbar gutter so the vertical
+   scrollbar can no longer clip the right-aligned Add-to-cart button when
+   the list overflows. (Belongs in the package long-term — see 0.2.0 note.) */
+.spl.propeller-spl {
+  --spl-accent: var(--primary);
+  --spl-accent-contrast: var(--primary-foreground);
+  --spl-border: var(--border);
+  --spl-muted: var(--muted-foreground);
+  --spl-danger: var(--destructive);
+}
+.propeller-spl .spl__col--list {
+  scrollbar-gutter: stable;
+  padding-right: 0.75rem;
+}
+/* Stack the card actions: price, then availability, then a full-width
+   Add-to-cart row that lines up with the product image (its own bottom
+   row) rather than being squeezed into the text column. The negative
+   margin breaks the button out across the media column too — the 5rem/1rem
+   mirror the package's `grid: 5rem 1fr` + gap, so the clean version of this
+   belongs in the package (0.2.0). */
+.propeller-spl .spl-card__actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+.propeller-spl .spl-card__price {
+  order: 0;
+}
+.propeller-spl .spl-card__stock {
+  order: 1;
+  flex: 0 0 auto;
+}
+.propeller-spl .spl-card__buy {
+  order: 2;
+  width: calc(100% + 5rem + 1rem);
+  margin-left: calc(-5rem - 1rem);
+  min-width: 0;
+}
+/* Let react-ui's button wrap under the qty only when the row is tight,
+   instead of overflowing (its md: breakpoints assume a wide column). */
+.propeller-spl .propeller-add-to-cart__controls {
+  flex-wrap: wrap;
+}

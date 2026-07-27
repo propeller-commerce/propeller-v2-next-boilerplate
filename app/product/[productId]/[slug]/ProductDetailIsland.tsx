@@ -375,7 +375,6 @@ export function SparePartsLiveIsland({
       {visible ? (
         <SparePartsLive
           publicationId={publicationId}
-          contactEmail={process.env.NEXT_PUBLIC_SPL_CONTACT_EMAIL}
           hostProductName={productName}
           hostProductSku={productSku}
           onProductClick={(p: Product) => router.push(config.urls.getProductUrl(p, language))}

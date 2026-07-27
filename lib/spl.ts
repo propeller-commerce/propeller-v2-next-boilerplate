@@ -15,10 +15,15 @@ import {
   createSplClient,
   resolveHotspotProducts,
   type SplClient,
+  type SplContactPayload,
 } from '@propeller-commerce/propeller-v2-spl/server';
-import type { Product, PriceCalculateProductInput } from '@propeller-commerce/propeller-sdk-v2';
+import {
+  eventActionConfigService,
+  type Product,
+  type PriceCalculateProductInput,
+} from '@propeller-commerce/propeller-sdk-v2';
 import { config } from '@/data/config';
-import type { ServerInfra } from '@/lib/server';
+import { createServerClient, type ServerInfra } from '@/lib/server';
 import { readAttributeStringValues } from '@/lib/machines';
 
 /** SPL is active only when a base URL + token are configured. */
@@ -85,4 +90,65 @@ export function buildSplProductResolver(
       imageVariantFilters: config.imageVariantFiltersSmall,
       priceCalculateProductInput: price,
     });
+}
+
+/** Recipient of the "Information request" email. */
+export function splContactEmail(): string {
+  return (process.env.NEXT_PUBLIC_SPL_CONTACT_EMAIL || '').trim();
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function contactHtml(p: SplContactPayload): string {
+  const f = p.form;
+  const fullName = [f.firstName, f.middleName, f.lastName].filter(Boolean).join(' ');
+  const machine = p.hostProduct?.name
+    ? `${p.hostProduct.name}${p.hostProduct.sku ? ` (${p.hostProduct.sku})` : ''}`
+    : undefined;
+  const rows: Array<[string, string | undefined]> = [
+    ['Part', `${p.part.name} (${p.part.sku})`],
+    ['Position', p.part.pos],
+    ['Drawing', p.breadcrumb?.length ? p.breadcrumb.join(' » ') : undefined],
+    ['Machine / product', machine],
+    ['Company', f.company],
+    ['Name', fullName],
+    ['E-mail', f.email],
+    ['Phone', f.phone],
+    ['Remarks', f.remarks],
+  ];
+  const body = rows
+    .filter(([, v]) => v)
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 12px 4px 0;font-weight:bold;vertical-align:top">${escapeHtml(
+          k
+        )}</td><td style="padding:4px 0">${escapeHtml(v as string)}</td></tr>`
+    )
+    .join('');
+  return `<div style="font-family:Arial,sans-serif;font-size:14px"><h2>Spare part information request</h2><table>${body}</table></div>`;
+}
+
+/**
+ * Send the "Information request" email via the Propeller backend's mail
+ * (`publishEmailSendEvent`) — no SMTP setup, any recipient. Sends to the
+ * configured SPL contact email. Anonymous apikey client (no viewer needed).
+ *
+ * @throws when the contact email isn't configured, or the backend rejects the send.
+ */
+export async function sendSplContactEmail(payload: SplContactPayload): Promise<void> {
+  const to = splContactEmail();
+  if (!to) throw new Error('SPL contact email not configured');
+  const client = createServerClient({ getAccessToken: () => undefined });
+  await eventActionConfigService(client).publishEmailSendEvent({
+    subject: `Spare part information request: ${payload.part.name} (${payload.part.sku})`,
+    content: contactHtml(payload),
+    from: { email: to, name: payload.form.company || 'SpareParts Live' },
+    to: [{ email: to }],
+  });
 }

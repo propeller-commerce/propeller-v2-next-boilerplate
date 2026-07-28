@@ -199,6 +199,10 @@ function CheckoutPageInner() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const d = addressData as Record<string, string | boolean | undefined>;
+      // Optional fields are omitted when blank: the API validates them whenever
+      // they are present and rejects an empty string (e.g. `email must be an
+      // email`), which a delivery address legitimately leaves empty since the
+      // email lives on the contact / customer record.
       const input: CartUpdateAddressInput = {
         type: type as CartAddressType,
         firstName: (d.firstName as string) || '',
@@ -206,17 +210,17 @@ function CheckoutPageInner() {
         street: (d.street as string) || '',
         postalCode: (d.postalCode as string) || '',
         city: (d.city as string) || '',
-        company: d.company as string | undefined,
-        gender: d.gender as Gender | undefined,
-        middleName: d.middleName as string | undefined,
-        number: d.number as string | undefined,
-        numberExtension: d.numberExtension as string | undefined,
-        country: d.country as string | undefined,
-        email: d.email as string | undefined,
-        mobile: d.mobile as string | undefined,
-        phone: d.phone as string | undefined,
-        notes: d.notes as string | undefined,
-        icp: d.icp as YesNo | undefined,
+        ...(d.company && { company: d.company as string }),
+        ...(d.gender && { gender: d.gender as Gender }),
+        ...(d.middleName && { middleName: d.middleName as string }),
+        ...(d.number && { number: d.number as string }),
+        ...(d.numberExtension && { numberExtension: d.numberExtension as string }),
+        ...(d.country && { country: d.country as string }),
+        ...(d.email && { email: d.email as string }),
+        ...(d.mobile && { mobile: d.mobile as string }),
+        ...(d.phone && { phone: d.phone as string }),
+        ...(d.notes && { notes: d.notes as string }),
+        ...(d.icp && { icp: d.icp as YesNo }),
       };
 
       const updatedCart = await updateCartAddress(state.cart!.cartId, input);

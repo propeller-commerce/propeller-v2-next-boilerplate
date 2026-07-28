@@ -480,6 +480,7 @@ export default function CategoryIsland({
             addToCartLabels={addToCartLabels}
             stockLabels={itemStockLabels}
             priceLabels={productPriceLabels}
+            onLoginClick={() => router.push(localizeHref('/login', language))}
           />
 
           <div className="flex justify-center gap-2 mt-12">

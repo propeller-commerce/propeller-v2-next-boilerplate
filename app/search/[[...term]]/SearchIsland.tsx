@@ -462,6 +462,7 @@ export default function SearchIsland({
             addToCartLabels={addToCartLabels}
             stockLabels={itemStockLabels}
             priceLabels={productPriceLabels}
+            onLoginClick={() => router.push(localizeHref('/login', language))}
           />
         </div>
 

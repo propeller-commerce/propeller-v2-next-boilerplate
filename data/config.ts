@@ -117,6 +117,17 @@ export const PORTAL_MODE = {
   OPEN: 'open'
 } as const;
 
+/**
+ * Portal mode from `NEXT_PUBLIC_PORTAL_MODE`. `NEXT_PUBLIC_` because client
+ * components import this module; `lib/server.ts` reads the same variable so the
+ * two passes cannot drift. `semiClosed` is normalised to `semi-closed`.
+ */
+function readPortalMode(): string {
+  const raw = (process.env.NEXT_PUBLIC_PORTAL_MODE || '').trim().toLowerCase();
+  if (!raw) return PORTAL_MODE.OPEN;
+  return raw === 'semiclosed' ? PORTAL_MODE.SEMI_CLOSED : raw;
+}
+
 export const config = {
   baseCategoryId: BASE_CATEGORY_ID,
   channelId: CHANNEL_ID,
@@ -133,7 +144,7 @@ export const config = {
   imageVariantFiltersLarge: imageVariantFiltersLarge,
   taxZone: 'NL',
   portal: {
-    mode: PORTAL_MODE.OPEN,
+    mode: readPortalMode(),
   },
   productTrackAttributes: [],
   categoryTrackAttributes: [],

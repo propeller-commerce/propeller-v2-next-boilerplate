@@ -33,7 +33,9 @@ import {
   AddToFavorite,
   ProductTabs,
   ProductSlider,
+  LoginToOrderButton,
 } from '@propeller-commerce/propeller-v2-react-ui';
+import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
 import {
   Cart,
   Cluster,
@@ -205,11 +207,17 @@ export default function ClusterDetailIsland({
                   }
                   options={cluster.options}
                   selectedOptionProducts={Object.values(selectedOptionProducts)}
+                  user={state.user}
+                  portalMode={config.portal.mode}
+                  labels={productPriceLabels}
+                  showLoginPrompt={false}
                 />
 
                 <ProductBulkPrices
                   bulkPrices={selectedProduct?.bulkPrices || []}
                   labels={bulkPricesLabels}
+                  user={state.user}
+                  portalMode={config.portal.mode}
                 />
 
                 {/* Cluster owns the marketing description; variant products
@@ -226,7 +234,8 @@ export default function ClusterDetailIsland({
                   />
                 </div>
 
-                {selectedProduct?.inventory && (
+                {selectedProduct?.inventory &&
+                  !isContentHidden(config.portal.mode, state.user) && (
                   <div className="mt-4">
                     <ItemStock
                       inventory={selectedProduct.inventory}
@@ -264,12 +273,20 @@ export default function ClusterDetailIsland({
                       onOptionClear={handleOptionClear}
                       showErrors={showClusterErrors}
                       labels={clusterOptionsLabels}
+                      user={state.user}
+                      portalMode={config.portal.mode}
                     />
                   </div>
                 )}
               </>
             )}
 
+            {isContentHidden(config.portal.mode, state.user) ? (
+              <LoginToOrderButton
+                labels={addToCartLabels}
+                onLoginClick={() => router.push(localizeHref('/login', language))}
+              />
+            ) : (
             <div className="flex items-center gap-2">
               <AddToCart
                 product={selectedProduct as Product}
@@ -302,6 +319,7 @@ export default function ClusterDetailIsland({
                 labels={addToFavoriteLabels}
               />
             </div>
+            )}
           </div>
         </div>
       </div>

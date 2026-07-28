@@ -265,7 +265,10 @@ async function readSelectedCompanyIdCookie(): Promise<number | undefined> {
  * silently never matched, leaving the semi-closed gate as a no-op.
  */
 function readPortalMode(): string {
-  const raw = (process.env.BOILERPLATE_PORTAL_MODE || 'open').trim().toLowerCase();
+  // Same variable as `data/config.ts` so server and client cannot drift.
+  const raw = (process.env.NEXT_PUBLIC_PORTAL_MODE || '').trim().toLowerCase();
+  // Unset, empty or whitespace-only all mean the default.
+  if (!raw) return 'open';
   // Tolerate the historical camelCase value too — it means the same thing.
   if (raw === 'semiclosed') return 'semi-closed';
   return raw;
@@ -289,7 +292,7 @@ export interface ServerInfra {
   user: Contact | Customer | null;
   /** Default language. Reads `BOILERPLATE_DEFAULT_LANGUAGE` env, falls back to 'NL'. */
   language: string;
-  /** Portal mode — `'open'` / `'semi-closed'` / `'closed'`. Reads `BOILERPLATE_PORTAL_MODE`,
+  /** Portal mode — `'open'` / `'semi-closed'` / `'closed'`. Reads `NEXT_PUBLIC_PORTAL_MODE`,
    *  normalised to lowercase kebab-case (the package's `isContentHidden` matches on these). */
   portalMode: string;
   /** Currency symbol. Reads `BOILERPLATE_CURRENCY`, falls back to '€'. */

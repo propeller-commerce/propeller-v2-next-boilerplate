@@ -136,6 +136,9 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   // entry only shows for them. Mirrors the CompanySwitcher's contact check.
   const isContact = !!(state.isAuthenticated && state.user && 'contactId' in state.user);
 
+  // Quick order is available to any signed-in user (contact OR customer).
+  const isLoggedIn = !!(state.isAuthenticated && state.user);
+
 
   // Close main menu on outside click
   useEffect(() => {
@@ -625,6 +628,11 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     Machines
                   </Link>
                 )}
+                {isLoggedIn && (
+                  <Link href={localizeHref('/quick-order', language)} className="hover:text-foreground transition-colors">
+                    {headerLabels.quickOrder}
+                  </Link>
+                )}
                 {globalData?.navLinks && globalData.navLinks.length > 0 ? (
                   globalData.navLinks.map((link, i) => (
                     <Link
@@ -679,6 +687,15 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Machines
+                </Link>
+              )}
+              {isLoggedIn && (
+                <Link
+                  href={localizeHref('/quick-order', language)}
+                  className="block px-4 py-3 text-sm font-medium text-foreground"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  {headerLabels.quickOrder}
                 </Link>
               )}
               {globalData?.navLinks && globalData.navLinks.length > 0 ? (

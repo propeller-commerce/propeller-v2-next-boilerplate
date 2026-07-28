@@ -382,7 +382,6 @@ export function SparePartsLiveIsland({
       {visible ? (
         <SparePartsLive
           publicationId={publicationId}
-          className="propeller-spl"
           labels={splLabels}
           hostProductName={productName}
           hostProductSku={productSku}

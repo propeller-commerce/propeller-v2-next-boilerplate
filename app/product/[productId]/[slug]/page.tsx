@@ -39,6 +39,7 @@ import {
 } from '@propeller-commerce/propeller-v2-react-ui/pure';
 // ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from '@propeller-commerce/propeller-v2-react-ui';
+import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
 import { fetchProduct, getServerInfra, getAnonymousInfra } from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { config } from '@/data/config';
@@ -197,7 +198,7 @@ export default async function ProductPage({
                 <div className="mt-6">
                   <ProductShortDescription product={product} language={infra.language} />
                 </div>
-                {product.inventory && (
+                {product.inventory && !isContentHidden(infra.portalMode, infra.user) && (
                   <div className="mt-4">
                     <ItemStock inventory={product.inventory} showAvailability={false} labels={itemStockLabels} />
                   </div>

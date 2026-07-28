@@ -31,7 +31,8 @@ import { useTranslations } from '@/lib/i18n/client';
 import { getTranslations } from '@/lib/i18n/server';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
-import { AddToCart } from '@propeller-commerce/propeller-v2-react-ui';
+import { AddToCart, LoginToOrderButton } from '@propeller-commerce/propeller-v2-react-ui';
+import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
 import { Breadcrumbs } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductTabs } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductSlider } from '@propeller-commerce/propeller-v2-react-ui';
@@ -62,7 +63,7 @@ export interface ProductDetailIslandProps {
 export default function AddToCartIsland({ product, productId }: ProductDetailIslandProps) {
   const router = useRouter();
   const { cart, saveCart } = useCart();
-  const { refreshUser } = useAuth();
+  const { state: authState, refreshUser } = useAuth();
   const { language } = useLanguage();
   const addToCartLabels = useTranslations('AddToCart');
   const addToFavoriteLabels = useTranslations('AddToFavorite');
@@ -87,6 +88,19 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
       );
     }
   }, [product, language, productId]);
+
+  // Anonymous visitor in a semi-closed portal: ordering is unavailable, so
+  // offer the way in instead. Mirrors the grid/card behaviour.
+  if (isContentHidden(config.portal.mode, authState.user)) {
+    return (
+      <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
+        <LoginToOrderButton
+          labels={addToCartLabels}
+          onLoginClick={() => router.push(localizeHref('/login', language))}
+        />
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
@@ -160,6 +174,7 @@ export function ProductPriceIsland({
         portalMode={portalMode}
         currency={config.currency}
         labels={productPriceLabels}
+        showLoginPrompt={false}
       />
       <ProductSurcharges surcharges={surcharges} language={language} />
       <div className="mt-6">
@@ -292,6 +307,7 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           afterBundleAddToCart={(updatedCart) => saveCart(updatedCart)}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           labels={productBundlesLabels}
+          showLoginPrompt={false}
         />
       </div>
       {CROSS_SELLS.map((type) => (

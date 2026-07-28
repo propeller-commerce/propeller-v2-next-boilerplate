@@ -27,7 +27,7 @@
     "@propeller-commerce/propeller-v2-cms-react": "^0.1.4",
     "@propeller-commerce/propeller-v2-mollie": "^0.2.4",
     "@propeller-commerce/propeller-v2-msp": "^0.1.2",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.7.0",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.7.1",
     "@propeller-commerce/propeller-v2-spl": "^0.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

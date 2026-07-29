@@ -188,10 +188,10 @@ export default function CategoryIsland({
   // `<title>` / metadata updates on every subsequent soft navigation.
   useEffect(() => {
     if (!category) return;
-    const match = category.slug?.find(
+    const match = category.slugs?.find(
       (s: { language?: string; value?: string }) => s.language === language
     );
-    const newSlug = match?.value || category.slug?.[0]?.value || '';
+    const newSlug = match?.value || category.slugs?.[0]?.value || '';
     const currentSlug = window.location.pathname.split('/').pop();
     if (newSlug && newSlug !== currentSlug) {
       const search = window.location.search;

@@ -27,8 +27,8 @@ export class MenuService {
       return `
         categories {
           categoryId
-          name(language: $language) { value language }
-          slug(language: $language) { value }
+          names(language: $language) { value language }
+          slugs(language: $language) { value }
           ${buildCategoriesQuery(currentDepth - 1)}
         }
       `;
@@ -38,8 +38,8 @@ export class MenuService {
       query Menu($categoryId: Float, $language: String) {
         category(categoryId: $categoryId) {
           categoryId
-          name(language: $language) { value language }
-          slug(language: $language) { value }
+          names(language: $language) { value language }
+          slugs(language: $language) { value }
           ${buildCategoriesQuery(depth)}
         }
       }

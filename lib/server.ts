@@ -834,7 +834,7 @@ export async function fetchCluster(
       cacheOptions(infra, clusterTags)
     );
     const attributeNames: string[] = (clusterConfig?.config?.settings ?? []).map(
-      (setting: ClusterConfigSetting) => setting.name
+      (setting: ClusterConfigSetting) => setting.attributeName
     );
 
     // Step 2 — full cluster fetch with the config-derived attribute filter.
@@ -880,8 +880,8 @@ const MENU_DEPTH_DEFAULT = 3;
 interface RawMenuCategory {
   categoryId: number;
   hidden?: boolean | string;
-  name?: Array<{ value: string; language: string }>;
-  slug?: Array<{ value: string; language?: string }>;
+  names?: Array<{ value: string; language: string }>;
+  slugs?: Array<{ value: string; language?: string }>;
   categories?: RawMenuCategory[];
 }
 
@@ -895,16 +895,16 @@ function buildMenuCategoriesFragment(depth: number): string {
     categories {
       categoryId
       hidden
-      name(language: $language) { value language }
-      slug(language: $language) { value }
+      names(language: $language) { value language }
+      slugs(language: $language) { value }
       ${buildMenuCategoriesFragment(depth - 1)}
     }
   `;
 }
 
 function mapRawMenuCategory(raw: RawMenuCategory, language: string): MenuCategory {
-  const nameEntry = raw.name?.find((n) => n.language === language) ?? raw.name?.[0];
-  const slugEntry = raw.slug?.[0];
+  const nameEntry = raw.names?.find((n) => n.language === language) ?? raw.names?.[0];
+  const slugEntry = raw.slugs?.[0];
   return {
     categoryId: raw.categoryId,
     name: nameEntry?.value ?? '',
@@ -943,8 +943,8 @@ export async function fetchMenu(
       category(categoryId: $categoryId) {
         categoryId
         hidden
-        name(language: $language) { value language }
-        slug(language: $language) { value }
+        names(language: $language) { value language }
+        slugs(language: $language) { value }
         ${buildMenuCategoriesFragment(depth)}
       }
     }

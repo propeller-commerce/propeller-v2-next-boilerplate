@@ -219,8 +219,8 @@ export const config = {
 
     /** Generate a canonical category URL from a Category object. */
     getCategoryUrl(category: Category, language?: string): string {
-      const slug = (language && category?.slug?.find((s: LocalizedString) => s.language === language)?.value)
-        || category?.slug?.[0]?.value || '';
+      const slug = (language && category?.slugs?.find((s: LocalizedString) => s.language === language)?.value)
+        || category?.slugs?.[0]?.value || '';
       return buildEntityUrl('category', category?.categoryId, slug, this.pattern, language);
     },
   },

@@ -77,12 +77,12 @@ export async function generateMetadata({
 
   const title = resolveSeoTitle(
     category.metadataTitles,
-    category.name,
+    category.names,
     infra.language
   );
   const description = resolveSeoDescription(
     category.metadataDescriptions,
-    [category.shortDescription, category.description],
+    [category.shortDescriptions, category.descriptions],
     infra.language
   );
   const canonical = resolveCanonicalUrl(
@@ -153,8 +153,8 @@ export default async function CategoryPage({
 
   // Resolve the localized category name for the server-rendered <h1>.
   const categoryName =
-    (category.name?.find((n) => n.language === infra.language)?.value ??
-      category.name?.[0]?.value ??
+    (category.names?.find((n) => n.language === infra.language)?.value ??
+      category.names?.[0]?.value ??
       'Category') as string;
 
   // CMS banner — fetched server-side so it is in the initial HTML.

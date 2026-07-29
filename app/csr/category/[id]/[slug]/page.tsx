@@ -131,8 +131,8 @@ export default function CategoryPage() {
   // to avoid a Next.js re-render cascade that would trigger a second API fetch.
   useEffect(() => {
     if (!category) return;
-    const match = category.slug?.find((s: { language?: string; value?: string }) => s.language === language);
-    const newSlug = match?.value || category.slug?.[0]?.value || '';
+    const match = category.slugs?.find((s: { language?: string; value?: string }) => s.language === language);
+    const newSlug = match?.value || category.slugs?.[0]?.value || '';
     const currentSlug = window.location.pathname.split('/').pop();
     if (newSlug && newSlug !== currentSlug) {
       const search = window.location.search;
@@ -223,8 +223,8 @@ export default function CategoryPage() {
   );
 
   const categoryName = (
-    category?.name?.find((n: { language?: string; value?: string }) => n.language === language)?.value
-    || category?.name?.[0]?.value
+    category?.names?.find((n: { language?: string; value?: string }) => n.language === language)?.value
+    || category?.names?.[0]?.value
     || 'Category'
   ) as string;
   const products = (category?.products?.items || []) as (Product | Cluster)[];

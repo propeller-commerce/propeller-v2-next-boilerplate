@@ -65,3 +65,6 @@ locales/_registry.ts
 
 # Claude harness transient lock
 .claude/scheduled_tasks.lock
+
+# PunchOut test fixtures (may contain a real shared secret)
+SetupRequest_*.xml

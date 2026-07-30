@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { restoreManagerCart } from '@/utils/cartHelpers';
+import PunchoutTransfer from '@/components/PunchoutTransfer';
 import { type Cart, type CartMainItem, CrossupsellType } from '@propeller-commerce/propeller-sdk-v2';
 import { useTranslations } from '@/lib/i18n/client';
 
@@ -30,6 +31,13 @@ export default function CartPage() {
   const t = useTranslations('CartPage');
 
   const items = mounted ? (cart?.items || []) : [];
+
+  // In a PunchOut session the cart is a transfer-only surface — the normal
+  // checkout / quote / action-code paths don't apply (the buyer sends the cart
+  // back to their procurement system). Gated on `mounted` so SSR + first client
+  // render match (the flag cookie is only readable in the browser).
+  const punchoutActive =
+    mounted && /(?:^|;\s*)punchout_active=/.test(document.cookie);
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
@@ -75,7 +83,8 @@ export default function CartPage() {
 
               {/* Cart Summary */}
               <div className="h-fit space-y-4">
-                {cart && (
+                <PunchoutTransfer />
+                {!punchoutActive && cart && (
                   <>
                     <CartSummary
                       cart={cart}

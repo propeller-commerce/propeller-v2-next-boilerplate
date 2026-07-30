@@ -150,7 +150,7 @@ export const config = {
   categoryTrackAttributes: [],
   clusterTrackAttributes: [],
   companyTrackAttributes: ['MY_INSTALLATIONS'],
-  contactTrackAttributes: [],
+  contactTrackAttributes: ['CXML_SHARED_SECRET'],
   customerTrackAttributes: [],
   /**
    * Spare-parts machines.
@@ -188,6 +188,28 @@ export const config = {
   // contact isn't truncated by the server default page.
   contactPAConfigInput: { page: 1, offset: 50 },
   contactCompaniesSearchInput: { page: 1, offset: 50 },
+  /**
+   * PunchOut (OCI + cXML). Non-secret, structured config only — the enable
+   * flag, shared secrets and buyer contact ids live in server env
+   * (`PUNCHOUT_ENABLED`, `PUNCHOUT_CXML_BUYERS`), read in `lib/punchout.ts`.
+   *
+   * `ociMapping` / `cxmlMapping` deep-merge over the package's
+   * `DEFAULT_OCI_MAPPING` / `DEFAULT_CXML_MAPPING` — the single place a
+   * deployment re-points, renames, or drops (`null`) an output field without
+   * forking the package. See the propeller-v2-punchout README for the rule shape.
+   */
+  punchout: {
+    /** ISO currency code emitted in OCI CURRENCY / cXML <Money currency>. */
+    currency: 'EUR',
+    /** Cart-transfer form target: '_self' | '_top' | '_parent' (frame it? use _top). */
+    transferTarget: '_self' as '_self' | '_top' | '_parent',
+    // ponytail: fresh-cart-on-entry not enforced yet — transfer works on any
+    // cart. Add a startCart in /api/punchout/enter if a buyer must not carry a
+    // prior non-punchout cart into the session.
+    freshCartOnEntry: false,
+    ociMapping: {} as Record<string, unknown>,
+    cxmlMapping: {} as Record<string, unknown>,
+  },
   includeVAT: true,
   enableRegistration: true,
   enableGuestCheckout: false,

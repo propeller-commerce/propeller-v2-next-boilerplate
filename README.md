@@ -139,6 +139,13 @@ client**, so the API key and GraphQL endpoint stay secret):
 - `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL)
 - `JWT_SECRET` - secret for signing/validating the auth cookie
 
+PunchOut (see the [PunchOut](#punchout-oci--cxml) section):
+
+- `PUNCHOUT_ENABLED` - master switch (`true`/`false`); when off every `/api/punchout/*` route is disabled
+- `CXML_CONTACT_ID` - CSV of candidate buyer contact ids (their `CXML_SHARED_SECRET` attribute is matched)
+- `PUNCHOUT_DEBUG` - `true` renders a readable OCI/cXML preview instead of auto-posting to the ERP
+- `PUNCHOUT_CURRENCY` / `PUNCHOUT_TRANSFER_TARGET` - optional overrides (default `EUR` / `_self`)
+
 ## Key Features Implemented
 
 ### Shopping Cart
@@ -220,6 +227,66 @@ A provider's `getNamespace(locale, namespace)` returns `Record<string, string>` 
 
 - `propeller-v2-react-ui@0.4.2+` — adds `labels?` to several components that previously didn't accept it (`UserDetails`, `OrderItemCard`, `ProductGallery`, `GridFilters`, `ProductGrid`, `GridToolbar`, `PriceToggle`), and adds forwarding props (`productCardLabels?`, `clusterCardLabels?`, `stockLabels?`, `addToCartLabels?`, `priceLabels?`) on `ProductGrid` / `ProductSlider`, plus `loginFormLabels?` on `AccountIconAndMenu`.
 - `propeller-v2-core-ui@0.2.2+` — owns the `TranslationProvider` interface (transitively installed via the UI package).
+
+## PunchOut (OCI + cXML)
+
+B2B e-procurement PunchOut, built on magic-token login and powered by
+[`@propeller-commerce/propeller-v2-punchout`](https://www.npmjs.com/package/@propeller-commerce/propeller-v2-punchout)
+(the pure protocol logic). A buyer "punches out" from their ERP (SAP Ariba,
+Coupa, SAP OCI), shops in a live session, and transfers the cart back as a
+requisition.
+
+**Wiring (thin routes that call the package):**
+
+| Concern | File |
+|---|---|
+| cXML `PunchOutSetupRequest` | `app/api/punchout/cxml/setup/route.ts` |
+| Entry → session cookie → magic-login | `app/api/punchout/enter/route.ts` |
+| Cart transfer (OCI fields / cXML OrderMessage) | `app/api/punchout/transfer/route.ts` |
+| Server glue (admin client, secret lookup, token mint) | `lib/punchout.ts` |
+| Non-secret config + **field-mapping overrides** | `data/config.ts` → `config.punchout` |
+| Cart-page transfer button | `components/PunchoutTransfer.tsx` |
+
+**How it works**
+
+- **cXML**: the buyer's system POSTs a `PunchOutSetupRequest` to
+  `/api/punchout/cxml/setup`. The route reads the candidate contacts from
+  `CXML_CONTACT_ID`, compares each one's `CXML_SHARED_SECRET` **contact track
+  attribute** (add it to `config.contactTrackAttributes`) to the request's
+  shared secret, mints a **one-time, 1-hour** magic token with the order-editor
+  key, and returns a `PunchOutSetupResponse` whose StartPage is
+  `/api/punchout/enter`.
+- **OCI**: no handshake — the ERP opens `/api/punchout/enter?mode=oci&mtoken=…`
+  directly, carrying `HOOK_URL` and the OCI params.
+- `enter` stores the session in an httpOnly `punchout` cookie (separate from the
+  auth cookies, so it survives magic-login's session clear) and redirects to
+  `/magic-login`. After login the cart page shows **Transfer cart to
+  procurement**; that POSTs to `/api/punchout/transfer`, which builds the OCI
+  `NEW_ITEM-*` set or the cXML `PunchOutOrderMessage` and hands it back to the ERP.
+
+**Configuring the output fields** — the wire mapping is data. Override any field
+in `config.punchout.ociMapping` / `cxmlMapping` (deep-merged over the package
+defaults; set a field to `null` to drop it). See the package README for the rule
+shape (`source` / `transform` / `static` / `fallback`).
+
+**Local testing**
+
+```bash
+# 1. enable + point at a test buyer contact, render previews instead of posting
+#    PUNCHOUT_ENABLED=true  CXML_CONTACT_ID=<id>  PUNCHOUT_DEBUG=true
+
+# 2. cXML: POST the setup request, copy the StartPage URL from the response
+curl -X POST http://localhost:3000/api/punchout/cxml/setup \
+  -H 'Content-Type: application/xml' --data-binary @SetupRequest.xml
+
+# 3. OCI: open the entry URL in a browser (uses a pre-provisioned magic token)
+#    http://localhost:3000/api/punchout/enter?mode=oci&mtoken=<token>&HOOK_URL=<url>&~CALLER=CTLG&CLASSIFICATION=44121600
+```
+
+With `PUNCHOUT_DEBUG=true` the transfer renders a readable preview of the
+converted cart (OCI field table / cXML document) and leaves the cart intact, so
+it's re-runnable. Set it to `false` for the real self-submitting form. The magic
+token is one-time, so re-POST the setup to mint a fresh StartPage.
 
 ## License
 

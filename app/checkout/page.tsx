@@ -277,6 +277,26 @@ function CheckoutPageInner() {
     return `${y}-${m}-${day}T00:00:00Z`;
   };
 
+  /**
+   * The cart's stored delivery date, or the first available one when that date
+   * has passed.
+   *
+   * A cart outlives the session: someone can pick a date, abandon checkout and
+   * come back days later, by which point `postageData.requestDate` is in the
+   * past. Sending it back is rejected by the API, so the shopper cannot place
+   * the order at all. Compared by calendar day — a date earlier TODAY is still
+   * today and stays valid.
+   */
+  const resolveDeliveryDate = (stored?: string): string => {
+    if (!stored) return computeFirstDeliveryDate();
+    const parsed = new Date(stored);
+    if (isNaN(parsed.getTime())) return computeFirstDeliveryDate();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const storedDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    return storedDay.getTime() < startOfToday.getTime() ? computeFirstDeliveryDate() : stored;
+  };
+
   // Auto-advance step 3 → 4 when the cart offers only ONE payment method and at
   // most ONE carrier. Preselects payment + carrier (if any) + the first
   // available delivery date, persists via `updateCartShipping`, then jumps to
@@ -296,10 +316,12 @@ function CheckoutPageInner() {
     const onlyPayment = payMethods[0]?.code;
     const onlyCarrier = carriers[0]?.name;
     if (!onlyPayment) return;
-    // Use the cart's stored requestDate when present, else the first available;
-    // matches what the `DeliveryDate` component would render as preselected.
-    const requestDate =
-      (cart.postageData?.requestDate as string | undefined) || computeFirstDeliveryDate();
+    // Use the cart's stored requestDate when present and still in the future,
+    // else the first available; matches what the `DeliveryDate` component
+    // would render as preselected.
+    const requestDate = resolveDeliveryDate(
+      cart.postageData?.requestDate as string | undefined
+    );
     autoAdvancedCartIdRef.current = cart.cartId;
     (async () => {
       try {
@@ -800,7 +822,9 @@ function CheckoutPageInner() {
                       )}
                       <DeliveryDate
                         cart={state.cart}
-                        initialDate={state.cart?.postageData?.requestDate as string | undefined}
+                        initialDate={resolveDeliveryDate(
+                          state.cart?.postageData?.requestDate as string | undefined
+                        )}
                         onDateSelect={(date) => setState(prev => ({ ...prev, selectedDeliveryDate: date }))}
                         labels={deliveryDateLabels}
                       />

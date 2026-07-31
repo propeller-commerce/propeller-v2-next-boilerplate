@@ -1,13 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { CmsProductCards } from '@/lib/cms/types';
+import { config, localizeHref } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import { ProductSlider } from '@propeller-commerce/propeller-v2-react-ui';
+import type { Product, Cluster } from '@propeller-commerce/propeller-sdk-v2';
 import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ProductCardsBlock({ block }: { block: CmsProductCards }) {
+  const router = useRouter();
   const { cart, saveCart } = useCart();
+  const { language } = useLanguage();
   const productSliderLabels = useTranslations('ProductSlider');
   const productCardLabels = useTranslations('ProductCard');
   const clusterCardLabels = useTranslations('ClusterCard');
@@ -49,6 +55,13 @@ export default function ProductCardsBlock({ block }: { block: CmsProductCards })
             createCart={true}
             onCartCreated={(newCart) => saveCart(newCart)}
             afterAddToCart={(updatedCart) => saveCart(updatedCart)}
+            onProductClick={(product: Product) => {
+              router.push(config.urls.getProductUrl(product, language));
+            }}
+            onClusterClick={(cluster: Cluster) => {
+              router.push(config.urls.getClusterUrl(cluster, language));
+            }}
+            onLoginClick={() => router.push(localizeHref('/login', language))}
           />
         ) : (
           <p className="text-muted-foreground text-center">{cmsBlocksLabels.noProductsConfigured}</p>

@@ -50,6 +50,7 @@ export default function ProductSliderBlock({ block }: { block: CmsProductSlider 
           onClusterClick={(cluster: Cluster) => {
             router.push(config.urls.getClusterUrl(cluster, language));
           }}
+          onLoginClick={() => router.push(localizeHref('/login', language))}
         />
       </div>
     </section>

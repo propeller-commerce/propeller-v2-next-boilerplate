@@ -38,6 +38,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
 import { parseListingParams, serializeAvailability, type ListingParams } from '@/lib/listingParams';
 import { useTranslations } from '@/lib/i18n/client';
+import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
 
 interface SearchIslandProps {
   /** The search term (empty string for the "all products" listing). */
@@ -69,6 +70,10 @@ export default function SearchIsland({
   initialParams,
 }: SearchIslandProps) {
   const router = useRouter();
+  // Prefetch a cluster/product route the moment the user hovers its card, so
+  // the click paints the loading skeleton from cache instead of after a full
+  // server round-trip. See useHoverPrefetch for why the cards can't self-prefetch.
+  const prefetchOnHover = useHoverPrefetch();
 
   // Hand control to ProductGrid the moment the user changes anything; until
   // then the grid renders the server-seeded first page with no client fetch.
@@ -472,6 +477,7 @@ export default function SearchIsland({
 
         {/* Grid — kept mounted via display-toggle so it owns the fetch cycle. */}
         <div className={hasNoResults ? 'hidden' : ''}>
+          <div onMouseOver={prefetchOnHover}>
           <ProductGrid
             // Server-seeded first page — dropped on the first interaction.
             products={usingServerData ? initialItems : undefined}
@@ -529,6 +535,7 @@ export default function SearchIsland({
             priceLabels={productPriceLabels}
             onLoginClick={() => router.push(localizeHref('/login', language))}
           />
+          </div>
         </div>
 
         {/* Pagination */}

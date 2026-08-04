@@ -131,7 +131,9 @@ function readPortalMode(): string {
 export const config = {
   baseCategoryId: BASE_CATEGORY_ID,
   channelId: CHANNEL_ID,
-  anonymousId: 71,
+  // Anonymous user id is derived from the channel at runtime (see
+  // lib/server.ts `getChannelDefaults` → `channel(channelId).anonymousUserId`),
+  // not hardcoded here.
   language: DEFAULT_LANG,
   currency: '€',
   /** ISO 4217 currency code — used by JSON-LD / schema.org payloads (`priceCurrency`).

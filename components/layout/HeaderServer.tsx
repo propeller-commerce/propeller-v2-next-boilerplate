@@ -21,18 +21,14 @@
  * which is correct: their auth/cart-bound shells aren't crawl targets and
  * benefit less from a server-rendered menu.
  */
-import { fetchMenu, getAnonymousInfra } from '@/lib/server';
+import { fetchMenu, getAnonymousInfra, resolveBaseCategoryId } from '@/lib/server';
 import Header from './Header';
-
-const BASE_CATEGORY_ID = parseInt(
-  process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1',
-  10
-);
 
 export default async function HeaderServer() {
   // Anonymous infra → the menu fetch is cacheable. Logged-in users do NOT
   // get a personalised menu (the catalog tree is not user-specific), so
   // resolving from the anonymous, cached path here is correct for all visitors.
-  const menuTree = await fetchMenu(getAnonymousInfra(), BASE_CATEGORY_ID);
+  // Root category = configured base, else the channel's catalog root.
+  const menuTree = await fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId());
   return <Header menuTree={menuTree} />;
 }

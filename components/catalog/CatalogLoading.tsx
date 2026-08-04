@@ -1,4 +1,4 @@
-import HeaderServer from '@/components/layout/HeaderServer';
+import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
 /**
@@ -14,13 +14,20 @@ import Footer from '@/components/layout/Footer';
  * page in behind it.
  *
  * Header + Footer are re-rendered here because they live in the page, not a
- * shared layout — without them the chrome would blink out during the load. The
- * menu fetch inside `HeaderServer` is served from the Next data cache (warm on
- * every real navigation), so rendering it here is ~free.
+ * shared layout — without them the chrome would blink out during the load. We
+ * use the *client* `Header` (not `HeaderServer`) on purpose: the skeleton must
+ * be fully static so Next can flush it in the first byte and retain the
+ * prefetched shell in the client Router Cache. An awaited menu fetch inside the
+ * loading boundary makes it dynamic (`staleTimes.dynamic` = 0 → not cached), so
+ * every click re-fetches over the network before the skeleton paints — exactly
+ * the lag this file exists to kill. The menu fills in client-side after the
+ * skeleton is already on screen.
  */
 
 function Bar({ className = '' }: { className?: string }) {
-  return <div className={`bg-surface-hover animate-pulse rounded ${className}`} />;
+  // Explicit gray (not the near-white `surface-hover` = gray-50 token) so the
+  // skeleton is clearly visible on a light page — and dark-mode aware.
+  return <div className={`bg-gray-200 dark:bg-gray-700 animate-pulse rounded ${className}`} />;
 }
 
 /** cluster / product — the two-column image + info detail layout. */
@@ -69,7 +76,7 @@ function GridSkeleton() {
 export default function CatalogLoading({ variant }: { variant: 'detail' | 'grid' }) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <HeaderServer />
+      <Header />
       <main className="flex-1 py-12">
         <div className="container-width">
           {variant === 'detail' ? <DetailSkeleton /> : <GridSkeleton />}

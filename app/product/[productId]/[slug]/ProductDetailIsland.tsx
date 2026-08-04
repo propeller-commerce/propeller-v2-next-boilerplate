@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import '@propeller-commerce/propeller-v2-spl/styles.css';
 import { useTranslations } from '@/lib/i18n/client';
 import { getTranslations } from '@/lib/i18n/server';
+import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart, LoginToOrderButton } from '@propeller-commerce/propeller-v2-react-ui';
@@ -282,6 +283,9 @@ const CROSS_SELLS = [
  */
 export function ProductBelowFoldIsland({ product, productId }: ProductDetailIslandProps) {
   const router = useRouter();
+  // Prefetch a cluster/product route on card hover so cross-sell clicks paint
+  // the loading skeleton from cache. See useHoverPrefetch.
+  const prefetchOnHover = useHoverPrefetch();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const productTabsLabels = useTranslations('ProductTabs');
@@ -311,8 +315,8 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
         />
       </div>
       {CROSS_SELLS.map((type) => (
+        <div key={type} onMouseOver={prefetchOnHover}>
         <ProductSlider
-          key={type}
           crossUpsellTypes={[type]}
           productId={productId}
           taxZone="NL"
@@ -334,6 +338,7 @@ export function ProductBelowFoldIsland({ product, productId }: ProductDetailIsla
           stockLabels={itemStockLabels}
           priceLabels={productPriceLabels}
         />
+        </div>
       ))}
     </>
   );

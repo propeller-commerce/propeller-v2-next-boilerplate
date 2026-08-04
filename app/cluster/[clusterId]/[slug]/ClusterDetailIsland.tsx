@@ -51,6 +51,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useCompany } from '@/context/CompanyContext';
 import { config, localizeHref } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
+import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
 
 interface ClusterDetailIslandProps {
   /** Numeric cluster ID from the route. */
@@ -79,6 +80,9 @@ export default function ClusterDetailIsland({
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const router = useRouter();
+  // Prefetch a cluster/product route on card hover so cross-sell clicks paint
+  // the loading skeleton from cache. See useHoverPrefetch.
+  const prefetchOnHover = useHoverPrefetch();
 
   const breadcrumbsLabels = useTranslations('Breadcrumbs');
   const bulkPricesLabels = useTranslations('ProductBulkPrices');
@@ -358,8 +362,8 @@ export default function ClusterDetailIsland({
           CrossupsellType.PARTS,
         ] as CrossupsellType[]
       ).map((type) => (
+        <div key={type} onMouseOver={prefetchOnHover}>
         <ProductSlider
-          key={type}
           crossUpsellTypes={[type]}
           clusterId={clusterId}
           taxZone="NL"
@@ -389,6 +393,7 @@ export default function ClusterDetailIsland({
           stockLabels={itemStockLabels}
           priceLabels={productPriceLabels}
         />
+        </div>
       ))}
     </>
   );

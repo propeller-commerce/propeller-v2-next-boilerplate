@@ -60,5 +60,8 @@
   "pdfDownloaded": "PDF downloaded successfully",
   "pdfDownloadFailed": "Failed to download PDF",
   "authorizationSettingsTitle": "Authorization Settings",
-  "authorizationRequestsTitle": "Authorization Requests"
+  "authorizationRequestsTitle": "Authorization Requests",
+  "openQuotesTitle": "Open quotations",
+  "latestOrdersTitle": "Latest orders",
+  "viewAll": "View all"
 }

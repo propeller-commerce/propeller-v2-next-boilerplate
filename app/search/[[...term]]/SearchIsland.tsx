@@ -31,6 +31,7 @@ import {
   GridFiltersPanel,
   GridPagination,
 } from '@propeller-commerce/propeller-v2-react-ui';
+import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -54,6 +55,13 @@ interface SearchIslandProps {
   initialParams: ListingParams;
 }
 
+/**
+ * Whether product cards show a stock indicator. Gates the availability filter
+ * too: filtering by stock is meaningless when no stock is displayed, so both
+ * read this one value rather than being set independently.
+ */
+const SHOW_STOCK = true;
+
 export default function SearchIsland({
   term,
   isAllProducts,
@@ -75,6 +83,9 @@ export default function SearchIsland({
   );
   const [maxPrice, setMaxPrice] = useState<number | undefined>(
     initialParams.maxPrice
+  );
+  const [availability, setAvailability] = useState<Availability[]>(
+    initialParams.availability ?? []
   );
   const [offset, setOffset] = useState(initialParams.offset);
   const [sortField, setSortField] = useState<ProductSortField>(
@@ -177,6 +188,7 @@ export default function SearchIsland({
       );
       setMinPrice(next.minPrice);
       setMaxPrice(next.maxPrice);
+      setAvailability(next.availability ?? []);
       setOffset(next.offset);
       setSortField(next.sortField);
       setSortOrder(next.sortOrder);
@@ -192,7 +204,8 @@ export default function SearchIsland({
     newMaxPrice?: number,
     newOffset?: number,
     newSortField?: string,
-    newSortOrder?: 'ASC' | 'DESC'
+    newSortOrder?: 'ASC' | 'DESC',
+    newAvailability?: Availability[]
   ) => {
     releaseServerData();
     const urlParams = new URLSearchParams();
@@ -207,6 +220,11 @@ export default function SearchIsland({
 
     if (newMinPrice !== undefined) urlParams.set('minPrice', newMinPrice.toString());
     if (newMaxPrice !== undefined) urlParams.set('maxPrice', newMaxPrice.toString());
+    // Only a single-bucket selection goes in the URL. Empty and both-selected
+    // are the same unfiltered listing, so the parameter is omitted.
+    if (newAvailability !== undefined && newAvailability.length === 1) {
+      urlParams.set('availability', newAvailability[0]);
+    }
     if (newOffset !== undefined && newOffset !== 12)
       urlParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'RELEVANCE')
@@ -219,6 +237,7 @@ export default function SearchIsland({
     setFilters(newFilters);
     setMinPrice(newMinPrice);
     setMaxPrice(newMaxPrice);
+    if (newAvailability !== undefined) setAvailability(newAvailability);
     if (newOffset !== undefined) setOffset(newOffset);
     if (newSortField !== undefined) setSortField(newSortField as ProductSortField);
     if (newSortOrder !== undefined) setSortOrder(newSortOrder as SortOrder);
@@ -245,7 +264,8 @@ export default function SearchIsland({
       maxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -257,8 +277,26 @@ export default function SearchIsland({
       newMaxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
+  };
+
+  const handleAvailabilityChange = (newAvailability: Availability[]) => {
+    updateURL(
+      filters,
+      1,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      newAvailability
+    );
+  };
+
+  const handleAvailabilityFilterRemove = (value: Availability) => {
+    handleAvailabilityChange(availability.filter((v) => v !== value));
   };
 
   const handlePageChange = (page: number) => {
@@ -269,7 +307,8 @@ export default function SearchIsland({
       maxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -281,7 +320,8 @@ export default function SearchIsland({
       maxPrice,
       newOffset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -293,7 +333,8 @@ export default function SearchIsland({
       maxPrice,
       offset,
       newSortField,
-      newSortOrder || (sortOrder as 'ASC' | 'DESC')
+      newSortOrder || (sortOrder as 'ASC' | 'DESC'),
+      availability
     );
   };
 
@@ -306,7 +347,8 @@ export default function SearchIsland({
       undefined,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      []
     );
   };
 
@@ -322,7 +364,8 @@ export default function SearchIsland({
       maxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -343,6 +386,9 @@ export default function SearchIsland({
           activeTextFilters={filters}
           activePriceMin={minPrice}
           activePriceMax={maxPrice}
+          showAvailabilityFilter={SHOW_STOCK}
+          activeAvailability={availability}
+          onAvailabilityChange={handleAvailabilityChange}
           isLoading={filtersLoading}
           labels={gridFiltersLabels}
         />
@@ -360,6 +406,7 @@ export default function SearchIsland({
               activeTextFilters={filters}
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
+              availability={availability}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')
@@ -369,6 +416,7 @@ export default function SearchIsland({
               onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
               onFilterRemove={handleFilterRemove}
               onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+              onAvailabilityFilterRemove={handleAvailabilityFilterRemove}
               onClearFilters={clearAllFilters}
               labels={gridToolbarLabels}
             />
@@ -418,7 +466,7 @@ export default function SearchIsland({
             createCart={true}
             cartId={cart?.cartId}
             showAvailability={false}
-            showStock={true}
+            showStock={SHOW_STOCK}
             onCartCreated={(newCart) => {
               saveCart(newCart);
             }}
@@ -426,6 +474,7 @@ export default function SearchIsland({
             textFilters={activeTextFilters}
             priceFilterMin={minPrice}
             priceFilterMax={maxPrice}
+            availability={availability}
             pageSize={offset}
             sortField={sortField as string}
             sortOrder={sortOrder as string}

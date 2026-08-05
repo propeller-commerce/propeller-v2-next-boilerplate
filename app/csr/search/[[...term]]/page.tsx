@@ -26,6 +26,7 @@ import { GridToolbar } from '@propeller-commerce/propeller-v2-react-ui';
 import { GridFilters } from '@propeller-commerce/propeller-v2-react-ui';
 import { GridPagination } from '@propeller-commerce/propeller-v2-react-ui';
 import { GridTitle } from '@propeller-commerce/propeller-v2-react-ui';
+import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
@@ -33,6 +34,14 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useTranslations } from '@/lib/i18n/client';
+import { parseAvailability } from '@/lib/listingParams';
+
+/**
+ * Whether product cards show a stock indicator. Gates the availability filter
+ * too: filtering by stock is meaningless when no stock is displayed, so both
+ * read this one value rather than being set independently.
+ */
+const SHOW_STOCK = true;
 
 export default function SearchPage() {
   const params = useParams();
@@ -46,6 +55,10 @@ export default function SearchPage() {
   const currentPage = parseInt(searchParams.get('page') || '1');
   const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined;
   const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
+  const availability = useMemo(
+    () => parseAvailability(searchParams.get('availability') ?? undefined),
+    [searchParams]
+  );
   const offset = parseInt(searchParams.get('offset') || '12');
   const sortField = (searchParams.get('sortField') as ProductSortField) || ProductSortField.RELEVANCE;
   const sortOrder = (searchParams.get('sortOrder') as SortOrder) || SortOrder.DESC;
@@ -53,7 +66,7 @@ export default function SearchPage() {
   const filters = useMemo(() => {
     const newFilters: Record<string, string[]> = {};
     searchParams.forEach((value, key) => {
-      if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder'].includes(key)) {
+      if (!['page', 'minPrice', 'maxPrice', 'offset', 'sortField', 'sortOrder', 'availability'].includes(key)) {
         try {
           newFilters[key] = JSON.parse(value);
         } catch {
@@ -116,7 +129,8 @@ export default function SearchPage() {
     newMaxPrice?: number,
     newOffset?: number,
     newSortField?: string,
-    newSortOrder?: 'ASC' | 'DESC'
+    newSortOrder?: 'ASC' | 'DESC',
+    newAvailability?: Availability[]
   ) => {
     const urlParams = new URLSearchParams();
 
@@ -130,6 +144,11 @@ export default function SearchPage() {
 
     if (newMinPrice !== undefined) urlParams.set('minPrice', newMinPrice.toString());
     if (newMaxPrice !== undefined) urlParams.set('maxPrice', newMaxPrice.toString());
+    // Only a single-bucket selection goes in the URL. Empty and both-selected
+    // are the same unfiltered listing, so the parameter is omitted.
+    if (newAvailability !== undefined && newAvailability.length === 1) {
+      urlParams.set('availability', newAvailability[0]);
+    }
     if (newOffset !== undefined && newOffset !== 12) urlParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'RELEVANCE') urlParams.set('sortField', newSortField);
     if (newSortOrder !== undefined && newSortOrder !== 'DESC') urlParams.set('sortOrder', newSortOrder);
@@ -149,28 +168,36 @@ export default function SearchPage() {
       : [...current, valueStr];
     const newFilters = { ...filters, [name]: next };
     if (next.length === 0) delete newFilters[name];
-    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
   };
 
   const handlePriceRangeChange = (newMinPrice?: number, newMaxPrice?: number) => {
-    updateURL(filters, 1, newMinPrice, newMaxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+    updateURL(filters, 1, newMinPrice, newMaxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
+  };
+
+  const handleAvailabilityChange = (newAvailability: Availability[]) => {
+    updateURL(filters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', newAvailability);
+  };
+
+  const handleAvailabilityFilterRemove = (value: Availability) => {
+    handleAvailabilityChange(availability.filter((v) => v !== value));
   };
 
   const handlePageChange = (page: number) => {
-    updateURL(filters, page, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+    updateURL(filters, page, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
   };
 
   const handleOffsetChange = (newOffset: number) => {
-    updateURL(filters, 1, minPrice, maxPrice, newOffset, sortField as string, sortOrder as 'ASC' | 'DESC');
+    updateURL(filters, 1, minPrice, maxPrice, newOffset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
   };
 
   const handleSortChange = (newSortField: string, newSortOrder?: 'ASC' | 'DESC') => {
-    updateURL(filters, 1, minPrice, maxPrice, offset, newSortField, newSortOrder || (sortOrder as 'ASC' | 'DESC'));
+    updateURL(filters, 1, minPrice, maxPrice, offset, newSortField, newSortOrder || (sortOrder as 'ASC' | 'DESC'), availability);
   };
 
   const clearAllFilters = () => {
     setClearSignal(s => s + 1);
-    updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+    updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC', []);
   };
 
   const handleFilterRemove = (filterName: string, value: string) => {
@@ -178,7 +205,7 @@ export default function SearchPage() {
     const newVals = current.filter(v => v !== value);
     const newFilters = { ...filters, [filterName]: newVals };
     if (newVals.length === 0) delete newFilters[filterName];
-    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC');
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
   };
 
   return (
@@ -209,6 +236,9 @@ export default function SearchPage() {
                   activeTextFilters={filters}
                   activePriceMin={minPrice}
                   activePriceMax={maxPrice}
+                  showAvailabilityFilter={SHOW_STOCK}
+                  activeAvailability={availability}
+                  onAvailabilityChange={handleAvailabilityChange}
                   isLoading={filtersLoading}
                   className=""
                   labels={gridFiltersLabels}
@@ -229,12 +259,14 @@ export default function SearchPage() {
                     activeTextFilters={filters}
                     priceFilterMin={minPrice}
                     priceFilterMax={maxPrice}
+                    availability={availability}
                     onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                     onOffsetChange={handleOffsetChange}
                     viewMode={viewMode}
                     onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
                     onFilterRemove={handleFilterRemove}
                     onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+                    onAvailabilityFilterRemove={handleAvailabilityFilterRemove}
                     onClearFilters={clearAllFilters}
                     labels={gridToolbarLabels}
                   />
@@ -286,7 +318,7 @@ export default function SearchPage() {
                 createCart={true}
                 cartId={cart?.cartId}
                 showAvailability={false}
-                showStock={true}
+                showStock={SHOW_STOCK}
                 onCartCreated={(newCart) => {
                   console.log('newCart', newCart);
                   saveCart(newCart);
@@ -295,6 +327,7 @@ export default function SearchPage() {
                 textFilters={activeTextFilters}
                 priceFilterMin={minPrice}
                 priceFilterMax={maxPrice}
+                availability={availability}
                 pageSize={offset}
                 sortField={sortField as string}
                 sortOrder={sortOrder as string}

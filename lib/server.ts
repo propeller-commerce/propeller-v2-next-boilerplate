@@ -82,6 +82,7 @@ import {
   machineService,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
+import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 
 // ── Cache control: tags + revalidate window ─────────────────────────────────
 // (see `tagFor` below and the `cacheable` flag on `ServerInfra`)
@@ -616,22 +617,32 @@ export interface ListingFetchOptions {
   priceFilterMin?: number;
   /** Active price-range filter upper bound. */
   priceFilterMax?: number;
+  /**
+   * Active stock-availability buckets. Mirrors the client `useProductSearch`
+   * listing path — converted to the SDK's `inventory` filter via
+   * `buildInventoryFilter` (never reimplement the operator semantics here).
+   */
+  availability?: Availability[];
   /** Language override. Defaults to `infra.language`. */
   language?: string;
 }
 
 /**
- * The `textFilters` / `price` pair is shared verbatim by every product-search
- * input the storefront builds (`CategoryProductSearchInput`,
+ * The `textFilters` / `price` / `inventory` trio is shared verbatim by every
+ * product-search input the storefront builds (`CategoryProductSearchInput`,
  * `SparePartsMachineProductSearchInput`, …), so `buildFilterInput` returns just
  * that slice and each caller spreads it into its own input type.
  */
-type ListingFilterSlice = Pick<CategoryProductSearchInput, 'textFilters' | 'price'>;
+type ListingFilterSlice = Pick<CategoryProductSearchInput, 'textFilters' | 'price' | 'inventory'>;
 
 /**
- * Build the optional `textFilters` / `price` slice of a product-search input
- * from listing options. Mirrors the client `useProductSearch` listing path.
- * Price defaults match the client's (`from: 0`, `to: 999999`).
+ * Build the optional `textFilters` / `price` / `inventory` slice of a
+ * product-search input from listing options. Mirrors the client
+ * `useProductSearch` listing path. Price defaults match the client's
+ * (`from: 0`, `to: 999999`). The inventory filter is built exclusively via
+ * `buildInventoryFilter` — it returns `undefined` for both an empty selection
+ * and a both-buckets selection (both mean "unfiltered"), so the field is only
+ * spread in when it resolves to a real filter.
  */
 function buildFilterInput(opts: ListingFetchOptions): ListingFilterSlice {
   const slice: ListingFilterSlice = {};
@@ -643,6 +654,8 @@ function buildFilterInput(opts: ListingFetchOptions): ListingFilterSlice {
     };
     slice.price = price;
   }
+  const inventory = buildInventoryFilter(opts.availability);
+  if (inventory) slice.inventory = inventory;
   return slice;
 }
 

@@ -1,5 +1,8 @@
 {
   "applyFilters": "Show results",
+  "availability": "Availability",
+  "inStock": "In stock",
   "noFiltersAvailable": "No filters available",
+  "outOfStock": "Out of stock",
   "priceRange": "Price Range"
 }

@@ -20,6 +20,7 @@ import {
   SortOrder,
   type ProductTextFilterInput,
 } from '@propeller-commerce/propeller-sdk-v2';
+import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 
 /** Reserved query keys — handled explicitly, never treated as a filter. */
 const RESERVED_KEYS = [
@@ -29,6 +30,7 @@ const RESERVED_KEYS = [
   'offset',
   'sortField',
   'sortOrder',
+  'availability',
 ] as const;
 
 /**
@@ -67,6 +69,8 @@ export interface ListingParams {
   maxPrice: number | undefined;
   /** Attribute filters: `{ [attributeName]: selectedValues }`. */
   filters: Record<string, string[]>;
+  /** Active stock-availability buckets. Empty when not filtered. */
+  availability: Availability[];
 }
 
 /**
@@ -77,6 +81,21 @@ export type RawSearchParams =
   | URLSearchParams
   | Record<string, string | string[] | undefined>
   | undefined;
+
+/**
+ * Parse the `availability` query param into typed buckets. Accepts a plain
+ * `URLSearchParams` value (`string`) or Next's `searchParams` shape (which
+ * may hand back `string[]` for a repeated key). Unknown values are dropped
+ * rather than manufacturing a bucket that doesn't exist.
+ */
+export function parseAvailability(raw: string | string[] | undefined): Availability[] {
+  const value = Array.isArray(raw) ? raw.join(',') : raw;
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v): v is Availability => v === 'in-stock' || v === 'out-of-stock');
+}
 
 /** Normalise the various `searchParams` shapes into a flat string map. */
 function toEntries(raw: RawSearchParams): Array<[string, string]> {
@@ -142,6 +161,7 @@ export function parseListingParams(
     minPrice: minPriceRaw ? parseFloat(minPriceRaw) : undefined,
     maxPrice: maxPriceRaw ? parseFloat(maxPriceRaw) : undefined,
     filters,
+    availability: parseAvailability(get('availability')),
   };
 }
 

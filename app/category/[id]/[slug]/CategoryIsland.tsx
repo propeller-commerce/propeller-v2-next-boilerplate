@@ -36,6 +36,7 @@ import {
   CategoryDescription,
   Breadcrumbs,
 } from '@propeller-commerce/propeller-v2-react-ui';
+import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -60,6 +61,13 @@ interface CategoryIslandProps {
    */
   initialParams: ListingParams;
 }
+
+/**
+ * Whether product cards show a stock indicator. Gates the availability filter
+ * too: filtering by stock is meaningless when no stock is displayed, so both
+ * read this one value rather than being set independently.
+ */
+const SHOW_STOCK = true;
 
 export default function CategoryIsland({
   categoryId,
@@ -89,6 +97,9 @@ export default function CategoryIsland({
   );
   const [maxPrice, setMaxPrice] = useState<number | undefined>(
     initialParams.maxPrice
+  );
+  const [availability, setAvailability] = useState<Availability[]>(
+    initialParams.availability ?? []
   );
   const [offset, setOffset] = useState(initialParams.offset);
   const [sortField, setSortField] = useState<ProductSortField>(
@@ -171,6 +182,7 @@ export default function CategoryIsland({
       );
       setMinPrice(next.minPrice);
       setMaxPrice(next.maxPrice);
+      setAvailability(next.availability ?? []);
       setOffset(next.offset);
       setSortField(next.sortField);
       setSortOrder(next.sortOrder);
@@ -210,7 +222,8 @@ export default function CategoryIsland({
     newMaxPrice?: number,
     newOffset?: number,
     newSortField?: string,
-    newSortOrder?: 'ASC' | 'DESC'
+    newSortOrder?: 'ASC' | 'DESC',
+    newAvailability?: Availability[]
   ) => {
     releaseServerData();
     const searchParams = new URLSearchParams();
@@ -225,6 +238,11 @@ export default function CategoryIsland({
 
     if (newMinPrice !== undefined) searchParams.set('minPrice', newMinPrice.toString());
     if (newMaxPrice !== undefined) searchParams.set('maxPrice', newMaxPrice.toString());
+    // Only a single-bucket selection goes in the URL. Empty and both-selected
+    // are the same unfiltered listing, so the parameter is omitted.
+    if (newAvailability !== undefined && newAvailability.length === 1) {
+      searchParams.set('availability', newAvailability[0]);
+    }
     if (newOffset !== undefined && newOffset !== 12)
       searchParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER')
@@ -238,6 +256,7 @@ export default function CategoryIsland({
     setFilters(newFilters);
     setMinPrice(newMinPrice);
     setMaxPrice(newMaxPrice);
+    if (newAvailability !== undefined) setAvailability(newAvailability);
     if (newOffset !== undefined) setOffset(newOffset);
     if (newSortField !== undefined) setSortField(newSortField as ProductSortField);
     if (newSortOrder !== undefined) setSortOrder(newSortOrder as SortOrder);
@@ -268,7 +287,8 @@ export default function CategoryIsland({
       maxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -280,8 +300,26 @@ export default function CategoryIsland({
       newMaxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
+  };
+
+  const handleAvailabilityChange = (newAvailability: Availability[]) => {
+    updateURL(
+      filters,
+      1,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      newAvailability
+    );
+  };
+
+  const handleAvailabilityFilterRemove = (value: Availability) => {
+    handleAvailabilityChange(availability.filter((v) => v !== value));
   };
 
   const handlePageChange = (page: number) => {
@@ -292,7 +330,8 @@ export default function CategoryIsland({
       maxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -304,7 +343,8 @@ export default function CategoryIsland({
       maxPrice,
       newOffset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -316,7 +356,8 @@ export default function CategoryIsland({
       maxPrice,
       offset,
       newSortField,
-      newSortOrder || (sortOrder as 'ASC' | 'DESC')
+      newSortOrder || (sortOrder as 'ASC' | 'DESC'),
+      availability
     );
   };
 
@@ -329,7 +370,8 @@ export default function CategoryIsland({
       undefined,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      []
     );
   };
 
@@ -345,7 +387,8 @@ export default function CategoryIsland({
       maxPrice,
       offset,
       sortField as string,
-      sortOrder as 'ASC' | 'DESC'
+      sortOrder as 'ASC' | 'DESC',
+      availability
     );
   };
 
@@ -396,6 +439,9 @@ export default function CategoryIsland({
           activeTextFilters={filters}
           activePriceMin={minPrice}
           activePriceMax={maxPrice}
+          showAvailabilityFilter={SHOW_STOCK}
+          activeAvailability={availability}
+          onAvailabilityChange={handleAvailabilityChange}
           isLoading={filtersLoading}
           labels={gridFiltersLabels}
         />
@@ -411,6 +457,7 @@ export default function CategoryIsland({
               activeTextFilters={filters}
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
+              availability={availability}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')
@@ -420,6 +467,7 @@ export default function CategoryIsland({
               onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
               onFilterRemove={handleFilterRemove}
               onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+              onAvailabilityFilterRemove={handleAvailabilityFilterRemove}
               onClearFilters={clearAllFilters}
               labels={gridToolbarLabels}
             />
@@ -443,11 +491,12 @@ export default function CategoryIsland({
             textFilters={activeTextFilters}
             priceFilterMin={minPrice}
             priceFilterMax={maxPrice}
+            availability={availability}
             pageSize={offset}
             sortField={sortField as string}
             sortOrder={sortOrder as string}
             showAvailability={false}
-            showStock={true}
+            showStock={SHOW_STOCK}
             onFiltersChange={setGridFilters}
             onPriceBoundsChange={(min, max) => {
               if (!priceBoundsMin && !priceBoundsMax) {

@@ -12,6 +12,8 @@
   "SUPPLIER_CODE": "Leverancierscode",
   "clearAll": "Alles wissen",
   "from": "van",
+  "inStock": "Op voorraad",
+  "outOfStock": "Niet op voorraad",
   "perPage": " per pagina",
   "price": "Prijs",
   "productPlural": "Producten",

@@ -1,5 +1,8 @@
 {
   "applyFilters": "Toon resultaten",
+  "availability": "Beschikbaarheid",
+  "inStock": "Op voorraad",
   "noFiltersAvailable": "Geen filters beschikbaar",
+  "outOfStock": "Niet op voorraad",
   "priceRange": "Prijsklasse"
 }

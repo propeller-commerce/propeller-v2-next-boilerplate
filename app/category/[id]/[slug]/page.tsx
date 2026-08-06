@@ -149,6 +149,7 @@ export default async function CategoryPage({
     priceFilterMin: listing.minPrice,
     priceFilterMax: listing.maxPrice,
     availability: listing.availability,
+    minStock: listing.minStock,
   });
   if (!category) notFound();
 

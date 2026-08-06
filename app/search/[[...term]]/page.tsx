@@ -73,6 +73,7 @@ export default async function SearchPage({
     priceFilterMin: listing.minPrice,
     priceFilterMax: listing.maxPrice,
     availability: listing.availability,
+    minStock: listing.minStock,
   };
 
   // Term search → query the base category with a search term + boosted

@@ -20,7 +20,7 @@ import {
   SortOrder,
   type ProductTextFilterInput,
 } from '@propeller-commerce/propeller-sdk-v2';
-import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
+import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/propeller-v2-core-ui';
 
 /** Reserved query keys — handled explicitly, never treated as a filter. */
 const RESERVED_KEYS = [
@@ -69,8 +69,10 @@ export interface ListingParams {
   maxPrice: number | undefined;
   /** Attribute filters: `{ [attributeName]: selectedValues }`. */
   filters: Record<string, string[]>;
-  /** Active stock-availability buckets. Empty when not filtered. */
-  availability: Availability[];
+  /** Active stock-availability selection. `'all'` when not filtered. */
+  availability: Availability;
+  /** Minimum quantity for the `'in-stock'` selection. */
+  minStock: number;
 }
 
 /**
@@ -83,18 +85,35 @@ export type RawSearchParams =
   | undefined;
 
 /**
- * Parse the `availability` query param into typed buckets. Accepts a plain
- * `URLSearchParams` value (`string`) or Next's `searchParams` shape (which
- * may hand back `string[]` for a repeated key). Unknown values are dropped
- * rather than manufacturing a bucket that doesn't exist.
+ * Parse the `availability` query param: bare `in-stock` or `in-stock:N`.
+ * Anything else (missing, unrecognised, garbage/sub-1 `N`) falls back to
+ * `'all'` / the minimum threshold rather than manufacturing bad state.
  */
-export function parseAvailability(raw: string | string[] | undefined): Availability[] {
-  const value = Array.isArray(raw) ? raw.join(',') : raw;
-  if (!value) return [];
-  return value
-    .split(',')
-    .map((v) => v.trim())
-    .filter((v): v is Availability => v === 'in-stock' || v === 'out-of-stock');
+export function parseAvailability(
+  raw: string | string[] | undefined
+): { availability: Availability; minStock: number } {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return { availability: 'all', minStock: MIN_STOCK_THRESHOLD };
+  const [selection, qty] = value.split(':');
+  if (selection !== 'in-stock') return { availability: 'all', minStock: MIN_STOCK_THRESHOLD };
+  const parsedQty = qty !== undefined ? parseInt(qty, 10) : NaN;
+  const minStock = Number.isFinite(parsedQty) && parsedQty >= MIN_STOCK_THRESHOLD
+    ? parsedQty
+    : MIN_STOCK_THRESHOLD;
+  return { availability: 'in-stock', minStock };
+}
+
+/**
+ * Inverse of `parseAvailability` — `'all'` omits the param; `'in-stock'` at
+ * the default threshold serialises bare; a raised quantity appends `:N`.
+ * Never emits `:1` so existing shared links stay valid.
+ */
+export function serializeAvailability(
+  availability: Availability,
+  minStock: number
+): string | undefined {
+  if (availability !== 'in-stock') return undefined;
+  return minStock > MIN_STOCK_THRESHOLD ? `in-stock:${minStock}` : 'in-stock';
 }
 
 /** Normalise the various `searchParams` shapes into a flat string map. */
@@ -152,6 +171,7 @@ export function parseListingParams(
 
   const minPriceRaw = get('minPrice');
   const maxPriceRaw = get('maxPrice');
+  const { availability, minStock } = parseAvailability(get('availability'));
 
   return {
     page: Math.max(1, parseInt(get('page') || '1', 10) || 1),
@@ -161,7 +181,8 @@ export function parseListingParams(
     minPrice: minPriceRaw ? parseFloat(minPriceRaw) : undefined,
     maxPrice: maxPriceRaw ? parseFloat(maxPriceRaw) : undefined,
     filters,
-    availability: parseAvailability(get('availability')),
+    availability,
+    minStock,
   };
 }
 

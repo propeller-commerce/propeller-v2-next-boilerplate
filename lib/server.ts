@@ -55,6 +55,7 @@ const taintObjectReference: (msg: string, obj: object) => void =
   (React as unknown as { experimental_taintObjectReference?: (msg: string, obj: object) => void })
     .experimental_taintObjectReference ?? (() => {});
 import { cookies } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import {
   GraphQLClient,
   type GraphQLClientConfig,
@@ -80,6 +81,7 @@ import {
   SortOrder,
   ProductSearchableField,
   machineService,
+  channelService,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
 import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui';
@@ -523,6 +525,64 @@ export async function getListingInfra(): Promise<ServerInfra> {
   return (await hasAuthCookie()) ? getServerInfra() : getAnonymousInfraWithTax();
 }
 
+// ── Channel-derived defaults (anonymous user + catalog root) ────────────────
+
+/**
+ * Defaults the storefront reads off the channel instead of hardcoding them:
+ *  - `anonymousUserId` — the guest account anonymous price/product queries run
+ *    as, so anonymous pricing follows the channel's configured account rather
+ *    than the backend apikey default.
+ *  - `catalogRootId` — the catalog root category, used as the base-category
+ *    fallback when none is configured (`NEXT_PUBLIC_BASE_CATEGORY_ID` unset).
+ */
+export interface ChannelDefaults {
+  anonymousUserId?: number;
+  catalogRootId?: number;
+}
+
+/**
+ * Fetch the channel's defaults from `channel(channelId)`. Cached across
+ * requests via the Next data cache (channel config changes rarely; shares the
+ * anonymous catalog TTL + `TAG_CATALOG` so `/api/revalidate {"tag":"*"}` clears
+ * it too). `unstable_cache` also dedupes within a request.
+ *
+ * ponytail: cached at the Next layer because `channelService.getChannel` — unlike
+ * `getCategory` — doesn't forward the SDK `fetchOptions` cache hint. Swap to
+ * `cacheOptions(...)` once the SDK adds that passthrough.
+ */
+const getChannelDefaults = unstable_cache(
+  async (channelId: number): Promise<ChannelDefaults> => {
+    try {
+      const client = createServerClient({ getAccessToken: () => undefined });
+      const channel = await channelService(client).getChannel({ channelId });
+      return {
+        anonymousUserId: channel?.anonymousUserId ?? undefined,
+        catalogRootId: channel?.catalogRootId ?? undefined,
+      };
+    } catch {
+      // Channel unreachable / misconfigured — anonymous falls back to the
+      // backend apikey default pricing and the configured base category.
+      return {};
+    }
+  },
+  ['channel-defaults'],
+  { revalidate: ANONYMOUS_CACHE_TTL_SECONDS, tags: [TAG_CATALOG] }
+);
+
+/**
+ * Server-side base category: the explicitly configured
+ * `NEXT_PUBLIC_BASE_CATEGORY_ID`, or — when none is provided — the channel's
+ * catalog root. Falls back to `config.baseCategoryId` (its own '1' default) if
+ * the channel exposes no root.
+ */
+export async function resolveBaseCategoryId(): Promise<number> {
+  const raw = process.env.NEXT_PUBLIC_BASE_CATEGORY_ID;
+  const explicit = raw ? parseInt(raw, 10) : NaN;
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const { catalogRootId } = await getChannelDefaults(config.channelId);
+  return catalogRootId ?? config.baseCategoryId;
+}
+
 // ── Thin fetch helpers (the data layer Bucket-B components consume) ─────────
 
 /**
@@ -672,12 +732,31 @@ const FILTER_AVAILABLE_ATTRIBUTE_INPUT: FilterAvailableAttributeInput = {
   isSearchable: true,
 };
 
-/** Resolve the `userId` the SDK price/search inputs expect from the infra user. */
-function resolveUserId(user: Contact | Customer | null): number | undefined {
-  if (!user) return undefined;
+/**
+ * Resolve the `userId` the SDK price/search inputs expect. Logged-in users
+ * resolve to their contact/customer id; anonymous sessions fall back to the
+ * channel's `anonymousUserId` so guest pricing follows the channel's configured
+ * account instead of the backend apikey default.
+ */
+function resolveUserId(
+  user: Contact | Customer | null,
+  anonymousUserId?: number
+): number | undefined {
+  if (!user) return anonymousUserId;
   if ('contactId' in user) return (user as Contact).contactId;
   if ('customerId' in user) return (user as Customer).customerId;
-  return undefined;
+  return anonymousUserId;
+}
+
+/**
+ * The `userId` for a listing / price fetch: the logged-in user's id, or — when
+ * anonymous — the channel's anonymous user (fetched once, cached). Only hits the
+ * channel query for anonymous renders; logged-in users never need it.
+ */
+async function listingUserId(infra: ServerInfra): Promise<number | undefined> {
+  if (infra.user) return resolveUserId(infra.user);
+  const { anonymousUserId } = await getChannelDefaults(config.channelId);
+  return anonymousUserId;
 }
 
 /**
@@ -717,7 +796,7 @@ export async function fetchCategory(
   const sortField = opts.sortField ?? ProductSortField.CATEGORY_ORDER;
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
-  const userId = resolveUserId(infra.user);
+  const userId = await listingUserId(infra);
   const companyId = resolveCompanyId(infra);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
@@ -780,7 +859,7 @@ export async function fetchSearch(
   const sortField = opts.sortField ?? ProductSortField.RELEVANCE;
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
-  const userId = resolveUserId(infra.user);
+  const userId = await listingUserId(infra);
   const companyId = resolveCompanyId(infra);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
@@ -1027,7 +1106,7 @@ export async function fetchMachine(
   const lang = opts.language ?? infra.language;
   const sortField = opts.sortField ?? ProductSortField.NAME;
   const sortOrder = opts.sortOrder ?? SortOrder.ASC;
-  const userId = resolveUserId(infra.user);
+  const userId = await listingUserId(infra);
   const companyId = resolveCompanyId(infra);
 
   // `language` / `page` / `offset` / `statuses` are NON_NULL on

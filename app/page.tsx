@@ -6,12 +6,7 @@ import PreprTrack from '@/components/cms/PreprTrack';
 import { getPage } from '@/lib/cms';
 import { readForwardedPreprHeaders } from '@/lib/preprHeaders';
 import HomeFallback from '@/components/cms/HomeFallback';
-import { fetchMenu, getAnonymousInfra } from '@/lib/server';
-
-const BASE_CATEGORY_ID = parseInt(
-  process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17',
-  10
-);
+import { fetchMenu, getAnonymousInfra, resolveBaseCategoryId } from '@/lib/server';
 
 export default async function Home({
   searchParams,
@@ -51,7 +46,7 @@ export default async function Home({
       noStore: true,
       preview,
     }),
-    fetchMenu(getAnonymousInfra(), BASE_CATEGORY_ID),
+    fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId()),
   ]);
 
   return (

@@ -42,6 +42,7 @@ import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { parseListingParams, serializeAvailability, type ListingParams } from '@/lib/listingParams';
 import { useTranslations } from '@/lib/i18n/client';
+import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
 
 interface CategoryIslandProps {
   /** Numeric category ID from the route. */
@@ -76,6 +77,10 @@ export default function CategoryIsland({
   initialParams,
 }: CategoryIslandProps) {
   const router = useRouter();
+  // Prefetch a cluster/product route the moment the user hovers its card, so
+  // the click paints the loading skeleton from cache instead of after a full
+  // server round-trip. See useHoverPrefetch for why the cards can't self-prefetch.
+  const prefetchOnHover = useHoverPrefetch();
 
   // Once any filter/sort/page change happens, `ProductGrid` must own its own
   // fetching — so we stop passing the server-seeded `products` prop. While
@@ -488,6 +493,7 @@ export default function CategoryIsland({
             />
           </div>
 
+          <div onMouseOver={prefetchOnHover}>
           <ProductGrid
             // Server-seeded first page — only while no interaction has
             // happened. Dropping it to `undefined` lets the grid fetch.
@@ -547,6 +553,7 @@ export default function CategoryIsland({
             priceLabels={productPriceLabels}
             onLoginClick={() => router.push(localizeHref('/login', language))}
           />
+          </div>
 
           <div className="flex justify-center gap-2 mt-12">
             {productsResponse && (

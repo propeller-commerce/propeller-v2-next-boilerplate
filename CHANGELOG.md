@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-08-04
+
+### Added
+- Anonymous user id is now derived from the channel at runtime instead of a
+  hardcoded config value. `lib/server.ts` reads `channel(channelId)` once
+  (cached) and uses its `anonymousUserId` for anonymous catalog/search/machine
+  price queries — so guest pricing follows the channel's configured account
+  rather than the backend apikey default — and its `catalogRootId` as the
+  base-category fallback when `NEXT_PUBLIC_BASE_CATEGORY_ID` is unset. The dead
+  `config.anonymousId` / `BOILERPLATE_ANONYMOUS_USER_ID` are removed.
+
+### Changed
+- Catalog navigation now paints the `loading.tsx` skeleton instantly on click.
+  Three fixes together: `compress: false` + an `X-Accel-Buffering: no` header
+  on the catalog routes (`next.config.ts`) stop the streamed skeleton from being
+  buffered by gzip/the proxy; `CatalogLoading` renders a static client `Header`
+  instead of awaiting the menu, so the shell flushes immediately; and grid /
+  slider cards prefetch their destination on hover (`lib/useHoverPrefetch.ts`)
+  so the click lands on an already-cached loading shell.
+
+### Fixed
+- Cluster configurator now renders options for ENUM-spanned clusters. The
+  shared attribute extractor read `value` for `AttributeEnumValue`, but the
+  schema exposes those on `enumValues` — every ENUM attribute resolved to an
+  empty option list, blocking variant selection and add-to-cart. Arrives via
+  the `propeller-v2-react-ui` / `propeller-v2-core-ui` update.
+
 ## [1.10.0] - 2026-07-30
 
 ### Added

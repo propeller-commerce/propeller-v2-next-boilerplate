@@ -31,12 +31,12 @@ import {
   GridFiltersPanel,
   GridPagination,
 } from '@propeller-commerce/propeller-v2-react-ui';
-import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
+import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/propeller-v2-core-ui';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePrice } from '@/context/PriceContext';
-import { parseListingParams, type ListingParams } from '@/lib/listingParams';
+import { parseListingParams, serializeAvailability, type ListingParams } from '@/lib/listingParams';
 import { useTranslations } from '@/lib/i18n/client';
 
 interface SearchIslandProps {
@@ -84,8 +84,11 @@ export default function SearchIsland({
   const [maxPrice, setMaxPrice] = useState<number | undefined>(
     initialParams.maxPrice
   );
-  const [availability, setAvailability] = useState<Availability[]>(
-    initialParams.availability ?? []
+  const [availability, setAvailability] = useState<Availability>(
+    initialParams.availability ?? 'all'
+  );
+  const [minStock, setMinStock] = useState<number>(
+    initialParams.minStock ?? MIN_STOCK_THRESHOLD
   );
   const [offset, setOffset] = useState(initialParams.offset);
   const [sortField, setSortField] = useState<ProductSortField>(
@@ -188,7 +191,8 @@ export default function SearchIsland({
       );
       setMinPrice(next.minPrice);
       setMaxPrice(next.maxPrice);
-      setAvailability(next.availability ?? []);
+      setAvailability(next.availability ?? 'all');
+      setMinStock(next.minStock ?? MIN_STOCK_THRESHOLD);
       setOffset(next.offset);
       setSortField(next.sortField);
       setSortOrder(next.sortOrder);
@@ -205,7 +209,8 @@ export default function SearchIsland({
     newOffset?: number,
     newSortField?: string,
     newSortOrder?: 'ASC' | 'DESC',
-    newAvailability?: Availability[]
+    newAvailability?: Availability,
+    newMinStock?: number
   ) => {
     releaseServerData();
     const urlParams = new URLSearchParams();
@@ -220,10 +225,9 @@ export default function SearchIsland({
 
     if (newMinPrice !== undefined) urlParams.set('minPrice', newMinPrice.toString());
     if (newMaxPrice !== undefined) urlParams.set('maxPrice', newMaxPrice.toString());
-    // Only a single-bucket selection goes in the URL. Empty and both-selected
-    // are the same unfiltered listing, so the parameter is omitted.
-    if (newAvailability !== undefined && newAvailability.length === 1) {
-      urlParams.set('availability', newAvailability[0]);
+    if (newAvailability !== undefined) {
+      const serialized = serializeAvailability(newAvailability, newMinStock ?? MIN_STOCK_THRESHOLD);
+      if (serialized) urlParams.set('availability', serialized);
     }
     if (newOffset !== undefined && newOffset !== 12)
       urlParams.set('offset', newOffset.toString());
@@ -238,6 +242,7 @@ export default function SearchIsland({
     setMinPrice(newMinPrice);
     setMaxPrice(newMaxPrice);
     if (newAvailability !== undefined) setAvailability(newAvailability);
+    if (newMinStock !== undefined) setMinStock(newMinStock);
     if (newOffset !== undefined) setOffset(newOffset);
     if (newSortField !== undefined) setSortField(newSortField as ProductSortField);
     if (newSortOrder !== undefined) setSortOrder(newSortOrder as SortOrder);
@@ -265,7 +270,8 @@ export default function SearchIsland({
       offset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      availability
+      availability,
+      minStock
     );
   };
 
@@ -278,11 +284,12 @@ export default function SearchIsland({
       offset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      availability
+      availability,
+      minStock
     );
   };
 
-  const handleAvailabilityChange = (newAvailability: Availability[]) => {
+  const handleAvailabilityChange = (newAvailability: Availability, newMinStock: number) => {
     updateURL(
       filters,
       1,
@@ -291,12 +298,13 @@ export default function SearchIsland({
       offset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      newAvailability
+      newAvailability,
+      newMinStock
     );
   };
 
-  const handleAvailabilityFilterRemove = (value: Availability) => {
-    handleAvailabilityChange(availability.filter((v) => v !== value));
+  const handleAvailabilityFilterRemove = () => {
+    handleAvailabilityChange('all', MIN_STOCK_THRESHOLD);
   };
 
   const handlePageChange = (page: number) => {
@@ -308,7 +316,8 @@ export default function SearchIsland({
       offset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      availability
+      availability,
+      minStock
     );
   };
 
@@ -321,7 +330,8 @@ export default function SearchIsland({
       newOffset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      availability
+      availability,
+      minStock
     );
   };
 
@@ -334,7 +344,8 @@ export default function SearchIsland({
       offset,
       newSortField,
       newSortOrder || (sortOrder as 'ASC' | 'DESC'),
-      availability
+      availability,
+      minStock
     );
   };
 
@@ -348,7 +359,8 @@ export default function SearchIsland({
       offset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      []
+      'all',
+      MIN_STOCK_THRESHOLD
     );
   };
 
@@ -365,7 +377,8 @@ export default function SearchIsland({
       offset,
       sortField as string,
       sortOrder as 'ASC' | 'DESC',
-      availability
+      availability,
+      minStock
     );
   };
 
@@ -388,6 +401,7 @@ export default function SearchIsland({
           activePriceMax={maxPrice}
           showAvailabilityFilter={SHOW_STOCK}
           activeAvailability={availability}
+          activeMinStock={minStock}
           onAvailabilityChange={handleAvailabilityChange}
           isLoading={filtersLoading}
           labels={gridFiltersLabels}
@@ -407,6 +421,7 @@ export default function SearchIsland({
               priceFilterMin={minPrice}
               priceFilterMax={maxPrice}
               availability={availability}
+              minStock={minStock}
               defaultSort={defaultSort}
               onSortChange={(field, order) =>
                 handleSortChange(field, order as 'ASC' | 'DESC')
@@ -475,6 +490,7 @@ export default function SearchIsland({
             priceFilterMin={minPrice}
             priceFilterMax={maxPrice}
             availability={availability}
+            minStock={minStock}
             pageSize={offset}
             sortField={sortField as string}
             sortOrder={sortOrder as string}

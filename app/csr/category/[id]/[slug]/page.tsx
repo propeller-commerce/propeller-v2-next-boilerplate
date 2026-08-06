@@ -26,7 +26,7 @@ import { GridFilters } from '@propeller-commerce/propeller-v2-react-ui';
 import { GridPagination } from '@propeller-commerce/propeller-v2-react-ui';
 import { GridTitle } from '@propeller-commerce/propeller-v2-react-ui';
 import { CategoryDescription } from '@propeller-commerce/propeller-v2-react-ui';
-import { type Availability } from '@propeller-commerce/propeller-v2-core-ui';
+import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/propeller-v2-core-ui';
 import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
@@ -36,7 +36,7 @@ import { getCategoryBanner } from '@/lib/cms';
 import CategoryBanner from '@/components/cms/blocks/CategoryBanner';
 import { Breadcrumbs } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
-import { parseAvailability } from '@/lib/listingParams';
+import { parseAvailability, serializeAvailability } from '@/lib/listingParams';
 
 /**
  * Whether product cards show a stock indicator. Gates the availability filter
@@ -70,8 +70,11 @@ export default function CategoryPage() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>(() =>
     searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
   );
-  const [availability, setAvailability] = useState<Availability[]>(() =>
-    parseAvailability(searchParams.get('availability') ?? undefined)
+  const [availability, setAvailability] = useState<Availability>(() =>
+    parseAvailability(searchParams.get('availability') ?? undefined).availability
+  );
+  const [minStock, setMinStock] = useState<number>(() =>
+    parseAvailability(searchParams.get('availability') ?? undefined).minStock
   );
   const [gridFilters, setGridFilters] = useState<AttributeFilter[]>([]);
   const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>();
@@ -129,7 +132,9 @@ export default function CategoryPage() {
     );
     setMinPrice(searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined);
     setMaxPrice(searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined);
-    setAvailability(parseAvailability(searchParams.get('availability') ?? undefined));
+    const parsedAvailability = parseAvailability(searchParams.get('availability') ?? undefined);
+    setAvailability(parsedAvailability.availability);
+    setMinStock(parsedAvailability.minStock);
     setOffset(parseInt(searchParams.get('offset') || '12'));
     setSortField(searchParams.get('sortField') as ProductSortField || ProductSortField.CATEGORY_ORDER);
     setSortOrder((searchParams.get('sortOrder') as SortOrder) || SortOrder.DESC);
@@ -161,7 +166,8 @@ export default function CategoryPage() {
     newOffset?: number,
     newSortField?: string,
     newSortOrder?: 'ASC' | 'DESC',
-    newAvailability?: Availability[]
+    newAvailability?: Availability,
+    newMinStock?: number
   ) => {
     const searchParams = new URLSearchParams();
 
@@ -175,10 +181,9 @@ export default function CategoryPage() {
 
     if (newMinPrice !== undefined) searchParams.set('minPrice', newMinPrice.toString());
     if (newMaxPrice !== undefined) searchParams.set('maxPrice', newMaxPrice.toString());
-    // Only a single-bucket selection goes in the URL. Empty and both-selected
-    // are the same unfiltered listing, so the parameter is omitted.
-    if (newAvailability !== undefined && newAvailability.length === 1) {
-      searchParams.set('availability', newAvailability[0]);
+    if (newAvailability !== undefined) {
+      const serialized = serializeAvailability(newAvailability, newMinStock ?? MIN_STOCK_THRESHOLD);
+      if (serialized) searchParams.set('availability', serialized);
     }
     if (newOffset !== undefined && newOffset !== 12) searchParams.set('offset', newOffset.toString());
     if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER') searchParams.set('sortField', newSortField);
@@ -198,36 +203,36 @@ export default function CategoryPage() {
       : [...current, valueStr];
     const newFilters = { ...filters, [name]: next };
     if (next.length === 0) delete newFilters[name];
-    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability, minStock);
   };
 
   const handlePriceRangeChange = (newMinPrice?: number, newMaxPrice?: number) => {
-    updateURL(filters, 1, newMinPrice, newMaxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
+    updateURL(filters, 1, newMinPrice, newMaxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability, minStock);
   };
 
-  const handleAvailabilityChange = (newAvailability: Availability[]) => {
-    updateURL(filters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', newAvailability);
+  const handleAvailabilityChange = (newAvailability: Availability, newMinStock: number) => {
+    updateURL(filters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', newAvailability, newMinStock);
   };
 
-  const handleAvailabilityFilterRemove = (value: Availability) => {
-    handleAvailabilityChange(availability.filter((v) => v !== value));
+  const handleAvailabilityFilterRemove = () => {
+    handleAvailabilityChange('all', MIN_STOCK_THRESHOLD);
   };
 
   const handlePageChange = (page: number) => {
-    updateURL(filters, page, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
+    updateURL(filters, page, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability, minStock);
   };
 
   const handleOffsetChange = (newOffset: number) => {
-    updateURL(filters, 1, minPrice, maxPrice, newOffset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
+    updateURL(filters, 1, minPrice, maxPrice, newOffset, sortField as string, sortOrder as 'ASC' | 'DESC', availability, minStock);
   };
 
   const handleSortChange = (newSortField: string, newSortOrder?: 'ASC' | 'DESC') => {
-    updateURL(filters, 1, minPrice, maxPrice, offset, newSortField, newSortOrder || (sortOrder as 'ASC' | 'DESC'), availability);
+    updateURL(filters, 1, minPrice, maxPrice, offset, newSortField, newSortOrder || (sortOrder as 'ASC' | 'DESC'), availability, minStock);
   };
 
   const clearAllFilters = () => {
     setClearSignal(s => s + 1);
-    updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC', []);
+    updateURL({}, 1, undefined, undefined, offset, sortField as string, sortOrder as 'ASC' | 'DESC', 'all', MIN_STOCK_THRESHOLD);
   };
 
   const handleFilterRemove = (filterName: string, value: string) => {
@@ -235,7 +240,7 @@ export default function CategoryPage() {
     const newVals = current.filter(v => v !== value);
     const newFilters = { ...filters, [filterName]: newVals };
     if (newVals.length === 0) delete newFilters[filterName];
-    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability);
+    updateURL(newFilters, 1, minPrice, maxPrice, offset, sortField as string, sortOrder as 'ASC' | 'DESC', availability, minStock);
   };
 
   const productClick = (product: Product) => {
@@ -311,6 +316,7 @@ export default function CategoryPage() {
                 activePriceMax={maxPrice}
                 showAvailabilityFilter={SHOW_STOCK}
                 activeAvailability={availability}
+                activeMinStock={minStock}
                 onAvailabilityChange={handleAvailabilityChange}
                 isLoading={filtersLoading}
                 className=""
@@ -331,6 +337,7 @@ export default function CategoryPage() {
                   priceFilterMin={minPrice}
                   priceFilterMax={maxPrice}
                   availability={availability}
+                  minStock={minStock}
                   onSortChange={(field, order) => handleSortChange(field, order as 'ASC' | 'DESC')}
                   onOffsetChange={handleOffsetChange}
                   viewMode={viewMode}
@@ -360,6 +367,7 @@ export default function CategoryPage() {
                 priceFilterMin={minPrice}
                 priceFilterMax={maxPrice}
                 availability={availability}
+                minStock={minStock}
                 pageSize={offset}
                 sortField={sortField as string}
                 sortOrder={sortOrder as string}

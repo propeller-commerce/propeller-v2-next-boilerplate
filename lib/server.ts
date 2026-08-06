@@ -618,11 +618,13 @@ export interface ListingFetchOptions {
   /** Active price-range filter upper bound. */
   priceFilterMax?: number;
   /**
-   * Active stock-availability buckets. Mirrors the client `useProductSearch`
+   * Active stock-availability selection. Mirrors the client `useProductSearch`
    * listing path — converted to the SDK's `inventory` filter via
    * `buildInventoryFilter` (never reimplement the operator semantics here).
    */
-  availability?: Availability[];
+  availability?: Availability;
+  /** Minimum quantity for the `'in-stock'` selection. Defaults to the SDK's `MIN_STOCK_THRESHOLD`. */
+  minStock?: number;
   /** Language override. Defaults to `infra.language`. */
   language?: string;
 }
@@ -654,7 +656,7 @@ function buildFilterInput(opts: ListingFetchOptions): ListingFilterSlice {
     };
     slice.price = price;
   }
-  const inventory = buildInventoryFilter(opts.availability);
+  const inventory = buildInventoryFilter(opts.availability, opts.minStock);
   if (inventory) slice.inventory = inventory;
   return slice;
 }

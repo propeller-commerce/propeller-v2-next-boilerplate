@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-08-07
+
+### Fixed
+
+- Cluster configurators spanned by ENUM attributes render their options again
+  (via `propeller-v2-core-ui` 0.6.1). The shared attribute extractor read
+  `value` for `AttributeEnumValue`, but the schema exposes those on
+  `enumValues`, so every ENUM attribute resolved to an empty dropdown. This fix
+  was originally prepared as core-ui 0.4.1 but was never published; it is now
+  shipped as 0.6.1 and pulled in here.
+
 ## [1.11.0] - 2026-08-04
 
 ### Added

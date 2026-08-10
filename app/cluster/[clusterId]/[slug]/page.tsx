@@ -31,7 +31,7 @@ import Footer from '@/components/layout/Footer';
 import { ClusterJsonLd } from '@propeller-commerce/propeller-v2-react-ui/pure';
 import {
   getListingInfra,
-  getAnonymousInfra,
+  getAnonymousInfraLocalized,
   fetchCluster,
 } from '@/lib/server';
 import {
@@ -61,7 +61,7 @@ export async function generateMetadata({
   const clusterId = Number.parseInt(clusterIdStr, 10);
   if (!Number.isFinite(clusterId)) return {};
 
-  const infra = getAnonymousInfra();
+  const infra = await getAnonymousInfraLocalized();
   const cluster = await fetchCluster(infra, clusterId);
   if (!cluster) return {};
 

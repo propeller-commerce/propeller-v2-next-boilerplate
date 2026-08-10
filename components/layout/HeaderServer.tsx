@@ -2,7 +2,7 @@
  * HeaderServer — async Server Component wrapper around `Header`.
  *
  * Resolves the category navigation tree server-side via `fetchMenu` (which
- * goes through `getAnonymousInfra()` so the underlying GraphQL call hits
+ * goes through `getAnonymousInfraLocalized()` so the underlying GraphQL call hits
  * Next.js's data cache, tagged for surgical invalidation via
  * `revalidateTag('menu')`). The pre-fetched tree is handed to the client
  * `Header` body as a serialisable prop, so:
@@ -21,7 +21,7 @@
  * which is correct: their auth/cart-bound shells aren't crawl targets and
  * benefit less from a server-rendered menu.
  */
-import { fetchMenu, getAnonymousInfra, resolveBaseCategoryId } from '@/lib/server';
+import { fetchMenu, getAnonymousInfraLocalized, resolveBaseCategoryId } from '@/lib/server';
 import Header from './Header';
 
 export default async function HeaderServer() {
@@ -29,6 +29,6 @@ export default async function HeaderServer() {
   // get a personalised menu (the catalog tree is not user-specific), so
   // resolving from the anonymous, cached path here is correct for all visitors.
   // Root category = configured base, else the channel's catalog root.
-  const menuTree = await fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId());
+  const menuTree = await fetchMenu(await getAnonymousInfraLocalized(), await resolveBaseCategoryId());
   return <Header menuTree={menuTree} />;
 }

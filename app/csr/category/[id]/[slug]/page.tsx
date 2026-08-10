@@ -320,6 +320,7 @@ export default function CategoryPage() {
                 onAvailabilityChange={handleAvailabilityChange}
                 isLoading={filtersLoading}
                 className=""
+                language={language}
                 labels={gridFiltersLabels}
               />
             </aside>

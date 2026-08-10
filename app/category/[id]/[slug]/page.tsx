@@ -28,7 +28,7 @@ import Footer from '@/components/layout/Footer';
 import { GridTitle, ItemListJsonLd } from '@propeller-commerce/propeller-v2-react-ui/pure';
 import {
   getListingInfra,
-  getAnonymousInfra,
+  getAnonymousInfraLocalized,
   fetchCategory,
 } from '@/lib/server';
 import { getCategoryBanner } from '@/lib/cms';
@@ -71,7 +71,7 @@ export async function generateMetadata({
   const categoryId = Number.parseInt(id, 10);
   if (!Number.isFinite(categoryId)) return {};
 
-  const infra = getAnonymousInfra();
+  const infra = await getAnonymousInfraLocalized();
   const category = await fetchCategory(infra, categoryId, { offset: 1 });
   if (!category) return {};
 

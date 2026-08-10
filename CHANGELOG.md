@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.3] - 2026-08-10
+
+### Fixed
+
+- **The order summary's total did not match its own lines, and ignored the
+  payment method.** Two defects, both visible on the cart page and in the
+  checkout sidebar (PWP-930):
+  - The payment method's transaction costs are part of `total.totalGross` but
+    had no line of their own, so a €7.25 order with €49.00 shipping printed a
+    "Total excl. VAT" of €56.60. Fixed in `propeller-v2-react-ui` 0.15.3, which
+    renders a **Transaction costs** row; `locales/{en,nl}/CartSummary.json` gain
+    the matching `transactionCosts` label.
+  - Selecting a payment method at step 3 only set local state, so the totals
+    kept showing the *previously stored* method's costs and then jumped when
+    step 4 loaded. `app/checkout/page.tsx` now persists the method on select
+    (skipping the no-op when the cart already carries it).
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` → `^0.15.3`.
+
 ## [1.11.2] - 2026-08-10
 
 ### Fixed

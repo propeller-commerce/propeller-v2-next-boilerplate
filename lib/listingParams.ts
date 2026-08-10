@@ -235,10 +235,13 @@ export function buildListingSearchParams(
  * — the shape `fetchCategory` / `fetchSearch` need for the server-side
  * filtered fetch. Empty selections are dropped.
  *
- * `type` defaults to `AttributeType.TEXT`: server-side we don't yet have the
- * facet list to look up each attribute's real type, and checkbox filters
- * (the only kind encoded this way) are TEXT. Range attributes go through the
- * separate price/`minPrice`/`maxPrice` path.
+ * `type` starts as `AttributeType.TEXT` because server-side we don't have the
+ * facet list yet — it arrives in the response we're about to make. It is only
+ * a starting guess: the backend matches nothing when the type is wrong (an
+ * ENUM facet filtered as TEXT returns zero products, not an error), so
+ * `fetchCategory` / `fetchSearch` correct it via `retypeTextFilters` below
+ * and re-issue the query. Range attributes go through the separate
+ * price/`minPrice`/`maxPrice` path.
  */
 export function buildTextFilters(
   filters: Record<string, string[]>
@@ -251,4 +254,46 @@ export function buildTextFilters(
       exclude: false,
       type: AttributeType.TEXT,
     }));
+}
+
+/** The facet-list shape `retypeTextFilters` reads — a structural subset of the
+ * SDK's `AttributeFilter`, so callers can pass the response array as-is. */
+interface FacetTypeSource {
+  type?: AttributeType | null;
+  attributeDescription?: { name?: string | null; type?: AttributeType | null } | null;
+}
+
+/**
+ * Correct the `type` on already-applied text filters against the facet list
+ * the backend returned, and hand back the corrected array — or `undefined`
+ * when every type already matched (the common case: nothing to redo).
+ *
+ * Why this exists: attribute filters are typed (TEXT / ENUM / …) and the
+ * backend silently matches NOTHING when the type is wrong. The server builds
+ * its filters straight from the URL, which carries names and values but no
+ * types, so ENUM-backed facets — season, colour, EU labels — server-rendered
+ * an empty listing on any refreshed, pasted or shared filtered URL. The client
+ * island never hit this: it resolves each type from the facet list it already
+ * holds.
+ *
+ * The facets come back correctly typed even on a zero-result response, so one
+ * corrected retry is enough and no extra round-trip is paid when the guess was
+ * right.
+ */
+export function retypeTextFilters(
+  applied: ProductTextFilterInput[] | undefined,
+  facets: readonly FacetTypeSource[] | undefined
+): ProductTextFilterInput[] | undefined {
+  if (!applied?.length || !facets?.length) return undefined;
+
+  let changed = false;
+  const corrected = applied.map((filter) => {
+    const facet = facets.find((f) => f?.attributeDescription?.name === filter.name);
+    const real = facet?.type ?? facet?.attributeDescription?.type;
+    if (!real || real === filter.type) return filter;
+    changed = true;
+    return { ...filter, type: real };
+  });
+
+  return changed ? corrected : undefined;
 }

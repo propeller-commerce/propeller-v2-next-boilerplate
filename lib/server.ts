@@ -85,6 +85,7 @@ import {
 } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
 import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui';
+import { retypeTextFilters } from './listingParams';
 
 // ── Cache control: tags + revalidate window ─────────────────────────────────
 // (see `tagFor` below and the `cacheable` flag on `ServerInfra`)
@@ -811,14 +812,14 @@ export async function fetchCategory(
     ...(companyId !== undefined && { companyId }),
   };
 
-  try {
-    // Variable order locked in for Next.js cache-key keying — see the note
-    // in `fetchProduct`. Don't reorder the keys below casually.
-    const result = await infra.services.category.getCategory(
+  // Variable order locked in for Next.js cache-key keying — see the note
+  // in `fetchProduct`. Don't reorder the keys below casually.
+  const run = (input: CategoryProductSearchInput) =>
+    infra.services.category.getCategory(
       {
         categoryId,
         language: lang,
-        categoryProductSearchInput,
+        categoryProductSearchInput: input,
         // Ask the backend for the attribute filter facets so the grid filter
         // sidebar has data on first paint.
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
@@ -828,6 +829,20 @@ export async function fetchCategory(
       },
       cacheOptions(infra, [TAG_CATALOG, tagFor('category'), tagFor('category', categoryId)])
     );
+
+  try {
+    let result = await run(categoryProductSearchInput);
+    // The URL carries filter names and values but no attribute types, and the
+    // backend matches nothing when a type is wrong. Correct them against the
+    // facets we just got back and redo the query — only when a type actually
+    // differed. See `retypeTextFilters`.
+    const retyped = retypeTextFilters(
+      categoryProductSearchInput.textFilters,
+      (result?.products as ProductsResponse | undefined)?.filters
+    );
+    if (retyped) {
+      result = await run({ ...categoryProductSearchInput, textFilters: retyped });
+    }
     return result ? (toPlain(result) as Category) : null;
   } catch (e) {
     // The known `Product.slugs` backend break surfaces as "null for
@@ -875,13 +890,13 @@ export async function fetchSearch(
     ...(companyId !== undefined && { companyId }),
   };
 
-  try {
-    // Cache-key keying note: variable order locked. See `fetchProduct`.
-    const result = await infra.services.category.getCategory(
+  // Cache-key keying note: variable order locked. See `fetchProduct`.
+  const run = (input: CategoryProductSearchInput) =>
+    infra.services.category.getCategory(
       {
         categoryId: baseCategoryId,
         language: lang,
-        categoryProductSearchInput,
+        categoryProductSearchInput: input,
         // Filter facets for the search page's grid filter sidebar.
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
         imageSearchFilters: imageSearchFiltersGrid,
@@ -891,6 +906,18 @@ export async function fetchSearch(
       // namespace. Long-tail entries age out via the revalidate window.
       cacheOptions(infra, [TAG_CATALOG, tagFor('search')])
     );
+
+  try {
+    let result = await run(categoryProductSearchInput);
+    // Same attribute-type correction as `fetchCategory` — see
+    // `retypeTextFilters`.
+    const retyped = retypeTextFilters(
+      categoryProductSearchInput.textFilters,
+      (result?.products as ProductsResponse | undefined)?.filters
+    );
+    if (retyped) {
+      result = await run({ ...categoryProductSearchInput, textFilters: retyped });
+    }
     const products = result?.products as ProductsResponse | undefined;
     return products ? (toPlain(products) as ProductsResponse) : null;
   } catch (e) {

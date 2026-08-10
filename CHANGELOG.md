@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-08-10
+
+### Fixed
+
+- **The spare-parts (SPL) panel 500'd on every product.** `lib/spl.ts` resolved
+  the parts-lookup category from `BOILERPLATE_BASE_CATEGORY_ID` — a variable
+  nothing else in the app read — and fell back to `0` when it was unset. Zero is
+  not a valid category id, so the hotspot lookup issued a `category` query with
+  no usable parameter and the backend rejected the request:
+  `GraphQL operation failed (category): At least one lookup parameter must be
+  provided: uuid, categoryId, id, or slug`. Both `/api/spl/drawings` and
+  `/api/spl/drawing` returned 500; the panel itself mounted fine, so the failure
+  looked like an SPL outage rather than a config gap.
+
+  It now calls `resolveBaseCategoryId()` — the same resolver the rest of the app
+  uses: explicit `NEXT_PUBLIC_BASE_CATEGORY_ID`, else the channel's
+  `catalogRootId`, else the config default. Spare parts therefore follow the
+  channel like every other catalog read, and need no environment variable at
+  all.
+
+### Removed
+
+- `BOILERPLATE_BASE_CATEGORY_ID` — now read by no code. Dropped from
+  `.env.local.example` and the README rather than left as a documented setting
+  that silently does nothing. `NEXT_PUBLIC_BASE_CATEGORY_ID` is the single
+  (optional) override for both the storefront and the SPL parts lookup.
+
+
 ## [1.11.1] - 2026-08-07
 
 ### Fixed

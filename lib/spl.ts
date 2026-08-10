@@ -23,7 +23,7 @@ import {
   type PriceCalculateProductInput,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { config } from '@/data/config';
-import { createServerClient, type ServerInfra } from '@/lib/server';
+import { createServerClient, resolveBaseCategoryId, type ServerInfra } from '@/lib/server';
 import { readAttributeStringValues } from '@/lib/machines';
 
 /** SPL is active only when a base URL + token are configured. */
@@ -62,8 +62,10 @@ export function getSplClient(): SplClient {
 
 /**
  * A product resolver bound to the current viewer — parts are looked up under
- * `BOILERPLATE_BASE_CATEGORY_ID` and priced for the viewer's contact/company,
- * exactly like the storefront's own listing fetch (`lib/server.ts`).
+ * the app-wide base category (`resolveBaseCategoryId()`: explicit
+ * `NEXT_PUBLIC_BASE_CATEGORY_ID`, else the channel's `catalogRootId`) and
+ * priced for the viewer's contact/company, exactly like the storefront's own
+ * listing fetch (`lib/server.ts`).
  */
 export function buildSplProductResolver(
   infra: ServerInfra
@@ -78,12 +80,18 @@ export function buildSplProductResolver(
     (user && 'contactId' in user ? user.company?.companyId : undefined);
   if (companyId != null) price.companyId = companyId;
 
-  const baseCategoryId = Number(process.env.BOILERPLATE_BASE_CATEGORY_ID) || 0;
-
-  return (skus: string[]) =>
+  // Use the app-wide resolver, NOT a bespoke env read. This previously read
+  // `BOILERPLATE_BASE_CATEGORY_ID` — a variable nothing else in the app uses —
+  // and fell back to `0`, which is not a valid category id: the hotspot lookup
+  // then issued a `category` query with no usable parameter and the backend
+  // rejected the whole request ("At least one lookup parameter must be
+  // provided"), so every SPL panel 500'd whenever that var was unset.
+  // `resolveBaseCategoryId()` reads NEXT_PUBLIC_BASE_CATEGORY_ID, falls back to
+  // the channel's catalog root, and only then to the config default.
+  return async (skus: string[]) =>
     resolveHotspotProducts({
       client: infra.client,
-      baseCategoryId,
+      baseCategoryId: await resolveBaseCategoryId(),
       language: infra.language,
       skus,
       imageSearchFilters: config.imageSearchFilters,

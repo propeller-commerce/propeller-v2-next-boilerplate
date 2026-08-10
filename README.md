@@ -133,11 +133,20 @@ client**, so the API key and GraphQL endpoint stay secret):
 - `BOILERPLATE_GRAPHQL_ENDPOINT` - upstream GraphQL API endpoint
 - `BOILERPLATE_API_KEY` - API key injected server-side by the proxy
 - `BOILERPLATE_ORDER_EDITOR_API_KEY` - order-editor API key
-- `BOILERPLATE_BASE_CATEGORY_ID` - root category ID
 - `BOILERPLATE_MENU_DEPTH` - menu nesting depth
 - `BOILERPLATE_ANONYMOUS_USER_ID` - anonymous user id
 - `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL)
 - `JWT_SECRET` - secret for signing/validating the auth cookie
+
+Exposed to the browser:
+
+- `NEXT_PUBLIC_CHANNEL_ID` - channel orders/quotes are placed on; also supplies
+  the anonymous user and the catalog root when they aren't set explicitly
+- `NEXT_PUBLIC_BASE_CATEGORY_ID` - **optional** root category. Unset, the root
+  comes from the channel's `catalogRootId` (`resolveBaseCategoryId` in
+  `lib/server.ts`) — the preferred setup. Set it only to override the channel.
+  This single variable serves both the storefront and the spare-parts (SPL)
+  hotspot lookup; there is no server-side twin.
 
 PunchOut (see the [PunchOut](#punchout-oci--cxml) section):
 

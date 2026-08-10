@@ -31,6 +31,7 @@ import { useAuth } from '@/context/AuthContext';
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import { usePrice } from '@/context/PriceContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useTranslations } from '@/lib/i18n/client';
@@ -106,6 +107,7 @@ export default function SearchPage() {
   const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
+  const baseCategoryId = useBaseCategoryId();
   const { includeTax } = usePrice();
   const gridPaginationLabels = useTranslations('GridPagination');
   const gridFiltersLabels = useTranslations('GridFilters');
@@ -318,7 +320,7 @@ export default function SearchPage() {
               <div className={hasNoResults ? 'hidden' : ''}>
               <ProductGrid
                 term={isAllProducts ? undefined : term}
-                categoryId={isAllProducts ? config.baseCategoryId : undefined}
+                categoryId={isAllProducts ? baseCategoryId : undefined}
                 showModal={true}
                 createCart={true}
                 cartId={cart?.cartId}

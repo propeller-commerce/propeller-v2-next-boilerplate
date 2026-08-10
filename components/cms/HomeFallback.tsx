@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
+import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import { useTranslations } from '@/lib/i18n/client';
 
 interface CategoryDisplay {
@@ -20,7 +21,6 @@ interface CategoryDisplay {
   slug: string;
 }
 
-const baseCategoryId = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '17', 10);
 const categoryIcons = ['\uD83D\uDCBB', '\u2328\uFE0F', '\uD83C\uDF10', '\uD83D\uDDA5\uFE0F', '\uD83C\uDFAE', '\uD83D\uDD0C'];
 
 export interface HomeFallbackProps {
@@ -39,6 +39,10 @@ export interface HomeFallbackProps {
 export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
   const { language } = useLanguage();
   const t = useTranslations('Home');
+  // Same server-resolved id the header and `HeaderServer` use. This module used
+  // to hardcode its own '17' fallback, which happened to be right on one tenant
+  // and wrong everywhere else.
+  const baseCategoryId = useBaseCategoryId();
 
   // Fallback fetch only when no pre-fetched tree was supplied.
   const { categories: fetchedCategories, fetchMenu } = useMenu({
@@ -63,7 +67,7 @@ export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
     // component \u2014 see TECH.md \u00A77 "Pre-fetched data prop pattern".
     if (hasPrefetchedTree) return;
     fetchMenu(baseCategoryId);
-  }, [hasPrefetchedTree, fetchMenu]);
+  }, [hasPrefetchedTree, fetchMenu, baseCategoryId]);
 
   return (
     <>

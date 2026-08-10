@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGlobal } from '@/context/GlobalContext';
+import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import type { MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
@@ -56,6 +57,10 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const { includeTax, setIncludeTax } = usePrice();
   const { language, setLanguage } = useLanguage();
   const globalData = useGlobal();
+  // Server-resolved (env override, else the channel's catalog root). Only used
+  // when `menuTree` is absent — i.e. the client-only pages that import this
+  // component directly instead of going through `HeaderServer`.
+  const baseCategoryId = useBaseCategoryId();
   const [showMainMenu, setShowMainMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -606,7 +611,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                         The previous `!state.isLoading` gate is therefore gone —
                         we never need to wait for auth before rendering the menu. */}
                     <PropellerMenu
-                      categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
+                      categoryId={baseCategoryId}
                       menuStyle="dropdown-vertical"
                       tree={menuTree}
                       onMenuItemClick={(category) => {
@@ -668,7 +673,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                 reason (see desktop note above). */}
             {showCategoriesMenu && (
               <PropellerMenu
-                categoryId={parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10)}
+                categoryId={baseCategoryId}
                 menuStyle="dropdown-vertical"
                 tree={menuTree}
                 onMenuItemClick={(category) => {

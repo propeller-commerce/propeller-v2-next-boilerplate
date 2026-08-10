@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.5] - 2026-08-10
+
+### Fixed
+
+- **"Failed to load menu" on every client-only page** (PWP-913, reported on
+  `/machines`). The catalog root category is meant to come from the channel:
+  `resolveBaseCategoryId()` returns `NEXT_PUBLIC_BASE_CATEGORY_ID` when set,
+  otherwise `channel(...).catalogRootId`. Only the server called it. Client
+  components guessed instead — `Header` with
+  `process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1'`, `HomeFallback` with its own
+  `|| '17'`. With the env unset (the intended default) the header asked for
+  `category(categoryId: 1)`, the API answered `CATEGORY_NOT_FOUND`, and `<Menu>`
+  rendered its error state.
+
+  Server-rendered pages were unaffected because `HeaderServer` resolves the id
+  and passes the tree down as a prop; the ~12 pages that render `<Header />`
+  directly — `/machines`, `/cart`, `/checkout`, … — all fell through to the
+  client fetch and broke. `/machines` is simply where it was noticed.
+
+  The root layout now resolves the id once and seeds it through the new
+  `BaseCategoryProvider`, the same way it already seeds price and language.
+
+### Changed
+
+- `config.baseCategoryId` is `number | undefined` — the env override only, no
+  literal default. `resolveBaseCategoryId()` throws when neither the env nor the
+  channel yields a root, instead of silently querying a category that does not
+  exist.
+- No client module reads `NEXT_PUBLIC_BASE_CATEGORY_ID` any more; they call
+  `useBaseCategoryId()`.
+
+### Removed
+
+- `lib/services/MenuService.ts` — a duplicate client-side menu fetch carrying
+  the same `|| '1'` bug, with no callers anywhere in the app.
+
 ## [1.11.4] - 2026-08-10
 
 ### Fixed

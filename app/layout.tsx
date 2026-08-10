@@ -13,6 +13,8 @@ import { GlobalProvider } from "@/context/GlobalContext";
 import { CompanyProvider } from "@/context/CompanyContext";
 import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { BaseCategoryProvider } from "@/context/BaseCategoryContext";
+import { resolveBaseCategoryId } from "@/lib/server";
 import { TranslationsProvider } from "@/lib/i18n/client";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
 import ScrollReset from "@/components/layout/ScrollReset";
@@ -45,7 +47,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [globalData, cookieStore] = await Promise.all([getGlobal(), cookies()]);
+  // Resolved server-side because only the server can reach the channel: the id
+  // is NEXT_PUBLIC_BASE_CATEGORY_ID when set, else `channel(...).catalogRootId`.
+  // Seeded to the client so components that fetch the menu themselves (every
+  // page rendering `<Header />` rather than `<HeaderServer />`) ask for the same
+  // category the server does, instead of guessing a literal — PWP-913.
+  const [globalData, cookieStore, baseCategoryId] = await Promise.all([
+    getGlobal(),
+    cookies(),
+    resolveBaseCategoryId(),
+  ]);
   // Seed the price preference from the cookie so SSR and the first client
   // snapshot agree — without this, users see a flash on first paint while
   // React hydrates and reads the cookie. Default is gross (true) when the
@@ -84,6 +95,7 @@ export default async function RootLayout({
             {PREPR_ENABLED ? <PreprSegmentsSync /> : null}
             <PriceProvider initialIncludeTax={initialIncludeTax}>
             <LanguageProvider initialLanguage={initialLanguage}>
+            <BaseCategoryProvider baseCategoryId={baseCategoryId}>
             <TranslationsProvider>
             <PropellerHostBridge>
             <CartProvider>
@@ -94,6 +106,7 @@ export default async function RootLayout({
             </CartProvider>
             </PropellerHostBridge>
             </TranslationsProvider>
+            </BaseCategoryProvider>
             </LanguageProvider>
             </PriceProvider>
           </CompanyProvider>

@@ -25,7 +25,7 @@ import {
   type Product,
   type ProductsResponse,
 } from '@propeller-commerce/propeller-sdk-v2';
-import { getListingInfra, fetchSearch, fetchCategory } from '@/lib/server';
+import { getListingInfra, fetchSearch, fetchCategory, resolveBaseCategoryId } from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { buildJsonLdContext } from '@/lib/seo';
 import { config } from '@/data/config';
@@ -62,6 +62,8 @@ export default async function SearchPage({
   );
 
   const infra = await getListingInfra();
+  // Env override, else the channel's catalog root — never a literal.
+  const baseCategoryId = await resolveBaseCategoryId();
 
   // The (possibly filtered) fetch options, straight from the URL.
   const fetchOpts = {
@@ -82,7 +84,7 @@ export default async function SearchPage({
   if (isAllProducts) {
     const category = await fetchCategory(
       infra,
-      config.baseCategoryId,
+      baseCategoryId,
       fetchOpts
     );
     initialProducts =
@@ -90,7 +92,7 @@ export default async function SearchPage({
   } else {
     initialProducts = await fetchSearch(
       infra,
-      config.baseCategoryId,
+      baseCategoryId,
       term,
       fetchOpts
     );

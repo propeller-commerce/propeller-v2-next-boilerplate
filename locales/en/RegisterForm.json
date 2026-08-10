@@ -29,6 +29,7 @@
   "phone": "Phone number",
   "postalCode": "Postal code",
   "registering": "Registering...",
+  "submitButton": "Register",
   "sameAsDelivery": "Delivery address is the same as billing address",
   "selectCountry": "Select country",
   "street": "Street",

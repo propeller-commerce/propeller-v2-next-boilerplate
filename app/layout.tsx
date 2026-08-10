@@ -74,7 +74,7 @@ export default async function RootLayout({
   ).toUpperCase();
 
   return (
-    <html lang="en">
+    <html lang={initialLanguage.toLowerCase()}>
       <body
         className={`${inter.variable} font-sans antialiased`}
       >

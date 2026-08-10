@@ -3,10 +3,12 @@
   "emailPlaceholder": "naam@voorbeeld.nl",
   "forgotPassword": "Wachtwoord vergeten?",
   "guestCheckoutLink": "Doorgaan als gast",
+  "invalidCredentials": "De ingevoerde gegevens komen niet overeen met onze administratie. Probeer het opnieuw.",
   "loggingIn": "Inloggen...",
   "noAccount": "Nog geen account? {link}",
   "password": "Wachtwoord",
   "passwordPlaceholder": "••••••••",
   "registerLink": "Account aanmaken",
-  "registerText": "Nog geen account?"
+  "registerText": "Nog geen account?",
+  "submitButton": "Inloggen"
 }

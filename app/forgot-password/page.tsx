@@ -18,7 +18,14 @@ export default function ForgotPasswordPage() {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-          <ForgotPassword labels={forgotPasswordLabels} />
+          {/* title/buttonText/responseMessage are props, not label keys — pass
+              them from the same namespace so they follow the language. */}
+          <ForgotPassword
+            labels={forgotPasswordLabels}
+            title={forgotPasswordLabels.title}
+            buttonText={forgotPasswordLabels.submitButton}
+            responseMessage={forgotPasswordLabels.responseMessage}
+          />
 
           <div className="mt-6 text-center">
             <Link href={localizeHref('/login', language)} className="text-primary hover:underline">

@@ -412,14 +412,28 @@ function taintInfra(infra: ServerInfra): void {
   );
 }
 
-/** Site default language when the request carries no locale signal. */
-const DEFAULT_LANGUAGE = process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+/**
+ * Site default language when the request carries no locale signal. Both names
+ * are honoured because the pages this resolver replaced were split between
+ * them, and `proxy.ts` reads the `NEXT_PUBLIC_` one — a shop that sets only
+ * that must not silently fall back to Dutch here.
+ */
+const DEFAULT_LANGUAGE =
+  process.env.BOILERPLATE_DEFAULT_LANGUAGE || process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
 
 /**
- * Browsing language for a server render. The proxy strips the `/en` prefix, so
- * the locale survives only as the cookie it sets (or an `x-cms-locale` header).
+ * Browsing language for a server render — URL prefix, then cookie, then the
+ * site default. The proxy strips the `/en` prefix before the route sees it and
+ * forwards it as `x-cms-locale`, so the header IS the prefix; the cookie is the
+ * persisted preference an unprefixed URL falls back to.
+ *
+ * Exported because six pages outside this module resolve their own locale
+ * (`app/page.tsx`, `layout`, `not-found`, `terms-conditions`, both blog pages
+ * and the CMS catch-all). They read the cookie ALONE, which loses to a stale
+ * value: `/en/blog` with an NL cookie still rendered Dutch. Routing them
+ * through here keeps one order in one place (PWP-927).
  */
-async function resolveRequestLanguage(): Promise<string> {
+export async function resolveRequestLanguage(): Promise<string> {
   try {
     const headerLocale = (await headers()).get('x-cms-locale');
     if (headerLocale) return headerLocale.toUpperCase();

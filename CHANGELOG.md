@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.9] - 2026-08-10
+
+### Fixed
+
+- **Six pages ignored the `/en` prefix.** 1.11.8 made the proxy forward the
+  URL's locale as `x-cms-locale`, but the home page, both blog pages and the
+  CMS catch-all still read `preferred_language` on its own — so `/en/blog`
+  carrying a Dutch cookie server-rendered Dutch, and the language a page
+  fetched its data with could disagree with the language the client (which
+  reads the URL) rendered around it. That divergence is what made a category
+  description vanish while its heading stayed in the other language.
+  `resolveRequestLanguage()` is now exported from `lib/server.ts` and is the
+  single resolver for every server render — prefix, then cookie, then default.
+  `app/layout.tsx`, `not-found` and `terms-conditions` had the same order
+  inlined three times over; they now call it too.
+
+### Tests
+
+- `e2e/tests/anonymous/12-language-prefix.spec.ts` covers both halves of the
+  contract against the *server* response: a prefixed URL outranks a stale
+  cookie, and an unprefixed one keeps the stored preference.
+
 ## [1.11.8] - 2026-08-10
 
 ### Fixed

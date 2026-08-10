@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.4] - 2026-08-10
+
+### Fixed
+
+- **Cart and checkout showed the same lines on different tax bases.** With the
+  header toggle on "Incl. BTW", `/cart` printed € 18,91 for a line that
+  `/checkout` printed as € 15,63 — neither labelled (PWP-923). `ItemsOverview`
+  never resolved infra from `PropellerProvider`, so it ignored the toggle
+  (and silently fell back to `'€'` and no language for surcharges) while
+  `CartItem` on the cart page followed it. Fixed in
+  `propeller-v2-react-ui` 0.15.4; both components now read the same
+  `totalSum` / `totalSumNet` fields. No host change needed —
+  `PropellerHostBridge` already supplies `includeTax`.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` → `^0.15.4`.
+
 ## [1.11.3] - 2026-08-10
 
 ### Fixed

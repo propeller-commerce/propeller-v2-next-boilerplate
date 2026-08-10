@@ -1,6 +1,7 @@
 {
   "accountLabel": "Account",
   "accountMenuTitle": "My account",
+  "greeting": "Hi, {name}",
   "loginButton": "Log In",
   "loginSubtitle": "",
   "loginTitle": "Welcome Back",

@@ -1,6 +1,8 @@
 {
   "description": "Beschrijving",
   "downloads": "Downloads",
+  "readLess": "Lees minder",
+  "readMore": "Lees meer",
   "specifications": "Specificaties",
   "videos": "Video's"
 }

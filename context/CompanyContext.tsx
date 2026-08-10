@@ -4,6 +4,27 @@ import { Company } from '@propeller-commerce/propeller-sdk-v2';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
 const STORAGE_KEY = 'selected_company';
+
+/**
+ * Parses the stored company, validating the shape instead of asserting it.
+ *
+ * A bare `JSON.parse(stored) as Company` accepted anything an older build had
+ * written, which is how a shape change turned into "clear your cache and it
+ * works" (PWP-912). `companyId` is the only field consumers actually need — it
+ * is what gets sent to the API and validated against the contact's memberships
+ * — so anything without a numeric one is unusable and better dropped: the app
+ * then falls back to the user's default company on its own.
+ */
+function readStoredCompany(raw: string): Company | null {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object') return null;
+  const { companyId } = parsed as { companyId?: unknown };
+  if (typeof companyId !== 'number' || !Number.isFinite(companyId)) {
+    console.warn('Discarding a stored company that no longer matches the expected shape');
+    return null;
+  }
+  return parsed as Company;
+}
 /**
  * Non-httpOnly cookie shadowing the localStorage selection so server-side
  * fetchers (`lib/server.ts:getServerInfra`) can scope queries by the active
@@ -38,7 +59,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? (JSON.parse(stored) as Company) : null;
+        return stored ? readStoredCompany(stored) : null;
       } catch {
         return null;
       }

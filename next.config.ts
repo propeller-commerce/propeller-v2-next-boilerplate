@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
 import { resolve } from "node:path";
 
+// Stamped into the client bundle so `lib/clientStorage.ts` can tell "written by
+// this build" from "written by an older one" and drop stale caches on its own
+// (PWP-912).
+//
+// The CI commit sha is preferred because it changes on EVERY deploy. The
+// package version is the local-dev fallback; it is bumped per release here, but
+// a shop scaffolded from this boilerplate may leave its version at 1.0.0
+// forever, and a stamp that never changes purges nothing.
+const APP_VERSION: string =
+  process.env.NEXT_PUBLIC_BUILD_ID ||
+  process.env.CI_COMMIT_SHORT_SHA ||
+  require('./package.json').version;
+
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_APP_VERSION: APP_VERSION },
   // The propeller surface lives in a sibling repo and is consumed here via a
   // `file:` link (`D:/laragon/www/propeller-ui/propeller-v2-react-ui`). Tell
   // Next.js to transpile it (the prebuilt dist already ships ES modules, but

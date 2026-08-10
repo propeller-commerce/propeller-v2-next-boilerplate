@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.7] - 2026-08-10
+
+### Fixed
+
+- **Switching to a language with partial translations emptied the category
+  menu** (PWP-927). `fetchMenu` asked for `names(language: $language)` /
+  `slugs(language: $language)`, so a category with no entry for that language
+  came back with empty arrays — and `mapRawMenuCategory`'s "fall back to the
+  first translation" then had nothing to fall back to. Those categories rendered
+  with a blank label and an empty slug: present in the DOM, invisible and
+  unclickable. Verified against the API: of 7 top-level categories, 2 return
+  `names: []` in EN.
+
+  Both localized fields are now fetched unfiltered and the mapper picks the
+  active language, falling back to whichever translation exists, so an
+  untranslated category keeps its (Dutch) name instead of vanishing. `$language`
+  is gone from the query signature — an unused GraphQL variable is a validation
+  error — and still selects the translation and keys the cache.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` → `^0.15.5`, which fixes the same
+  bug on the client-side fallback path (`useMenu`).
+
 ## [1.11.6] - 2026-08-10
 
 ### Fixed

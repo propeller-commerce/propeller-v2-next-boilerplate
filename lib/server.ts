@@ -1055,8 +1055,8 @@ function buildMenuCategoriesFragment(depth: number): string {
     categories {
       categoryId
       hidden
-      names(language: $language) { value language }
-      slugs(language: $language) { value }
+      names { value language }
+      slugs { value language }
       ${buildMenuCategoriesFragment(depth - 1)}
     }
   `;
@@ -1064,7 +1064,7 @@ function buildMenuCategoriesFragment(depth: number): string {
 
 function mapRawMenuCategory(raw: RawMenuCategory, language: string): MenuCategory {
   const nameEntry = raw.names?.find((n) => n.language === language) ?? raw.names?.[0];
-  const slugEntry = raw.slugs?.[0];
+  const slugEntry = raw.slugs?.find((s) => s.language === language) ?? raw.slugs?.[0];
   return {
     categoryId: raw.categoryId,
     name: nameEntry?.value ?? '',
@@ -1099,12 +1099,12 @@ export async function fetchMenu(
   // Cache-key keying note: variable order locked (categoryId, language). See
   // the note on `fetchProduct`.
   const query = `
-    query Menu($categoryId: Float, $language: String) {
+    query Menu($categoryId: Float) {
       category(categoryId: $categoryId) {
         categoryId
         hidden
-        names(language: $language) { value language }
-        slugs(language: $language) { value }
+        names { value language }
+        slugs { value language }
         ${buildMenuCategoriesFragment(depth)}
       }
     }
@@ -1112,7 +1112,7 @@ export async function fetchMenu(
   try {
     const result = await infra.client.execute<{ category: RawMenuCategory | null }>({
       query,
-      variables: { categoryId: rootCategoryId, language: lang },
+      variables: { categoryId: rootCategoryId },
       operationName: 'Menu',
       fetchOptions: cacheOptions(infra, [TAG_CATALOG, tagFor('menu')]),
     });

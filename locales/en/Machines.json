@@ -1,4 +1,6 @@
 {
+  "loading": "Loading…",
+  "noMachines": "No machines found.",
   "rootTitle": "Machines",
   "viewMachine": "View"
 }

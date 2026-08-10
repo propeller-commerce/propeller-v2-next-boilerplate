@@ -97,6 +97,7 @@ export default function CategoryPage() {
   const { language } = useLanguage();
   const breadcrumbsLabels = useTranslations('Breadcrumbs');
   const gridPaginationLabels = useTranslations('GridPagination');
+  const categoryDescriptionLabels = useTranslations('CategoryDescription');
   const gridFiltersLabels = useTranslations('GridFilters');
   const gridToolbarLabels = useTranslations('GridToolbar');
   const productGridLabels = useTranslations('ProductGrid');
@@ -296,7 +297,7 @@ export default function CategoryPage() {
           {/* Category Header */}
           <GridTitle title={categoryName} />
 
-          <CategoryDescription category={category} language={language} />
+          <CategoryDescription category={category} language={language} labels={categoryDescriptionLabels} />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar */}

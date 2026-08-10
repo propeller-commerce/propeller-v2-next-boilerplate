@@ -150,6 +150,7 @@ export default function CategoryIsland({
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const gridPaginationLabels = useTranslations('GridPagination');
+  const categoryDescriptionLabels = useTranslations('CategoryDescription');
   const gridFiltersLabels = useTranslations('GridFilters');
   const gridToolbarLabels = useTranslations('GridToolbar');
   const productGridLabels = useTranslations('ProductGrid');
@@ -441,7 +442,7 @@ export default function CategoryIsland({
 
   return (
     <>
-      <CategoryDescription category={category} language={language} />
+      <CategoryDescription category={category} language={language} labels={categoryDescriptionLabels} />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Filters: inline sidebar at lg+, slide-in drawer below lg */}

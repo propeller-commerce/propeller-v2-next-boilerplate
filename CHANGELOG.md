@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.10] - 2026-08-10
+
+### Fixed
+
+- **The last package strings that stayed English on a Dutch page.** react-ui
+  0.15.6 makes them overridable; this supplies the keys so they follow the
+  language switcher.
+
+  - `CategoryDescription` — the Read more / Read less toggle, in a new
+    namespace. The visible one: the component truncates at 200 characters by
+    default, so any category with a longer description showed an English
+    toggle regardless of language.
+  - `ProductTabs` — the same two keys, which the package forwards to
+    `ProductDescription`.
+  - `Machines` — the loading and empty states.
+  - `RegisterForm` — the account-type validation message.
+  - `AccountIconAndMenu` — the greeting, via a `{name}` placeholder so the
+    translation controls word order.
+  - Both authorization components — the modal close button's accessible name.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` → `^0.15.6`.
+- The two dashboard card titles are capitalised.
+
 ## [1.11.9] - 2026-08-10
 
 ### Fixed

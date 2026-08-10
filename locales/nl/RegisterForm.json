@@ -29,10 +29,11 @@
   "phone": "Telefoonnummer",
   "postalCode": "Postcode",
   "registering": "Registreren...",
-  "submitButton": "Account aanmaken",
   "sameAsDelivery": "Bezorgadres is hetzelfde als factuuradres",
   "selectCountry": "Selecteer land",
+  "selectUserType": "Selecteer een accounttype.",
   "street": "Straat",
+  "submitButton": "Account aanmaken",
   "successMessage": "Uw account is succesvol aangemaakt.",
   "userTypeLabel": "Accounttype",
   "vatNumber": "BTW-nummer"

@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.6] - 2026-08-10
+
+### Fixed
+
+- **Users no longer have to clear their browser storage after a release**
+  (PWP-912). Two unrelated causes, fixed two different ways:
+  - *Stale caches.* `useMenu` persists the category tree under
+    `propeller_menu_*` with a 12h TTL and no idea which build wrote it, so a
+    deploy that changed the catalog left the old menu on screen for up to half a
+    day. The new `lib/clientStorage.ts` stamps the build into `localStorage` and
+    drops cache keys written by a previous one, before any provider reads
+    storage. Only refetchable data is ever purged — carts, sessions and the
+    active company are left alone, since wiping those every release would be a
+    worse bug than the one being fixed.
+  - *Shape drift.* `cart` and `selected_company` were read back with a bare
+    `as Cart` / `as Company` type assertion — no runtime validation — so an
+    object written by an older build was handed to code that dereferenced fields
+    it no longer had. Both now validate the shape on read and discard only what
+    genuinely doesn't match (the pattern `AuthContext` already used for its
+    `user` hint), so shapes self-heal on any release with no version constant to
+    remember to bump. A rejected cart is evicted rather than re-parsed on every
+    page load.
+- The orphaned `menuData` key — written by `lib/services/MenuService.ts`, which
+  1.11.5 deleted — is now removed from returning users' browsers.
+
+### Added
+
+- `NEXT_PUBLIC_APP_VERSION`, injected by `next.config.ts` from
+  `NEXT_PUBLIC_BUILD_ID` → `CI_COMMIT_SHORT_SHA` → the package version. The CI
+  sha is preferred because it changes on every deploy; a scaffolded shop may
+  never bump its package version, and a stamp that never changes purges nothing.
+- `e2e/tests/anonymous/11-stale-storage.spec.ts` — seeds storage from a
+  fictional older build via an init script (so it lands before app modules
+  evaluate) and asserts the stale menu is dropped, a current-build cache is
+  kept, `menuData` is removed, and a drifted cart / company is discarded without
+  a page error.
+
 ## [1.11.5] - 2026-08-10
 
 ### Fixed

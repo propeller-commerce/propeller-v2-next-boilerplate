@@ -8,6 +8,12 @@ import { authService } from '@/lib/services/AuthService';
 import { graphqlClient } from '@/lib/api';
 import { toPlain } from '@propeller-commerce/propeller-v2-react-ui';
 import { config, localizeHref } from '@/data/config';
+// Side-effect import, and it must stay the FIRST thing that touches
+// localStorage: the reconcile drops caches written by an older build, and the
+// providers below read storage in their useState initialisers. Module
+// evaluation beats component render, so importing it here wins the race that a
+// component or effect would lose (PWP-912).
+import '@/lib/clientStorage';
 import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
 import { classifyApiError } from '@/lib/errors';
 import { getTranslations } from '@/lib/i18n/server';

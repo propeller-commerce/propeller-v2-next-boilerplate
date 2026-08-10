@@ -356,6 +356,25 @@ function CheckoutPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentStep, state.cart, isQuoteMode]);
 
+  // Persist the payment method the moment it is picked, so the order summary
+  // shows THIS method's transaction costs instead of the previously stored
+  // method's (PWP-930) — the totals used to only refresh on Continue, which made
+  // the grand total jump at step 4. CartPaymethods also fires this on mount to
+  // report the cart's stored method; skip the mutation when nothing changed.
+  const handlePaymethodSelect = async (code: string) => {
+    setState(prev => ({ ...prev, selectedPayment: code }));
+    const cart = state.cart;
+    if (!cart?.cartId || cart.paymentData?.method === code) return;
+    try {
+      const updatedCart = await updateCartShipping(cart.cartId, { paymentData: { method: code } });
+      saveCart(updatedCart);
+      setState(prev => ({ ...prev, cart: updatedCart }));
+    } catch (error) {
+      // Non-fatal: the totals stay stale, but Continue re-sends the method.
+      console.error(error);
+    }
+  };
+
   const handleStep3Continue = async () => {
     // A carrier is only required when the cart actually offers one. Some carts
     // (e.g. digital-only or business-rule configs) return no carriers; in that
@@ -794,7 +813,7 @@ function CheckoutPageInner() {
                       )}
                       <CartPaymethods
                         cart={state.cart}
-                        onPaymethodSelect={(method) => setState(prev => ({ ...prev, selectedPayment: method.code }))}
+                        onPaymethodSelect={(method) => handlePaymethodSelect(method.code)}
                         labels={cartPaymethodsLabels}
                         paymethodLabels={paymethodNames}
                       />

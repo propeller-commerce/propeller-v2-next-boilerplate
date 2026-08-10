@@ -54,7 +54,7 @@ import { cache } from 'react';
 const taintObjectReference: (msg: string, obj: object) => void =
   (React as unknown as { experimental_taintObjectReference?: (msg: string, obj: object) => void })
     .experimental_taintObjectReference ?? (() => {});
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { unstable_cache } from 'next/cache';
 import {
   GraphQLClient,
@@ -412,6 +412,25 @@ function taintInfra(infra: ServerInfra): void {
   );
 }
 
+/** Site default language when the request carries no locale signal. */
+const DEFAULT_LANGUAGE = process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+
+/**
+ * Browsing language for a server render. The proxy strips the `/en` prefix, so
+ * the locale survives only as the cookie it sets (or an `x-cms-locale` header).
+ */
+async function resolveRequestLanguage(): Promise<string> {
+  try {
+    const headerLocale = (await headers()).get('x-cms-locale');
+    if (headerLocale) return headerLocale.toUpperCase();
+    const cookieLocale = (await cookies()).get('preferred_language')?.value;
+    if (cookieLocale) return cookieLocale.toUpperCase();
+  } catch {
+    // Outside a request scope (build-time prerender) — fall back to default.
+  }
+  return DEFAULT_LANGUAGE;
+}
+
 export async function getServerInfra(): Promise<ServerInfra> {
   // Read the token + tax preference + active company FIRST. The token is
   // attached as the client's Authorization header (direct-mode SDK calls
@@ -419,10 +438,11 @@ export async function getServerInfra(): Promise<ServerInfra> {
   // into the infra value object so server components render the right
   // gross/net price and the right company-scoped assortment in the initial
   // HTML.
-  const [token, includeTax, selectedCompanyId] = await Promise.all([
+  const [token, includeTax, selectedCompanyId, language] = await Promise.all([
     readCookieAccessToken(),
     readIncludeTaxCookie(),
     readSelectedCompanyIdCookie(),
+    resolveRequestLanguage(),
   ]);
   const client = createServerClient({ bearerToken: token });
   const services = createServices(client);
@@ -433,7 +453,7 @@ export async function getServerInfra(): Promise<ServerInfra> {
     client,
     services,
     user,
-    language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
+    language,
     portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax,
@@ -480,6 +500,12 @@ export function getAnonymousInfra(): ServerInfra {
   return infra;
 }
 
+/** `getAnonymousInfra()` with the request's browsing language applied. */
+export async function getAnonymousInfraLocalized(): Promise<ServerInfra> {
+  const language = await resolveRequestLanguage();
+  return { ...getAnonymousInfra(), language };
+}
+
 /** True when the request carries an `access_token` cookie (i.e. logged in). */
 export async function hasAuthCookie(): Promise<boolean> {
   const store = await cookies();
@@ -498,14 +524,17 @@ export async function hasAuthCookie(): Promise<boolean> {
  * visitors with no cookie set.
  */
 export async function getAnonymousInfraWithTax(): Promise<ServerInfra> {
-  const includeTax = await readIncludeTaxCookie();
+  const [includeTax, language] = await Promise.all([
+    readIncludeTaxCookie(),
+    resolveRequestLanguage(),
+  ]);
   const client = createServerClient({ getAccessToken: () => undefined });
   const services = createServices(client);
   const infra: ServerInfra = {
     client,
     services,
     user: null,
-    language: process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL',
+    language,
     portalMode: readPortalMode(),
     currency: process.env.BOILERPLATE_CURRENCY || '€',
     includeTax,

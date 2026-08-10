@@ -462,6 +462,7 @@ export default function CategoryIsland({
           activeMinStock={minStock}
           onAvailabilityChange={handleAvailabilityChange}
           isLoading={filtersLoading}
+          language={language}
           labels={gridFiltersLabels}
         />
 

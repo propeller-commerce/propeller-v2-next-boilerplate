@@ -244,6 +244,7 @@ export default function SearchPage() {
                   onAvailabilityChange={handleAvailabilityChange}
                   isLoading={filtersLoading}
                   className=""
+                  language={language}
                   labels={gridFiltersLabels}
                 />
               </aside>

@@ -600,17 +600,27 @@ const getChannelDefaults = unstable_cache(
 );
 
 /**
- * Server-side base category: the explicitly configured
- * `NEXT_PUBLIC_BASE_CATEGORY_ID`, or — when none is provided — the channel's
- * catalog root. Falls back to `config.baseCategoryId` (its own '1' default) if
- * the channel exposes no root.
+ * The catalog root category: the explicitly configured
+ * `NEXT_PUBLIC_BASE_CATEGORY_ID`, or — when none is provided (the intended
+ * default) — the channel's catalog root.
+ *
+ * The two are the only permitted sources. There is no literal fallback: a
+ * channel with no `catalogRootId` and no env override is a misconfiguration,
+ * and it must fail loudly here rather than send `category(categoryId: 1)` at
+ * the API and surface as an unexplained "Failed to load menu" (PWP-913).
+ *
+ * @throws when neither source yields an id.
  */
 export async function resolveBaseCategoryId(): Promise<number> {
-  const raw = process.env.NEXT_PUBLIC_BASE_CATEGORY_ID;
-  const explicit = raw ? parseInt(raw, 10) : NaN;
-  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  if (config.baseCategoryId !== undefined) return config.baseCategoryId;
   const { catalogRootId } = await getChannelDefaults(config.channelId);
-  return catalogRootId ?? config.baseCategoryId;
+  if (catalogRootId == null) {
+    throw new Error(
+      `No catalog root: channel ${config.channelId} exposes no catalogRootId and ` +
+        'NEXT_PUBLIC_BASE_CATEGORY_ID is unset. Set one of the two.'
+    );
+  }
+  return catalogRootId;
 }
 
 // ── Thin fetch helpers (the data layer Bucket-B components consume) ─────────

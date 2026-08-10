@@ -11,7 +11,16 @@ import {
 } from './defaults';
 
 const DEFAULT_LANG = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
-const BASE_CATEGORY_ID = parseInt(process.env.NEXT_PUBLIC_BASE_CATEGORY_ID || '1', 10);
+// Env override ONLY. When unset (the intended default) the catalog root comes
+// from the channel — `lib/server.ts` `resolveBaseCategoryId()` server-side, and
+// `useBaseCategoryId()` on the client, which the root layout seeds from it.
+// Deliberately `undefined` rather than a literal: guessing an id here is what
+// made every client-only page query a category that does not exist (PWP-913).
+const BASE_CATEGORY_ID: number | undefined = (() => {
+  const raw = process.env.NEXT_PUBLIC_BASE_CATEGORY_ID;
+  const parsed = raw ? parseInt(raw, 10) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+})();
 // Channel orders/quotes are placed on for THIS environment. The account
 // order/quote lists filter by `channelIds: [channelId]`, so a wrong value makes
 // those pages permanently empty (the query succeeds but matches nothing).
@@ -148,7 +157,7 @@ export const config = {
   portal: {
     mode: readPortalMode(),
   },
-  productTrackAttributes: [],
+  productTrackAttributes: ['QUANTORE_70001371'],
   categoryTrackAttributes: [],
   clusterTrackAttributes: [],
   companyTrackAttributes: ['MY_INSTALLATIONS'],

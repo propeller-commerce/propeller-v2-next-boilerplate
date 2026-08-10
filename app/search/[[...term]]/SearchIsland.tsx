@@ -35,6 +35,7 @@ import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/prop
 import { config, localizeHref } from '@/data/config';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import { usePrice } from '@/context/PriceContext';
 import { parseListingParams, serializeAvailability, type ListingParams } from '@/lib/listingParams';
 import { useTranslations } from '@/lib/i18n/client';
@@ -134,6 +135,7 @@ export default function SearchIsland({
 
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
+  const baseCategoryId = useBaseCategoryId();
   const { includeTax } = usePrice();
   const searchLabels = useTranslations('Search');
   const gridPaginationLabels = useTranslations('GridPagination');
@@ -483,7 +485,7 @@ export default function SearchIsland({
             // Server-seeded first page — dropped on the first interaction.
             products={usingServerData ? initialItems : undefined}
             term={isAllProducts ? undefined : term}
-            categoryId={isAllProducts ? config.baseCategoryId : undefined}
+            categoryId={isAllProducts ? baseCategoryId : undefined}
             showModal={true}
             createCart={true}
             cartId={cart?.cartId}

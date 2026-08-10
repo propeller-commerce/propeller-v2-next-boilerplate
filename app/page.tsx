@@ -1,4 +1,4 @@
-import { cookies, draftMode } from 'next/headers';
+import { draftMode } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import PersonalizedPage from '@/components/cms/PersonalizedPage';
@@ -6,16 +6,21 @@ import PreprTrack from '@/components/cms/PreprTrack';
 import { getPage } from '@/lib/cms';
 import { readForwardedPreprHeaders } from '@/lib/preprHeaders';
 import HomeFallback from '@/components/cms/HomeFallback';
-import { fetchMenu, getAnonymousInfraLocalized, resolveBaseCategoryId } from '@/lib/server';
+import {
+  fetchMenu,
+  getAnonymousInfraLocalized,
+  resolveBaseCategoryId,
+  resolveRequestLanguage,
+} from '@/lib/server';
 
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const cookieStore = await cookies();
-  const cookieLocale = cookieStore.get('preferred_language')?.value;
-  const defaultLocale = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+  // One resolver for the whole app: URL prefix, then cookie, then default.
+  // Reading the cookie alone made a prefixed URL lose to a stale value.
+  const locale = await resolveRequestLanguage();
 
   // Prepr personalization signals proxy.ts forwarded onto this request
   // (Prepr-Segments from the editor preview switch, Prepr-Customer-Id for a
@@ -41,7 +46,7 @@ export default async function Home({
   // the legacy client-side fetch and puts the grid in the initial HTML.
   const [page, menuTree] = await Promise.all([
     getPage('home', {
-      locale: previewLocale || cookieLocale || defaultLocale,
+      locale: previewLocale || locale,
       extraHeaders: preprHeaders,
       noStore: true,
       preview,

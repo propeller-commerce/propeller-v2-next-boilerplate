@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation';
-import { cookies, draftMode } from 'next/headers';
+import { draftMode } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
 import PreprTrack from '@/components/cms/PreprTrack';
 import { getPage, getAllPageSlugs } from '@/lib/cms';
 import { readForwardedPreprHeaders } from '@/lib/preprHeaders';
+import { resolveRequestLanguage } from '@/lib/server';
 
 interface CmsPageProps {
   params: Promise<{ slug: string[] }>;
@@ -38,9 +39,9 @@ export default async function CmsPage({ params, searchParams }: CmsPageProps) {
   const { slug } = await params;
   const pageSlug = slug.join('/');
 
-  const cookieStore = await cookies();
-  const cookieLocale = cookieStore.get('preferred_language')?.value;
-  const defaultLocale = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
+  // One resolver for the whole app: URL prefix, then cookie, then default.
+  // Reading the cookie alone made a prefixed URL lose to a stale value.
+  const locale = await resolveRequestLanguage();
   const { isEnabled: preview } = await draftMode();
   // In preview, forward the segment switch (?prepr_preview_segment from Prepr's
   // preview bar) so editors can preview each segment's adaptive variant. Empty
@@ -53,7 +54,7 @@ export default async function CmsPage({ params, searchParams }: CmsPageProps) {
   }
 
   const page = await getPage(pageSlug, {
-    locale: previewLocale || cookieLocale || defaultLocale,
+    locale: previewLocale || locale,
     extraHeaders,
     noStore: preview,
     preview,

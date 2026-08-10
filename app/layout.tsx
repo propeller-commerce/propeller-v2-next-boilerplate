@@ -14,12 +14,12 @@ import { CompanyProvider } from "@/context/CompanyContext";
 import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { BaseCategoryProvider } from "@/context/BaseCategoryContext";
-import { resolveBaseCategoryId } from "@/lib/server";
+import { resolveBaseCategoryId, resolveRequestLanguage } from "@/lib/server";
 import { TranslationsProvider } from "@/lib/i18n/client";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
 import ScrollReset from "@/components/layout/ScrollReset";
 import { Toaster } from "react-hot-toast";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getGlobal } from "@/lib/cms";
 import { CmsAdapterProvider } from "@propeller-commerce/propeller-v2-cms-react";
 import { PREPR_ENABLED } from "@/lib/preprEvent";
@@ -52,10 +52,13 @@ export default async function RootLayout({
   // Seeded to the client so components that fetch the menu themselves (every
   // page rendering `<Header />` rather than `<HeaderServer />`) ask for the same
   // category the server does, instead of guessing a literal — PWP-913.
-  const [globalData, cookieStore, baseCategoryId] = await Promise.all([
+  const [globalData, cookieStore, baseCategoryId, initialLanguage] = await Promise.all([
     getGlobal(),
     cookies(),
     resolveBaseCategoryId(),
+    // Same resolver every page uses, so `<html lang>` and the client
+    // provider can never disagree with what the page fetched.
+    resolveRequestLanguage(),
   ]);
   // Seed the price preference from the cookie so SSR and the first client
   // snapshot agree — without this, users see a flash on first paint while
@@ -64,14 +67,6 @@ export default async function RootLayout({
   const includeTaxCookie = cookieStore.get('price_include_tax')?.value;
   const initialIncludeTax =
     includeTaxCookie === undefined ? true : includeTaxCookie === '1';
-
-  // Seed the language too — the proxy strips the /en prefix before SSR.
-  const initialLanguage = (
-    (await headers()).get('x-cms-locale') ||
-    cookieStore.get('preferred_language')?.value ||
-    process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE ||
-    'NL'
-  ).toUpperCase();
 
   return (
     <html lang={initialLanguage.toLowerCase()}>

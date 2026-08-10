@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { cookies, draftMode } from 'next/headers';
+import { draftMode } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import DynamicBlockRenderer from '@/components/cms/DynamicBlockRenderer';
@@ -9,6 +9,7 @@ import PreprTrack from '@/components/cms/PreprTrack';
 import { getArticle } from '@/lib/cms';
 import { readForwardedPreprHeaders } from '@/lib/preprHeaders';
 import { getTranslations } from '@/lib/i18n/server';
+import { resolveRequestLanguage } from '@/lib/server';
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -32,8 +33,12 @@ function formatDate(dateString: string | null) {
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const [store, { isEnabled: preview }] = await Promise.all([cookies(), draftMode()]);
-  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  // One resolver for the whole app: URL prefix, then cookie, then default.
+  // Reading the cookie alone made a prefixed URL lose to a stale value.
+  const [locale, { isEnabled: preview }] = await Promise.all([
+    resolveRequestLanguage(),
+    draftMode(),
+  ]);
   // In preview, forward the segment switch (?prepr_preview_segment) so editors
   // can preview a post's adaptive content for each segment. Empty off-Prepr.
   const extraHeaders = preview ? await readForwardedPreprHeaders() : undefined;

@@ -1,10 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { cookies, draftMode } from 'next/headers';
+import { draftMode } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { getArticles } from '@/lib/cms';
 import { getTranslations } from '@/lib/i18n/server';
+import { resolveRequestLanguage } from '@/lib/server';
 import type { CmsArticle } from '@/lib/cms/types';
 
 function formatDate(dateString: string | null) {
@@ -92,8 +93,12 @@ function ArticleCard({ article, readMoreLabel }: { article: CmsArticle; readMore
 }
 
 export default async function BlogPage() {
-  const [store, { isEnabled: preview }] = await Promise.all([cookies(), draftMode()]);
-  const locale = store.get('preferred_language')?.value || process.env.BOILERPLATE_DEFAULT_LANGUAGE || 'NL';
+  // One resolver for the whole app: URL prefix, then cookie, then default.
+  // Reading the cookie alone made a prefixed URL lose to a stale value.
+  const [locale, { isEnabled: preview }] = await Promise.all([
+    resolveRequestLanguage(),
+    draftMode(),
+  ]);
   const articles = await getArticles(locale, { preview });
   const t = getTranslations(locale, 'Blog');
 

@@ -1,16 +1,11 @@
-import { cookies, headers } from 'next/headers';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
 import { getTranslations } from '@/lib/i18n/server';
+import { resolveRequestLanguage } from '@/lib/server';
 
 export default async function TermsConditionsPage() {
-  const [store, hdrs] = await Promise.all([cookies(), headers()]);
   // Prefixed URL wins (via the proxy's header), else the stored preference.
-  const locale =
-    hdrs.get('x-cms-locale') ||
-    store.get('preferred_language')?.value ||
-    process.env.BOILERPLATE_DEFAULT_LANGUAGE ||
-    'NL';
+  const locale = await resolveRequestLanguage();
   const t = getTranslations(locale, 'StaticPages');
 
   return (

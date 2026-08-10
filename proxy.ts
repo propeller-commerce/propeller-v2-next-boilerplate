@@ -169,7 +169,11 @@ export function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = strippedPath;
 
-      const response = NextResponse.rewrite(url);
+      // The URL's locale wins over the cookie for this request — forwarded as a
+      // header because the prefix is stripped before the server render sees it.
+      const localeHeaders = new Headers(request.headers);
+      localeHeaders.set('x-cms-locale', locale.toUpperCase());
+      const response = NextResponse.rewrite(url, { request: { headers: localeHeaders } });
       response.cookies.set('preferred_language', locale.toUpperCase(), { path: '/' });
       return applySecurityHeaders(response);
     }
@@ -209,17 +213,19 @@ export function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = strippedPath;
 
+    // The URL's locale wins over the cookie for this request — forwarded as a
+    // header because the prefix is stripped before the server render sees it.
+    headers.set('x-cms-locale', locale.toUpperCase());
     const response = NextResponse.rewrite(url, { request: { headers } });
     // Set cookie so client-side LanguageContext can pick it up on first load
     response.cookies.set('preferred_language', locale.toUpperCase(), { path: '/' });
     return persistPreprUid(applySecurityHeaders(response), uid, isNew);
   }
 
-  // No locale prefix → default locale. Reset the cookie to the default so a
-  // stale prefix cookie (e.g. EN left over from visiting /en) can't override
-  // the URL and make an unprefixed page render in the wrong language.
+  // No locale prefix → default locale for THIS request. The cookie is left
+  // alone: it carries the user's choice across navigations, and overwriting it
+  // here reset every unprefixed page back to the default.
   const response = NextResponse.next({ request: { headers } });
-  response.cookies.set('preferred_language', DEFAULT_LANGUAGE, { path: '/' });
   return persistPreprUid(applySecurityHeaders(response), uid, isNew);
 }
 

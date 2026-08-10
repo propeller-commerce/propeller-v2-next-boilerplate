@@ -9,9 +9,11 @@
 
 import { useEffect, useState } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useTranslations } from '@/lib/i18n/client';
 
 export default function PunchoutTransfer() {
   const { cart } = useCart();
+  const t = useTranslations('CartPage');
   const [active, setActive] = useState(false);
 
   // Read the flag after mount to avoid a hydration mismatch (server render
@@ -25,14 +27,14 @@ export default function PunchoutTransfer() {
   return (
     <form method="POST" action="/api/punchout/transfer" className="rounded-lg border bg-card p-4">
       <p className="mb-3 text-sm text-muted-foreground">
-        You are shopping from your procurement system. Send this cart back as a requisition.
+        {t.punchoutIntro}
       </p>
       <input type="hidden" name="cartId" value={cart.cartId} />
       <button
         type="submit"
         className="w-full rounded-lg bg-primary px-6 py-3 text-primary-foreground transition hover:bg-primary/90"
       >
-        Transfer cart to procurement
+        {t.punchoutTransfer}
       </button>
     </form>
   );

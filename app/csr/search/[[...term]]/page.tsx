@@ -109,6 +109,7 @@ export default function SearchPage() {
   const { language } = useLanguage();
   const baseCategoryId = useBaseCategoryId();
   const { includeTax } = usePrice();
+  const searchLabels = useTranslations('Search');
   const gridPaginationLabels = useTranslations('GridPagination');
   const gridFiltersLabels = useTranslations('GridFilters');
   const gridToolbarLabels = useTranslations('GridToolbar');
@@ -218,7 +219,7 @@ export default function SearchPage() {
       <main className="flex-1 py-8">
         <div className="container-width">
           {/* Search Header */}
-          <GridTitle title={`Search results for "${term}"`} />
+          <GridTitle title={`${searchLabels.resultsFor || 'Search results for'} "${term}"`} />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Filters Sidebar — hidden when search returned no results so

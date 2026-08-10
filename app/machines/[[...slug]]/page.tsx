@@ -43,6 +43,7 @@ export default function MachinesPage() {
   const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
 
+  const machinesLabels = useTranslations('Machines');
   const paginationLabels = useTranslations('GridPagination');
   const filtersLabels = useTranslations('GridFilters');
   const toolbarLabels = useTranslations('GridToolbar');
@@ -90,6 +91,8 @@ export default function MachinesPage() {
           {/* key forces a fresh mount per node so sibling nav re-seeds cleanly. */}
           <MachineGrid
             key={segments.join('/')}
+            rootTitle={machinesLabels.rootTitle}
+            machineCardLabels={machinesLabels}
             segments={segments}
             basePath={basePath}
             source={source}

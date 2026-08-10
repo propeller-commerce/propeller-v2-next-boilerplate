@@ -6,6 +6,12 @@ import { getLanguagePrefix, stripLanguagePrefix, detectLanguageFromPath } from '
 const STORAGE_KEY = 'preferred_language';
 const DEFAULT_LANGUAGE = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
 
+/** Mirror the choice into a cookie — Server Components can't read localStorage. */
+function writeLanguageCookie(value: string): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${STORAGE_KEY}=${value}; path=/; max-age=31536000; samesite=lax`;
+}
+
 interface LanguageContextType {
   language: string;
   setLanguage: (language: string) => void;
@@ -23,12 +29,19 @@ function subscribeToLanguageChange(callback: () => void) {
   };
 }
 
+function readLanguageCookie(): string | undefined {
+  const match = document.cookie.match(/(?:^|;\s*)preferred_language=([^;]+)/);
+  return match?.[1]?.toUpperCase();
+}
+
 function getLanguageSnapshot(): string {
   try {
-    // URL is the authoritative source for the current page language.
-    // Reading localStorage here would return a stale value from a previous
-    // session and cause a hydration mismatch → extra re-render → extra fetch.
-    return detectLanguageFromPath(window.location.pathname);
+    // A prefixed URL is authoritative; otherwise fall back to the cookie so the
+    // choice survives navigation to unprefixed routes. The server resolves the
+    // same order, so this matches what it rendered.
+    const fromPath = detectLanguageFromPath(window.location.pathname);
+    if (fromPath !== DEFAULT_LANGUAGE) return fromPath;
+    return readLanguageCookie() || DEFAULT_LANGUAGE;
   } catch {
     return DEFAULT_LANGUAGE;
   }
@@ -49,12 +62,16 @@ export const LanguageProvider: React.FC<{ children: ReactNode; initialLanguage?:
     serverSnapshot,
   );
 
-  // On mount, sync localStorage with URL prefix (e.g., user navigated directly to /en/...)
+  // Sync storage from a PREFIXED url only (e.g. a deep link to /en/...). An
+  // unprefixed path is the default language for that request, not a choice —
+  // syncing from it reset the preference on every navigation.
   useEffect(() => {
     const urlLang = detectLanguageFromPath(window.location.pathname);
+    if (urlLang === DEFAULT_LANGUAGE) return;
     const storedLang = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANGUAGE;
     if (urlLang !== storedLang) {
       localStorage.setItem(STORAGE_KEY, urlLang);
+      writeLanguageCookie(urlLang);
       window.dispatchEvent(new CustomEvent('languageChanged', { detail: urlLang }));
     }
   }, []);
@@ -62,6 +79,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode; initialLanguage?:
   const setLanguage = useCallback((value: string) => {
     const prev = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANGUAGE;
     localStorage.setItem(STORAGE_KEY, value);
+    writeLanguageCookie(value);
 
     // Navigate, not replaceState — SSR content is fetched per request language.
     if (prev !== value && typeof window !== 'undefined') {

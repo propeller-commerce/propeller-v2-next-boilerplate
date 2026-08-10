@@ -61,6 +61,7 @@ export default function LoginPage() {
                 <LoginForm
                   labels={loginFormLabels}
                   title=""
+                  buttonText={loginFormLabels.submitButton}
                   accountHeaderLoginForm={false}
                   displayGuestCheckoutLink={false}
                   cart={cart as Cart | null}

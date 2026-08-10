@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.8] - 2026-08-10
+
+### Fixed
+
+- **The site could not be browsed in English.** Selecting EN re-rendered the
+  current page, but any navigation reverted to Dutch. The proxy reset
+  `preferred_language` to the default on every unprefixed request, so the
+  choice survived exactly one page; `LanguageContext` wrote only to
+  localStorage, which Server Components cannot read; the client snapshot read
+  the URL alone and so reported the default on unprefixed paths; and the mount
+  effect synced storage from the URL unconditionally, overwriting the
+  preference on each navigation. Unprefixed requests now leave the cookie
+  alone, the choice is mirrored into it, and both client and server resolve
+  the same order — a prefixed URL wins (forwarded as `x-cms-locale` on both
+  proxy branches), else the cookie, else the default.
+
+- **Terms & conditions was half translated.** The heading came from
+  `StaticPages` but all eight body sections were hardcoded English. They now
+  come from the same namespace, with Dutch copy added.
+
+- **Auth-flow strings stayed English on a Dutch page.** The login failure
+  message needed the `invalidCredentials` label the app never supplied. The
+  submit buttons on login, register and forgot-password, plus that page's
+  title and success message, are package *props* rather than label keys, so
+  passing `labels` alone left them English — they are now fed from the same
+  namespace. Adds the `accountMenuTitle` key the package reads.
+
+- **Remaining untranslated surfaces**: the PunchOut cart notice and transfer
+  button (no `useTranslations` at all), the CSR search heading, and the
+  machines page title and card CTA (new `Machines` namespace).
+
+- `<html lang>` was always `en`, including when serving Dutch.
+
+### Known gaps (require a package change)
+
+`CategoryDescription` / `ProductDescription` ("Read more" / "Read less"),
+`MachineGrid` ("Loading…", "No machines found."), `RegisterForm` ("Please
+select an account type." and the raw server error) and `AccountIconAndMenu`
+(the "Hi, " greeting) have no label key or prop to override them.
+
 ## [1.11.7] - 2026-08-10
 
 ### Fixed

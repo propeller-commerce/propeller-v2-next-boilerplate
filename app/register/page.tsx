@@ -63,6 +63,7 @@ export default function RegisterPage() {
                 <RegisterForm
                   labels={registerFormLabels}
                   title=""
+                  buttonText={registerFormLabels.submitButton}
                   requiredFields={['firstName', 'lastName']}
                   onLoginClick={() => router.push(localizeHref('/login', language))}
                   automaticLogin={true}

@@ -34,15 +34,19 @@ function getLanguageSnapshot(): string {
   }
 }
 
-function getLanguageServerSnapshot(): string {
-  return DEFAULT_LANGUAGE;
-}
-
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const LanguageProvider: React.FC<{ children: ReactNode; initialLanguage?: string }> = ({
+  children,
+  initialLanguage,
+}) => {
+  // Must match what the server rendered, or hydration falls back to default.
+  const serverSnapshot = useCallback(
+    () => (initialLanguage || DEFAULT_LANGUAGE).toUpperCase(),
+    [initialLanguage],
+  );
   const language = useSyncExternalStore(
     subscribeToLanguageChange,
     getLanguageSnapshot,
-    getLanguageServerSnapshot,
+    serverSnapshot,
   );
 
   // On mount, sync localStorage with URL prefix (e.g., user navigated directly to /en/...)
@@ -59,19 +63,13 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     const prev = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANGUAGE;
     localStorage.setItem(STORAGE_KEY, value);
 
-    // Update URL prefix BEFORE dispatching the event so that getLanguageSnapshot()
-    // (which reads the URL) returns the new language when triggered by the event.
-    //
-    // Pass the CURRENT `window.history.state`, not `null`: the App Router keeps
-    // its navigation tree key there, and clobbering it with `null` desyncs the
-    // router from the real URL — which breaks `<title>` updates on later
-    // soft navigations.
+    // Navigate, not replaceState — SSR content is fetched per request language.
     if (prev !== value && typeof window !== 'undefined') {
       const basePath = stripLanguagePrefix(window.location.pathname);
       const newPrefix = getLanguagePrefix(value);
       const newPath = basePath === '/' && newPrefix ? newPrefix : newPrefix + basePath;
-      const search = window.location.search;
-      window.history.replaceState(window.history.state, '', (newPath || '/') + search);
+      window.location.assign((newPath || '/') + window.location.search);
+      return;
     }
 
     window.dispatchEvent(new CustomEvent('languageChanged', { detail: value }));

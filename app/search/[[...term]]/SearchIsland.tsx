@@ -409,6 +409,7 @@ export default function SearchIsland({
           activeMinStock={minStock}
           onAvailabilityChange={handleAvailabilityChange}
           isLoading={filtersLoading}
+          language={language}
           labels={gridFiltersLabels}
         />
       ) : null}

@@ -6,7 +6,7 @@ import PreprTrack from '@/components/cms/PreprTrack';
 import { getPage } from '@/lib/cms';
 import { readForwardedPreprHeaders } from '@/lib/preprHeaders';
 import HomeFallback from '@/components/cms/HomeFallback';
-import { fetchMenu, getAnonymousInfra, resolveBaseCategoryId } from '@/lib/server';
+import { fetchMenu, getAnonymousInfraLocalized, resolveBaseCategoryId } from '@/lib/server';
 
 export default async function Home({
   searchParams,
@@ -46,7 +46,7 @@ export default async function Home({
       noStore: true,
       preview,
     }),
-    fetchMenu(getAnonymousInfra(), await resolveBaseCategoryId()),
+    fetchMenu(await getAnonymousInfraLocalized(), await resolveBaseCategoryId()),
   ]);
 
   return (

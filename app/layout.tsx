@@ -15,8 +15,9 @@ import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { TranslationsProvider } from "@/lib/i18n/client";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
+import ScrollReset from "@/components/layout/ScrollReset";
 import { Toaster } from "react-hot-toast";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { getGlobal } from "@/lib/cms";
 import { CmsAdapterProvider } from "@propeller-commerce/propeller-v2-cms-react";
 import { PREPR_ENABLED } from "@/lib/preprEvent";
@@ -53,6 +54,14 @@ export default async function RootLayout({
   const initialIncludeTax =
     includeTaxCookie === undefined ? true : includeTaxCookie === '1';
 
+  // Seed the language too — the proxy strips the /en prefix before SSR.
+  const initialLanguage = (
+    (await headers()).get('x-cms-locale') ||
+    cookieStore.get('preferred_language')?.value ||
+    process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE ||
+    'NL'
+  ).toUpperCase();
+
   return (
     <html lang="en">
       <body
@@ -68,12 +77,13 @@ export default async function RootLayout({
             all CMS content server-side (Server Components call getPage/getArticle
             directly), so no client adapter is supplied — `null` is the documented
             value for server-fetched shops; `useCms()` returns null on the client. */}
+        <ScrollReset />
         <CmsAdapterProvider adapter={null}>
         <AuthProvider>
           <CompanyProvider>
             {PREPR_ENABLED ? <PreprSegmentsSync /> : null}
             <PriceProvider initialIncludeTax={initialIncludeTax}>
-            <LanguageProvider>
+            <LanguageProvider initialLanguage={initialLanguage}>
             <TranslationsProvider>
             <PropellerHostBridge>
             <CartProvider>

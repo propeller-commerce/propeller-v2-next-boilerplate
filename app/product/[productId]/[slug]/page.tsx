@@ -40,7 +40,7 @@ import {
 // ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from '@propeller-commerce/propeller-v2-react-ui';
 import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
-import { fetchProduct, getServerInfra, getAnonymousInfra } from '@/lib/server';
+import { fetchProduct, getServerInfra, getAnonymousInfraLocalized } from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { config } from '@/data/config';
 import { getLanguageString } from '@propeller-commerce/propeller-v2-react-ui/shared';
@@ -82,7 +82,7 @@ export async function generateMetadata({
   const productId = Number.parseInt(productIdStr, 10);
   if (!Number.isFinite(productId)) return {};
 
-  const infra = getAnonymousInfra();
+  const infra = await getAnonymousInfraLocalized();
   const product = await fetchProduct(infra, productId, infra.language);
   if (!product) return {};
 

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.15] - 2026-08-11
+
+### Fixed
+
+- **"Bonus items" stayed English in the cart sidebar.** The heading read
+  "Bonus items" on a Dutch page while the same block on the cart and checkout
+  pages read "Bonusartikelen". `CartIconAndSidebar` renders `CartBonusItems`
+  itself and passed it no `labels`, so it always fell back to the English
+  defaults — the `CartBonusItems` translations existed and were simply
+  unreachable from the host. Fixed in react-ui 0.15.10, which adds a
+  `cartBonusItemsLabels` prop; the header now passes the same map the cart page
+  already used.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` → `^0.15.10`, which also brings
+  0.15.9's `ProductSpecifications` language fallback (the specs table no longer
+  blanks out on a partly-translated catalogue).
+
 ## [1.11.14] - 2026-08-11
 
 ### Fixed

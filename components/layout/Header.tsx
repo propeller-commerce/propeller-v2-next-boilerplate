@@ -88,6 +88,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   // Forwarded to the mini-cart's inner CartItem rows (e.g. the "Aantal:" qty
   // prefix) — the sidebar labels don't cover the line items.
   const cartItemLabels = useTranslations('CartItem');
+  const cartBonusItemsLabels = useTranslations('CartBonusItems');
   const accountLabels = useTranslations('Account');
   const headerLabels = useTranslations('Header');
 
@@ -512,6 +513,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                   <CartIconAndSidebar
                     labels={cartIconAndSidebarLabels}
                     cartItemLabels={cartItemLabels}
+                    cartBonusItemsLabels={cartBonusItemsLabels}
                     cart={cart as Cart}
                     onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
                     onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}

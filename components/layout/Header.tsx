@@ -437,11 +437,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                         window.dispatchEvent(new CustomEvent('userLoggedIn'));
                       }
 
-                      // Switch to user's preferred language if available
                       const userLang = (user as Contact | Customer).primaryLanguage;
-                      if (userLang && userLang !== language) {
-                        setLanguage(userLang);
-                      }
 
                       const company = (user as Contact).company;
                       let targetCart = await fetchActiveCart(user as Contact | Customer, company?.companyId);
@@ -482,7 +478,12 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                         saveCart(finalCart);
                       }
 
-                      router.push(localizeHref('/account', userLang || language));
+                      // Last: setLanguage navigates, which would abort the cart work above.
+                      if (userLang && userLang !== language) {
+                        setLanguage(userLang, '/account');
+                        return;
+                      }
+                      router.push(localizeHref('/account', language));
                     }}
                     onMenuItemClick={(href) => router.push(href)}
                     onLogoutClick={async () => {

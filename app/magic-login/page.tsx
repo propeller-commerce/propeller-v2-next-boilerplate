@@ -20,7 +20,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth as usePropellerAuth } from '@propeller-commerce/propeller-v2-react-ui';
 import { graphqlClient } from '@/lib/api';
-import { config, localizeHref } from '@/data/config';
+import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAfterLogin } from '@/lib/useAfterLogin';
 
@@ -69,13 +69,17 @@ function MagicLoginRunner() {
         return;
       }
 
-      const { effectiveLanguage } = await runAfterLogin(
+      const { effectiveLanguage, navigated } = await runAfterLogin(
         res.data.user,
         res.data.accessToken,
         res.data.refreshToken,
         res.data.expiresAt,
+        null,
+        redirect ? stripLanguagePrefix(redirect) : '/',
       );
-      router.replace(redirect || localizeHref('/', effectiveLanguage));
+      if (!navigated) {
+        router.replace(redirect || localizeHref('/', effectiveLanguage));
+      }
     })();
     // Run once on mount — deliberately not reactive to searchParams/hooks.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.14] - 2026-08-11
+
+### Fixed
+
+- **The search-bar dropdown found nothing while pressing Enter found the
+  product** (PWP-928). `PropellerHostBridge` handed `data/config` straight to
+  the package as `configuration`, and `config.baseCategoryId` is the env
+  override — `undefined` on every shop that lets the channel decide the catalog
+  root, which has been the intended default since PWP-913. Four package
+  consumers read `configuration.baseCategoryId` and each degrades to category
+  `0`, then returns an empty result set with no error and no spinner:
+  `useProductSearch` (both the autosuggest and the term-search grid),
+  `useQuickOrder` (typeahead and XLSX upload) and `Breadcrumbs`. The bridge now
+  splices in the id the root layout already resolves server-side, so the client
+  half matches the server half. `app/quick-order/page.tsx` passes the same value
+  explicitly; that is now redundant but harmless.
+
+### Tests
+
+- `e2e/tests/anonymous/13-search-autocomplete.spec.ts` asserts the dropdown and
+  the results page agree on a SKU taken from the catalogue itself, so it holds
+  on any tenant. It fails on the previous build and passes on this one.
+
 ## [1.11.13] - 2026-08-11
 
 ### Fixed

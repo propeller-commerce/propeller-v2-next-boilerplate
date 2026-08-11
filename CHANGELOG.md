@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.14] - 2026-08-11
+
+### Fixed
+
+- **The search-bar dropdown found nothing while pressing Enter found the
+  product** (PWP-928). `PropellerHostBridge` handed `data/config` straight to
+  the package as `configuration`, and `config.baseCategoryId` is the env
+  override — `undefined` on every shop that lets the channel decide the catalog
+  root, which has been the intended default since PWP-913. Four package
+  consumers read `configuration.baseCategoryId` and each degrades to category
+  `0`, then returns an empty result set with no error and no spinner:
+  `useProductSearch` (both the autosuggest and the term-search grid),
+  `useQuickOrder` (typeahead and XLSX upload) and `Breadcrumbs`. The bridge now
+  splices in the id the root layout already resolves server-side, so the client
+  half matches the server half. `app/quick-order/page.tsx` passes the same value
+  explicitly; that is now redundant but harmless.
+
+### Tests
+
+- `e2e/tests/anonymous/13-search-autocomplete.spec.ts` asserts the dropdown and
+  the results page agree on a SKU taken from the catalogue itself, so it holds
+  on any tenant. It fails on the previous build and passes on this one.
+
+## [1.11.13] - 2026-08-11
+
+### Fixed
+
+- **Login sometimes stopped on "Already logged in" instead of the dashboard.**
+  Two independent causes. `afterLogin` awaited the whole post-login sequence
+  (session cookie, active-cart fetch, anonymous-cart merge) before redirecting,
+  but dispatched `userLoggedIn` a third of the way in — so `AuthContext` flipped
+  `isAuthenticated` while the cart work was still running, and the page swapped
+  to the already-signed-in branch before `router.push` ran. Whichever finished
+  first won, which is why it was intermittent; an anonymous cart to merge made
+  it likelier. Separately, a user whose `primaryLanguage` differed from the
+  active one hit `setLanguage`, which navigates — reloading `/login` and
+  discarding the redirect every time.
+
+  The login page now redirects when a visit that started signed *out* becomes
+  authenticated. The "Already logged in" screen is unchanged for someone who
+  opens `/login` while signed in.
+
+- **A language switch during login could abort the cart merge.** `setLanguage`
+  calls `window.location.assign`, and all three login paths called it *before*
+  `fetchActiveCart` / `mergeAnonymousCart` / `deleteCart` — so the anonymous
+  cart could be left unmerged or undeleted when the navigation won the race. The
+  switch now runs last, after the cart is saved.
+
+### Changed
+
+- `setLanguage(language, targetPath?)` takes an optional unprefixed path, so
+  login can switch language and land on the dashboard in one navigation instead
+  of reloading the login page.
+
 ## [1.11.12] - 2026-08-11
 
 ### Fixed

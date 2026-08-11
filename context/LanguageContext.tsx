@@ -14,7 +14,7 @@ function writeLanguageCookie(value: string): void {
 
 interface LanguageContextType {
   language: string;
-  setLanguage: (language: string) => void;
+  setLanguage: (language: string, targetPath?: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -76,17 +76,19 @@ export const LanguageProvider: React.FC<{ children: ReactNode; initialLanguage?:
     }
   }, []);
 
-  const setLanguage = useCallback((value: string) => {
+  // `targetPath` (unprefixed) navigates somewhere other than the current page.
+  const setLanguage = useCallback((value: string, targetPath?: string) => {
     const prev = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANGUAGE;
     localStorage.setItem(STORAGE_KEY, value);
     writeLanguageCookie(value);
 
     // Navigate, not replaceState — SSR content is fetched per request language.
     if (prev !== value && typeof window !== 'undefined') {
-      const basePath = stripLanguagePrefix(window.location.pathname);
+      const basePath = targetPath ?? stripLanguagePrefix(window.location.pathname);
       const newPrefix = getLanguagePrefix(value);
       const newPath = basePath === '/' && newPrefix ? newPrefix : newPrefix + basePath;
-      window.location.assign((newPath || '/') + window.location.search);
+      const search = targetPath ? '' : window.location.search;
+      window.location.assign((newPath || '/') + search);
       return;
     }
 

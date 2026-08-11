@@ -26,6 +26,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import {
   PropellerDepsProvider,
   PropellerProvider,
@@ -33,22 +34,40 @@ import {
   type PropellerScope,
 } from '@propeller-commerce/propeller-v2-react-ui';
 
-// Tier 1 deps are module-constant — graphqlClient/services/config never
-// change at runtime, so hoist outside the component to avoid a fresh object
-// per render (which would re-broadcast the deps context to every consumer).
-const deps: PropellerDeps = {
-  graphqlClient,
-  services,
-  currency: config.currency,
-  configuration: config,
-};
-
 export default function PropellerHostBridge({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
+  const baseCategoryId = useBaseCategoryId();
+
+  // `config.baseCategoryId` is the env override and is `undefined` on every
+  // shop that lets the channel decide (the intended default since PWP-913).
+  // Handing that `config` straight to the package left
+  // `configuration.baseCategoryId` undefined for FOUR consumers, each of which
+  // degrades to category 0 and then silently returns nothing:
+  // `useProductSearch` (the search-bar dropdown AND the term-search grid),
+  // `useQuickOrder` (typeahead + XLSX upload) and `Breadcrumbs`. The visible
+  // symptom was an autosuggest that found nothing while pressing Enter found
+  // the product — same term, one path with a real category id and one with 0.
+  // The resolved id is seeded server-side by the root layout, so splice it in
+  // here; this is the client-side half of PWP-913's "no module guesses a
+  // catalog root".
+  //
+  // Tier 1 deps are otherwise constant, so the memo keeps the object stable —
+  // a fresh one per render would re-broadcast the deps context to every
+  // consumer. `baseCategoryId` comes from a server-seeded provider and does
+  // not change after mount.
+  const deps = useMemo<PropellerDeps>(
+    () => ({
+      graphqlClient,
+      services,
+      currency: config.currency,
+      configuration: { ...config, baseCategoryId },
+    }),
+    [baseCategoryId]
+  );
 
   // The selected company can be a STALE `selected_company` left in localStorage
   // by a previously logged-in identity — CompanyContext hydrates it

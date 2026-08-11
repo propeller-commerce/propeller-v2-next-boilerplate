@@ -9,7 +9,8 @@
  * (`/api/auth/session`), and reconcile the cart (fetch active → merge anonymous
  * → drop the anonymous cart). It returns the resolved `effectiveLanguage` and
  * leaves the final redirect to the caller (login → /account, magic-login → /),
- * so redirect policy stays at the call site.
+ * so redirect policy stays at the call site. `navigated` is true when the
+ * language switch already triggered a page load — the caller must not redirect.
  */
 
 import { useAuth } from '@/context/AuthContext';
@@ -32,7 +33,9 @@ export type AfterLogin = (
   refreshToken?: string,
   expiresAt?: string,
   anonymousCart?: Cart | null,
-) => Promise<{ effectiveLanguage: string }>;
+  /** Unprefixed path to land on when the language switch navigates. */
+  targetPath?: string,
+) => Promise<{ effectiveLanguage: string; navigated: boolean }>;
 
 export function useAfterLogin(): AfterLogin {
   const { updateUser } = useAuth();
@@ -40,7 +43,7 @@ export function useAfterLogin(): AfterLogin {
   const { language, setLanguage } = useLanguage();
   const { saveCart, clearCart } = useCart();
 
-  return async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
+  return async (user, accessToken, refreshToken, expiresAt, anonymousCart, targetPath) => {
     // Persist ONLY the thin hint — never the PII-bearing Contact. Full profile
     // is re-fetched via getViewer() on mount. See lib/userHint.ts.
     const hint = pickUserHint(user);
@@ -66,11 +69,7 @@ export function useAfterLogin(): AfterLogin {
       window.dispatchEvent(new CustomEvent('userLoggedIn'));
     }
 
-    // Switch to user's preferred language if available.
     const userLang = (user as Contact | Customer).primaryLanguage;
-    if (userLang && userLang !== language) {
-      setLanguage(userLang);
-    }
 
     let targetCart = await fetchActiveCart({
       services,
@@ -114,6 +113,12 @@ export function useAfterLogin(): AfterLogin {
     if (targetCart) saveCart(targetCart);
     else clearCart();
 
-    return { effectiveLanguage: userLang || language };
+    // Last: setLanguage navigates, which would abort the cart work above.
+    if (userLang && userLang !== language) {
+      setLanguage(userLang, targetPath);
+      return { effectiveLanguage: userLang, navigated: true };
+    }
+
+    return { effectiveLanguage: language, navigated: false };
   };
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -25,13 +26,26 @@ export default function LoginPage() {
   // reused by the magic-login page. See lib/useAfterLogin.ts.
   const runAfterLogin = useAfterLogin();
 
+  // Only a visit that started signed in shows "already logged in".
+  const startedAuthenticated = useRef<boolean | null>(null);
+  if (startedAuthenticated.current === null && !state.isLoading) {
+    startedAuthenticated.current = state.isAuthenticated;
+  }
+  const showAlreadyLoggedIn = state.isAuthenticated && startedAuthenticated.current === true;
+
+  useEffect(() => {
+    if (state.isLoading) return;
+    if (state.isAuthenticated && startedAuthenticated.current === false) {
+      router.replace(localizeHref('/account', language));
+    }
+  }, [state.isAuthenticated, state.isLoading, language, router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
       <Header />
       <main className="flex-1 container-width flex items-center justify-center py-12">
         <Card className="w-full max-w-md mx-auto shadow-lg">
-          {state.isAuthenticated ? (
+          {showAlreadyLoggedIn ? (
             <>
               <CardHeader className="space-y-1 text-center">
                 <CardTitle className="text-2xl font-bold">{t.alreadyLoggedIn}</CardTitle>
@@ -68,14 +82,17 @@ export default function LoginPage() {
                   onForgotPasswordClick={() => router.push(localizeHref('/forgot-password', language))}
                   onRegisterClick={() => router.push(localizeHref('/register', language))}
                   afterLogin={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
-                    const { effectiveLanguage } = await runAfterLogin(
+                    const { effectiveLanguage, navigated } = await runAfterLogin(
                       user,
                       accessToken,
                       refreshToken,
                       expiresAt,
                       anonymousCart,
+                      '/account',
                     );
-                    router.push(localizeHref('/account', effectiveLanguage));
+                    if (!navigated) {
+                      router.replace(localizeHref('/account', effectiveLanguage));
+                    }
                   }}
                 />
               </CardContent>

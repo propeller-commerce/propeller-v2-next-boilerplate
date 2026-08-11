@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.12] - 2026-08-11
+
+### Fixed
+
+- **Quick order could add products from outside the shop's catalogue.** Both the
+  row typeahead and the XLSX upload resolved codes through the flat `products`
+  resolver, which ignores catalog and orderlist scoping server-side — so quick
+  order surfaced products the category grid and the search preview correctly
+  hid. Fixed in react-ui 0.15.8, which routes the search through
+  `category.getCategory` over a base category with `userId` / `companyId` /
+  `applyOrderlists`, the same path `ProductGrid` and `SearchBar` use. The page
+  now passes `baseCategoryId` (via `useBaseCategoryId()`) so the search is
+  scoped; codes outside the catalogue are reported as missing instead of being
+  added.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` → `^0.15.8`.
+
 ## [1.11.11] - 2026-08-11
 
 ### Fixed

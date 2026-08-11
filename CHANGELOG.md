@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.11] - 2026-08-11
+
+### Fixed
+
+- **A free bonus item showed its list price on the thank-you page.** It read
+  € 0,00 in the cart and at checkout, then reappeared at e.g. € 2,77 on the
+  order confirmation and in order details. The API models a bonus as two order
+  lines — the product line at its list price, plus a sibling `incentive` line
+  carrying the negative delta and pointing back via `parentOrderItemId` — and
+  `OrderBonusItems` rendered only the product line. Fixed in react-ui 0.15.7
+  (via `getNettedBonusItems()` in core-ui 0.6.2), which nets each bonus against
+  its incentive siblings; partial discounts keep their remainder. Order totals
+  were already correct — this was display-only. Consumed here by pinning
+  react-ui `^0.15.7`.
+
 ## [1.11.10] - 2026-08-10
 
 ### Fixed

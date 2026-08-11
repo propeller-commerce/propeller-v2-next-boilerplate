@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.16] - 2026-08-11
+
+### Fixed
+
+- **Checkout step 3 opened with nothing selected on a fresh cart (PWP-934).**
+  The payment-method and carrier grids only restored a value the cart already
+  stored, so a first-time cart rendered both blank and Continue rejected the
+  step until the user clicked. react-ui 0.15.11 preselects the stored option
+  when there is one and otherwise the first one offered, so the user can go
+  straight through. The host is unchanged: the preselection arrives through the
+  same `onPaymethodSelect` / `onCarrierSelect` callbacks, so it is persisted and
+  priced exactly like a manual pick.
+
 ## [1.11.15] - 2026-08-11
 
 ### Fixed

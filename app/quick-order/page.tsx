@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import { localizeHref, config } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import { parseQuickOrderXlsx } from '@/lib/parseQuickOrderXlsx';
@@ -25,6 +26,7 @@ export default function QuickOrderPage() {
   const { selectedCompany } = useCompany();
   const { saveCart } = useCart();
   const { language } = useLanguage();
+  const baseCategoryId = useBaseCategoryId();
   const t = useTranslations('QuickOrder');
 
   // Auth guard: wait for auth to finish loading, then redirect if signed out.
@@ -65,6 +67,7 @@ export default function QuickOrderPage() {
               configuration={{
                 imageSearchFiltersGrid: config.imageSearchFiltersGrid,
                 imageVariantFiltersSmall: config.imageVariantFiltersSmall,
+                baseCategoryId,
               }}
               parseSpreadsheet={parseQuickOrderXlsx}
               templateUrl="/files/quickorder-template.xlsx"

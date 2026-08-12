@@ -153,6 +153,7 @@ export default function QuoteDetailPage() {
                                                     showDiscount={true}
                                                     childItems={childMap.get(item.id) || []}
                                                     labels={orderItemCardLabels}
+                                                    language={language}
                                                 />
                                             ))}
                                         </table>

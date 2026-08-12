@@ -571,6 +571,7 @@ function ThankYouPageInner() {
                                               orderItem={item}
                                               childItems={childMap.get(item.id) || []}
                                               labels={orderItemCardLabels}
+                                              language={language}
                                           />
                                       ))}
                                   </table>

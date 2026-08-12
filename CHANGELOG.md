@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.17] - 2026-08-12
+
+### Fixed
+
+- **Localized names and slugs ignored the storefront language (PWP-936 /
+  PWP-940).** react-ui 0.16.0 resolves every localized name and slug by the
+  active language instead of reading index 0, which is the catalog's default
+  language. The visible half was wrong-language text in cluster options,
+  favorites, cart/order item rows and bundles; the damaging half was
+  default-language slugs baked into product, cluster and search-autosuggest
+  links on every non-default locale.
+- **"Request authorization" in the cart sidebar did nothing (PWP-937 /
+  PWP-938).** The package's `useCart` captured its cart id at mount, so the
+  header sidebar — which renders before the cart resolves — held an empty id
+  for the life of the page and the request never left the browser.
+
+### Changed
+
+- The order/quote/thank-you pages pass `language` to `OrderItemCard`. The
+  component is exported from the RSC-safe entry and reads no context by design,
+  so the host has to supply it.
+- The favorites list's add-product button now reads "Add product to favorite
+  list" / "Voeg product toe aan favorietenlijst" (PWP-939) — "favorite list" is
+  the agreed term, not "wishlist".
+
 ## [1.11.16] - 2026-08-11
 
 ### Fixed

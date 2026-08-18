@@ -2,9 +2,6 @@
   "name": "propeller-next",
   "version": "1.11.17",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
     "dev": "next dev",
@@ -13,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "clean": "powershell -Command \"Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue\"",
+    "clean": "node -e \"const{rmSync}=require('fs');for(const d of ['.next','out'])rmSync(d,{recursive:true,force:true})\"",
     "sdk:sync": "npm update @propeller-commerce/propeller-sdk-v2 && npm install --install-links",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

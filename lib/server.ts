@@ -603,10 +603,26 @@ const getChannelDefaults = unstable_cache(
         anonymousUserId: channel?.anonymousUserId ?? undefined,
         catalogRootId: channel?.catalogRootId ?? undefined,
       };
-    } catch {
-      // Channel unreachable / misconfigured — anonymous falls back to the
-      // backend apikey default pricing and the configured base category.
-      return {};
+    } catch (cause) {
+      // Rethrow with context — never swallow. A bare `catch { return {} }` here
+      // collapsed three very different failures into one indistinguishable
+      // value: DNS/transport failure, a 401 from a wrong api key, and "this
+      // channel genuinely has no catalogRootId". Downstream,
+      // `resolveBaseCategoryId` could only report the last one, so a mistyped
+      // endpoint or key surfaced as "channel N exposes no catalogRootId" and
+      // sent integrators hunting through channel config (PWP-942 #9).
+      //
+      // Throwing also keeps the failure OUT of the cache: this function body
+      // runs inside `unstable_cache`, so the `{}` was cached for the full TTL
+      // and — in dev — persisted to `.next/cache`. Fixing the credentials and
+      // restarting left the shop broken until `rm -rf .next`. Next does not
+      // cache a rejected promise, so the next request retries.
+      throw new Error(
+        `Channel ${channelId} lookup failed against ` +
+          `${GRAPHQL_ENDPOINT || '(BOILERPLATE_GRAPHQL_ENDPOINT unset)'} — ` +
+          'check the endpoint and BOILERPLATE_API_KEY.',
+        { cause }
+      );
     }
   },
   ['channel-defaults'],
@@ -809,6 +825,12 @@ function resolveUserId(
  */
 async function listingUserId(infra: ServerInfra): Promise<number | undefined> {
   if (infra.user) return resolveUserId(infra.user);
+  // Deliberately NOT guarded: since PWP-942 #9 a failed channel lookup throws
+  // rather than returning `{}`, so a broken endpoint/key 500s the page instead
+  // of quietly listing UNSCOPED products. That is the safer failure — the
+  // anonymous user is what applies the channel's assortment rules (negative
+  // order lists included), so rendering without it shows items the visitor is
+  // not supposed to see.
   const { anonymousUserId } = await getChannelDefaults(config.channelId);
   return anonymousUserId;
 }

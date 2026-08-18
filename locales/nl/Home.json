@@ -1,8 +1,8 @@
 {
-  "heroBadge": "Nieuw binnen 2024",
-  "heroTitleLine1": "High-performance",
-  "heroTitleLine2": "Werkstations",
-  "heroDescription": "Ervaar de kracht van next-gen computing. Gebouwd voor professionals die snelheid, betrouwbaarheid en stilte eisen.",
+  "heroBadge": "Nieuw binnen",
+  "heroTitleLine1": "Alles wat u nodig heeft,",
+  "heroTitleLine2": "op één plek",
+  "heroDescription": "Bekijk het volledige assortiment en bestel online, met snelle levering en heldere prijzen.",
   "shopNow": "Nu winkelen",
   "viewDetails": "Details bekijken",
   "freeShippingTitle": "Gratis verzending",
@@ -12,6 +12,5 @@
   "secureCheckoutTitle": "Veilig afrekenen",
   "secureCheckoutText": "Beveiligd met SSL-versleuteling",
   "shopByCategory": "Winkelen per categorie",
-  "categorySubtitle": "Ontdek ons brede assortiment premium componenten en randapparatuur.",
-  "heroImageAlt": "Industriële achtergrond"
+  "categorySubtitle": "Bekijk het volledige assortiment."
 }

@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { graphqlClient } from '@/lib/api';
 import { useMenu, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui';
 import { Button } from '@/components/ui/Button';
@@ -21,7 +20,10 @@ interface CategoryDisplay {
   slug: string;
 }
 
-const categoryIcons = ['\uD83D\uDCBB', '\u2328\uFE0F', '\uD83C\uDF10', '\uD83D\uDDA5\uFE0F', '\uD83C\uDFAE', '\uD83D\uDD0C'];
+// One vertical-neutral placeholder for every category. This used to be a
+// per-index list of laptop/keyboard/console emoji, right only for an
+// electronics shop and hunted down by hand by everyone else (PWP-942 #19).
+const CATEGORY_ICON = '\uD83D\uDCE6';
 
 export interface HomeFallbackProps {
   /**
@@ -56,7 +58,7 @@ export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
   const categories: CategoryDisplay[] = menuCategories.slice(0, 6).map((cat, index) => ({
     id: cat.categoryId,
     name: cat.name,
-    icon: categoryIcons[index] || '\uD83D\uDCE6',
+    icon: CATEGORY_ICON,
     categoryId: cat.categoryId,
     slug: cat.slug,
   }));
@@ -73,14 +75,11 @@ export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
     <>
       {/* Hero Section */}
       <section className="relative overflow-hidden min-h-[600px] flex items-center">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/hero-banner.png"
-            alt={t.heroImageAlt}
-            fill
-            className="object-cover"
-            priority
-          />
+        {/* Placeholder backdrop drawn from the theme tokens. This was a 750KB
+            photo of server hardware, which every non-electronics shop had to
+            replace before it could demo (PWP-942 #19). Drop your own image in
+            here when you have one. */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/15 via-background to-secondary/10">
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
         </div>
 

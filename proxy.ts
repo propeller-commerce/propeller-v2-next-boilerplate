@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isHomeSlug } from '@/lib/cms/core';
+import { LOCALES } from '@/locales/_locales';
 
 const DEFAULT_LANGUAGE = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
 
-/** Locale codes that get a URL prefix (everything except the default). */
-const LOCALE_PREFIXES = ['en', 'de', 'fr']; // extend as needed
+/**
+ * Locale codes that get a URL prefix (everything except the default).
+ *
+ * Derived from the locale folders the shop actually ships, NOT a hardcoded
+ * list. The previous `['en', 'de', 'fr']` silently assumed a Dutch-default
+ * shop: any storefront whose prefixed locale was outside that set never
+ * matched the rewrite below, so every prefixed URL 404'd while the language
+ * switcher still "worked" client-side — the site looked bilingual right up
+ * until the visitor's next click (PWP-942 #14). `data/config.ts`'s
+ * `localizeHref()` prefixes every internal link, so that is the whole site.
+ */
+// `string[]`, not the generated literal union: these are compared against
+// whatever two-letter segment the URL happens to carry.
+const LOCALE_PREFIXES: string[] = LOCALES.filter((c) => c.toUpperCase() !== DEFAULT_LANGUAGE);
 
 // Prepr-specific behavior (personalization bridge, tracking-pixel CSP allowlist,
 // preview iframe framing) is gated on Prepr being the active CMS. On any other

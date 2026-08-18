@@ -823,6 +823,24 @@ function resolveUserId(
  * anonymous — the channel's anonymous user (fetched once, cached). Only hits the
  * channel query for anonymous renders; logged-in users never need it.
  */
+/**
+ * The channel's anonymous user, for seeding into the package's `configuration`.
+ *
+ * Only the server can reach the channel, so the client cannot resolve this
+ * itself — same shape as `resolveBaseCategoryId()`. The package's listing hooks
+ * scope logged-out queries to it, which is what makes the client refetch ask
+ * the SAME question as the SSR seed. Without it the client ran unscoped and the
+ * backend skipped the channel's assortment rules — negative order lists among
+ * them — so a visitor saw products they should not (PWP-942 #22).
+ *
+ * Returns `undefined` when the channel exposes none; the package then omits the
+ * key, which is the pre-existing behaviour.
+ */
+export async function resolveAnonymousUserId(): Promise<number | undefined> {
+  const { anonymousUserId } = await getChannelDefaults(config.channelId);
+  return anonymousUserId;
+}
+
 async function listingUserId(infra: ServerInfra): Promise<number | undefined> {
   if (infra.user) return resolveUserId(infra.user);
   // Deliberately NOT guarded: since PWP-942 #9 a failed channel lookup throws

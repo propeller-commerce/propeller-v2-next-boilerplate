@@ -34,7 +34,19 @@ import {
   type PropellerScope,
 } from '@propeller-commerce/propeller-v2-react-ui';
 
-export default function PropellerHostBridge({ children }: { children: ReactNode }) {
+export default function PropellerHostBridge({
+  children,
+  anonymousUserId,
+}: {
+  children: ReactNode;
+  /**
+   * The channel's anonymous user, resolved server-side by the root layout.
+   * Scopes the package's logged-out listing queries the same way the SSR seed
+   * does — without it the client refetch ran unscoped and the backend skipped
+   * the channel's assortment rules, negative order lists included (PWP-942 #22).
+   */
+  anonymousUserId?: number;
+}) {
   const router = useRouter();
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
@@ -64,9 +76,9 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
       graphqlClient,
       services,
       currency: config.currency,
-      configuration: { ...config, baseCategoryId },
+      configuration: { ...config, baseCategoryId, anonymousUserId },
     }),
-    [baseCategoryId]
+    [baseCategoryId, anonymousUserId]
   );
 
   // The selected company can be a STALE `selected_company` left in localStorage

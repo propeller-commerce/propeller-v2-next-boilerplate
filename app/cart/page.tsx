@@ -96,7 +96,7 @@ export default function CartPage() {
                         if (parked) saveCart(parked); else clearCart();
                         router.push(`/authorization-request-sent/${updatedCart.cartId}`);
                       }}
-                      onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                      onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
                       labels={cartSummaryLabels}
                     />
                     <ActionCode

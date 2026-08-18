@@ -67,7 +67,6 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   // Mobile (< md): search collapses to an icon that expands the bar.
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   // Drives the fade/slide-in: flipped true on the frame after the panel mounts.
-  const [mobileSearchIn, setMobileSearchIn] = useState(false);
   const mainMenuRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
@@ -92,17 +91,14 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const accountLabels = useTranslations('Account');
   const headerLabels = useTranslations('Header');
 
-  const [searchClearSignal, setSearchClearSignal] = useState(0);
-  const lastPathnameRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (pathname === null) return;
-    if (lastPathnameRef.current === pathname) return;
-    const previous = lastPathnameRef.current;
-    lastPathnameRef.current = pathname;
-    if (previous === null) return; // first render — no navigation happened
-    const onSearchRoute = stripLanguagePrefix(pathname).startsWith('/search');
-    if (!onSearchRoute) setSearchClearSignal((s) => s + 1);
-  }, [pathname]);
+  // Reset the search box on navigation, by key rather than by signal.
+  // Anywhere that isn't a search route the key is the route itself, so each
+  // navigation remounts the box empty; on /search it stays constant, so the
+  // term the visitor just submitted survives. This replaces a counter bumped
+  // from an effect — state and a ref to express what the URL already
+  // says (PWP-942 #20).
+  const searchBoxKey =
+    pathname && stripLanguagePrefix(pathname).startsWith('/search') ? 'search' : (pathname ?? '');
 
   // Fetch the user's active cart from the server for a given user/company,
   // saving it to the cart context. Returns the cart for further work (merge, etc).
@@ -186,12 +182,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   // outside click / Escape. Focus targets the SearchBar's internal input by
   // its package class so we don't need an autoFocus prop on the component.
   useEffect(() => {
-    if (!showMobileSearch) {
-      setMobileSearchIn(false);
-      return;
-    }
-    // Start hidden, then flip to visible next frame so the transition runs.
-    const raf = requestAnimationFrame(() => setMobileSearchIn(true));
+    if (!showMobileSearch) return;
     const input = mobileSearchRef.current?.querySelector<HTMLInputElement>(
       'input.propeller-search-bar__input',
     );
@@ -207,7 +198,6 @@ export default function Header({ menuTree }: HeaderProps = {}) {
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKey);
     return () => {
-      cancelAnimationFrame(raf);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKey);
     };
@@ -381,7 +371,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     labels={searchBarLabels}
                     priceLabels={productPriceLabels}
                     placeholder={searchBarLabels.placeholder}
-                    clearSignal={searchClearSignal}
+                    key={searchBoxKey}
                     onSubmit={(term) => router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language))}
                     onResultClick={(result) => {
                       if (result.url) router.push(result.url);
@@ -515,11 +505,11 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     cartItemLabels={cartItemLabels}
                     cartBonusItemsLabels={cartBonusItemsLabels}
                     cart={cart as Cart}
-                    onCheckoutButtonClick={(cart) => router.push(localizeHref('/checkout', language))}
-                    onCartPageButtonClick={(cart) => router.push(localizeHref('/cart', language))}
+                    onCheckoutButtonClick={() => router.push(localizeHref('/checkout', language))}
+                    onCartPageButtonClick={() => router.push(localizeHref('/cart', language))}
                     showTotals={true}
                     iconClassName="text-white hover:text-white hover:bg-white/10"
-                    onRequestQuoteClick={(cart) => router.push(localizeHref('/checkout?mode=quote', language))}
+                    onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}
                     afterRequestAuthorization={(updatedCart) => {
                       // If a manager parked their own cart to act on this
                       // request, hand it back; otherwise clear.
@@ -548,22 +538,21 @@ export default function Header({ menuTree }: HeaderProps = {}) {
 
             {/* Mobile expanding search — revealed by the icon toggle above.
                 Below md only; from md up the always-visible bar handles search.
-                Fades + slides in via an opacity/translate transition that flips
-                on the frame after mount (mobileSearchIn). No height clipping, so
-                the autosuggest dropdown (absolute top-full) is never cut off. */}
+                Fades + slides in with a CSS enter animation. This used to be a
+                state flag flipped from an effect on the frame after mount,
+                which is a render just to start a transition the browser can
+                run on its own (PWP-942 #20). No height clipping, so the
+                autosuggest dropdown (absolute top-full) is never cut off. */}
             {showSearch && showMobileSearch && (
               <div
                 ref={mobileSearchRef}
-                className={cn(
-                  'md:hidden pb-4 transition-all duration-300 ease-out motion-reduce:transition-none',
-                  mobileSearchIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
-                )}
+                className="md:hidden pb-4 animate-in fade-in slide-in-from-top-2 duration-300 ease-out motion-reduce:animate-none"
               >
                 <SearchBar
                   labels={searchBarLabels}
                   priceLabels={productPriceLabels}
                   placeholder={searchBarLabels.placeholder}
-                  clearSignal={searchClearSignal}
+                  key={searchBoxKey}
                   onSubmit={(term) => {
                     setShowMobileSearch(false);
                     router.push(localizeHref(term ? `/search/${encodeURIComponent(term)}` : '/search/', language));

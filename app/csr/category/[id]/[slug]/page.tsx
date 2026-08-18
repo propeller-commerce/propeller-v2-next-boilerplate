@@ -91,7 +91,6 @@ export default function CategoryPage() {
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filtersLoading, setFiltersLoading] = useState(false);
-  const { state } = useAuth();
   const { cart, saveCart } = useCart();
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
   const { language } = useLanguage();
@@ -124,6 +123,7 @@ export default function CategoryPage() {
       }
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirroring the URL search params into local state when the route changes
     setCurrentPage(parseInt(searchParams.get('page') || '1'));
     // Use functional update so React can bail out when content is unchanged,
     // avoiding a spurious re-render (and downstream ProductGrid re-fetch) when
@@ -249,7 +249,7 @@ export default function CategoryPage() {
   };
 
   // Stable defaultSort reference for GridToolbar — only changes when URL sort params change.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const defaultSort = useMemo(
     () => [{ field: sortField as string, order: sortOrder as string }],
     [sortField, sortOrder]
@@ -263,7 +263,10 @@ export default function CategoryPage() {
   const products = (category?.products?.items || []) as (Product | Cluster)[];
   const totalPages = category?.products?.pages || 1;
   const hasActiveFilters = Object.keys(filters).length > 0 || minPrice !== undefined || maxPrice !== undefined;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
+  // Hoisted out of the dependency list: the linter needs plain identifiers
+  // there, and a call expression is re-evaluated on every render anyway.
+  const filtersKey = JSON.stringify(filters);
   const activeTextFilters = useMemo(() => Object.entries(filters)
     .filter(([, values]) => values.length > 0)
     .map(([name, values]) => {
@@ -274,7 +277,7 @@ export default function CategoryPage() {
         exclude: false,
         type: filterDef?.type ?? AttributeType.TEXT,
       };
-    }), [JSON.stringify(filters), gridFilters]);
+    }), [filtersKey, gridFilters]);
 
 
   // Render Logic

@@ -55,7 +55,7 @@ export default function HomeFallback({ menuTree }: HomeFallbackProps = {}) {
   const hasPrefetchedTree = Array.isArray(menuTree);
   const menuCategories: MenuCategory[] = hasPrefetchedTree ? menuTree! : fetchedCategories;
 
-  const categories: CategoryDisplay[] = menuCategories.slice(0, 6).map((cat, index) => ({
+  const categories: CategoryDisplay[] = menuCategories.slice(0, 6).map((cat) => ({
     id: cat.categoryId,
     name: cat.name,
     icon: CATEGORY_ICON,

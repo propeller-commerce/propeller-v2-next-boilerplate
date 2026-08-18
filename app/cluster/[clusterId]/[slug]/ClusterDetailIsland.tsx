@@ -43,7 +43,6 @@ import {
   Product,
   ProductPrice as ProductPriceSDK,
 } from '@propeller-commerce/propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { usePrice } from '@/context/PriceContext';
@@ -76,8 +75,6 @@ export default function ClusterDetailIsland({
 
   const { cart, saveCart } = useCart();
   const { state, refreshUser } = useAuth();
-  const { selectedCompany } = useCompany();
-  const { includeTax } = usePrice();
   const { language } = useLanguage();
   const router = useRouter();
   // Prefetch a cluster/product route on card hover so cross-sell clicks paint

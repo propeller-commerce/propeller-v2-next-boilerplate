@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
-import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { PurchaseAuthorizationConfigurator } from '@propeller-commerce/propeller-v2-react-ui';
 import { Contact, Customer, Company } from '@propeller-commerce/propeller-sdk-v2';
@@ -12,7 +11,6 @@ import { useTranslations } from '@/lib/i18n/client';
 export default function AuthorizationSettingsPage() {
     const { state } = useAuth();
     const { selectedCompany } = useCompany();
-    const { language } = useLanguage();
     const purchaseAuthorizationConfiguratorLabels = useTranslations('PurchaseAuthorizationConfigurator');
     const t = useTranslations('Account');
 

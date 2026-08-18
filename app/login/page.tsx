@@ -28,9 +28,11 @@ export default function LoginPage() {
 
   // Only a visit that started signed in shows "already logged in".
   const startedAuthenticated = useRef<boolean | null>(null);
+  // eslint-disable-next-line react-hooks/refs -- latching whether this visit STARTED authenticated — reading it during render is the point; it must not cause a render of its own
   if (startedAuthenticated.current === null && !state.isLoading) {
     startedAuthenticated.current = state.isAuthenticated;
   }
+  // eslint-disable-next-line react-hooks/refs -- same latch, read for display
   const showAlreadyLoggedIn = state.isAuthenticated && startedAuthenticated.current === true;
 
   useEffect(() => {

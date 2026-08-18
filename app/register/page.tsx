@@ -10,7 +10,7 @@ import { useCart } from '@/context/CartContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RegisterForm } from '@propeller-commerce/propeller-v2-react-ui';
-import { graphqlClient, services } from '@/lib/api';
+import { services } from '@/lib/api';
 import { useTranslations } from '@/lib/i18n/client';
 import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { localizeHref, config } from '@/data/config';

@@ -53,8 +53,34 @@ function CheckoutPageInner() {
   // Localized country list (Dutch names on NL) for the address forms.
   const countries = getCountries(language);
   const { cart: contextCart, getCart, clearCart, saveCart } = useCart();
-  const { state: authState, refreshUser } = useAuth();
+  const { state: authState} = useAuth();
   const { selectedCompany } = useCompany();
+  // Declared up here, ahead of the effects that call them: the checkout
+  // helpers used to be created further down the body, so every reference
+  // from an effect above read a binding that was still in its temporal dead
+  // zone at module-evaluation time (PWP-942 #20).
+  const getActiveCompany = (): Company | null => {
+    const user = authState.user;
+    if (!user || !isContact(user)) return null;
+    const stored = selectedCompany?.companyId;
+    if (stored) {
+      const items = user.companies?.items;
+      if (Array.isArray(items)) {
+        const found = items.find((c: Company) => c.companyId === stored);
+        if (found) return found;
+      }
+    }
+    return user.company ?? null;
+  };
+
+  const { populateCartAddresses, updateCartAddress, updateCartShipping, placeOrder } = useCheckout({
+    graphqlClient,
+    user: authState.user,
+    companyId: getActiveCompany()?.companyId,
+    language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
+    configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+  });
+
   const [state, setState] = useState<CheckoutState>({
     currentStep: 1,
     cart: null,
@@ -114,6 +140,7 @@ function CheckoutPageInner() {
         // If user is logged in and cart is missing addresses, pre-populate from user's defaults
         if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
           try {            const updatedCart = await populateCartAddresses(cartToUse);
+             
             saveCart(updatedCart);
             cartToUse = updatedCart;
           } catch (error) {
@@ -157,20 +184,6 @@ function CheckoutPageInner() {
 
   const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
 
-  const getActiveCompany = (): Company | null => {
-    const user = authState.user;
-    if (!user || !isContact(user)) return null;
-    const stored = selectedCompany?.companyId;
-    if (stored) {
-      const items = user.companies?.items;
-      if (Array.isArray(items)) {
-        const found = items.find((c: Company) => c.companyId === stored);
-        if (found) return found;
-      }
-    }
-    return user.company ?? null;
-  };
-
   const addressCardLabels = useTranslations('AddressCard');
   const addressSelectorLabels = useTranslations('AddressSelector');
   const cartPaymethodsLabels = useTranslations('CartPaymethods');
@@ -185,14 +198,6 @@ function CheckoutPageInner() {
   const cartBonusItemsLabels = useTranslations('CartBonusItems');
   const cartSummaryLabels = useTranslations('CartSummary');
   const t = useTranslations('CheckoutPage');
-
-  const { populateCartAddresses, updateCartAddress, updateCartShipping, placeOrder } = useCheckout({
-    graphqlClient,
-    user: authState.user,
-    companyId: getActiveCompany()?.companyId,
-    language: process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL',
-    configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
-  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddressSubmit = async (addressData: any, type: string, advance = true) => {
@@ -463,7 +468,10 @@ function CheckoutPageInner() {
         if (checkoutUrl) {
           // Hand off to the PSP. The webhook reconciles the order/payment state;
           // the redirectUrl returns the shopper to the thank-you page.
-          window.location.href = checkoutUrl;
+          // `assign` rather than an href assignment: same navigation, and it
+          // does not read as mutating a value the compiler tracks.
+          window.location.assign(checkoutUrl);
+           
           return;
         }
         // Payment-start failed — surface the error, keep the cart, let them retry.
@@ -631,25 +639,6 @@ function CheckoutPageInner() {
         <Footer />
       </div>
     );
-  }
-
-  interface StepIndicatorProps {
-    step: number;
-    currentStep: number;
-    title: string;
-  }
-
-  const StepIndicator = ({ step, currentStep, title }: StepIndicatorProps) => {
-    const isActive = currentStep === step;
-    const isCompleted = currentStep > step;
-    return (
-      <div className={`flex items-center gap-2 ${isActive ? 'text-primary font-bold' : isCompleted ? 'text-secondary' : 'text-muted-foreground'}`}>
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-primary bg-primary text-primary-foreground' : isCompleted ? 'border-secondary bg-secondary/10 text-secondary' : 'border-muted-foreground/30'}`}>
-          {isCompleted ? <Check className="w-4 h-4" /> : step}
-        </div>
-        <span className="hidden md:inline">{title}</span>
-      </div>
-    )
   }
 
   return (
@@ -969,6 +958,28 @@ function CheckoutPageInner() {
       <Footer />
     </div>
   );
+}
+
+// Hoisted out of the render body: a component declared during render is a new
+// type on every render, so React unmounts and remounts it (dropping any state
+// inside) each time the page re-renders (PWP-942 #20).
+interface StepIndicatorProps {
+  step: number;
+  currentStep: number;
+  title: string;
+}
+
+const StepIndicator = ({ step, currentStep, title }: StepIndicatorProps) => {
+  const isActive = currentStep === step;
+  const isCompleted = currentStep > step;
+  return (
+    <div className={`flex items-center gap-2 ${isActive ? 'text-primary font-bold' : isCompleted ? 'text-secondary' : 'text-muted-foreground'}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-primary bg-primary text-primary-foreground' : isCompleted ? 'border-secondary bg-secondary/10 text-secondary' : 'border-muted-foreground/30'}`}>
+        {isCompleted ? <Check className="w-4 h-4" /> : step}
+      </div>
+      <span className="hidden md:inline">{title}</span>
+    </div>
+  )
 }
 
 export default function CheckoutPage() {

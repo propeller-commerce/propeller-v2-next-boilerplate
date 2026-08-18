@@ -1,4 +1,18 @@
-import type { Contact, Company } from '@propeller-commerce/propeller-sdk-v2';
+import type { Contact, Customer, Company } from '@propeller-commerce/propeller-sdk-v2';
+
+/**
+ * One track attribute as it arrives on a company, in either spelling. Every
+ * field is optional: the payload is whatever the backend authored, and the
+ * three value shapes below (enum / text / scalar) are mutually exclusive.
+ */
+interface TrackAttribute {
+  attributeDescription?: { name?: string; _name?: string };
+  value?: {
+    enumValues?: unknown[];
+    textValues?: { values?: string[] }[];
+    value?: unknown;
+  } | null;
+}
 
 /** Convert a display name to a Prepr segment slug: "Premium customers" → "premium-customers". */
 export function toSegmentSlug(value: string): string {
@@ -10,13 +24,20 @@ export function toSegmentSlug(value: string): string {
  * active company's SYSTEM_USER_GROUPS attribute (e.g. "Premium customers" →
  * ["premium-customers"]). Returns [] for guests or companies without the group.
  */
-export function getUserSegments(user: any, selectedCompany: Company | null): string[] {
+export function getUserSegments(
+  user: Contact | Customer | null | undefined,
+  selectedCompany: Company | null
+): string[] {
   if (!user || !('contactId' in user)) return [];
 
   const company = selectedCompany || (user as Contact).company;
   if (!company) return [];
 
-  const attrs = company.attributes?.items || (company as any)._attributes?.items || [];
+  // `_attributes` is the pre-toPlain spelling some cached payloads still carry.
+  const attrs: TrackAttribute[] =
+    (company.attributes?.items as TrackAttribute[] | undefined) ||
+    (company as { _attributes?: { items?: TrackAttribute[] } })._attributes?.items ||
+    [];
 
   for (const attr of attrs) {
     const name = attr.attributeDescription?.name || attr.attributeDescription?._name;
@@ -30,7 +51,9 @@ export function getUserSegments(user: any, selectedCompany: Company | null): str
       }
       // TEXT type: value might be in textValues
       else if (val.textValues && Array.isArray(val.textValues)) {
-        raw = val.textValues.flatMap((tv: any) => tv.values || []).filter(Boolean);
+        raw = val.textValues
+          .flatMap((tv: { values?: string[] }) => tv.values || [])
+          .filter(Boolean);
       }
       // Fallback: direct value
       else if (val.value) {

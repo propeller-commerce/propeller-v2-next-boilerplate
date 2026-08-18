@@ -15,7 +15,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { graphqlClient } from '@/lib/api';
 import {
   AttributeFilter,
   AttributeType,
@@ -136,7 +135,6 @@ export default function SearchIsland({
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const baseCategoryId = useBaseCategoryId();
-  const { includeTax } = usePrice();
   const searchLabels = useTranslations('Search');
   const gridPaginationLabels = useTranslations('GridPagination');
   const gridFiltersLabels = useTranslations('GridFilters');
@@ -171,7 +169,7 @@ export default function SearchIsland({
     [filters, gridFilters]
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const defaultSort = useMemo(
     () => [{ field: sortField as string, order: sortOrder as string }],
     [sortField, sortOrder]

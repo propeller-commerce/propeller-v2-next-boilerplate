@@ -142,6 +142,7 @@ function ThankYouPageInner() {
   }, [orderId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the initial order load; every setState inside it lands after the fetch resolves
     fetchOrderDetails();
   }, [fetchOrderDetails]);
 
@@ -175,6 +176,7 @@ function ThankYouPageInner() {
     if (!paymentId) {
       const status = (order?.paymentData?.status || order?.status || '').toUpperCase();
       if (status === 'PAID' || status === 'NEW' || status === 'AUTHORIZED') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resolving a PSP return whose payment id was never stashed, from the order we just fetched
         setPaymentState('success');
       } else if (order) {
         setPaymentState('pending');
@@ -269,6 +271,7 @@ function ThankYouPageInner() {
     if (!isPspReturn || !order) return;
     const orderStatus = (order.paymentData?.status || order.status || '').toUpperCase();
     if (orderStatus === 'PAID' || orderStatus === 'AUTHORIZED') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- upgrading the payment state once the webhook-updated order arrives
       setPaymentState('success');
       try {
         window.sessionStorage.removeItem(stashKey);

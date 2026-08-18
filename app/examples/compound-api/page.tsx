@@ -16,8 +16,6 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Product } from '@propeller-commerce/propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
-import { config } from '@/data/config';
 import { ProductCard } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductGrid } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
@@ -86,7 +84,7 @@ function CompoundApiDemoInner() {
           Shows how the compound shape lets consumers redesign the card without forking it.
         </p>
         <p className="text-sm text-muted-foreground italic">
-          (Requires a parent ProductGrid to supply a product. In practice you'd render this
+          (Requires a parent ProductGrid to supply a product. In practice you&apos;d render this
           inside <code>&lt;ProductGrid.Items renderItem&gt;</code>.)
         </p>
       </section>

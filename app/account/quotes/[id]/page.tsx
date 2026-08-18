@@ -11,7 +11,6 @@ import { useOrders } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderSummary } from '@propeller-commerce/propeller-v2-react-ui';
 import { QuoteActions } from '@propeller-commerce/propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { OrderItemCard } from '@propeller-commerce/propeller-v2-react-ui';

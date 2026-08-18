@@ -415,13 +415,16 @@ export default function CategoryIsland({
     router.push(config.urls.getProductUrl(product, language));
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const defaultSort = useMemo(
     () => [{ field: sortField as string, order: sortOrder as string }],
     [sortField, sortOrder]
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
+  // Hoisted out of the dependency list: the linter needs plain identifiers
+  // there, and a call expression is re-evaluated on every render anyway.
+  const filtersKey = JSON.stringify(filters);
   const activeTextFilters = useMemo(
     () =>
       Object.entries(filters)
@@ -437,7 +440,7 @@ export default function CategoryIsland({
             type: filterDef?.type ?? AttributeType.TEXT,
           };
         }),
-    [JSON.stringify(filters), gridFilters]
+    [filtersKey, gridFilters]
   );
 
   return (

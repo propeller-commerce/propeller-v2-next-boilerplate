@@ -175,7 +175,7 @@ const ORDER_EDITOR_API_KEY = process.env.BOILERPLATE_ORDER_EDITOR_API_KEY || '';
 if (typeof window === 'undefined' && !GRAPHQL_ENDPOINT) {
   // Server-only warning — don't crash, since this module may be imported by
   // pages that haven't moved to server fetching yet.
-  // eslint-disable-next-line no-console
+   
   console.warn(
     '[lib/server] BOILERPLATE_GRAPHQL_ENDPOINT is empty. Server-side ' +
       'SDK calls will fail. Set it in .env.local for SSR data fetching.'

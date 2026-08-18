@@ -14,8 +14,32 @@ const APP_VERSION: string =
   process.env.CI_COMMIT_SHORT_SHA ||
   require('./package.json').version;
 
+// Five settings exist twice — once server-side, once as a NEXT_PUBLIC_ twin the
+// browser can read — and the example file used to just ask you to keep them in
+// sync by hand. Every one of those was a silent misconfiguration waiting to
+// happen (server and client disagreeing, with no error). Derive the twin from
+// the server variable instead, so it cannot drift. An explicitly-set
+// NEXT_PUBLIC_ value is still honoured when the server one is absent, so shops
+// configured the old way keep working.
+const TWINS: Record<string, string | undefined> = {
+  NEXT_PUBLIC_DEFAULT_LANGUAGE: process.env.BOILERPLATE_DEFAULT_LANGUAGE,
+  NEXT_PUBLIC_BOILERPLATE_MACHINE_SOURCE: process.env.BOILERPLATE_MACHINE_SOURCE,
+  NEXT_PUBLIC_BOILERPLATE_MACHINE_LANGUAGE: process.env.BOILERPLATE_MACHINE_LANGUAGE,
+  NEXT_PUBLIC_CMS_PROVIDER: process.env.CMS_PROVIDER,
+  NEXT_PUBLIC_PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER,
+  NEXT_PUBLIC_ON_ACCOUNT_PAYMENTS: process.env.ON_ACCOUNT_PAYMENTS,
+};
+
+// `env` entries are inlined verbatim, so an `undefined` would land in the
+// bundle as the literal string "undefined" — only carry the ones we resolved.
+const derivedEnv: Record<string, string> = { NEXT_PUBLIC_APP_VERSION: APP_VERSION };
+for (const [publicName, serverValue] of Object.entries(TWINS)) {
+  const value = serverValue ?? process.env[publicName];
+  if (value !== undefined) derivedEnv[publicName] = value;
+}
+
 const nextConfig: NextConfig = {
-  env: { NEXT_PUBLIC_APP_VERSION: APP_VERSION },
+  env: derivedEnv,
   // The propeller surface lives in a sibling repo and is consumed here via a
   // `file:` link (`D:/laragon/www/propeller-ui/propeller-v2-react-ui`). Tell
   // Next.js to transpile it (the prebuilt dist already ships ES modules, but

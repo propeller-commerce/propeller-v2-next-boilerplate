@@ -654,13 +654,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                       {link.label}
                     </Link>
                   ))
-                ) : (
-                  <>
-                    <Link href={localizeHref('/new-arrivals', language)} className="hover:text-foreground transition-colors">{headerLabels.newArrivals}</Link>
-                    <Link href={localizeHref('/best-sellers', language)} className="hover:text-foreground transition-colors">{headerLabels.bestSellers}</Link>
-                    <Link href={localizeHref('/sale', language)} className="hover:text-foreground transition-colors text-destructive">{headerLabels.sale}</Link>
-                  </>
-                )}
+                ) : null}
               </div>
             </nav>
           </div>
@@ -720,13 +714,7 @@ export default function Header({ menuTree }: HeaderProps = {}) {
                     {link.label}
                   </Link>
                 ))
-              ) : (
-                <>
-                  <Link href={localizeHref('/new-arrivals', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>{headerLabels.newArrivals}</Link>
-                  <Link href={localizeHref('/best-sellers', language)} className="block px-4 py-3 text-sm font-medium text-foreground" onClick={() => setShowMobileMenu(false)}>{headerLabels.bestSellers}</Link>
-                  <Link href={localizeHref('/sale', language)} className="block px-4 py-3 text-sm font-medium text-destructive" onClick={() => setShowMobileMenu(false)}>{headerLabels.sale}</Link>
-                </>
-              )}
+              ) : null}
             </div>
           </div>
         )}

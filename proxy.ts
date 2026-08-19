@@ -36,6 +36,15 @@ const IS_PREPR =
 // visitor being tracked is the visitor being personalized — if these diverged,
 // none of it would line up.
 const PREPR_UID_COOKIE = '__prepr_uid';
+
+// ── Behaviour-tracking visitor id (PWP-910) ─────────────────────────────────
+// A first-party, CMS-independent visitor id. Deliberately NOT the Prepr cookie:
+// reusing `__prepr_uid` would make behaviour tracking silently stop working on
+// any shop that picks a different CMS. Minted here rather than client-side so
+// it exists on the very first render and survives login/logout, which is what
+// makes anonymous-then-identified stitching possible at all.
+const VISITOR_COOKIE = 'pr_vid';
+const VISITOR_MAX_AGE = 365 * 24 * 60 * 60;
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
 /**
@@ -141,7 +150,17 @@ const CSP_DEV = [
   "form-action 'self'",
 ].join('; ');
 
-function applySecurityHeaders(response: NextResponse): NextResponse {
+function applySecurityHeaders(response: NextResponse, request?: NextRequest): NextResponse {
+  // Mint the tracking visitor id here because every non-API response returns
+  // through this function — adding it per return path would guarantee one gets
+  // missed the next time a branch is added.
+  if (request && !request.cookies.get(VISITOR_COOKIE)) {
+    response.cookies.set(VISITOR_COOKIE, crypto.randomUUID(), {
+      path: '/',
+      maxAge: VISITOR_MAX_AGE,
+      sameSite: 'lax',
+    });
+  }
   response.headers.set('Content-Security-Policy', isProd ? CSP_PROD : CSP_DEV);
   // X-Frame-Options is all-or-nothing and can't allow Prepr's preview iframe, so
   // under Prepr framing is controlled by CSP `frame-ancestors` alone (scoped to
@@ -188,9 +207,9 @@ export function proxy(request: NextRequest) {
       localeHeaders.set('x-cms-locale', locale.toUpperCase());
       const response = NextResponse.rewrite(url, { request: { headers: localeHeaders } });
       response.cookies.set('preferred_language', locale.toUpperCase(), { path: '/' });
-      return applySecurityHeaders(response);
+      return applySecurityHeaders(response, request);
     }
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(NextResponse.next(), request);
   }
 
   // ── Prepr path: personalization bridge + home-slug rewrite. ──
@@ -216,7 +235,7 @@ export function proxy(request: NextRequest) {
     url.pathname = '/';
     const response = NextResponse.rewrite(url, { request: { headers } });
     response.cookies.set('preferred_language', DEFAULT_LANGUAGE, { path: '/' });
-    return persistPreprUid(applySecurityHeaders(response), uid, isNew);
+    return persistPreprUid(applySecurityHeaders(response, request), uid, isNew);
   }
 
   if (hasLocalePrefix && match) {
@@ -232,14 +251,14 @@ export function proxy(request: NextRequest) {
     const response = NextResponse.rewrite(url, { request: { headers } });
     // Set cookie so client-side LanguageContext can pick it up on first load
     response.cookies.set('preferred_language', locale.toUpperCase(), { path: '/' });
-    return persistPreprUid(applySecurityHeaders(response), uid, isNew);
+    return persistPreprUid(applySecurityHeaders(response, request), uid, isNew);
   }
 
   // No locale prefix → default locale for THIS request. The cookie is left
   // alone: it carries the user's choice across navigations, and overwriting it
   // here reset every unprefixed page back to the default.
   const response = NextResponse.next({ request: { headers } });
-  return persistPreprUid(applySecurityHeaders(response), uid, isNew);
+  return persistPreprUid(applySecurityHeaders(response, request), uid, isNew);
 }
 
 export const config = {

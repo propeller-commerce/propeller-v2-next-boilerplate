@@ -27,6 +27,8 @@ import { useCompany } from '@/context/CompanyContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBaseCategoryId } from '@/context/BaseCategoryContext';
+import TrackingBridge from '@/components/tracking/TrackingBridge';
+import PageViewTracker from '@/components/tracking/PageViewTracker';
 import {
   PropellerDepsProvider,
   PropellerProvider,
@@ -139,7 +141,13 @@ export default function PropellerHostBridge({
 
   return (
     <PropellerDepsProvider value={deps}>
-      <PropellerProvider value={scope}>{children}</PropellerProvider>
+      <PropellerProvider value={scope}>
+        {/* Behaviour tracking (PWP-910): syncs scope into the tracker singleton
+            and registers the ingest subscriber. Renders nothing. */}
+        <TrackingBridge />
+        <PageViewTracker />
+        {children}
+      </PropellerProvider>
     </PropellerDepsProvider>
   );
 }

@@ -17,6 +17,8 @@
  */
 
 import { useEffect, useState, useMemo } from 'react';
+import { trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracking';
+import TrackView from '@/components/tracking/TrackView';
 import { useRouter } from 'next/navigation';
 import {
   AttributeFilter,
@@ -411,9 +413,23 @@ export default function CategoryIsland({
     );
   };
 
+  // The surface this island represents — passed into the grid callbacks so an
+  // add-to-cart from the category grid is distinguishable from the same product
+  // added on its PDP. That distinction is what answers "does the grid convert?".
+  const categorySource = { type: 'category' as const, id: categoryId, page: currentPage };
+
   const productClick = (product: Product) => {
+    trackSelectItem(categorySource, product);
     router.push(config.urls.getProductUrl(product, language));
   };
+
+  // `view_item_list` once per rendered result set; the bus dedupes the repeat
+  // renders that a filter/sort change produces for the same page.
+  useEffect(() => {
+    if (itemsFound <= 0) return;
+    trackViewItemList(categorySource, itemsFound, pageItemCount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId, currentPage, itemsFound, pageItemCount]);
 
    
   const defaultSort = useMemo(
@@ -445,6 +461,7 @@ export default function CategoryIsland({
 
   return (
     <>
+      <TrackView pageType="category" entityType="category" entityId={categoryId} />
       <CategoryDescription category={category} language={language} labels={categoryDescriptionLabels} />
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -536,8 +553,9 @@ export default function CategoryIsland({
             onLoadingChange={setFiltersLoading}
             page={currentPage}
             onPageChange={setCurrentPage}
-            afterAddToCart={(c) => {
+            afterAddToCart={(c, item) => {
               saveCart(c);
+              trackAddToCart(categorySource, item);
             }}
             onProceedToCheckout={() =>
               router.push(localizeHref('/checkout', language))
@@ -548,6 +566,7 @@ export default function CategoryIsland({
             onProductsResponse={setProductsResponse}
             onCategoryChange={setCategory}
             onClusterClick={(cluster: Cluster) => {
+              trackSelectItem(categorySource, cluster);
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
             labels={productGridLabels}

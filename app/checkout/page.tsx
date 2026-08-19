@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { track } from '@/lib/tracking';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
@@ -92,6 +93,20 @@ function CheckoutPageInner() {
     sameAsInvoice: false,
     step3Submitted: false
   });
+  // `begin_checkout` once per cart. Deliberately keyed on the cart id rather
+  // than the step: step 3 can auto-advance when there is only one payment
+  // method, so keying on transitions would double-count.
+  const checkoutCartId = state?.cart?.cartId;
+  useEffect(() => {
+    if (!checkoutCartId) return;
+    track(
+      'begin_checkout',
+      { value: state?.cart?.total?.totalNet ?? null, item_count: state?.cart?.items?.length ?? 0, is_quote_mode: isQuoteMode },
+      `begin_checkout:${checkoutCartId}`
+    );
+    track('page_viewed', { page_type: 'checkout' }, `page_viewed:checkout:${checkoutCartId}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutCartId, isQuoteMode]);
   const sameAsInvoiceRef = useRef(false);
   const orderPlacedRef = useRef(false);
   // Idempotency guard for the PSP retry path: processCart converts the cart to
@@ -139,7 +154,8 @@ function CheckoutPageInner() {
 
         // If user is logged in and cart is missing addresses, pre-populate from user's defaults
         if (authState.isAuthenticated && (!hasInvoiceAddress || !hasDeliveryAddress)) {
-          try {            const updatedCart = await populateCartAddresses(cartToUse);
+          try {
+            const updatedCart = await populateCartAddresses(cartToUse);
              
             saveCart(updatedCart);
             cartToUse = updatedCart;
@@ -374,6 +390,7 @@ function CheckoutPageInner() {
       const updatedCart = await updateCartShipping(cart.cartId, { paymentData: { method: code } });
       saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart }));
+      track('add_payment_info', { payment_type: code }, `add_payment_info:${cart.cartId}:${code}`);
     } catch (error) {
       // Non-fatal: the totals stay stale, but Continue re-sends the method.
       console.error(error);
@@ -404,6 +421,11 @@ function CheckoutPageInner() {
       const updatedCart = await updateCartShipping(state.cart!.cartId, input);
       saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
+      track(
+        'add_shipping_info',
+        { shipping_tier: state.selectedCarrier ?? null },
+        `add_shipping_info:${state.cart!.cartId}:${state.selectedCarrier ?? ''}`
+      );
     } catch (error) {
       console.error(error);
       setState(prev => ({ ...prev, error: 'Failed to update cart', loading: false }));

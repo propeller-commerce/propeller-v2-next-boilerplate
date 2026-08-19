@@ -21,6 +21,7 @@ import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
 import { trackPreprEvent } from '@/lib/preprEvent';
+import { track } from '@/lib/tracking';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 
 /**
@@ -157,6 +158,38 @@ function ThankYouPageInner() {
       trackPreprEvent('QuoteRequest');
     }
   }, [isQuoteMode, orderId]);
+
+  // Conversion (PWP-910). Emitted HERE and not from `placeOrder`, because the
+  // PSP branch does `window.location.assign(checkoutUrl)` — the shopper leaves
+  // the SPA before the order is confirmed, so an emit at placeOrder would count
+  // abandoned payments as purchases. Keyed on the order id, which also makes it
+  // safe against the PSP-return re-check that re-renders this page.
+  useEffect(() => {
+    if (!orderId || !order) return;
+    if (isQuoteMode) {
+      track(
+        'propeller.quote_requested',
+        { order_id: Number(orderId) || null, value: order.total?.net ?? null, item_count: order.items?.length ?? 0 },
+        `quote_requested:${orderId}`
+      );
+      return;
+    }
+    track(
+      'purchase',
+      {
+        order_id: Number(orderId) || null,
+        value: order.total?.net ?? null,
+        tax: order.total?.tax ?? null,
+        item_count: order.items?.length ?? 0,
+        order_status: (order.paymentData?.status || order.status || '') || null,
+      },
+      `purchase:${orderId}`
+    );
+  }, [orderId, order, isQuoteMode]);
+
+  useEffect(() => {
+    track('page_viewed', { page_type: 'thank_you' }, `page_viewed:thank_you:${orderId ?? ''}`);
+  }, [orderId]);
 
   // PSP return: resolve the real outcome from the LIVE PSP status. The PSP
   // redirects to the same URL whatever happened, so the order status alone can't

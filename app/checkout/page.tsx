@@ -46,6 +46,11 @@ interface CheckoutState {
 }
 
 // COUNTRIES imported from shared utils
+// Module scope on purpose: `getActiveCompany` is declared at the top of the
+// component body (PWP-942 #20) and calls this during render, so a `const`
+// further down the body was still in its temporal dead zone.
+const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
+
 function CheckoutPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -197,8 +202,6 @@ function CheckoutPageInner() {
       }, 100);
     }
   }, [state.currentStep]);
-
-  const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
 
   const addressCardLabels = useTranslations('AddressCard');
   const addressSelectorLabels = useTranslations('AddressSelector');

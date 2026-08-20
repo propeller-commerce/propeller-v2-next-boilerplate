@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.13.0] - 2026-08-20
 
+### Fixed
+
+- **`locales/_registry.ts` was no longer generated, breaking any clean build.**
+  Adding the `_locales.ts` emit in 1.12.0 replaced the registry write instead of
+  joining it, so `prebuild` stopped producing the registry. Every dev machine
+  still had one from an earlier run — the file is generated and gitignored — so
+  local builds resolved a stale copy and nothing failed until CI built from a
+  clean clone (`Can't resolve '@/locales/_registry'`). Both files are written
+  again.
+
 ### Added
 
 - **GA4 / Google Tag Manager layer (PWP-910).** A second subscriber on the

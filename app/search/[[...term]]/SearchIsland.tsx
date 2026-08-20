@@ -14,8 +14,9 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { track, trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracking';
+import TrackView from '@/components/tracking/TrackView';
 import { useRouter } from 'next/navigation';
-import { graphqlClient } from '@/lib/api';
 import {
   AttributeFilter,
   AttributeType,
@@ -136,7 +137,6 @@ export default function SearchIsland({
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const baseCategoryId = useBaseCategoryId();
-  const { includeTax } = usePrice();
   const searchLabels = useTranslations('Search');
   const gridPaginationLabels = useTranslations('GridPagination');
   const gridFiltersLabels = useTranslations('GridFilters');
@@ -171,7 +171,7 @@ export default function SearchIsland({
     [filters, gridFilters]
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const defaultSort = useMemo(
     () => [{ field: sortField as string, order: sortOrder as string }],
     [sortField, sortOrder]
@@ -181,6 +181,53 @@ export default function SearchIsland({
   // came back — drives the simplified empty-state UI.
   const hasNoResults =
     !!term && !filtersLoading && itemsFound === 0 && productsResponse !== null;
+
+  // ── Search tracking (PWP-910) ───────────────────────────────────────────
+  // `itemsFound` updates on EVERY refetch — filter toggle, page change,
+  // language switch — not once per search. So the dedupe key carries the
+  // filters and the page: without that, one fruitless search emits
+  // `search_no_results` five times while the user narrows filters, and the
+  // "searched three times and found nothing" signal the sales rep reads is
+  // inflated by exactly the behaviour that proves they were trying.
+  // The surface this island represents. Passed explicitly into the grid's
+  // callbacks so an add-to-cart from search is distinguishable from the same
+  // product added on its PDP.
+  const searchSource = { type: 'search' as const, name: term, searchTerm: term, page: currentPage };
+
+  const filtersKey = JSON.stringify(filters);
+  useEffect(() => {
+    if (!term || filtersLoading || productsResponse === null) return;
+    const key = `${term}|${filtersKey}|${currentPage}`;
+    track(
+      'search',
+      {
+        search_term: term,
+        results_count: itemsFound,
+        filters_active: Object.values(filters).filter((v) => v.length > 0).length,
+        page: currentPage,
+      },
+      `search:${key}`
+    );
+    // The rendered page of products rides along as GA4 `items[]`. It is the
+    // one thing the GA4 mapper cannot invent, and it is already in hand here.
+    trackViewItemList(searchSource, itemsFound, pageItemCount, productsResponse?.items as never, {
+      language,
+      offset: productsResponse?.offset,
+    });
+    if (itemsFound === 0) {
+      // `filters_active` separates the two causes: over-filtering is a UX
+      // problem, a bare term with no hits is an assortment gap. Different
+      // owner, different fix — and only the second matters to a rep.
+      track(
+        'search_no_results',
+        {
+          search_term: term,
+          filters_active: Object.values(filters).filter((v) => v.length > 0).length,
+        },
+        `search_no_results:${key}`
+      );
+    }
+  }, [term, filtersLoading, productsResponse, itemsFound, filtersKey, currentPage, filters, language]);
 
   // Keep URL-derived state in sync after browser back/forward — parsed via
   // the same `parseListingParams` the Server Component uses.
@@ -390,7 +437,9 @@ export default function SearchIsland({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
+    <>
+      <TrackView pageType="search" entityName={term} />
+      <div className="flex flex-col lg:flex-row gap-8">
       {/* Filters: inline sidebar at lg+, slide-in drawer below lg. Hidden when
           the search returned no results. */}
       {!hasNoResults ? (
@@ -514,8 +563,9 @@ export default function SearchIsland({
             onPageItemCountChange={setPageItemCount}
             onLoadingChange={setFiltersLoading}
             page={currentPage}
-            afterAddToCart={(updatedCart) => {
+            afterAddToCart={(updatedCart, item) => {
               saveCart(updatedCart);
+              trackAddToCart(searchSource, item, updatedCart, null, language);
             }}
             onProceedToCheckout={() =>
               router.push(localizeHref('/checkout', language))
@@ -525,9 +575,11 @@ export default function SearchIsland({
             }
             onProductsResponse={setProductsResponse}
             onProductClick={(product: Product) => {
+              trackSelectItem(searchSource, product, null, language);
               router.push(config.urls.getProductUrl(product, language));
             }}
             onClusterClick={(cluster: Cluster) => {
+              trackSelectItem(searchSource, cluster, null, language);
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
             labels={productGridLabels}
@@ -554,7 +606,8 @@ export default function SearchIsland({
             )}
           </div>
         ) : null}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

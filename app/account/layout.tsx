@@ -10,7 +10,6 @@ import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
-import { Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { useTranslations } from '@/lib/i18n/client';
 
 export default function AccountLayout({

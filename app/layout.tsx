@@ -14,9 +14,10 @@ import { CompanyProvider } from "@/context/CompanyContext";
 import { PriceProvider } from "@/context/PriceContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { BaseCategoryProvider } from "@/context/BaseCategoryContext";
-import { resolveBaseCategoryId, resolveRequestLanguage } from "@/lib/server";
+import { resolveAnonymousUserId, resolveBaseCategoryId, resolveRequestLanguage } from "@/lib/server";
 import { TranslationsProvider } from "@/lib/i18n/client";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
+import GoogleTags from '@/components/tracking/GoogleTags';
 import ScrollReset from "@/components/layout/ScrollReset";
 import { Toaster } from "react-hot-toast";
 import { cookies } from "next/headers";
@@ -52,13 +53,17 @@ export default async function RootLayout({
   // Seeded to the client so components that fetch the menu themselves (every
   // page rendering `<Header />` rather than `<HeaderServer />`) ask for the same
   // category the server does, instead of guessing a literal — PWP-913.
-  const [globalData, cookieStore, baseCategoryId, initialLanguage] = await Promise.all([
+  const [globalData, cookieStore, baseCategoryId, initialLanguage, anonymousUserId] = await Promise.all([
     getGlobal(),
     cookies(),
     resolveBaseCategoryId(),
     // Same resolver every page uses, so `<html lang>` and the client
     // provider can never disagree with what the page fetched.
     resolveRequestLanguage(),
+    // Channel-only value, so the client cannot resolve it: it scopes logged-out
+    // listing queries to the channel's anonymous user, matching what the SSR
+    // seed already sends (PWP-942 #22).
+    resolveAnonymousUserId(),
   ]);
   // Seed the price preference from the cookie so SSR and the first client
   // snapshot agree — without this, users see a flash on first paint while
@@ -78,6 +83,7 @@ export default async function RootLayout({
             {`!function(e,t,p,r,n,a,s){e[r]||((n=e[r]=function(){n.process?n.process.apply(n,arguments):n.queue.push(arguments)}).queue=[],n.t=+new Date,(a=t.createElement(p)).async=1,a.src="https://cdn.tracking.prepr.io/js/prepr_v2.min.js?t="+864e5*Math.ceil(new Date/864e5),(s=t.getElementsByTagName(p)[0]).parentNode.insertBefore(a,s))}(window,document,"script","prepr"),prepr("init","${PREPR_TRACKING_TOKEN}"),prepr("event","pageload");`}
           </Script>
         ) : null}
+        <GoogleTags />
         {PREPR_ENABLED ? <PreprPreviewBar /> : null}
         {/* CMS adapter for client islands' optional `useCms()`. nextDemo fetches
             all CMS content server-side (Server Components call getPage/getArticle
@@ -92,7 +98,7 @@ export default async function RootLayout({
             <LanguageProvider initialLanguage={initialLanguage}>
             <BaseCategoryProvider baseCategoryId={baseCategoryId}>
             <TranslationsProvider>
-            <PropellerHostBridge>
+            <PropellerHostBridge anonymousUserId={anonymousUserId}>
             <CartProvider>
               <GlobalProvider globalData={globalData}>
                 {children}

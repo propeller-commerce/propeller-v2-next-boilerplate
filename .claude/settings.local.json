@@ -16,7 +16,27 @@
       "Bash(npx tsc *)",
       "Bash(awk -F: 'NF>1 { s=$NF; while \\(match\\(s, /\\(gray|red|green|blue|yellow|amber|orange|purple|violet|indigo|pink|rose|emerald|teal|cyan|sky|slate|zinc|neutral|stone|lime|fuchsia\\)-[0-9]+/\\)\\) { print substr\\(s, RSTART, RLENGTH\\); s = substr\\(s, RSTART+RLENGTH\\) } }' 'C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\ce22f3fd-5ae4-43db-bd75-15c278cab9da\\\\tool-results\\\\toolu_01CbC9zKiiXcz8JGyVxcWnPT.txt')",
       "Bash(awk -F: 'NF>1 { s=$NF; while \\(match\\(s, /rounded-\\(sm|md|lg|xl|2xl|3xl|full|none\\)/\\)\\) { print substr\\(s, RSTART, RLENGTH\\); s = substr\\(s, RSTART+RLENGTH\\) } }' 'C:\\\\Users\\\\tinka\\\\.claude\\\\projects\\\\c--workspace-nextDemo\\\\ce22f3fd-5ae4-43db-bd75-15c278cab9da\\\\tool-results\\\\toolu_01Nf39QTA4o94uRNNd2ivvo1.txt')",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "mcp__atlassian__getAccessibleAtlassianResources",
+      "mcp__atlassian__searchJiraIssuesUsingJql",
+      "Bash(python *)",
+      "Bash(node -p \"JSON.stringify\\(require\\('./package.json'\\).dependencies,null,1\\)\")",
+      "Bash(node -p \"require\\('./node_modules/@propeller-commerce/propeller-v2-core-ui/package.json'\\).version\")",
+      "Bash(node -p \"require\\('./node_modules/@propeller-commerce/propeller-v2-vue-ui/package.json'\\).version\")",
+      "Bash(cp /tmp/rt.mjs ./rt.mjs)",
+      "Bash(node rt.mjs)",
+      "Bash(rm -f rt.mjs)",
+      "Read(//tmp/**)",
+      "Bash(PORT=4100 node server.js)",
+      "PowerShell(git *)",
+      "PowerShell(npm view *)",
+      "mcp__atlassian__getTransitionsForJiraIssue",
+      "mcp__atlassian__lookupJiraAccountId",
+      "mcp__atlassian__addCommentToJiraIssue",
+      "mcp__atlassian__transitionJiraIssue",
+      "mcp__atlassian__editJiraIssue",
+      "mcp__atlassian__getJiraIssue",
+      "PowerShell(Get-ChildItem *)"
     ],
     "additionalDirectories": [
       "d:\\laragon\\www\\propeller-next\\app\\authorization-request-sent"

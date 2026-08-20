@@ -1,6 +1,18 @@
 import { graphqlClient } from '../api';
 
 /**
+ * The shape `getLocalizedString` accepts. The SDK's LocalizedString uses
+ * `language`/`value`; some older payloads carry `lang`/`text`. Both are
+ * optional so either spelling type-checks.
+ */
+export interface LocalizedLike {
+    language?: string;
+    lang?: string;
+    value?: string;
+    text?: string;
+}
+
+/**
  * Base class for all API services that provides common post-processing patterns
  */
 export abstract class BaseApiService {
@@ -23,33 +35,42 @@ export abstract class BaseApiService {
     /**
      * Handle API errors and transform them to user-friendly messages
      */
-    protected handleApiError(error: any, operation: string): Error {
+    protected handleApiError(error: unknown, operation: string): Error {
         console.error(`${operation} failed:`, error);
 
+        // Anything can be thrown, so read the message defensively rather than
+        // assuming an Error shape.
+        const message =
+            error instanceof Error
+                ? error.message
+                : typeof (error as { message?: unknown } | null)?.message === 'string'
+                  ? ((error as { message: string }).message)
+                  : '';
+
         // Transform specific API errors to user-friendly messages
-        if (error?.message) {
-            if (error.message.includes('unauthorized') || error.message.includes('401')) {
+        if (message) {
+            if (message.includes('unauthorized') || message.includes('401')) {
                 return new Error('Authentication failed. Please log in again.');
             }
-            if (error.message.includes('forbidden') || error.message.includes('403')) {
+            if (message.includes('forbidden') || message.includes('403')) {
                 return new Error('Access denied. You do not have permission for this action.');
             }
-            if (error.message.includes('not found') || error.message.includes('404')) {
+            if (message.includes('not found') || message.includes('404')) {
                 return new Error('Requested resource not found.');
             }
-            if (error.message.includes('network') || error.message.includes('timeout')) {
+            if (message.includes('network') || message.includes('timeout')) {
                 return new Error('Network error. Please check your connection and try again.');
             }
         }
 
         // Fallback to original error message or generic message
-        return new Error(error?.message || `${operation} failed. Please try again.`);
+        return new Error(message || `${operation} failed. Please try again.`);
     }
 
     /**
      * Store data in localStorage with error handling
      */
-    protected setLocalStorage(key: string, value: any): void {
+    protected setLocalStorage(key: string, value: unknown): void {
         if (typeof window === 'undefined') return;
         try {
             localStorage.setItem(key, JSON.stringify(value));
@@ -115,7 +136,7 @@ export abstract class BaseApiService {
     /**
      * Log API operations for debugging
      */
-    protected logOperation(operation: string, data?: any): void {
+    protected logOperation(operation: string, data?: unknown): void {
         if (process.env.NODE_ENV === 'development') {
             console.log(`API Operation: ${operation}`, data);
         }
@@ -124,7 +145,10 @@ export abstract class BaseApiService {
     /**
      * Transform propeller-v2 LocalizedString arrays to simple strings
      */
-    protected getLocalizedString(localizedStrings?: any[], language: string = 'NL'): string {
+    protected getLocalizedString(
+        localizedStrings?: LocalizedLike[],
+        language: string = 'NL'
+    ): string {
         if (!Array.isArray(localizedStrings) || localizedStrings.length === 0) {
             return '';
         }
@@ -146,7 +170,11 @@ export abstract class BaseApiService {
     /**
      * Validate required fields and throw errors if missing
      */
-    protected validateRequired(data: any, fields: string[], operation: string): void {
+    protected validateRequired(
+        data: Record<string, unknown>,
+        fields: string[],
+        operation: string
+    ): void {
         const missing = fields.filter(field => !data[field]);
         if (missing.length > 0) {
             throw new Error(`${operation} failed: Missing required fields: ${missing.join(', ')}`);

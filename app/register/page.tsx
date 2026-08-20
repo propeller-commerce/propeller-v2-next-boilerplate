@@ -1,4 +1,5 @@
 'use client';
+import { track } from '@/lib/tracking';
 
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
@@ -10,7 +11,7 @@ import { useCart } from '@/context/CartContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RegisterForm } from '@propeller-commerce/propeller-v2-react-ui';
-import { graphqlClient, services } from '@/lib/api';
+import { services } from '@/lib/api';
 import { useTranslations } from '@/lib/i18n/client';
 import { Cart, Company, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { localizeHref, config } from '@/data/config';
@@ -77,6 +78,25 @@ export default function RegisterPage() {
                     'US': 'United States'
                   }}
                   afterRegistration={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
+                    // Two events, deliberately: B2B registration is often a
+                    // REQUEST pending approval, so an account that never goes
+                    // live must not be reported as a conversion. `sign_up` is
+                    // emitted only on the automatic-login path, where the
+                    // account demonstrably exists and works (PWP-910).
+                    const accountType = user && 'company' in user ? 'contact' : 'customer';
+                    track(
+                      'registration_submitted',
+                      { account_type: accountType, requires_approval: !accessToken },
+                      `registration_submitted:${accountType}:${Math.floor(Date.now() / 5000)}`
+                    );
+                    if (accessToken) {
+                      track(
+                        'sign_up',
+                        { method: 'password', account_type: accountType },
+                        `sign_up:${accountType}:${Math.floor(Date.now() / 5000)}`
+                      );
+                    }
+
                     // No token means the form was used with `automaticLogin: false`.
                     // The user exists server-side but isn't signed in here — send
                     // them to the login page.

@@ -21,6 +21,7 @@ import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
 import { trackPreprEvent } from '@/lib/preprEvent';
+import { track, orderItems } from '@/lib/tracking';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 
 /**
@@ -142,6 +143,7 @@ function ThankYouPageInner() {
   }, [orderId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the initial order load; every setState inside it lands after the fetch resolves
     fetchOrderDetails();
   }, [fetchOrderDetails]);
 
@@ -156,6 +158,49 @@ function ThankYouPageInner() {
       trackPreprEvent('QuoteRequest');
     }
   }, [isQuoteMode, orderId]);
+
+  // Conversion (PWP-910). Emitted HERE and not from `placeOrder`, because the
+  // PSP branch does `window.location.assign(checkoutUrl)` — the shopper leaves
+  // the SPA before the order is confirmed, so an emit at placeOrder would count
+  // abandoned payments as purchases. Keyed on the order id, which also makes it
+  // safe against the PSP-return re-check that re-renders this page.
+  useEffect(() => {
+    if (!orderId || !order) return;
+    if (isQuoteMode) {
+      track(
+        'propeller.quote_requested',
+        { order_id: Number(orderId) || null, value: order.total?.gross ?? null, item_count: order.items?.length ?? 0 },
+        `quote_requested:${orderId}`
+      );
+      return;
+    }
+    // On a PSP return the payment is not settled yet — the provider redirects
+    // to this same URL whatever happened. Emitting on arrival would book
+    // revenue for payments that go on to fail, which is what the WordPress
+    // plugin avoids by redirecting failures away before its purchase event.
+    // Non-PSP orders (on account) are already final, so they emit immediately.
+    if (isPspReturn && paymentState !== 'success') return;
+    track(
+      'purchase',
+      {
+        order_id: Number(orderId) || null,
+        // `gross` is the EX-VAT total in this SDK, `net` the tax-inclusive one
+        // (OrderTotals' own doc comments). GA4 takes ex-VAT revenue with `tax`
+        // alongside it, matching the WordPress side.
+        value: order.total?.gross ?? null,
+        tax: order.total?.tax ?? null,
+        shipping: order.postageData?.gross ?? null,
+        item_count: order.items?.length ?? 0,
+        items: orderItems(order, language),
+        order_status: (order.paymentData?.status || order.status || '') || null,
+      },
+      `purchase:${orderId}`
+    );
+  }, [orderId, order, isQuoteMode, isPspReturn, paymentState, language]);
+
+  useEffect(() => {
+    track('page_viewed', { page_type: 'thank_you' }, `page_viewed:thank_you:${orderId ?? ''}`);
+  }, [orderId]);
 
   // PSP return: resolve the real outcome from the LIVE PSP status. The PSP
   // redirects to the same URL whatever happened, so the order status alone can't
@@ -175,6 +220,7 @@ function ThankYouPageInner() {
     if (!paymentId) {
       const status = (order?.paymentData?.status || order?.status || '').toUpperCase();
       if (status === 'PAID' || status === 'NEW' || status === 'AUTHORIZED') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resolving a PSP return whose payment id was never stashed, from the order we just fetched
         setPaymentState('success');
       } else if (order) {
         setPaymentState('pending');
@@ -269,6 +315,7 @@ function ThankYouPageInner() {
     if (!isPspReturn || !order) return;
     const orderStatus = (order.paymentData?.status || order.status || '').toUpperCase();
     if (orderStatus === 'PAID' || orderStatus === 'AUTHORIZED') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- upgrading the payment state once the webhook-updated order arrives
       setPaymentState('success');
       try {
         window.sessionStorage.removeItem(stashKey);

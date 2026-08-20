@@ -17,6 +17,7 @@ import '@/lib/clientStorage';
 import { pickUserHint, isUserHint, type UserHint } from '@/lib/userHint';
 import { classifyApiError } from '@/lib/errors';
 import { getTranslations } from '@/lib/i18n/server';
+import { track } from '@/lib/tracking';
 
 type User = Contact | Customer;
 
@@ -266,6 +267,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // new session instead of staying logged-out until their next mount.
       window.dispatchEvent(new CustomEvent('userLoggedIn'));
       authChannel?.postMessage('login');
+
+      // Behaviour tracking (PWP-910). Emitted here rather than on the login
+      // page so magic-token and punchout entry are covered by the same line.
+      track('login', { method: 'password' }, `login:password:${Date.now()}`);
     } catch (error) {
       const locale = typeof window !== 'undefined'
         ? localStorage.getItem('preferred_language') || 'NL'
@@ -279,6 +284,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = useCallback(async (): Promise<void> => {
+    track('logout', {}, `logout:${Date.now()}`);
     try {
       await authService.logout();
     } catch (error) {

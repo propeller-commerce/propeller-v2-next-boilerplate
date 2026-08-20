@@ -113,9 +113,12 @@ export class FavoriteListService extends BaseApiService {
             const input = {
                 id: listId,
                 language: "NL",
+                // Widened because the branches below add customerId / contactId /
+                // companyId after the fact; the literal alone would be inferred
+                // as `{ taxZone: string }` and reject them.
                 priceCalculateProductInput: {
                     taxZone: "NL"
-                } as any,
+                } as Record<string, unknown>,
                 imageSearchFilters: {
                     page: 1,
                     offset: 1

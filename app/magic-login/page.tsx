@@ -23,6 +23,7 @@ import { graphqlClient } from '@/lib/api';
 import { config, localizeHref, stripLanguagePrefix } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAfterLogin } from '@/lib/useAfterLogin';
+import { track } from '@/lib/tracking';
 
 function Spinner() {
   return <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />;
@@ -68,6 +69,16 @@ function MagicLoginRunner() {
         expired();
         return;
       }
+
+      // Magic-token login is the punchout entry point: an ERP/procurement
+      // system deep-links the buyer in. Tracked here rather than in the API
+      // route because only the browser session can be attributed.
+      track(
+        'propeller.punchout_session_started',
+        { method: 'magic_token', redirect: redirect ? stripLanguagePrefix(redirect) : '/' },
+        `punchout_session_started:${token.slice(0, 12)}`
+      );
+      track('login', { method: 'magic_token' }, `login:magic_token:${token.slice(0, 12)}`);
 
       const { effectiveLanguage, navigated } = await runAfterLogin(
         res.data.user,

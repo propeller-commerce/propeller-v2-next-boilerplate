@@ -2,8 +2,14 @@ import { LoginService, UserService, LoginInput } from '@propeller-commerce/prope
 import { graphqlClient, toPlain } from '../api';
 import { pickUserHint } from '../userHint';
 import toast from 'react-hot-toast';
-import { ViewerInput, ViewerVariables } from '@propeller-commerce/propeller-sdk-v2';
+import { ViewerVariables, type Contact, type Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { config } from '@/data/config';
+
+/**
+ * What `login` hands back: the viewer when it resolves, or a thin stand-in
+ * built from the session when the viewer call fails.
+ */
+export type LoginUser = Contact | Customer | { email: string; type: string };
 
 export class AuthService {
     private loginService: LoginService;
@@ -17,7 +23,7 @@ export class AuthService {
     /**
      * Login with email and password
      */
-    async login(email: string, password: string): Promise<{ accessToken: string; user: any }> {
+    async login(email: string, password: string): Promise<{ accessToken: string; user: LoginUser | null }> {
         try {
             console.log('🚀 AuthService.login() called with email:', email);
 
@@ -46,7 +52,7 @@ export class AuthService {
             });
 
             // Get viewer data
-            let user = null;
+            let user: LoginUser | null = null;
             try {
                 const input: ViewerVariables = {
                     companyAttributesInput: {
@@ -64,15 +70,11 @@ export class AuthService {
                     contactPAConfigInput: config.contactPAConfigInput,
                     contactCompaniesSearchInput: config.contactCompaniesSearchInput
                 };
-                // Pass empty object as argument if required by the SDK
-                const viewerResponse: any = await this.userService.getViewer(input);
-                console.log('Viewer data received:', viewerResponse);
-
-                if (viewerResponse?.data) {
-                    user = viewerResponse.data;
-                } else {
-                    user = viewerResponse;
-                }
+                // `getViewer` resolves to the Contact/Customer itself — the SDK
+                // already unwraps the GraphQL envelope. The old `.data` unwrap
+                // beneath an `any` annotation was dead legacy (PWP-942 #20).
+                user = await this.userService.getViewer(input);
+                console.log('Viewer data received:', user);
             } catch (viewerError) {
                 console.warn('Failed to fetch viewer data:', viewerError);
                 // Create basic user object from session
@@ -96,7 +98,10 @@ export class AuthService {
                 // Persist ONLY the thin render hint (id, type, name,
                 // companyId) — never the full Contact. The full profile is
                 // re-fetched via getViewer() on mount; see lib/userHint.ts.
-                const hint = pickUserHint(toPlain(user));
+                // The catch branch above can leave `user` as the thin session
+                // stand-in rather than a real Contact/Customer; pickUserHint
+                // returns null for anything it doesn't recognise.
+                const hint = pickUserHint(toPlain(user) as Contact | Customer | null);
                 if (hint) localStorage.setItem('user', JSON.stringify(hint));
                 window.dispatchEvent(new CustomEvent('userLoggedIn'));
             }

@@ -27,6 +27,8 @@ import { useCompany } from '@/context/CompanyContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBaseCategoryId } from '@/context/BaseCategoryContext';
+import TrackingBridge from '@/components/tracking/TrackingBridge';
+import PageViewTracker from '@/components/tracking/PageViewTracker';
 import {
   PropellerDepsProvider,
   PropellerProvider,
@@ -34,7 +36,19 @@ import {
   type PropellerScope,
 } from '@propeller-commerce/propeller-v2-react-ui';
 
-export default function PropellerHostBridge({ children }: { children: ReactNode }) {
+export default function PropellerHostBridge({
+  children,
+  anonymousUserId,
+}: {
+  children: ReactNode;
+  /**
+   * The channel's anonymous user, resolved server-side by the root layout.
+   * Scopes the package's logged-out listing queries the same way the SSR seed
+   * does — without it the client refetch ran unscoped and the backend skipped
+   * the channel's assortment rules, negative order lists included (PWP-942 #22).
+   */
+  anonymousUserId?: number;
+}) {
   const router = useRouter();
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
@@ -64,9 +78,9 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
       graphqlClient,
       services,
       currency: config.currency,
-      configuration: { ...config, baseCategoryId },
+      configuration: { ...config, baseCategoryId, anonymousUserId },
     }),
-    [baseCategoryId]
+    [baseCategoryId, anonymousUserId]
   );
 
   // The selected company can be a STALE `selected_company` left in localStorage
@@ -127,7 +141,13 @@ export default function PropellerHostBridge({ children }: { children: ReactNode 
 
   return (
     <PropellerDepsProvider value={deps}>
-      <PropellerProvider value={scope}>{children}</PropellerProvider>
+      <PropellerProvider value={scope}>
+        {/* Behaviour tracking (PWP-910): syncs scope into the tracker singleton
+            and registers the ingest subscriber. Renders nothing. */}
+        <TrackingBridge />
+        <PageViewTracker />
+        {children}
+      </PropellerProvider>
     </PropellerDepsProvider>
   );
 }

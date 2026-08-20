@@ -868,7 +868,7 @@ export function createPreprProvider(): CmsProvider {
       }
     },
 
-    async getCategoryBanner(categoryId: string, locale?: string) {
+    async getCategoryBanner(_categoryId: string, _locale?: string) {
       // CategoryBanner model does not exist in this Prepr environment yet
       return null;
     },

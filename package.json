@@ -1,10 +1,7 @@
 {
   "name": "propeller-next",
-  "version": "1.11.17",
+  "version": "1.13.0",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
     "dev": "next dev",
@@ -13,12 +10,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "clean": "powershell -Command \"Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue\"",
+    "clean": "node -e \"const{rmSync}=require('fs');for(const d of ['.next','out'])rmSync(d,{recursive:true,force:true})\"",
     "sdk:sync": "npm update @propeller-commerce/propeller-sdk-v2 && npm install --install-links",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:tracking": "node --test --experimental-strip-types lib/tracking/*.test.ts"
   },
   "dependencies": {
     "@contentful/rich-text-html-renderer": "^17.2.2",
@@ -28,14 +26,15 @@
     "@propeller-commerce/propeller-v2-mollie": "^0.2.4",
     "@propeller-commerce/propeller-v2-msp": "^0.1.2",
     "@propeller-commerce/propeller-v2-punchout": "^0.1.0",
-    "@propeller-commerce/propeller-v2-react-ui": "^0.16.0",
+    "@propeller-commerce/propeller-v2-react-ui": "^0.18.0",
     "@propeller-commerce/propeller-v2-spl": "^0.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.560.0",
     "marked": "^17.0.5",
-    "next": "16.0.10",
+    "mysql2": "^3.23.3",
+    "next": "16.3.1",
     "qs": "^6.15.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -55,7 +54,7 @@
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.11.0",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.3.1",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
     "typescript": "^5"

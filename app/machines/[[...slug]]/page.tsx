@@ -25,6 +25,7 @@ import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { useTranslations } from '@/lib/i18n/client';
+import { track } from '@/lib/tracking';
 import { parseListingParams, buildListingSearchParams } from '@/lib/listingParams';
 import {
   MACHINE_LANGUAGE,
@@ -88,6 +89,7 @@ export default function MachinesPage() {
       <Header />
       <main className="flex-1 py-8">
         <div className="container-width">
+          <MachineViewTracker segments={segments} />
           {/* key forces a fresh mount per node so sibling nav re-seeds cleanly. */}
           <MachineGrid
             key={segments.join('/')}
@@ -119,4 +121,23 @@ export default function MachinesPage() {
       <Footer />
     </div>
   );
+}
+
+/**
+ * `machine_viewed` at the tree root, `spare_part_viewed` once the user has
+ * drilled into a node — the depth IS the distinction, and only the second is a
+ * parts-demand signal a rep can act on (PWP-910). Null-rendering, so it costs
+ * the page nothing.
+ */
+function MachineViewTracker({ segments }: { segments: string[] }) {
+  const slug = segments.join('/');
+  useEffect(() => {
+    const name = segments.length > 1 ? 'propeller.spare_part_viewed' : 'propeller.machine_viewed';
+    track(
+      name,
+      { machine_id: segments[0] ?? null, node_id: segments[segments.length - 1] ?? null, depth: segments.length },
+      `${name}:${slug || 'root'}`
+    );
+  }, [slug, segments]);
+  return null;
 }

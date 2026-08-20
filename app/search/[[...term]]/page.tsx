@@ -28,7 +28,6 @@ import {
 import { getListingInfra, fetchSearch, fetchCategory, resolveBaseCategoryId } from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { buildJsonLdContext } from '@/lib/seo';
-import { config } from '@/data/config';
 import {
   parseListingParams,
   buildTextFilters,

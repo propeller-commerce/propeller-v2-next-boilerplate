@@ -7,6 +7,137 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-08-20
+
+### Fixed
+
+- **`locales/_registry.ts` was no longer generated, breaking any clean build.**
+  Adding the `_locales.ts` emit in 1.12.0 replaced the registry write instead of
+  joining it, so `prebuild` stopped producing the registry. Every dev machine
+  still had one from an earlier run — the file is generated and gitignored — so
+  local builds resolved a stale copy and nothing failed until CI built from a
+  clean clone (`Can't resolve '@/locales/_registry'`). Both files are written
+  again.
+
+### Added
+
+- **GA4 / Google Tag Manager layer (PWP-910).** A second subscriber on the
+  existing tracking bus: `lib/tracking/ga4.ts` maps our event vocabulary onto
+  Google's, `lib/tracking/items.ts` builds the `items[]` array every GA4
+  ecommerce report is keyed on, and `components/tracking/GoogleTags.tsx` (a
+  Server Component) loads the tags. Gated on `USE_GA4`, with `GA4_KEY` and an
+  optional `GTM_KEY`; the `NEXT_PUBLIC_` twins are derived in `next.config.ts`
+  and `proxy.ts` widens the CSP off the same flag. Off by default — no script
+  and no `dataLayer` when disabled. No new dependencies.
+- **Commerce events now carry `items[]`.** The emit sites previously sent flat
+  scalars, which a mapper cannot turn into a GA4 payload — item name, unit price
+  and brand were never captured. Ported from the WordPress plugin's mappers so
+  both storefronts report the same shape: `item_id` is the SKU, `index` is
+  page-aware across pagination, and prices are omitted (not zeroed) for
+  price-on-request products and closed portals.
+- **19 previously-unwired taxonomy events.** Address CRUD, `order_viewed`,
+  `reorder_started`, `quote_accepted`, `registration_submitted` / `sign_up`,
+  `company_switched`, quick order, machines and spare parts, punchout entry,
+  and the purchase-authorization set. 56 of 61 names now have an emit site.
+- **Two Playwright specs asserting on the real `dataLayer`** — the commerce
+  funnel in the anonymous suite (this is a hybrid shop: add-to-cart and checkout
+  work logged out) and `purchase` plus the account events in the contact suite.
+  Both skip when `USE_GA4` is off.
+
+### Fixed
+
+- **Revenue was inflated by the VAT rate on `view_cart` and `begin_checkout`.**
+  Both sent `totalNet`, which is the tax-INCLUSIVE total in this SDK — `gross`
+  is the ex-VAT one, contrary to the usual meaning of the words. GA4 now gets
+  the ex-VAT figure with `tax` alongside it.
+- **`purchase` fired on arrival at the thank-you page**, before the PSP had
+  settled, so failed and cancelled payments were booked as revenue. It now waits
+  for the success branch; non-PSP orders are final on arrival and still emit
+  immediately.
+- **Cart quantity edits reported the new line total instead of the delta**,
+  multiplying cart-add volume. Raising a line 2 → 5 is now an add of 3.
+  `remove_from_cart` was not emitted at all; one cart diff at the single
+  `afterCartUpdate` callback now covers adds, removals and quantity edits.
+- **The authenticated e2e suite could not log in.** The setup matched
+  `getByLabel(/password/i)` against a Dutch storefront whose label is
+  "Wachtwoord", so every contact and customer test failed on that line. Setups
+  now locate the stable input ids, and `playwright.config.ts` loads `.env.local`
+  via `@next/env` so `TEST_CONTACT_*` / `TEST_CUSTOMER_*` are actually read
+  instead of silently falling back to hardcoded defaults.
+- **Temporal dead zone in the cart page**, the same shape as PWP-942 #20: the
+  tracking effect sat above the `useLanguage()` call it read.
+
+## [1.12.0] - 2026-08-20
+
+### Added
+
+- **Storefront tracking and a `/tracker` dashboard (PWP-910).** An event bus
+  and ingest route writing to a `propeller_analytics` schema, storefront
+  instrumentation, a grouped metrics dashboard with a query allowlist behind
+  `/api/tracker`, a daily rollup job, unit tests and a demo seeder. No new
+  dependencies.
+- **The channel's anonymous user is handed to the client (PWP-942 #22).**
+  `resolveAnonymousUserId()` resolves it server-side and the root layout seeds
+  it into the package `configuration`, the same route `baseCategoryId` takes.
+  Anonymous SSR and the client refetch now scope catalog queries identically;
+  previously the client asked an unscoped question and quietly replaced a
+  correctly-scoped product list with a different one.
+
+### Fixed
+
+- **Checkout crashed on every render (`isContact` in its temporal dead
+  zone).** Hoisting the checkout helpers above the effects that call them left
+  `getActiveCompany()` running before `isContact` was initialised. `tsc` can't
+  see a TDZ across a closure and `next build` never renders a dynamic route,
+  so both gates passed. `isContact` now lives at module scope.
+- **Non-default-language URLs 404'd (PWP-942 #14).** `proxy.ts` hardcoded
+  `['en','de','fr']`, so a shop scaffolded with other locales lost every
+  prefixed URL the moment a visitor switched language. The prefix list is now
+  derived from the locale folders the shop actually ships.
+- **A bad endpoint or api key was reported as a channel-config problem, and
+  cached (PWP-942 #9).** `getChannelDefaults` swallowed every failure into
+  `{}`, so DNS failures, a 401 and "this channel has no catalogRootId" were
+  indistinguishable — and the empty result was written to the Next data cache,
+  surviving a dev-server restart until `.next` was deleted. It now throws with
+  the endpoint named, and a rejected promise is never cached.
+- **Server and client could disagree on five settings (PWP-942 #3).** The
+  `NEXT_PUBLIC_` twins of `BOILERPLATE_DEFAULT_LANGUAGE`, the machine source /
+  language, `CMS_PROVIDER`, `PAYMENT_PROVIDER` and `ON_ACCOUNT_PAYMENTS` are
+  now derived from their server variable in `next.config.ts` instead of being
+  kept in sync by hand. An explicitly-set public value still wins when the
+  server one is absent, so existing shops are unaffected.
+- **Header nav linked to routes that don't exist (PWP-942 #18).** The no-CMS
+  fallback offered `/new-arrivals`, `/best-sellers` and `/sale` — three 404s
+  out of about six visible items. Dropped.
+- **`npm run clean` was Windows-only (PWP-942 #5)** and `package.json`
+  declared a `workspaces` array for a `packages/` directory that doesn't exist
+  (#7).
+- **`docs/` was scaffolded and then ignored by `.gitignore` (PWP-942 #6),** so
+  it vanished from the history of every shop on first commit. Only the agent
+  scratch directory under it is ignored now.
+
+### Changed
+
+- **The homepage placeholder is vertical-neutral (PWP-942 #19).** The hero
+  copy no longer sells workstations, the category icons are no longer
+  electronics emoji, and the 750KB photo of server hardware is replaced by a
+  gradient drawn from the theme tokens. Drop your own image in when you have
+  one.
+- **The scaffold passes its own lint (PWP-942 #20)** — 155 errors to zero.
+  Mostly real fixes: `lib/services` typed, a duplicated copy of
+  `getUserSegments` deleted, `StepIndicator` hoisted out of render, the mobile
+  search transition replaced by a CSS animation and its clear-signal counter by
+  a remount key. `@typescript-eslint/no-explicit-any` is switched off for the
+  five CMS decoder files only — they decode vendors' JSON shapes — and stays an
+  error everywhere else.
+- **Env example trimmed (PWP-942 #21)** — a REQUIRED block at the top naming
+  the three values a minimal shop needs, and the removed/never-wired variables
+  moved out of the file every integrator has to read.
+- **Next 16.0.10 → 16.3.1 (PWP-942 #10),** clearing the fixable audit
+  advisories: 9 down to 3. The remainder are `xlsx` (SheetJS is no longer on
+  npm; no fix available) and `fast-xml-parser` via
+  `@propeller-commerce/propeller-v2-punchout`, which needs a major bump there.
+
 ## [1.11.17] - 2026-08-12
 
 ### Fixed

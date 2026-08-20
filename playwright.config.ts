@@ -1,4 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import { loadEnvConfig } from '@next/env';
+
+// Playwright runs outside Next, so `.env.local` is not loaded for it. Use Next's
+// own loader (already a dependency) so the suite reads exactly the same file and
+// precedence the app does — otherwise test credentials silently fall back to the
+// hardcoded defaults and you debug the wrong account.
+loadEnvConfig(process.cwd());
 
 export default defineConfig({
   testDir: './e2e',

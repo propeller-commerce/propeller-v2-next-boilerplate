@@ -134,9 +134,16 @@ client**, so the API key and GraphQL endpoint stay secret):
 - `BOILERPLATE_API_KEY` - API key injected server-side by the proxy
 - `BOILERPLATE_ORDER_EDITOR_API_KEY` - order-editor API key
 - `BOILERPLATE_MENU_DEPTH` - menu nesting depth
-- `BOILERPLATE_ANONYMOUS_USER_ID` - anonymous user id
-- `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL)
-- `JWT_SECRET` - secret for signing/validating the auth cookie
+- `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL). Its `NEXT_PUBLIC_`
+  twin is derived from this in `next.config.ts` — there is nothing to keep in
+  sync (the same holds for the machine source/language, `CMS_PROVIDER`,
+  `PAYMENT_PROVIDER` and `ON_ACCOUNT_PAYMENTS`)
+
+The anonymous user is **not** an env var: it comes from
+`channel(NEXT_PUBLIC_CHANNEL_ID).anonymousUserId`, resolved server-side and
+seeded to the client so both scope catalog queries the same way. `JWT_SECRET`
+is gone too — JWTs are issued and verified upstream, and nothing here ever
+signed one.
 
 Exposed to the browser:
 
@@ -236,6 +243,52 @@ A provider's `getNamespace(locale, namespace)` returns `Record<string, string>` 
 
 - `propeller-v2-react-ui@0.4.2+` — adds `labels?` to several components that previously didn't accept it (`UserDetails`, `OrderItemCard`, `ProductGallery`, `GridFilters`, `ProductGrid`, `GridToolbar`, `PriceToggle`), and adds forwarding props (`productCardLabels?`, `clusterCardLabels?`, `stockLabels?`, `addToCartLabels?`, `priceLabels?`) on `ProductGrid` / `ProductSlider`, plus `loginFormLabels?` on `AccountIconAndMenu`.
 - `propeller-v2-core-ui@0.2.2+` — owns the `TranslationProvider` interface (transitively installed via the UI package).
+
+## Analytics (GA4 / Google Tag Manager)
+
+The storefront emits its own event vocabulary on the tracking bus
+(`lib/tracking/`, PWP-910). GA4 is one **subscriber** on that bus: `lib/tracking/ga4.ts`
+projects our events onto Google's names and payload shape. Internal event names,
+the `propeller_analytics` schema and `/tracker` are unaffected — a tenant who
+wants Segment or Snowplow instead writes a different mapper against the same
+stream.
+
+Off by default. With `USE_GA4=false` no script is loaded and no `dataLayer` is
+created.
+
+```ini
+USE_GA4=false   # master switch
+GA4_KEY=        # G-XXXXXXXXXX — required when USE_GA4=true
+GTM_KEY=        # GTM-XXXXXXX — optional, and it CHANGES THE TRANSPORT
+```
+
+`next.config.ts` derives the `NEXT_PUBLIC_` twins from these, and `proxy.ts`
+widens the CSP off the same flag — never set the twins by hand.
+
+**The two transports are not interchangeable.** With `GTM_KEY` set we push
+`{event, ecommerce}` objects, which is what a container understands; without one
+we call `gtag('event', …)`, which is the only thing gtag.js understands. Sending
+the wrong one fails silently.
+
+**With a container, events only reach GA4 once a tag exists for them in GTM.**
+The property will otherwise show just Google's own automatic events while the
+storefront is pushing correctly. Build tags for the names in
+`lib/tracking/taxonomy.ts` — the GA4 names are those, with `propeller.` rewritten
+to `propeller_` (a dot is illegal in a GA4 event name).
+
+Two payload conventions worth knowing before reading a report:
+
+- **`value` is EX-VAT, with `tax` reported separately.** This SDK inverts the
+  usual naming — `gross` excludes VAT and `net` includes it — so the ex-VAT
+  figure is `total.gross` / `totalGross`. Matches the WordPress plugin, so
+  reports are comparable across Propeller storefronts.
+- **Cart quantity edits report the delta**, not the resulting line quantity:
+  raising a line 2 → 5 is `add_to_cart` with quantity 3.
+
+Verify with `npm run test:tracking` (mapping unit tests) and the two Playwright
+specs — `e2e/tests/anonymous/13-ga4.spec.ts` and
+`e2e/tests/contact/09-ga4-funnel.spec.ts` — which assert on the real `dataLayer`
+in a browser and skip themselves when `USE_GA4` is off.
 
 ## PunchOut (OCI + cXML)
 

@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isHomeSlug } from '@/lib/cms/core';
+import { LOCALES } from '@/locales/_locales';
 
 const DEFAULT_LANGUAGE = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
 
-/** Locale codes that get a URL prefix (everything except the default). */
-const LOCALE_PREFIXES = ['en', 'de', 'fr']; // extend as needed
+/**
+ * Locale codes that get a URL prefix (everything except the default).
+ *
+ * Derived from the locale folders the shop actually ships, NOT a hardcoded
+ * list. The previous `['en', 'de', 'fr']` silently assumed a Dutch-default
+ * shop: any storefront whose prefixed locale was outside that set never
+ * matched the rewrite below, so every prefixed URL 404'd while the language
+ * switcher still "worked" client-side — the site looked bilingual right up
+ * until the visitor's next click (PWP-942 #14). `data/config.ts`'s
+ * `localizeHref()` prefixes every internal link, so that is the whole site.
+ */
+// `string[]`, not the generated literal union: these are compared against
+// whatever two-letter segment the URL happens to carry.
+const LOCALE_PREFIXES: string[] = LOCALES.filter((c) => c.toUpperCase() !== DEFAULT_LANGUAGE);
 
 // Prepr-specific behavior (personalization bridge, tracking-pixel CSP allowlist,
 // preview iframe framing) is gated on Prepr being the active CMS. On any other
@@ -23,6 +36,15 @@ const IS_PREPR =
 // visitor being tracked is the visitor being personalized — if these diverged,
 // none of it would line up.
 const PREPR_UID_COOKIE = '__prepr_uid';
+
+// ── Behaviour-tracking visitor id (PWP-910) ─────────────────────────────────
+// A first-party, CMS-independent visitor id. Deliberately NOT the Prepr cookie:
+// reusing `__prepr_uid` would make behaviour tracking silently stop working on
+// any shop that picks a different CMS. Minted here rather than client-side so
+// it exists on the very first render and survives login/logout, which is what
+// makes anonymous-then-identified stitching possible at all.
+const VISITOR_COOKIE = 'pr_vid';
+const VISITOR_MAX_AGE = 365 * 24 * 60 * 60;
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
 /**
@@ -92,6 +114,14 @@ const isProd = process.env.NODE_ENV === 'production';
 // the script and no tracking/personalization runs. Added only when Prepr is the
 // CMS. ('https:' in connect-src already permits the pixel's event beacons.)
 const PREPR_SCRIPT_SRC = IS_PREPR ? ' https://cdn.tracking.prepr.io' : '';
+// gtag.js and the GTM container are both served from googletagmanager.com — it
+// must be in script-src or the browser blocks them and nothing is collected.
+// ('https:' in connect-src already permits the beacons to google-analytics.com.)
+// Kept on the same flag as the loader so the allowlist cannot drift from it.
+const GA_SCRIPT_SRC =
+  (process.env.NEXT_PUBLIC_USE_GA4 || '').toLowerCase() === 'true'
+    ? ' https://www.googletagmanager.com'
+    : '';
 // Allow Prepr's in-CMS preview to frame the storefront (editor preview iframe).
 // Non-Prepr keeps the strict `'none'` + X-Frame-Options: DENY below.
 const FRAME_ANCESTORS = IS_PREPR ? "frame-ancestors 'self' https://*.prepr.io" : "frame-ancestors 'none'";
@@ -101,7 +131,7 @@ const CSP_PROD = [
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${PREPR_SCRIPT_SRC}`,
+  `script-src 'self' 'unsafe-inline'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}`,
   "connect-src 'self' https:",
   // Allow embedded product videos (ProductVideos iframes). Without an explicit
   // frame-src, iframes fall back to default-src 'self' and YouTube/Vimeo embeds
@@ -118,7 +148,7 @@ const CSP_DEV = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   // Next.js dev (HMR) requires eval + inline.
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval'${PREPR_SCRIPT_SRC}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}`,
   // Allow ws/wss for HMR websocket.
   "connect-src 'self' ws: wss: https: http:",
   // Allow embedded product videos (ProductVideos iframes) — see CSP_PROD.
@@ -128,7 +158,17 @@ const CSP_DEV = [
   "form-action 'self'",
 ].join('; ');
 
-function applySecurityHeaders(response: NextResponse): NextResponse {
+function applySecurityHeaders(response: NextResponse, request?: NextRequest): NextResponse {
+  // Mint the tracking visitor id here because every non-API response returns
+  // through this function — adding it per return path would guarantee one gets
+  // missed the next time a branch is added.
+  if (request && !request.cookies.get(VISITOR_COOKIE)) {
+    response.cookies.set(VISITOR_COOKIE, crypto.randomUUID(), {
+      path: '/',
+      maxAge: VISITOR_MAX_AGE,
+      sameSite: 'lax',
+    });
+  }
   response.headers.set('Content-Security-Policy', isProd ? CSP_PROD : CSP_DEV);
   // X-Frame-Options is all-or-nothing and can't allow Prepr's preview iframe, so
   // under Prepr framing is controlled by CSP `frame-ancestors` alone (scoped to
@@ -175,9 +215,9 @@ export function proxy(request: NextRequest) {
       localeHeaders.set('x-cms-locale', locale.toUpperCase());
       const response = NextResponse.rewrite(url, { request: { headers: localeHeaders } });
       response.cookies.set('preferred_language', locale.toUpperCase(), { path: '/' });
-      return applySecurityHeaders(response);
+      return applySecurityHeaders(response, request);
     }
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(NextResponse.next(), request);
   }
 
   // ── Prepr path: personalization bridge + home-slug rewrite. ──
@@ -203,7 +243,7 @@ export function proxy(request: NextRequest) {
     url.pathname = '/';
     const response = NextResponse.rewrite(url, { request: { headers } });
     response.cookies.set('preferred_language', DEFAULT_LANGUAGE, { path: '/' });
-    return persistPreprUid(applySecurityHeaders(response), uid, isNew);
+    return persistPreprUid(applySecurityHeaders(response, request), uid, isNew);
   }
 
   if (hasLocalePrefix && match) {
@@ -219,14 +259,14 @@ export function proxy(request: NextRequest) {
     const response = NextResponse.rewrite(url, { request: { headers } });
     // Set cookie so client-side LanguageContext can pick it up on first load
     response.cookies.set('preferred_language', locale.toUpperCase(), { path: '/' });
-    return persistPreprUid(applySecurityHeaders(response), uid, isNew);
+    return persistPreprUid(applySecurityHeaders(response, request), uid, isNew);
   }
 
   // No locale prefix → default locale for THIS request. The cookie is left
   // alone: it carries the user's choice across navigations, and overwriting it
   // here reset every unprefixed page back to the default.
   const response = NextResponse.next({ request: { headers } });
-  return persistPreprUid(applySecurityHeaders(response), uid, isNew);
+  return persistPreprUid(applySecurityHeaders(response, request), uid, isNew);
 }
 
 export const config = {

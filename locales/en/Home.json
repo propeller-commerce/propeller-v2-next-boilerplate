@@ -1,8 +1,8 @@
 {
-  "heroBadge": "New Arrivals 2024",
-  "heroTitleLine1": "High-Performance",
-  "heroTitleLine2": "Workstations",
-  "heroDescription": "Experience the power of next-gen computing. Built for professionals who demand speed, reliability, and silence.",
+  "heroBadge": "New arrivals",
+  "heroTitleLine1": "Everything you need,",
+  "heroTitleLine2": "in one place",
+  "heroDescription": "Browse the full range and order online, with fast delivery and clear pricing.",
   "shopNow": "Shop Now",
   "viewDetails": "View Details",
   "freeShippingTitle": "Free Shipping",
@@ -12,6 +12,5 @@
   "secureCheckoutTitle": "Secure Checkout",
   "secureCheckoutText": "Protected by SSL encryption",
   "shopByCategory": "Shop by Category",
-  "categorySubtitle": "Browse our wide range of premium components and peripherals.",
-  "heroImageAlt": "Industrial Background"
+  "categorySubtitle": "Browse the full range."
 }

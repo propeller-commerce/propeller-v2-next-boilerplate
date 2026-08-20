@@ -17,6 +17,8 @@
  */
 
 import { useEffect, useState, useMemo } from 'react';
+import { trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracking';
+import TrackView from '@/components/tracking/TrackView';
 import { useRouter } from 'next/navigation';
 import {
   AttributeFilter,
@@ -411,17 +413,43 @@ export default function CategoryIsland({
     );
   };
 
+  // The surface this island represents — passed into the grid callbacks so an
+  // add-to-cart from the category grid is distinguishable from the same product
+  // added on its PDP. That distinction is what answers "does the grid convert?".
+  // The category NAME, not just its id: GA4's `item_list_name` is what a
+  // merchant reads in the reports, and "category" is not a useful label there.
+  const categoryName =
+    category?.names?.find((n) => n.language?.toUpperCase() === language?.slice(0, 2).toUpperCase())?.value ??
+    category?.names?.[0]?.value ??
+    null;
+  const categorySource = { type: 'category' as const, id: categoryId, name: categoryName, page: currentPage };
+
   const productClick = (product: Product) => {
+    trackSelectItem(categorySource, product, null, language);
     router.push(config.urls.getProductUrl(product, language));
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // `view_item_list` once per rendered result set; the bus dedupes the repeat
+  // renders that a filter/sort change produces for the same page.
+  useEffect(() => {
+    if (itemsFound <= 0) return;
+    trackViewItemList(categorySource, itemsFound, pageItemCount, productsResponse?.items as never, {
+      language,
+      offset: productsResponse?.offset,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId, currentPage, itemsFound, pageItemCount, productsResponse, language]);
+
+   
   const defaultSort = useMemo(
     () => [{ field: sortField as string, order: sortOrder as string }],
     [sortField, sortOrder]
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
+  // Hoisted out of the dependency list: the linter needs plain identifiers
+  // there, and a call expression is re-evaluated on every render anyway.
+  const filtersKey = JSON.stringify(filters);
   const activeTextFilters = useMemo(
     () =>
       Object.entries(filters)
@@ -437,11 +465,12 @@ export default function CategoryIsland({
             type: filterDef?.type ?? AttributeType.TEXT,
           };
         }),
-    [JSON.stringify(filters), gridFilters]
+    [filtersKey, gridFilters]
   );
 
   return (
     <>
+      <TrackView pageType="category" entityType="category" entityId={categoryId} />
       <CategoryDescription category={category} language={language} labels={categoryDescriptionLabels} />
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -533,8 +562,9 @@ export default function CategoryIsland({
             onLoadingChange={setFiltersLoading}
             page={currentPage}
             onPageChange={setCurrentPage}
-            afterAddToCart={(c) => {
+            afterAddToCart={(c, item) => {
               saveCart(c);
+              trackAddToCart(categorySource, item, c, null, language);
             }}
             onProceedToCheckout={() =>
               router.push(localizeHref('/checkout', language))
@@ -545,6 +575,7 @@ export default function CategoryIsland({
             onProductsResponse={setProductsResponse}
             onCategoryChange={setCategory}
             onClusterClick={(cluster: Cluster) => {
+              trackSelectItem(categorySource, cluster, null, language);
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
             labels={productGridLabels}

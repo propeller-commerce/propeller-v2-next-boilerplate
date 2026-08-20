@@ -19,6 +19,7 @@ export default function PunchoutTransfer() {
   // Read the flag after mount to avoid a hydration mismatch (server render
   // can't see document.cookie).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- document.cookie does not exist during SSR, so the flag can only be read after mount
     setActive(/(?:^|;\s*)punchout_active=/.test(document.cookie));
   }, []);
 

@@ -11,7 +11,6 @@ import { useOrders } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderSummary } from '@propeller-commerce/propeller-v2-react-ui';
 import { QuoteActions } from '@propeller-commerce/propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { OrderItemCard } from '@propeller-commerce/propeller-v2-react-ui';
@@ -21,6 +20,7 @@ import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
+import { track } from '@/lib/tracking';
 
 // COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
@@ -46,6 +46,14 @@ export default function QuoteDetailPage() {
             const result = await getOrderById(Number(quoteId));
             if (result.success && result.order) {
                 setQuote(result.order);
+                // A quote viewed repeatedly without being accepted is a stalled
+                // deal with a name and a value on it — the "call this account"
+                // signal (PWP-910).
+                track(
+                    'propeller.quote_viewed',
+                    { order_id: Number(quoteId) || null, value: result.order?.total?.net ?? null, order_status: result.order?.status ?? null },
+                    `quote_viewed:${quoteId}`
+                );
             } else {
                 setError(result.error ?? 'Quote not found');
             }
@@ -58,6 +66,17 @@ export default function QuoteDetailPage() {
     }, [quoteId]);
 
     const handleAfterAccept = async (acceptedQuote: Order) => {
+        // "Quote viewed repeatedly but never accepted" is the stalled-deal
+        // signal; this is the event that closes that loop (PWP-910).
+        track(
+            'propeller.quote_accepted',
+            {
+                quote_id: Number(acceptedQuote?.id) || null,
+                value: acceptedQuote?.total?.gross ?? null,
+                item_count: acceptedQuote?.items?.length ?? 0,
+            },
+            `quote_accepted:${acceptedQuote?.id ?? ''}`
+        );
         router.push(localizeHref(`/checkout/thank-you/${acceptedQuote.id}`, language));
     };
 
@@ -91,6 +110,11 @@ export default function QuoteDetailPage() {
         setDownloading(true);
         try {
             const result = await downloadQuotePdf(Number(quoteId));
+            track(
+                'propeller.order_pdf_downloaded',
+                { order_id: Number(quoteId) || null, doc_type: 'quote' },
+                `order_pdf_downloaded:quote:${quoteId}:${Math.floor(Date.now() / 2000)}`
+            );
             if (result?.success) {
                 showDownloadToast(t.pdfDownloaded, 'success');
             } else {

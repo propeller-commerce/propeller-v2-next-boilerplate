@@ -1,4 +1,5 @@
 'use client';
+import { track } from '@/lib/tracking';
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -81,9 +82,26 @@ export default function AddressesPage() {
     setShowAddModal(true);
   };
 
+  /**
+   * Address events carry `owner_type` because the composable branches on
+   * company vs customer input, so the two are genuinely different signals.
+   */
+  const trackAddress = (name: string, address: { id?: unknown; type?: unknown }) => {
+    track(
+      name,
+      {
+        address_id: address?.id != null ? Number(address.id) : null,
+        address_type: (address?.type as string) ?? null,
+        owner_type: isContact(authState.user) ? 'company' : 'customer',
+      },
+      `${name}:${address?.id ?? 'new'}:${Math.floor(Date.now() / 2000)}`
+    );
+  };
+
   const handleEditAddress = async (address: Address) => {
     const result = await updateAddress(Number(address.id), address as Partial<AddressInput>);
     if (result.success) {
+      trackAddress('propeller.address_updated', address);
       await refreshUser();
       toast.success(t.addressUpdated);
     } else {
@@ -94,6 +112,7 @@ export default function AddressesPage() {
   const handleDeleteAddress = async (address: Address) => {
     const result = await deleteAddress(Number(address.id));
     if (result.success) {
+      trackAddress('propeller.address_deleted', address);
       await refreshUser();
       toast.success(t.addressDeleted);
     } else {
@@ -104,6 +123,7 @@ export default function AddressesPage() {
   const handleSetDefault = async (address: Address) => {
     const result = await setDefaultAddress(Number(address.id));
     if (result.success) {
+      trackAddress('propeller.address_set_default', address);
       await refreshUser();
       toast.success(t.addressSetDefault);
     } else {
@@ -133,6 +153,9 @@ export default function AddressesPage() {
 
     const result = await createAddress(input);
     if (result.success) {
+      // A new DELIVERY address is a new site or branch — expansion, and a
+      // conversation a rep would otherwise never hear about (PWP-910).
+      trackAddress('propeller.address_created', { ...input, id: undefined });
       await refreshUser();
       toast.success(t.addressCreated);
       setShowAddModal(false);

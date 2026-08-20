@@ -19,7 +19,6 @@ import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { graphqlClient } from '@/lib/api';
 import { AttributeFilter, AttributeType, Cluster, Product, ProductSortField, ProductsResponse, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
 import { ProductGrid } from '@propeller-commerce/propeller-v2-react-ui';
 import { GridToolbar } from '@propeller-commerce/propeller-v2-react-ui';
@@ -103,12 +102,9 @@ export default function SearchPage() {
   const [filtersLoading, setFiltersLoading] = useState(false);
   const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(null);
 
-  const { state } = useAuth();
-  const { selectedCompany } = useCompany();
   const { cart, saveCart } = useCart();
   const { language } = useLanguage();
   const baseCategoryId = useBaseCategoryId();
-  const { includeTax } = usePrice();
   const searchLabels = useTranslations('Search');
   const gridPaginationLabels = useTranslations('GridPagination');
   const gridFiltersLabels = useTranslations('GridFilters');

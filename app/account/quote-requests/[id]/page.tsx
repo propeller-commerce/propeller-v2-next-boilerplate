@@ -3,14 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
 import { useOrders } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderSummary } from '@propeller-commerce/propeller-v2-react-ui';
 import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { OrderItemCard } from '@propeller-commerce/propeller-v2-react-ui';

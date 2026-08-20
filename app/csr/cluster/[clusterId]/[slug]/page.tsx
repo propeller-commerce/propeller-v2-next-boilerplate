@@ -24,7 +24,6 @@ import { ClusterConfigurator } from '@propeller-commerce/propeller-v2-react-ui';
 import { ClusterOptions } from '@propeller-commerce/propeller-v2-react-ui';
 import { ClusterInfo } from '@propeller-commerce/propeller-v2-react-ui';
 import { Cart, Cluster, CrossupsellType, Product, ProductPrice as ProductPriceSDK } from '@propeller-commerce/propeller-sdk-v2';
-import { graphqlClient } from '@/lib/api';
 import { useCart } from '@/context/CartContext';
 import { ProductGallery } from '@propeller-commerce/propeller-v2-react-ui';
 import { Breadcrumbs } from '@propeller-commerce/propeller-v2-react-ui';
@@ -54,9 +53,7 @@ export default function ClusterPage() {
   const [showClusterErrors, setShowClusterErrors] = useState(false);
 
   const { cart, saveCart } = useCart();
-  const { state, refreshUser } = useAuth();
-  const { selectedCompany } = useCompany();
-  const { includeTax } = usePrice();
+  const { refreshUser } = useAuth();
   const { language } = useLanguage();
   const router = useRouter();
   const breadcrumbsLabels = useTranslations('Breadcrumbs');

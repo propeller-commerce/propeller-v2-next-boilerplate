@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-20
+
+### Added
+
+- **Storefront tracking and a `/tracker` dashboard (PWP-910).** An event bus
+  and ingest route writing to a `propeller_analytics` schema, storefront
+  instrumentation, a grouped metrics dashboard with a query allowlist behind
+  `/api/tracker`, a daily rollup job, unit tests and a demo seeder. No new
+  dependencies.
+- **The channel's anonymous user is handed to the client (PWP-942 #22).**
+  `resolveAnonymousUserId()` resolves it server-side and the root layout seeds
+  it into the package `configuration`, the same route `baseCategoryId` takes.
+  Anonymous SSR and the client refetch now scope catalog queries identically;
+  previously the client asked an unscoped question and quietly replaced a
+  correctly-scoped product list with a different one.
+
+### Fixed
+
+- **Checkout crashed on every render (`isContact` in its temporal dead
+  zone).** Hoisting the checkout helpers above the effects that call them left
+  `getActiveCompany()` running before `isContact` was initialised. `tsc` can't
+  see a TDZ across a closure and `next build` never renders a dynamic route,
+  so both gates passed. `isContact` now lives at module scope.
+- **Non-default-language URLs 404'd (PWP-942 #14).** `proxy.ts` hardcoded
+  `['en','de','fr']`, so a shop scaffolded with other locales lost every
+  prefixed URL the moment a visitor switched language. The prefix list is now
+  derived from the locale folders the shop actually ships.
+- **A bad endpoint or api key was reported as a channel-config problem, and
+  cached (PWP-942 #9).** `getChannelDefaults` swallowed every failure into
+  `{}`, so DNS failures, a 401 and "this channel has no catalogRootId" were
+  indistinguishable — and the empty result was written to the Next data cache,
+  surviving a dev-server restart until `.next` was deleted. It now throws with
+  the endpoint named, and a rejected promise is never cached.
+- **Server and client could disagree on five settings (PWP-942 #3).** The
+  `NEXT_PUBLIC_` twins of `BOILERPLATE_DEFAULT_LANGUAGE`, the machine source /
+  language, `CMS_PROVIDER`, `PAYMENT_PROVIDER` and `ON_ACCOUNT_PAYMENTS` are
+  now derived from their server variable in `next.config.ts` instead of being
+  kept in sync by hand. An explicitly-set public value still wins when the
+  server one is absent, so existing shops are unaffected.
+- **Header nav linked to routes that don't exist (PWP-942 #18).** The no-CMS
+  fallback offered `/new-arrivals`, `/best-sellers` and `/sale` — three 404s
+  out of about six visible items. Dropped.
+- **`npm run clean` was Windows-only (PWP-942 #5)** and `package.json`
+  declared a `workspaces` array for a `packages/` directory that doesn't exist
+  (#7).
+- **`docs/` was scaffolded and then ignored by `.gitignore` (PWP-942 #6),** so
+  it vanished from the history of every shop on first commit. Only the agent
+  scratch directory under it is ignored now.
+
+### Changed
+
+- **The homepage placeholder is vertical-neutral (PWP-942 #19).** The hero
+  copy no longer sells workstations, the category icons are no longer
+  electronics emoji, and the 750KB photo of server hardware is replaced by a
+  gradient drawn from the theme tokens. Drop your own image in when you have
+  one.
+- **The scaffold passes its own lint (PWP-942 #20)** — 155 errors to zero.
+  Mostly real fixes: `lib/services` typed, a duplicated copy of
+  `getUserSegments` deleted, `StepIndicator` hoisted out of render, the mobile
+  search transition replaced by a CSS animation and its clear-signal counter by
+  a remount key. `@typescript-eslint/no-explicit-any` is switched off for the
+  five CMS decoder files only — they decode vendors' JSON shapes — and stays an
+  error everywhere else.
+- **Env example trimmed (PWP-942 #21)** — a REQUIRED block at the top naming
+  the three values a minimal shop needs, and the removed/never-wired variables
+  moved out of the file every integrator has to read.
+- **Next 16.0.10 → 16.3.1 (PWP-942 #10),** clearing the fixable audit
+  advisories: 9 down to 3. The remainder are `xlsx` (SheetJS is no longer on
+  npm; no fix available) and `fast-xml-parser` via
+  `@propeller-commerce/propeller-v2-punchout`, which needs a major bump there.
+
 ## [1.11.17] - 2026-08-12
 
 ### Fixed

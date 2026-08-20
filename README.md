@@ -134,9 +134,16 @@ client**, so the API key and GraphQL endpoint stay secret):
 - `BOILERPLATE_API_KEY` - API key injected server-side by the proxy
 - `BOILERPLATE_ORDER_EDITOR_API_KEY` - order-editor API key
 - `BOILERPLATE_MENU_DEPTH` - menu nesting depth
-- `BOILERPLATE_ANONYMOUS_USER_ID` - anonymous user id
-- `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL)
-- `JWT_SECRET` - secret for signing/validating the auth cookie
+- `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL). Its `NEXT_PUBLIC_`
+  twin is derived from this in `next.config.ts` — there is nothing to keep in
+  sync (the same holds for the machine source/language, `CMS_PROVIDER`,
+  `PAYMENT_PROVIDER` and `ON_ACCOUNT_PAYMENTS`)
+
+The anonymous user is **not** an env var: it comes from
+`channel(NEXT_PUBLIC_CHANNEL_ID).anonymousUserId`, resolved server-side and
+seeded to the client so both scope catalog queries the same way. `JWT_SECRET`
+is gone too — JWTs are issued and verified upstream, and nothing here ever
+signed one.
 
 Exposed to the browser:
 

@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-08-20
+
+### Added
+
+- **GA4 / Google Tag Manager layer (PWP-910).** A second subscriber on the
+  existing tracking bus: `lib/tracking/ga4.ts` maps our event vocabulary onto
+  Google's, `lib/tracking/items.ts` builds the `items[]` array every GA4
+  ecommerce report is keyed on, and `components/tracking/GoogleTags.tsx` (a
+  Server Component) loads the tags. Gated on `USE_GA4`, with `GA4_KEY` and an
+  optional `GTM_KEY`; the `NEXT_PUBLIC_` twins are derived in `next.config.ts`
+  and `proxy.ts` widens the CSP off the same flag. Off by default — no script
+  and no `dataLayer` when disabled. No new dependencies.
+- **Commerce events now carry `items[]`.** The emit sites previously sent flat
+  scalars, which a mapper cannot turn into a GA4 payload — item name, unit price
+  and brand were never captured. Ported from the WordPress plugin's mappers so
+  both storefronts report the same shape: `item_id` is the SKU, `index` is
+  page-aware across pagination, and prices are omitted (not zeroed) for
+  price-on-request products and closed portals.
+- **19 previously-unwired taxonomy events.** Address CRUD, `order_viewed`,
+  `reorder_started`, `quote_accepted`, `registration_submitted` / `sign_up`,
+  `company_switched`, quick order, machines and spare parts, punchout entry,
+  and the purchase-authorization set. 56 of 61 names now have an emit site.
+- **Two Playwright specs asserting on the real `dataLayer`** — the commerce
+  funnel in the anonymous suite (this is a hybrid shop: add-to-cart and checkout
+  work logged out) and `purchase` plus the account events in the contact suite.
+  Both skip when `USE_GA4` is off.
+
+### Fixed
+
+- **Revenue was inflated by the VAT rate on `view_cart` and `begin_checkout`.**
+  Both sent `totalNet`, which is the tax-INCLUSIVE total in this SDK — `gross`
+  is the ex-VAT one, contrary to the usual meaning of the words. GA4 now gets
+  the ex-VAT figure with `tax` alongside it.
+- **`purchase` fired on arrival at the thank-you page**, before the PSP had
+  settled, so failed and cancelled payments were booked as revenue. It now waits
+  for the success branch; non-PSP orders are final on arrival and still emit
+  immediately.
+- **Cart quantity edits reported the new line total instead of the delta**,
+  multiplying cart-add volume. Raising a line 2 → 5 is now an add of 3.
+  `remove_from_cart` was not emitted at all; one cart diff at the single
+  `afterCartUpdate` callback now covers adds, removals and quantity edits.
+- **The authenticated e2e suite could not log in.** The setup matched
+  `getByLabel(/password/i)` against a Dutch storefront whose label is
+  "Wachtwoord", so every contact and customer test failed on that line. Setups
+  now locate the stable input ids, and `playwright.config.ts` loads `.env.local`
+  via `@next/env` so `TEST_CONTACT_*` / `TEST_CUSTOMER_*` are actually read
+  instead of silently falling back to hardcoded defaults.
+- **Temporal dead zone in the cart page**, the same shape as PWP-942 #20: the
+  tracking effect sat above the `useLanguage()` call it read.
+
 ## [1.12.0] - 2026-08-20
 
 ### Added

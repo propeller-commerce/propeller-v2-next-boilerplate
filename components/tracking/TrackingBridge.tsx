@@ -7,6 +7,7 @@ import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { config } from '@/data/config';
 import { tracker, track, batchTo } from '@/lib/tracking';
+import { GA4_ENABLED, ga4Subscriber } from '@/lib/tracking/ga4';
 import type { TrackingContext, UserMode } from '@/lib/tracking';
 
 /**
@@ -90,10 +91,19 @@ export default function TrackingBridge() {
   const { selectedCompany } = useCompany();
   const { language } = useLanguage();
 
-  // Register the transport exactly once for the life of the page.
+  // Register the transports exactly once for the life of the page.
+  //
+  // Subscribers are independent: GA4 receiving a malformed event cannot stop
+  // the row reaching `/api/track`, and vice versa — the bus isolates throwing
+  // subscribers from each other. Both run off the same event, so instrumenting
+  // once feeds every sink.
   useEffect(() => {
-    const unsubscribe = tracker.subscribe(batchTo('/api/track'));
-    return unsubscribe;
+    const offBatch = tracker.subscribe(batchTo('/api/track'));
+    const offGa4 = GA4_ENABLED ? tracker.subscribe(ga4Subscriber()) : null;
+    return () => {
+      offBatch();
+      offGa4?.();
+    };
   }, []);
 
   const user = state.user as { contactId?: number; customerId?: number } | null;

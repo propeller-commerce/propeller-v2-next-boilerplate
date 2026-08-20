@@ -1,4 +1,5 @@
 'use client';
+import { track } from '@/lib/tracking';
 
 import { Company } from '@propeller-commerce/propeller-sdk-v2';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
@@ -68,10 +69,32 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   const setSelectedCompany = useCallback((company: Company) => {
+    // The PREVIOUS company is read from storage rather than from React state:
+    // this callback has empty deps, so a captured `selectedCompany` would be
+    // stale, and reading it inside a state updater would fire the event twice
+    // under StrictMode.
+    let previousId: number | null = null;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      previousId = stored ? (JSON.parse(stored) as Company)?.companyId ?? null : null;
+    } catch {
+      /* unreadable storage is not worth failing a company switch over */
+    }
+
     setSelectedCompanyState(company);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(company));
     writeCompanyCookie(company.companyId);
     window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
+
+    // Only a real change is a switch — this setter also runs on login and on
+    // restore, where from === to and nothing was chosen (PWP-910).
+    if (previousId != null && previousId !== company.companyId) {
+      track(
+        'propeller.company_switched',
+        { from_company_id: previousId, to_company_id: company.companyId },
+        `company_switched:${previousId}:${company.companyId}:${Math.floor(Date.now() / 2000)}`
+      );
+    }
   }, []);
 
   const clearSelectedCompany = useCallback(() => {

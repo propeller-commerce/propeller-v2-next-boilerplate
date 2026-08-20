@@ -416,10 +416,16 @@ export default function CategoryIsland({
   // The surface this island represents — passed into the grid callbacks so an
   // add-to-cart from the category grid is distinguishable from the same product
   // added on its PDP. That distinction is what answers "does the grid convert?".
-  const categorySource = { type: 'category' as const, id: categoryId, page: currentPage };
+  // The category NAME, not just its id: GA4's `item_list_name` is what a
+  // merchant reads in the reports, and "category" is not a useful label there.
+  const categoryName =
+    category?.names?.find((n) => n.language?.toUpperCase() === language?.slice(0, 2).toUpperCase())?.value ??
+    category?.names?.[0]?.value ??
+    null;
+  const categorySource = { type: 'category' as const, id: categoryId, name: categoryName, page: currentPage };
 
   const productClick = (product: Product) => {
-    trackSelectItem(categorySource, product);
+    trackSelectItem(categorySource, product, null, language);
     router.push(config.urls.getProductUrl(product, language));
   };
 
@@ -427,9 +433,12 @@ export default function CategoryIsland({
   // renders that a filter/sort change produces for the same page.
   useEffect(() => {
     if (itemsFound <= 0) return;
-    trackViewItemList(categorySource, itemsFound, pageItemCount);
+    trackViewItemList(categorySource, itemsFound, pageItemCount, productsResponse?.items as never, {
+      language,
+      offset: productsResponse?.offset,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryId, currentPage, itemsFound, pageItemCount]);
+  }, [categoryId, currentPage, itemsFound, pageItemCount, productsResponse, language]);
 
    
   const defaultSort = useMemo(
@@ -555,7 +564,7 @@ export default function CategoryIsland({
             onPageChange={setCurrentPage}
             afterAddToCart={(c, item) => {
               saveCart(c);
-              trackAddToCart(categorySource, item);
+              trackAddToCart(categorySource, item, c, null, language);
             }}
             onProceedToCheckout={() =>
               router.push(localizeHref('/checkout', language))
@@ -566,7 +575,7 @@ export default function CategoryIsland({
             onProductsResponse={setProductsResponse}
             onCategoryChange={setCategory}
             onClusterClick={(cluster: Cluster) => {
-              trackSelectItem(categorySource, cluster);
+              trackSelectItem(categorySource, cluster, null, language);
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
             labels={productGridLabels}

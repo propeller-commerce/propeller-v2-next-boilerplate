@@ -208,7 +208,12 @@ export default function SearchIsland({
       },
       `search:${key}`
     );
-    trackViewItemList(searchSource, itemsFound, pageItemCount);
+    // The rendered page of products rides along as GA4 `items[]`. It is the
+    // one thing the GA4 mapper cannot invent, and it is already in hand here.
+    trackViewItemList(searchSource, itemsFound, pageItemCount, productsResponse?.items as never, {
+      language,
+      offset: productsResponse?.offset,
+    });
     if (itemsFound === 0) {
       // `filters_active` separates the two causes: over-filtering is a UX
       // problem, a bare term with no hits is an assortment gap. Different
@@ -222,7 +227,7 @@ export default function SearchIsland({
         `search_no_results:${key}`
       );
     }
-  }, [term, filtersLoading, productsResponse, itemsFound, filtersKey, currentPage, filters]);
+  }, [term, filtersLoading, productsResponse, itemsFound, filtersKey, currentPage, filters, language]);
 
   // Keep URL-derived state in sync after browser back/forward — parsed via
   // the same `parseListingParams` the Server Component uses.
@@ -560,7 +565,7 @@ export default function SearchIsland({
             page={currentPage}
             afterAddToCart={(updatedCart, item) => {
               saveCart(updatedCart);
-              trackAddToCart(searchSource, item);
+              trackAddToCart(searchSource, item, updatedCart, null, language);
             }}
             onProceedToCheckout={() =>
               router.push(localizeHref('/checkout', language))
@@ -570,11 +575,11 @@ export default function SearchIsland({
             }
             onProductsResponse={setProductsResponse}
             onProductClick={(product: Product) => {
-              trackSelectItem(searchSource, product);
+              trackSelectItem(searchSource, product, null, language);
               router.push(config.urls.getProductUrl(product, language));
             }}
             onClusterClick={(cluster: Cluster) => {
-              trackSelectItem(searchSource, cluster);
+              trackSelectItem(searchSource, cluster, null, language);
               router.push(config.urls.getClusterUrl(cluster, language));
             }}
             labels={productGridLabels}

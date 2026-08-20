@@ -12,6 +12,7 @@ import { useBaseCategoryId } from '@/context/BaseCategoryContext';
 import { localizeHref, config } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import { parseQuickOrderXlsx } from '@/lib/parseQuickOrderXlsx';
+import { track, cartItems } from '@/lib/tracking';
 import toast from 'react-hot-toast';
 import type { Cart } from '@propeller-commerce/propeller-sdk-v2';
 
@@ -69,14 +70,44 @@ export default function QuickOrderPage() {
                 imageVariantFiltersSmall: config.imageVariantFiltersSmall,
                 baseCategoryId,
               }}
-              parseSpreadsheet={parseQuickOrderXlsx}
+              parseSpreadsheet={(file: File) => {
+                // Row count before matching: an upload that yields few matches
+                // is a data gap, and that only shows if both numbers exist.
+                const parsed = parseQuickOrderXlsx(file);
+                Promise.resolve(parsed)
+                  .then((rows) => {
+                    track(
+                      'propeller.quick_order_file_uploaded',
+                      { row_count: Array.isArray(rows) ? rows.length : null },
+                      `quick_order_file_uploaded:${Math.floor(Date.now() / 2000)}`
+                    );
+                  })
+                  .catch(() => {
+                    /* parse errors are the component's to surface, not ours */
+                  });
+                return parsed;
+              }}
               templateUrl="/files/quickorder-template.xlsx"
               afterAddToCart={(cart: Cart) => {
+                track(
+                  'propeller.quick_order_submitted',
+                  { item_count: cart?.items?.length ?? 0, items: cartItems(cart, language) },
+                  `quick_order_submitted:${cart?.cartId ?? ''}:${Math.floor(Date.now() / 2000)}`
+                );
                 saveCart(cart);
                 toast.success(t.added);
               }}
               onMissingCodes={(codes: string[]) => {
-                if (codes.length) toast.error(`${t.missing}: ${codes.join(', ')}`);
+                // The same class of signal as a zero-result search: a named
+                // account typing SKUs we cannot match is an assortment gap.
+                if (codes.length) {
+                  track(
+                    'propeller.quick_order_submitted',
+                    { unmatched_count: codes.length, unmatched_skus: codes.slice(0, 20) },
+                    `quick_order_unmatched:${codes.join(',').slice(0, 60)}`
+                  );
+                  toast.error(`${t.missing}: ${codes.join(', ')}`);
+                }
               }}
               labels={t}
             />

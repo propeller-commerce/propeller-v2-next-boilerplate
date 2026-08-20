@@ -30,7 +30,8 @@ import '@propeller-commerce/propeller-v2-spl/styles.css';
 import { useTranslations } from '@/lib/i18n/client';
 import { getTranslations } from '@/lib/i18n/server';
 import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
-import { track, trackAddToCart } from '@/lib/tracking';
+import { track, trackAddToCart, itemOptions } from '@/lib/tracking';
+import { itemsFromProducts } from '@/lib/tracking/items';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart, LoginToOrderButton } from '@propeller-commerce/propeller-v2-react-ui';
@@ -82,12 +83,25 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
       { page_type: 'product', entity_type: 'product', entity_id: productId, entity_name: name },
       `page_viewed:product:${productId}`
     );
+    // `items[]` + `value` so this maps straight onto GA4's `view_item`.
+    // Prices are suppressed in closed/semi-closed portals for the same reason
+    // the card is: an anonymous visitor must not learn them from the datalayer
+    // either.
+    const hidePrices = isContentHidden(config.portal.mode, authState.user);
+    const items = itemsFromProducts([product], itemOptions({ language, hidePrices }));
     track(
       'view_item',
-      { product_id: productId, sku: product?.sku ?? null, entity_name: name },
+      {
+        product_id: productId,
+        sku: product?.sku ?? null,
+        entity_name: name,
+        items,
+        value: items[0]?.price ?? null,
+      },
       `view_item:${productId}`
     );
-  }, [productId, product?.sku, product?.names]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, product?.sku, product?.names, language, authState.user]);
 
   // Update URL slug when the user switches language. Uses replaceState to
   // avoid a Next router re-render cascade that would otherwise trigger a
@@ -140,7 +154,7 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
             trackPreprEvent('AddToCart');
             // Behaviour tracking (PWP-910). Source 'pdp' is what separates a
             // considered add from an impulse add off a grid.
-            trackAddToCart({ type: 'pdp', id: product.productId }, item ?? null, c);
+            trackAddToCart({ type: 'pdp', id: product.productId }, item ?? null, c, null, language);
           }}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}

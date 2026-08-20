@@ -17,6 +17,7 @@ import { BaseCategoryProvider } from "@/context/BaseCategoryContext";
 import { resolveAnonymousUserId, resolveBaseCategoryId, resolveRequestLanguage } from "@/lib/server";
 import { TranslationsProvider } from "@/lib/i18n/client";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
+import GoogleTags from '@/components/tracking/GoogleTags';
 import ScrollReset from "@/components/layout/ScrollReset";
 import { Toaster } from "react-hot-toast";
 import { cookies } from "next/headers";
@@ -82,6 +83,7 @@ export default async function RootLayout({
             {`!function(e,t,p,r,n,a,s){e[r]||((n=e[r]=function(){n.process?n.process.apply(n,arguments):n.queue.push(arguments)}).queue=[],n.t=+new Date,(a=t.createElement(p)).async=1,a.src="https://cdn.tracking.prepr.io/js/prepr_v2.min.js?t="+864e5*Math.ceil(new Date/864e5),(s=t.getElementsByTagName(p)[0]).parentNode.insertBefore(a,s))}(window,document,"script","prepr"),prepr("init","${PREPR_TRACKING_TOKEN}"),prepr("event","pageload");`}
           </Script>
         ) : null}
+        <GoogleTags />
         {PREPR_ENABLED ? <PreprPreviewBar /> : null}
         {/* CMS adapter for client islands' optional `useCms()`. nextDemo fetches
             all CMS content server-side (Server Components call getPage/getArticle

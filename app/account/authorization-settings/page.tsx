@@ -1,4 +1,5 @@
 'use client';
+import type { PurchaseAuthorizationConfig } from '@propeller-commerce/propeller-sdk-v2';
 
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
@@ -7,6 +8,7 @@ import { PurchaseAuthorizationConfigurator } from '@propeller-commerce/propeller
 import { Contact, Customer, Company } from '@propeller-commerce/propeller-sdk-v2';
 import { orderEditorGraphqlClient } from '@/lib/api';
 import { useTranslations } from '@/lib/i18n/client';
+import { track } from '@/lib/tracking';
 
 export default function AuthorizationSettingsPage() {
     const { state } = useAuth();
@@ -37,7 +39,32 @@ export default function AuthorizationSettingsPage() {
             <PurchaseAuthorizationConfigurator
                 graphqlClient={orderEditorGraphqlClient}
                 labels={purchaseAuthorizationConfiguratorLabels}
+                afterPurchaseAuthorizationCreate={(pac) => trackPac('created', pac)}
+                afterPurchaseAuthorizationUpdate={(pac) => trackPac('updated', pac)}
+                afterPurchaseAuthorizationDelete={(deleted) => {
+                    if (deleted) trackPac('deleted', null);
+                }}
             />
         </div>
+    );
+}
+
+/**
+ * Procurement rules changing is a maturing buying process, which typically
+ * precedes larger orders (PWP-910). One event with an `action` prop rather than
+ * three: nobody will ever filter created vs updated separately here.
+ */
+function trackPac(
+    action: 'created' | 'updated' | 'deleted',
+    pac: PurchaseAuthorizationConfig | null
+) {
+    track(
+        'propeller.purchase_authorization_config_changed',
+        {
+            action,
+            role: pac?.purchaseRole ?? null,
+            limit: pac?.authorizationLimit ?? null,
+        },
+        `pac_changed:${action}:${pac?.id ?? ''}:${Math.floor(Date.now() / 2000)}`
     );
 }

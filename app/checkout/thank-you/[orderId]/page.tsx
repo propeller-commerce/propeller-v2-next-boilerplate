@@ -21,7 +21,7 @@ import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
 import { trackPreprEvent } from '@/lib/preprEvent';
-import { track } from '@/lib/tracking';
+import { track, orderItems } from '@/lib/tracking';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 
 /**
@@ -169,23 +169,34 @@ function ThankYouPageInner() {
     if (isQuoteMode) {
       track(
         'propeller.quote_requested',
-        { order_id: Number(orderId) || null, value: order.total?.net ?? null, item_count: order.items?.length ?? 0 },
+        { order_id: Number(orderId) || null, value: order.total?.gross ?? null, item_count: order.items?.length ?? 0 },
         `quote_requested:${orderId}`
       );
       return;
     }
+    // On a PSP return the payment is not settled yet — the provider redirects
+    // to this same URL whatever happened. Emitting on arrival would book
+    // revenue for payments that go on to fail, which is what the WordPress
+    // plugin avoids by redirecting failures away before its purchase event.
+    // Non-PSP orders (on account) are already final, so they emit immediately.
+    if (isPspReturn && paymentState !== 'success') return;
     track(
       'purchase',
       {
         order_id: Number(orderId) || null,
-        value: order.total?.net ?? null,
+        // `gross` is the EX-VAT total in this SDK, `net` the tax-inclusive one
+        // (OrderTotals' own doc comments). GA4 takes ex-VAT revenue with `tax`
+        // alongside it, matching the WordPress side.
+        value: order.total?.gross ?? null,
         tax: order.total?.tax ?? null,
+        shipping: order.postageData?.gross ?? null,
         item_count: order.items?.length ?? 0,
+        items: orderItems(order, language),
         order_status: (order.paymentData?.status || order.status || '') || null,
       },
       `purchase:${orderId}`
     );
-  }, [orderId, order, isQuoteMode]);
+  }, [orderId, order, isQuoteMode, isPspReturn, paymentState, language]);
 
   useEffect(() => {
     track('page_viewed', { page_type: 'thank_you' }, `page_viewed:thank_you:${orderId ?? ''}`);

@@ -114,6 +114,14 @@ const isProd = process.env.NODE_ENV === 'production';
 // the script and no tracking/personalization runs. Added only when Prepr is the
 // CMS. ('https:' in connect-src already permits the pixel's event beacons.)
 const PREPR_SCRIPT_SRC = IS_PREPR ? ' https://cdn.tracking.prepr.io' : '';
+// gtag.js and the GTM container are both served from googletagmanager.com — it
+// must be in script-src or the browser blocks them and nothing is collected.
+// ('https:' in connect-src already permits the beacons to google-analytics.com.)
+// Kept on the same flag as the loader so the allowlist cannot drift from it.
+const GA_SCRIPT_SRC =
+  (process.env.NEXT_PUBLIC_USE_GA4 || '').toLowerCase() === 'true'
+    ? ' https://www.googletagmanager.com'
+    : '';
 // Allow Prepr's in-CMS preview to frame the storefront (editor preview iframe).
 // Non-Prepr keeps the strict `'none'` + X-Frame-Options: DENY below.
 const FRAME_ANCESTORS = IS_PREPR ? "frame-ancestors 'self' https://*.prepr.io" : "frame-ancestors 'none'";
@@ -123,7 +131,7 @@ const CSP_PROD = [
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${PREPR_SCRIPT_SRC}`,
+  `script-src 'self' 'unsafe-inline'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}`,
   "connect-src 'self' https:",
   // Allow embedded product videos (ProductVideos iframes). Without an explicit
   // frame-src, iframes fall back to default-src 'self' and YouTube/Vimeo embeds
@@ -140,7 +148,7 @@ const CSP_DEV = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   // Next.js dev (HMR) requires eval + inline.
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval'${PREPR_SCRIPT_SRC}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}`,
   // Allow ws/wss for HMR websocket.
   "connect-src 'self' ws: wss: https: http:",
   // Allow embedded product videos (ProductVideos iframes) — see CSP_PROD.

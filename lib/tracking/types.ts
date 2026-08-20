@@ -19,6 +19,9 @@ export type UserMode = 'anonymous' | 'b2c' | 'b2b';
  */
 export type SourceType =
   | 'pdp'
+  // The cart page itself: quantity edits and removals originate here, not from
+  // whichever surface first added the line.
+  | 'cart'
   | 'category'
   | 'search'
   | 'cluster'

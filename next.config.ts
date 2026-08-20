@@ -28,6 +28,9 @@ const TWINS: Record<string, string | undefined> = {
   NEXT_PUBLIC_CMS_PROVIDER: process.env.CMS_PROVIDER,
   NEXT_PUBLIC_PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER,
   NEXT_PUBLIC_ON_ACCOUNT_PAYMENTS: process.env.ON_ACCOUNT_PAYMENTS,
+  NEXT_PUBLIC_USE_GA4: process.env.USE_GA4,
+  NEXT_PUBLIC_GA4_KEY: process.env.GA4_KEY,
+  NEXT_PUBLIC_GTM_KEY: process.env.GTM_KEY,
 };
 
 // `env` entries are inlined verbatim, so an `undefined` would land in the

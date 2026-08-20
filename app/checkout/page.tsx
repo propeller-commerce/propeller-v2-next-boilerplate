@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { track } from '@/lib/tracking';
+import { track, cartItems, cartValue } from '@/lib/tracking';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import Header from '@/components/layout/Header';
@@ -106,7 +106,14 @@ function CheckoutPageInner() {
     if (!checkoutCartId) return;
     track(
       'begin_checkout',
-      { value: state?.cart?.total?.totalNet ?? null, item_count: state?.cart?.items?.length ?? 0, is_quote_mode: isQuoteMode },
+      {
+        // `totalGross` is the EX-VAT total in this SDK — see lib/tracking/items.ts.
+        value: cartValue(state?.cart),
+        item_count: state?.cart?.items?.length ?? 0,
+        items: cartItems(state?.cart, language),
+        coupon: state?.cart?.actionCode ?? null,
+        is_quote_mode: isQuoteMode,
+      },
       `begin_checkout:${checkoutCartId}`
     );
     track('page_viewed', { page_type: 'checkout' }, `page_viewed:checkout:${checkoutCartId}`);
@@ -393,7 +400,15 @@ function CheckoutPageInner() {
       const updatedCart = await updateCartShipping(cart.cartId, { paymentData: { method: code } });
       saveCart(updatedCart);
       setState(prev => ({ ...prev, cart: updatedCart }));
-      track('add_payment_info', { payment_type: code }, `add_payment_info:${cart.cartId}:${code}`);
+      track(
+        'add_payment_info',
+        {
+          payment_type: code,
+          value: cartValue(updatedCart),
+          items: cartItems(updatedCart, language),
+        },
+        `add_payment_info:${cart.cartId}:${code}`
+      );
     } catch (error) {
       // Non-fatal: the totals stay stale, but Continue re-sends the method.
       console.error(error);
@@ -426,7 +441,11 @@ function CheckoutPageInner() {
       setState(prev => ({ ...prev, cart: updatedCart, currentStep: 4, loading: false }));
       track(
         'add_shipping_info',
-        { shipping_tier: state.selectedCarrier ?? null },
+        {
+          shipping_tier: state.selectedCarrier ?? null,
+          value: cartValue(updatedCart),
+          items: cartItems(updatedCart, language),
+        },
         `add_shipping_info:${state.cart!.cartId}:${state.selectedCarrier ?? ''}`
       );
     } catch (error) {

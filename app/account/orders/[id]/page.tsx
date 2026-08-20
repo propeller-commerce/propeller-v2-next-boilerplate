@@ -7,6 +7,7 @@ import { useCompany } from '@/context/CompanyContext';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
+import { track, orderItems } from '@/lib/tracking';
 import { Order, OrderItem, Company } from '@propeller-commerce/propeller-sdk-v2';
 import { useOrders } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderSummary } from '@propeller-commerce/propeller-v2-react-ui';
@@ -62,6 +63,23 @@ export default function OrderDetailPage() {
             const result = await getOrderById(Number(orderId));
             if (result.success && result.order) {
                 setOrder(result.order);
+                // `order_viewed` with the order's age: a rep reading the
+                // timeline cares that an OLD order was reopened (a dispute or
+                // an audit), not that a fresh one was.
+                const placed = result.order.createdAt ? Date.parse(String(result.order.createdAt)) : NaN;
+                track(
+                    'propeller.order_viewed',
+                    {
+                        order_id: Number(orderId) || null,
+                        order_status: result.order.status ?? null,
+                        value: result.order.total?.gross ?? null,
+                        item_count: result.order.items?.length ?? 0,
+                        age_days: Number.isNaN(placed)
+                            ? null
+                            : Math.floor((Date.now() - placed) / 86_400_000),
+                    },
+                    `order_viewed:${orderId}`
+                );
             } else {
                 setError(result.error ?? 'Order not found');
             }
@@ -118,7 +136,19 @@ export default function OrderDetailPage() {
                                 saveCart(newCart)
                             }}
                             afterReorder={(newCart) => {
-                                console.log('Cart reordered:', newCart);
+                                // Reorder is a distinct intent from a fresh add:
+                                // it is a repeat-purchase signal with a source
+                                // order attached (PWP-910).
+                                track(
+                                    'propeller.reorder_started',
+                                    {
+                                        source_order_id: Number(orderId) || null,
+                                        item_count: order?.items?.length ?? 0,
+                                        value: order?.total?.gross ?? null,
+                                        items: orderItems(order, language),
+                                    },
+                                    `reorder_started:${orderId}:${Math.floor(Date.now() / 2000)}`
+                                );
                                 saveCart(newCart)
                             }}
                         />

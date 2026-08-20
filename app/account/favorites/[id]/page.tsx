@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { FavoriteListDetails } from '@propeller-commerce/propeller-v2-react-ui';
 import { useTranslations } from '@/lib/i18n/client';
+import { track } from '@/lib/tracking';
 
 export default function FavoriteListPage() {
   const { state: authState, refreshUser } = useAuth();
@@ -41,6 +42,9 @@ export default function FavoriteListPage() {
 
   async function handleItemDelete(itemId: string, itemType?: string) {
     const numericId = Number(itemId);
+    // A curated shortlist is a buyer mid-decision — the strongest single
+    // intent signal in the account area (PWP-910).
+    track('propeller.favorite_removed', { list_id: Number(listId) || null }, `favorite_removed:${listId}:${Math.floor(Date.now() / 2000)}`);
     await removeFromList(
       listId,
       itemType === 'cluster' ? undefined : numericId,

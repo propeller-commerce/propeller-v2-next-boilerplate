@@ -30,6 +30,7 @@ import '@propeller-commerce/propeller-v2-spl/styles.css';
 import { useTranslations } from '@/lib/i18n/client';
 import { getTranslations } from '@/lib/i18n/server';
 import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
+import { track, trackAddToCart } from '@/lib/tracking';
 import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
 import { AddToCart, LoginToOrderButton } from '@propeller-commerce/propeller-v2-react-ui';
@@ -68,6 +69,25 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
   const { language } = useLanguage();
   const addToCartLabels = useTranslations('AddToCart');
   const addToFavoriteLabels = useTranslations('AddToFavorite');
+
+  // `page_viewed` + `view_item` for the PDP (PWP-910). Emitted from the island
+  // rather than the Server Component shell because a view has to be attributed
+  // to a browser — the shell's render is shared by the data cache. Deps are
+  // scalars so this fires once per product, not once per parent render.
+  useEffect(() => {
+    if (!productId) return;
+    const name = product?.names?.[0]?.value ?? null;
+    track(
+      'page_viewed',
+      { page_type: 'product', entity_type: 'product', entity_id: productId, entity_name: name },
+      `page_viewed:product:${productId}`
+    );
+    track(
+      'view_item',
+      { product_id: productId, sku: product?.sku ?? null, entity_name: name },
+      `view_item:${productId}`
+    );
+  }, [productId, product?.sku, product?.names]);
 
   // Update URL slug when the user switches language. Uses replaceState to
   // avoid a Next router re-render cascade that would otherwise trigger a
@@ -113,11 +133,14 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
           onCartCreated={(c: Cart) => saveCart(c)}
           className="flex items-center w-full gap-2"
           showModal={true}
-          afterAddToCart={(c: Cart) => {
+          afterAddToCart={(c: Cart, item) => {
             saveCart(c);
             // Conversion signal for personalization: Prepr correlates it to the
             // adaptive variants this visitor saw on the way here. No-ops off-Prepr.
             trackPreprEvent('AddToCart');
+            // Behaviour tracking (PWP-910). Source 'pdp' is what separates a
+            // considered add from an impulse add off a grid.
+            trackAddToCart({ type: 'pdp', id: product.productId }, item ?? null, c);
           }}
           onProceedToCheckout={() => router.push(localizeHref('/checkout', language))}
           onRequestQuoteClick={() => router.push(localizeHref('/checkout?mode=quote', language))}

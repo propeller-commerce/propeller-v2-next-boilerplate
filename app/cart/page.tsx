@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
+import { useEffect } from 'react';
+import { track } from '@/lib/tracking';
 import { restoreManagerCart } from '@/utils/cartHelpers';
 import PunchoutTransfer from '@/components/PunchoutTransfer';
 import { type Cart, type CartMainItem, CrossupsellType } from '@propeller-commerce/propeller-sdk-v2';
@@ -22,6 +24,18 @@ const subscribe = () => () => { };
 export default function CartPage() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const { cart, saveCart, clearCart } = useCart();
+
+  // Cart view (PWP-910). Keyed on the cart id so a re-render or a StrictMode
+  // double-invoke cannot inflate it.
+  useEffect(() => {
+    track('page_viewed', { page_type: 'cart' }, 'page_viewed:cart');
+    const items = cart?.items?.length ?? 0;
+    track(
+      'view_cart',
+      { item_count: items, value: cart?.total?.totalNet ?? null },
+      `view_cart:${cart?.cartId ?? 'empty'}:${items}`
+    );
+  }, [cart?.cartId, cart?.items?.length, cart?.total?.totalNet]);
   const router = useRouter();
   const { language } = useLanguage();
   const cartItemLabels = useTranslations('CartItem');

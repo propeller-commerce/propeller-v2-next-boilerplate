@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:tracking": "node --test --experimental-strip-types lib/tracking/*.test.ts"
   },
   "dependencies": {
     "@contentful/rich-text-html-renderer": "^17.2.2",
@@ -32,6 +33,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.560.0",
     "marked": "^17.0.5",
+    "mysql2": "^3.23.3",
     "next": "16.3.1",
     "qs": "^6.15.0",
     "react": "19.2.0",

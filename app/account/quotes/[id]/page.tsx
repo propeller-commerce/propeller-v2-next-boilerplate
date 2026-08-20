@@ -20,6 +20,7 @@ import { getCountries } from '@/data/countries';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
+import { track } from '@/lib/tracking';
 
 // COUNTRIES imported from shared utils
 export default function QuoteDetailPage() {
@@ -45,6 +46,14 @@ export default function QuoteDetailPage() {
             const result = await getOrderById(Number(quoteId));
             if (result.success && result.order) {
                 setQuote(result.order);
+                // A quote viewed repeatedly without being accepted is a stalled
+                // deal with a name and a value on it — the "call this account"
+                // signal (PWP-910).
+                track(
+                    'propeller.quote_viewed',
+                    { order_id: Number(quoteId) || null, value: result.order?.total?.net ?? null, order_status: result.order?.status ?? null },
+                    `quote_viewed:${quoteId}`
+                );
             } else {
                 setError(result.error ?? 'Quote not found');
             }
@@ -90,6 +99,11 @@ export default function QuoteDetailPage() {
         setDownloading(true);
         try {
             const result = await downloadQuotePdf(Number(quoteId));
+            track(
+                'propeller.order_pdf_downloaded',
+                { order_id: Number(quoteId) || null, doc_type: 'quote' },
+                `order_pdf_downloaded:quote:${quoteId}:${Math.floor(Date.now() / 2000)}`
+            );
             if (result?.success) {
                 showDownloadToast(t.pdfDownloaded, 'success');
             } else {

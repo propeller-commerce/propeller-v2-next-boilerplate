@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-08-20
+
+### Added
+
+- **`npm run tracking:init` — the analytics schema installer (PWP-910).**
+  Nothing created the `propeller_analytics` database or its tables before: the
+  two `db/*.sql` files were only referenced from a comment in
+  `.env.local.example`, so every fresh install had a dashboard reporting zeros
+  from a database that did not exist. The schema is now generated from
+  `lib/tracking/schema.ts` and applied by one command, which detects the engine
+  and emits matching DDL for **MariaDB 10+, MySQL 5.6+, MySQL 8 and Cloud SQL**.
+  `--dry-run` reports without writing; `--print-sql` emits the whole schema for a
+  DBA to run by hand.
+
+  Because MySQL DDL cannot roll back, the installer is resumable rather than
+  transactional: every statement is `IF NOT EXISTS` and each completed migration
+  is recorded in a `schema_migrations` ledger, so re-running after fixing a grant
+  continues where it stopped. On failure it writes `tracking-schema.sql` and
+  prints the grants the account actually holds. A hand-run script records the
+  same ledger rows, so a later `tracking:init` adopts it instead of repeating it.
+
+  Creating a *database* now asks first — a typo in `TRACKING_DB_NAME` otherwise
+  silently produces an empty database that reports zeros forever. Non-interactive
+  runs refuse rather than prompt; `--yes` is how CI opts in.
+
+- **The dashboard explains why it is empty.** `/api/tracker` classifies driver
+  errors into `not_configured` / `unreachable` / `schema_missing` /
+  `access_denied` / `tls` and answers **503 with the fix attached**, which
+  `components/tracker/SetupBanner.tsx` shows above the panels. Previously an
+  unconfigured shop returned 200 with empty data — indistinguishable from a quiet
+  day — and a missing schema relayed a raw MySQL error into one of nine panels.
+  Unrecognised errors still surface as 500s, so a genuine query bug is not
+  disguised as a misconfiguration.
+
+### Fixed
+
+- **The analytics database could only be reached on its own host.** The
+  connection layer had no TLS option, so every managed MySQL (RDS, Aiven,
+  PlanetScale, Cloud SQL) refused it; no unix socket, which is how a database on
+  the same Linux host is normally reached and the only way in for an
+  `auth_socket` account; and no URL form, which is how hosting platforms inject a
+  database. Added as `TRACKING_DB_SSL`, `TRACKING_DB_SOCKET` and
+  `TRACKING_DB_URL` — see `lib/tracking/dbconfig.ts`. The default port was
+  **3307**, one dev machine's second instance, so any deploy that omitted the
+  port connected nowhere; it is 3306 now.
+
+- **The schema was needlessly MySQL-8-only.** Its own header claimed the
+  dashboard needed window functions and CTEs; it uses `COALESCE`, `COUNT`,
+  `DATE`, `MAX` and `SUM` and nothing else. The only 8.0-only element was the
+  `utf8mb4_0900_ai_ci` collation, now `utf8mb4_unicode_ci`. Partitions were
+  hardcoded to Aug 2026 – Feb 2027, so a later install put every row in the
+  catch-all partition and retention-by-`DROP PARTITION` degraded into a table
+  scan; they are generated from the install date. `props` becomes `LONGTEXT`
+  where there is no native JSON type, and the table is created unpartitioned
+  where the server has partitioning disabled.
+
+- **`scripts/` was excluded from `tsconfig.json`**, so `tsc --noEmit` silently
+  skipped everything in it. Now included, with `allowImportingTsExtensions`
+  because Node's `--experimental-strip-types` requires `.ts` in import paths.
+  (`**/*.test.ts` remains excluded — pre-existing.)
+
+### Changed
+
+- `db/storefront_events.sql` and `db/rollups.sql` are replaced by generated
+  `db/schema.sql`. `lib/tracking/schema.ts` is the single source of truth;
+  migrations are append-only, since installs in the field have recorded their ids.
+
 ## [1.13.0] - 2026-08-20
 
 ### Fixed

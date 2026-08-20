@@ -13,6 +13,7 @@ import {
   SearchSection,
   VisitorsSection,
 } from './sections';
+import SetupBanner from './SetupBanner';
 import { POLL_MS } from './useMetric';
 
 /**
@@ -163,6 +164,9 @@ export default function TrackerShell({ section }: { section: SectionId }) {
               />
             </label>
           </div>
+
+          {/* Above the panels: it explains the zeros they are about to show. */}
+          <SetupBanner />
 
           {section === 'overview' ? <OverviewSection {...range} /> : null}
           {section === 'visitors' ? <VisitorsSection {...range} /> : null}

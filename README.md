@@ -244,6 +244,67 @@ A provider's `getNamespace(locale, namespace)` returns `Record<string, string>` 
 - `propeller-v2-react-ui@0.4.2+` — adds `labels?` to several components that previously didn't accept it (`UserDetails`, `OrderItemCard`, `ProductGallery`, `GridFilters`, `ProductGrid`, `GridToolbar`, `PriceToggle`), and adds forwarding props (`productCardLabels?`, `clusterCardLabels?`, `stockLabels?`, `addToCartLabels?`, `priceLabels?`) on `ProductGrid` / `ProductSlider`, plus `loginFormLabels?` on `AccountIconAndMenu`.
 - `propeller-v2-core-ui@0.2.2+` — owns the `TranslationProvider` interface (transitively installed via the UI package).
 
+## Behaviour tracking database (`/tracker`)
+
+The `/tracker` dashboard reads a MySQL database the storefront writes to. It is
+**optional** — with nothing configured the shop runs normally, `/api/track`
+answers 202, and the dashboard says so instead of showing empty charts.
+
+Nothing is created automatically. Not at install, not at first boot: DDL at boot
+races across instances and needs production privileges the app account usually
+does not have.
+
+### Install
+
+Point the `TRACKING_DB_*` variables in `.env.local` at a database (see
+`.env.local.example` for the URL / socket / TLS forms), then:
+
+```bash
+npm run tracking:init              # create the schema
+npm run tracking:init -- --dry-run # report what it would do, change nothing
+```
+
+Safe to run repeatedly, so it belongs in a deploy pipeline. It detects the engine
+and generates matching DDL — **MariaDB 10+, MySQL 5.6+, MySQL 8 and Cloud SQL**
+are all supported from the one command. Where there is no native JSON type
+(MySQL < 5.7.8, MariaDB < 10.2) `props` becomes `LONGTEXT`; where the server has
+partitioning disabled the table is created unpartitioned, which costs only the
+`DROP PARTITION` retention shortcut.
+
+### When it fails
+
+MySQL DDL does not roll back, so the installer is built to be **resumable**
+rather than transactional: every statement is `IF NOT EXISTS`, and each completed
+migration is recorded in a `schema_migrations` ledger. Fix the problem, run it
+again, and it continues from where it stopped.
+
+If it cannot finish — most often because the account may not create databases,
+which is normal on Cloud SQL and other managed instances — it writes
+`tracking-schema.sql` and prints the grants the account actually holds. You can
+also ask for that file up front, from a machine with no route to the database at
+all:
+
+```bash
+npm run tracking:init -- --print-sql
+mysql -h <host> -u <user> -p < tracking-schema.sql
+```
+
+That file is the complete schema with the right collation, your configured
+database name and partitions dated from today. It writes the same ledger rows the
+installer would, so running `tracking:init` afterwards **adopts** the result
+rather than repeating it. Drop its first line if your account may only create
+tables inside an existing database.
+
+`db/schema.sql` is a checked-in reference copy of the same output.
+
+### Schema changes
+
+`lib/tracking/schema.ts` is the single source of truth; the `.sql` files are
+generated from it. Migrations are append-only — an id that has shipped is frozen,
+because installs in the field have recorded it. Change an existing table with a
+new entry, never by editing an old one. The ledger stores a checksum per
+migration and warns if one was applied from different SQL than is now shipped.
+
 ## Analytics (GA4 / Google Tag Manager)
 
 The storefront emits its own event vocabulary on the tracking bus

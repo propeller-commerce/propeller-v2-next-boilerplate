@@ -27,7 +27,8 @@ export function OverviewSection({ from, to }: RangeProps) {
 
   return (
     <div className="space-y-4">
-      {overview.error ? <ErrorNote message={overview.error} /> : null}
+      {/* A setup problem is already reported once, globally, by SetupBanner. */}
+      {overview.error && !overview.setup ? <ErrorNote message={overview.error} /> : null}
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         <StatTile label="Visits" value={visits} hint="Distinct sessions" />

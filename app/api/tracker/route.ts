@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS, type MetricParams } from '@/lib/tracking/queries';
+import { classifyDbError, STATUS_HINTS } from '@/lib/tracking/dbconfig';
+import { isTrackingConfigured } from '@/lib/trackingDb';
 import { todayLocal, addDays } from '@/lib/tracking/timezone';
 import { config as shopConfig } from '@/data/config';
 
@@ -62,6 +64,16 @@ export async function GET(request: NextRequest) {
     channelId: Number(shopConfig.channelId) || 1,
   };
 
+  // Answered before running anything: with no database every metric would
+  // otherwise return an empty array with a 200, and a dashboard full of honest
+  // zeros is indistinguishable from a quiet day.
+  if (!isTrackingConfigured()) {
+    return NextResponse.json(
+      { error: 'analytics database not configured', status: 'not_configured', hint: STATUS_HINTS.not_configured, metric },
+      { status: 503 }
+    );
+  }
+
   try {
     const data = await runner(params);
     return NextResponse.json(
@@ -72,6 +84,16 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'query failed';
+
+    // A setup problem is not a server fault: 503 with the fix attached, so the
+    // dashboard can say "run db/*.sql" instead of relaying ER_NO_SUCH_TABLE.
+    const status = classifyDbError(error);
+    if (status) {
+      return NextResponse.json(
+        { error: message, status, hint: STATUS_HINTS[status], metric },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: message, metric }, { status: 500 });
   }
 }

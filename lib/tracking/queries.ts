@@ -14,7 +14,7 @@ import { rangeToUtc } from './timezone';
  * is the deliberate trade for "real time": a rollup is stale until its job runs,
  * and at storefront volumes the indexes carry these ranges comfortably. The
  * rollup tables and their job exist for when that stops being true — see
- * db/rollups.sql and /api/tracker/rollup.
+ * db/schema.sql and /api/tracker/rollup.
  */
 
 export interface MetricParams {
@@ -38,6 +38,18 @@ function bounds(p: MetricParams): [Date, Date, number] {
 }
 
 export const METRICS: Record<string, Runner> = {
+  /**
+   * Setup probe for the dashboard banner. Cheapest query that can still fail
+   * the way a broken install fails: `WHERE 1=0` returns no rows and scans
+   * nothing, but the table still has to exist, so a missing schema raises
+   * ER_NO_SUCH_TABLE here exactly as it would in a real query. `SELECT 1` alone
+   * would report a perfectly healthy database with no tables in it.
+   */
+  health: async () => {
+    await q('SELECT 1 FROM storefront_events WHERE 1=0', []);
+    return { ok: true };
+  },
+
   /** KPI tiles. */
   overview: async (p) => {
     const [start, end, ch] = bounds(p);

@@ -16,6 +16,12 @@ export const POLL_MS = 30_000;
 export interface MetricState<T> {
   data: T | null;
   error: string | null;
+  /**
+   * Set when the API reports a setup problem (503) rather than a query fault.
+   * The dashboard shows one banner for this instead of an error per panel —
+   * the cause is global, so nine copies of it is noise.
+   */
+  setup: { status: string; hint: string } | null;
   loading: boolean;
 }
 
@@ -28,6 +34,7 @@ export function useMetric<T = unknown>(
   const [state, setState] = useState<MetricState<T>>({
     data: null,
     error: null,
+    setup: null,
     loading: true,
   });
 
@@ -42,13 +49,23 @@ export function useMetric<T = unknown>(
         const json = await res.json();
         if (cancelled) return;
         if (!res.ok) {
-          setState({ data: null, error: json?.error ?? `HTTP ${res.status}`, loading: false });
+          setState({
+            data: null,
+            error: json?.error ?? `HTTP ${res.status}`,
+            setup: json?.status ? { status: json.status, hint: json.hint ?? '' } : null,
+            loading: false,
+          });
           return;
         }
-        setState({ data: json.data as T, error: null, loading: false });
+        setState({ data: json.data as T, error: null, setup: null, loading: false });
       } catch (error) {
         if (cancelled || (error as Error)?.name === 'AbortError') return;
-        setState({ data: null, error: (error as Error)?.message ?? 'failed', loading: false });
+        setState({
+          data: null,
+          error: (error as Error)?.message ?? 'failed',
+          setup: null,
+          loading: false,
+        });
       }
     }
 

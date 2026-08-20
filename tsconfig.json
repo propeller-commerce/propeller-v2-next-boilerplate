@@ -10,6 +10,9 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // Node runs scripts/*.ts directly via --experimental-strip-types, which
+    // does no extension resolution: imports there MUST say `.ts`.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -39,7 +42,6 @@
   "exclude": [
     "node_modules",
     "output",
-    "scripts",
     "cms",
     "**/*.test.ts"
   ]

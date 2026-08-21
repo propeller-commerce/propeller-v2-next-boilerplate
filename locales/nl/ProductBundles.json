@@ -1,0 +1,18 @@
+{
+  "addToCart": "In winkelwagen",
+  "addedToCart": "toegevoegd aan winkelwagen",
+  "adding": "Toevoegen...",
+  "condition_ALL": "Korting op alle artikelen",
+  "condition_EP": "Korting op extra artikelen",
+  "continueShopping": "Verder winkelen",
+  "errorAdding": "Bundel kon niet worden toegevoegd aan winkelwagen",
+  "exclTax": "excl. BTW",
+  "inclTax": "incl. BTW",
+  "loginToSeePrices": "Log in om prijzen te zien en toe te voegen aan winkelwagen",
+  "modalTitle": "Toegevoegd aan winkelwagen",
+  "noCartId": "Geen winkelwagen-ID opgegeven",
+  "proceedToCheckout": "Naar afrekenen",
+  "quantity": "Aantal",
+  "title": "Bundel",
+  "youSave": "Uw besparing:"
+}

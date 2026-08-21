@@ -1,0 +1,11 @@
+{
+  "discount": "Discount:",
+  "shippingCosts": "Shipping costs:",
+  "subtotal": "Subtotal:",
+  "subtotalWithDiscount": "Subtotal with discount:",
+  "total": "Total:",
+  "totalExclVat": "Total excl. VAT:",
+  "totalVat": "Total VAT:",
+  "transactionCosts": "Transaction costs:",
+  "vat": "VAT"
+}

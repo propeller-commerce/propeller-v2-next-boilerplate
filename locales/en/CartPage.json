@@ -1,0 +1,7 @@
+{
+  "title": "Shopping Cart",
+  "empty": "Your cart is empty",
+  "continueShopping": "Continue Shopping",
+  "punchoutIntro": "You are shopping from your procurement system. Send this cart back as a requisition.",
+  "punchoutTransfer": "Transfer cart to procurement"
+}

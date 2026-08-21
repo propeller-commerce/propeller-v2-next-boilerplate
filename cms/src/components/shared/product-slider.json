@@ -1,0 +1,18 @@
+{
+  "collectionName": "components_shared_product_sliders",
+  "info": {
+    "displayName": "Product Slider",
+    "icon": "shoppingCart",
+    "description": "Displays products/clusters from Propeller by ID"
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "items": {
+      "type": "customField",
+      "customField": "plugin::propeller-product-picker.propeller-products"
+    }
+  }
+}

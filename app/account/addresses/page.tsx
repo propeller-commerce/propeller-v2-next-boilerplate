@@ -1,0 +1,303 @@
+'use client';
+import { track } from '@/lib/tracking';
+
+import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useCompany } from '@/context/CompanyContext';
+import { graphqlClient } from '@/lib/api';
+import { AddressCard } from '@propeller-commerce/propeller-v2-react-ui';
+import { Address, AddressType, Company, Contact, Customer, YesNo } from '@propeller-commerce/propeller-sdk-v2';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/Button';
+import { Plus } from 'lucide-react';
+import { useAddress, type AddressInput } from '@propeller-commerce/propeller-v2-react-ui';
+import { useTranslations } from '@/lib/i18n/client';
+import { useLanguage } from '@/context/LanguageContext';
+import { getCountries } from '@/data/countries';
+
+export default function AddressesPage() {
+  const { state: authState, refreshUser } = useAuth();
+  const { language } = useLanguage();
+  // Localized country list (Dutch names on NL) for the address dropdowns.
+  const countries = getCountries(language);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalType, setAddModalType] = useState<AddressType>(AddressType.invoice);
+  const { selectedCompany } = useCompany();
+
+  const user = authState.user;
+
+  const isContact = (u: Contact | Customer | null): u is Contact => u !== null && 'company' in u;
+  const isCustomer = (u: Contact | Customer | null): u is Customer => u !== null && 'customerId' in u;
+
+  const getActiveCompany = (): Company | null => {
+    if (!user || !isContact(user)) return null;
+    const targetId = selectedCompany?.companyId;
+    if (targetId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const companiesRaw = (user as any).companies;
+      const items = (companiesRaw?.items ?? companiesRaw) as Company[] | undefined;
+      if (Array.isArray(items)) {
+        const found = items.find((c: Company) => c.companyId === targetId);
+        if (found) return found;
+      }
+      if (user.company?.companyId === targetId) return user.company as Company;
+    }
+    return (user.company as Company | undefined) ?? null;
+  };
+
+  const resolvedCompanyId = getActiveCompany()?.companyId;
+
+  const addressCardLabels = useTranslations('AddressCard');
+  const t = useTranslations('Account');
+
+  const { createAddress, updateAddress, deleteAddress, setDefaultAddress } = useAddress({
+    graphqlClient,
+    user,
+    companyId: resolvedCompanyId,
+  });
+
+  const getAllAddresses = (): Address[] => {
+    if (!user) return [];
+    if (isContact(user)) return getActiveCompany()?.addresses || [];
+    if (isCustomer(user)) return user.addresses || [];
+    return [];
+  };
+
+  const getDefaultAddresses = () => {
+    const addresses = getAllAddresses();
+    return {
+      invoice: addresses.find((addr: Address) => addr.type === AddressType.invoice && addr.isDefault === YesNo.Y),
+      delivery: addresses.find((addr: Address) => addr.type === AddressType.delivery && addr.isDefault === YesNo.Y),
+    };
+  };
+
+  const getBillingAddresses = () =>
+    getAllAddresses().filter((addr: Address) => addr.type === AddressType.invoice && addr.isDefault === YesNo.N);
+
+  const getDeliveryAddresses = () =>
+    getAllAddresses().filter((addr: Address) => addr.type === AddressType.delivery && addr.isDefault === YesNo.N);
+
+  const handleAddAddress = (type: AddressType) => {
+    setAddModalType(type);
+    setShowAddModal(true);
+  };
+
+  /**
+   * Address events carry `owner_type` because the composable branches on
+   * company vs customer input, so the two are genuinely different signals.
+   */
+  const trackAddress = (name: string, address: { id?: unknown; type?: unknown }) => {
+    track(
+      name,
+      {
+        address_id: address?.id != null ? Number(address.id) : null,
+        address_type: (address?.type as string) ?? null,
+        owner_type: isContact(authState.user) ? 'company' : 'customer',
+      },
+      `${name}:${address?.id ?? 'new'}:${Math.floor(Date.now() / 2000)}`
+    );
+  };
+
+  const handleEditAddress = async (address: Address) => {
+    const result = await updateAddress(Number(address.id), address as Partial<AddressInput>);
+    if (result.success) {
+      trackAddress('propeller.address_updated', address);
+      await refreshUser();
+      toast.success(t.addressUpdated);
+    } else {
+      toast.error(t.addressUpdateFailed);
+    }
+  };
+
+  const handleDeleteAddress = async (address: Address) => {
+    const result = await deleteAddress(Number(address.id));
+    if (result.success) {
+      trackAddress('propeller.address_deleted', address);
+      await refreshUser();
+      toast.success(t.addressDeleted);
+    } else {
+      toast.error(t.addressDeleteFailed);
+    }
+  };
+
+  const handleSetDefault = async (address: Address) => {
+    const result = await setDefaultAddress(Number(address.id));
+    if (result.success) {
+      trackAddress('propeller.address_set_default', address);
+      await refreshUser();
+      toast.success(t.addressSetDefault);
+    } else {
+      toast.error(t.addressSetDefaultFailed);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSaveNewAddress = async (address: any) => {
+    const input: AddressInput = {
+      company: address.company || undefined,
+      gender: address.gender || undefined,
+      firstName: address.firstName || undefined,
+      middleName: address.middleName || undefined,
+      lastName: address.lastName || undefined,
+      email: address.email || undefined,
+      street: address.street || '',
+      number: address.number || undefined,
+      numberExtension: address.numberExtension || undefined,
+      postalCode: address.postalCode || '',
+      city: address.city || '',
+      country: address.country || 'NL',
+      notes: address.notes || undefined,
+      isDefault: (address.isDefault as YesNo) || YesNo.N,
+      type: addModalType,
+    };
+
+    const result = await createAddress(input);
+    if (result.success) {
+      // A new DELIVERY address is a new site or branch — expansion, and a
+      // conversation a rep would otherwise never hear about.
+      trackAddress('propeller.address_created', { ...input, id: undefined });
+      await refreshUser();
+      toast.success(t.addressCreated);
+      setShowAddModal(false);
+    } else {
+      toast.error(t.addressCreateFailed);
+    }
+  };
+
+  if (!authState.isAuthenticated || !user) return null;
+
+  const defaultAddresses = getDefaultAddresses();
+  const billingAddresses = getBillingAddresses();
+  const deliveryAddresses = getDeliveryAddresses();
+
+  return (
+    <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">{t.addressesTitle}</h1>
+      </div>
+
+      {/* Default Addresses */}
+      <div className="space-y-4 pb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-md">{t.defaultBillingAddress}</h2>
+            </div>
+            {defaultAddresses.invoice ? (
+              <AddressCard
+                key={`inv-${defaultAddresses.invoice.id}-${selectedCompany?.companyId ?? 'default'}`}
+                address={defaultAddresses.invoice}
+                enableDelete={false}
+                onEdit={handleEditAddress}
+                onDelete={handleDeleteAddress}
+                onSetDefault={handleSetDefault}
+                countries={countries}
+                showTypeBadge={false}
+                labels={addressCardLabels}
+              />
+            ) : (
+              <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
+                <p className="text-sm text-muted-foreground">{t.noDefaultInvoiceAddress}</p>
+                <Button variant="link" onClick={() => handleAddAddress(AddressType.invoice)}>{t.addOne}</Button>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-md">{t.defaultDeliveryAddress}</h2>
+            </div>
+            {defaultAddresses.delivery ? (
+              <AddressCard
+                key={`del-${defaultAddresses.delivery.id}-${selectedCompany?.companyId ?? 'default'}`}
+                address={defaultAddresses.delivery}
+                enableDelete={false}
+                onEdit={handleEditAddress}
+                onDelete={handleDeleteAddress}
+                onSetDefault={handleSetDefault}
+                countries={countries}
+                showTypeBadge={false}
+                labels={addressCardLabels}
+              />
+            ) : (
+              <div className="border border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center space-y-2">
+                <p className="text-sm text-muted-foreground">{t.noDefaultDeliveryAddress}</p>
+                <Button variant="link" onClick={() => handleAddAddress(AddressType.delivery)}>{t.addOne}</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Billing Addresses */}
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">{t.additionalBillingAddresses}</h2>
+          <Button size="sm" onClick={() => handleAddAddress(AddressType.invoice)}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t.addNew}
+          </Button>
+        </div>
+        {billingAddresses.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {billingAddresses.map((address: Address) => (
+              <AddressCard
+                key={`${address.id}-${selectedCompany?.companyId ?? 'default'}`}
+                address={address}
+                onEdit={handleEditAddress}
+                onDelete={handleDeleteAddress}
+                onSetDefault={handleSetDefault}
+                countries={countries}
+                showTypeBadge={false}
+                labels={addressCardLabels}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground italic text-sm">{t.noAdditionalBillingAddresses}</p>
+        )}
+      </div>
+
+      {/* Delivery Addresses */}
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">{t.additionalDeliveryAddresses}</h2>
+          <Button size="sm" onClick={() => handleAddAddress(AddressType.delivery)}>
+            <Plus className="w-4 h-4 mr-2" />
+            {t.addNew}
+          </Button>
+        </div>
+        {deliveryAddresses.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {deliveryAddresses.map((address: Address) => (
+              <AddressCard
+                key={`${address.id}-${selectedCompany?.companyId ?? 'default'}`}
+                address={address}
+                onEdit={handleEditAddress}
+                onDelete={handleDeleteAddress}
+                onSetDefault={handleSetDefault}
+                countries={countries}
+                showTypeBadge={false}
+                labels={addressCardLabels}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground italic text-sm">{t.noAdditionalDeliveryAddresses}</p>
+        )}
+      </div>
+
+      {showAddModal && (
+        <AddressCard
+          addressType={addModalType}
+          address={null}
+          isNew
+          onEdit={handleSaveNewAddress}
+          onCancel={() => setShowAddModal(false)}
+          enableActions={false}
+          countries={countries}
+          labels={addressCardLabels}
+        />
+      )}
+    </div>
+  );
+}

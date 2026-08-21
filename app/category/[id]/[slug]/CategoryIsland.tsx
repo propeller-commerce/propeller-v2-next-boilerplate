@@ -1,0 +1,627 @@
+'use client';
+
+/**
+ * CategoryIsland — the interactive client half of the category page.
+ *
+ * The Server Component (`page.tsx`) fetches the category + its first page of
+ * products and renders the static shell. This island receives that data as
+ * `initialCategory` and owns everything interactive: the filter sidebar,
+ * toolbar, pagination, and the URL-driven filter/sort/page state machine.
+ *
+ * SSR seeding: on the FIRST render the island hands `ProductGrid` the
+ * server-fetched `products` so the first paint shows real cards without a
+ * client fetch. `ProductGrid` treats a defined `products` prop as
+ * "controlled" and never fetches while it is set — so as soon as the user
+ * changes a filter/sort/page we drop the prop to `undefined`, which lets the
+ * grid resume its own fetching for every subsequent change.
+ */
+
+import { useEffect, useState, useMemo } from 'react';
+import { trackAddToCart, trackSelectItem, trackViewItemList } from '@/lib/tracking';
+import TrackView from '@/components/tracking/TrackView';
+import { useRouter } from 'next/navigation';
+import {
+  AttributeFilter,
+  AttributeType,
+  Category,
+  Cluster,
+  Product,
+  ProductSortField,
+  ProductsResponse,
+  SortOrder,
+} from '@propeller-commerce/propeller-sdk-v2';
+import {
+  ProductGrid,
+  GridToolbar,
+  GridFiltersPanel,
+  GridPagination,
+  CategoryDescription,
+  Breadcrumbs,
+} from '@propeller-commerce/propeller-v2-react-ui';
+import { type Availability, MIN_STOCK_THRESHOLD } from '@propeller-commerce/propeller-v2-core-ui';
+import { config, localizeHref } from '@/data/config';
+import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { parseListingParams, serializeAvailability, type ListingParams } from '@/lib/listingParams';
+import { useTranslations } from '@/lib/i18n/client';
+import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
+
+interface CategoryIslandProps {
+  /** Numeric category ID from the route. */
+  categoryId: number;
+  /** Slug segment from the route — used when rewriting the URL. */
+  initialSlug: string;
+  /**
+   * The category fetched server-side, including its first page of products
+   * (`products.items`, `products.pages`). Seeds the first paint.
+   */
+  initialCategory: Category;
+  /**
+   * The URL query parsed by the Server Component. The island seeds ALL of
+   * its filter/sort/page state from this — NOT from `window.location` — so
+   * the server-rendered markup and the client's first render agree (and a
+   * refreshed filtered URL restores correctly).
+   */
+  initialParams: ListingParams;
+}
+
+/**
+ * Whether product cards show a stock indicator. Gates the availability filter
+ * too: filtering by stock is meaningless when no stock is displayed, so both
+ * read this one value rather than being set independently.
+ */
+const SHOW_STOCK = true;
+
+export default function CategoryIsland({
+  categoryId,
+  initialSlug,
+  initialCategory,
+  initialParams,
+}: CategoryIslandProps) {
+  const router = useRouter();
+  // Prefetch a cluster/product route the moment the user hovers its card, so
+  // the click paints the loading skeleton from cache instead of after a full
+  // server round-trip. See useHoverPrefetch for why the cards can't self-prefetch.
+  const prefetchOnHover = useHoverPrefetch();
+
+  // Once any filter/sort/page change happens, `ProductGrid` must own its own
+  // fetching — so we stop passing the server-seeded `products` prop. While
+  // this is true the grid renders the SSR first page with no client fetch.
+  const [usingServerData, setUsingServerData] = useState(true);
+
+  const [category, setCategory] = useState<Category>(initialCategory);
+
+  // URL-derived state — seeded from `initialParams` (parsed by the Server
+  // Component). Using the prop, not `window.location`, keeps the server HTML
+  // and the client's first render identical and restores a refreshed
+  // filtered URL correctly.
+  const [currentPage, setCurrentPage] = useState(initialParams.page);
+  const [filters, setFilters] = useState<Record<string, string[]>>(
+    initialParams.filters
+  );
+  const [minPrice, setMinPrice] = useState<number | undefined>(
+    initialParams.minPrice
+  );
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(
+    initialParams.maxPrice
+  );
+  const [availability, setAvailability] = useState<Availability>(
+    initialParams.availability ?? 'all'
+  );
+  const [minStock, setMinStock] = useState<number>(
+    initialParams.minStock ?? MIN_STOCK_THRESHOLD
+  );
+  const [offset, setOffset] = useState(initialParams.offset);
+  const [sortField, setSortField] = useState<ProductSortField>(
+    initialParams.sortField
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    initialParams.sortOrder
+  );
+
+  // Seed the filter sidebar from the server-fetched filter facets so it
+  // shows on first paint. `ProductGrid.onFiltersChange` only fires from its
+  // internal fetch — which is skipped while the grid is server-controlled —
+  // so without this seed the sidebar would render "No filters available"
+  // until the first interaction.
+  const [gridFilters, setGridFilters] = useState<AttributeFilter[]>(
+    () =>
+      ((initialCategory.products as ProductsResponse | undefined)?.filters ??
+        []) as AttributeFilter[]
+  );
+  // Price-slider bounds, seeded from the server response for the same reason
+  // as `gridFilters` — `onPriceBoundsChange` only fires from the grid's
+  // internal fetch.
+  const [priceBoundsMin, setPriceBoundsMin] = useState<number | undefined>(
+    () => (initialCategory.products as ProductsResponse | undefined)?.minPrice
+  );
+  const [priceBoundsMax, setPriceBoundsMax] = useState<number | undefined>(
+    () => (initialCategory.products as ProductsResponse | undefined)?.maxPrice
+  );
+  const [clearSignal, setClearSignal] = useState(0);
+  const [itemsFound, setItemsFound] = useState<number>(
+    () => (initialCategory.products as ProductsResponse | undefined)?.itemsFound ?? 0
+  );
+  const [pageItemCount, setPageItemCount] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [filtersLoading, setFiltersLoading] = useState(false);
+  const [productsResponse, setProductsResponse] = useState<ProductsResponse | null>(
+    () => (initialCategory.products as ProductsResponse | undefined) ?? null
+  );
+
+  const { cart, saveCart } = useCart();
+  const { language } = useLanguage();
+  const gridPaginationLabels = useTranslations('GridPagination');
+  const categoryDescriptionLabels = useTranslations('CategoryDescription');
+  const gridFiltersLabels = useTranslations('GridFilters');
+  const gridToolbarLabels = useTranslations('GridToolbar');
+  const productGridLabels = useTranslations('ProductGrid');
+  const productCardLabels = useTranslations('ProductCard');
+  const clusterCardLabels = useTranslations('ClusterCard');
+  const addToCartLabels = useTranslations('AddToCart');
+  const itemStockLabels = useTranslations('ItemStock');
+  const productPriceLabels = useTranslations('ProductPrice');
+
+  // The server-seeded first page of products. Passed to ProductGrid only
+  // while `usingServerData` is true.
+  const initialProducts = useMemo(
+    () =>
+      ((initialCategory.products?.items ?? []) as (Product | Cluster)[]),
+    [initialCategory]
+  );
+
+  /**
+   * Hand control to the client grid. Called by every interaction handler the
+   * moment the user changes something — from then on ProductGrid fetches.
+   */
+  const releaseServerData = () => setUsingServerData(false);
+
+  // Keep URL-derived state in sync with the address bar after browser
+  // back/forward. Parsed via the same `parseListingParams` the Server
+  // Component uses, so the interpretation is identical.
+  useEffect(() => {
+    const onChange = () => {
+      const next = parseListingParams(
+        new URLSearchParams(window.location.search),
+        ProductSortField.CATEGORY_ORDER
+      );
+      setCurrentPage(next.page);
+      setFilters((prev) =>
+        JSON.stringify(prev) === JSON.stringify(next.filters)
+          ? prev
+          : next.filters
+      );
+      setMinPrice(next.minPrice);
+      setMaxPrice(next.maxPrice);
+      setAvailability(next.availability ?? 'all');
+      setMinStock(next.minStock ?? MIN_STOCK_THRESHOLD);
+      setOffset(next.offset);
+      setSortField(next.sortField);
+      setSortOrder(next.sortOrder);
+    };
+    window.addEventListener('popstate', onChange);
+    return () => window.removeEventListener('popstate', onChange);
+  }, []);
+
+  // Update URL slug when language or category changes — history.replaceState
+  // to avoid a Next.js re-render cascade.
+  //
+  // IMPORTANT: pass the CURRENT `window.history.state`, not `null`. The App
+  // Router keeps its navigation tree key in `history.state`; replacing it with
+  // `null` desyncs the router from the real URL, which silently breaks
+  // `<title>` / metadata updates on every subsequent soft navigation.
+  useEffect(() => {
+    if (!category) return;
+    const match = category.slugs?.find(
+      (s: { language?: string; value?: string }) => s.language === language
+    );
+    const newSlug = match?.value || category.slugs?.[0]?.value || '';
+    const currentSlug = window.location.pathname.split('/').pop();
+    if (newSlug && newSlug !== currentSlug) {
+      const search = window.location.search;
+      window.history.replaceState(
+        window.history.state,
+        '',
+        localizeHref(`/category/${categoryId}/${newSlug}`, language) + search
+      );
+    }
+  }, [category, language, categoryId]);
+
+  const updateURL = (
+    newFilters: Record<string, string[]>,
+    newPage: number = 1,
+    newMinPrice?: number,
+    newMaxPrice?: number,
+    newOffset?: number,
+    newSortField?: string,
+    newSortOrder?: 'ASC' | 'DESC',
+    newAvailability?: Availability,
+    newMinStock?: number
+  ) => {
+    releaseServerData();
+    const searchParams = new URLSearchParams();
+
+    if (newPage > 1) searchParams.set('page', newPage.toString());
+
+    Object.entries(newFilters).forEach(([key, values]) => {
+      if (values.length > 0) {
+        searchParams.set(key, JSON.stringify(values));
+      }
+    });
+
+    if (newMinPrice !== undefined) searchParams.set('minPrice', newMinPrice.toString());
+    if (newMaxPrice !== undefined) searchParams.set('maxPrice', newMaxPrice.toString());
+    if (newAvailability !== undefined) {
+      const serialized = serializeAvailability(newAvailability, newMinStock ?? MIN_STOCK_THRESHOLD);
+      if (serialized) searchParams.set('availability', serialized);
+    }
+    if (newOffset !== undefined && newOffset !== 12)
+      searchParams.set('offset', newOffset.toString());
+    if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER')
+      searchParams.set('sortField', newSortField);
+    if (newSortOrder !== undefined && newSortOrder !== 'DESC')
+      searchParams.set('sortOrder', newSortOrder);
+
+    // Mirror the new URL into local state immediately (router.push does not
+    // emit popstate, so the listener above won't fire for our own pushes).
+    setCurrentPage(newPage);
+    setFilters(newFilters);
+    setMinPrice(newMinPrice);
+    setMaxPrice(newMaxPrice);
+    if (newAvailability !== undefined) setAvailability(newAvailability);
+    if (newMinStock !== undefined) setMinStock(newMinStock);
+    if (newOffset !== undefined) setOffset(newOffset);
+    if (newSortField !== undefined) setSortField(newSortField as ProductSortField);
+    if (newSortOrder !== undefined) setSortOrder(newSortOrder as SortOrder);
+
+    const newSearch = searchParams.toString();
+    router.push(
+      `${localizeHref(`/category/${categoryId}/${initialSlug}`, language)}${
+        newSearch ? `?${newSearch}` : ''
+      }`,
+      { scroll: false }
+    );
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+  };
+
+  const handleFilterChange = (filter: AttributeFilter, value: string | number) => {
+    const name = filter.attributeDescription?.name || '';
+    const current = filters[name] || [];
+    const valueStr = String(value);
+    const next = current.includes(valueStr)
+      ? current.filter((v: string) => v !== valueStr)
+      : [...current, valueStr];
+    const newFilters = { ...filters, [name]: next };
+    if (next.length === 0) delete newFilters[name];
+    updateURL(
+      newFilters,
+      1,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+  };
+
+  const handlePriceRangeChange = (newMinPrice?: number, newMaxPrice?: number) => {
+    updateURL(
+      filters,
+      1,
+      newMinPrice,
+      newMaxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+  };
+
+  const handleAvailabilityChange = (newAvailability: Availability, newMinStock: number) => {
+    updateURL(
+      filters,
+      1,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      newAvailability,
+      newMinStock
+    );
+  };
+
+  const handleAvailabilityFilterRemove = () => {
+    handleAvailabilityChange('all', MIN_STOCK_THRESHOLD);
+  };
+
+  const handlePageChange = (page: number) => {
+    updateURL(
+      filters,
+      page,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+  };
+
+  const handleOffsetChange = (newOffset: number) => {
+    updateURL(
+      filters,
+      1,
+      minPrice,
+      maxPrice,
+      newOffset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+  };
+
+  const handleSortChange = (newSortField: string, newSortOrder?: 'ASC' | 'DESC') => {
+    updateURL(
+      filters,
+      1,
+      minPrice,
+      maxPrice,
+      offset,
+      newSortField,
+      newSortOrder || (sortOrder as 'ASC' | 'DESC'),
+      availability,
+      minStock
+    );
+  };
+
+  const clearAllFilters = () => {
+    setClearSignal((s) => s + 1);
+    updateURL(
+      {},
+      1,
+      undefined,
+      undefined,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      'all',
+      MIN_STOCK_THRESHOLD
+    );
+  };
+
+  const handleFilterRemove = (filterName: string, value: string) => {
+    const current = filters[filterName] || [];
+    const newVals = current.filter((v) => v !== value);
+    const newFilters = { ...filters, [filterName]: newVals };
+    if (newVals.length === 0) delete newFilters[filterName];
+    updateURL(
+      newFilters,
+      1,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+  };
+
+  // The surface this island represents — passed into the grid callbacks so an
+  // add-to-cart from the category grid is distinguishable from the same product
+  // added on its PDP. That distinction is what answers "does the grid convert?".
+  // The category NAME, not just its id: GA4's `item_list_name` is what a
+  // merchant reads in the reports, and "category" is not a useful label there.
+  const categoryName =
+    category?.names?.find((n) => n.language?.toUpperCase() === language?.slice(0, 2).toUpperCase())?.value ??
+    category?.names?.[0]?.value ??
+    null;
+  const categorySource = { type: 'category' as const, id: categoryId, name: categoryName, page: currentPage };
+
+  const productClick = (product: Product) => {
+    trackSelectItem(categorySource, product, null, language);
+    router.push(config.urls.getProductUrl(product, language));
+  };
+
+  // `view_item_list` once per rendered result set; the bus dedupes the repeat
+  // renders that a filter/sort change produces for the same page.
+  useEffect(() => {
+    if (itemsFound <= 0) return;
+    trackViewItemList(categorySource, itemsFound, pageItemCount, productsResponse?.items as never, {
+      language,
+      offset: productsResponse?.offset,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId, currentPage, itemsFound, pageItemCount, productsResponse, language]);
+
+   
+  const defaultSort = useMemo(
+    () => [{ field: sortField as string, order: sortOrder as string }],
+    [sortField, sortOrder]
+  );
+
+   
+  // Hoisted out of the dependency list: the linter needs plain identifiers
+  // there, and a call expression is re-evaluated on every render anyway.
+  const filtersKey = JSON.stringify(filters);
+  const activeTextFilters = useMemo(
+    () =>
+      Object.entries(filters)
+        .filter(([, values]) => values.length > 0)
+        .map(([name, values]) => {
+          const filterDef = gridFilters.find(
+            (f) => f.attributeDescription?.name === name
+          );
+          return {
+            name,
+            values,
+            exclude: false,
+            type: filterDef?.type ?? AttributeType.TEXT,
+          };
+        }),
+    [filtersKey, gridFilters]
+  );
+
+  return (
+    <>
+      <TrackView pageType="category" entityType="category" entityId={categoryId} />
+      <CategoryDescription category={category} language={language} labels={categoryDescriptionLabels} />
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Filters: inline sidebar at lg+, slide-in drawer below lg */}
+        <GridFiltersPanel
+          filters={gridFilters}
+          priceMin={priceBoundsMin}
+          priceMax={priceBoundsMax}
+          onFilterChange={handleFilterChange}
+          onPriceChange={handlePriceRangeChange}
+          onClearFilters={clearAllFilters}
+          collapsed={true}
+          clearSignal={clearSignal}
+          activeTextFilters={filters}
+          activePriceMin={minPrice}
+          activePriceMax={maxPrice}
+          showAvailabilityFilter={SHOW_STOCK}
+          activeAvailability={availability}
+          activeMinStock={minStock}
+          onAvailabilityChange={handleAvailabilityChange}
+          isLoading={filtersLoading}
+          language={language}
+          labels={gridFiltersLabels}
+        />
+
+        {/* Products Grid */}
+        <div className="flex-1 w-full">
+          <div className="sticky top-[80px] z-30 bg-background/95 backdrop-blur py-2 lg:static lg:bg-transparent lg:py-0 mb-2">
+            <GridToolbar
+              itemsFound={itemsFound}
+              page={currentPage}
+              pageSize={offset}
+              pageItemCount={pageItemCount}
+              activeTextFilters={filters}
+              priceFilterMin={minPrice}
+              priceFilterMax={maxPrice}
+              availability={availability}
+              minStock={minStock}
+              defaultSort={defaultSort}
+              onSortChange={(field, order) =>
+                handleSortChange(field, order as 'ASC' | 'DESC')
+              }
+              onOffsetChange={handleOffsetChange}
+              viewMode={viewMode}
+              onViewChange={(mode) => setViewMode(mode as 'grid' | 'list')}
+              onFilterRemove={handleFilterRemove}
+              onPriceFilterRemove={() => handlePriceRangeChange(undefined, undefined)}
+              onAvailabilityFilterRemove={handleAvailabilityFilterRemove}
+              onClearFilters={clearAllFilters}
+              labels={gridToolbarLabels}
+            />
+          </div>
+
+          <div onMouseOver={prefetchOnHover}>
+          <ProductGrid
+            // Server-seeded first page — only while no interaction has
+            // happened. Dropping it to `undefined` lets the grid fetch.
+            products={usingServerData ? initialProducts : undefined}
+            categoryId={categoryId}
+            onProductClick={productClick}
+            allowAddToCart={true}
+            showPrice={true}
+            showModal={true}
+            createCart={true}
+            cartId={cart?.cartId}
+            onCartCreated={(c) => {
+              saveCart(c);
+            }}
+            columns={viewMode === 'list' ? 1 : 3}
+            textFilters={activeTextFilters}
+            priceFilterMin={minPrice}
+            priceFilterMax={maxPrice}
+            availability={availability}
+            minStock={minStock}
+            pageSize={offset}
+            sortField={sortField as string}
+            sortOrder={sortOrder as string}
+            showAvailability={false}
+            showStock={SHOW_STOCK}
+            onFiltersChange={setGridFilters}
+            onPriceBoundsChange={(min, max) => {
+              if (!priceBoundsMin && !priceBoundsMax) {
+                setPriceBoundsMin(min);
+                setPriceBoundsMax(max);
+              }
+            }}
+            onItemsFoundChange={setItemsFound}
+            onPageItemCountChange={setPageItemCount}
+            onLoadingChange={setFiltersLoading}
+            page={currentPage}
+            onPageChange={setCurrentPage}
+            afterAddToCart={(c, item) => {
+              saveCart(c);
+              trackAddToCart(categorySource, item, c, null, language);
+            }}
+            onProceedToCheckout={() =>
+              router.push(localizeHref('/checkout', language))
+            }
+            onRequestQuoteClick={() =>
+              router.push(localizeHref('/checkout?mode=quote', language))
+            }
+            onProductsResponse={setProductsResponse}
+            onCategoryChange={setCategory}
+            onClusterClick={(cluster: Cluster) => {
+              trackSelectItem(categorySource, cluster, null, language);
+              router.push(config.urls.getClusterUrl(cluster, language));
+            }}
+            labels={productGridLabels}
+            productCardLabels={productCardLabels}
+            clusterCardLabels={clusterCardLabels}
+            addToCartLabels={addToCartLabels}
+            stockLabels={itemStockLabels}
+            priceLabels={productPriceLabels}
+            onLoginClick={() => router.push(localizeHref('/login', language))}
+          />
+          </div>
+
+          <div className="flex justify-center gap-2 mt-12">
+            {productsResponse && (
+              <GridPagination
+                products={productsResponse}
+                onPageChange={handlePageChange}
+                variant="full"
+                labels={gridPaginationLabels}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Above-the-fold breadcrumbs island. Lives in its own client component so the
+ * non-serializable `configuration.urls.getCategoryUrl` function can be wired
+ * up on the client — passing it directly from the Server Component would
+ * throw at the RSC serialization step. Mirrors `ProductBreadcrumbsIsland`.
+ */
+export function CategoryBreadcrumbsIsland({
+  category,
+}: {
+  category: Category;
+}) {
+  const breadcrumbsLabels = useTranslations('Breadcrumbs');
+  return (
+    <Breadcrumbs
+      categoryPath={category.categoryPath || []}
+      currentCategory={category || undefined}
+      showCurrent={true}
+      labels={breadcrumbsLabels}
+    />
+  );
+}

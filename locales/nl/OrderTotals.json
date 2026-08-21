@@ -1,0 +1,11 @@
+{
+  "discount": "Korting:",
+  "shippingCosts": "Verzendkosten:",
+  "subtotal": "Subtotaal:",
+  "subtotalWithDiscount": "Subtotaal met korting:",
+  "total": "Totaal:",
+  "totalExclVat": "Totaal excl. BTW:",
+  "totalVat": "Totaal BTW:",
+  "transactionCosts": "Transactiekosten:",
+  "vat": "BTW"
+}

@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pages",
+  "info": {
+    "singularName": "page",
+    "pluralName": "pages",
+    "displayName": "Page",
+    "description": "Create and manage CMS pages"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "template": {
+      "type": "enumeration",
+      "enum": ["default", "landing-page", "editorial"],
+      "default": "default"
+    },
+    "seo": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.seo"
+    },
+    "blocks": {
+      "type": "dynamiczone",
+      "components": [
+        "shared.hero-banner",
+        "shared.product-slider",
+        "shared.rich-text",
+        "shared.media",
+        "shared.quote",
+        "shared.slider",
+        "shared.value-props",
+        "shared.call-to-action",
+        "shared.product-carousel",
+        "shared.contact-form"
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "downloadPdf": "Order confirmation (PDF)",
+  "downloadingPdf": "Downloading...",
+  "pdfError": "Failed to download PDF",
+  "pdfSuccess": "PDF downloaded successfully",
+  "reorder": "Order again",
+  "reorderError": "Failed to add items to cart",
+  "reorderSuccess": "All items added to cart",
+  "reordering": "Adding items..."
+}

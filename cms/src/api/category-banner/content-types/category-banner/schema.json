@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "category_banners",
+  "info": {
+    "singularName": "category-banner",
+    "pluralName": "category-banners",
+    "displayName": "Category Banner",
+    "description": "Banner images linked to Propeller category IDs"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "categoryId": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": true,
+      "allowedTypes": ["images"]
+    },
+    "ctaText": {
+      "type": "string"
+    },
+    "ctaUrl": {
+      "type": "string"
+    }
+  }
+}

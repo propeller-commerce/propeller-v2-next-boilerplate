@@ -1,0 +1,6 @@
+{
+  "required": "Required",
+  "requiredError": "This option is required",
+  "selectOptional": "— None (Optional) —",
+  "selectRequired": "— Select an option —"
+}

@@ -1,0 +1,195 @@
+'use client';
+import { track } from '@/lib/tracking';
+
+import { Company } from '@propeller-commerce/propeller-sdk-v2';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+
+const STORAGE_KEY = 'selected_company';
+
+/**
+ * Parses the stored company, validating the shape instead of asserting it.
+ *
+ * A bare `JSON.parse(stored) as Company` accepted anything an older build had
+ * written, which is how a shape change turned into "clear your cache and it
+ * works". `companyId` is the only field consumers actually need — it
+ * is what gets sent to the API and validated against the contact's memberships
+ * — so anything without a numeric one is unusable and better dropped: the app
+ * then falls back to the user's default company on its own.
+ */
+function readStoredCompany(raw: string): Company | null {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object') return null;
+  const { companyId } = parsed as { companyId?: unknown };
+  if (typeof companyId !== 'number' || !Number.isFinite(companyId)) {
+    console.warn('Discarding a stored company that no longer matches the expected shape');
+    return null;
+  }
+  return parsed as Company;
+}
+/**
+ * Non-httpOnly cookie shadowing the localStorage selection so server-side
+ * fetchers (`lib/server.ts:getServerInfra`) can scope queries by the active
+ * company on the very first SSR render — without it the server would always
+ * use the user's default company while the client uses the picked one,
+ * silently desynchronising prices, assortment, and filter facets.
+ */
+const COOKIE_KEY = 'selected_company_id';
+
+function writeCompanyCookie(companyId: number | undefined): void {
+  if (typeof document === 'undefined') return;
+  if (companyId === undefined) {
+    document.cookie = `${COOKIE_KEY}=; path=/; max-age=0; samesite=lax`;
+    return;
+  }
+  // 30-day persistence; matches typical session cookie lifetime — long enough
+  // to survive a tab close, short enough that an abandoned device eventually
+  // drops the selection.
+  document.cookie = `${COOKIE_KEY}=${companyId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+}
+
+interface CompanyContextType {
+  selectedCompany: Company | null;
+  setSelectedCompany: (company: Company) => void;
+  clearSelectedCompany: () => void;
+}
+
+const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
+
+export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [selectedCompany, setSelectedCompanyState] = useState<Company | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? readStoredCompany(stored) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const setSelectedCompany = useCallback((company: Company) => {
+    // The PREVIOUS company is read from storage rather than from React state:
+    // this callback has empty deps, so a captured `selectedCompany` would be
+    // stale, and reading it inside a state updater would fire the event twice
+    // under StrictMode.
+    let previousId: number | null = null;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      previousId = stored ? (JSON.parse(stored) as Company)?.companyId ?? null : null;
+    } catch {
+      /* unreadable storage is not worth failing a company switch over */
+    }
+
+    setSelectedCompanyState(company);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(company));
+    writeCompanyCookie(company.companyId);
+    window.dispatchEvent(new CustomEvent('companySwitched', { detail: company }));
+
+    // Only a real change is a switch — this setter also runs on login and on
+    // restore, where from === to and nothing was chosen.
+    if (previousId != null && previousId !== company.companyId) {
+      track(
+        'propeller.company_switched',
+        { from_company_id: previousId, to_company_id: company.companyId },
+        `company_switched:${previousId}:${company.companyId}:${Math.floor(Date.now() / 2000)}`
+      );
+    }
+  }, []);
+
+  const clearSelectedCompany = useCallback(() => {
+    setSelectedCompanyState(null);
+    localStorage.removeItem(STORAGE_KEY);
+    writeCompanyCookie(undefined);
+  }, []);
+
+  // After hydration, mirror the localStorage-restored selection into the
+  // cookie. The cookie can be missing (first visit on a new device, cookie
+  // cleared while localStorage survived, …) while localStorage carries the
+  // last pick — without this sync the next SSR render would scope to the
+  // user's default company instead of what the UI is showing.
+  useEffect(() => {
+    if (selectedCompany?.companyId) writeCompanyCookie(selectedCompany.companyId);
+  }, []);
+
+  // Sync when another tab/component dispatches companySwitched
+  useEffect(() => {
+    const handleCompanySwitched = (e: Event) => {
+      const company = (e as CustomEvent<Company>).detail;
+      setSelectedCompanyState(company);
+    };
+
+    window.addEventListener('companySwitched', handleCompanySwitched);
+    return () => window.removeEventListener('companySwitched', handleCompanySwitched);
+  }, []);
+
+  // Clear on logout
+  useEffect(() => {
+    const handleLogout = () => clearSelectedCompany();
+    window.addEventListener('userLoggedOut', handleLogout);
+    return () => window.removeEventListener('userLoggedOut', handleLogout);
+  }, [clearSelectedCompany]);
+
+  // Re-sync the selected company when the user is refreshed (e.g. after an
+  // address edit calls refreshUser). `selectedCompany` is a separate snapshot
+  // that the dashboard reads addresses + company info off — without this it
+  // keeps the stale copy and shows the old addresses. Re-point it at the FRESH
+  // company carried on the refreshed user, matching the current companyId
+  // (multi-company contacts), else the user's default. State-only — this is the
+  // same data the user already selected, so no `companySwitched` dispatch and
+  // no localStorage churn beyond keeping the snapshot current.
+  useEffect(() => {
+    const handleUserRefreshed = (e: Event) => {
+      const user = (e as CustomEvent<{ user: unknown }>).detail?.user as
+        | { company?: Company; companies?: { items?: Company[] } }
+        | null
+        | undefined;
+      if (!user) return;
+      setSelectedCompanyState((current) => {
+        const targetId = current?.companyId;
+        const candidates: Company[] = [
+          ...(user.companies?.items ?? []),
+          ...(user.company ? [user.company] : []),
+        ];
+        // Prefer the FRESH copy of the currently-selected company (keeps the
+        // user's choice, just with up-to-date data). If the current selection
+        // isn't one of THIS user's companies — e.g. a stale `selected_company`
+        // left over from a previously logged-in identity — fall back to their
+        // default company. This is what stops `fetchActiveCart` from filtering
+        // `carts` by a company the user isn't a member of → "Unauthorized use
+        // of companyIds".
+        const next =
+          (targetId != null && candidates.find((c) => c?.companyId === targetId)) ||
+          user.company ||
+          null;
+        // Reconcile localStorage + cookie with the resolved selection so a
+        // later reload (which reads it back) doesn't resurrect the stale
+        // company, and the server-side scoping cookie tracks the change.
+        try {
+          if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          else localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          /* storage full / unavailable — in-memory state still updates */
+        }
+        writeCompanyCookie(next?.companyId);
+        return next;
+      });
+    };
+    window.addEventListener('userRefreshed', handleUserRefreshed);
+    return () => window.removeEventListener('userRefreshed', handleUserRefreshed);
+  }, []);
+
+  return (
+    <CompanyContext.Provider value={{ selectedCompany, setSelectedCompany, clearSelectedCompany }}>
+      {children}
+    </CompanyContext.Provider>
+  );
+};
+
+export const useCompany = (): CompanyContextType => {
+  const context = useContext(CompanyContext);
+  if (context === undefined) {
+    throw new Error('useCompany must be used within a CompanyProvider');
+  }
+  return context;
+};

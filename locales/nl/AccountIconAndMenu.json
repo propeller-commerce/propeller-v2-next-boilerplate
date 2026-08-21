@@ -1,0 +1,10 @@
+{
+  "accountLabel": "Account",
+  "accountMenuTitle": "Mijn account",
+  "greeting": "Hallo, {name}",
+  "loginButton": "Inloggen",
+  "loginSubtitle": "",
+  "loginTitle": "Welkom terug",
+  "logoutLabel": "Uitloggen",
+  "signedInAs": "Ingelogd als"
+}

@@ -1,0 +1,1 @@
+export const companyViewerAttributes: string[] = ["SAP_RECEIVER_ID", "SAP_DEBTOR_ID", "ABD_DEBTOR_ID"];

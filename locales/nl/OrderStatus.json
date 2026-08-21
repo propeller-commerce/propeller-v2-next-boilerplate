@@ -1,0 +1,12 @@
+{
+  "CANCELLED": "Geannuleerd",
+  "COMPLETE": "Voltooid",
+  "CONFIRMED": "Bevestigd",
+  "NEW": "Nieuw",
+  "PROCESSING": "In behandeling",
+  "QUOTE_ACCEPTED": "Offerte geaccepteerd",
+  "QUOTE_REJECTED": "Offerte afgewezen",
+  "REQUEST": "Aangevraagd",
+  "SHIPPED": "Verzonden",
+  "UNFINISHED": "Onafgerond"
+}

@@ -1,0 +1,17 @@
+{
+  "activeBadge": "Actief",
+  "cocNumberLabel": "KvK-nummer",
+  "companies": "Bedrijven",
+  "companyInformation": "Bedrijfsgegevens",
+  "companyNameLabel": "Bedrijfsnaam",
+  "defaultAddresses": "Standaardadressen",
+  "deliveryAddress": "Bezorgadres",
+  "emailLabel": "Email",
+  "invoiceAddress": "Factuuradres",
+  "nameLabel": "Naam",
+  "noDeliveryAddress": "Geen bezorgadres gevonden",
+  "noInvoiceAddress": "Geen factuuradres gevonden",
+  "personalInformation": "Persoonlijke gegevens",
+  "taxNumberLabel": "BTW-nummer",
+  "userFallback": "Gebruiker"
+}

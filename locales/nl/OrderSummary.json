@@ -1,0 +1,13 @@
+{
+  "carrier": "Vervoerder:",
+  "deliveryAddress": "Bezorgadres",
+  "deliveryDate": "Bezorgdatum:",
+  "invoiceAddress": "Factuuradres",
+  "orderDate": "Orderdatum",
+  "orderNumber": "Ordernummer",
+  "payment": "Betaling:",
+  "reference": "Referentie:",
+  "remarks": "Opmerkingen:",
+  "status": "Status",
+  "total": "Totaal"
+}

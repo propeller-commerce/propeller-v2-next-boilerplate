@@ -1,0 +1,10 @@
+{
+  "downloadPdf": "Orderbevestiging (PDF)",
+  "downloadingPdf": "Downloaden...",
+  "pdfError": "PDF kon niet worden gedownload",
+  "pdfSuccess": "PDF succesvol gedownload",
+  "reorder": "Opnieuw bestellen",
+  "reorderError": "Artikelen konden niet worden toegevoegd aan winkelwagen",
+  "reorderSuccess": "Alle artikelen toegevoegd aan winkelwagen",
+  "reordering": "Artikelen toevoegen..."
+}

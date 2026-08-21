@@ -1,0 +1,12 @@
+{
+  "CANCELLED": "Cancelled",
+  "COMPLETE": "Completed",
+  "CONFIRMED": "Confirmed",
+  "NEW": "New",
+  "PROCESSING": "Processing",
+  "QUOTE_ACCEPTED": "Quote accepted",
+  "QUOTE_REJECTED": "Quote rejected",
+  "REQUEST": "Requested",
+  "SHIPPED": "Shipped",
+  "UNFINISHED": "Unfinished"
+}

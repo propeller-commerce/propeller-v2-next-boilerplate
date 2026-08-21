@@ -1,0 +1,153 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.0">
+  <diagram id="architecture" name="Full Architecture">
+    <mxGraphModel dx="1678" dy="1015" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="browser" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;fontSize=16;spacingTop=5;container=1;collapsible=0;" value="BROWSER" vertex="1">
+          <mxGeometry height="680" width="1520" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="state-label" parent="browser" style="text;html=1;align=left;fontSize=13;fontColor=#333333;" value="&lt;b&gt;State Management (context/)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="300" x="20" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="auth-ctx" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;AuthContext&lt;/b&gt;&lt;br&gt;useReducer&lt;br&gt;accessToken + refreshToken&lt;br&gt;30min inactivity logout&lt;br&gt;events: userLoggedIn/Out&lt;br&gt;persists to localStorage" vertex="1">
+          <mxGeometry height="110" width="220" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cart-ctx" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;CartContext&lt;/b&gt;&lt;br&gt;useState&lt;br&gt;cross-tab sync (storage events)&lt;br&gt;event: cartUpdated&lt;br&gt;persists to localStorage" vertex="1">
+          <mxGeometry height="110" width="220" x="260" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="global-ctx" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=8;fontSize=11;" value="&lt;b&gt;GlobalContext&lt;/b&gt;&lt;br&gt;CMS global data&lt;br&gt;(logo, nav, footer)&lt;br&gt;from Strapi via layout.tsx" vertex="1">
+          <mxGeometry height="110" width="220" x="500" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="localstorage" parent="browser" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;size=10;fontSize=11;align=center;" value="&lt;b&gt;localStorage&lt;/b&gt;&lt;br&gt;auth_tokens&lt;br&gt;cart_data&lt;br&gt;admin_auth" vertex="1">
+          <mxGeometry height="115" width="130" x="740" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="routes-container" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#cccccc;container=1;collapsible=0;" value="" vertex="1">
+          <mxGeometry height="470" width="870" x="20" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="routes-title" parent="routes-container" style="text;html=1;align=left;fontSize=13;fontColor=#333333;" value="&lt;b&gt;Pages (app/) — Route Resolution: highest → lowest priority&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="500" x="10" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="static-routes" parent="routes-container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;1. Static Routes&lt;/b&gt;&lt;br&gt;/login → LoginPage&lt;br&gt;/register → RegisterPage&lt;br&gt;/cart → CartPage&lt;br&gt;/checkout → CheckoutPage&lt;br&gt;/forgot-password&lt;br&gt;/terms-conditions" vertex="1">
+          <mxGeometry height="130" width="200" x="10" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dynamic-routes" parent="routes-container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;2. Dynamic Routes [param]&lt;/b&gt;&lt;br&gt;/product/[productId]/[slug]&lt;br&gt;/category/[id]/[slug]&lt;br&gt;/cluster/[clusterId]/[slug]&lt;br&gt;/search/[term]&lt;br&gt;/checkout/thank-you/[orderId]" vertex="1">
+          <mxGeometry height="130" width="230" x="220" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="protected-routes" parent="routes-container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;3. Protected /account/*&lt;/b&gt;&lt;br&gt;account/layout.tsx guards all:&lt;br&gt;useAuth() → !auth? → /login&lt;hr&gt;/account (dashboard)&lt;br&gt;/account/orders &amp; /[id]&lt;br&gt;/account/addresses&lt;br&gt;/account/favorites &amp; /[id]&lt;br&gt;/account/invoices&lt;br&gt;/account/quotes &amp; /[id]&lt;br&gt;/account/price-requests" vertex="1">
+          <mxGeometry height="185" width="210" x="10" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="admin-route" parent="routes-container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;4. Admin [[...admin]]&lt;/b&gt;&lt;br&gt;/admin/* → react-admin SPA&lt;br&gt;Own JWT auth (24h)&lt;br&gt;via /api/admin/auth/login&lt;br&gt;Client-side routing by&lt;br&gt;react-admin" vertex="1">
+          <mxGeometry height="115" width="200" x="230" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="cms-catchall" parent="routes-container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;5. CMS Catch-All (lowest priority)&lt;/b&gt;&lt;br&gt;/(cms)/[...slug] → CmsPage&lt;br&gt;&lt;br&gt;/about-us → getPage(&quot;about-us&quot;)&lt;br&gt;/legal/privacy → getPage(&quot;legal/privacy&quot;)&lt;br&gt;&lt;br&gt;Found → DynamicBlockRenderer&lt;br&gt;Not found → 404" vertex="1">
+          <mxGeometry height="155" width="270" x="460" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="home-route" parent="routes-container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;6. Home / (special case)&lt;/b&gt;&lt;br&gt;app/page.tsx&lt;br&gt;&lt;br&gt;getPage(&quot;home&quot;) → CMS page?&lt;br&gt;  YES → DynamicBlockRenderer&lt;br&gt;  NO → HomeFallback&lt;br&gt;    ├ menuService.getMenu()&lt;br&gt;    └ categoryService → products" vertex="1">
+          <mxGeometry height="155" width="270" x="460" y="195" as="geometry" />
+        </mxCell>
+        <mxCell id="ds-label-propeller" parent="routes-container" style="text;html=1;align=left;fontSize=11;fontColor=#0050ef;fontStyle=1;" value="→ Propeller API" vertex="1">
+          <mxGeometry height="20" width="120" x="745" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ds-label-mysql" parent="routes-container" style="text;html=1;align=left;fontSize=11;fontColor=#ae4132;fontStyle=1;" value="→ MySQL" vertex="1">
+          <mxGeometry height="20" width="120" x="745" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="ds-label-strapi" parent="routes-container" style="text;html=1;align=left;fontSize=11;fontColor=#2d7600;fontStyle=1;" value="→ Strapi CMS" vertex="1">
+          <mxGeometry height="20" width="120" x="745" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e-static-ds" edge="1" parent="routes-container" source="static-routes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0050ef;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="ds-label-propeller">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-dynamic-ds" edge="1" parent="routes-container" source="dynamic-routes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0050ef;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="ds-label-propeller">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-protected-ds" edge="1" parent="routes-container" source="protected-routes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0050ef;exitX=1;exitY=0.3;" target="ds-label-propeller">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-admin-ds" edge="1" parent="routes-container" source="admin-route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ae4132;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="ds-label-mysql">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cms-ds" edge="1" parent="routes-container" source="cms-catchall" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2d7600;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="ds-label-strapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sdk-layer" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996185;align=center;fontSize=11;verticalAlign=top;spacingTop=3;" value="&lt;b&gt;SDK Layer&lt;/b&gt; (lib/api.ts)&lt;br&gt;&lt;br&gt;GraphQLClient({ endpoint: &quot;/api/graphql&quot;, apiKey: &quot;&quot; })&lt;br&gt;&lt;i&gt;apiKey empty — proxy injects it server-side&lt;/i&gt;&lt;hr&gt;&lt;table style=&quot;font-size:11px;&quot;&gt;&lt;tr&gt;&lt;td&gt;productService&lt;/td&gt;&lt;td&gt;cartService&lt;/td&gt;&lt;td&gt;userService&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;categoryService&lt;/td&gt;&lt;td&gt;orderService&lt;/td&gt;&lt;td&gt;payMethodService&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;Some components (ProductGrid, AddToCart) receive graphqlClient as prop&lt;/i&gt;" vertex="1">
+          <mxGeometry height="170" width="570" x="920" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="auth-flow" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;Customer Auth Flow&lt;/b&gt;&lt;hr&gt;/login → AuthContext.login()&lt;br&gt;→ propeller-sdk-v2 UserService&lt;br&gt;→ POST /api/graphql → Propeller API&lt;br&gt;→ { accessToken, refreshToken, user }&lt;br&gt;→ localStorage + state update&lt;br&gt;→ router.push(&#39;/account&#39;)&lt;hr&gt;&lt;b&gt;Protection:&lt;/b&gt; account/layout.tsx&lt;br&gt;useAuth() → redirect if !authenticated&lt;br&gt;&lt;b&gt;Timeout:&lt;/b&gt; 30min inactivity auto-logout" vertex="1">
+          <mxGeometry height="200" width="280" x="920" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="admin-flow" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;Admin Auth Flow&lt;/b&gt;&lt;hr&gt;/admin → react-admin login form&lt;br&gt;→ POST /api/admin/auth/login&lt;br&gt;→ validate against MySQL admin_users&lt;br&gt;  (bcryptjs password hash)&lt;br&gt;→ JWT (24h, signed with JWT_SECRET)&lt;br&gt;→ localStorage: admin_auth&lt;br&gt;→ authProvider validates each route" vertex="1">
+          <mxGeometry height="165" width="280" x="1210" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="hydration-note" parent="browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;align=center;fontSize=10;fontStyle=0;" value="&lt;b&gt;Hydration Pattern&lt;/b&gt;&lt;br&gt;useSyncExternalStore()&lt;br&gt;prevents localStorage&lt;br&gt;hydration mismatches" vertex="1">
+          <mxGeometry height="70" width="170" x="1210" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="server" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontStyle=1;fontSize=16;spacingTop=5;container=1;collapsible=0;" value="NEXT.JS SERVER" vertex="1">
+          <mxGeometry height="300" width="1520" x="40" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="api-routes-label" parent="server" style="text;html=1;align=left;fontSize=13;fontColor=#333333;" value="&lt;b&gt;API Routes&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="200" x="20" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="graphql-proxy" parent="server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;/api/graphql&lt;/b&gt; (route.ts)&lt;hr&gt;1. Receives POST from browser&lt;br&gt;2. Injects header: apikey = API_KEY&lt;br&gt;3. Forwards Authorization header&lt;br&gt;4. Proxies to GRAPHQL_ENDPOINT&lt;hr&gt;&lt;i&gt;API_KEY never sent to browser&lt;/i&gt;" vertex="1">
+          <mxGeometry height="145" width="280" x="20" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="admin-api" parent="server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;/api/admin/auth/login&lt;/b&gt;&lt;hr&gt;Validates email/password&lt;br&gt;against MySQL admin_users&lt;br&gt;(bcryptjs hash)&lt;br&gt;Returns signed JWT (24h)" vertex="1">
+          <mxGeometry height="120" width="220" x="320" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ssr-label" parent="server" style="text;html=1;align=left;fontSize=13;fontColor=#333333;" value="&lt;b&gt;Server-Side Data Fetching&lt;/b&gt; (lib/cms/strapi.ts)" vertex="1">
+          <mxGeometry height="20" width="400" x="600" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ssr-layout" parent="server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;layout.tsx (root)&lt;/b&gt;&lt;br&gt;getGlobal()&lt;br&gt;GET /api/global?populate=*&lt;br&gt;revalidate: 60s (prod)&lt;br&gt;no-store (dev)" vertex="1">
+          <mxGeometry height="100" width="220" x="600" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ssr-cms" parent="server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;(cms)/[...slug]/page.tsx&lt;/b&gt;&lt;br&gt;getPage(slug)&lt;br&gt;generateStaticParams()&lt;br&gt;→ pre-renders at build time" vertex="1">
+          <mxGeometry height="100" width="220" x="840" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ssr-home" parent="server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;app/page.tsx (home)&lt;/b&gt;&lt;br&gt;getPage(&quot;home&quot;)&lt;br&gt;Falls back to HomeFallback" vertex="1">
+          <mxGeometry height="80" width="220" x="600" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ssr-catbanner" parent="server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;category/[id]/[slug]&lt;/b&gt;&lt;br&gt;getCategoryBanner(id)&lt;br&gt;GET /api/category-banners" vertex="1">
+          <mxGeometry height="80" width="220" x="840" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="propeller" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontSize=11;verticalAlign=top;spacingTop=5;fontColor=#000000;" value="&lt;b&gt;Propeller GraphQL API&lt;/b&gt;&lt;br&gt;(SaaS — helice.cloud)&lt;hr&gt;Products &amp; Categories&lt;br&gt;Cart &amp; Orders&lt;br&gt;Users &amp; Auth&lt;br&gt;Clusters &amp; Inventory&lt;br&gt;Prices &amp; Pay Methods&lt;hr&gt;&lt;b&gt;Auth:&lt;/b&gt; Propeller tokens&lt;br&gt;in localStorage, 30min&lt;br&gt;inactivity timeout" vertex="1">
+          <mxGeometry height="230" width="250" x="100" y="1140" as="geometry" />
+        </mxCell>
+        <mxCell id="strapi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;fontSize=11;verticalAlign=top;spacingTop=5;" value="&lt;b&gt;Strapi CMS&lt;/b&gt;&lt;br&gt;(localhost:1337)&lt;hr&gt;Pages &amp; Global settings&lt;br&gt;Category Banners&lt;br&gt;Articles &amp; About&lt;br&gt;Authors &amp; Categories&lt;hr&gt;&lt;b&gt;Auth:&lt;/b&gt; Optional API token&lt;br&gt;(STRAPI_API_TOKEN)&lt;br&gt;server-side only" vertex="1">
+          <mxGeometry height="220" width="250" x="660" y="1140" as="geometry" />
+        </mxCell>
+        <mxCell id="mysql" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;fontSize=11;verticalAlign=top;spacingTop=5;size=15;" value="&lt;b&gt;MySQL&lt;/b&gt;&lt;br&gt;(localhost:3306)&lt;hr&gt;admin_users table&lt;br&gt;(admin panel only)&lt;br&gt;bcryptjs passwords&lt;hr&gt;&lt;b&gt;Auth:&lt;/b&gt; JWT in localStorage&lt;br&gt;(admin_auth), 24h expiry&lt;br&gt;signed with JWT_SECRET" vertex="1">
+          <mxGeometry height="230" width="250" x="1180" y="1140" as="geometry" />
+        </mxCell>
+        <mxCell id="e-browser-server" edge="1" parent="1" source="sdk-layer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" target="graphql-proxy" value="POST /api/graphql&lt;br&gt;+ Authorization: Bearer &lt;token&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1205" y="730" />
+              <mxPoint x="200" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-proxy-propeller" edge="1" parent="1" source="graphql-proxy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" target="propeller" value="proxies with&lt;br&gt;apikey header">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ssr-strapi" edge="1" parent="1" source="ssr-layout" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" target="strapi" value="fetch with&lt;br&gt;revalidate: 60s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ssr-cms-strapi" edge="1" parent="1" source="ssr-cms" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;strokeWidth=2;dashed=1;" target="strapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ssr-home-strapi" edge="1" parent="1" source="ssr-home" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;strokeWidth=2;dashed=1;" target="strapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ssr-cat-strapi" edge="1" parent="1" source="ssr-catbanner" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;strokeWidth=2;dashed=1;" target="strapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-admin-mysql" edge="1" parent="1" source="admin-api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" target="mysql" value="validate + CRUD">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="keyfiles" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;align=left;spacingLeft=10;verticalAlign=top;spacingTop=5;" value="&lt;b style=&quot;font-size:13px;&quot;&gt;Key Files&lt;/b&gt;&lt;hr&gt;&lt;table style=&quot;font-size:11px;border-collapse:collapse;&quot;&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;app/layout.tsx&lt;/td&gt;&lt;td&gt;Root server component — fetches CMS global, wraps Auth+Cart+Global providers&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;app/(cms)/[...slug]/&lt;/td&gt;&lt;td&gt;CMS catch-all for Strapi-managed pages&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;app/account/layout.tsx&lt;/td&gt;&lt;td&gt;Client-side auth guard for all /account/* routes&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;lib/api.ts&lt;/td&gt;&lt;td&gt;GraphQLClient + 6 service singletons (endpoint: /api/graphql)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;lib/cms/strapi.ts&lt;/td&gt;&lt;td&gt;Strapi fetch helper (getPage, getGlobal, getCategoryBanner)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;lib/services/&lt;/td&gt;&lt;td&gt;BaseApiService subclasses — retry logic, error handling, caching&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;context/&lt;/td&gt;&lt;td&gt;AuthContext, CartContext, GlobalContext&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;components/propeller/&lt;/td&gt;&lt;td&gt;Active Mitosis-compiled React components (ProductGrid, AddToCart, etc.)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;components/cms/&lt;/td&gt;&lt;td&gt;DynamicBlockRenderer + block components for Strapi content&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;data/config.ts&lt;/td&gt;&lt;td&gt;Feature flags, URL builders, base category ID&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;data/defaults.ts&lt;/td&gt;&lt;td&gt;Pagination, search, cart, validation, timeout, cache defaults&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 10px 2px 0;font-weight:bold;&quot;&gt;app/api/graphql/route.ts&lt;/td&gt;&lt;td&gt;Server-side proxy — injects API_KEY, forwards auth, hides endpoint&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" vertex="1">
+          <mxGeometry height="270" width="750" x="40" y="1420" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

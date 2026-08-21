@@ -1,0 +1,36 @@
+{
+  "collectionName": "components_shared_hero_banners",
+  "info": {
+    "displayName": "Hero Banner",
+    "icon": "picture",
+    "description": "Full-width hero section with background image and CTA"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "subtitle": {
+      "type": "text"
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "ctaText": {
+      "type": "string"
+    },
+    "ctaUrl": {
+      "type": "string"
+    },
+    "secondaryCtaText": {
+      "type": "string"
+    },
+    "secondaryCtaUrl": {
+      "type": "string"
+    }
+  }
+}

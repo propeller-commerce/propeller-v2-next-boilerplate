@@ -1,0 +1,291 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { localizeHref } from '@/data/config';
+import { useLanguage } from '@/context/LanguageContext';
+import { graphqlClient } from '@/lib/api';
+import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
+import { useOrders } from '@propeller-commerce/propeller-v2-react-ui';
+import { OrderSummary } from '@propeller-commerce/propeller-v2-react-ui';
+import { QuoteActions } from '@propeller-commerce/propeller-v2-react-ui';
+import { imageSearchFiltersGrid, imageVariantFiltersSmall } from '@/data/defaults';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { OrderItemCard } from '@propeller-commerce/propeller-v2-react-ui';
+import { OrderBonusItems } from '@propeller-commerce/propeller-v2-react-ui';
+import { OrderTotals } from '@propeller-commerce/propeller-v2-react-ui';
+import { getCountries } from '@/data/countries';
+import { useTranslations } from '@/lib/i18n/client';
+import AccessErrorView from '@/components/access/AccessErrorView';
+import { classifyApiError } from '@/lib/errors';
+import { track } from '@/lib/tracking';
+
+// COUNTRIES imported from shared utils
+export default function QuoteDetailPage() {
+    const { state } = useAuth();
+    const router = useRouter();
+    const { language } = useLanguage();
+    const params = useParams();
+    const quoteId = params.id as string;
+    const [quote, setQuote] = useState<Order | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const { getOrderById, downloadQuotePdf } = useOrders({
+        graphqlClient,
+        user: state.user,
+        language,
+        configuration: { imageSearchFiltersGrid, imageVariantFiltersSmall },
+    });
+
+    useEffect(() => {
+        const fetchQuoteDetails = async () => {
+            setLoading(true);
+            const result = await getOrderById(Number(quoteId));
+            if (result.success && result.order) {
+                setQuote(result.order);
+                // A quote viewed repeatedly without being accepted is a stalled
+                // deal with a name and a value on it — the "call this account"
+                // signal.
+                track(
+                    'propeller.quote_viewed',
+                    { order_id: Number(quoteId) || null, value: result.order?.total?.net ?? null, order_status: result.order?.status ?? null },
+                    `quote_viewed:${quoteId}`
+                );
+            } else {
+                setError(result.error ?? 'Quote not found');
+            }
+            setLoading(false);
+        };
+
+        if (quoteId) {
+            fetchQuoteDetails();
+        }
+    }, [quoteId]);
+
+    const handleAfterAccept = async (acceptedQuote: Order) => {
+        // "Quote viewed repeatedly but never accepted" is the stalled-deal
+        // signal; this is the event that closes that loop.
+        track(
+            'propeller.quote_accepted',
+            {
+                quote_id: Number(acceptedQuote?.id) || null,
+                value: acceptedQuote?.total?.gross ?? null,
+                item_count: acceptedQuote?.items?.length ?? 0,
+            },
+            `quote_accepted:${acceptedQuote?.id ?? ''}`
+        );
+        router.push(localizeHref(`/checkout/thank-you/${acceptedQuote.id}`, language));
+    };
+
+    // PDF download UX state — shows "Downloading..." while the request is in
+    // flight, then a success or error toast based on the result. Mirrors the
+    // pattern OrderActions uses for the order-confirmation PDF.
+    const orderSummaryLabels = useTranslations('OrderSummary');
+    const orderStatusLabels = useTranslations('OrderStatus');
+    const paymethodNames = useTranslations('PaymethodNames');
+    const quoteActionsLabels = useTranslations('QuoteActions');
+    const orderBonusItemsLabels = useTranslations('OrderBonusItems');
+    const orderTotalsLabels = useTranslations('OrderTotals');
+    const orderItemCardLabels = useTranslations('OrderItemCard');
+    const errorPagesLabels = useTranslations('ErrorPages');
+    const t = useTranslations('Account');
+
+    const [downloading, setDownloading] = useState(false);
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    const showDownloadToast = (message: string, type: 'success' | 'error') => {
+        setToastMessage(message);
+        setToastType(type);
+        setToastVisible(true);
+        setTimeout(() => setToastVisible(false), 4000);
+    };
+
+    const handleDownloadPDF = async () => {
+        if (downloading) return;
+        setDownloading(true);
+        try {
+            const result = await downloadQuotePdf(Number(quoteId));
+            track(
+                'propeller.order_pdf_downloaded',
+                { order_id: Number(quoteId) || null, doc_type: 'quote' },
+                `order_pdf_downloaded:quote:${quoteId}:${Math.floor(Date.now() / 2000)}`
+            );
+            if (result?.success) {
+                showDownloadToast(t.pdfDownloaded, 'success');
+            } else {
+                showDownloadToast(result?.error || t.pdfDownloadFailed, 'error');
+            }
+        } catch (e) {
+            console.error('Error downloading quote PDF:', e);
+            showDownloadToast(t.pdfDownloadFailed, 'error');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    if (!state.isAuthenticated) return null;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.back()}
+                        className="gap-2"
+                    >
+                        ← {t.back}
+                    </Button>
+                    <h1 className="text-3xl font-bold tracking-tight">{t.quoteDetailsTitle}</h1>
+                </div>
+            </div>
+
+            {loading && (
+                <Card className="p-8 text-center animate-pulse">
+                    <div className="h-8 bg-slate-100 rounded w-1/3 mx-auto mb-4"></div>
+                    <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto"></div>
+                </Card>
+            )}
+
+            {error && (
+                <AccessErrorView
+                    kind={classifyApiError(error)}
+                    backHref="/account/quotes"
+                    backLabel={errorPagesLabels.backToQuotes}
+                />
+            )}
+
+            {!loading && !error && quote && (
+                <div className="space-y-8">
+                    {/* Quote Summary + Addresses + Delivery Info */}
+                    <Card className="p-6">
+                        <div className="flex-1">
+                            <OrderSummary
+                                order={quote}
+                                labels={{
+                                    ...orderSummaryLabels,
+                                    orderNumber: t.issuedQuoteNumber,
+                                    orderDate: t.issuedQuoteDate,
+                                }}
+                                statusLabels={orderStatusLabels}
+                                paymethodLabels={paymethodNames}
+                                countries={getCountries(language)}
+                            />
+                        </div>
+                        <div className="flex flex-row items-end gap-3 flex-shrink-0 mt-4">
+                            <QuoteActions
+                                quote={quote}
+                                labels={quoteActionsLabels}
+                                afterAccept={handleAfterAccept}
+                                showTermsAndConditions={true}
+                                onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
+                            />
+                            <Button variant="link" size="sm" onClick={handleDownloadPDF} disabled={downloading}>
+                                {downloading ? t.downloading : t.downloadQuotePdf}
+                            </Button>
+                        </div>
+                    </Card>
+
+                    {/* Quote Overview */}
+                    <div className="pt-10">
+                        <h2 className="text-2xl font-bold mb-6 mt-6">{t.quoteOverviewTitle}</h2>
+
+                        {/* Regular Products (grouped parent/child) */}
+                        {(() => {
+                            const allProducts = quote.items?.filter((item: OrderItem) =>
+                                item.class === "product" && item.isBonus === "N"
+                            ) || [];
+                            const parentItems = allProducts.filter((item: OrderItem) => !item.parentOrderItemId);
+                            const childMap = new Map<number, OrderItem[]>();
+                            allProducts.filter((item: OrderItem) => item.parentOrderItemId).forEach((item: OrderItem) => {
+                                const children = childMap.get(item.parentOrderItemId!) || [];
+                                children.push(item);
+                                childMap.set(item.parentOrderItemId!, children);
+                            });
+
+                            if (parentItems.length > 0) {
+                                return (
+                                    <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 border-b">
+                                                <tr>
+                                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500">{t.colProducts}</th>
+                                                    <th className="px-6 py-4 text-center text-sm font-medium text-gray-500">{t.colQuantity}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colDiscount}</th>
+                                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500">{t.colPrice}</th>
+                                                </tr>
+                                            </thead>
+                                            {parentItems.map((item: OrderItem) => (
+                                                <OrderItemCard
+                                                    key={item.id}
+                                                    orderItem={item}
+                                                    showDiscount={true}
+                                                    childItems={childMap.get(item.id) || []}
+                                                    labels={orderItemCardLabels}
+                                                    language={language}
+                                                />
+                                            ))}
+                                        </table>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
+
+                        {/* Bonus Items */}
+                        <OrderBonusItems order={quote} labels={orderBonusItemsLabels} />
+                    </div>
+
+                    {/* Quote Bottom Totals */}
+                    <div className="flex flex-col md:flex-row justify-end gap-8 pt-6 border-t md:border-none">
+                        <OrderTotals order={quote} labels={orderTotalsLabels} />
+                    </div>
+                </div>
+            )}
+
+            {/* PDF download toast (success / error feedback) */}
+            {toastVisible ? (
+                <div
+                    className={`fixed top-4 right-4 z-50 flex items-start gap-3 w-80 rounded-container shadow-lg p-4 ${
+                        toastType === 'success'
+                            ? 'bg-success border border-success text-success-foreground'
+                            : 'bg-destructive border border-destructive text-destructive-foreground'
+                    }`}
+                    data-toast-type={toastType}
+                >
+                    <div className="flex-shrink-0 w-5 h-5 mt-0.5">
+                        {toastType === 'success' ? (
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        ) : (
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                                />
+                            </svg>
+                        )}
+                    </div>
+                    <p className="flex-1 text-sm font-medium">{toastMessage}</p>
+                    <button
+                        type="button"
+                        className="flex-shrink-0 rounded focus:outline-none hover:opacity-80"
+                        onClick={() => setToastVisible(false)}
+                    >
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-4 w-4" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            ) : null}
+        </div>
+    );
+}

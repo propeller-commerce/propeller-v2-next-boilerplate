@@ -1,0 +1,12 @@
+{
+  "alreadyLoggedIn": "Al ingelogd",
+  "alreadyLoggedInDesc": "U bent al ingelogd op uw account.",
+  "goToAccount": "Naar mijn account",
+  "goToHome": "Naar home",
+  "welcomeBack": "Welkom terug",
+  "welcomeBackDesc": "Voer uw gegevens in om toegang te krijgen tot uw account",
+  "createAccount": "Account aanmaken",
+  "createAccountDesc": "Vul onderstaande gegevens in om uw account aan te maken",
+  "backToLogin": "Terug naar inloggen",
+  "loginFailed": "Inloggen mislukt"
+}

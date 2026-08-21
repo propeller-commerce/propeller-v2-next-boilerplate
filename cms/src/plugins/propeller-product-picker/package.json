@@ -1,0 +1,12 @@
+{
+  "name": "propeller-product-picker",
+  "version": "1.0.0",
+  "strapi": {
+    "name": "propeller-product-picker",
+    "displayName": "Propeller Product Picker",
+    "description": "Search and select products/clusters from Propeller Commerce API",
+    "kind": "plugin"
+  },
+  "main": "./strapi-server.js",
+  "dependencies": {}
+}

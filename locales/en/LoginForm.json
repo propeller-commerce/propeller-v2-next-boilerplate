@@ -1,0 +1,14 @@
+{
+  "email": "Email",
+  "emailPlaceholder": "name@example.com",
+  "forgotPassword": "Forgot password?",
+  "guestCheckoutLink": "Continue as Guest",
+  "invalidCredentials": "The credentials you entered don't match our records. Please try again.",
+  "loggingIn": "Logging in...",
+  "noAccount": "Don't have an account? {link}",
+  "password": "Password",
+  "passwordPlaceholder": "••••••••",
+  "registerLink": "Create an Account",
+  "registerText": "Don't have an account?",
+  "submitButton": "Log in"
+}

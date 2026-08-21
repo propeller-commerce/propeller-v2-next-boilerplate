@@ -1,0 +1,20 @@
+{
+  "close": "Sluiten",
+  "colActions": "Acties",
+  "colCreatedAt": "Datum",
+  "colExpectedDelivery": "Verwachte levering",
+  "colItems": "Artikelen",
+  "colProduct": "Product",
+  "colQuantity": "Aantal",
+  "colSku": "SKU",
+  "colStatus": "Status",
+  "details": "Details",
+  "itemsTitle": "Artikelen",
+  "labelExpectedDelivery": "Verwachte levering",
+  "labelStatus": "Status",
+  "modalTitle": "Verzenddetails",
+  "noItems": "Geen artikelen in deze zending",
+  "title": "Verzendgegevens",
+  "trackAndTrace": "Track & Trace",
+  "trackAndTraceTitle": "Track & Trace"
+}

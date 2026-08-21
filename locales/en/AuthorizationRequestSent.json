@@ -1,0 +1,14 @@
+{
+  "title": "Authorization Request Sent!",
+  "description": "Your request has been submitted. An authorization manager will review it shortly.",
+  "reference": "Reference:",
+  "cartSummary": "Cart Summary",
+  "colProduct": "Product",
+  "colQty": "Qty",
+  "colTotal": "Total",
+  "totalExclVat": "Total excl. VAT:",
+  "vat": "VAT:",
+  "total": "Total:",
+  "continueShopping": "Continue Shopping",
+  "notified": "You will be notified once your authorization request has been reviewed."
+}

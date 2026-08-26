@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-08-26
+
+### Changed
+
+- Consumes `propeller-v2-react-ui` `^0.19.1`, which fixes order and quote lines whose
+  product is gone from the catalog. A hidden, withdrawn or deleted product
+  still appears on every order and quote it was sold on, but the API returns
+  no product record for it; the line's total had been dropping out of the row.
+
 ## [1.15.0] - 2026-08-26
 
 ### Fixed

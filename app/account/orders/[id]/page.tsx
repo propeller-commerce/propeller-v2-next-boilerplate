@@ -20,6 +20,7 @@ import { OrderTotals } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderActions } from '@propeller-commerce/propeller-v2-react-ui';
 import { OrderShipments } from '@propeller-commerce/propeller-v2-react-ui';
 import { getCountries } from '@/data/countries';
+import { config } from '@/data/config';
 import { useTranslations } from '@/lib/i18n/client';
 import AccessErrorView from '@/components/access/AccessErrorView';
 import { classifyApiError } from '@/lib/errors';
@@ -187,6 +188,7 @@ export default function OrderDetailPage() {
                                             </thead>
                                             {parentItems.map((item: OrderItem) => (
                                                 <OrderItemCard
+                                                    configuration={config}
                                                     key={item.id}
                                                     orderItem={item}
                                                     childItems={childMap.get(item.id) || []}

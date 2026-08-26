@@ -93,6 +93,17 @@ export function detectLanguageFromPath(pathname: string): string {
  *
  * Empty segments (missing id or slug) are dropped so the URL is always clean.
  */
+/**
+ * The URL pattern the builders below use.
+ *
+ * Module-level rather than read off `this.pattern`: the builders are handed to
+ * package components as plain function values, and a detached method loses its
+ * receiver — `this.pattern` became undefined and `pattern.split('/')` threw
+ * during render, tearing down every `<AddToCart>` on the page. `config.urls.pattern`
+ * still exposes it for anything that reads the configured value.
+ */
+const URL_PATTERN = 'page/id/slug';
+
 function buildEntityUrl(
   page: string,
   id: number | string | undefined,
@@ -233,13 +244,13 @@ export const config = {
      *   'page/slug'     →  /product/my-product
      *   'page/id'       →  /product/123
      */
-    pattern: 'page/id/slug',
+    pattern: URL_PATTERN,
 
     /** Generate a canonical product URL from a Product object. */
     getProductUrl(product: Product, language?: string): string {
       const slug = (language && product?.slugs?.find(s => s.language === language)?.value)
         || product?.slugs?.[0]?.value || '';
-      return buildEntityUrl('product', product?.productId, slug, this.pattern, language);
+      return buildEntityUrl('product', product?.productId, slug, URL_PATTERN, language);
     },
 
     /** Generate a canonical cluster URL from a Cluster object. */
@@ -247,14 +258,14 @@ export const config = {
       const slugs = cluster?.slugs || cluster?.defaultProduct?.slugs;
       const slug = (language && slugs?.find((s: LocalizedString) => s.language === language)?.value)
         || slugs?.[0]?.value || '';
-      return buildEntityUrl('cluster', cluster?.clusterId, slug, this.pattern, language);
+      return buildEntityUrl('cluster', cluster?.clusterId, slug, URL_PATTERN, language);
     },
 
     /** Generate a canonical category URL from a Category object. */
     getCategoryUrl(category: Category, language?: string): string {
       const slug = (language && category?.slugs?.find((s: LocalizedString) => s.language === language)?.value)
         || category?.slugs?.[0]?.value || '';
-      return buildEntityUrl('category', category?.categoryId, slug, this.pattern, language);
+      return buildEntityUrl('category', category?.categoryId, slug, URL_PATTERN, language);
     },
   },
 };

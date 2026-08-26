@@ -15,7 +15,11 @@ export default function Footer() {
   const description = globalData?.footerDescription || t.description;
   const email = globalData?.footerEmail || 'info@propeller.com';
   const phone = globalData?.footerPhone || '+1 234 567 890';
+  // On a --cms=none shop `globalData` is empty, so this fallback IS the shipped
+  // UI — as an inline English literal it rendered "All rights reserved" in every
+  // locale while the description right above it translated correctly.
   const copyright = globalData?.copyrightText ||
+    (t.copyright || '').replace('{year}', String(new Date().getFullYear())) ||
     `\u00A9 ${new Date().getFullYear()} Propeller E-commerce. All rights reserved.`;
 
   const hasColumns = globalData?.footerColumns && globalData.footerColumns.length > 0;

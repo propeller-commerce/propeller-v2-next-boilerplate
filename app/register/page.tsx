@@ -19,11 +19,17 @@ import { pickUserHint } from '@/lib/userHint';
 import { fetchActiveCart } from '@propeller-commerce/propeller-v2-react-ui';
 import { mergeAnonymousCart } from '@propeller-commerce/propeller-v2-react-ui';
 import { initCart } from '@propeller-commerce/propeller-v2-react-ui';
+import { getCountries } from '@/data/countries';
 
 export default function RegisterPage() {
   const { state, updateUser } = useAuth();
   const { setSelectedCompany } = useCompany();
   const { language } = useLanguage();
+  // `RegisterForm` takes a `{ code: name }` map; `getCountries` is the shop's
+  // localized source of truth, shared with the address and order pages.
+  const countryOptions = Object.fromEntries(
+    getCountries(language).map((country) => [country.code, country.name])
+  );
   const { cart, saveCart, clearCart } = useCart();
   const registerFormLabels = useTranslations('RegisterForm');
   const t = useTranslations('AuthPages');
@@ -69,14 +75,10 @@ export default function RegisterPage() {
                   onLoginClick={() => router.push(localizeHref('/login', language))}
                   automaticLogin={true}
                   cart={cart as Cart | null}
-                  countries={{
-                    'NL': 'Netherlands',
-                    'BE': 'Belgium',
-                    'DE': 'Germany',
-                    'FR': 'France',
-                    'UK': 'United Kingdom',
-                    'US': 'United States'
-                  }}
+                  /* The same localized list every other country dropdown in the
+                     shop reads. This used to be six English literals inline, so
+                     a fully Dutch form offered "Netherlands" under "Land". */
+                  countries={countryOptions}
                   afterRegistration={async (user, accessToken, refreshToken, expiresAt, anonymousCart) => {
                     // Two events, deliberately: B2B registration is often a
                     // REQUEST pending approval, so an account that never goes

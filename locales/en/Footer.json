@@ -1,5 +1,5 @@
 {
-  "description": "Your trusted destination for premium electronics. Quality products, fast shipping, and exceptional support.",
+  "description": "Everything you need, in one place. Reliable products, fast delivery and support you can reach.",
   "shopTitle": "Shop",
   "allProducts": "All Products",
   "featured": "Featured",
@@ -9,5 +9,6 @@
   "termsConditions": "Terms & Conditions",
   "privacyPolicy": "Privacy Policy",
   "returns": "Returns",
-  "contactTitle": "Contact"
+  "contactTitle": "Contact",
+  "copyright": "© {year} Propeller E-commerce. All rights reserved."
 }

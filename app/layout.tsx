@@ -16,6 +16,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { BaseCategoryProvider } from "@/context/BaseCategoryContext";
 import { resolveAnonymousUserId, resolveBaseCategoryId, resolveRequestLanguage } from "@/lib/server";
 import { TranslationsProvider } from "@/lib/i18n/client";
+import { getTranslations } from "@/lib/i18n/server";
 import PropellerHostBridge from "@/components/layout/PropellerHostBridge";
 import GoogleTags from '@/components/tracking/GoogleTags';
 import ScrollReset from "@/components/layout/ScrollReset";
@@ -38,10 +39,20 @@ const inter = Inter({
 // build behavioral segments. Only mounted when Prepr is the active CMS.
 const PREPR_TRACKING_TOKEN = process.env.NEXT_PUBLIC_PREPR_TRACKING_TOKEN;
 
-export const metadata: Metadata = {
-  title: "Propeller E-commerce",
-  description: "Next.js e-commerce powered by Propeller SDK",
-};
+/**
+ * A static `metadata` export serves the same title and description to every
+ * locale — wrong for search engines and for anything that unfurls a shared
+ * link. Resolve the request's language the same way the layout below does for
+ * `<html lang>` and read the strings from that locale.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const language = await resolveRequestLanguage();
+  const t = getTranslations(language, 'Metadata');
+  return {
+    title: t.title || 'Propeller E-commerce',
+    description: t.description || 'Next.js e-commerce powered by Propeller SDK',
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -103,7 +114,14 @@ export default async function RootLayout({
               <GlobalProvider globalData={globalData}>
                 {children}
               </GlobalProvider>
-              <Toaster position="top-center" reverseOrder={false} />
+              {/* Clears the sticky header (which publishes its measured height
+                  as `--header-h`) and sits above the header's own dropdowns
+                  (z-60) and the cart sidebar (z-70). */}
+              <Toaster
+                position="top-center"
+                reverseOrder={false}
+                containerStyle={{ top: 'calc(var(--header-h, 0px) + 1rem)', zIndex: 100000 }}
+              />
             </CartProvider>
             </PropellerHostBridge>
             </TranslationsProvider>

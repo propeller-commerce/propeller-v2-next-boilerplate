@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-08-26
+
+### Fixed
+
+- **Registration offered English country names on a Dutch form.** `/register`
+  carried its own inline map of six English literals while `getCountries(language)`
+  — the localized list every other country dropdown in the shop reads — sat
+  unused next to it.
+- **Page titles and descriptions were one language.** `metadata` was a static
+  export, so both locales served the default language's `<title>` and
+  `<meta name="description">` even though `<html lang>` was already correct.
+  Now `generateMetadata()`, reading the request's language through the same
+  resolver the layout uses, from a new `Metadata` locale namespace.
+- **The footer copyright bypassed i18n.** It fell back to an inline English
+  literal, and on a `--cms=none` shop that fallback *is* the shipped UI — so
+  "All rights reserved" rendered in every locale while the description directly
+  above it translated correctly. It reads a locale key now.
+- **Toasts landed on the sticky header.** react-hot-toast pins a top-center
+  toast at `top: 16px`, inside the header band on any shop whose header is
+  taller than that — which is all of them — and below the header's own dropdowns
+  and the cart sidebar. The header publishes its measured height as `--header-h`
+  (measured, because it changes across breakpoints and when the mobile search
+  row opens) and the toast container offsets off it.
+- **`config.urls` builders threw when detached from their object.** They read
+  `this.pattern`, so passing `urls: { getProductUrl: config.urls.getProductUrl }`
+  — the natural way to satisfy the package's narrower type — made `pattern`
+  undefined and `pattern.split('/')` throw during React's render, unmounting
+  every `<AddToCart>` on the page. The pattern is a module constant now.
+- **The volume-pricing block showed an English heading in every locale.** The
+  PDP passed `title: ''` to hide it, which `getLabel` reads as "missing" and
+  replaces with its English default. The locale files already carry the heading,
+  so the PDP now passes them through unchanged.
+- **The bundle add button read "In cart"** — a status, not the action.
+- Order, quote and thank-you pages hand `configuration` to `OrderItemCard`, so
+  item links carry the storefront's locale prefix.
+
+### Changed
+
+- Requires `@propeller-commerce/propeller-v2-react-ui` `^0.19.0`.
+- The footer's seed copy no longer describes a consumer-electronics shop.
+
 ## [1.14.0] - 2026-08-20
 
 ### Added

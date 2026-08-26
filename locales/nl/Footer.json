@@ -1,5 +1,5 @@
 {
-  "description": "Uw vertrouwde bestemming voor premium elektronica. Kwaliteitsproducten, snelle verzending en uitstekende ondersteuning.",
+  "description": "Alles wat u nodig heeft, op één plek. Betrouwbare producten, snelle levering en bereikbare ondersteuning.",
   "shopTitle": "Winkel",
   "allProducts": "Alle producten",
   "featured": "Uitgelicht",
@@ -9,5 +9,6 @@
   "termsConditions": "Algemene voorwaarden",
   "privacyPolicy": "Privacybeleid",
   "returns": "Retourneren",
-  "contactTitle": "Contact"
+  "contactTitle": "Contact",
+  "copyright": "© {year} Propeller E-commerce. Alle rechten voorbehouden."
 }

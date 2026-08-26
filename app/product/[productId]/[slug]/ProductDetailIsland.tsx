@@ -221,7 +221,7 @@ export function ProductPriceIsland({
           includeTax={includeTax}
           user={user}
           portalMode={portalMode}
-          labels={{ ...bulkPricesLabels, title: '' }}
+          labels={bulkPricesLabels}
         />
       </div>
     </>

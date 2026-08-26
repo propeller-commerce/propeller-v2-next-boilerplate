@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { localizeHref } from '@/data/config';
+import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import Header from '@/components/layout/Header';
@@ -614,6 +614,7 @@ function ThankYouPageInner() {
                                       </thead>
                                       {parentItems.map((item: OrderItem) => (
                                           <OrderItemCard
+                                                    configuration={config}
                                               key={item.id}
                                               orderItem={item}
                                               childItems={childMap.get(item.id) || []}

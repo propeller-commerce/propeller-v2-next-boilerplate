@@ -128,7 +128,7 @@ export default function ProductPage() {
 
                 <ProductPrice price={price} />
                 <div className="mt-6">
-                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={{ ...bulkPricesLabels, title: '' }} />
+                  <ProductBulkPrices bulkPrices={product?.bulkPrices || []} labels={bulkPricesLabels} />
                 </div>
                 <div className="mt-6">
                   <ProductShortDescription product={product as Product} />

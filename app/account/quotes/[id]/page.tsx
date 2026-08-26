@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { localizeHref } from '@/data/config';
+import { localizeHref, config } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { graphqlClient } from '@/lib/api';
 import { Order, OrderItem } from '@propeller-commerce/propeller-sdk-v2';
@@ -223,6 +223,7 @@ export default function QuoteDetailPage() {
                                             </thead>
                                             {parentItems.map((item: OrderItem) => (
                                                 <OrderItemCard
+                                                    configuration={config}
                                                     key={item.id}
                                                     orderItem={item}
                                                     showDiscount={true}

@@ -142,6 +142,25 @@ export default function Header({ menuTree }: HeaderProps = {}) {
   const isLoggedIn = !!(state.isAuthenticated && state.user);
 
 
+  // Publish the header's rendered height as `--header-h` so anything that has
+  // to clear the sticky band can offset off a real measurement. The toast
+  // container is the reason: react-hot-toast pins a top-center toast at
+  // `top: 16px`, which is inside the header on every shop whose header is
+  // taller than that, so every add-to-cart confirmation landed on it.
+  //
+  // Measured rather than hardcoded because the height changes across
+  // breakpoints (h-16 → h-20) and when the mobile search row opens.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`);
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Close main menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

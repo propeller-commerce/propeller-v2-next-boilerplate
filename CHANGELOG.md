@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.2] - 2026-08-27
+
+### Fixed
+
+- **The PDP price block formatted its money in Dutch on an English page.** The
+  client island imported `ProductPrice` / `ProductBulkPrices` from the package's
+  `/pure` entry, which ships the context-free builds meant for Server
+  Components. From there they never resolved `language` from
+  `<PropellerProvider>` and fell back to the package's `nl-NL` default — so the
+  hero price read `€ 1,42` while the cards around it read `€1.70`. Imported
+  from the main entry now.
+
+- Consumes `propeller-v2-react-ui` `^0.19.2`, which resolves the money locale and
+  currency from `<PropellerProvider>` on the price, order-total and checkout
+  surfaces that previously read them straight off their props — and so
+  formatted at the Dutch default unless the host threaded the prop.
+
 ## [1.15.1] - 2026-08-26
 
 ### Changed

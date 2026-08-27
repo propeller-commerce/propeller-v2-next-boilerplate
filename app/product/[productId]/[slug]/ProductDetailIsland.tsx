@@ -41,7 +41,13 @@ import { ProductTabs } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductSlider } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductBundles } from '@propeller-commerce/propeller-v2-react-ui';
 import { AddToFavorite } from '@propeller-commerce/propeller-v2-react-ui';
-import { ProductPrice, ProductBulkPrices } from '@propeller-commerce/propeller-v2-react-ui/pure';
+// Main entry, NOT `/pure`: this file is a Client Component, and the `/pure`
+// build ships the unwrapped components that read no context. Imported from
+// there, the PDP's price block never resolved `language` from
+// <PropellerProvider> and formatted its money at the package's `nl-NL`
+// default — Dutch separators on the most prominent price of an English page,
+// while the cards around it (which do resolve) rendered `en-GB`.
+import { ProductPrice, ProductBulkPrices } from '@propeller-commerce/propeller-v2-react-ui';
 import type { Category } from '@propeller-commerce/propeller-sdk-v2';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';

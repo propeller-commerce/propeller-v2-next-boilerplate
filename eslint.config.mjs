@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // The Strapi CMS is a separate application with its own toolchain. A
+    // scaffold puts it beside the app (`<shop>/cms` next to `<shop>/frontend`),
+    // so it is never in the app's lint surface there — only in this repo,
+    // where the boilerplate keeps both trees together. Half of what it
+    // contributed was `cms/dist` and `cms/types/generated` anyway: build
+    // output and codegen.
+    "cms/**",
   ]),
   {
     // Underscore-prefixed names are the conventional "declared on purpose,

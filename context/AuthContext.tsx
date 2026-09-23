@@ -177,6 +177,84 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
   const logoutTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      const userService = new UserService(graphqlClient);
+      // Fetch the tracked company/customer attributes (e.g. MY_INSTALLATIONS)
+      // alongside the viewer so the machines area and price scoping have them.
+      const viewerData = await userService.getViewer({
+        companyAttributesInput: {
+          attributeDescription: {
+            names: config.companyTrackAttributes
+          }
+        },
+        customerAttributesInput: {
+          attributeDescription: {
+            names: config.customerTrackAttributes
+          }
+        },
+        // Always paginate the viewer's companies + purchase-auth configs
+        // (see data/config.ts — objects, never `[]`).
+        contactPAConfigInput: config.contactPAConfigInput,
+        contactCompaniesSearchInput: config.contactCompaniesSearchInput
+      } as ViewerVariables);
+      // A stale/invalid Bearer does NOT error upstream — `viewer` resolves as
+      // a bare anonymous `User` (neither Contact nor Customer) with HTTP 200.
+      // Accepting it would put a userId-less object into `state.user`: the UI
+      // paints logged-in while every user-scoped query (orders, favorites)
+      // runs with userId 0 and returns nothing. Treat it as a dead session.
+      const isRealUser =
+        !!viewerData &&
+        (('contactId' in viewerData && (viewerData as Contact).contactId) ||
+          ('customerId' in viewerData && (viewerData as Customer).customerId));
+      if (!isRealUser && viewerData) {
+        throw new Error('Unauthorized: viewer resolved anonymous — session expired');
+      }
+      if (viewerData) {
+        const plain = toPlain(viewerData) as User;
+        // localStorage gets ONLY the thin hint. The full profile lives in
+        // React state for this page session and is never serialized.
+        const hint = pickUserHint(plain);
+        if (hint) localStorage.setItem('user', JSON.stringify(hint));
+        // accessToken in reducer state is vestigial — the JWT lives only in the
+        // httpOnly cookie and is injected by the /api/graphql proxy.
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: { user: plain, accessToken: '' },
+        });
+        // Let CompanyContext re-point its `selectedCompany` at the fresh
+        // company copy. That context holds a SEPARATE snapshot of the company
+        // (the dashboard reads addresses + company info off it, not off
+        // `user.company`), so after an address mutation + refreshUser it would
+        // otherwise stay stale — old addresses on the dashboard. Decoupled via
+        // a window event, like the existing `companySwitched`/`userLoggedIn`.
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('userRefreshed', { detail: { user: plain } }));
+        }
+      }
+    } catch (e) {
+      console.error('Error refreshing user data:', e);
+      // If getViewer() failed with an auth error, the session is dead — the
+      // refresh token lapsed while the access_token cookie lingered, so
+      // /api/auth/me still reports "authenticated" from cookie presence and
+      // the app would otherwise paint logged-in from the localStorage hint
+      // while every data call 401s, with no recovery. Fall back to a clean
+      // logged-out state. Non-auth failures (network blip) are left alone so
+      // a transient error doesn't sign the user out.
+      if (classifyApiError(e) === 'forbidden') {
+        if (typeof window !== 'undefined') {
+          for (const key of ['user', 'cart', 'selected_company', 'accessToken', 'access_token', 'refreshToken', 'refresh_token', 'expiresAt']) {
+            localStorage.removeItem(key);
+          }
+          // Clear the httpOnly cookies server-side too, so a reload doesn't
+          // re-enter this same stuck state.
+          fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+        }
+        dispatch({ type: 'AUTH_LOGOUT' });
+      }
+    }
+  }, []);
+
   // Initialize auth state on mount.
   //
   // The JWT lives only in an httpOnly cookie that JS cannot read. We ask the
@@ -243,9 +321,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       cancelled = true;
     };
-    // refreshUser is a stable useCallback (empty deps) — safe to omit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshUser]);
 
   // Login function
   const login = useCallback(async (email: string, password: string): Promise<void> => {
@@ -377,84 +453,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [state.user]);
 
-  const refreshUser = useCallback(async (): Promise<void> => {
-    try {
-      const userService = new UserService(graphqlClient);
-      // Fetch the tracked company/customer attributes (e.g. MY_INSTALLATIONS)
-      // alongside the viewer so the machines area and price scoping have them.
-      const viewerData = await userService.getViewer({
-        companyAttributesInput: {
-          attributeDescription: {
-            names: config.companyTrackAttributes
-          }
-        },
-        customerAttributesInput: {
-          attributeDescription: {
-            names: config.customerTrackAttributes
-          }
-        },
-        // Always paginate the viewer's companies + purchase-auth configs
-        // (see data/config.ts — objects, never `[]`).
-        contactPAConfigInput: config.contactPAConfigInput,
-        contactCompaniesSearchInput: config.contactCompaniesSearchInput
-      } as ViewerVariables);
-      // A stale/invalid Bearer does NOT error upstream — `viewer` resolves as
-      // a bare anonymous `User` (neither Contact nor Customer) with HTTP 200.
-      // Accepting it would put a userId-less object into `state.user`: the UI
-      // paints logged-in while every user-scoped query (orders, favorites)
-      // runs with userId 0 and returns nothing. Treat it as a dead session.
-      const isRealUser =
-        !!viewerData &&
-        (('contactId' in viewerData && (viewerData as Contact).contactId) ||
-          ('customerId' in viewerData && (viewerData as Customer).customerId));
-      if (!isRealUser && viewerData) {
-        throw new Error('Unauthorized: viewer resolved anonymous — session expired');
-      }
-      if (viewerData) {
-        const plain = toPlain(viewerData) as User;
-        // localStorage gets ONLY the thin hint. The full profile lives in
-        // React state for this page session and is never serialized.
-        const hint = pickUserHint(plain);
-        if (hint) localStorage.setItem('user', JSON.stringify(hint));
-        // accessToken in reducer state is vestigial — the JWT lives only in the
-        // httpOnly cookie and is injected by the /api/graphql proxy.
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: { user: plain, accessToken: '' },
-        });
-        // Let CompanyContext re-point its `selectedCompany` at the fresh
-        // company copy. That context holds a SEPARATE snapshot of the company
-        // (the dashboard reads addresses + company info off it, not off
-        // `user.company`), so after an address mutation + refreshUser it would
-        // otherwise stay stale — old addresses on the dashboard. Decoupled via
-        // a window event, like the existing `companySwitched`/`userLoggedIn`.
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('userRefreshed', { detail: { user: plain } }));
-        }
-      }
-    } catch (e) {
-      console.error('Error refreshing user data:', e);
-      // If getViewer() failed with an auth error, the session is dead — the
-      // refresh token lapsed while the access_token cookie lingered, so
-      // /api/auth/me still reports "authenticated" from cookie presence and
-      // the app would otherwise paint logged-in from the localStorage hint
-      // while every data call 401s, with no recovery. Fall back to a clean
-      // logged-out state. Non-auth failures (network blip) are left alone so
-      // a transient error doesn't sign the user out.
-      if (classifyApiError(e) === 'forbidden') {
-        if (typeof window !== 'undefined') {
-          for (const key of ['user', 'cart', 'selected_company', 'accessToken', 'access_token', 'refreshToken', 'refresh_token', 'expiresAt']) {
-            localStorage.removeItem(key);
-          }
-          // Clear the httpOnly cookies server-side too, so a reload doesn't
-          // re-enter this same stuck state.
-          fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-        }
-        dispatch({ type: 'AUTH_LOGOUT' });
-      }
-    }
-  }, []);
-
   const isAuthManagerForCompany = (user: Contact | Customer | null, companyId: number | undefined): boolean => {
     if (!user || !companyId || !('contactId' in user)) return false;
     // The cached user has been through toPlain(), so .items / .purchaseRole /
@@ -515,7 +513,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       window.removeEventListener('userLoggedOut', handleUserLoggedOut);
       authChannel?.removeEventListener('message', handleChannel);
     };
-  }, []);
+  }, [refreshUser]);
 
   const contextValue: AuthContextType = {
     state,

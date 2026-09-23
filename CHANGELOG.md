@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-09-23
+
+Consumes SDK 0.17.0 and react-ui 0.21.0 — spare-parts machines with no slug in
+the tree language no longer disappear from the list, and the parts grid takes
+label overrides.
+
+### Fixed
+
+- **A locale with no dictionary rendered blank strings instead of falling back
+  to English.** The registry wrote `{}` placeholders for missing namespaces "so
+  the build stays green", and at runtime those empty namespaces were used as-is
+  — no per-namespace fallback existed. With `--default-locale=fr` and no
+  `locales/fr/*.json` the storefront came up with an empty hero title, empty
+  buttons and an empty menu label: page shell and tenant data visible,
+  everything label-driven invisible, no console warning and every request a
+  200. First impression was a completely broken shop with nothing pointing at
+  i18n. Two changes, either of which closes it: the registry now emits the
+  canonical dictionary in place of `{}`, and `createFileProvider` falls back to
+  `CANONICAL_LOCALE` for a locale that is absent from the registry entirely.
+  (PWP-978)
+- **`locales/en/` was required but could be pruned, producing an app that could
+  not start.** `build-locales-registry.mjs` exited 1 with "locales/en/ is
+  required as the canonical namespace set", while the CLI trims `en` whenever
+  it is not in `--locales` — so `--locales=fr,nl` scaffolded a shop where
+  `npm run dev` and `npm run build` both died in the `predev`/`prebuild` hook.
+  The canonical namespace set is now `en` when present, else whichever locale
+  defines the most namespaces. (PWP-977)
+- **A fresh scaffold did not lint clean, while `eslint.config.mjs` claimed it
+  did.** Three errors, all in the scaffold's own files. Two were one bug:
+  `refreshUser` is a `useCallback` declared at the bottom of `AuthContext` and
+  awaited by the mount effect near the top, which works at runtime but makes
+  the React Compiler refuse to compile the component — "Cannot access variable
+  before it is declared", then "Existing memoization could not be preserved".
+  The declaration moved above its first use, which also retires two
+  `exhaustive-deps` suppressions. The third was `require('./package.json')` in
+  `next.config.ts`, now a static import (`resolveJsonModule` was already on).
+  `npm run lint` exits 0. (PWP-998)
+
+### Changed
+
+- **`cms/**` is no longer linted.** The Strapi CMS is a separate application
+  with its own toolchain, and a scaffold places it beside the app
+  (`<shop>/cms` next to `<shop>/frontend`) where it is not in the app's lint
+  scope anyway. It contributed 38 of the 41 errors in this repo, most of them
+  from `cms/dist` and `cms/types/generated` — build output and codegen.
+- `locales/_registry.ts` now also exports `CANONICAL_LOCALE`.
+
 ## [1.15.3] - 2026-09-23
 
 ### Changed

@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import { resolve } from "node:path";
+// Static import rather than require(): tsconfig has resolveJsonModule, and the
+// require() form was one of the three errors a fresh scaffold linted with.
+import pkg from "./package.json";
 
 // Stamped into the client bundle so `lib/clientStorage.ts` can tell "written by
 // this build" from "written by an older one" and drop stale caches on its own
@@ -12,7 +15,7 @@ import { resolve } from "node:path";
 const APP_VERSION: string =
   process.env.NEXT_PUBLIC_BUILD_ID ||
   process.env.CI_COMMIT_SHORT_SHA ||
-  require('./package.json').version;
+  pkg.version;
 
 // Five settings exist twice — once server-side, once as a NEXT_PUBLIC_ twin the
 // browser can read — and the example file used to just ask you to keep them in

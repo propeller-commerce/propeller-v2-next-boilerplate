@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.3] - 2026-09-23
+
+### Changed
+
+- Consumes `propeller-v2-react-ui` `^0.20.1`, which prices favorite lists and
+  cross-upsells for the company chosen in the switcher rather than the
+  contact's default, and re-fetches both when that company changes — a
+  multi-company contact was shown one company's prices while the cart charged
+  another's. `FavoriteListDetails` now accepts a `companyId` prop, resolved
+  from `PropellerProvider` when omitted.
+
+### Fixed
+
+- The closed cart drawer widened the document by its own content width, giving
+  signed-in users a stray horizontal scrollbar. (PWP-1002)
+- Product and category descriptions rendered bullet lists as bare lines: the
+  package emitted Tailwind Typography `prose` classes but the plugin is
+  installed neither there nor here, so they compiled to nothing while the
+  package's own Preflight stripped the markers. (PWP-1000)
+- Stock counts rendered as `(120pcs)` with no separator. (PWP-1005a)
+- Order-list filter labels were title-cased by Tailwind's `capitalize`, which
+  mangled translations ("Terme De Recherche"). (PWP-1005b)
+- The account menu hardcoded a dark-header scheme that rendered white-on-light,
+  and highlighted the active sidebar link with the wrong colour ramp.
+  (PWP-1005c)
+
+### Note
+
+- Pins `^0.20.1` rather than `^0.20.0`. The 0.20.0 tarball shipped the
+  `/shared` entry with no type declarations — a race between tsup's clean and
+  its concurrent DTS builds — so `next build` failed at the typecheck with
+  TS7016 in the five files that import it. 0.20.1 is that build fix and nothing
+  else.
+
 ## [1.15.2] - 2026-08-27
 
 ### Fixed

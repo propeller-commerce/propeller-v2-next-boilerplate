@@ -13,5 +13,6 @@
   "requestingAuthorization": "Aanvragen...",
   "surcharges": "Aanvullende toeslagen:",
   "total": "Totaal",
+  "totalExclVat": "Totaal excl. BTW",
   "totalLabel": "Totaal"
 }

@@ -23,7 +23,12 @@ import {
   type PriceCalculateProductInput,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { config } from '@/data/config';
-import { createServerClient, resolveBaseCategoryId, type ServerInfra } from '@/lib/server';
+import {
+  buildPriceInput,
+  createServerClient,
+  resolveBaseCategoryId,
+  type ServerInfra,
+} from '@/lib/server';
 import { readAttributeStringValues } from '@/lib/machines';
 
 /** SPL is active only when a base URL + token are configured. */
@@ -70,15 +75,11 @@ export function getSplClient(): SplClient {
 export function buildSplProductResolver(
   infra: ServerInfra
 ): (skus: string[]) => Promise<Map<string, Product>> {
-  const user = infra.user;
-  const price: PriceCalculateProductInput = { taxZone: config.taxZone };
-  if (user && 'contactId' in user) price.contactId = user.contactId;
-  else if (user && 'customerId' in user) price.customerId = user.customerId;
-
-  const companyId =
-    infra.selectedCompanyId ??
-    (user && 'contactId' in user ? user.company?.companyId : undefined);
-  if (companyId != null) price.companyId = companyId;
+  // Shared with the catalog fetches, so the selected company is validated
+  // against the contact's memberships before it is sent.
+  const price: PriceCalculateProductInput = buildPriceInput(infra) ?? {
+    taxZone: config.taxZone,
+  };
 
   // Use the app-wide resolver, NOT a bespoke env read. This previously read
   // `BOILERPLATE_BASE_CATEGORY_ID` — a variable nothing else in the app uses —

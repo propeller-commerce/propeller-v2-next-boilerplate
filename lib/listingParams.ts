@@ -136,10 +136,16 @@ function toEntries(raw: RawSearchParams): Array<[string, string]> {
  * @param raw - `URLSearchParams`, Next's `searchParams` object, or undefined.
  * @param defaultSortField - Sort field when the URL has none (categories use
  *   `CATEGORY_ORDER`, search uses `RELEVANCE`).
+ * @param defaultSortOrder - Sort order when the URL has none. Must match the
+ *   `defaultSortOrder` given to `buildListingSearchParams`: the writer omits
+ *   the param when it equals the default, so a reader defaulting to something
+ *   else parses the written URL back as the wrong order — with DESC hardcoded
+ *   here, an ASC-defaulted listing could never be sorted ascending.
  */
 export function parseListingParams(
   raw: RawSearchParams,
-  defaultSortField: ProductSortField
+  defaultSortField: ProductSortField,
+  defaultSortOrder: SortOrder = SortOrder.DESC
 ): ListingParams {
   const entries = toEntries(raw);
   const get = (key: string): string | undefined =>
@@ -177,7 +183,7 @@ export function parseListingParams(
     page: Math.max(1, parseInt(get('page') || '1', 10) || 1),
     offset: parseInt(get('offset') || '12', 10) || 12,
     sortField: (get('sortField') as ProductSortField) || defaultSortField,
-    sortOrder: (get('sortOrder') as SortOrder) || SortOrder.DESC,
+    sortOrder: (get('sortOrder') as SortOrder) || defaultSortOrder,
     minPrice: minPriceRaw ? parseFloat(minPriceRaw) : undefined,
     maxPrice: maxPriceRaw ? parseFloat(maxPriceRaw) : undefined,
     filters,

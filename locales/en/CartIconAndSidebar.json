@@ -13,5 +13,6 @@
   "requestingAuthorization": "Requesting...",
   "surcharges": "Additional surcharges:",
   "total": "Total",
+  "totalExclVat": "Total excl. VAT",
   "totalLabel": "Total"
 }

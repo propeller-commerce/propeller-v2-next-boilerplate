@@ -100,7 +100,7 @@ export class FavoriteListService extends BaseApiService {
      * @param listId - The favorite list ID
      * @param user - The currently authenticated user from AuthContext
      */
-    async getFavoriteList(listId: string, user?: User | null): Promise<FavoriteList> {
+    async getFavoriteList(listId: string, user?: User | null, companyId?: number): Promise<FavoriteList> {
         try {
             await this.ensureInitialized();
 
@@ -140,9 +140,16 @@ export class FavoriteListService extends BaseApiService {
             if (user) {
                 if ('customerId' in user && user.customerId) {
                     input.priceCalculateProductInput.customerId = user.customerId;
-                } else if ('contactId' in user && user.contactId && 'company' in user && user.company?.companyId) {
+                } else if ('contactId' in user && user.contactId) {
                     input.priceCalculateProductInput.contactId = user.contactId;
-                    input.priceCalculateProductInput.companyId = user.company.companyId;
+                    // Switcher selection wins; the contact's default company is the
+                    // fallback. Previously read the default only, so a contact who
+                    // switched company saw the wrong prices.
+                    const activeCompanyId =
+                        companyId ?? ('company' in user ? user.company?.companyId : undefined);
+                    if (activeCompanyId) {
+                        input.priceCalculateProductInput.companyId = activeCompanyId;
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useCompany } from '@/context/CompanyContext';
 import { localizeHref } from '@/data/config';
 import { useLanguage } from '@/context/LanguageContext';
 import { useParams } from 'next/navigation';
@@ -19,6 +20,7 @@ import { track } from '@/lib/tracking';
 export default function FavoriteListPage() {
   const { state: authState, refreshUser } = useAuth();
   const { cart, saveCart } = useCart();
+  const { selectedCompany } = useCompany();
   const params = useParams();
   const listId = params?.id as string;
   const { language } = useLanguage();
@@ -80,7 +82,14 @@ export default function FavoriteListPage() {
         </h1>
       </div>
 
+      {/* Prices are scoped to the active company, and the component fetches on
+          mount — so wait for the full user rather than the thin hint, and remount
+          on a company switch. */}
+      {authState.isLoading || !authState.user ? null : (
       <FavoriteListDetails
+        key={selectedCompany?.companyId ?? 'default'}
+        user={authState.user}
+        companyId={selectedCompany?.companyId}
         labels={favoriteListDetailsLabels}
         stockLabels={itemStockLabels}
         addToCartLabels={addToCartLabels}
@@ -100,6 +109,7 @@ export default function FavoriteListPage() {
         showAvailability={false}
         showStock={true}
       />
+      )}
     </div>
   );
 }

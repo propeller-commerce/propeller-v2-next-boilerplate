@@ -76,6 +76,8 @@ import {
   type SparePartsMachine,
   type SparePartsMachineProductSearchInput,
   type AttributeResultSearchInput,
+  type PriceCalculateProductInput,
+  type UserBulkPriceProductInput,
   ProductStatus,
   ProductSortField,
   SortOrder,
@@ -698,6 +700,7 @@ export async function fetchProduct(
   language?: string,
   attributeNames?: string[]
 ): Promise<Product | null> {
+  const priceInput = buildPriceInput(infra);
   try {
     const result = await infra.services.product.getProduct(
       {
@@ -709,6 +712,13 @@ export async function fetchProduct(
         // last so the base cache key is unchanged when no names are requested.
         ...(attributeNames && attributeNames.length
           ? { attributeResultSearchInput: { attributeDescription: { names: attributeNames } } }
+          : {}),
+        // Logged-in only, so the anonymous body — and its cache key — is unchanged.
+        ...(priceInput
+          ? {
+              priceCalculateProductInput: priceInput,
+              userBulkPriceProductInput: priceInput as UserBulkPriceProductInput,
+            }
           : {}),
       },
       cacheOptions(infra, [TAG_CATALOG, tagFor('product'), tagFor('product', productId)])
@@ -865,10 +875,41 @@ async function listingUserId(infra: ServerInfra): Promise<number | undefined> {
  * company.
  */
 function resolveCompanyId(infra: ServerInfra): number | undefined {
-  if (infra.selectedCompanyId !== undefined) return infra.selectedCompanyId;
   const user = infra.user;
   if (!user || !('contactId' in user)) return undefined;
-  return (user as Contact).company?.companyId;
+  const contact = user as Contact;
+  // `selected_company_id` is a non-httpOnly cookie, so it is user-writable and
+  // can outlive the identity that set it. The API rejects a company the contact
+  // is not a member of ("Unauthorized use of companyId") — an error the fetch
+  // catch blocks do NOT swallow, so an unchecked value 500s the page. Validate
+  // against the contact's companies and fall back to their default.
+  if (infra.selectedCompanyId !== undefined) {
+    const match = contact.companies?.items?.find((c) => c?.companyId === infra.selectedCompanyId);
+    if (match?.companyId !== undefined) return match.companyId;
+  }
+  return contact.company?.companyId;
+}
+
+/**
+ * Price scoping for a logged-in viewer: contact/customer plus the company they
+ * are acting for. Without it the backend prices for the bearer token's default
+ * company, so a contact who switched company saw their default company's prices
+ * while the cart charged the selected one's (PWP-1015).
+ *
+ * Returns `undefined` for anonymous visitors on purpose. Their request bodies
+ * must stay byte-identical — Next hashes the POST body for the data-cache key,
+ * and only anonymous fetches are cacheable. Emitting even a bare `taxZone`
+ * would cold-start the whole catalog cache.
+ */
+export function buildPriceInput(infra: ServerInfra): PriceCalculateProductInput | undefined {
+  const user = infra.user;
+  if (!user) return undefined;
+  const input: PriceCalculateProductInput = { taxZone: config.taxZone };
+  if ('contactId' in user) input.contactId = (user as Contact).contactId;
+  else if ('customerId' in user) input.customerId = (user as Customer).customerId;
+  const companyId = resolveCompanyId(infra);
+  if (companyId != null) input.companyId = companyId;
+  return input;
 }
 
 /**
@@ -892,6 +933,7 @@ export async function fetchCategory(
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
   const userId = await listingUserId(infra);
   const companyId = resolveCompanyId(infra);
+  const priceInput = buildPriceInput(infra);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -919,6 +961,8 @@ export async function fetchCategory(
         imageSearchFilters: imageSearchFiltersGrid,
         // Category product listings use the grid-sized variant.
         imageVariantFilters: imageVariantFiltersMedium,
+        // Logged-in only, so the anonymous body — and its cache key — is unchanged.
+        ...(priceInput ? { priceCalculateProductInput: priceInput } : {}),
       },
       cacheOptions(infra, [TAG_CATALOG, tagFor('category'), tagFor('category', categoryId)])
     );
@@ -969,6 +1013,7 @@ export async function fetchSearch(
   const sortInputs: ProductSortInput[] = [{ field: sortField, order: sortOrder }];
   const userId = await listingUserId(infra);
   const companyId = resolveCompanyId(infra);
+  const priceInput = buildPriceInput(infra);
 
   const categoryProductSearchInput: CategoryProductSearchInput = {
     language: lang,
@@ -994,6 +1039,8 @@ export async function fetchSearch(
         filterAvailableAttributeInput: FILTER_AVAILABLE_ATTRIBUTE_INPUT,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersMedium,
+        // Logged-in only, so the anonymous body — and its cache key — is unchanged.
+        ...(priceInput ? { priceCalculateProductInput: priceInput } : {}),
       },
       // Search isn't tagged per-term — long-tail terms would explode the tag
       // namespace. Long-tail entries age out via the revalidate window.
@@ -1041,6 +1088,7 @@ export async function fetchCluster(
 ): Promise<Cluster | null> {
   const lang = language ?? infra.language;
   const clusterTags = [TAG_CATALOG, tagFor('cluster'), tagFor('cluster', clusterId)];
+  const priceInput = buildPriceInput(infra);
   try {
     // Step 1 — config drives the attribute name list.
     const clusterConfig = await infra.services.cluster.getClusterConfig(
@@ -1064,6 +1112,13 @@ export async function fetchCluster(
             attributeDescription: { names: attributeNames },
           },
         }),
+        // Logged-in only, so the anonymous body — and its cache key — is unchanged.
+        ...(priceInput
+          ? {
+              priceCalculateProductInput: priceInput,
+              userBulkPriceProductInput: priceInput as UserBulkPriceProductInput,
+            }
+          : {}),
       },
       cacheOptions(infra, clusterTags)
     );

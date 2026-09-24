@@ -67,7 +67,11 @@ export default function MachinesPage() {
   const source = config.machines?.source;
   const sourceIds = resolveInstallationIds(authState.user, selectedCompany?.companyId);
 
-  const parsed = parseListingParams(searchParams, MACHINE_SORT_FIELD_DEFAULT);
+  const parsed = parseListingParams(
+    searchParams,
+    MACHINE_SORT_FIELD_DEFAULT,
+    MACHINE_SORT_ORDER_DEFAULT
+  );
   const listing: MachineListingState = { ...parsed, term: searchParams.get('term') ?? '' };
   const basePath = localizeHref('/machines', language);
 

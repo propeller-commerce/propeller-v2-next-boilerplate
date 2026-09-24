@@ -11,6 +11,7 @@
 import { ProductSortField, SortOrder } from '@propeller-commerce/propeller-sdk-v2';
 import type { SparePartsMachine, Contact, Customer } from '@propeller-commerce/propeller-sdk-v2';
 import { config } from '@/data/config';
+import { registry } from '@/locales/_registry';
 
 /** Company track attribute holding the contact's installation ids. */
 const MY_INSTALLATIONS = 'MY_INSTALLATIONS';
@@ -82,6 +83,20 @@ export function readAttributeStringValues(value: unknown): string[] {
  * resolve part names with the storefront language.
  */
 export const MACHINE_LANGUAGE: string = config.machines?.language || 'EN';
+
+/**
+ * Every language a machine slug might be authored in.
+ *
+ * A slug resolves ONLY in its own language, so a tree that is only partly
+ * translated lists a machine by (say) its NL slug and then cannot open it with
+ * `language: 'EN'` — the row appears but the page behind it is empty (PWP-993).
+ * `MachineGrid` tries `MACHINE_LANGUAGE` and the storefront language first and
+ * falls back through this list.
+ *
+ * Read from the generated locale registry rather than hardcoded, so a shop that
+ * adds a locale gets it here without a second edit.
+ */
+export const MACHINE_LANGUAGES: string[] = Object.keys(registry).map((l) => l.toUpperCase());
 
 /**
  * Storefront browse depth for the machine tree. The WP reference generates one

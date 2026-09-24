@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-09-24
+
+Consumes react-ui 0.23.0.
+
+### Added
+
+- `Machines` dictionary keys `quantityInMachine`, `searchParts` and
+  `machineNotFound` (en + nl).
+- `MACHINE_LANGUAGES` in `lib/machines.ts`, read from the generated locale
+  registry so a shop that adds a locale does not need a second edit.
+
+### Fixed
+
+- **"Qty in machine" and "Search parts…" showed in English on a Dutch shop.**
+  The package read them from `toolbarLabels`, which is forwarded verbatim to
+  `GridToolbar` — so they belonged to no dictionary anyone would think to
+  translate, and a shop with a fully translated `GridToolbar` still got English.
+  react-ui 0.23.0 moves them to `machineCardLabels`, which this app already
+  passes. (PWP-995a)
+- **A machine listed in one language now opens.** 1.16.0 made an NL-only
+  installation appear in an EN tree, linked by its NL slug — but the lookup
+  still asked for the tree language, so the page behind that link was empty with
+  no error. The machines page passes the new `machineLanguages`, so the slug
+  resolves in whichever language it was authored in. (PWP-993)
+
 ## [1.16.0] - 2026-09-23
 
 Consumes SDK 0.17.0 and react-ui 0.21.0 — spare-parts machines with no slug in

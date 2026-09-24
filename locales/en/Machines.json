@@ -1,6 +1,9 @@
 {
   "loading": "Loading…",
+  "machineNotFound": "This machine could not be found.",
   "noMachines": "No machines found.",
+  "quantityInMachine": "Qty in machine",
   "rootTitle": "Machines",
+  "searchParts": "Search parts…",
   "viewMachine": "View"
 }

@@ -1,6 +1,9 @@
 {
   "loading": "Laden…",
+  "machineNotFound": "Deze machine kon niet worden gevonden.",
   "noMachines": "Geen machines gevonden.",
+  "quantityInMachine": "Aantal in machine",
   "rootTitle": "Machines",
+  "searchParts": "Onderdelen zoeken…",
   "viewMachine": "Bekijken"
 }

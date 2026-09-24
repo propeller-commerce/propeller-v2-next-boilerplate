@@ -29,6 +29,7 @@ import { track } from '@/lib/tracking';
 import { parseListingParams, buildListingSearchParams } from '@/lib/listingParams';
 import {
   MACHINE_LANGUAGE,
+  MACHINE_LANGUAGES,
   MACHINE_MAX_DEPTH,
   MACHINE_SORT_FIELD_DEFAULT,
   MACHINE_SORT_ORDER_DEFAULT,
@@ -104,6 +105,7 @@ export default function MachinesPage() {
             source={source}
             sourceIds={sourceIds}
             machineLanguage={MACHINE_LANGUAGE}
+            machineLanguages={MACHINE_LANGUAGES}
             listing={listing}
             onListingChange={onListingChange}
             configuration={{

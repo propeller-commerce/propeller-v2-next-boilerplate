@@ -110,12 +110,17 @@ export default function PropellerHostBridge({
   const scope = useMemo<PropellerScope>(
     () => ({
       user: state.user,
+      // `user` stays null until getViewer() resolves, so semi-closed surfaces
+      // would flash their logged-out state for an authenticated visitor. This
+      // is true from the thin-hint paint onward. Note `isLoading` is already
+      // false by then and so cannot serve the same purpose.
+      isAuthenticated: state.isAuthenticated,
       companyId,
       language,
       includeTax,
       portalMode: config.portal.mode,
     }),
-    [state.user, companyId, language, includeTax]
+    [state.user, state.isAuthenticated, companyId, language, includeTax]
   );
 
   // When the active company changes, ask Next to re-run the current Server

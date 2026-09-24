@@ -1,4 +1,5 @@
 {
+  "authorizationRequired": "This order exceeds your authorization limit. Request authorization from the cart to continue.",
   "carrier": "Carrier:",
   "deliveryAddress": "Delivery Address",
   "deliveryDate": "Delivery Date:",

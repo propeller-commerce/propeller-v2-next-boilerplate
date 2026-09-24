@@ -1,4 +1,5 @@
 {
+  "authorizationRequired": "Deze bestelling overschrijdt uw autorisatielimiet. Vraag autorisatie aan vanuit de winkelwagen om door te gaan.",
   "carrier": "Vervoerder:",
   "deliveryAddress": "Bezorgadres",
   "deliveryDate": "Bezorgdatum:",

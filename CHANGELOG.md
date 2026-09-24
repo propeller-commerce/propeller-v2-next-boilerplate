@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-09-24
+
+### Fixed
+
+- **The spare-parts list showed English stock, price and add-to-cart text in a
+  translated shop.** The parts list inside `<MachineGrid>` is a `<ProductGrid>`,
+  so it needs the same four dictionaries the category and cluster listings
+  already pass — the machines page passed none of them, so the machine chrome
+  translated while the cards kept saying "In stock", "incl. VAT" and "Add".
+  Now wires `productCardLabels`, `addToCartLabels`, `stockLabels` and
+  `priceLabels`. (PWP-995a)
+
+- **The header's dark middle bar rendered package triggers illegibly.** They are
+  styled `text-inherit`, and the bar set only a background colour, so they
+  inherited the page's dark foreground on a dark background. The bar now sets
+  `text-white`.
+
+### Changed
+
+- `@propeller-commerce/propeller-v2-react-ui` `^0.23.1` — a machine listed in another
+  language now actually opens. The fallback added in the previous release could
+  never run: the API reports a wrong-language slug as a partial response
+  (`machine: null` plus an error) rather than as a thrown error, so the first
+  candidate language was accepted as a hit and the rest were never tried.
+  (PWP-993)
+
 ## [1.17.0] - 2026-09-24
 
 Consumes react-ui 0.23.0.

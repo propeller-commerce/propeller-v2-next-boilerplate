@@ -701,6 +701,8 @@ export async function fetchProduct(
   attributeNames?: string[]
 ): Promise<Product | null> {
   const priceInput = buildPriceInput(infra);
+  const userId = await listingUserId(infra);
+  const companyId = resolveCompanyId(infra);
   try {
     const result = await infra.services.product.getProduct(
       {
@@ -708,6 +710,8 @@ export async function fetchProduct(
         language: language ?? infra.language,
         imageSearchFilters,
         imageVariantFilters: imageVariantFiltersLarge,
+        ...(userId !== undefined && { userId }),
+        ...(companyId !== undefined && { companyId }),
         // Optional track-attribute selection (e.g. the SPL publication id). Kept
         // last so the base cache key is unchanged when no names are requested.
         ...(attributeNames && attributeNames.length
@@ -1089,6 +1093,8 @@ export async function fetchCluster(
   const lang = language ?? infra.language;
   const clusterTags = [TAG_CATALOG, tagFor('cluster'), tagFor('cluster', clusterId)];
   const priceInput = buildPriceInput(infra);
+  const userId = await listingUserId(infra);
+  const companyId = resolveCompanyId(infra);
   try {
     // Step 1 — config drives the attribute name list.
     const clusterConfig = await infra.services.cluster.getClusterConfig(
@@ -1107,6 +1113,8 @@ export async function fetchCluster(
         language: lang,
         imageSearchFilters: imageSearchFiltersGrid,
         imageVariantFilters: imageVariantFiltersLarge,
+        ...(userId !== undefined && { userId }),
+        ...(companyId !== undefined && { companyId }),
         ...(attributeNames.length > 0 && {
           attributeResultSearchInput: {
             attributeDescription: { names: attributeNames },

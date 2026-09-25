@@ -16,6 +16,7 @@
  * base category instead of running a term search.
  */
 
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import HeaderServer from '@/components/layout/HeaderServer';
 import Footer from '@/components/layout/Footer';
@@ -25,7 +26,7 @@ import {
   type Product,
   type ProductsResponse,
 } from '@propeller-commerce/propeller-sdk-v2';
-import { getListingInfra, fetchSearch, fetchCategory, resolveBaseCategoryId } from '@/lib/server';
+import { getListingInfra, fetchSearch, fetchCategory, resolveBaseCategoryId, resolveRequestLanguage } from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { buildJsonLdContext } from '@/lib/seo';
 import {
@@ -41,6 +42,18 @@ interface RouteParams {
 
 /** Anonymous variant is cacheable for 5 min; authenticated renders are dynamic. */
 export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<RouteParams>;
+}): Promise<Metadata> {
+  const { term: termSegments } = await params;
+  const term = termSegments?.[0] ? decodeURIComponent(termSegments[0]) : '';
+  const language = await resolveRequestLanguage();
+  const t = getTranslations(language, 'PageTitles');
+  return { title: term ? `${t.search}: ${term}` : t.search };
+}
 
 export default async function SearchPage({
   params,

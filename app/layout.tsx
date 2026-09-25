@@ -48,8 +48,11 @@ const PREPR_TRACKING_TOKEN = process.env.NEXT_PUBLIC_PREPR_TRACKING_TOKEN;
 export async function generateMetadata(): Promise<Metadata> {
   const language = await resolveRequestLanguage();
   const t = getTranslations(language, 'Metadata');
+  const siteName = t.title || 'Propeller E-commerce';
   return {
-    title: t.title || 'Propeller E-commerce',
+    // `template` appends the shop name to every page that sets its own title,
+    // so routes only carry their own name; `default` covers pages that set none.
+    title: { default: siteName, template: `%s | ${siteName}` },
     description: t.description || 'Next.js e-commerce powered by Propeller SDK',
   };
 }

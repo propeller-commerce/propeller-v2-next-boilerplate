@@ -1,0 +1,21 @@
+{
+  "login": "Log in",
+  "register": "Create account",
+  "forgotPassword": "Forgot password",
+  "cart": "Shopping cart",
+  "checkout": "Checkout",
+  "quickOrder": "Quick order",
+  "search": "Search",
+  "account": "My account",
+  "accountAddresses": "Addresses",
+  "accountOrders": "Orders",
+  "accountOrderDetail": "Order details",
+  "accountQuotes": "Quotes",
+  "accountQuoteDetail": "Quote details",
+  "accountQuoteRequests": "Quote requests",
+  "accountQuoteRequestDetail": "Quote request",
+  "accountFavorites": "Favorites",
+  "accountFavoriteDetail": "Favorite list",
+  "accountAuthorizationSettings": "Authorization settings",
+  "accountAuthorizationRequests": "Authorization requests"
+}

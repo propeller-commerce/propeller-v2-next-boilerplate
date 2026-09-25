@@ -415,6 +415,30 @@ function CheckoutPageInner() {
     }
   };
 
+  // Persist the carrier on select, like the payment method above. Business
+  // rules keyed on `postageData.carrier` (shipping cost, carrier-restricted
+  // paymethods) are evaluated backend-side, so storing it only on Continue
+  // meant the customer never saw their effect in the step where they choose.
+  const handleCarrierSelect = async (name: string) => {
+    setState(prev => ({ ...prev, selectedCarrier: name }));
+    const cart = state.cart;
+    if (!cart?.cartId || cart.postageData?.carrier === name) return;
+    try {
+      const updatedCart = await updateCartShipping(cart.cartId, {
+        postageData: {
+          carrier: name,
+          // postageData is replaced wholesale, so re-send the date we hold.
+          ...(state.selectedDeliveryDate && { requestDate: state.selectedDeliveryDate }),
+        },
+      });
+      saveCart(updatedCart);
+      setState(prev => ({ ...prev, cart: updatedCart }));
+    } catch (error) {
+      // Non-fatal: Continue re-sends the carrier.
+      console.error(error);
+    }
+  };
+
   const handleStep3Continue = async () => {
     // A carrier is only required when the cart actually offers one. Some carts
     // (e.g. digital-only or business-rule configs) return no carriers; in that
@@ -861,7 +885,7 @@ function CheckoutPageInner() {
                       <CartCarriers
                         cart={state.cart}
                         showPrice={false}
-                        onCarrierSelect={(carrier) => setState(prev => ({ ...prev, selectedCarrier: carrier.name }))}
+                        onCarrierSelect={(carrier) => handleCarrierSelect(carrier.name)}
                         labels={cartCarriersLabels}
                       />
                     </div>
@@ -903,6 +927,8 @@ function CheckoutPageInner() {
                         onTermsAndConditionsClick={() => window.open('/terms-conditions', '_blank')}
                         onPurchaseButtonClick={(_cart, reference, notes) => handlePlaceOrder(reference, notes)}
                         labels={cartOverviewLabels}
+                        paymethodLabels={paymethodNames}
+                        countries={countries}
                       />
                     </CardContent>
                   )}

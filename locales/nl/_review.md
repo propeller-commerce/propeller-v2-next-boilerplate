@@ -24,7 +24,7 @@ All 51 namespace files have been translated to Dutch best-effort.
 
 ## Slugs to review
 
-- `PurchaseAuthorizationConfigurator.title` — EN: "Purchase Authorization Settings" → NL (proposed): "Inkoopauthorisatie-instellingen" — Reason: compound noun; a native reviewer may prefer "Instellingen inkoopmachtiging" or "Inkoopbeheer instellingen".
+- `PurchaseAuthorizationConfigurator.title` — EN: "Purchase Authorization Settings" → NL (proposed): "Inkoopautorisatie-instellingen" — Reason: compound noun; a native reviewer may prefer "Instellingen inkoopmachtiging" or "Inkoopbeheer instellingen".
 - `PurchaseAuthorizationConfigurator.roleManager` — EN: "Authorization Manager" → NL (proposed): "Autorisatiebeheerder" — Reason: technical role name; could also be "Machtigingsbeheerder".
 - `PurchaseAuthorizationConfigurator.rolePurchaser` — EN: "Purchaser" → NL (proposed): "Inkoper" — Reason: correct but could be "Aanvrager" depending on how the role is presented in the UI flow.
 - `CartItem.crossupsellTitle` — EN: "You might also like" → NL (proposed): "Misschien ook interessant" — Reason: colloquial; acceptable but a reviewer may prefer "Wellicht ook interessant" or "Aanbevolen producten".

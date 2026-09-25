@@ -1,0 +1,21 @@
+{
+  "login": "Inloggen",
+  "register": "Account aanmaken",
+  "forgotPassword": "Wachtwoord vergeten",
+  "cart": "Winkelwagen",
+  "checkout": "Afrekenen",
+  "quickOrder": "Snel bestellen",
+  "search": "Zoeken",
+  "account": "Mijn account",
+  "accountAddresses": "Adressen",
+  "accountOrders": "Bestellingen",
+  "accountOrderDetail": "Bestelgegevens",
+  "accountQuotes": "Offertes",
+  "accountQuoteDetail": "Offertegegevens",
+  "accountQuoteRequests": "Offerteaanvragen",
+  "accountQuoteRequestDetail": "Offerteaanvraag",
+  "accountFavorites": "Favorieten",
+  "accountFavoriteDetail": "Favorietenlijst",
+  "accountAuthorizationSettings": "Autorisatie-instellingen",
+  "accountAuthorizationRequests": "Autorisatieaanvragen"
+}

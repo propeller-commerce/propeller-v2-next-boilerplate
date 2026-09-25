@@ -9,6 +9,7 @@
   "colCode": "Article no. / SKU",
   "colName": "Product name",
   "colPrice": "excl. VAT",
+  "colPriceInclVat": "incl. VAT",
   "colQuantity": "Qty",
   "colTotal": "Total",
   "addRow": "Add more rows",

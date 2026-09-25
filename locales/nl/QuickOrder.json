@@ -9,6 +9,7 @@
   "colCode": "Artikelnr. / SKU",
   "colName": "Productnaam",
   "colPrice": "excl. btw",
+  "colPriceInclVat": "incl. btw",
   "colQuantity": "Aantal",
   "colTotal": "Totaal",
   "addRow": "Meer rijen toevoegen",

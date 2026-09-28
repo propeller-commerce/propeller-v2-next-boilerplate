@@ -17,5 +17,6 @@
   "accountFavorites": "Favorites",
   "accountFavoriteDetail": "Favorite list",
   "accountAuthorizationSettings": "Authorization settings",
-  "accountAuthorizationRequests": "Authorization requests"
+  "accountAuthorizationRequests": "Authorization requests",
+  "priceRequest": "Price request"
 }

@@ -32,10 +32,16 @@ import { getTranslations } from '@/lib/i18n/server';
 import { useHoverPrefetch } from '@/lib/useHoverPrefetch';
 import { track, trackAddToCart, itemOptions } from '@/lib/tracking';
 import { itemsFromProducts } from '@/lib/tracking/items';
-import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
+import { Cart, CrossupsellType, Contact, Customer, Product, ProductPrice as ProductPriceSDK, SurchargeType, YesNo, type Surcharge } from '@propeller-commerce/propeller-sdk-v2';
 import { Card } from '@/components/ui/Card';
-import { AddToCart, LoginToOrderButton } from '@propeller-commerce/propeller-v2-react-ui';
-import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
+import {
+  AddToCart,
+  LoginToOrderButton,
+  RequestPriceButton,
+  isPriceOnRequest,
+  usePriceRequest,
+} from '@propeller-commerce/propeller-v2-react-ui';
+import { isContentHidden, getLanguageString } from '@propeller-commerce/propeller-v2-core-ui';
 import { Breadcrumbs } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductTabs } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductSlider } from '@propeller-commerce/propeller-v2-react-ui';
@@ -75,6 +81,8 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
   const { state: authState, refreshUser } = useAuth();
   const { language } = useLanguage();
   const addToCartLabels = useTranslations('AddToCart');
+  const priceRequestLabels = useTranslations('PriceRequest');
+  const priceRequest = usePriceRequest();
   const addToFavoriteLabels = useTranslations('AddToFavorite');
 
   // `page_viewed` + `view_item` for the PDP. Emitted from the island
@@ -138,6 +146,35 @@ export default function AddToCartIsland({ product, productId }: ProductDetailIsl
         <LoginToOrderButton
           labels={addToCartLabels}
           onLoginClick={() => router.push(localizeHref('/login', language))}
+        />
+      </Card>
+    );
+  }
+
+  // Orderable first, then the display mode: a non-orderable product gets no
+  // control at all, and a quoted price replaces add-to-cart rather than
+  // joining it — an unpriced line must never reach checkout.
+  if (product.orderable === YesNo.N) return null;
+
+  if (isPriceOnRequest(product)) {
+    return (
+      <Card className="p-6 bg-muted/30 border-none shadow-none mb-8">
+        <RequestPriceButton
+          labels={priceRequestLabels}
+          isAuthenticated={!!authState.user}
+          onLoginClick={() => router.push(localizeHref('/login', language))}
+          added={priceRequest.ready && priceRequest.has(product.sku || '')}
+          onRequestPrice={() => {
+            priceRequest.add({
+              productId: product.productId,
+              code: product.sku || '',
+              name: getLanguageString(product.names, language) || product.sku || '',
+              quantity: product.minimumQuantity || 1,
+              minQuantity: product.minimumQuantity || 1,
+              unit: product.unit || 1,
+            });
+            router.push(localizeHref('/price-request', language));
+          }}
         />
       </Card>
     );

@@ -1,5 +1,7 @@
 {
   "exclTax": "excl. VAT",
   "inclTax": "incl. VAT",
-  "loginToSeePrices": "Log in to see prices"
+  "loginToSeePrices": "Log in to see prices",
+  "priceOnRequest": "Price on request",
+  "requestPrice": "Request a price"
 }

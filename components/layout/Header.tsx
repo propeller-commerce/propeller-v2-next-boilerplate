@@ -354,11 +354,13 @@ export default function Header({ menuTree }: HeaderProps = {}) {
         ref={headerRef}
         className="w-full z-50 bg-background shadow-sm sticky top-0"
       >
-        {/* Middle Section — `text-white` so package triggers styled
-            `text-inherit` pick up the dark bar's colour. */}
-        <div className="text-white" style={{ backgroundColor: '#242526' }}>
+        {/* Middle Section. `text-white` sits on the row, not the bar: package
+            popovers (search dropdown, cart sidebar) are DOM children of their
+            triggers, so a colour on the wrapper cascades into them and renders
+            white text on their light backgrounds. */}
+        <div style={{ backgroundColor: '#242526' }}>
           <div className="container-width">
-            <div className="flex items-center justify-between h-16 sm:h-20 gap-4 sm:gap-8">
+            <div className="flex items-center justify-between h-16 sm:h-20 gap-4 sm:gap-8 text-white">
               {/* Mobile hamburger */}
               <button
                 type="button"

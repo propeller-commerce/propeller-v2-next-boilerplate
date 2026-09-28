@@ -17,5 +17,6 @@
   "accountFavorites": "Favorieten",
   "accountFavoriteDetail": "Favorietenlijst",
   "accountAuthorizationSettings": "Autorisatie-instellingen",
-  "accountAuthorizationRequests": "Autorisatieaanvragen"
+  "accountAuthorizationRequests": "Autorisatieaanvragen",
+  "priceRequest": "Prijsaanvraag"
 }

@@ -27,6 +27,7 @@ import { useCompany } from '@/context/CompanyContext';
 import { usePrice } from '@/context/PriceContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBaseCategoryId } from '@/context/BaseCategoryContext';
+import NextImageAdapter from '@/components/layout/NextImageAdapter';
 import TrackingBridge from '@/components/tracking/TrackingBridge';
 import PageViewTracker from '@/components/tracking/PageViewTracker';
 import {
@@ -79,6 +80,9 @@ export default function PropellerHostBridge({
       services,
       currency: config.currency,
       configuration: { ...config, baseCategoryId, anonymousUserId },
+      // Serves package images through /_next/image, so they sit behind this
+      // origin's headers instead of linking the media CDN directly.
+      imgComponent: NextImageAdapter,
     }),
     [baseCategoryId, anonymousUserId]
   );

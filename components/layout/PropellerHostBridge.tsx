@@ -52,7 +52,7 @@ export default function PropellerHostBridge({
 }) {
   const router = useRouter();
   const { state } = useAuth();
-  const { selectedCompany } = useCompany();
+  const { selectedCompany, clearSelectedCompany } = useCompany();
   const { includeTax } = usePrice();
   const { language } = useLanguage();
   const baseCategoryId = useBaseCategoryId();
@@ -101,12 +101,27 @@ export default function PropellerHostBridge({
     const u = state.user as
       | { company?: { companyId?: number }; companies?: { items?: { companyId?: number }[] } }
       | null;
-    // Anonymous / user not resolved yet: no contact to mismatch, keep the selection.
-    if (!u) return selId;
+    // Anonymous visitors have no company scope, and the backend rejects a
+    // company-scoped catalog read with no bearer token (PRODUCT_SEARCH_ERROR),
+    // so a `selected_company` left in localStorage by a previous session breaks
+    // every client-side grid fetch. Keep the selection only while a session is
+    // known to exist and its profile is still loading.
+    if (!u) return state.isAuthenticated ? selId : undefined;
     const candidates = [...(u.companies?.items ?? []), ...(u.company ? [u.company] : [])];
     if (selId != null && candidates.some((c) => c?.companyId === selId)) return selId;
     return u.company?.companyId ?? undefined;
-  }, [selectedCompany?.companyId, state.user]);
+  }, [selectedCompany?.companyId, state.user, state.isAuthenticated]);
+
+  // A `selected_company` from a previous session outlives logout whenever the
+  // `userLoggedOut` event is missed (expiry, another tab, cleared cookies), and
+  // then scopes anonymous catalog reads to a company the request cannot
+  // authorize. Drop it once auth has settled on anonymous.
+  useEffect(() => {
+    if (state.isLoading) return;
+    if (state.isAuthenticated || state.user) return;
+    if (selectedCompany?.companyId == null) return;
+    clearSelectedCompany();
+  }, [state.isLoading, state.isAuthenticated, state.user, selectedCompany?.companyId, clearSelectedCompany]);
 
   // Tier 2 scope — only the 4 reactive store values are deps; the memo keeps
   // the context value stable across unrelated parent renders so scope

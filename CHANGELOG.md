@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-10-05
+
+### Added
+
+- **Package images are served through `next/image`.** They were emitted as a
+  bare `<img src="https://media.…">`, fetched straight from the media CDN,
+  which sends no `X-Robots-Tag` and serves no `robots.txt` — so they sat
+  outside this storefront’s crawler directives and bypassed image
+  optimisation. `NextImageAdapter` is passed once on `PropellerDepsProvider`,
+  so every package image routes through `/_next/image`. (PWP-1001)
+
+### Fixed
+
+- **Anonymous visitors no longer send a stale `companyId`.** A
+  `selected_company` left in localStorage by an earlier session was kept when
+  the user was anonymous, and the backend rejects a company-scoped catalog
+  read with no bearer token — so every client-side grid fetch failed with
+  `PRODUCT_SEARCH_ERROR`. Filtering, sorting and paging all broke; only the
+  SSR paint worked, because the server has no localStorage. The channel’s
+  anonymous `userId` is still sent, so assortment rules are unchanged.
+  (PWP-1001)
+
+### Changed
+
+- Pins react-ui 0.28.0 (core-ui 0.10.0).
+
 ## [1.17.1] - 2026-09-24
 
 ### Fixed

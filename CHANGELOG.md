@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-10-05
+
+### Changed
+
+- **Pin `propeller-v2-react-ui` 0.29.0** (core-ui 0.11.0). Client-side
+  listings and `<ProductSlider>` stop ignoring the company's orderlist, cart
+  quantity steppers keep the line on the order grid, and add to cart recovers
+  when the remembered cart no longer exists.
+
+  Note for this app: the package no longer sends `applyOrderlists: false` by
+  default, so a logged-in contact's grids are now scoped to their company's
+  orderlist after a sort, filter, page or company change — matching what the
+  server already rendered.
+
 ## [1.18.0] - 2026-10-05
 
 ### Added

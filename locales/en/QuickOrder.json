@@ -21,5 +21,6 @@
   "noItems": "Add at least one product before submitting",
   "missing": "The following products were not found",
   "missingCodes": "The following products were not added:",
-  "remove": "Remove"
+  "remove": "Remove",
+  "priceOnRequest": "Price on request — order this product from its page"
 }

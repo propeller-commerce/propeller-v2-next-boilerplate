@@ -1,6 +1,10 @@
 {
   "account": "On account",
   "afhalen": "On pickup",
+  "invoice": "Payment on invoice",
+  "invoice-net": "Payment on invoice",
+  "invoice_net": "Payment on invoice",
+  "invoicenet": "Payment on invoice",
   "on-account": "On account",
   "on_account": "On account",
   "onaccount": "On account",

@@ -232,12 +232,15 @@ export function ProductPriceIsland({
   surcharges,
   user,
   portalMode,
+  priceOnRequest,
 }: {
   price: ProductPriceSDK;
   bulkPrices: ProductPriceSDK[];
   surcharges?: Surcharge[];
   user: Contact | Customer | null;
   portalMode: string;
+  /** Renders the quote label instead of an amount. */
+  priceOnRequest?: boolean;
 }) {
   const { includeTax } = usePrice();
   const { language } = useLanguage();
@@ -256,6 +259,7 @@ export function ProductPriceIsland({
         currency={config.currency}
         labels={productPriceLabels}
         showLoginPrompt={false}
+        priceOnRequest={priceOnRequest}
       />
       <ProductSurcharges surcharges={surcharges} language={language} />
       <div className="mt-6">

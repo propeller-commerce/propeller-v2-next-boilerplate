@@ -1,6 +1,10 @@
 {
   "account": "Op rekening",
   "afhalen": "Bij afhalen",
+  "invoice": "Betaling op factuur",
+  "invoice-net": "Betaling op factuur",
+  "invoice_net": "Betaling op factuur",
+  "invoicenet": "Betaling op factuur",
   "on-account": "Op rekening",
   "on_account": "Op rekening",
   "onaccount": "Op rekening",

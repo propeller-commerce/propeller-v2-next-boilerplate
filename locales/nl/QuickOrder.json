@@ -21,5 +21,6 @@
   "noItems": "Voeg minstens één product toe voordat u verzendt",
   "missing": "De volgende producten zijn niet gevonden",
   "missingCodes": "De volgende producten zijn niet toegevoegd:",
-  "remove": "Verwijderen"
+  "remove": "Verwijderen",
+  "priceOnRequest": "Prijs op aanvraag — bestel dit product via de productpagina"
 }

@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-10-06
+
+### Fixed
+
+- **The product page shows the quote label instead of an amount for
+  price-on-request products.** `ProductPrice` has a `priceOnRequest` prop and
+  the page already resolved the flag for the request button, but never passed
+  it — so a quoted product rendered whatever sat in `price.gross`/`price.net`,
+  almost always € 0,00, beside a working "Prijs aanvragen" button.
+- **`/account` has its own page title.** Every account sub-route has a server
+  `layout.tsx` exporting `generateMetadata`, but `/account` itself did not —
+  its layout is the client auth guard, where metadata cannot live. The guard
+  moved to `AccountShell` and the layout is now a thin server component, so the
+  dashboard no longer falls back to the site default.
+- **The cart line's delete button is named in the page language.** The button
+  carries an `aria-label`, but `deleteLabel` was missing from both
+  dictionaries, so assistive technology announced the English fallback on a
+  Dutch shop.
+- **Quick order names a price-on-request SKU in the page language.** The
+  `priceOnRequest` notice had no key in either dictionary.
+- **The checkout review maps `INVOICE_NET` to a readable name.** The payment
+  dictionary covered the `on_account` spellings only, so other codes fell
+  through to the raw enum.
+
+### Changed
+
+- **Pin `propeller-v2-react-ui` 0.30.0.** `SearchBar` resolves its placeholder
+  from `labels`, and `isPriceOnRequest` is available from `/shared` so this
+  app's server-rendered price block can use it.
+
 ## [1.19.0] - 2026-10-05
 
 ### Changed

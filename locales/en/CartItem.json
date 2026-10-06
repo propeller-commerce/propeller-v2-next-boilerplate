@@ -6,5 +6,6 @@
   "notesPlaceholder": "Add a note for this item...",
   "qtyPrefix": "Qty:",
   "surcharges": "Additional surcharges:",
-  "updating": "Updating..."
+  "updating": "Updating...",
+  "deleteLabel": "Remove item"
 }

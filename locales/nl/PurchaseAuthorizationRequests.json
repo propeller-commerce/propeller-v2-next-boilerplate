@@ -14,6 +14,7 @@
   "deleteConfirmTitle": "Autorisatieaanvraag verwijderen?",
   "deleteConfirmYes": "Ja, verwijderen",
   "deleting": "Verwijderen...",
+  "discount": "Korting:",
   "empty": "Geen openstaande autorisatieaanvragen",
   "itemProduct": "Product",
   "itemQty": "Aantal",
@@ -22,9 +23,13 @@
   "itemsTitle": "Artikelen",
   "modalTitle": "Autorisatieaanvraag",
   "requesterInfo": "Aanvrager",
+  "shippingCosts": "Verzendkosten:",
+  "subtotal": "Subtotaal:",
   "title": "Autorisatieaanvragen",
   "total": "Totaal:",
   "totalExclVat": "Totaal excl. BTW:",
   "totalVat": "BTW:",
+  "transactionCosts": "Transactiekosten:",
+  "vat": "BTW",
   "view": "Bekijken"
 }

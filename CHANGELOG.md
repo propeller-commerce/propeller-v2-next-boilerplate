@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-10-13
+
+### Fixed
+
+- **Every page under `/account` lost the site name from its tab title.** The
+  server layout added in 1.20.0 returned its title as a plain string, which the
+  App Router treats as the whole subtree's template — so the root
+  `%s | <site>` template stopped reaching the sub-routes and they rendered a
+  bare "Bestellingen", "Adressen" and so on. The layout now returns
+  `{ default, template }`, which titles `/account` itself and leaves the suffix
+  in place below it.
+- **The checkout review showed a raw payment code for bank transfer.** The
+  payment-name dictionary had no entry for `bank_transfer`, so the enum was
+  rendered verbatim. Added under every spelling the lower-cased code can
+  arrive in.
+- **The authorization-request detail now shows a breakdown that adds up**
+  (via react-ui 0.31.0) — subtotal, discount, transaction costs, shipping and
+  the per-level VAT rows, so the total no longer exceeds the lines above it
+  with nothing to explain the difference. Adds the `subtotal`, `discount`,
+  `transactionCosts`, `shippingCosts` and `vat` label keys.
+- **Cart quantity steppers no longer move the wrong way** (via react-ui
+  0.31.0) for a quantity that is off the `min + n*step` grid.
+
+### Changed
+
+- react-ui `^0.30.0` → `^0.31.0` (core-ui 0.12.0 transitively).
+
 ## [1.20.0] - 2026-10-06
 
 ### Fixed

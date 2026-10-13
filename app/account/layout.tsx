@@ -8,7 +8,10 @@ import AccountShell from './AccountShell';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await resolveRequestLanguage();
   const t = getTranslations(language, 'PageTitles');
-  return { title: t.account };
+  const siteName = getTranslations(language, 'Metadata').title || 'Propeller E-commerce';
+  // `default` + `template`, not a bare string: a plain title here would become
+  // the subtree's template and strip the site suffix from every sub-route.
+  return { title: { default: `${t.account} | ${siteName}`, template: `%s | ${siteName}` } };
 }
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {

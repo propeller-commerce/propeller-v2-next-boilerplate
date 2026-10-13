@@ -1,6 +1,9 @@
 {
   "account": "Op rekening",
   "afhalen": "Bij afhalen",
+  "bank-transfer": "Vooruitbetaling per bankoverschrijving",
+  "bank_transfer": "Vooruitbetaling per bankoverschrijving",
+  "banktransfer": "Vooruitbetaling per bankoverschrijving",
   "invoice": "Betaling op factuur",
   "invoice-net": "Betaling op factuur",
   "invoice_net": "Betaling op factuur",

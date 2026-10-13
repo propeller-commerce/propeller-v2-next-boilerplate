@@ -14,6 +14,7 @@
   "deleteConfirmTitle": "Delete authorization request?",
   "deleteConfirmYes": "Yes, delete",
   "deleting": "Deleting...",
+  "discount": "Discount:",
   "empty": "No pending authorization requests",
   "itemProduct": "Product",
   "itemQty": "Qty",
@@ -22,9 +23,13 @@
   "itemsTitle": "Items",
   "modalTitle": "Authorization Request",
   "requesterInfo": "Requester",
+  "shippingCosts": "Shipping costs:",
+  "subtotal": "Subtotal:",
   "title": "Authorization Requests",
   "total": "Total:",
   "totalExclVat": "Total excl. VAT:",
   "totalVat": "VAT:",
+  "transactionCosts": "Transaction costs:",
+  "vat": "VAT",
   "view": "View"
 }

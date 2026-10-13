@@ -18,5 +18,9 @@
   "accountFavoriteDetail": "Favorite list",
   "accountAuthorizationSettings": "Authorization settings",
   "accountAuthorizationRequests": "Authorization requests",
-  "priceRequest": "Price request"
+  "priceRequest": "Price request",
+  "accountInvoices": "Invoices",
+  "accountPriceRequests": "Price requests",
+  "thankYouOrder": "Thank you for your order",
+  "thankYouQuote": "Thank you for your quote request"
 }

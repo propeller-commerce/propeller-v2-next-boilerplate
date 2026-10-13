@@ -18,5 +18,9 @@
   "accountFavoriteDetail": "Favorietenlijst",
   "accountAuthorizationSettings": "Autorisatie-instellingen",
   "accountAuthorizationRequests": "Autorisatieaanvragen",
-  "priceRequest": "Prijsaanvraag"
+  "priceRequest": "Prijsaanvraag",
+  "accountInvoices": "Facturen",
+  "accountPriceRequests": "Prijsaanvragen",
+  "thankYouOrder": "Bedankt voor uw bestelling",
+  "thankYouQuote": "Bedankt voor uw offerteaanvraag"
 }

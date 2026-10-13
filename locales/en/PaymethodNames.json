@@ -1,6 +1,9 @@
 {
   "account": "On account",
   "afhalen": "On pickup",
+  "bank-transfer": "Prepayment by bank transfer",
+  "bank_transfer": "Prepayment by bank transfer",
+  "banktransfer": "Prepayment by bank transfer",
   "invoice": "Payment on invoice",
   "invoice-net": "Payment on invoice",
   "invoice_net": "Payment on invoice",

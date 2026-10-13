@@ -40,7 +40,12 @@ import {
 // ProductGallery is interactive (Swiper, state) — stays on the client entry.
 import { ProductGallery } from '@propeller-commerce/propeller-v2-react-ui';
 import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
-import { fetchProduct, getServerInfra, getAnonymousInfraLocalized } from '@/lib/server';
+import {
+  fetchProduct,
+  getServerInfra,
+  getAnonymousInfraLocalized,
+  hasAuthCookie,
+} from '@/lib/server';
 import { getTranslations } from '@/lib/i18n/server';
 import { getLanguageString, isPriceOnRequest } from '@propeller-commerce/propeller-v2-react-ui/shared';
 import {
@@ -68,8 +73,9 @@ interface RouteParams {
  * `metadataDescriptions` / `metadataCanonicalUrls` when populated, falling
  * back to the product `names` / `shortDescriptions` otherwise.
  *
- * Fetched anonymously — SEO metadata is identical for every viewer, so this
- * avoids coupling it to the auth cookie. Without a curated canonical, Next.js
+ * Scoped to the caller when signed in: a product outside their assortment must
+ * not surface its name in the tab title of a 404 (PWP-1015). Anonymous
+ * requests stay on the cacheable path. Without a curated canonical, Next.js
  * defaults `alternates.canonical` to the request URL.
  */
 export async function generateMetadata({
@@ -81,7 +87,11 @@ export async function generateMetadata({
   const productId = Number.parseInt(productIdStr, 10);
   if (!Number.isFinite(productId)) return {};
 
-  const infra = await getAnonymousInfraLocalized();
+  // Anonymous keeps the cacheable path; a signed-in visitor is scoped, so a
+  // product outside their assortment yields no title instead of leaking one.
+  const infra = (await hasAuthCookie())
+    ? await getServerInfra()
+    : await getAnonymousInfraLocalized();
   const product = await fetchProduct(infra, productId, infra.language);
   if (!product) return {};
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.1] - 2026-10-13
+
+### Fixed
+
+- **A product or cluster outside the visitor's assortment leaked its name into
+  the tab title of its own 404.** `generateMetadata` fetched anonymously, so it
+  resolved records the signed-in contact may not see and the browser tab
+  briefly showed the hidden product's name while the page itself correctly
+  404'd. Metadata is now scoped to the caller when a session cookie is present;
+  anonymous requests stay on the cacheable path, so the SSR data cache is
+  unaffected. The cluster page carried the same leak.
+
 ## [1.21.0] - 2026-10-13
 
 ### Fixed

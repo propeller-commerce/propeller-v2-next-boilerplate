@@ -31,7 +31,9 @@ import Footer from '@/components/layout/Footer';
 import { ClusterJsonLd } from '@propeller-commerce/propeller-v2-react-ui/pure';
 import {
   getListingInfra,
+  getServerInfra,
   getAnonymousInfraLocalized,
+  hasAuthCookie,
   fetchCluster,
 } from '@/lib/server';
 import {
@@ -50,7 +52,9 @@ interface RouteParams {
 /**
  * Per-cluster SEO metadata. Uses the cluster's curated `metadataTitles` /
  * `metadataDescriptions` / `metadataCanonicalUrls` when populated, falling
- * back to the cluster `names` / `shortDescriptions`. Fetched anonymously.
+ * back to the cluster `names` / `shortDescriptions`. Scoped to the caller, not
+ * anonymous: a cluster outside the visitor's assortment must not surface its
+ * name in the tab title of a 404 (PWP-1015).
  */
 export async function generateMetadata({
   params,
@@ -61,7 +65,11 @@ export async function generateMetadata({
   const clusterId = Number.parseInt(clusterIdStr, 10);
   if (!Number.isFinite(clusterId)) return {};
 
-  const infra = await getAnonymousInfraLocalized();
+  // Anonymous keeps the cacheable path; a signed-in visitor is scoped, so a
+  // cluster outside their assortment yields no title instead of leaking one.
+  const infra = (await hasAuthCookie())
+    ? await getServerInfra()
+    : await getAnonymousInfraLocalized();
   const cluster = await fetchCluster(infra, clusterId);
   if (!cluster) return {};
 

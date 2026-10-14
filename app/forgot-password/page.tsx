@@ -18,11 +18,15 @@ export default function ForgotPasswordPage() {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-          {/* title/buttonText/responseMessage are props, not label keys — pass
-              them from the same namespace so they follow the language. */}
+          {/* The page owns its h1; the component's own title would be a second
+              heading, so it is suppressed with an empty `title`. */}
+          <h1 className="text-2xl font-bold mb-6">{forgotPasswordLabels.title}</h1>
+
+          {/* buttonText/responseMessage are props, not label keys — pass them
+              from the same namespace so they follow the language. */}
           <ForgotPassword
             labels={forgotPasswordLabels}
-            title={forgotPasswordLabels.title}
+            title=""
             buttonText={forgotPasswordLabels.submitButton}
             responseMessage={forgotPasswordLabels.responseMessage}
           />

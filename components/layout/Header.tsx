@@ -365,6 +365,8 @@ export default function Header({ menuTree }: HeaderProps = {}) {
               <button
                 type="button"
                 className="md:hidden text-white p-2 -ml-2"
+                aria-label={headerLabels.menu || 'Menu'}
+                aria-expanded={showMobileMenu}
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
               >
                 {showMobileMenu ? (

@@ -11,7 +11,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = getTranslations(language, 'Metadata').title || 'Propeller E-commerce';
   // `default` + `template`, not a bare string: a plain title here would become
   // the subtree's template and strip the site suffix from every sub-route.
-  return { title: { default: `${t.account} | ${siteName}`, template: `%s | ${siteName}` } };
+  // `default` stays bare — the root template appends the site name, so
+  // including it here would print it twice.
+  return { title: { default: t.account, template: `%s | ${siteName}` } };
 }
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {

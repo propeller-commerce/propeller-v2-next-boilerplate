@@ -43,7 +43,7 @@ export default function RegisterPage() {
           {state.isAuthenticated ? (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">{t.alreadyLoggedIn}</CardTitle>
+                <CardTitle as="h1" className="text-2xl font-bold">{t.alreadyLoggedIn}</CardTitle>
                 <CardDescription>
                   {t.alreadyLoggedInDesc}
                 </CardDescription>
@@ -60,7 +60,7 @@ export default function RegisterPage() {
           ) : (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">{t.createAccount}</CardTitle>
+                <CardTitle as="h1" className="text-2xl font-bold">{t.createAccount}</CardTitle>
                 <CardDescription>
                   {t.createAccountDesc}
                 </CardDescription>

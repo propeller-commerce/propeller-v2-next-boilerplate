@@ -23,15 +23,18 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-    ({ className, ...props }, ref) => (
-        <h3
-            ref={ref}
-            className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
-            {...props}
-        />
-    )
-);
+// `as` so a card that carries the page's own heading can be an h1 — heading
+// level is document structure, not styling. Defaults to h3 as before.
+const CardTitle = React.forwardRef<
+    HTMLHeadingElement,
+    React.HTMLAttributes<HTMLHeadingElement> & { as?: 'h1' | 'h2' | 'h3' | 'h4' }
+>(({ className, as: Tag = 'h3', ...props }, ref) => (
+    <Tag
+        ref={ref}
+        className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
+        {...props}
+    />
+));
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(

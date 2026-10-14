@@ -255,6 +255,57 @@ export default function SearchIsland({
     return () => window.removeEventListener('popstate', onChange);
   }, []);
 
+  /**
+   * The listing URL for a state, without touching state or navigating. Lets
+   * the pagination render real hrefs so a page can be opened in a new tab.
+   */
+  const buildListingHref = (
+    newFilters: Record<string, string[]>,
+    newPage: number = 1,
+    newMinPrice?: number,
+    newMaxPrice?: number,
+    newOffset?: number,
+    newSortField?: string,
+    newSortOrder?: 'ASC' | 'DESC',
+    newAvailability?: Availability,
+    newMinStock?: number
+  ) => {
+    const urlParams = new URLSearchParams();
+    if (newPage > 1) urlParams.set('page', newPage.toString());
+    Object.entries(newFilters).forEach(([key, values]) => {
+      if (values.length > 0) urlParams.set(key, JSON.stringify(values));
+    });
+    if (newMinPrice !== undefined) urlParams.set('minPrice', newMinPrice.toString());
+    if (newMaxPrice !== undefined) urlParams.set('maxPrice', newMaxPrice.toString());
+    if (newAvailability !== undefined) {
+      const serialized = serializeAvailability(newAvailability, newMinStock ?? MIN_STOCK_THRESHOLD);
+      if (serialized) urlParams.set('availability', serialized);
+    }
+    if (newOffset !== undefined && newOffset !== 12)
+      urlParams.set('offset', newOffset.toString());
+    if (newSortField !== undefined && newSortField !== 'RELEVANCE')
+      urlParams.set('sortField', newSortField);
+    if (newSortOrder !== undefined && newSortOrder !== 'DESC')
+      urlParams.set('sortOrder', newSortOrder);
+    const search = urlParams.toString();
+    const basePath = localizeHref('/search/' + encodeURIComponent(term), language);
+    return `${basePath}${search ? `?${search}` : ''}`;
+  };
+
+  /** The href for a page of the current listing, everything else unchanged. */
+  const pageHref = (page: number) =>
+    buildListingHref(
+      filters,
+      page,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+
   const updateURL = (
     newFilters: Record<string, string[]>,
     newPage: number = 1,
@@ -600,6 +651,7 @@ export default function SearchIsland({
               <GridPagination
                 products={productsResponse}
                 onPageChange={handlePageChange}
+                pageHref={pageHref}
                 variant="full"
                 labels={gridPaginationLabels}
               />

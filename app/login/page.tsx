@@ -67,7 +67,7 @@ export default function LoginPage() {
           ) : (
             <>
               <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">{t.welcomeBack}</CardTitle>
+                <CardTitle as="h1" className="text-2xl font-bold">{t.welcomeBack}</CardTitle>
                 <CardDescription>
                   {t.welcomeBackDesc}
                 </CardDescription>

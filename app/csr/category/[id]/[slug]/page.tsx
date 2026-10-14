@@ -159,6 +159,53 @@ export default function CategoryPage() {
     }
   }, [category, language, categoryId]);
 
+  /**
+   * The listing URL for a state, without navigating. Lets the pagination
+   * render real hrefs so a page can be opened in a new tab.
+   */
+  const buildListingHref = (
+    newFilters: Record<string, string[]>,
+    newPage: number = 1,
+    newMinPrice?: number,
+    newMaxPrice?: number,
+    newOffset?: number,
+    newSortField?: string,
+    newSortOrder?: 'ASC' | 'DESC',
+    newAvailability?: Availability,
+    newMinStock?: number
+  ) => {
+    const sp = new URLSearchParams();
+    if (newPage > 1) sp.set('page', newPage.toString());
+    Object.entries(newFilters).forEach(([key, values]) => {
+      if (values.length > 0) sp.set(key, JSON.stringify(values));
+    });
+    if (newMinPrice !== undefined) sp.set('minPrice', newMinPrice.toString());
+    if (newMaxPrice !== undefined) sp.set('maxPrice', newMaxPrice.toString());
+    if (newAvailability !== undefined) {
+      const serialized = serializeAvailability(newAvailability, newMinStock ?? MIN_STOCK_THRESHOLD);
+      if (serialized) sp.set('availability', serialized);
+    }
+    if (newOffset !== undefined && newOffset !== 12) sp.set('offset', newOffset.toString());
+    if (newSortField !== undefined && newSortField !== 'CATEGORY_ORDER') sp.set('sortField', newSortField);
+    if (newSortOrder !== undefined && newSortOrder !== 'DESC') sp.set('sortOrder', newSortOrder);
+    const search = sp.toString();
+    return `${localizeHref(`/category/${categoryId}/${params.slug}`, language)}${search ? `?${search}` : ''}`;
+  };
+
+  /** The href for a page of the current listing, everything else unchanged. */
+  const pageHref = (page: number) =>
+    buildListingHref(
+      filters,
+      page,
+      minPrice,
+      maxPrice,
+      offset,
+      sortField as string,
+      sortOrder as 'ASC' | 'DESC',
+      availability,
+      minStock
+    );
+
   const updateURL = (
     newFilters: Record<string, string[]>,
     newPage: number = 1,
@@ -416,6 +463,7 @@ export default function CategoryPage() {
                   <GridPagination
                     products={productsResponse}
                     onPageChange={handlePageChange}
+                    pageHref={pageHref}
                     variant='full'
                     labels={gridPaginationLabels}
                   />

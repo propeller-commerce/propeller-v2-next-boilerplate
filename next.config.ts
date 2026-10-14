@@ -91,7 +91,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'media.helice.cloud',
+      },
+      {
+        protocol: 'https',
         hostname: 'staging.media.helice.cloud',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.helice.cloud',
       },
       {
         protocol: 'http',

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-10-14
+
+### Fixed
+
+- **Product pages failed with a 500 for tenants on the production API.** The
+  image host `media.helice.cloud` was missing from `next.config.ts`, so
+  `next/image` rejected every product image with "hostname is not configured
+  under images" (PWP-1058). Added, with `api.helice.cloud` alongside it.
+- **Five English country names were garbled** — "CÃ´te d'Ivoire", "CuraÃ§ao",
+  "RÃ©union", "Saint BarthÃ©lemy", "Ã…land Islands". The source file was
+  double-encoded UTF-8; repaired in place (PWP-1052).
+- **The login, register and forgot-password pages had no `h1`.** Their heading
+  was an `h3` from `CardTitle` or an `h2` from the component (PWP-1054).
+  `CardTitle` now takes an optional `as`, and each page owns its `h1` while the
+  component's own title is suppressed.
+- **`/account` printed the site name twice** and the order, quote,
+  quote-request and favourites **detail** pages still had no suffix (PWP-1034).
+  A bare title in a layout becomes its subtree's template, so each of those
+  four parent layouts now re-declares `{ default, template }`.
+- **The mobile menu button had no accessible name** (PWP-1056); it now carries
+  `aria-label` and `aria-expanded`.
+- Bank-transfer payment names, and the label keys the authorization-request
+  breakdown needs.
+
+### Changed
+
+- Pagination below a listing renders links rather than buttons, at all five
+  call sites, so a page can be opened in a new tab and its URL copied
+  (PWP-1060). The href preserves the current filters, price range,
+  availability, offset and sort.
+- react-ui `^0.31.0` → `^0.32.0` (core-ui 0.13.0 transitively).
+
 ## [1.21.1] - 2026-10-13
 
 ### Fixed

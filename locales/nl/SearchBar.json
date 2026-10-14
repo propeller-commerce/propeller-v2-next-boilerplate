@@ -1,5 +1,6 @@
 {
   "placeholder": "Zoek producten...",
   "noResults": "Geen producten gevonden voor",
-  "viewAll": "Alle resultaten bekijken"
+  "viewAll": "Alle resultaten bekijken",
+  "searchLabel": "Zoeken"
 }

@@ -83,14 +83,21 @@ export default function MachinesPage() {
   const listing: MachineListingState = { ...parsed, term: searchParams.get('term') ?? '' };
   const basePath = localizeHref('/machines', language);
 
-  const onListingChange = (next: MachineListingState) => {
+  const listingHref = (next: MachineListingState) => {
     const query = buildListingSearchParams(next, {
       defaultSortField: MACHINE_SORT_FIELD_DEFAULT,
       defaultSortOrder: MACHINE_SORT_ORDER_DEFAULT,
     });
     const path = [basePath, ...segments].join('/');
-    router.push(query ? `${path}?${query}` : path, { scroll: false });
+    return query ? `${path}?${query}` : path;
   };
+
+  const onListingChange = (next: MachineListingState) => {
+    router.push(listingHref(next), { scroll: false });
+  };
+
+  /** The href for a page of the parts listing, everything else unchanged. */
+  const pageHref = (page: number) => listingHref({ ...listing, page });
 
   // Anonymous visitors are redirected by the effect above; render nothing until
   // auth settles so no machine data flashes for a non-contact.
@@ -115,6 +122,7 @@ export default function MachinesPage() {
             machineLanguages={MACHINE_LANGUAGES}
             listing={listing}
             onListingChange={onListingChange}
+            pageHref={pageHref}
             configuration={{
               imageSearchFiltersGrid: config.imageSearchFiltersGrid,
               imageVariantFiltersMedium: config.imageVariantFiltersMedium,

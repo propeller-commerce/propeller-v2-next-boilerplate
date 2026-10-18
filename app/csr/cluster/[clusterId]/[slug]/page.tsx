@@ -33,7 +33,8 @@ import { ProductPrice as ProductPriceDisplay } from '@propeller-commerce/propell
 import { ProductBulkPrices } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductShortDescription } from '@propeller-commerce/propeller-v2-react-ui';
 import { ItemStock } from '@propeller-commerce/propeller-v2-react-ui';
-import { AddToCart } from '@propeller-commerce/propeller-v2-react-ui';
+import { AddToCart, LoginToOrderButton } from '@propeller-commerce/propeller-v2-react-ui';
+import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
 import { AddToFavorite } from '@propeller-commerce/propeller-v2-react-ui';
 import { ProductTabs } from '@propeller-commerce/propeller-v2-react-ui';
 import { usePrice } from '@/context/PriceContext';
@@ -53,7 +54,8 @@ export default function ClusterPage() {
   const [showClusterErrors, setShowClusterErrors] = useState(false);
 
   const { cart, saveCart } = useCart();
-  const { refreshUser } = useAuth();
+  const { state, refreshUser } = useAuth();
+  const hideForAnonymous = isContentHidden(config.portal.mode, state.user);
   const { language } = useLanguage();
   const router = useRouter();
   const breadcrumbsLabels = useTranslations('Breadcrumbs');
@@ -219,7 +221,7 @@ export default function ClusterPage() {
                       <ProductShortDescription product={selectedProduct as Product} />
                     </div>
 
-                    {selectedProduct?.inventory && (
+                    {selectedProduct?.inventory && !hideForAnonymous && (
                       <div className="mt-4">
                         <ItemStock inventory={selectedProduct.inventory} showAvailability={false} labels={itemStockLabels} />
                       </div>
@@ -255,6 +257,12 @@ export default function ClusterPage() {
                   </>
                 )}
 
+                {hideForAnonymous ? (
+                  <LoginToOrderButton
+                    labels={addToCartLabels}
+                    onLoginClick={() => router.push(localizeHref('/login', language))}
+                  />
+                ) : (
                 <div className="flex items-center gap-2">
                   <AddToCart
                     product={selectedProduct as Product}
@@ -280,6 +288,7 @@ export default function ClusterPage() {
                     labels={addToFavoriteLabels}
                   />
                 </div>
+                )}
               </div>
             </div>
           </div>

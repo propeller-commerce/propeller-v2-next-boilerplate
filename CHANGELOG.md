@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.1] - 2026-10-18
+
+### Fixed
+
+- **The CSR cluster page (`/csr/cluster/...`) offered stock and add-to-cart to
+  an anonymous visitor in a semi-closed shop.** It now shows the log-in button,
+  as the server-rendered cluster page already did.
+
 ## [1.22.0] - 2026-10-14
 
 ### Fixed

@@ -239,7 +239,9 @@ export function createStrapiProvider(): CmsProvider {
   const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_API_URL || process.env.STRAPI_API_URL || 'http://localhost:1337';
   const strapiToken = process.env.STRAPI_API_TOKEN || '';
 
-  async function strapiFetch<T = any>(path: string, query?: Record<string, any>): Promise<T> {
+  // `preview` (Next draft mode) reads the draft version, uncached.
+  async function strapiFetch<T = any>(path: string, query?: Record<string, any>, preview = false): Promise<T> {
+    if (preview) query = { ...query, status: 'draft' };
     const queryString = query ? qs.stringify(query, { encodeValuesOnly: true }) : '';
     const url = `${strapiUrl}${path}${queryString ? `?${queryString}` : ''}`;
 
@@ -248,12 +250,12 @@ export function createStrapiProvider(): CmsProvider {
       headers['Authorization'] = `Bearer ${strapiToken}`;
     }
 
-    const isDev = process.env.NODE_ENV === 'development';
+    const noStore = preview || process.env.NODE_ENV === 'development';
 
     const res = await fetch(url, {
       headers,
-      cache: isDev ? 'no-store' : undefined,
-      next: isDev ? undefined : { revalidate: 60 },
+      cache: noStore ? 'no-store' : undefined,
+      next: noStore ? undefined : { revalidate: 60 },
     });
 
     if (!res.ok) {
@@ -266,12 +268,12 @@ export function createStrapiProvider(): CmsProvider {
   }
 
   return {
-    async getPage(slug: string) {
+    async getPage(slug: string, options?) {
       try {
         const data = await strapiFetch('/api/pages', {
           filters: { slug: { $eq: slug } },
           populate: { seo: { populate: '*' }, blocks: { populate: '*' } },
-        });
+        }, options?.preview);
         const entry = data?.data?.[0];
         if (!entry) return null;
         return normalizePage(strapiUrl, entry);
@@ -314,13 +316,13 @@ export function createStrapiProvider(): CmsProvider {
       }
     },
 
-    async getArticles() {
+    async getArticles(_locale?: string, options?) {
       try {
         const data = await strapiFetch('/api/articles', {
           populate: { cover: true, author: { populate: 'avatar' }, category: true },
           sort: 'publishedAt:desc',
           pagination: { pageSize: 100 },
-        });
+        }, options?.preview);
         return (data?.data || []).map((entry: any) => normalizeArticle(strapiUrl, entry));
       } catch (error) {
         console.error('[CMS:Strapi] Failed to fetch articles:', error);
@@ -328,12 +330,12 @@ export function createStrapiProvider(): CmsProvider {
       }
     },
 
-    async getArticle(slug: string) {
+    async getArticle(slug: string, _locale?: string, options?) {
       try {
         const data = await strapiFetch('/api/articles', {
           filters: { slug: { $eq: slug } },
           populate: { cover: true, author: { populate: 'avatar' }, category: true, blocks: { populate: '*' } },
-        });
+        }, options?.preview);
         const entry = data?.data?.[0];
         if (!entry) return null;
         return normalizeArticle(strapiUrl, entry);

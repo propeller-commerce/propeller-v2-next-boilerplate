@@ -254,6 +254,24 @@ Nothing is created automatically. Not at install, not at first boot: DDL at boot
 races across instances and needs production privileges the app account usually
 does not have.
 
+### Access
+
+`/tracker` and every `/api/tracker` route sit behind HTTP Basic auth. Set a
+server-only secret in `.env.local`:
+
+```ini
+TRACKER_ACCESS_SECRET=a-long-random-string
+```
+
+Open `/tracker` and sign in with any username and that secret as the password;
+the dashboard's own data calls reuse the browser's credentials. Without the
+variable the dashboard and its API answer 404. A cron hitting the rollup sends
+the same Basic credentials:
+
+```bash
+curl -X POST -u "cron:$TRACKER_ACCESS_SECRET" "https://shop.example/api/tracker/rollup?days=3"
+```
+
 ### Install
 
 Point the `TRACKING_DB_*` variables in `.env.local` at a database (see
@@ -304,6 +322,46 @@ generated from it. Migrations are append-only — an id that has shipped is froz
 because installs in the field have recorded it. Change an existing table with a
 new entry, never by editing an old one. The ledger stores a checksum per
 migration and warns if one was applied from different SQL than is now shipped.
+
+## CMS contact form
+
+The CMS contact-form block posts to `POST /api/contact`, which mails the message
+through the shared mail layer (`MAIL_PROVIDER` / `SMTP_*`) with the visitor as
+reply-to. Set `CONTACT_TO_EMAIL` (comma-separated) to the shop's inbox; the
+recipient is never taken from the request. Without it the endpoint answers 503
+and the block shows an error instead of a false success.
+
+## Form protection
+
+`POST /api/contact` and `POST /api/price-request` are public mail endpoints.
+
+- **Honeypot (always on).** A filled `website` field gets a normal success
+  response but no mail.
+- **Rate limit (always on).** Per client IP: 5 contact messages and 10 price
+  requests per 10 minutes; over the limit answers 429 with `Retry-After`. The
+  counters live in memory, so they are per instance. Behind several instances
+  use a shared store (e.g. Redis) or your hosting's WAF / edge rate limiting.
+- **reCAPTCHA v3 (opt-in).** Set `RECAPTCHA_SECRET_KEY` and
+  `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` (optionally `RECAPTCHA_MIN_SCORE`, default
+  0.5). The forms then load Google's script and the server verifies the token,
+  score and action; failures answer 400, an unreachable Google 503. Google's
+  badge stays visible as its terms require, and the script sets Google cookies,
+  so EU shops need cookie consent. The CSP in `proxy.ts` allows Google only
+  while it is enabled.
+
+The price-request list form is rendered by the UI package, so it cannot send the
+honeypot field yet; the server honours it as soon as it does.
+
+## Strapi preview
+
+With `CMS_PROVIDER=strapi`, the Strapi admin can show pages and blog posts
+side by side with the editor. Set the same random value as `PREVIEW_SECRET` in
+`cms/.env` and `STRAPI_PREVIEW_SECRET` in `.env.local`, and point `CLIENT_URL`
+in `cms/.env` at the storefront (default `http://localhost:3000`). Restart both,
+open a page or article in the Strapi admin and click **Preview**: the Draft tab
+shows unpublished content via draft mode, the Published tab the live page.
+While either secret is unset, preview stays off and the storefront refuses to
+be framed.
 
 ## Analytics (GA4 / Google Tag Manager)
 

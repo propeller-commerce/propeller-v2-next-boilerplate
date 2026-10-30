@@ -34,5 +34,7 @@
   "emailColCode": "Article no. / SKU",
   "emailColName": "Product",
   "emailColQuantity": "Qty",
-  "sendFailed": "Could not send the request. Please try again."
+  "sendFailed": "Could not send the request. Please try again.",
+  "rateLimited": "Too many requests. Please wait a few minutes and try again.",
+  "captchaFailed": "We could not verify that you are human. Please try again."
 }

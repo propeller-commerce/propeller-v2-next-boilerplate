@@ -35,7 +35,6 @@ const config: GraphQLClientConfig = {
   // rate-limit checks, and handles refresh-token retry on 401.
   endpoint: '/api/graphql',
   apiKey: '', // API key is handled by the proxy
-  orderEditorApiKey: process.env.NEXT_PUBLIC_ORDER_EDITOR_API_KEY || '',
   timeout: parseInt(process.env.NEXT_PUBLIC_TIMEOUT || '30000', 10),
   headers: {},
 };

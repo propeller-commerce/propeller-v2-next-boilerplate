@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { trackerGate } from '@/lib/tracker/access';
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS, type MetricParams } from '@/lib/tracking/queries';
 import { classifyDbError, STATUS_HINTS } from '@/lib/tracking/dbconfig';
 import { isTrackingConfigured } from '@/lib/trackingDb';
@@ -27,6 +28,9 @@ function daysBetween(from: string, to: string): number {
 }
 
 export async function GET(request: NextRequest) {
+  const denied = trackerGate(request);
+  if (denied) return denied;
+
   const { searchParams } = request.nextUrl;
   const metric = searchParams.get('metric') ?? '';
 

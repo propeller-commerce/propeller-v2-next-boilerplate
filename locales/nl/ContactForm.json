@@ -5,5 +5,8 @@
   "emailPlaceholder": "uw@email.com",
   "message": "Bericht",
   "messagePlaceholder": "Uw bericht...",
-  "send": "Bericht verzenden"
+  "send": "Bericht verzenden",
+  "sendError": "Uw bericht kon helaas niet worden verzonden. Probeer het later opnieuw.",
+  "rateLimited": "Te veel berichten. Wacht een paar minuten en probeer het opnieuw.",
+  "captchaFailed": "We konden niet bevestigen dat u een mens bent. Probeer het opnieuw."
 }

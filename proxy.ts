@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isHomeSlug } from '@/lib/cms/core';
 import { LOCALES } from '@/locales/_locales';
+import { isTrackerPath, trackerGate } from '@/lib/tracker/access';
+import { frameAncestors, strapiPreviewOrigin } from '@/lib/cms/preview';
+import { recaptchaConfig } from '@/lib/recaptcha/verify';
+import { recaptchaCspSources } from '@/lib/recaptcha/csp';
 
 const DEFAULT_LANGUAGE = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
 
@@ -122,21 +126,37 @@ const GA_SCRIPT_SRC =
   (process.env.NEXT_PUBLIC_USE_GA4 || '').toLowerCase() === 'true'
     ? ' https://www.googletagmanager.com'
     : '';
-// Allow Prepr's in-CMS preview to frame the storefront (editor preview iframe).
-// Non-Prepr keeps the strict `'none'` + X-Frame-Options: DENY below.
-const FRAME_ANCESTORS = IS_PREPR ? "frame-ancestors 'self' https://*.prepr.io" : "frame-ancestors 'none'";
+// Allow the CMS's in-editor preview to frame the storefront: Prepr's editor, or
+// the Strapi admin when its preview is enabled. Otherwise keep the strict
+// `'none'` + X-Frame-Options: DENY below.
+const STRAPI_PREVIEW_ORIGIN = strapiPreviewOrigin({
+  NEXT_PUBLIC_CMS_PROVIDER: process.env.NEXT_PUBLIC_CMS_PROVIDER,
+  CMS_PROVIDER: process.env.CMS_PROVIDER,
+  STRAPI_PREVIEW_SECRET: process.env.STRAPI_PREVIEW_SECRET,
+  NEXT_PUBLIC_STRAPI_API_URL: process.env.NEXT_PUBLIC_STRAPI_API_URL,
+  STRAPI_API_URL: process.env.STRAPI_API_URL,
+});
+const CMS_FRAMES = IS_PREPR || !!STRAPI_PREVIEW_ORIGIN;
+// reCAPTCHA v3 (opt-in): Google script + challenge iframe only when both keys are set.
+const RECAPTCHA_CSP = recaptchaCspSources(
+  !!recaptchaConfig({
+    RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
+    NEXT_PUBLIC_RECAPTCHA_SITE_KEY: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
+  }),
+);
+const FRAME_ANCESTORS = frameAncestors(IS_PREPR, STRAPI_PREVIEW_ORIGIN);
 
 const CSP_PROD = [
   "default-src 'self'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}`,
+  `script-src 'self' 'unsafe-inline'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}${RECAPTCHA_CSP.script}`,
   "connect-src 'self' https:",
   // Allow embedded product videos (ProductVideos iframes). Without an explicit
   // frame-src, iframes fall back to default-src 'self' and YouTube/Vimeo embeds
   // are blocked. frame-ancestors below is unrelated (controls who may frame us).
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+  `frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com${RECAPTCHA_CSP.frame}`,
   FRAME_ANCESTORS,
   "base-uri 'self'",
   "form-action 'self'",
@@ -148,11 +168,11 @@ const CSP_DEV = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   // Next.js dev (HMR) requires eval + inline.
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval'${PREPR_SCRIPT_SRC}${GA_SCRIPT_SRC}${RECAPTCHA_CSP.script}`,
   // Allow ws/wss for HMR websocket.
   "connect-src 'self' ws: wss: https: http:",
   // Allow embedded product videos (ProductVideos iframes) — see CSP_PROD.
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+  `frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com${RECAPTCHA_CSP.frame}`,
   FRAME_ANCESTORS,
   "base-uri 'self'",
   "form-action 'self'",
@@ -170,10 +190,10 @@ function applySecurityHeaders(response: NextResponse, request?: NextRequest): Ne
     });
   }
   response.headers.set('Content-Security-Policy', isProd ? CSP_PROD : CSP_DEV);
-  // X-Frame-Options is all-or-nothing and can't allow Prepr's preview iframe, so
-  // under Prepr framing is controlled by CSP `frame-ancestors` alone (scoped to
-  // self + *.prepr.io). Non-Prepr keeps the belt-and-suspenders DENY.
-  if (!IS_PREPR) {
+  // X-Frame-Options is all-or-nothing and can't allow a CMS preview iframe, so
+  // then framing is controlled by CSP `frame-ancestors` alone (scoped to self +
+  // the CMS origin). Otherwise keep the belt-and-suspenders DENY.
+  if (!CMS_FRAMES) {
     response.headers.set('X-Frame-Options', 'DENY');
   }
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -188,6 +208,12 @@ function applySecurityHeaders(response: NextResponse, request?: NextRequest): Ne
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Basic-auth gate for the tracker dashboard and its API, ahead of the API skip.
+  if (isTrackerPath(pathname, LOCALE_PREFIXES)) {
+    const denied = trackerGate(request);
+    if (denied) return denied;
+  }
 
   // Skip API routes, static files, Next.js internals — no header injection,
   // no locale rewrite, no personalization. JSON endpoints don't benefit from CSP.

@@ -34,5 +34,7 @@
   "emailColCode": "Artikelnr. / SKU",
   "emailColName": "Product",
   "emailColQuantity": "Aantal",
-  "sendFailed": "De aanvraag kon niet worden verstuurd. Probeer het opnieuw."
+  "sendFailed": "De aanvraag kon niet worden verstuurd. Probeer het opnieuw.",
+  "rateLimited": "Te veel aanvragen. Wacht een paar minuten en probeer het opnieuw.",
+  "captchaFailed": "We konden niet bevestigen dat u een mens bent. Probeer het opnieuw."
 }

@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { looksLikeValidJwt } from '@/lib/jwt';
+import { clientIp } from '@/lib/http/clientIp';
+import {
+  LAST_ORDER_COOKIE,
+  LAST_ORDER_MAX_AGE,
+  placedOrderId,
+  shouldUseOrderEditorKey,
+  signLastOrder,
+  verifyLastOrder,
+  type RoutingContext,
+} from '@/lib/graphql/orderEditorRouting';
 
 const GRAPHQL_ENDPOINT = process.env.BOILERPLATE_GRAPHQL_ENDPOINT || '';
 const API_KEY = process.env.BOILERPLATE_API_KEY || '';
@@ -10,38 +20,14 @@ const API_KEY = process.env.BOILERPLATE_API_KEY || '';
 // PropellerApi::buildHeaders($type) has to happen HERE instead.
 const ORDER_EDITOR_API_KEY = process.env.BOILERPLATE_ORDER_EDITOR_API_KEY || '';
 
-// Mirrors the SDK's DEFAULT_ORDER_EDITOR_MUTATIONS (GraphQLClient.ts). Keep in
-// sync if the SDK list changes. These operation names route to the order key.
-const ORDER_EDITOR_MUTATIONS = new Set([
-  'orderSetStatus',
-  'passwordResetLink',
-  'triggerQuoteSendRequest',
-  'triggerOrderSendConfirm',
-]);
-
-// Queries that the general API key isn't allowed to resolve. The `order` query
-// (used by the thank-you page and order detail screens to fetch a single order
-// by id) returns `Forbidden resource` under the general key; only the
-// order-editor key authorizes it. Mirrors the same routing decision the SDK
-// embeds for mutations, but applied at the query level where the SDK has no
-// equivalent default list — the proxy is the authoritative router in proxy
-// mode (see callUpstream below).
-const ORDER_EDITOR_QUERIES = new Set(['order']);
-
-// Operations that route to the order key ONLY when the caller identifies as the
-// order-editor client. `contactRegister` is used by BOTH public self-registration
-// (general key) AND authorization-settings "add contact" (order key) — the
-// operationName is identical, so the caller signals intent via the SDK's
-// `clientId` (sent as `X-Client-ID`) and the proxy routes accordingly. The
-// header is server-internal: not forwarded upstream.
-const ORDER_EDITOR_OPT_IN_MUTATIONS = new Set(['contactRegister']);
+// Key routing lives in lib/graphql/orderEditorRouting.ts; X-Client-ID is never forwarded.
 const ORDER_EDITOR_CLIENT_ID = 'order-editor';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
 /**
- * Extract an operation name from a GraphQL document — fallback for requests
- * that don't carry `operationName` in the body. Mirrors the SDK's own
+ * Extract an operation name for dev logging only — never used for key routing.
+ * Fallback for requests that don't carry `operationName` in the body. Mirrors the SDK's own
  * `extractOperationName`: strips leading `#` comments, then matches the first
  * `query NAME` / `mutation NAME`. Returns undefined for anonymous operations.
  */
@@ -69,7 +55,7 @@ const RATE_LIMIT_ANON = 150; // per-IP, anonymous
 
 /**
  * Approximate GraphQL query depth by counting maximum brace nesting in the
- * query string. NOT a full AST walk (we don't depend on graphql-js); braces
+ * query string. NOT a full AST walk (runs before any parse); braces
  * inside string literals could in principle fool this, but GraphQL string
  * literals can't contain unescaped `{`/`}`, so the counter is safe for
  * well-formed queries. Malformed queries fail upstream anyway.
@@ -120,50 +106,19 @@ function isRateLimited(ip: string, limit: number): boolean {
   return false;
 }
 
-function clientIp(request: NextRequest): string {
-  // Trust the first hop only if present; otherwise fall back to a sentinel.
-  // x-forwarded-for is set by Vercel/most proxies; client-set headers can
-  // be spoofed but rate-limiting from a known shared sentinel is a known
-  // tradeoff (worst case: a single noisy LAN trips the limit together).
-  const xff = request.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  const xri = request.headers.get('x-real-ip');
-  if (xri) return xri;
-  return 'unknown';
-}
-
 /**
  * Calls the upstream GraphQL endpoint once with the supplied bearer (or
  * none). Returns the raw Response so the caller can inspect status before
- * deciding to retry.
- *
- * `operationName` selects the API key: order-editor mutations route to
- * ORDER_EDITOR_API_KEY, everything else to the general API_KEY. If the order
- * key is unset we fall back to the general key (which the backend will reject
- * for these mutations — surfaced as the same "Forbidden resource" error rather
- * than a silent mismatch).
+ * deciding to retry. `useOrderKey` selects ORDER_EDITOR_API_KEY over API_KEY.
  */
 async function callUpstream(
   body: unknown,
   bearer: string | undefined,
-  operationName: string | undefined,
-  orderEditorOptIn = false,
-  isAnonymous = false,
+  useOrderKey: boolean,
 ): Promise<Response> {
-  // ORDER_EDITOR_QUERIES is gated on `isAnonymous` so logged-in flows
-  // (e.g. /account/orders/[id]) keep using the general key with their own
-  // bearer token, which is the path the backend authorizes for owners.
-  // Guest sessions have no bearer at all, so the only way the thank-you
-  // page can read its just-placed order is through the order-editor key.
-  const useOrderKey =
-    !!ORDER_EDITOR_API_KEY &&
-    !!operationName &&
-    (ORDER_EDITOR_MUTATIONS.has(operationName) ||
-      (isAnonymous && ORDER_EDITOR_QUERIES.has(operationName)) ||
-      (orderEditorOptIn && ORDER_EDITOR_OPT_IN_MUTATIONS.has(operationName)));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    apikey: useOrderKey ? ORDER_EDITOR_API_KEY : API_KEY,
+    apikey: useOrderKey && ORDER_EDITOR_API_KEY ? ORDER_EDITOR_API_KEY : API_KEY,
   };
   if (bearer) headers['Authorization'] = `Bearer ${bearer}`;
   return fetch(GRAPHQL_ENDPOINT, {
@@ -244,7 +199,7 @@ export async function POST(request: NextRequest) {
     // non-expired JWT — not raw cookie presence, which a raw HTTP client can
     // forge with any `access_token=x` value to claim the auth ceiling.
     const hasAuthToken = looksLikeValidJwt(sessionCookie);
-    const ip = clientIp(request);
+    const ip = clientIp(request.headers);
     const limit = hasAuthToken ? RATE_LIMIT_AUTH : RATE_LIMIT_ANON;
     if (isRateLimited(ip, limit)) {
       return NextResponse.json({ error: 'rate limit exceeded' }, { status: 429 });
@@ -268,15 +223,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'invalid JSON body' }, { status: 400 });
     }
 
-    // Resolve the operation name (used to pick the API key). The SDK sends it
-    // in the body; fall back to parsing the query for any caller that doesn't.
+    // Dev logging only; key routing parses the document instead.
     const operationName =
       (typeof body.operationName === 'string' ? body.operationName : undefined) ??
       extractOperationName(body.query);
 
     // Opt-in signal for clientId-gated order-editor operations (contactRegister
-    // from authorization settings). Public self-registration uses the default
-    // client (no clientId) and omits it.
+    // from authorization settings). Public self-registration omits it.
     const orderEditorOptIn = request.headers.get('x-client-id') === ORDER_EDITOR_CLIENT_ID;
 
     // ── Query-depth limit ────────────────────────────────────────────────
@@ -288,6 +241,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Guest reading the order this browser just placed (signed httpOnly cookie).
+    const lastOrderId = verifyLastOrder(request.cookies.get(LAST_ORDER_COOKIE)?.value, ORDER_EDITOR_API_KEY);
+    const routing: RoutingContext = {
+      query: body.query,
+      variables: body.variables,
+      orderEditorClient: orderEditorOptIn,
+      hasSession: hasAuthToken,
+      isAnonymous: !hasSessionCookie,
+      lastOrderId,
+    };
+
     if (isDev) {
       // Dev-only: query/variables can contain PII (cart contents, contact data).
       // Never log them in production.
@@ -297,10 +261,7 @@ export async function POST(request: NextRequest) {
         endpoint: GRAPHQL_ENDPOINT,
         hasApiKey: !!API_KEY,
         operationName,
-        usingOrderKey:
-          !!operationName &&
-          (ORDER_EDITOR_MUTATIONS.has(operationName) ||
-            (!hasSessionCookie && ORDER_EDITOR_QUERIES.has(operationName))),
+        usingOrderKey: shouldUseOrderEditorKey(routing),
         query: querySnippet,
         variables: body.variables,
         depth,
@@ -323,12 +284,6 @@ export async function POST(request: NextRequest) {
     let initialBearer =
       cookieToken ?? (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
 
-    // Guest sessions are the ones the ORDER_EDITOR_QUERIES gate cares about.
-    // `hasSessionCookie` was computed up-top for rate limiting and is the same
-    // signal we want here: no cookie ⇒ anonymous request ⇒ guest-only routing
-    // is permitted to escalate the `order` query to the order-editor key.
-    const isAnonymous = !hasSessionCookie;
-
     let refreshSetCookies: string[] = [];
 
     // Proactive refresh for a stale session. The upstream does NOT 401 an
@@ -347,6 +302,7 @@ export async function POST(request: NextRequest) {
       if (refreshed) {
         refreshSetCookies = refreshed.setCookies;
         initialBearer = refreshed.newAccessToken;
+        routing.hasSession = true;
       }
       // If the refresh failed the refresh_token is dead too — fall through
       // with the stale Bearer; upstream treats it as anonymous, and the
@@ -354,13 +310,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First attempt.
-    let response = await callUpstream(
-      body,
-      initialBearer,
-      operationName,
-      orderEditorOptIn,
-      isAnonymous,
-    );
+    let response = await callUpstream(body, initialBearer, shouldUseOrderEditorKey(routing));
 
     // 401-refresh-retry: ONLY when we had a cookie token (a logged-in session
     // that may have just expired). If the request came in anonymously, no
@@ -369,14 +319,11 @@ export async function POST(request: NextRequest) {
       const refreshed = await tryRefresh(request);
       if (refreshed) {
         refreshSetCookies = refreshed.setCookies;
-        // After a successful refresh the request is no longer anonymous, so
-        // the retry runs with `isAnonymous=false` and skips the guest gate.
+        // After a successful refresh the request is a logged-in session.
         response = await callUpstream(
           body,
           refreshed.newAccessToken,
-          operationName,
-          orderEditorOptIn,
-          false,
+          shouldUseOrderEditorKey({ ...routing, hasSession: true, isAnonymous: false }),
         );
       }
     }
@@ -406,6 +353,17 @@ export async function POST(request: NextRequest) {
     }
     const okRes = NextResponse.json(data);
     for (const c of refreshSetCookies) okRes.headers.append('set-cookie', c);
+    // Remember the order this browser just placed so its thank-you page can read it.
+    const newOrderId = ORDER_EDITOR_API_KEY ? placedOrderId(body.query, data) : null;
+    if (newOrderId) {
+      okRes.cookies.set(LAST_ORDER_COOKIE, signLastOrder(newOrderId, ORDER_EDITOR_API_KEY), {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: !isDev,
+        path: '/',
+        maxAge: LAST_ORDER_MAX_AGE,
+      });
+    }
     return okRes;
   } catch (error) {
     if (isDev) {

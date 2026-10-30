@@ -1,19 +1,17 @@
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
+import { checkTrackerAccess } from '@/lib/tracker/access';
 import './tracker.css';
 
-/**
- * /tracker layout.
- *
- * ponytail: ungated by request — gate before deploy. This page exposes every
- * account's behaviour and revenue to anyone with the URL, which is fine on a
- * local box and is not fine anywhere shared. The reminder lives here rather
- * than only in the plan document.
- */
+// Basic-auth gated in proxy.ts; re-checked here in case the proxy is bypassed.
 export const metadata = {
   title: 'Storefront tracker',
   robots: { index: false, follow: false },
 };
 
-export default function TrackerLayout({ children }: { children: ReactNode }) {
+export default async function TrackerLayout({ children }: { children: ReactNode }) {
+  const requestHeaders = await headers();
+  if (!checkTrackerAccess(requestHeaders.get('authorization')).ok) notFound();
   return children;
 }

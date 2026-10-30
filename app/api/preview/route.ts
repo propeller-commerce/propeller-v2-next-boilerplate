@@ -1,56 +1,40 @@
 import { draftMode } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { NextRequest } from 'next/server';
-import { isHomeSlug } from '@/lib/cms';
+import { resolvePreviewRequest } from '@/lib/cms/preview';
 import { PREPR_ENABLED } from '@/lib/preprEvent';
 
-// Shared secret guarding draft mode. Configure the Prepr environment's preview
-// URL as:  https://<host>/api/preview?secret=<PREPR_PREVIEW_SECRET>&slug=/{slug}&locale={locale}
+const STRAPI_ENABLED = process.env.CMS_PROVIDER === 'strapi';
+
+// Shared secret guarding draft mode.
+// Prepr: configure the environment's preview URL as
+//   https://<host>/api/preview?secret=<PREPR_PREVIEW_SECRET>&slug=/{slug}&locale={locale}
 // Prepr fills {locale} with the locale being edited (e.g. en-US), so the preview
 // follows the editor's locale switch.
-const PREVIEW_SECRET = process.env.PREPR_PREVIEW_SECRET || 'prepr-preview';
+// Strapi: cms/config/admin.ts builds the URL (with &status=draft|published)
+// from PREVIEW_SECRET, which must equal STRAPI_PREVIEW_SECRET here.
+const PREVIEW_SECRET = PREPR_ENABLED
+  ? process.env.PREPR_PREVIEW_SECRET || 'prepr-preview'
+  : process.env.STRAPI_PREVIEW_SECRET;
 
 /**
- * Enables Next.js draft mode (so pages fetch unpublished content via the Prepr
- * Preview token) and redirects to the requested page. Used by Prepr's in-editor
- * preview. Only available when Prepr is the active CMS.
+ * Enables Next.js draft mode (so pages fetch unpublished content) and redirects
+ * to the requested page. Used by Prepr's in-editor preview and Strapi's admin
+ * preview. Strapi's "Published" tab turns draft mode off instead.
  */
 export async function GET(request: NextRequest) {
-  if (!PREPR_ENABLED) {
-    return new Response('Not found', { status: 404 });
+  const decision = resolvePreviewRequest(new URL(request.url).searchParams, {
+    prepr: PREPR_ENABLED,
+    strapi: STRAPI_ENABLED,
+    secret: PREVIEW_SECRET,
+  });
+  if (decision.status !== 307) {
+    return new Response(decision.body, { status: decision.status });
   }
 
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get('secret');
-  const slug = searchParams.get('slug') || searchParams.get('redirect') || '/';
+  const draft = await draftMode();
+  if (decision.draft) draft.enable();
+  else draft.disable();
 
-  if (secret !== PREVIEW_SECRET) {
-    return new Response('Invalid preview secret', { status: 401 });
-  }
-
-  (await draftMode()).enable();
-
-  // The home page (incl. the personalized "home-personalized" slug) is served at
-  // the root `/`, not via the catch-all CMS route — so a preview of it must land
-  // on `/`. Everything else previews at its own slug. Only same-origin paths.
-  const base = isHomeSlug(slug) ? '/' : slug.startsWith('/') ? slug : `/${slug}`;
-
-  // Prepr's preview bar appends its segment / A-B switch as query params on the
-  // preview URL. This route 307-redirects to the page, which would drop the
-  // query string — so carry the switch params through so the page (and proxy.ts)
-  // can resolve the chosen variant.
-  const passthrough = new URLSearchParams();
-  // Carry the edited locale to the (server-rendered) page. Prepr fills {locale}
-  // with the locale being edited (e.g. en-US); normalise to the storefront's
-  // short code (en-US → EN) and pass it as a query param — it survives the
-  // redirect and works inside Prepr's cross-site iframe (no cookie needed). A
-  // manual &lang= short code is also accepted.
-  const rawLocale = searchParams.get('locale') || searchParams.get('lang');
-  if (rawLocale) passthrough.set('preview_lang', rawLocale.split('-')[0].toUpperCase());
-  for (const key of ['prepr_preview_segment', 'prepr_preview_ab']) {
-    const value = searchParams.get(key);
-    if (value) passthrough.set(key, value);
-  }
-  const query = passthrough.toString();
-  redirect(query ? `${base}${base.includes('?') ? '&' : '?'}${query}` : base);
+  redirect(decision.location);
 }

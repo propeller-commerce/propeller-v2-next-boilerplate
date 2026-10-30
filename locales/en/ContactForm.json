@@ -5,5 +5,8 @@
   "emailPlaceholder": "your@email.com",
   "message": "Message",
   "messagePlaceholder": "Your message...",
-  "send": "Send Message"
+  "send": "Send Message",
+  "sendError": "Sorry, your message could not be sent. Please try again later.",
+  "rateLimited": "Too many messages. Please wait a few minutes and try again.",
+  "captchaFailed": "We could not verify that you are human. Please try again."
 }

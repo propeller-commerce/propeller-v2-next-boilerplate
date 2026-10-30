@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-10-30
+
+### Security
+
+- **The `/tracker` dashboard and its `/api/tracker` data and rollup routes were
+  open to anyone with the URL** (PWP-1077). They now require HTTP Basic auth
+  with `TRACKER_ACCESS_SECRET` as the password (any username, constant-time
+  compare). Without the variable they answer 404. The gate lives in
+  `lib/tracker/access.ts` and runs in `proxy.ts` (including locale-prefixed
+  paths), in each tracker route handler and in the tracker layout. A cron
+  calling the rollup sends the same Basic credentials.
+- **`/api/graphql` chose the order-editor API key from the request's
+  `operationName`** (PWP-1078), so any query could be named into the elevated
+  key. The proxy now parses the document with graphql-js and elevates only a
+  single operation selecting a single allowlisted top-level field
+  (`orderSetStatus`, `passwordResetLink`, `triggerQuoteSendRequest`,
+  `triggerOrderSendConfirm`). `contactRegister` via `X-Client-ID: order-editor`
+  additionally needs a logged-in session. A guest's `order` query is elevated
+  only for the order id in the signed httpOnly `propeller_last_order` cookie
+  (HMAC-SHA256, 1 hour), which the proxy sets when it relays `cartProcess`, so
+  the guest thank-you page still loads its order. `graphql` is now a direct
+  dependency.
+- The browser bundle no longer reads `NEXT_PUBLIC_ORDER_EDITOR_API_KEY`; the
+  key stays server-side in the proxy.
+- **The public mail endpoints `/api/contact` and `/api/price-request` had no
+  abuse protection.** Both are now rate limited per client IP (5 and 10
+  requests per 10 minutes; 429 `rate_limited` with `Retry-After`), counting
+  every request including invalid ones, and drop submissions with a filled
+  `website` honeypot behind a normal success response. Limits are in memory
+  and per instance; see "Form protection" in the README.
+
+### Fixed
+
+- **The CMS contact-form block showed its success message without sending
+  anything** (PWP-1085). It now posts to the new `POST /api/contact`, which
+  mails the shop at `CONTACT_TO_EMAIL` (never a recipient from the request) with
+  the visitor as reply-to, validates and caps every field, and answers 503 when
+  the recipient is not configured. The block shows success only on a 2xx,
+  shows a translated error otherwise, and disables the button while sending.
+
+### Added
+
+- `npm test` runs every Node unit test (tracking, tracker access, GraphQL key
+  routing, contact and price-request handlers, CMS preview, form protection,
+  reCAPTCHA).
+- **Opt-in reCAPTCHA v3 on the contact and price-request forms.** Enabled when
+  both `RECAPTCHA_SECRET_KEY` and `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` are set
+  (`RECAPTCHA_MIN_SCORE`, default 0.5). The forms load Google's script only
+  when they mount and send a `recaptchaToken`; the server checks success, score
+  and action (`contact` / `price_request`), answers 400 `captcha_failed` or,
+  when Google is unreachable, 503 `captcha_unavailable`. The CSP allows
+  Google's script and frame only while it is enabled. Both forms show
+  translated messages for rate-limit and verification failures (en, nl).
+- The contact form sends a visually hidden `website` honeypot field.
+- The price-request page forwards the `website` honeypot from `PriceRequestList`
+  (react-ui 0.33.0) in its POST body, sending an empty string when the
+  installed package does not supply it yet.
+- The price-request route's logic moved to `lib/price-request/handler.ts` with
+  injected dependencies so it is unit tested.
+- **Strapi side-by-side preview.** `cms/config/admin.ts` enables the Strapi
+  admin's Preview when `PREVIEW_SECRET` is set, mapping pages to `/{slug}`
+  (`home` to `/`) and articles to `/blog/{slug}` via `CLIENT_URL`.
+  `/api/preview` now also serves Strapi (`STRAPI_PREVIEW_SECRET`, which must
+  equal `PREVIEW_SECRET`): the Draft tab enables draft mode, the Published tab
+  disables it. In draft mode the Strapi provider reads `status=draft`,
+  uncached. With the secret set, `proxy.ts` lets the Strapi origin frame the
+  storefront (`frame-ancestors`, no `X-Frame-Options: DENY`); otherwise the
+  strict policy stays. Preview slugs starting with `//` or `\` can no longer
+  redirect off-site, and neither can the `redirect` of `/api/preview/exit`.
+  Logic and tests in `lib/cms/preview.ts`.
+
+### Changed
+
+- Pins react-ui 0.33.0 (MachineGrid skeletons and props, the search error
+  state, the price-request honeypot).
+
 ## [1.22.1] - 2026-10-18
 
 ### Fixed

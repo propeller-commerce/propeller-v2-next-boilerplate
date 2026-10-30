@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { trackerGate } from '@/lib/tracker/access';
 import { getTrackingPool } from '@/lib/trackingDb';
 import { rangeToUtc, todayLocal, addDays, SHOP_TIMEZONE } from '@/lib/tracking/timezone';
 
@@ -8,7 +9,7 @@ import { rangeToUtc, todayLocal, addDays, SHOP_TIMEZONE } from '@/lib/tracking/t
  *
  * The dashboard reads raw for real-time accuracy; these tables exist for when
  * raw stops keeping up. Run from cron / a scheduled task:
- *   POST /api/tracker/rollup?days=3
+ *   POST /api/tracker/rollup?days=3   (Basic auth, password TRACKER_ACCESS_SECRET)
  *
  * Idempotent by construction: REPLACE INTO keyed on (channel, day, …) means
  * re-running a day overwrites it, so a re-run after an outage self-heals and
@@ -25,6 +26,9 @@ export const dynamic = 'force-dynamic';
 const MAX_DAYS = 90;
 
 export async function POST(request: NextRequest) {
+  const denied = trackerGate(request);
+  if (denied) return denied;
+
   const pool = getTrackingPool();
   if (!pool) {
     return NextResponse.json({ error: 'tracking not configured' }, { status: 503 });

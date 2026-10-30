@@ -1,23 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import type { CmsContactForm } from '@/lib/cms/types';
 import { useTranslations } from '@/lib/i18n/client';
+import { getRecaptchaToken, loadRecaptcha } from '@/lib/recaptcha/client';
+
+type SendError = 'send' | 'rateLimited' | 'captchaFailed';
 
 export default function ContactForm({ block }: { block: CmsContactForm }) {
   const t = useTranslations('ContactForm');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<SendError | null>(null);
   const hasSplitLayout = !!(block.phone || block.email);
+
+  useEffect(() => {
+    loadRecaptcha()?.catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return;
+    const data = new FormData(e.currentTarget);
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    setSubmitted(true);
+    setError(null);
+    try {
+      const recaptchaToken = await getRecaptchaToken('contact');
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.get('name'),
+          email: data.get('email'),
+          message: data.get('message'),
+          website: data.get('website') ?? '',
+          recaptchaToken,
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const code = (await res.json().catch(() => ({})))?.error;
+        if (res.status === 429) setError('rateLimited');
+        else if (code === 'captcha_failed' || code === 'captcha_unavailable') setError('captchaFailed');
+        else setError('send');
+      }
+    } catch {
+      setError('send');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const form = submitted ? (
@@ -51,7 +85,24 @@ export default function ContactForm({ block }: { block: CmsContactForm }) {
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
-        <Button type="submit" size="lg" className="w-full" isLoading={loading}>
+        {/* Honeypot: off-screen so bots fill it and people never see it. */}
+        <div
+          aria-hidden="true"
+          style={{ position: 'absolute', left: '-10000px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}
+        >
+          <label htmlFor="contact-website">Website</label>
+          <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error === 'rateLimited'
+              ? t.rateLimited || 'Too many messages. Please wait a few minutes and try again.'
+              : error === 'captchaFailed'
+                ? t.captchaFailed || 'We could not verify that you are human. Please try again.'
+                : t.sendError || 'Sorry, your message could not be sent. Please try again later.'}
+          </p>
+        )}
+        <Button type="submit" size="lg" className="w-full" isLoading={loading} disabled={loading}>
           {t.send}
         </Button>
       </form>

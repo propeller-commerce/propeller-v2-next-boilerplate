@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.1] - 2026-11-04
+
+### Changed
+
+- **Pin `propeller-sdk-v2` 0.18.1.** A query that loses its connection to the
+  API is now sent once more before the error is thrown, so a server-rendered
+  page no longer answers 500 on a single dropped connection where a reload
+  worked (PWP-1062). Mutations are never resent. Also refreshes
+  `propeller-v2-msp` 0.1.3, `propeller-v2-cms-react` 0.1.6 and
+  `propeller-v2-core-ui` 0.13.1 (CI and docs only, no code change).
+
 ## [1.23.0] - 2026-10-30
 
 ### Security

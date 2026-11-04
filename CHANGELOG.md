@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.2] - 2026-11-04
+
+### Changed
+
+- **Pin `propeller-v2-react-ui` 0.34.0.** `RegisterForm` can now register
+  without a password (`showPassword={false}`, which also skips the automatic
+  login) and without the welcome email (`sendWelcomeEmail={false}`), for shops
+  that approve each account in the backoffice and send a set-password link.
+  The register page keeps today's behaviour; both props default to `true`.
+
 ## [1.23.1] - 2026-11-04
 
 ### Changed

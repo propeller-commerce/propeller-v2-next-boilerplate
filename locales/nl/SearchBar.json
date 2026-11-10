@@ -2,5 +2,6 @@
   "placeholder": "Zoek producten...",
   "noResults": "Geen producten gevonden voor",
   "viewAll": "Alle resultaten bekijken",
-  "searchLabel": "Zoeken"
+  "searchLabel": "Zoeken",
+  "searchError": "Zoeken is nu niet beschikbaar. Probeer het opnieuw."
 }

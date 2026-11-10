@@ -2,5 +2,6 @@
   "placeholder": "Search products...",
   "noResults": "No products found for",
   "viewAll": "View all results",
-  "searchLabel": "Search"
+  "searchLabel": "Search",
+  "searchError": "Search is unavailable right now. Please try again."
 }

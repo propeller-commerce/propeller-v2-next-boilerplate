@@ -86,6 +86,8 @@ import {
   channelService,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
+import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
+import { hidePrices } from './catalog/hidePrices';
 import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 import { retypeTextFilters } from './listingParams';
 
@@ -278,6 +280,11 @@ function readPortalMode(): string {
   // Tolerate the historical camelCase value too — it means the same thing.
   if (raw === 'semiclosed') return 'semi-closed';
   return raw;
+}
+
+// Semi-closed shops must not send prices to visitors who are not logged in.
+function forViewer<T>(infra: ServerInfra, data: T): T {
+  return isContentHidden(infra.portalMode, infra.user) ? hidePrices(data) : data;
 }
 
 // ── Server-side services accessor (mirrors the client-side createServices) ──
@@ -727,7 +734,7 @@ export async function fetchProduct(
       },
       cacheOptions(infra, [TAG_CATALOG, tagFor('product'), tagFor('product', productId)])
     );
-    return result ? (toPlain(result) as Product) : null;
+    return result ? forViewer(infra, toPlain(result) as Product) : null;
   } catch (e) {
     if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
       return null;
@@ -984,7 +991,7 @@ export async function fetchCategory(
     if (retyped) {
       result = await run({ ...categoryProductSearchInput, textFilters: retyped });
     }
-    return result ? (toPlain(result) as Category) : null;
+    return result ? forViewer(infra, toPlain(result) as Category) : null;
   } catch (e) {
     // The known `Product.slugs` backend break surfaces as "null for
     // non-nullable" — swallow it so the page can still render its shell and
@@ -1063,7 +1070,7 @@ export async function fetchSearch(
       result = await run({ ...categoryProductSearchInput, textFilters: retyped });
     }
     const products = result?.products as ProductsResponse | undefined;
-    return products ? (toPlain(products) as ProductsResponse) : null;
+    return products ? forViewer(infra, toPlain(products) as ProductsResponse) : null;
   } catch (e) {
     if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
       return null;
@@ -1130,7 +1137,7 @@ export async function fetchCluster(
       },
       cacheOptions(infra, clusterTags)
     );
-    return result ? (toPlain(result) as Cluster) : null;
+    return result ? forViewer(infra, toPlain(result) as Cluster) : null;
   } catch (e) {
     if (e instanceof Error && /not found|null for non-nullable/i.test(e.message)) {
       return null;
@@ -1326,7 +1333,7 @@ export async function fetchMachine(
       },
       cacheOptions(infra, [TAG_CATALOG, tagFor('machine'), tagFor('machine', slug)])
     );
-    return result ? (toPlain(result) as SparePartsMachine) : null;
+    return result ? forViewer(infra, toPlain(result) as SparePartsMachine) : null;
   } catch (e) {
     // Same swallow as `fetchCategory`: the known `Product.slugs` backend break
     // surfaces as "null for non-nullable" and reaches us through the spare
@@ -1421,7 +1428,7 @@ export async function fetchRootMachines(infra: ServerInfra): Promise<SparePartsM
           },
           cacheOptions(infra, [TAG_CATALOG, tagFor('machine'), tagFor('machine', sourceId)])
         );
-        return result ? (toPlain(result) as SparePartsMachine) : null;
+        return result ? forViewer(infra, toPlain(result) as SparePartsMachine) : null;
       } catch {
         // One bad/stale id shouldn't blank the whole list.
         return null;

@@ -1,6 +1,6 @@
 {
   "name": "propeller-next",
-  "version": "1.23.2",
+  "version": "1.23.3",
   "private": true,
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
@@ -16,7 +16,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
-    "test": "node --test --experimental-strip-types lib/tracking/*.test.ts lib/tracker/*.test.ts lib/graphql/*.test.ts lib/contact/*.test.ts lib/cms/*.test.ts lib/form-protection/*.test.ts lib/recaptcha/*.test.ts lib/http/*.test.ts lib/price-request/*.test.ts",
+    "test": "node --test --experimental-strip-types lib/tracking/*.test.ts lib/tracker/*.test.ts lib/graphql/*.test.ts lib/contact/*.test.ts lib/cms/*.test.ts lib/form-protection/*.test.ts lib/recaptcha/*.test.ts lib/http/*.test.ts lib/price-request/*.test.ts lib/catalog/*.test.ts",
     "test:tracking": "node --test --experimental-strip-types lib/tracking/*.test.ts",
     "tracking:init": "node --experimental-strip-types scripts/tracking-init.ts"
   },

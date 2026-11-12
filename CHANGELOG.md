@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.4] - 2026-11-12
+
+### Fixed
+
+- **CMS pages render again** (PWP-976). With a CMS configured, the catch-all
+  CMS pages, `/blog/[slug]` and the homepage returned 500 ("Functions cannot
+  be passed directly to Client Components"), because
+  `propeller-v2-cms-react` marked its page renderer `"use client"`.
+  Pins `@propeller-commerce/propeller-v2-cms-react` `^0.2.0`, where the
+  renderer works in Server Components. No app code changes.
+
 ## [1.23.3] - 2026-11-10
 
 ### Security

@@ -25,7 +25,10 @@ export async function GET(request: Request) {
   }
   try {
     const infra = await getServerInfra();
-    const result = await assembleRoot(getSplClient(), publicationId, buildSplProductResolver(infra));
+    // Cards are named in the language the products were resolved in.
+    const result = await assembleRoot(getSplClient(), publicationId, buildSplProductResolver(infra), {
+      language: infra.language,
+    });
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json(

@@ -1,6 +1,6 @@
 {
   "name": "propeller-next",
-  "version": "1.23.7",
+  "version": "1.23.8",
   "private": true,
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",
@@ -29,7 +29,7 @@
     "@propeller-commerce/propeller-v2-msp": "^0.1.3",
     "@propeller-commerce/propeller-v2-punchout": "^0.1.0",
     "@propeller-commerce/propeller-v2-react-ui": "^0.34.3",
-    "@propeller-commerce/propeller-v2-spl": "^0.2.0",
+    "@propeller-commerce/propeller-v2-spl": "^0.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "graphql": "^16.14.2",

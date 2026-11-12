@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.8] - 2026-11-12
+
+### Fixed
+
+- **SpareParts Live part cards are named in the visitor's language**
+  (PWP-1075). Pins `@propeller-commerce/propeller-v2-spl` `^0.2.1`, and both
+  `/api/spl` routes pass the request language to `assembleDrawing` /
+  `assembleRoot`; the English shop showed the Dutch product name.
+
 ## [1.23.7] - 2026-11-12
 
 ### Fixed

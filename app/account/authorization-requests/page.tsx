@@ -11,7 +11,7 @@ import { Contact, Customer, Cart } from '@propeller-commerce/propeller-sdk-v2';
 import { useTranslations } from '@/lib/i18n/client';
 
 export default function AuthorizationRequestsPage() {
-    const { state } = useAuth();
+    const { state, isAuthManagerForCompany } = useAuth();
     const { selectedCompany } = useCompany();
     const { cart, saveCart } = useCart();
     const router = useRouter();
@@ -24,7 +24,8 @@ export default function AuthorizationRequestsPage() {
     const companyId = selectedCompany?.companyId;
 
     // Guard: only authenticated contacts with a companyId can access this page
-    if (!state.isAuthenticated || !isContact(state.user) || !companyId) return null;
+    // Manager-only: the menu hides the link, and a typed URL is refused too.
+    if (!state.isAuthenticated || !isContact(state.user) || !companyId || !isAuthManagerForCompany(state.user, companyId)) return null;
 
     return (
         <div className="space-y-6">

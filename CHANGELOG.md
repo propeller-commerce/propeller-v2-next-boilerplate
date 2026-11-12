@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.7] - 2026-11-12
+
+### Fixed
+
+- **English breadcrumbs link to a working page.** A category with no English
+  slug was linked as `/en/category/1332` and answered 404. Pins
+  `@propeller-commerce/propeller-sdk-v2` `^0.19.1`, whose category path now
+  carries every language's slug, so the link falls back to the first one.
+- **Forgot password no longer reveals which addresses have an account.** Pins
+  `@propeller-commerce/propeller-v2-react-ui` `^0.34.3`: every request shows
+  the same confirmation.
+- **Authorization settings and requests are manager-only.** A contact without
+  the authorization-manager role who typed the URL got the manager component;
+  the pages now render nothing for them, as the menu already hid the links.
+
 ## [1.23.6] - 2026-11-12
 
 ### Fixed

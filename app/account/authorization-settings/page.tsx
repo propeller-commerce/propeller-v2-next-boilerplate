@@ -11,7 +11,7 @@ import { useTranslations } from '@/lib/i18n/client';
 import { track } from '@/lib/tracking';
 
 export default function AuthorizationSettingsPage() {
-    const { state } = useAuth();
+    const { state, isAuthManagerForCompany } = useAuth();
     const { selectedCompany } = useCompany();
     const purchaseAuthorizationConfiguratorLabels = useTranslations('PurchaseAuthorizationConfigurator');
     const t = useTranslations('Account');
@@ -27,7 +27,8 @@ export default function AuthorizationSettingsPage() {
     const companyId = getActiveCompany()?.companyId;
 
     // Guard: only contacts with a companyId can access this page
-    if (!state.isAuthenticated || !isContact(state.user) || !companyId) return null;
+    // Manager-only: the menu hides the link, and a typed URL is refused too.
+    if (!state.isAuthenticated || !isContact(state.user) || !companyId || !isAuthManagerForCompany(state.user, companyId)) return null;
 
     return (
         <div className="space-y-6">

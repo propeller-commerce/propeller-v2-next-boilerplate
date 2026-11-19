@@ -54,7 +54,11 @@ const nextConfig: NextConfig = {
   // Turbopack's RSC analyzer needs the source pulled into the same build
   // graph) and widen the file-tracing root so symlinks outside this repo
   // aren't pruned at build time.
-  transpilePackages: ['@propeller-commerce/propeller-v2-react-ui'],
+  // postcss: sanitize-html (lib/cms/sanitize.ts) depends on its own nested postcss, which
+  // Next loads as an external module by default. Turbopack reaches an external through a
+  // build-local link (.next/node_modules/postcss-<hash>) that breaks when a deploy copies
+  // the build elsewhere: every CMS-rendered page then answers 500. Bundled, there is no link.
+  transpilePackages: ['@propeller-commerce/propeller-v2-react-ui', 'postcss'],
   outputFileTracingRoot: resolve(__dirname, '..', '..'),
   // Next's built-in gzip fully buffers small responses before flushing, which
   // swallows the streamed `loading.tsx` skeleton on RSC navigations (the ~10KB

@@ -1,6 +1,6 @@
 {
   "name": "propeller-next",
-  "version": "1.24.0",
+  "version": "1.24.1",
   "private": true,
   "scripts": {
     "locales:build": "node scripts/build-locales-registry.mjs",

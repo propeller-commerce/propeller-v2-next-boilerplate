@@ -5,6 +5,16 @@ All notable changes to the propeller-next boilerplate are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.1] - 2026-11-19
+
+### Fixed
+
+- **Every CMS-rendered page answered 500 after a deploy that copies the build** (1.24.0). The CMS rich-text
+  sanitiser (`sanitize-html`) depends on its own nested `postcss`, which Next loads as an external module;
+  Turbopack reached it through a build-local link (`.next/node_modules/postcss-<hash>`) that did not survive
+  the dev site's rsync to the deploy directory (`Cannot find module 'postcss-<hash>'`). `postcss` is now
+  bundled (`transpilePackages` in `next.config.ts`), so the build has no external links.
+
 ## [1.24.0] - 2026-11-19
 
 Security release: covers the 2026-11 security review (PWP-1120).

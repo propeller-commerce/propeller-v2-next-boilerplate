@@ -7,11 +7,15 @@
  * `PropellerSparepartsAjax::spl_contact`.
  *
  * Body: SplContactPayload `{ part, hostProduct?, breadcrumb?, form }`.
- * 200 { ok: true } · 400 invalid · 503 not configured · 500 send failed.
+ * 200 { ok: true } · 400 invalid · 403 cross-site / not JSON · 429 rate-limited (5 per IP
+ * per 10 minutes) · 503 not configured · 500 send failed.
  */
 import { NextResponse } from 'next/server';
 import type { SplContactPayload } from '@propeller-commerce/propeller-v2-spl/server';
 import { isSplEnabled, splContactEmail, sendSplContactEmail } from '@/lib/spl';
+import { errorSummary } from '@/lib/http/errorSummary';
+import { isSameOriginJson } from '@/lib/http/sameOrigin';
+import { SPL_CONTACT_POLICY, formProtection, rateLimitResponse } from '@/lib/form-protection';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +38,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'contact email not configured' }, { status: 503 });
   }
 
+  // Only the shop's own JSON posts, and rate-limited per IP: it mails the SPL inbox for anyone.
+  if (!isSameOriginJson(request, process.env.NEXT_PUBLIC_SITE_URL)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+  const limited = rateLimitResponse(request, SPL_CONTACT_POLICY, formProtection());
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -48,9 +59,7 @@ export async function POST(request: Request) {
     await sendSplContactEmail(body);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'send failed' },
-      { status: 500 }
-    );
+    console.error('[api/spl/contact] send failed:', errorSummary(e));
+    return NextResponse.json({ error: 'send failed' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { isHomeSlug } from './core.ts';
+import { safeEqual } from '../http/safeEqual.ts';
 
 export interface PreviewConfig {
   prepr: boolean;
@@ -27,15 +28,19 @@ export function frameAncestors(isPrepr: boolean, strapiOrigin: string): string {
   return "frame-ancestors 'none'";
 }
 
-/** Same-origin path for a preview slug; leading slashes/backslashes are collapsed so `//host` cannot escape. */
+/**
+ * Same-origin path for a preview slug. Control characters go first, then leading slashes,
+ * backslashes and whitespace collapse, so `//host` cannot escape (browsers drop tabs and
+ * newlines: "\t//host" would be `//host`).
+ */
 export function previewPath(slug: string): string {
-  return isHomeSlug(slug) ? '/' : `/${slug.replace(/^[/\\]+/, '')}`;
+  return isHomeSlug(slug) ? '/' : `/${slug.replace(/[\u0000-\u001f\u007f]/g, '').replace(/^[\s/\\]+/, '')}`;
 }
 
 /** Validates a /api/preview request and decides draft mode plus the redirect target. */
 export function resolvePreviewRequest(searchParams: URLSearchParams, config: PreviewConfig): PreviewDecision {
   if ((!config.prepr && !config.strapi) || !config.secret) return { status: 404, body: 'Not found' };
-  if (searchParams.get('secret') !== config.secret) return { status: 401, body: 'Invalid preview secret' };
+  if (!safeEqual(searchParams.get('secret') ?? '', config.secret)) return { status: 401, body: 'Invalid preview secret' };
 
   const base = previewPath(searchParams.get('slug') || searchParams.get('redirect') || '/');
 

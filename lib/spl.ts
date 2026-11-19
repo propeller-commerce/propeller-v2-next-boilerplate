@@ -30,6 +30,8 @@ import {
   type ServerInfra,
 } from '@/lib/server';
 import { readAttributeStringValues } from '@/lib/machines';
+import { hidePrices } from '@/lib/catalog/hidePrices';
+import { viewerScopedResolver } from '@/lib/catalog/priceVisibility';
 
 /** SPL is active only when a base URL + token are configured. */
 export function isSplEnabled(): boolean {
@@ -70,7 +72,10 @@ export function getSplClient(): SplClient {
  * the app-wide base category (`resolveBaseCategoryId()`: explicit
  * `NEXT_PUBLIC_BASE_CATEGORY_ID`, else the channel's `catalogRootId`) and
  * priced for the viewer's contact/company, exactly like the storefront's own
- * listing fetch (`lib/server.ts`).
+ * listing fetch (`lib/server.ts`). In semi-closed / closed portals a viewer who
+ * may not see prices gets every product through `hidePrices` (the SPL cards
+ * carry the whole product), as SSR does; `priceData.display` stays, so
+ * on-request parts are still recognised.
  */
 export function buildSplProductResolver(
   infra: ServerInfra
@@ -89,7 +94,7 @@ export function buildSplProductResolver(
   // provided"), so every SPL panel 500'd whenever that var was unset.
   // `resolveBaseCategoryId()` reads NEXT_PUBLIC_BASE_CATEGORY_ID, falls back to
   // the channel's catalog root, and only then to the config default.
-  return async (skus: string[]) =>
+  const resolve = async (skus: string[]) =>
     resolveHotspotProducts({
       client: infra.client,
       baseCategoryId: await resolveBaseCategoryId(),
@@ -99,6 +104,7 @@ export function buildSplProductResolver(
       imageVariantFilters: config.imageVariantFiltersSmall,
       priceCalculateProductInput: price,
     });
+  return viewerScopedResolver(resolve, infra.portalMode, infra.user, hidePrices);
 }
 
 /** Recipient of the "Information request" email. */

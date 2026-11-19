@@ -1,4 +1,5 @@
 import { documentToHtmlString } from '@contentful/rich-text-html-renderer';
+import { sanitizeRichText } from '../sanitize';
 import type { CmsProvider, CmsPageOptions } from '../core';
 import type {
   CmsImage,
@@ -157,7 +158,7 @@ function richTextToHtml(body: any): string {
   const doc = body?.json ?? body;
   if (!doc) return '';
   try {
-    return documentToHtmlString(doc);
+    return sanitizeRichText(documentToHtmlString(doc));
   } catch {
     return '';
   }

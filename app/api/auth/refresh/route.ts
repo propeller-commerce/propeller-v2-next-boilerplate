@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GraphQLClient, LoginService } from '@propeller-commerce/propeller-sdk-v2';
+import { isSameOrigin } from '@/lib/http/sameOrigin';
+import { errorSummary } from '@/lib/http/errorSummary';
 
 /**
  * Exchanges the httpOnly `refresh_token` cookie for a fresh access+refresh pair
@@ -36,6 +38,11 @@ const sdkClient = new GraphQLClient({
 });
 
 export async function POST(request: NextRequest) {
+  // No body to type-check: the Origin, when sent, must be the shop's own. The
+  // proxy's own server-side call sends none.
+  if (!isSameOrigin(request, process.env.NEXT_PUBLIC_SITE_URL)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
   const refreshToken = request.cookies.get('refresh_token')?.value;
   if (!refreshToken) {
     return NextResponse.json({ error: 'no refresh token' }, { status: 401 });
@@ -75,9 +82,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     // Upstream errored or token is invalid — surface as 401 so the proxy's
     // retry path treats it as "give up, let the caller redirect to login".
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('refresh failed:', e instanceof Error ? e.message : e);
-    }
+    console.error('refresh failed:', errorSummary(e));
     return NextResponse.json({ error: 'refresh failed' }, { status: 401 });
   }
 }

@@ -16,6 +16,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { localPath } from '@/lib/http/localPath';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth as usePropellerAuth } from '@propeller-commerce/propeller-v2-react-ui';
@@ -45,7 +46,10 @@ function MagicLoginRunner() {
     ranRef.current = true;
 
     const token = searchParams.get('mtoken');
-    const redirect = searchParams.get('redirect') || undefined;
+    // Same-site paths only: an absolute URL here would send the visitor off-site after login.
+    const redirect = localPath(searchParams.get('redirect'));
+    // The unprefixed target the language switch navigates to, checked again after stripping.
+    const target = (redirect && localPath(stripLanguagePrefix(redirect))) || '/';
     const expired = () => router.replace(`${localizeHref('/login', language)}?magic_expired=1`);
 
     (async () => {
@@ -56,15 +60,19 @@ function MagicLoginRunner() {
       }
       // Clear any stale session first: the exchange must not carry a prior
       // access token (matches the WP flow), and this lets a magic link hand off
-      // to a DIFFERENT contact than the one currently signed in.
+      // to a DIFFERENT contact than the one currently signed in. `keep` spares
+      // the pending punchout entry this very exchange activates.
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout?keep=punchout-pending', { method: 'POST' });
       } catch {
         /* best-effort */
       }
 
       const res = await magicLogin(token);
       if (!res.ok || !res.data.user) {
+        // End any punchout session this link set up (a failed exchange already
+        // cleared it in the proxy; this covers a failure after the exchange).
+        await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
         setFailed(true);
         expired();
         return;
@@ -75,7 +83,7 @@ function MagicLoginRunner() {
       // route because only the browser session can be attributed.
       track(
         'propeller.punchout_session_started',
-        { method: 'magic_token', redirect: redirect ? stripLanguagePrefix(redirect) : '/' },
+        { method: 'magic_token', redirect: target },
         `punchout_session_started:${token.slice(0, 12)}`
       );
       track('login', { method: 'magic_token' }, `login:magic_token:${token.slice(0, 12)}`);
@@ -86,7 +94,7 @@ function MagicLoginRunner() {
         res.data.refreshToken,
         res.data.expiresAt,
         null,
-        redirect ? stripLanguagePrefix(redirect) : '/',
+        target,
       );
       if (!navigated) {
         router.replace(redirect || localizeHref('/', effectiveLanguage));

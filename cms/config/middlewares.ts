@@ -20,10 +20,11 @@ export default [
       keepHeaderOnError: true,
     },
   },
-  'strapi::poweredBy',
   'strapi::query',
   'strapi::body',
   'strapi::session',
   'strapi::favicon',
+  // nosniff for uploads; HTML/SVG/XML uploads only in a script-less sandbox (src/middlewares/upload-headers.ts).
+  'global::upload-headers',
   'strapi::public',
 ];

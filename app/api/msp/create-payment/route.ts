@@ -9,95 +9,33 @@
  *   POST /api/msp/create-payment
  *   Body: {
  *     orderId: number,
- *     amount: number | string,   // major units, e.g. 49.95
- *     currency: string,          // ISO 4217, e.g. "EUR"
  *     method: string,            // Propeller method code (mapped to an MSP gateway)
- *     description: string,
- *     redirectUrl: string,       // where MultiSafepay returns the shopper
- *     userId?: number,
- *     anonymousId?: number
+ *     redirectUrl?: string,      // only its language prefix is used
  *   }
+ *   Any amount / currency / userId in the body is ignored: the order is read
+ *   server-side (order-editor key) and MultiSafepay charges its total.net in its
+ *   currency. The caller must own the order (signed last-order cookie, or a
+ *   verified session whose userId is the order's) and it must be UNFINISHED.
+ *   The return URL is NEXT_PUBLIC_SITE_URL + this order's thank-you page.
  *
  *   200 { ok: true, checkoutUrl, paymentId, orderId }
  *   400 { error: "..." }
+ *   403 { error: "forbidden" }       // not this caller's order, or cross-site
+ *   409 { error: "..." }             // order not awaiting payment
  *   503 { error: "multisafepay not configured" }
  *   500 { error: "..." }
  *
  * Server-only; secrets never reach the client.
  */
 
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getMspProvider, isMspEnabled } from '@/lib/msp';
-import { isOnAccountMethod } from '@/lib/payments';
+import { handleCreatePayment } from '@/lib/psp/handlers';
 
-interface CreatePaymentBody {
-  orderId: number;
-  amount: number | string;
-  currency: string;
-  method: string;
-  description: string;
-  redirectUrl: string;
-  userId?: number;
-  anonymousId?: number;
-}
-
-function isValid(body: unknown): body is CreatePaymentBody {
-  if (!body || typeof body !== 'object') return false;
-  const b = body as Record<string, unknown>;
-  return (
-    typeof b.orderId === 'number' &&
-    (typeof b.amount === 'number' || typeof b.amount === 'string') &&
-    typeof b.currency === 'string' &&
-    typeof b.method === 'string' &&
-    typeof b.description === 'string' &&
-    typeof b.redirectUrl === 'string'
-  );
-}
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   if (!isMspEnabled()) {
     return NextResponse.json({ error: 'multisafepay not configured' }, { status: 503 });
   }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'invalid JSON' }, { status: 400 });
-  }
-
-  if (!isValid(body)) {
-    return NextResponse.json({ error: 'missing or invalid fields' }, { status: 400 });
-  }
-
-  // Defense in depth: on-account methods must never reach the PSP. The client
-  // already skips MSP for these, but guard server-side too in case the route is
-  // called directly.
-  if (isOnAccountMethod(body.method)) {
-    return NextResponse.json(
-      { error: 'on-account method does not use a PSP' },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const provider = getMspProvider();
-    const result = await provider.createPayment({
-      orderId: body.orderId,
-      amount: body.amount,
-      currency: body.currency,
-      method: body.method,
-      description: body.description,
-      redirectUrl: body.redirectUrl,
-      ...(body.userId !== undefined ? { userId: body.userId } : {}),
-      ...(body.anonymousId !== undefined ? { anonymousId: body.anonymousId } : {}),
-    });
-
-    return NextResponse.json({ ok: true, ...result });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'payment creation failed';
-    // Don't leak internals to the client; log server-side.
-    console.error('[msp] create-payment failed:', message);
-    return NextResponse.json({ error: 'payment creation failed' }, { status: 500 });
-  }
+  return handleCreatePayment(req, 'multisafepay', (args) => getMspProvider().createPayment(args));
 }

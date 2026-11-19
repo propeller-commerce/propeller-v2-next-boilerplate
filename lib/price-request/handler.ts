@@ -7,12 +7,16 @@ import {
   sectionHeading,
 } from '../mail/template.ts';
 import {
+  EMAIL_DAILY_CAP,
   PRICE_REQUEST_POLICY,
+  capResponse,
   captchaResponse,
+  emailCapKey,
   isHoneypot,
   rateLimitResponse,
   type FormProtection,
 } from '../form-protection/index.ts';
+import { errorSummary } from '../http/errorSummary.ts';
 
 /**
  * Price-request submission.
@@ -35,7 +39,11 @@ interface RequestItem {
 interface Payload {
   items?: RequestItem[];
   comment?: string;
-  /** The signed-in shopper. The list is only offered to authenticated users. */
+  /**
+   * The signed-in shopper's address. The route (app/api/price-request/route.ts)
+   * only accepts a verified session; the confirmation to this address is capped
+   * at EMAIL_DAILY_CAP whatever the session or IP.
+   */
   email?: string;
   name?: string;
   company?: string;
@@ -184,8 +192,14 @@ export async function handlePriceRequest(req: Request, deps: PriceRequestDeps): 
       }),
     });
   } catch (e) {
-    console.error('[api/price-request] send to shop failed:', e);
+    console.error('[api/price-request] send to shop failed:', errorSummary(e));
     return Response.json({ error: 'Failed to send the request' }, { status: 502 });
+  }
+
+  // The request always reaches the shop; the confirmation is capped per address (3 a day), so
+  // the form can't be used to mail one address repeatedly, nor to lock its owner out.
+  if (capResponse(emailCapKey(PRICE_REQUEST_POLICY.route, email), EMAIL_DAILY_CAP, deps.protection)) {
+    return Response.json({ ok: true });
   }
 
   // ── The shopper's confirmation, in their own language ─────────────────────
@@ -233,7 +247,7 @@ export async function handlePriceRequest(req: Request, deps: PriceRequestDeps): 
       }),
     });
   } catch (e) {
-    console.error('[api/price-request] confirmation to shopper failed:', e);
+    console.error('[api/price-request] confirmation to shopper failed:', errorSummary(e));
   }
 
   return Response.json({ ok: true });

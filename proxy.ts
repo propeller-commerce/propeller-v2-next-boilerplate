@@ -6,6 +6,8 @@ import { isTrackerPath, trackerGate } from '@/lib/tracker/access';
 import { frameAncestors, strapiPreviewOrigin } from '@/lib/cms/preview';
 import { recaptchaConfig } from '@/lib/recaptcha/verify';
 import { recaptchaCspSources } from '@/lib/recaptcha/csp';
+import { clientIp } from '@/lib/http/clientIp';
+import { proxyPathKind } from '@/lib/http/proxyPaths';
 
 const DEFAULT_LANGUAGE = (process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL').toUpperCase();
 
@@ -80,10 +82,11 @@ function buildPreprHeaders(request: NextRequest): { headers: Headers; uid: strin
   }
   if (previewAb) headers.set('Prepr-ABTesting', previewAb);
 
-  const ip =
-    request.headers.get('cf-connecting-ip') ||
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  if (ip) headers.set('Prepr-Visitor-IP', ip);
+  // Same address the rate limits use (right-most trusted x-forwarded-for hop). cf-connecting-ip is
+  // not read: without Cloudflare in front any client can set it; behind Cloudflare, count it in
+  // TRUSTED_PROXY_HOPS instead.
+  const ip = clientIp(request.headers);
+  if (ip !== 'unknown') headers.set('Prepr-Visitor-IP', ip);
 
   for (const key of UTM_KEYS) {
     const value = request.nextUrl.searchParams.get(key);
@@ -215,16 +218,15 @@ export function proxy(request: NextRequest) {
     if (denied) return denied;
   }
 
-  // Skip API routes, static files, Next.js internals — no header injection,
-  // no locale rewrite, no personalization. JSON endpoints don't benefit from CSP.
-  if (
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/admin') ||
-    pathname.includes('.')
-  ) {
-    return NextResponse.next();
-  }
+  // API routes pass untouched (no CSP on API responses: the punchout transfer
+  // posts off-site). A static-file extension or a /_next/ path gets the security
+  // headers but no locale rewrite or personalization: a page also renders under
+  // /product/1/x.js or /search/a.json. See lib/http/proxyPaths.ts. (There is no
+  // /admin skip: no Next route lives there, and a CMS page such as
+  // /administratie needs the headers like any other page.)
+  const kind = proxyPathKind(pathname);
+  if (kind === 'bypass') return NextResponse.next();
+  if (kind === 'file') return applySecurityHeaders(NextResponse.next());
 
   // ── Non-Prepr path: unchanged from the original (plain locale rewrite). ──
   if (!IS_PREPR) {
@@ -297,7 +299,8 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except static files and API
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Everything except Next's static assets and /cms (Strapi, when a reverse
+    // proxy serves it on the shop's origin: its uploads must not pass through here).
+    '/((?!_next/static|_next/image|favicon.ico|cms/|cms$).*)',
   ],
 };

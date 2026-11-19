@@ -6,10 +6,14 @@
  * `access_token` cookie), builds the OCI NEW_ITEM field set or the cXML
  * PunchOutOrderMessage per the punchout session, deletes the shop cart, and
  * returns a self-submitting form that POSTs the payload back to the ERP.
+ *
+ * The session is the signed `punchout` cookie the token exchange activated; its
+ * return URL is checked again (https, PUNCHOUT_HOOK_HOSTS) before anything
+ * else, so a refused transfer keeps the cart. The response carries no CSP
+ * (proxy.ts skips /api/): a `form-action 'self'` would block the hand-back.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { CartService } from '@propeller-commerce/propeller-sdk-v2';
 import {
   buildOciFields,
@@ -21,34 +25,24 @@ import {
 } from '@propeller-commerce/propeller-v2-punchout';
 import { createServerClient } from '@/lib/server';
 import { config } from '@/data/config';
-import {
-  PUNCHOUT_COOKIE,
-  PUNCHOUT_FLAG_COOKIE,
-  punchoutCurrency,
-  ociMapping,
-  cxmlMapping,
-  isPunchoutDebug,
-  type PunchoutSession,
-} from '@/lib/punchout';
+import { punchoutCurrency, ociMapping, cxmlMapping, isPunchoutDebug } from '@/lib/punchout';
+import { PUNCHOUT_COOKIE, clearPunchoutCookies, verifyActive } from '@/lib/punchout-session/session';
+import { isSameOrigin } from '@/lib/http/sameOrigin';
 
 export async function POST(request: NextRequest) {
-  const store = await cookies();
-  const rawSession = store.get(PUNCHOUT_COOKIE)?.value;
-  if (!rawSession) return new NextResponse('No punchout session', { status: 400 });
-
-  let session: PunchoutSession;
-  try {
-    session = JSON.parse(rawSession);
-  } catch {
-    return new NextResponse('Bad punchout session', { status: 400 });
+  // The cart page's own form; another site can't post (and empty) the buyer's cart.
+  if (!isSameOrigin(request, process.env.NEXT_PUBLIC_SITE_URL)) {
+    return new NextResponse('Forbidden', { status: 403 });
   }
-  if (!session.returnUrl) return new NextResponse('No return URL', { status: 400 });
+  const active = verifyActive(request.cookies.get(PUNCHOUT_COOKIE)?.value);
+  if (!active) return new NextResponse('No punchout session', { status: 400 });
+  const { session } = active;
 
   const form = await request.formData();
   const cartId = String(form.get('cartId') || '');
   if (!cartId) return new NextResponse('Missing cartId', { status: 400 });
 
-  const bearer = store.get('access_token')?.value;
+  const bearer = request.cookies.get('access_token')?.value?.trim() || undefined;
   const client = createServerClient({ bearerToken: bearer });
   const cartService = new CartService(client);
 
@@ -108,8 +102,7 @@ export async function POST(request: NextRequest) {
     } catch {
       /* non-fatal: the ERP already has the payload */
     }
-    res.cookies.set(PUNCHOUT_COOKIE, '', { path: '/', maxAge: 0 });
-    res.cookies.set(PUNCHOUT_FLAG_COOKIE, '', { path: '/', maxAge: 0 });
+    clearPunchoutCookies(res);
   }
   return res;
 }

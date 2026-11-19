@@ -17,6 +17,7 @@
 
 import { NextResponse } from 'next/server';
 import { getMollieProvider, isMollieEnabled } from '@/lib/mollie';
+import { errorSummary } from '@/lib/http/errorSummary';
 
 export async function POST(req: Request) {
   // Even when disabled we 200 — a stray delivery shouldn't look like an outage.
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     }
   } catch (e) {
     // The provider already swallows; this guards the wiring itself.
-    console.error('[mollie] webhook handler error:', e instanceof Error ? e.message : e);
+    console.error('[mollie] webhook handler error:', errorSummary(e));
   }
 
   // Unconditionally acknowledge.

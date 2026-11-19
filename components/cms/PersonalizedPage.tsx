@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCompany } from '@/context/CompanyContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getPage } from '@/lib/cms';
 import type { CmsPage } from '@/lib/cms/types';
 import DynamicBlockRenderer from './DynamicBlockRenderer';
 // Single copy of the segment derivation — this file used to carry a verbatim
@@ -18,18 +17,22 @@ interface PersonalizedPageProps {
   slug: string;
 }
 
+// Only Prepr personalizes by segment (next.config twins CMS_PROVIDER into this).
+const IS_PREPR = process.env.NEXT_PUBLIC_CMS_PROVIDER === 'prepr';
+
 /**
  * Renders a CMS page with personalization support.
- * Initially renders the server-provided default page, then re-fetches
- * with the user's segments if they're logged in with a matching group.
+ * Initially renders the server-provided page, then re-fetches only when
+ * something differs from it: the language changed since the render (the
+ * switcher swaps the URL without a navigation), or the user has Prepr segments.
  */
-const DEFAULT_LANGUAGE = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
-
 export default function PersonalizedPage({ defaultPage, slug }: PersonalizedPageProps) {
   const { state } = useAuth();
   const { selectedCompany } = useCompany();
   const { language } = useLanguage();
   const [page, setPage] = useState<CmsPage | null>(defaultPage);
+  // The language the server rendered `defaultPage` in (the hydration snapshot).
+  const renderedLanguage = useRef(language.toUpperCase());
 
   useEffect(() => {
     if (state.isLoading) return;
@@ -39,25 +42,26 @@ export default function PersonalizedPage({ defaultPage, slug }: PersonalizedPage
         ? getUserSegments(state.user, selectedCompany)
         : [];
 
-    // `defaultPage` is the server render in the default locale with no segments.
-    // Re-fetch client-side only when something actually differs from it: a
-    // non-default language (the switcher swaps the URL client-side without a
-    // navigation, so the server render stays stale) or user group segments.
-    const isDefaultLocale = language.toUpperCase() === DEFAULT_LANGUAGE.toUpperCase();
-    if (isDefaultLocale && segments.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- the personalized re-fetch; the server render is the default page
+    // `defaultPage` is the server render in the request's language (the draft
+    // in preview). Strapi and Contentful ignore segments, so for them a
+    // logged-in view no longer fetches the page a second time.
+    const languageChanged = language.toUpperCase() !== renderedLanguage.current;
+    if (!languageChanged && !(IS_PREPR && segments.length > 0)) {
       setPage(defaultPage);
       return;
     }
 
+    // Through our route: the CMS token is server-only, so the browser can't
+    // call the CMS itself. The route derives the segments from the session.
     let cancelled = false;
-    getPage(slug, { locale: language, segments }).then((nextPage) => {
-      if (!cancelled && nextPage) {
-        setPage(nextPage);
-      }
-    }).catch(() => {
-      // Fallback to the server-rendered default on error
-    });
+    fetch(`/api/cms/page?slug=${encodeURIComponent(slug)}&locale=${encodeURIComponent(language)}`)
+      .then((res) => (res.ok ? (res.json() as Promise<CmsPage>) : null))
+      .then((nextPage) => {
+        if (!cancelled && nextPage) setPage(nextPage);
+      })
+      .catch(() => {
+        // Keep the server-rendered page on error.
+      });
     return () => {
       cancelled = true;
     };

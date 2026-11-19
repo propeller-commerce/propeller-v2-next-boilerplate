@@ -575,7 +575,10 @@ function CheckoutPageInner() {
    * the `?psp=<provider>` return marker, and the sessionStorage stash key.
    * Returns null on failure (caller surfaces the error and keeps the cart). The
    * amount is the VAT-inclusive total the shopper pays — `total.totalNet` in the
-   * SDK's (inverted) naming.
+   * SDK's (inverted) naming. The route ignores the posted amount, currency and
+   * userId: it reads the placed order server-side and charges its `total.net`
+   * (the same number) in the order's currency, and builds the return URL from
+   * NEXT_PUBLIC_SITE_URL (keeping only the language prefix of `redirectUrl`).
    *
    * Stashes the PSP payment id in sessionStorage keyed by orderId so the
    * thank-you page can look up the LIVE status on return (the PSP always

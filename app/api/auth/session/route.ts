@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSameOriginJson } from '@/lib/http/sameOrigin';
+import {
+  PUNCHOUT_COOKIE,
+  PUNCHOUT_FLAG_COOKIE,
+  PUNCHOUT_PENDING_COOKIE,
+  clearPunchoutCookies,
+  keepsPunchout,
+} from '@/lib/punchout-session/session';
 
 /**
  * Sets the authentication token in an httpOnly cookie.
@@ -81,6 +89,12 @@ function validateAccessTokenShape(
 }
 
 export async function POST(request: NextRequest) {
+  // Login CSRF: another site could otherwise post its own token and log the
+  // visitor into that account. JSON only (a cross-site form can't send it
+  // without a preflight) and, when an Origin is sent, the shop's own.
+  if (!isSameOriginJson(request, process.env.NEXT_PUBLIC_SITE_URL)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let body: { accessToken?: string; refreshToken?: string };
   try {
     body = await request.json();
@@ -123,6 +137,13 @@ export async function POST(request: NextRequest) {
       maxAge: REFRESH_MAX_AGE,
     });
   }
+
+  // A punchout session survives only the login its own token exchange produced
+  // (magic-login posts that same access token here); any other login, a
+  // password login included, ends it.
+  const punchout = request.cookies.get(PUNCHOUT_COOKIE)?.value;
+  const hasPunchout = [PUNCHOUT_COOKIE, PUNCHOUT_FLAG_COOKIE, PUNCHOUT_PENDING_COOKIE].some((n) => request.cookies.has(n));
+  if (hasPunchout && !keepsPunchout(punchout, accessToken)) clearPunchoutCookies(res);
 
   return res;
 }

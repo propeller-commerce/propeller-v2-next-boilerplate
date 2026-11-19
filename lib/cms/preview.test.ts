@@ -57,7 +57,9 @@ test('frame-ancestors allows the Strapi origin only when its preview secret is s
 });
 
 test('previewPath keeps every slug on the shop (also used by /api/preview/exit)', () => {
-  for (const slug of ['//evil.example', '/\evil.example', '\\evil.example']) {
-    assert.equal(new URL(previewPath(slug), 'https://shop.test').origin, 'https://shop.test');
+  for (const slug of ['//evil.example', '/\evil.example', '\\evil.example', '\t//evil.example', '\n//evil.example', ' /\n/evil.example', '/\t/evil.example']) {
+    assert.equal(new URL(previewPath(slug), 'https://shop.test').origin, 'https://shop.test', JSON.stringify(slug));
   }
+  assert.equal(previewPath('\t//evil.example'), '/evil.example');
+  assert.equal(previewPath('/blog/my-post?x=1'), '/blog/my-post?x=1');
 });

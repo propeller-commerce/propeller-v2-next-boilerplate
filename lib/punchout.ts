@@ -22,21 +22,8 @@ import { validateSharedSecret, type Mapping } from '@propeller-commerce/propelle
 import { config } from '@/data/config';
 import { readAttributeStringValues } from '@/lib/machines';
 
-export const PUNCHOUT_COOKIE = 'punchout';
-/** Non-httpOnly companion flag so the client cart page can show the transfer button. */
-export const PUNCHOUT_FLAG_COOKIE = 'punchout_active';
-
-export interface PunchoutSession {
-  mode: 'oci' | 'cxml';
-  /** ERP return address: HOOK_URL (OCI) / BrowserFormPost URL (cXML). */
-  returnUrl: string;
-  target: string;
-  session: Record<string, string>;
-  buyerCookie?: string;
-  from?: string;
-  to?: string;
-  deploymentMode?: string;
-}
+// Session cookies (pending → active, signed) live in lib/punchout-session/session.ts.
+export { PUNCHOUT_COOKIE, PUNCHOUT_FLAG_COOKIE, type PunchoutSession } from '@/lib/punchout-session/session';
 
 /** Contact track attribute holding the cXML shared secret (backend side). */
 const CXML_SHARED_SECRET_ATTR = 'CXML_SHARED_SECRET';
@@ -59,11 +46,10 @@ export function isPunchoutDebug(): boolean {
  * `magicTokenCreate` is admin-gated (the 403 we hit during magic-token work).
  * Route it through the order-editor key by adding it to the editor mutation set
  * (same trick `lib/msp.ts` uses for paymentCreate). REPLACES the SDK default
- * list, so the defaults are repeated.
+ * list, so the defaults are repeated (minus passwordResetLink, which is never elevated).
  */
 const PUNCHOUT_ORDER_EDITOR_MUTATIONS = [
   'orderSetStatus',
-  'passwordResetLink',
   'triggerQuoteSendRequest',
   'triggerOrderSendConfirm',
   'magicTokenCreate',

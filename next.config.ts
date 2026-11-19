@@ -46,6 +46,8 @@ for (const [publicName, serverValue] of Object.entries(TWINS)) {
 
 const nextConfig: NextConfig = {
   env: derivedEnv,
+  // No `X-Powered-By: Next.js` header.
+  poweredByHeader: false,
   // The propeller surface lives in a sibling repo and is consumed here via a
   // `file:` link (`D:/laragon/www/propeller-ui/propeller-v2-react-ui`). Tell
   // Next.js to transpile it (the prebuilt dist already ships ES modules, but

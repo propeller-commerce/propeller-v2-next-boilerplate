@@ -86,8 +86,9 @@ import {
   channelService,
 } from '@propeller-commerce/propeller-sdk-v2';
 import { createServices, toPlain, type Services, type MenuCategory } from '@propeller-commerce/propeller-v2-react-ui/shared';
-import { isContentHidden } from '@propeller-commerce/propeller-v2-core-ui';
-import { hidePrices } from './catalog/hidePrices';
+import { forVisitor } from './catalog/hidePrices';
+import { pricesHidden } from './catalog/priceVisibility';
+import { gateListingOptions } from './catalog/listingGate';
 import { buildInventoryFilter, type Availability } from '@propeller-commerce/propeller-v2-core-ui';
 import { retypeTextFilters } from './listingParams';
 
@@ -235,7 +236,8 @@ export function createServerClient(opts: CreateServerClientOptions = {}): GraphQ
 async function readCookieAccessToken(): Promise<string | undefined> {
   // `cookies()` is async in Next 15+; awaiting works on older versions too.
   const store = await cookies();
-  return store.get('access_token')?.value;
+  // A blank value (`access_token=%09`) is no token.
+  return store.get('access_token')?.value?.trim() || undefined;
 }
 
 /**
@@ -282,9 +284,11 @@ function readPortalMode(): string {
   return raw;
 }
 
-// Semi-closed shops must not send prices to visitors who are not logged in.
+// Semi-closed and closed shops must not send prices to visitors who are not logged in, and no
+// visitor gets the merchant's cost prices. The package's isContentHidden covers semi-closed only
+// (lib/catalog/priceVisibility.ts).
 function forViewer<T>(infra: ServerInfra, data: T): T {
-  return isContentHidden(infra.portalMode, infra.user) ? hidePrices(data) : data;
+  return forVisitor(data, !pricesHidden(infra.portalMode, infra.user));
 }
 
 // ── Server-side services accessor (mirrors the client-side createServices) ──
@@ -532,7 +536,7 @@ export async function getAnonymousInfraLocalized(): Promise<ServerInfra> {
 /** True when the request carries an `access_token` cookie (i.e. logged in). */
 export async function hasAuthCookie(): Promise<boolean> {
   const store = await cookies();
-  return !!store.get('access_token')?.value;
+  return !!store.get('access_token')?.value?.trim();
 }
 
 /**
@@ -938,6 +942,9 @@ export async function fetchCategory(
   categoryId: number,
   opts: ListingFetchOptions = {}
 ): Promise<Category | null> {
+  // A guest who may not see prices sends no price range or PRICE sort; unknown sort values fall
+  // back to the default. Before the input is built, so before the data-cache key (#4).
+  opts = gateListingOptions(opts, pricesHidden(infra.portalMode, infra.user));
   const lang = opts.language ?? infra.language;
   const sortField = opts.sortField ?? ProductSortField.CATEGORY_ORDER;
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
@@ -1018,6 +1025,9 @@ export async function fetchSearch(
   term: string,
   opts: ListingFetchOptions = {}
 ): Promise<ProductsResponse | null> {
+  // A guest who may not see prices sends no price range or PRICE sort; unknown sort values fall
+  // back to the default. Before the input is built, so before the data-cache key (#4).
+  opts = gateListingOptions(opts, pricesHidden(infra.portalMode, infra.user));
   const lang = opts.language ?? infra.language;
   const sortField = opts.sortField ?? ProductSortField.RELEVANCE;
   const sortOrder = opts.sortOrder ?? SortOrder.DESC;
@@ -1286,6 +1296,10 @@ export async function fetchMachine(
   slug: string,
   opts: ListingFetchOptions & { term?: string } = {}
 ): Promise<SparePartsMachine | null> {
+  // A guest who may not see prices sends no price range or PRICE sort; unknown sort values fall
+  // back to the default. Before the input is built, so before the data-cache key (#4).
+  opts = gateListingOptions(opts, pricesHidden(infra.portalMode, infra.user));
+
   // Two languages, deliberately. `machine(slug:, language:)` is language-scoped
   // and hard-errors ("No machine found for slug and language") when the machine
   // isn't authored in that language — machine trees are typically EN-only while

@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { safeEqual } from '../http/safeEqual.ts';
 
 // Basic-auth gate for /tracker and /api/tracker: any user, password TRACKER_ACCESS_SECRET, unset = 404.
 
@@ -20,13 +20,6 @@ function basicPassword(authorization: string | null | undefined): string | null 
   const colon = decoded.indexOf(':');
   if (colon < 0) return null;
   return decoded.slice(colon + 1);
-}
-
-// Constant-time compare on fixed-length digests.
-function safeEqual(a: string, b: string): boolean {
-  const ha = createHash('sha256').update(a, 'utf8').digest();
-  const hb = createHash('sha256').update(b, 'utf8').digest();
-  return timingSafeEqual(ha, hb);
 }
 
 export function checkTrackerAccess(

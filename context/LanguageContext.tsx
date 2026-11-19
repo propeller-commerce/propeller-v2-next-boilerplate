@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useCallback, useEffect, useSyncExternalStore, ReactNode } from 'react';
 import { getLanguagePrefix, stripLanguagePrefix, detectLanguageFromPath } from '@/data/config';
+import { localPath } from '@/lib/http/localPath';
 
 const STORAGE_KEY = 'preferred_language';
 const DEFAULT_LANGUAGE = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE || 'NL';
@@ -84,7 +85,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode; initialLanguage?:
 
     // Navigate, not replaceState — SSR content is fetched per request language.
     if (prev !== value && typeof window !== 'undefined') {
-      const basePath = targetPath ?? stripLanguagePrefix(window.location.pathname);
+      // A target from a URL parameter (magic-login's ?redirect=) must stay on this site.
+      const basePath = (targetPath && localPath(targetPath)) || stripLanguagePrefix(window.location.pathname);
       const newPrefix = getLanguagePrefix(value);
       const newPath = basePath === '/' && newPrefix ? newPrefix : newPrefix + basePath;
       const search = targetPath ? '' : window.location.search;

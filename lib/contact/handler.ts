@@ -1,5 +1,6 @@
 import type { MailMessage } from '../mail/core';
 import { detailRow, escapeHtml, renderEmail, sectionHeading } from '../mail/template.ts';
+import { errorSummary } from '../http/errorSummary.ts';
 import {
   CONTACT_POLICY,
   captchaResponse,
@@ -90,7 +91,7 @@ export async function handleContact(req: Request, deps: ContactDeps): Promise<Re
       }),
     });
   } catch (e) {
-    console.error('[api/contact] send failed:', e);
+    console.error('[api/contact] send failed:', errorSummary(e));
     return Response.json({ error: 'Failed to send the message' }, { status: 502 });
   }
 

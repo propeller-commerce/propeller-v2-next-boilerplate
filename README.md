@@ -133,11 +133,40 @@ client**, so the API key and GraphQL endpoint stay secret):
 - `BOILERPLATE_GRAPHQL_ENDPOINT` - upstream GraphQL API endpoint
 - `BOILERPLATE_API_KEY` - API key injected server-side by the proxy
 - `BOILERPLATE_ORDER_EDITOR_API_KEY` - order-editor API key
+- `COOKIE_SIGNING_SECRET` - HMAC secret for the signed cookies (last order, registration,
+  punchout). Empty: derived from the order-editor key, with a warning. Set it in production
 - `BOILERPLATE_MENU_DEPTH` - menu nesting depth
 - `BOILERPLATE_DEFAULT_LANGUAGE` - default language (NL). Its `NEXT_PUBLIC_`
   twin is derived from this in `next.config.ts` — there is nothing to keep in
   sync (the same holds for the machine source/language, `CMS_PROVIDER`,
   `PAYMENT_PROVIDER` and `ON_ACCOUNT_PAYMENTS`)
+
+### API keys and roles
+
+The two Propeller keys are server-only: neither is ever sent to the browser.
+
+- **`BOILERPLATE_API_KEY` (storefront key): give it the storefront role only.** The `/api/graphql`
+  proxy attaches it to every browser request, so anything this key may do, any visitor can do through
+  the proxy. Never give it back-office rights.
+- **`BOILERPLATE_ORDER_EDITOR_API_KEY` (order-editor key), role `user:owner`.** The server uses it
+  only for operations it has checked itself:
+  - the checkout mutations (`orderSetStatus`, `triggerQuoteSendRequest`, `triggerOrderSendConfirm`)
+    for the order this browser just placed (signed `propeller_last_order` cookie), once each, and quote
+    acceptance for the logged-in owner's quotation;
+  - `contactRegister` into a company the logged-in contact manages, and the self-registration
+    documents (`companyCreate`, `companyAddressCreate`);
+  - order reads (`order`, `orders`, `orderGetPDF`, `quoteGetPDF`): only the verified owner's own,
+    non-draft orders, or a guest's just-placed order. **Required for the account order pages**;
+  - the PSP routes (Mollie, MultiSafepay): order lookup, payment and status updates;
+  - PunchOut setup: reading the buyer contact's shared secret and minting its magic token.
+
+The proxy forwards these elevated operations only as the installed SDK's own documents, matched by
+the sha256 of the printed document (`ELEVATED_MUTATION_DOCUMENT_HASHES` in
+`lib/graphql/orderEditorRouting.ts`, `ORDER_READ_DOCUMENT_HASHES` in
+`lib/graphql/orderReadRouting.ts`, `REGISTRATION_DOCUMENT_HASHES` in
+`lib/graphql/registrationRouting.ts`): the order-editor key would otherwise run any selection a
+caller adds. An SDK upgrade that changes one of those documents needs its hash updated. `npm test`
+fails first and names the document.
 
 The anonymous user is **not** an env var: it comes from
 `channel(NEXT_PUBLIC_CHANNEL_ID).anonymousUserId`, resolved server-side and
@@ -161,6 +190,7 @@ PunchOut (see the [PunchOut](#punchout-oci--cxml) section):
 - `CXML_CONTACT_ID` - CSV of candidate buyer contact ids (their `CXML_SHARED_SECRET` attribute is matched)
 - `PUNCHOUT_DEBUG` - `true` renders a readable OCI/cXML preview instead of auto-posting to the ERP
 - `PUNCHOUT_CURRENCY` / `PUNCHOUT_TRANSFER_TARGET` - optional overrides (default `EUR` / `_self`)
+- `PUNCHOUT_HOOK_HOSTS` - optional CSV of hostnames the cart may be returned to (`HOOK_URL` / BrowserFormPost); unset = any https host. Return URLs must be https either way
 
 ## Key Features Implemented
 
@@ -333,7 +363,8 @@ and the block shows an error instead of a false success.
 
 ## Form protection
 
-`POST /api/contact` and `POST /api/price-request` are public mail endpoints.
+`POST /api/contact` is a public mail endpoint; `POST /api/price-request` needs
+a logged-in session (and sends the shopper at most three confirmations a day).
 
 - **Honeypot (always on).** A filled `website` field gets a normal success
   response but no mail.
@@ -341,6 +372,9 @@ and the block shows an error instead of a false success.
   requests per 10 minutes; over the limit answers 429 with `Retry-After`. The
   counters live in memory, so they are per instance. Behind several instances
   use a shared store (e.g. Redis) or your hosting's WAF / edge rate limiting.
+  The client IP is the `X-Forwarded-For` entry your reverse proxy added
+  (`TRUSTED_PROXY_HOPS`, default 1 = nginx; 2 with Cloudflare or a load
+  balancer in front of it). Only the reverse proxy may reach the app port.
 - **reCAPTCHA v3 (opt-in).** Set `RECAPTCHA_SECRET_KEY` and
   `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` (optionally `RECAPTCHA_MIN_SCORE`, default
   0.5). The forms then load Google's script and the server verifies the token,
@@ -439,11 +473,20 @@ requisition.
   `/api/punchout/enter`.
 - **OCI**: no handshake — the ERP opens `/api/punchout/enter?mode=oci&mtoken=…`
   directly, carrying `HOOK_URL` and the OCI params.
-- `enter` stores the session in an httpOnly `punchout` cookie (separate from the
-  auth cookies, so it survives magic-login's session clear) and redirects to
-  `/magic-login`. After login the cart page shows **Transfer cart to
-  procurement**; that POSTs to `/api/punchout/transfer`, which builds the OCI
-  `NEW_ITEM-*` set or the cXML `PunchOutOrderMessage` and hands it back to the ERP.
+- `enter` stores the session in a signed, 10-minute *pending* cookie bound to
+  the magic token and redirects to `/magic-login`. Only when magic-login
+  exchanges that same token successfully does the `/api/graphql` proxy turn it
+  into the signed `punchout` session cookie (one hour) and the readable
+  `punchout_active` flag (`lib/punchout-session/session.ts`). A failed exchange,
+  any other login and logout end it. After login the cart page shows **Transfer
+  cart to procurement**; that POSTs to `/api/punchout/transfer`, which builds the
+  OCI `NEW_ITEM-*` set or the cXML `PunchOutOrderMessage` and hands it back to
+  the ERP.
+- The return URL (`HOOK_URL`, cXML BrowserFormPost) must be https and, when
+  `PUNCHOUT_HOOK_HOSTS` is set, on one of those hosts; it is checked at setup,
+  entry and again before the transfer (a refused transfer keeps the cart). The
+  cXML BrowserFormPost and echo credentials reach `enter` in one signed `cxml`
+  parameter from the setup response, never as plain query parameters.
 
 **Configuring the output fields** — the wire mapping is data. Override any field
 in `config.punchout.ociMapping` / `cxmlMapping` (deep-merged over the package

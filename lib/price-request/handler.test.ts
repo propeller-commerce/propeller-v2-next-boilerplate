@@ -77,3 +77,32 @@ test('with reCAPTCHA on, the price_request action is required', async () => {
   assert.equal((await handlePriceRequest(post({ ...valid, recaptchaToken: 't' }), b.deps)).status, 200);
   assert.equal(b.sent.length, 2);
 });
+
+test('the shop gets every request; one address gets at most three confirmations a day', async () => {
+  const { sent, deps: d } = deps();
+  for (let i = 0; i < 4; i++) {
+    // Different IPs and spellings: the cap is per address, not per client.
+    const res = await handlePriceRequest(post({ ...valid, email: i % 2 ? 'Ada@Example.com' : 'ada@example.com' }, `198.51.100.${i}`), d);
+    assert.equal(res.status, 200);
+  }
+  const toShop = sent.filter((m) => m.to.includes('shop@example.com')).length;
+  assert.equal(toShop, 4);
+  assert.equal(sent.length - toShop, 3);
+});
+
+test('mail errors are logged without the address', async () => {
+  const { deps: d } = deps();
+  d.send = async () => {
+    throw Object.assign(new Error('Recipient address rejected: ada@example.com'), { code: 'EENVELOPE', responseCode: 550 });
+  };
+  const logged: unknown[][] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => { logged.push(args); };
+  try {
+    assert.equal((await handlePriceRequest(post(valid), d)).status, 502);
+  } finally {
+    console.error = original;
+  }
+  assert.ok(logged.length > 0);
+  assert.ok(!JSON.stringify(logged).includes('ada@example.com'));
+});

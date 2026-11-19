@@ -27,6 +27,8 @@
  */
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
+import { errorSummary } from '@/lib/http/errorSummary';
+import { safeEqual } from '@/lib/http/safeEqual';
 import { PREPR_ENABLED } from '@/lib/preprEvent';
 import { TAG_CMS, cmsPageTag, cmsArticleTag } from '@/lib/cms/providers/prepr';
 
@@ -46,7 +48,7 @@ export async function POST(req: Request) {
       { status: 503 }
     );
   }
-  if (!secret || secret !== expected) {
+  if (!secret || !safeEqual(secret, expected)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -83,9 +85,8 @@ export async function POST(req: Request) {
     for (const tag of tags) revalidateTag(tag, 'max');
     return NextResponse.json({ ok: true, tags });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'revalidation failed' },
-      { status: 500 }
-    );
+    // The error type only, in the log; the caller gets generic text (#15).
+    console.error('revalidation failed:', errorSummary(e));
+    return NextResponse.json({ error: 'revalidation failed' }, { status: 500 });
   }
 }

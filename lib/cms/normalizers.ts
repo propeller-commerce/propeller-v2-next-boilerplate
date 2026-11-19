@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import { sanitizeRichText } from './sanitize';
 import type {
   CmsImage,
   CmsSeo,
@@ -106,7 +107,8 @@ function normalizeBlock(raw: any): CmsBlock | null {
     case 'rich-text':
       return {
         _type: 'rich-text',
-        body: raw.body ? marked.parse(raw.body, { async: false }) as string : '',
+        // marked passes raw HTML through: sanitized before it leaves the normalizer.
+        body: raw.body ? sanitizeRichText(marked.parse(raw.body, { async: false }) as string) : '',
       };
     case 'media':
       return {

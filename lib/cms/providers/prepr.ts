@@ -1,4 +1,5 @@
 import type { CmsProvider, CmsPageOptions, CmsArticleOptions } from '../core';
+import { sanitizeRichText } from '../sanitize';
 import type {
   CmsImage,
   CmsSeo,
@@ -213,7 +214,8 @@ function normalizeBlock(raw: any): CmsBlock | CmsBlock[] | null {
   switch (typename) {
     case 'Text': {
       // Prepr rich-text block; `html` holds the rendered headings/paragraphs.
-      const html = raw.html || '';
+      // Editor HTML: sanitized before it leaves the provider.
+      const html = sanitizeRichText(raw.html || '');
       return html.trim() ? ({ _type: 'rich-text', body: html } as CmsRichText) : null;
     }
     case 'Assets': {

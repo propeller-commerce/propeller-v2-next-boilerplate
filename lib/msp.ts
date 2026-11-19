@@ -32,9 +32,9 @@ import { GraphQLClient, type GraphQLClientConfig } from '@propeller-commerce/pro
  * defaults plus the payment mutations.
  */
 const MSP_ORDER_EDITOR_MUTATIONS = [
-  // SDK defaults (must be repeated — this option replaces, not extends):
+  // SDK defaults (must be repeated — this option replaces, not extends), minus
+  // passwordResetLink: it returns a reset URL for any account and is never elevated.
   'orderSetStatus',
-  'passwordResetLink',
   'triggerQuoteSendRequest',
   'triggerOrderSendConfirm',
   // Payment mutations the MultiSafepay flow issues, gated the same way:

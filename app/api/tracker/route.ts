@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { trackerGate } from '@/lib/tracker/access';
+import { errorSummary } from '@/lib/http/errorSummary';
 import { METRICS, MAX_LIMIT, MAX_RANGE_DAYS, type MetricParams } from '@/lib/tracking/queries';
 import { classifyDbError, STATUS_HINTS } from '@/lib/tracking/dbconfig';
 import { isTrackingConfigured } from '@/lib/trackingDb';
@@ -87,7 +88,9 @@ export async function GET(request: NextRequest) {
       { headers: { 'Cache-Control': 'no-store' } }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'query failed';
+    // The error type only, in the log; database messages (user, host, schema) stay server-side (#15).
+    console.error('[tracker] query failed:', errorSummary(error));
+    const message = 'query failed';
 
     // A setup problem is not a server fault: 503 with the fix attached, so the
     // dashboard can say "run db/*.sql" instead of relaying ER_NO_SUCH_TABLE.

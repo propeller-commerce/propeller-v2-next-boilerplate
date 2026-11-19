@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import crypto from 'node:crypto';
 import { getTrackingPool } from '@/lib/trackingDb';
+import { getVerifiedViewer } from '@/lib/auth/viewer';
+import { TRACK_POLICY, formProtection } from '@/lib/form-protection';
+import { clientIp } from '@/lib/http/clientIp';
+import { isSameOrigin } from '@/lib/http/sameOrigin';
 import { isKnownEvent } from '@/lib/tracking/taxonomy';
 import { config as shopConfig } from '@/data/config';
 
@@ -44,8 +48,6 @@ const uuid = (v: unknown): string | null => {
   return s && /^[0-9a-fA-F-]{36}$/.test(s) ? s : null;
 };
 
-const USER_MODES = new Set(['anonymous', 'b2c', 'b2b']);
-
 /** Columns promoted out of `props`; whatever is left is stored as JSON. */
 const PROMOTED = new Set([
   'page_type', 'entity_type', 'entity_id', 'entity_name',
@@ -59,6 +61,15 @@ export async function POST(request: NextRequest) {
     const pool = getTrackingPool();
     // 202 regardless: a storefront must not care whether analytics is configured.
     if (!pool) return new NextResponse(null, { status: 202 });
+
+    // Origin, size and rate are checked before the body is read. A beacon always
+    // declares its length; without one (or over the cap) the batch is dropped.
+    if (!isSameOrigin(request, process.env.NEXT_PUBLIC_SITE_URL)) return new NextResponse(null, { status: 202 });
+    const declared = Number(request.headers.get('content-length') || NaN);
+    if (!Number.isFinite(declared) || declared > MAX_BODY_BYTES) return new NextResponse(null, { status: 202 });
+    if (!formProtection().limiter.hit(`${TRACK_POLICY.route}:${clientIp(request.headers)}`, TRACK_POLICY).ok) {
+      return new NextResponse(null, { status: 202 });
+    }
 
     const raw = await request.text();
     if (raw.length > MAX_BODY_BYTES) return new NextResponse(null, { status: 202 });
@@ -76,10 +87,20 @@ export async function POST(request: NextRequest) {
     const visitorId = request.cookies.get(VISITOR_COOKIE)?.value ?? uuid(ctx.visitorId) ?? '00000000-0000-0000-0000-000000000000';
     const sessionId = uuid(ctx.sessionId) ?? visitorId;
 
-    const userMode = USER_MODES.has(String(ctx.userMode)) ? String(ctx.userMode) : 'anonymous';
-    const contactId = num(ctx.contactId);
-    const customerId = num(ctx.customerId);
-    const companyId = num(ctx.companyId);
+    // Who is logged in comes from the verified session (cached per token), never
+    // from the body: a client could otherwise file events under any contact.
+    const viewer = await getVerifiedViewer(request.cookies.get('access_token')?.value);
+    const userMode = viewer?.type === 'Contact' ? 'b2b' : viewer?.type === 'Customer' ? 'b2c' : 'anonymous';
+    const contactId = viewer?.type === 'Contact' ? viewer.userId : null;
+    const customerId = viewer?.type === 'Customer' ? viewer.userId : null;
+    // The company the contact is browsing for, when it is one of theirs.
+    const bodyCompanyId = num(ctx.companyId);
+    const companyId =
+      viewer?.type === 'Contact'
+        ? bodyCompanyId !== null && viewer.companyIds.includes(bodyCompanyId)
+          ? bodyCompanyId
+          : viewer.companyId
+        : null;
     const language = str(ctx.language, 2);
     const currency = str(ctx.currency, 3);
 

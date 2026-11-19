@@ -13,9 +13,8 @@ const STRAPI_ENABLED = process.env.CMS_PROVIDER === 'strapi';
 // follows the editor's locale switch.
 // Strapi: cms/config/admin.ts builds the URL (with &status=draft|published)
 // from PREVIEW_SECRET, which must equal STRAPI_PREVIEW_SECRET here.
-const PREVIEW_SECRET = PREPR_ENABLED
-  ? process.env.PREPR_PREVIEW_SECRET || 'prepr-preview'
-  : process.env.STRAPI_PREVIEW_SECRET;
+// Unset means no preview (404): there is no default secret.
+const PREVIEW_SECRET = PREPR_ENABLED ? process.env.PREPR_PREVIEW_SECRET : process.env.STRAPI_PREVIEW_SECRET;
 
 /**
  * Enables Next.js draft mode (so pages fetch unpublished content) and redirects

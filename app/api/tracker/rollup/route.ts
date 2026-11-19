@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { trackerGate } from '@/lib/tracker/access';
+import { errorSummary } from '@/lib/http/errorSummary';
 import { getTrackingPool } from '@/lib/trackingDb';
 import { rangeToUtc, todayLocal, addDays, SHOP_TIMEZONE } from '@/lib/tracking/timezone';
 
@@ -80,7 +81,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, timezone: SHOP_TIMEZONE, days: processed });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'rollup failed';
-    return NextResponse.json({ error: message, processed }, { status: 500 });
+    // The error type only, in the log; database messages (user, host, schema) stay server-side (#15).
+    console.error('[tracker] rollup failed:', errorSummary(error));
+    return NextResponse.json({ error: 'rollup failed', processed }, { status: 500 });
   }
 }

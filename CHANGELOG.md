@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.9] - 2026-11-19
+
+### Fixed
+
+- **Product and other responsive grids keep their columns without a
+  safelist** (PWP-976). Pins `@propeller-commerce/propeller-v2-react-ui`
+  `^0.34.4`, whose stylesheet restates the grid breakpoints so the shop's own
+  Tailwind sheet can't flatten them. The grid-column safelist in
+  `app/globals.css` is removed: it no longer does anything.
+
 ## [1.23.8] - 2026-11-12
 
 ### Fixed

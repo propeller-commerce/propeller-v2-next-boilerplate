@@ -5,6 +5,16 @@ All notable changes to the propeller-next boilerplate are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.4] - 2026-11-20
+
+### Fixed
+
+- **Self-registration no longer depends on the storefront key's rights.** Its contact step
+  (`contactRegister`) needs a role the storefront key shouldn't have, so it now runs with the order-editor
+  key and without a Bearer, like the company and address steps: only the SDK's own document, only for a
+  guest, only into the company this browser just created (signed registration cookie), once. Any other
+  `contactRegister` that isn't an authorization manager's call is refused. (PWP-1134)
+
 ## [1.24.3] - 2026-11-20
 
 Follow-up to the 2026-11 security review (PWP-1120).

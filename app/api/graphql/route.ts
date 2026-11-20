@@ -493,14 +493,20 @@ export async function POST(request: NextRequest) {
       });
       if (!allowed) return refuse('Forbidden: this order is not available to you', 403);
     }
+    // Self-registration's contact step: the SDK's own contactRegister, anonymous, into the company this
+    // browser just created, once. It needs the order-editor key, like the company and address steps.
+    const contactStep =
+      knownElevatedDocument &&
+      mayRegisterContact(contactRegisterParentId(single, body.variables), { isAnonymous, registration });
     // Sent without the Bearer: only the order-editor key and the checks above decide.
-    const sendBearer = !regStep && !orderRead;
+    const sendBearer = !regStep && !orderRead && !contactStep;
 
     // ── Order-editor key ─────────────────────────────────────────────────
     const cookieElevated = !regStep && knownElevatedDocument && shouldUseOrderEditorKey(routing);
     const usedOrderKey =
       !!regStep ||
       orderRead ||
+      contactStep ||
       cookieElevated ||
       (await viewerElevation(single, body.variables, initialBearer, orderEditorOptIn, knownElevatedDocument));
     // The checkout's order-editor mutations never run with the storefront key: either they are
@@ -508,12 +514,8 @@ export async function POST(request: NextRequest) {
     if (!usedOrderKey && elevatedField) {
       return refuse('This operation is not allowed', 403);
     }
-    // contactRegister runs only as a manager's elevated call or as this browser's own self-registration.
-    const contactStep =
-      !usedOrderKey && guards.fields.has(CONTACT_REGISTER_FIELD)
-        ? mayRegisterContact(contactRegisterParentId(single, body.variables), { isAnonymous, registration })
-        : false;
-    if (!usedOrderKey && guards.fields.has(CONTACT_REGISTER_FIELD) && !contactStep) {
+    // contactRegister runs only elevated: a manager's call or this browser's own self-registration.
+    if (!usedOrderKey && guards.fields.has(CONTACT_REGISTER_FIELD)) {
       return refuse('Forbidden: contact registration is not allowed here', 403);
     }
     // Spend the checkout mutation for this order before the call. The flags read above can be

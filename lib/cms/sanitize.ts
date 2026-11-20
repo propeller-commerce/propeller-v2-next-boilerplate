@@ -8,19 +8,9 @@ import sanitizeHtml from 'sanitize-html';
  * and tables stay; scripts, event handlers, iframes, forms, inline styles and
  * `javascript:` URLs go.
  */
+// The same allowlist as propeller-vue's src/server/sanitizeRichText.js.
 const OPTIONS: sanitizeHtml.IOptions = {
-  allowedTags: [
-    ...sanitizeHtml.defaults.allowedTags,
-    'h1',
-    'img',
-    'del',
-    's',
-    'ins',
-    'sub',
-    'sup',
-    'figure',
-    'figcaption',
-  ],
+  allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'del', 'ins'],
   allowedAttributes: {
     a: ['href', 'name', 'target', 'title', 'rel'],
     img: ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
@@ -32,7 +22,13 @@ const OPTIONS: sanitizeHtml.IOptions = {
   // Only language-* on <code> (markdown fences); no other classes.
   allowedClasses: { code: ['language-*'] },
   allowedSchemes: ['http', 'https', 'mailto', 'tel'],
-  allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+  allowedSchemesByTag: { img: ['http', 'https'] },
+  allowProtocolRelative: false,
+  transformTags: {
+    // A new-tab link can't reach back into the shop window.
+    a: (tagName, attribs) =>
+      attribs.target === '_blank' ? { tagName, attribs: { ...attribs, rel: 'noopener noreferrer' } } : { tagName, attribs },
+  },
 };
 
 /** `html` reduced to the prose allowlist above. */

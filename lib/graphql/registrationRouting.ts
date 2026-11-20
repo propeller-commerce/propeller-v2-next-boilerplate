@@ -75,6 +75,16 @@ export function verifyRegistration(value: string | undefined | null, opts?: Sign
   return match ? { companyId: Number(match[1]), used: match[2] ?? '' } : null;
 }
 
+/** Only self-registration creates a company; any other document selecting this is refused. */
+export const COMPANY_CREATE_FIELD = 'companyCreate';
+
+/** An hourly limit from the environment: a whole number, 0 for none; anything else keeps `fallback`. */
+export function hourlyLimit(value: string | undefined, fallback: number): { limit: number; windowMs: number } {
+  const raw = (value ?? '').trim();
+  const n = /^\d{1,6}$/.test(raw) ? Number(raw) : fallback;
+  return { limit: n === 0 ? Number.MAX_SAFE_INTEGER : n, windowMs: 60 * 60_000 };
+}
+
 /** Cookie flag for the contact registered into the new company. */
 export const CONTACT_FLAG = 'c';
 

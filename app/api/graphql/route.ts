@@ -32,11 +32,13 @@ import {
 import { isOrderRead, mayReadOrder } from '@/lib/graphql/orderReadRouting';
 import { hasPriceFilter, inspectDocument, withoutPriceFilters } from '@/lib/graphql/priceGate';
 import {
+  COMPANY_CREATE_FIELD,
   CONTACT_FLAG,
   REGISTRATION_COOKIE,
   REGISTRATION_MAX_AGE,
   companyCreateVariables,
   createdCompanyId,
+  hourlyLimit,
   mayRegisterContact,
   registeredContact,
   registrationStep,
@@ -80,8 +82,8 @@ const spentElevations = createSpentLog();
 // limiter of its own so a flood of per-IP keys can't evict the total.
 const registrationLimiter = createRateLimiter();
 const registrationTotalLimiter = createRateLimiter({ maxKeys: 10 });
-const REGISTRATION_PER_IP = { limit: 5, windowMs: 60 * 60_000 };
-const REGISTRATION_TOTAL = { limit: 30, windowMs: 60 * 60_000 };
+const REGISTRATION_PER_IP = hourlyLimit(process.env.REGISTRATION_LIMIT_PER_IP, 5);
+const REGISTRATION_TOTAL = hourlyLimit(process.env.REGISTRATION_LIMIT_TOTAL, 30);
 
 /** A refusal in GraphQL's own error shape, so every client (SDK, tests) can read it. */
 function refuse(message: string, status: number, code = 'FORBIDDEN'): NextResponse {
@@ -447,6 +449,10 @@ export async function POST(request: NextRequest) {
     // Sent without the Bearer, so only the order-editor key decides (lib/graphql/registrationRouting.ts).
     const registration = verifyRegistration(request.cookies.get(REGISTRATION_COOKIE)?.value);
     const regStep = ORDER_EDITOR_API_KEY ? registrationStep(doc, body.variables, { isAnonymous, registration }) : null;
+    // A company is created only by that step, never by another document on the storefront key.
+    if (regStep?.kind !== 'company' && guards.fields.has(COMPANY_CREATE_FIELD)) {
+      return refuse('Forbidden: company registration is not allowed here', 403);
+    }
     if (regStep?.kind === 'company') {
       const perIp = registrationLimiter.hit(`registration-company:${ip}`, REGISTRATION_PER_IP);
       if (!perIp.ok || !registrationTotalLimiter.hit('registration-company', REGISTRATION_TOTAL).ok) {

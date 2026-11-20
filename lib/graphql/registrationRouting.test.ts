@@ -11,6 +11,7 @@ import {
   documentHash,
   companyCreateVariables,
   mayRegisterContact,
+  hourlyLimit,
   registeredContact,
   CONTACT_FLAG,
   type RegistrationContext,
@@ -128,4 +129,12 @@ test('a contact counts as registered when the response carries it, even with par
   assert.equal(registeredContact({ data: { contactRegister: { contact: { contactId: 1 } } }, errors: [{ message: 'Unauthorized' }] }), true);
   assert.equal(registeredContact({ data: { contactRegister: null }, errors: [{ message: 'Email exists' }] }), false);
   assert.equal(registeredContact(null), false);
+});
+
+test('registration limits come from the environment: a whole number, 0 for none, else the default', () => {
+  assert.deepEqual(hourlyLimit(undefined, 30), { limit: 30, windowMs: 3_600_000 });
+  assert.deepEqual(hourlyLimit('', 30), { limit: 30, windowMs: 3_600_000 });
+  assert.equal(hourlyLimit(' 200 ', 30).limit, 200);
+  assert.equal(hourlyLimit('0', 30).limit, Number.MAX_SAFE_INTEGER);
+  for (const bad of ['-1', '1.5', 'many', '9999999']) assert.equal(hourlyLimit(bad, 30).limit, 30, bad);
 });

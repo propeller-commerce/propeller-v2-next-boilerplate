@@ -82,6 +82,14 @@ const nextConfig: NextConfig = {
         source: '/:route(cluster|product|category|search)/:path*',
         headers: [{ key: 'X-Accel-Buffering', value: 'no' }],
       },
+      // API responses skip proxy.ts (no CSP: the punchout transfer posts off-site), not these two.
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
     ];
   },
   images: {

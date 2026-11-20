@@ -48,6 +48,15 @@ test('raw HTML inside markdown is cleaned, the text around it kept', () => {
 });
 
 test('Prepr / Contentful style HTML keeps headings and paragraphs', () => {
-  const html = '<h2>Title</h2><p>Text with <a href="/page" target="_blank">a link</a>.</p><ul><li>item</li></ul>';
+  const html = '<h2>Title</h2><p>Text with <a href="/page">a link</a>.</p><ul><li>item</li></ul>';
   assert.equal(sanitizeRichText(html), html);
+});
+
+test('same allowlist as propeller-vue: new-tab links get noopener; protocol-relative and data: URLs go', () => {
+  assert.equal(
+    sanitizeRichText('<a href="https://x.test" target="_blank">x</a>'),
+    '<a href="https://x.test" target="_blank" rel="noopener noreferrer">x</a>',
+  );
+  assert.equal(sanitizeRichText('<a href="//evil.test/a">x</a>'), '<a>x</a>');
+  assert.equal(sanitizeRichText('<img src="data:image/svg+xml;base64,PHN2Zz4=" alt="a">'), '<img alt="a" />');
 });

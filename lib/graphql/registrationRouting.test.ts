@@ -10,6 +10,9 @@ import {
   REGISTRATION_DOCUMENT_HASHES,
   documentHash,
   companyCreateVariables,
+  mayRegisterContact,
+  registeredContact,
+  CONTACT_FLAG,
   type RegistrationContext,
 } from './registrationRouting.ts';
 import { verifyLastOrderState } from './orderEditorRouting.ts';
@@ -102,4 +105,27 @@ test('an elevated companyCreate keeps only the registration fields', () => {
     contactSearchArguments: { page: 1 },
   });
   assert.deepEqual(companyCreateVariables(null), { input: {} });
+});
+
+test('an anonymous contactRegister is allowed only into the company this browser just created, once', () => {
+  const reg = (used = '') => ({ companyId: 77, used });
+  assert.equal(mayRegisterContact(77, { isAnonymous: true, registration: reg() }), true);
+  assert.equal(mayRegisterContact(77, { isAnonymous: true, registration: reg('id') }), true);
+  // Another company, no cookie, already registered, or a logged-in caller.
+  assert.equal(mayRegisterContact(78, { isAnonymous: true, registration: reg() }), false);
+  assert.equal(mayRegisterContact(77, { isAnonymous: true, registration: null }), false);
+  assert.equal(mayRegisterContact(null, { isAnonymous: true, registration: reg() }), false);
+  assert.equal(mayRegisterContact(77, { isAnonymous: true, registration: reg(CONTACT_FLAG) }), false);
+  assert.equal(mayRegisterContact(77, { isAnonymous: false, registration: reg() }), false);
+});
+
+test('the registration cookie carries the contact flag next to the address flags', () => {
+  const value = signRegistration(77, 'c' + 'id', SIGN);
+  assert.deepEqual(verifyRegistration(value, SIGN), { companyId: 77, used: 'cid' });
+});
+
+test('a contact counts as registered when the response carries it, even with partial errors', () => {
+  assert.equal(registeredContact({ data: { contactRegister: { contact: { contactId: 1 } } }, errors: [{ message: 'Unauthorized' }] }), true);
+  assert.equal(registeredContact({ data: { contactRegister: null }, errors: [{ message: 'Email exists' }] }), false);
+  assert.equal(registeredContact(null), false);
 });

@@ -118,3 +118,18 @@ test('an alias on a cost-price field is flagged for every viewer, also inside fr
   assert.equal(inspect('{ product(productId: 1) { priceData { costPrices { value } } } }').costPriceAlias, false);
   assert.equal(inspect('{ product(productId: 1) { pd: priceData { costPrices { value } } } }').costPriceAlias, false);
 });
+
+test('an alias that could carry a discount amount or bulkCostPrices is flagged; plain selections are not', () => {
+  for (const query of [
+    '{ x: bulkCostPrices(input: {}) { items { value } } }',
+    '{ product(productId: 1) { price { d: discount { value } } } }',
+    '{ product(productId: 1) { bulkPrices { discount { v: value } } } }',
+    '{ product(productId: 1) { bulkPrices { discount { quantityFrom: value } } } }',
+    '{ product(productId: 1) { bulkPrices { discount { ... on BulkPrice { q: value } } } } }',
+    'query { product(productId: 1) { bulkPrices { discount { ...D } } } } fragment D on BulkPrice { q: value }',
+  ]) {
+    assert.equal(inspect(query).costPriceAlias, true, query);
+  }
+  assert.equal(inspect('{ product(productId: 1) { bulkPrices { discount { value quantityFrom } } } }').costPriceAlias, false);
+  assert.equal(inspect('{ product(productId: 1) { names: name { nl: value } bulkPrices { discount { value } } } }').costPriceAlias, false);
+});

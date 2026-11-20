@@ -7,6 +7,7 @@ import {
   awaitsPayment,
   chargeAmount,
   paymentRequest,
+  PSP_ORDER_QUERY,
   pspReturnUrl,
   toPspOrder,
   type OrderAccessDeps,
@@ -128,12 +129,17 @@ test('the return URL is always this site and this order; only a language prefix 
 
 test('toPspOrder reads the order-editor answer', () => {
   assert.deepEqual(
-    toPspOrder({ data: { order: { orderId: 4711, userId: 42, status: 'UNFINISHED', currency: 'EUR', total: { net: 13.3947 } } } }),
+    toPspOrder({ data: { order: { id: 4711, userId: 42, status: 'UNFINISHED', currency: 'EUR', total: { net: 13.3947 } } } }),
     order(),
   );
   assert.equal(toPspOrder({ data: { order: null } }), null);
   assert.equal(toPspOrder({ errors: [{ message: 'Forbidden resource' }] }), null);
-  assert.equal(toPspOrder({ data: { order: { orderId: 1, status: 'NEW', total: {} } } }), null);
+  assert.equal(toPspOrder({ data: { order: { id: 1, status: 'NEW', total: {} } } }), null);
+});
+
+test('PSP_ORDER_QUERY selects Order.id (Order has no orderId field)', () => {
+  assert.match(PSP_ORDER_QUERY, /\{ id userId /);
+  assert.doesNotMatch(PSP_ORDER_QUERY, /\{ orderId /);
 });
 
 test('awaitsPayment: only an UNFINISHED order, and a failed lookup is a no', async () => {

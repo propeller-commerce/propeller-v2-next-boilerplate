@@ -45,7 +45,11 @@ export async function GET(req: NextRequest) {
   try {
     const provider = getMspProvider();
     const result = await provider.getPaymentStatus(paymentId);
-    // result is { ok, paymentId, status?, settled?, orderId?, error? }
+    // result is { ok, paymentId, status?, settled?, orderId?, error? }; MSP's error text stays in the log.
+    if (!result.ok) {
+      console.warn('[msp] payment-status not ok:', result.error);
+      return NextResponse.json({ ok: false, paymentId, error: 'status lookup failed' });
+    }
     return NextResponse.json(result);
   } catch (e) {
     console.error('[msp] payment-status failed:', errorSummary(e));

@@ -32,11 +32,13 @@ export interface DocumentGuards {
    */
   inlinePriceFilter: boolean;
   /**
-   * An alias on a cost-price field (`c: costPrices`, `x: cost`). Refused for every viewer: the cost prices are
-   * stripped by response key (withoutCostPrices), which an alias would rename. The SDK never aliases them.
+   * An alias that could carry a cost past withoutCostPrices, which works by response key: on a cost
+   * field or `discount`, or on any field inside a discount record. Refused for every viewer.
    */
   costPriceAlias: boolean;
 }
+
+const DISCOUNT_TYPES = new Set(['IDiscount', 'BulkCostPrice', 'BulkPrice', 'Discount']);
 
 /**
  * One walk of a parsed browser document for the proxy's guards: the field names it selects
@@ -46,12 +48,30 @@ export interface DocumentGuards {
 export function inspectDocument(doc: DocumentNode): DocumentGuards {
   const fields = new Set<string>();
   const result = { fields, foreignAlias: false, inlinePriceFilter: false, costPriceAlias: false };
+  let inDiscount = 0;
+  let discountFragment = false;
   visit(doc, {
-    [Kind.FIELD](node) {
-      const name = node.name.value;
-      fields.add(name);
-      if (node.alias && !isAllowedAlias(node.alias.value, name)) result.foreignAlias = true;
-      if (node.alias && COST_PRICE_KEYS.has(name)) result.costPriceAlias = true;
+    [Kind.FIELD]: {
+      enter(node) {
+        const name = node.name.value;
+        fields.add(name);
+        if (node.alias && !isAllowedAlias(node.alias.value, name)) result.foreignAlias = true;
+        if (node.alias && (COST_PRICE_KEYS.has(name) || name === 'discount' || inDiscount || discountFragment)) {
+          result.costPriceAlias = true;
+        }
+        if (name === 'discount') inDiscount++;
+      },
+      leave(node) {
+        if (node.name.value === 'discount') inDiscount--;
+      },
+    },
+    [Kind.FRAGMENT_DEFINITION]: {
+      enter(node) {
+        discountFragment = DISCOUNT_TYPES.has(node.typeCondition.name.value);
+      },
+      leave() {
+        discountFragment = false;
+      },
     },
     [Kind.OBJECT_FIELD](node) {
       const name = node.name.value;

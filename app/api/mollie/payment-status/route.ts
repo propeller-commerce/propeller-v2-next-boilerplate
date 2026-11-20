@@ -12,10 +12,9 @@
  * Read-only: does not touch Propeller. Returns:
  *   200 { ok: true, status, settled, paymentId, orderId? }
  *   400 { error: "missing paymentId" }
- *   403 { ok: false, error: "forbidden" }
  *   503 { error: "mollie not configured" }
- *   200 { ok: false, error } — when the payment can't be fetched (the caller
- *        treats a non-ok body as "unknown" and can retry)
+ *   200 { ok: false, error: "status lookup failed" } — unknown payment, someone
+ *        else's, or a failed fetch (the caller treats it as "unknown" and can retry)
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
@@ -30,17 +29,18 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const paymentId = (searchParams.get('paymentId') || '').trim();
-  if (!paymentId) {
+  if (!/^tr_[A-Za-z0-9]{1,64}$/.test(paymentId)) {
     return NextResponse.json({ error: 'missing paymentId' }, { status: 400 });
   }
 
   try {
     const provider = getMollieProvider();
     const result = await provider.getPaymentStatus(paymentId);
-    // result is { ok, paymentId, status?, settled?, orderId?, error? }
-    if (result.ok) {
-      const refused = await orderAccessRefusal(req, result.orderId);
-      if (refused) return refused;
+    // result is { ok, paymentId, status?, settled?, orderId?, error? }; Mollie's error text stays in the log.
+    if (!result.ok) console.warn('[mollie] payment-status not ok:', result.error);
+    // Someone else's payment answers like an unknown one.
+    if (!result.ok || (await orderAccessRefusal(req, result.orderId))) {
+      return NextResponse.json({ ok: false, paymentId, error: 'status lookup failed' });
     }
     return NextResponse.json(result);
   } catch (e) {

@@ -86,12 +86,28 @@ export function hidePrices<T>(data: T): T {
 }
 
 // The merchant's purchase prices: Price.costPrices, costPrice on inventory balances and order items,
-// and ProductPrice.cost (`price.cost`, `bulkPrices[].cost`, the same number; the only field named `cost`
-// in the schema, 2026-11-19). The storefront and order-editor keys both answer them; no visitor or buyer
-// ever gets them.
-export const COST_PRICE_KEYS: ReadonlySet<string> = new Set(['costPrice', 'costPrices', 'cost']);
+// ProductPrice.cost (`price.cost`, `bulkPrices[].cost`; the only field named `cost` in the schema,
+// 2026-11-19) and Query.bulkCostPrices. No visitor or buyer ever gets them.
+export const COST_PRICE_KEYS: ReadonlySet<string> = new Set(['costPrice', 'costPrices', 'cost', 'bulkCostPrices']);
 
-/** A copy of `data` without any `costPrice` / `costPrices` / `cost` key, at any depth. */
+// A discount record keeps no amounts: on a COST_PRICE_PLUS tier its `value` is the markup on cost.
+const DISCOUNT_KEPT = new Set([
+  'id',
+  'createdAt',
+  'lastModifiedAt',
+  'quantityFrom',
+  'validFrom',
+  'validTo',
+  'priceId',
+  'pricesheetId',
+  'productId',
+  'categoryId',
+  'priceGroup',
+  'discountType',
+  '__typename',
+]);
+
+/** A copy of `data` without any COST_PRICE_KEYS key, and with discount records reduced to DISCOUNT_KEPT. */
 export function withoutCostPrices<T>(data: T): T {
   const walk = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(walk);
@@ -99,7 +115,12 @@ export function withoutCostPrices<T>(data: T): T {
     return Object.fromEntries(
       Object.entries(value)
         .filter(([key]) => !COST_PRICE_KEYS.has(key))
-        .map(([key, child]) => [key, walk(child)]),
+        .map(([key, child]) => [
+          key,
+          key === 'discount' && child && typeof child === 'object' && !Array.isArray(child)
+            ? Object.fromEntries(Object.entries(child).filter(([k, v]) => DISCOUNT_KEPT.has(k) && (v === null || typeof v !== 'object')))
+            : walk(child),
+        ]),
     );
   };
   return walk(data) as T;

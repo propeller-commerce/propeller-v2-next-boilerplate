@@ -11,6 +11,7 @@ import {
   LAST_ORDER_COOKIE,
   LAST_ORDER_MAX_AGE,
   ORDER_EDITOR_MUTATION_FIELDS,
+  CONTACT_REGISTER_FIELD,
   contactRegisterParentId,
   createSpentLog,
   elevatedMutationFlag,
@@ -31,10 +32,13 @@ import {
 import { isOrderRead, mayReadOrder } from '@/lib/graphql/orderReadRouting';
 import { hasPriceFilter, inspectDocument, withoutPriceFilters } from '@/lib/graphql/priceGate';
 import {
+  CONTACT_FLAG,
   REGISTRATION_COOKIE,
   REGISTRATION_MAX_AGE,
   companyCreateVariables,
   createdCompanyId,
+  mayRegisterContact,
+  registeredContact,
   registrationStep,
   signRegistration,
   verifyRegistration,
@@ -498,6 +502,14 @@ export async function POST(request: NextRequest) {
     if (!usedOrderKey && elevatedField) {
       return refuse('This operation is not allowed', 403);
     }
+    // contactRegister runs only as a manager's elevated call or as this browser's own self-registration.
+    const contactStep =
+      !usedOrderKey && guards.fields.has(CONTACT_REGISTER_FIELD)
+        ? mayRegisterContact(contactRegisterParentId(single, body.variables), { isAnonymous, registration })
+        : false;
+    if (!usedOrderKey && guards.fields.has(CONTACT_REGISTER_FIELD) && !contactStep) {
+      return refuse('Forbidden: contact registration is not allowed here', 403);
+    }
     // Spend the checkout mutation for this order before the call. The flags read above can be
     // stale by now (tryRefresh and the viewer lookups awaited since), so reserve() checks and
     // spends in one synchronous step with no await before the upstream call: of N parallel
@@ -602,7 +614,9 @@ export async function POST(request: NextRequest) {
       ? signRegistration(newCompanyId)
       : regStep?.kind === 'address' && registration && !hasErrors
         ? signRegistration(regStep.companyId, registration.used + regStep.flag)
-        : null;
+        : contactStep && registration && registeredContact(data)
+          ? signRegistration(registration.companyId, registration.used + CONTACT_FLAG)
+          : null;
     if (regCookie) okRes.cookies.set(REGISTRATION_COOKIE, regCookie, cookieOptions(REGISTRATION_MAX_AGE));
     applyPunchout(okRes);
     return okRes;

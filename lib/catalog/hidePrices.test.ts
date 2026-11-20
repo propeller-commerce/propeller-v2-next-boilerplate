@@ -176,3 +176,20 @@ test('SSR fetcher results (a product, a listing) lose cost prices for every view
   // Input untouched.
   assert.equal(hasCostKey(withCosts), true);
 });
+
+test('discount records keep no amounts for any viewer; numeric discounts stay; bulkCostPrices is dropped', () => {
+  // A COST_PRICE_PLUS tier: gross and discount.value give the cost. The tier table reads quantityFrom.
+  const tier = {
+    discountType: 'COST_PRICE_PLUS',
+    gross: 78,
+    discount: { value: 30, quantityFrom: 10, validFrom: null, validTo: null, priceId: 5, product: { productId: 1 } },
+  };
+  assert.deepEqual(forVisitor({ product: { bulkPrices: [tier] } }, true), {
+    product: { bulkPrices: [{ discountType: 'COST_PRICE_PLUS', gross: 78, discount: { quantityFrom: 10, validFrom: null, validTo: null, priceId: 5 } }] },
+  });
+  // Cart and order discounts are numbers, kept for a viewer who sees prices.
+  const cart = { cart: { total: { discount: 5 }, items: [{ discount: 1 }] } };
+  assert.deepEqual(forVisitor(cart, true), cart);
+  // A root bulkCostPrices answer is dropped whole.
+  assert.deepEqual(forVisitor({ data: { bulkCostPrices: { items: [{ value: 3 }] } } }, true), { data: {} });
+});

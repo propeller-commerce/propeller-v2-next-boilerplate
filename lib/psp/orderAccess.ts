@@ -29,12 +29,12 @@ export interface OrderAccessDeps {
 export type Refusal = { status: 400 | 403 | 409; error: string };
 
 export const PSP_ORDER_QUERY =
-  'query pspOrder($orderId: Int) { order(orderId: $orderId) { orderId userId status currency total { net } } }';
+  'query pspOrder($orderId: Int) { order(orderId: $orderId) { id userId status currency total { net } } }';
 
 /** The order from a PSP_ORDER_QUERY response, else null. */
 export function toPspOrder(response: unknown): PspOrder | null {
   const order = (response as { data?: { order?: Record<string, unknown> | null } | null } | null)?.data?.order;
-  const orderId = toId(order?.orderId);
+  const orderId = toId(order?.id);
   const totalNet = (order?.total as { net?: unknown } | null | undefined)?.net;
   if (!order || !orderId || typeof order.status !== 'string' || typeof totalNet !== 'number') return null;
   return {

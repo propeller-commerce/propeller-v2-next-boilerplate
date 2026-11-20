@@ -71,8 +71,25 @@ export function signRegistration(companyId: number, used = '', opts?: SignOption
 }
 
 export function verifyRegistration(value: string | undefined | null, opts?: SignOptions): Registration | null {
-  const match = /^(\d{1,15})(?:\.([id]{1,2}))?$/.exec(verifyCookieValue(REGISTRATION_PURPOSE, value, opts) ?? '');
+  const match = /^(\d{1,15})(?:\.([idc]{1,3}))?$/.exec(verifyCookieValue(REGISTRATION_PURPOSE, value, opts) ?? '');
   return match ? { companyId: Number(match[1]), used: match[2] ?? '' } : null;
+}
+
+/** Cookie flag for the contact registered into the new company. */
+export const CONTACT_FLAG = 'c';
+
+/** Whether a contactRegister response created a contact (an anonymous one also carries partial errors). */
+export function registeredContact(response: unknown): boolean {
+  return !!(response as { data?: { contactRegister?: unknown } } | null)?.data?.contactRegister;
+}
+
+/**
+ * Whether an anonymous contactRegister is this browser's own self-registration: into the company it
+ * just created (signed cookie), once. The storefront key accepts any existing `parentId`.
+ */
+export function mayRegisterContact(parentId: number | null, ctx: RegistrationContext): boolean {
+  const reg = ctx.registration;
+  return ctx.isAnonymous && !!reg && parentId === reg.companyId && !reg.used.includes(CONTACT_FLAG);
 }
 
 // The fields RegisterForm sends; anything else (debtorId, parentId, …) could tie the new company to an existing one.
